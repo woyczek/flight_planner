@@ -396,6 +396,7 @@ class Nav:
         ratios=[e.get('_cost',e['nm'])/e['nm'] for es in g.values() for _,e in es if e['nm']>.00001]
         ratio=min(ratios,default=0)
         goal_set=set(goals) if goals else None
+        reach=getattr(g,'goal_reach_ft',None)      # SOG-0517 : le niveau auquel une porte doit être atteinte pour servir la section suivante (la route libre : le plancher de la bande océanique) : une porte atteinte seulement par des voies basses n'est pas notée, la recherche continue (une autre étiquette, plus haute, peut l'atteindre)
         reached={}
         if goal_set:end=min(goal_set);waypoints=();names=[]
         targets=[self.nodes[k] for k in waypoints]+[self.nodes[end]]
@@ -432,7 +433,7 @@ class Nav:
             expanded+=1;u,index,seen_fra,low,high=state
             fra_reachable=fra_reachable or '|FRA|' in u
             if goal_set:
-                if u in goal_set and u not in reached:
+                if u in goal_set and u not in reached and (reach is None or high>=reach-.01):
                     path,walk=[],state
                     while walk!=origin:
                         previous,e=prev[walk];path.append((previous[0],walk[0],e));walk=previous

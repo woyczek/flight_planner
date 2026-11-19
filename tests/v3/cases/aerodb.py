@@ -223,6 +223,59 @@ def _real_nat(south=('ETIKI', 'REGHI'), north=True):
     return data
 
 
+_BANKS = {}
+_BANK_POINTS = {'LEMD': (40.47, -3.56), 'KBOS': (42.36, -71.01), 'DGO': (40.8, -3.9), 'BLV': (41.4, -5.0), 'XORNA': (42.0, -5.7), 'LOTEE': (42.4, -5.2), 'DELOG': (42.8, -6.4), 'NENEM': (43.2, -5.6), 'KORUL': (44.0, -7.5),
+                'ETIKI': (44.1, -8.6), 'REGHI': (44.3, -9.7), 'ALLRY': (46.8, -51.0), 'H1': (45.6, -58.0), 'H2': (44.4, -63.0), 'H3': (43.2, -67.5), 'H4': (42.5, -70.2)}
+_BANK_RULES = {'LF2096': ['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF2096', '', '', '', 'ETIKI', 'COMPULSORY FOR TFC\nVIA REGHI', 'H24', 'S', 'Traffic orientation', '', 'LFRRACC', 'LF'],
+               'LE2666': ['NEW', '29 OCT 2026 [2611]', 'UFN', 'LE2666', '', '', '', 'DELOG', 'NOT AVBL FOR TFC\nDEP LEMD & VIA DGO', 'H24', 'C', 'Traffic organization', '', 'LECMACC', 'LE']}
+
+
+def _rule_bank(*rules):
+    """SOG-0517 (19 Nov 2026): an INVENTED data folder (a path, in a temporary folder removed at the end of the process) that exercises the RAD rules LF2096 (ETIKI compulsory for the traffic via REGHI) and LE2666 (DELOG not available for the traffic from LEMD via DGO)
+    WHATEVER the real base is — the real-base proofs of K303 and K305 stopped exercising the rules when the base moved (the flight no longer meets them) and a case that falls silent when the base moves is a case that is relaxed. `rules`: the ids of the rules written in the RAD book (none: no rule).
+    The bank: LEMD and KBOS; a high network LEMD - DGO - BLV - (N75 by XORNA, N864 by LOTEE) - DELOG - KORUL (the shortest), and a longer way by NENEM; KORUL - ETIKI, KORUL - REGHI (no airway ETIKI - REGHI); on the American side ALLRY - H1 - H2 - H3 - H4 (then a DCT to KBOS);
+    the NAT message of the tests with the track H at REGHI (the entry of the free route) and ALLRY (its end). No SID, no STAR, no permanent gate to make the entry REGHI the best (the caller sets `free_route.MAX_GATES` to 0)."""
+    import atexit
+    import json
+    import os
+    import shutil
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I
+    if rules in _BANKS:
+        return _BANKS[rules]
+    td = tempfile.mkdtemp(prefix='k_bank_')
+    atexit.register(shutil.rmtree, td, True)
+    data = os.path.join(td, 'data')
+    folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+    os.makedirs(folder)
+    pt = _BANK_POINTS
+
+    def airway(route, chain):
+        return [{'route': route, 'a': {'id': a, 'lat': pt[a][0], 'lon': pt[a][1]}, 'b': {'id': b, 'lat': pt[b][0], 'lon': pt[b][1]}, 'lower': 6500, 'upper': 66000} for a, b in zip(chain, chain[1:])]
+    ways = (airway('N867', ['DGO', 'BLV']) + airway('N75', ['BLV', 'XORNA', 'DELOG']) + airway('N864', ['BLV', 'LOTEE', 'DELOG']) + airway('N867', ['BLV', 'NENEM']) + airway('UN20', ['DELOG', 'KORUL']) + airway('UN21', ['NENEM', 'KORUL'])
+            + airway('UN30', ['KORUL', 'ETIKI']) + airway('UN31', ['KORUL', 'REGHI']) + airway('UL5', ['ALLRY', 'H1', 'H2', 'H3', 'H4']))
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['LEMD', 'MADRID', pt['LEMD'][0], pt['LEMD'][1], 2000, 0, 0], ['KBOS', 'BOSTON', pt['KBOS'][0], pt['KBOS'][1], 20, 0, 0]]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pt.items() if k not in ('LEMD', 'KBOS')], 'navaids': [], 'airways': ways}
+    for k, v in files.items():
+        with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+            json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+    os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+    with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+        json.dump(_nat_test((('REGHI', 'east'),), False), f)
+    sheets = RF.rad_sheets()
+    for name, rows in sheets:
+        if name == 'Annex 2B':
+            rows[1:] = [_BANK_RULES[r] + [''] * (17 - len(_BANK_RULES[r])) for r in rules]
+    book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+    RF.write_xlsx(book, sheets)
+    os.makedirs(os.path.join(data, 'route'))
+    I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(book)[1]]))
+    _BANKS[rules] = data
+    return data
+
+
 def _regen():
     """Le socle des travaux du lanceur (tools/regen_jobs.py) avec les verbes des jeux chargés (tools/regen/*.py : proc.py, la lecture des procédures), comme le lanceur au premier appel."""
     import importlib
@@ -12793,25 +12846,21 @@ def k303(c):
          'the repli: a point that the RAD makes avoid is neither an entry nor an exit of the free route, the next is taken (XA avoided: XB), and when every exit (or entry) is avoided the answer says so', what='avoid')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
     c.ok("n\\'exclurait rien de neuf" in src and 'fresh = [x for x in extra' in src and "x.get('fallback')" in src and 'détour de' in src, 'plan.py', 'a RAD retry that imposes nothing new is never played; the repli (Y set aside) only after the pass by X was tried; the answer says the detour')
-    data = _real_nat((('REGHI', 'east'),), north=False)      # SOG-0412: no northern track (they are reached now, the case is about the free route); SOG-0394: a dated test NAT message, never the message of the day
-    if data is None:
-        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
-        return
     from route_engine import plan as P, view, results_cache
     results_cache.ENABLED = False
+    args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
     saved_gates = F.MAX_GATES
-    F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at REGHI (a shorter route by the gates): the proof of the RAD rule LF2096 on the real base is made WITHOUT them
-    saved_turn, engine.Nav.TURN_MAX_DEG = engine.Nav.TURN_MAX_DEG, 0      # SOG-0501 (a): the route that the rule imposes here (ETIKI then REGHI, then back west to the created entry 48/10) turns by 179° at REGHI: the proof of the RAD rule is made WITHOUT the limit of the turns (the case is about the RAD, not about the turns; K365 is about the turns)
     try:
-        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
-        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        # SOG-0517 (19 Nov): the proof of the rule is made on an INVENTED bank that exercises it whatever the real base is (the real flight stopped meeting the rule when the base moved: this case said « skipped », which relaxes it)
+        F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at REGHI: the proof of the RAD rule LF2096 is made WITHOUT them
+        bank = _rule_bank('LF2096')
+        res = P.compute(view.to_request(args), bank, bank + '/route/rad.json.gz', None)
         p = res['primary']
         errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
         kinds = [x['kind'] for a in res['rad_search_attempts'] for x in a.get('excluded', [])]
-        c.ok(bool(p.get('ok')) and not errors and 3200 < p['distance_nm'] < 3350 and 'ETIKI DCT REGHI' in p['route'] and 'compel' in kinds and not any(i['text'].startswith('Point REGHI écarté') for i in p.get('issues', [])), str((errors, p.get('distance_nm'), kinds)),
-             'LEMD → KBOS on the real base: about 3 270 NM by KORUL DCT ETIKI DCT REGHI, no error of the control, REGHI not set aside (so no detour to say)')
+        c.ok(bool(p.get('ok')) and not errors and 3000 < p['distance_nm'] < 3050 and 'ETIKI DCT REGHI' in p['route'] and 'compel' in kinds and not any(i['text'].startswith('Point REGHI écarté') for i in p.get('issues', [])), str((errors, p.get('distance_nm'), kinds, p.get('route'))),
+             'LEMD → KBOS on the invented bank: about 3 012 NM by KORUL UN30 ETIKI DCT REGHI, no error of the control, REGHI not set aside (so no detour to say)')
         # the repli: when the pass by ETIKI does not work (here the free route is made to ignore the order), REGHI is set aside and the answer says the detour with both distances
-        import re
         solve = F.solve
 
         def blind(nav, gr, *a, **k):
@@ -12819,7 +12868,7 @@ def k303(c):
             return solve(nav, gr, *a, **k)
         F.solve = blind
         try:
-            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            res = P.compute(view.to_request(args), bank, bank + '/route/rad.json.gz', None)
         finally:
             F.solve = solve
         said = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Point REGHI écarté')]
@@ -12827,9 +12876,16 @@ def k303(c):
         failed = [a for a in res['rad_search_attempts'] if a.get('error') and any(x.get('fallback') for x in a.get('excluded', []))]
         c.ok(said == [] and len(broken) == 1 and len(failed) == 1, str((said, broken, len(failed))),
              'when the pass by ETIKI fails and the fallback has nowhere to go (this bench has ONE entry, REGHI), the fallback is TRIED (one attempt without a route) and the answer does NOT say that REGHI was set aside (SOG-0504: it said « détour de +8 NM » for a retry that had failed; this case asserted that sentence); the rule is said broken. The fallback that succeeds is K376')
+        # the control on the REAL base (when it is here): LEMD → KBOS with the permanent gates, as the user flies it. 19 Nov: the Spanish network rebuilt and the free route fixed (K396), the flight no longer goes by REGHI: it goes by the Spanish airways, the point GODIV, the entry AGADO and the coordinates 42/10 … 47/50, 2 994 NM (3 270 NM by KORUL ETIKI REGHI before): the rule LF2096 is not met any more on the real base, the invented bank above is what proves it
+        F.MAX_GATES = saved_gates
+        data = _real_nat((('REGHI', 'east'),), north=False)      # SOG-0412: no northern track; SOG-0394: a dated test NAT message, never the message of the day
+        if data is not None:
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            p = res['primary']
+            errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
+            c.ok(bool(p.get('ok')) and not errors and 2900 < p['distance_nm'] < 3100, str((errors, p.get('distance_nm'), p.get('route'))), 'control, LEMD → KBOS on the real base: a route with no error of the control, between 2 900 and 3 100 NM (2 994 NM on 19 Nov by the entry AGADO; 3 270 NM by REGHI before the Spanish network)')
     finally:
         F.MAX_GATES = saved_gates
-        engine.Nav.TURN_MAX_DEG = saved_turn
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
@@ -12940,21 +12996,29 @@ def k305(c):
          'whatever the segments by which a route reaches DELOG (N75 XORNA–DELOG, N864 LOTEE–DELOG), the finding is the SAME exclusion: the point DELOG (red before: the segments of each route, and a second retry); a route that does not touch DELOG: nothing', what='point exclusion')
     src = (ROOT / 'tools' / 'route_engine' / 'rad_flight.py').read_text(encoding='utf-8')
     c.ok('point_rule=' in src and "v[7] not in [dep,arr]" in src and "elif point_rule:" in src, 'rad_flight.py', 'a point rule excludes the point (not an aerodrome, not a procedure leg, which keep their own exclusions)')
-    data = _real_nat(north=False)      # SOG-0412: no northern track (they are reached now, the case is about the RAD retry of the southern entries); SOG-0394: a dated test NAT message, never the message of the day
-    if data is None:
-        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
-        return
     from route_engine import engine, free_route as F, plan as P, view, results_cache
     results_cache.ENABLED = False
+    args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
     saved_gates = F.MAX_GATES
-    F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at DELOG / ETIKI: the proof of the RAD retry of the entries on the real base is made WITHOUT them
     try:
-        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
-        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        # SOG-0517 (19 Nov): the proof of the retry on the invented bank (it exercises the rule LE2666 whatever the real base is); the shortest route goes by N75 XORNA – DELOG, another goes by N864 LOTEE – DELOG: one retry that excludes the POINT is enough, the next route goes by NENEM
+        F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at REGHI: the proof of the RAD retry is made WITHOUT them
+        bank = _rule_bank('LE2666')
+        res = P.compute(view.to_request(args), bank, bank + '/route/rad.json.gz', None)
         p = res['primary']
         errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
         points = [x['point'] for a in res['rad_search_attempts'] for x in a.get('excluded', []) if x.get('kind') == 'point']
-        c.ok(bool(p.get('ok')) and not errors and len(res['rad_search_attempts']) == 1 and 'DELOG' in points, str((errors, len(res['rad_search_attempts']), points)), 'LEMD → KBOS on the real base: a route with no error of the control after ONE RAD retry, which excluded the point DELOG (and passed by ETIKI)')
+        c.ok(bool(p.get('ok')) and not errors and len(res['rad_search_attempts']) == 1 and points == ['DELOG'] and 'DELOG' not in p['route'].split() and 'NENEM' in p['route'].split(), str((errors, len(res['rad_search_attempts']), points, p.get('route'))),
+             'LEMD → KBOS on the invented bank: a route with no error of the control after ONE RAD retry, which excluded the POINT DELOG (every edge that touches it: N75 and N864 both lead to it); the route goes by NENEM')
+        # the control on the REAL base (when it is here): as the user flies it. 19 Nov: the flight no longer meets the rule LE2666 (no DELOG: it goes by the Spanish airways and the entry AGADO); the retries that remain are those of NARBO and TURON (other rules)
+        F.MAX_GATES = saved_gates
+        data = _real_nat(north=False)      # SOG-0412: no northern track; SOG-0394: a dated test NAT message, never the message of the day
+        if data is not None:
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            p = res['primary']
+            errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
+            c.ok(bool(p.get('ok')) and not errors and 2900 < p['distance_nm'] < 3100 and len(res['rad_search_attempts']) <= 2, str((errors, len(res['rad_search_attempts']), p.get('distance_nm'))),
+                 'control, LEMD → KBOS on the real base: a route with no error of the control after at most two RAD retries, between 2 900 and 3 100 NM (19 Nov: two retries, NARBO then TURON)')
     finally:
         F.MAX_GATES = saved_gates
         results_cache.ENABLED = True
@@ -17836,3 +17900,51 @@ def k359(c):
     finally:
         engine.MAX_BRIDGE_VISITS = keep
     c.ok(capped is None or capped[0] < 900, str(capped), 'a budget of visits that is too small ends the search at once with what it has (the shortest found so far, or nothing): never an exception, never a long loop')
+
+
+@case('K396', 'Route engine, free route: an entry that the departure reaches ONLY by low lanes (below the oceanic band) is no longer noted as reached — the search of Europe goes on for another, higher way to it; it was the nearest to the gates, so it came first, failed with EVERY exit and (with the rule « an exit that fails is dead ») left no exit: « CALCUL IMPOSSIBLE » (LPPT → KMIA after the Portuguese network of 19 Nov)',
+      'K', static=True,
+      rule='Measured on the base of the user after the rebuild of 19 Nov: LPPT → KMIA FL370 without NAT message: KOMUT, LUTAK and ERPES were reached by lanes of FL195 to FL245 (band (19500, 24500)) at the lowest cost, the oceanic legs begin at FL285: the section « entry → exit » found no level in common, for the 20 exits. The invented bench: a lane of FL000-FL245 from the departure to the entry E1 (near the great circle), a lane of FL285-FL450 to the entry E2 (farther); a lane of FL285+ ALSO reaches E3, longer than its low lane. The real search is used (`Nav.search(goals=…)`); the resolution of a pair needs a band that reaches the oceanic floor (what `sections._resolve` needs).')
+def k396(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import engine, free_route as F
+    pos = {'DEP': (50.0, -5.0), 'ARR': (40.0, -74.0), 'E1': (50.0, -14.0), 'E2': (56.0, -14.0), 'E3': (46.0, -14.0), 'X1': (41.0, -52.0), 'X2': (42.0, -53.0), 'X3': (43.0, -54.0), 'M3': (50.0, -10.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    nav = engine.Nav.__new__(engine.Nav)
+    nav.nodes, nav.nat, nav.depart, nav.nat_rejected, nav._nat_high, nav.sections_info, nav.states_total = dict(nodes), {'ends': {'T1': ['E1', 'X1'], 'T2': ['E2', 'X2'], 'T3': ['E3', 'X3']}}, None, frozenset(), frozenset(), None, 0
+    nav.add = lambda p: nav.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']}) and p['id']
+    g = engine.RoutingGraph()
+
+    def lane(u, v, lower, upper):
+        e = {'a': u, 'b': v, 'route': 'UL' + u + v, 'nm': engine.nm(nodes[u], nodes[v]), 'lower': lower, 'upper': upper, 'dir': 'F', 'kind': 'AIRWAY'}
+        g.setdefault(u, []).append((v, e))
+        return e
+    lane('DEP', 'E1', 0, 24500)      # the low lane: the nearest entry, reached by FL245 at most
+    lane('DEP', 'E2', 28500, 45000)
+    lane('DEP', 'M3', 28500, 45000)
+    lane('M3', 'E3', 28500, 45000)      # E3 has a high way, longer than the straight low lane below
+    lane('DEP', 'E3', 0, 24500)
+    seen = {'bands': {}}      # no `nav.edges`: the free route makes no link from the high network to the gates (the bench has only its lanes)
+
+    def europe(g2, start, entries, **k):
+        got = nav.search(g2, start, entries[0], (), False, False, None, gate=True, goals=entries, **k) or {}
+        seen['reach'] = getattr(g2, 'goal_reach_ft', None)
+        return got
+
+    def resolve(g2, start, end, i, o, legs, first):
+        seen['bands'][i] = first['band']
+        if first['band'][1] < F.LOW_FT:      # what sections._resolve meets: the oceanic legs (FL285+) share no level with the band of the section of Europe
+            return None
+        path = first['path'] + [(i, o, {'nm': 1500.0, 'route': 'DCT'}), (o, 'ARR', {'nm': 900.0, 'route': 'DCT'})]
+        return 3000.0, path, [{'nm': 900.0}]
+    # the search alone: with the level asked, E1 is missing, E3 comes by its high way (band above the floor)
+    plain = nav.search(g, 'DEP', 'E1', (), False, False, None, gate=True, goals=['E1', 'E2', 'E3'])
+    g.goal_reach_ft = F.LOW_FT
+    high = nav.search(g, 'DEP', 'E1', (), False, False, None, gate=True, goals=['E1', 'E2', 'E3'])
+    c.eq((sorted(plain), plain['E1']['band'][1], plain['E3']['band'][1]), (['E1', 'E2', 'E3'], 24500, 24500), 'without the level asked, the search notes E1 and E3 by their low lanes (their band stops at FL245): what the base of 19 Nov did', what='plain')
+    c.eq((sorted(high), high['E3']['band'][1] >= F.LOW_FT, [v for _u, v, _e in high['E3']['path']]), (['E2', 'E3'], True, ['M3', 'E3']), 'with the level asked, E1 (only a low lane) is NOT noted; E3 is noted by its HIGH way (the longer one): a label of a higher band is not discarded', what='high')
+    g.goal_reach_ft = None
+    best, why = F.solve(nav, g, 'DEP', 'ARR', 1.0, resolve, europe)
+    c.eq((why, best and best['entry'], seen['reach'], sorted(seen['bands'])), (None, best and best['entry'], F.LOW_FT, [i for i in sorted(seen['bands']) if i != 'E1']), 'the free route asks the search of Europe for the oceanic floor, and no pair is resolved with the entry E1 (before: E1 came first and failed with every exit)', what='solve')
+    c.ok(best is not None and best['entry'] in ('E2', 'E3'), str(best and best['entry']), 'the free route is found by a high entry')

@@ -193,6 +193,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozense
         high_band = nav._nat_high_band = nat_layer.main_network(nav, LOW_FT) if hasattr(nav, 'edges') else frozenset()      # un faux de cas n'a pas de base
     g2 = engine.RoutingGraph(g)
     g2.__dict__.update(g.__dict__)
+    g2.goal_reach_ft = band[0]      # SOG-0517 : la recherche d'Europe note une entrée seulement si elle l'atteint à la bande océanique (LPPT → KMIA : KOMUT, LUTAK, ERPES atteintes par des voies de FL245 seulement, les plus proches des portes : elles passaient en tête et échouaient avec toutes les sorties)
     for k, into in [(i, True) for i in entries] + [(o, False) for o in exits]:
         got = _links(nav, eff(k), high, into, band)      # SOG-0396 (selection) : les trois nœuds les plus proches du réseau « haut » (voies au plafond FL245) ET les trois du réseau qui ATTEINT la bande de la route libre (FL285) : un nœud de voie plafonnée à FL255 n'est atteint que de bas, jamais à la bande du raccord ; sans les seconds, la porte n'avait aucun raccord utilisable (KORD → EIDW : 6 085 NM au lieu de 3 508)
         seen_links = {(x[0], x[1]) for x in got}
