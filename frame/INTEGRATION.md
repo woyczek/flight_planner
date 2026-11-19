@@ -1091,6 +1091,8 @@ About thirty `<details><summary>` were written by hand (Data, Settings, Fuel, Re
 | `wireFolds(root, set, { get })` | ONE capturing `toggle` listener on `root`; for each connected `<details data-fold>` that changes, `set(key, open, el)`; with `get(key)`, `set` is called only when the value changes; returns `off()` |
 | `foldOf(root, key)` / `openFold(root, key)` | the fold of that key or null; opens it when closed (a link that leads to a card opens its fold first) |
 
+**For the classic scripts of the frame** (Settings builds its groups synchronously): the frame loads `fold.js` with its start, before the first screen, and gives it as `window.SogFrame.fold` (frozen, `null` only if the load failed: a failure of the frame, no fallback copy); `lib/fold.js` is in the service worker's shell (A353). A module (ES) imports the file itself.
+
 Migrating a builder changes nothing of what it draws: the bench proves `fold()` equal to the original text of four builders (Data cycle, packs, recette, tokens); a migrating file keeps its class and its own `data-` attribute (`attrs`), and gains `data-fold` only when it passes a key. What stays with the caller: what an opening does (read a file, start a map), in its `set`. Owners migrate one at a time: Data and Settings first, Fuel last; the missions registry is NOT migrated (it becomes a table, SOG-0498).
 
 ## 13. Service screens (`APP.screens`)

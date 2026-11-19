@@ -5384,6 +5384,18 @@ def a353(c):
     c.check_errors()
 
 
+@case('A353', 'SogFrame.fold (SOG-0468 (3), the classic screens of Settings): the frame loads frame/lib/fold.js with its start and gives it, frozen and ready before the first screen; the service worker keeps it for offline', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (3) (Réglages: groups.js builds its groups and keeps the open ones synchronously): window.SogFrame.fold is { fold, wireFolds, foldOf, openFold } of frame/lib/fold.js, frozen, set before the first screen is drawn; frame/sw.js lists lib/fold.js in its shell')
+def a353(c):
+    c.open('hello')
+    got = c.js("() => { const F = window.SogFrame.fold; if (!F) return null; const h = document.createElement('div'); h.innerHTML = F.fold({ cls: 'x', key: 'k', title: 'T', body: '<p>b</p>' }); return [Object.isFrozen(F), Object.keys(F).sort().join(','), h.firstChild.tagName, h.firstChild.dataset.fold, F.foldOf(h, 'k') === h.firstChild, F.openFold(h, 'k').open] }")
+    c.eq(got, [True, 'fold,foldOf,openFold,wireFolds', 'DETAILS', 'k', True, True], 'SogFrame.fold: the four functions of fold.js, frozen, ready once the first screen is up', what='SogFrame.fold')
+    sw = (ROOT / 'frame' / 'sw.js').read_text(encoding='utf-8')
+    c.eq("'lib/fold.js'" in sw, True, 'the service worker keeps frame/lib/fold.js (Settings draws offline)', what='sw shell')
+    c.check_errors()
+
+
 @case('A352', 'SogFrame.text (SOG-0468 (2), the classic screens of Settings): the frame loads frame/lib/text.js with its start and gives it, frozen and ready before the first screen, to the screens that cannot await an import; the service worker keeps it for offline', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (2) (Réglages: access.js draws synchronously, an `await import` would make four folds asynchronous or keep a second copy): window.SogFrame.text is { stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug } of frame/lib/text.js, frozen, set before the first screen is drawn; frame/sw.js lists lib/text.js in its shell')

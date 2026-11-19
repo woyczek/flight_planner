@@ -135,6 +135,11 @@
   const textP = import(new URL('lib/text.js?v=0', document.currentScript.src).href).then(m => TXT = Object.freeze({
     ...m
   })).catch(e => console.warn('text', e));
+  // le pli <details> (frame/lib/fold.js, SOG-0468 (3)) : même règle que le pliage des textes, donné en synchrone à Réglages (groups.js) par SogFrame.fold
+  let FLD = null;
+  const foldP = import(new URL('lib/fold.js?v=0', document.currentScript.src).href).then(m => FLD = Object.freeze({
+    ...m
+  })).catch(e => console.warn('fold', e));
   /** Heure de l'appli : fmtZ (« 16:30Z »), fmtZLocal (« 16:30Z (18:30) »), fmtDateZ (date UTC et heure Z). */
   const tz = (fn, iso) => TZ?.[fn]?.(iso, lang()) ?? '';
   const ROOT = new URL('../', document.currentScript.src).href;
@@ -5797,6 +5802,7 @@
     }).catch(() => {});
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await textP; // le pliage des textes, prêt pour SogFrame.text avant le premier écran
+    await foldP; // le pli <details>, prêt pour SogFrame.fold avant le premier écran
     await loadDevice();
     bootLoaded();
     readVersion(); // en fond : la version de la suite, dernière ligne du bloc d'état
@@ -6452,6 +6458,9 @@
     syncNow,
     reloads: reloadsState,
     reloadApp, // SOG-0484 (aussi donné à Réglages) : le rechargement demandé par un geste, noté par le cadre
+    get fold() {
+      return FLD; // frame/lib/fold.js (fold, wireFolds, foldOf, openFold), figé ; prêt avant le premier écran ; null si son chargement a échoué
+    },
     get text() {
       return TXT; // frame/lib/text.js (stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug), figé ; prêt avant le premier écran ; null si son chargement a échoué
     },
