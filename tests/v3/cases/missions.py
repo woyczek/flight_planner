@@ -11667,7 +11667,7 @@ def n177(c):
                f"document.querySelector('{_KW} details[data-fold=\"fam:FIRE\"]')?.open]")
     c.eq(sar, [True, True, False], 'the family of the mission open, in its open group; another family closed', what='the families')
     one = c.js(f"(() => {{ const b = document.querySelector('{_KW} [data-brick=\"sar-land\"]'); return [b.tagName, b.querySelector('[data-kwsym]')?.textContent.trim(), b.querySelector('b')?.textContent.trim(), b.querySelector('.f-muted')?.textContent.trim(), b.title] }})()")
-    c.eq(one, ['BUTTON', '◯', 'Recherche terrestre progressive', norm(row(c, 'dwKey_zone', EDTX_FILE)), 'Une zone de passage révèle le secteur précis.'],
+    c.eq(one, ['BUTTON', '◯︎', 'Recherche terrestre progressive', norm(row(c, 'dwKey_zone', EDTX_FILE)), 'Une zone de passage révèle le secteur précis.'],
          'a brick: a button, its symbol, its title, its key, its brief on hover', what='a brick')
     c.tap(f'{_KW} [data-do=edkindoff]')
     ed_leave(c)

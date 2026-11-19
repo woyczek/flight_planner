@@ -1397,7 +1397,7 @@ function kwPoolHtml(s, o) {
     hit = text => !q || foldLower(text).includes(q),
     kept = e.kfold || {},
     open = (k, dflt) => q ? true : k in kept ? !!kept[k] : dflt,
-    sym = k => `<span class="ms-kwsym" data-kwsym aria-hidden="true">${KW_SYM[k] || '+'}</span>`,
+    sym = k => `<span class="ms-kwsym" data-kwsym aria-hidden="true">${KW_SYM[k] || '+'}︎</span>`, // U+FE0E : le symbole en texte, jamais en emoji (⚑, ↗)
     brick = b => `<button type="button" class="ms-kwitem" data-do="edbrick" data-brick="${esc(b.id)}" title="${esc(CAT.textIn(b.message, lang))}">${sym(b.key)}<span class="ms-kwtext"><b>${esc(CAT.textIn(b.title, lang))}</b><span class="f-muted">${esc(keyName(b.key))}</span></span></button>`,
     found = bricks.filter(b => hit([CAT.textIn(b.title, lang), CAT.textIn(b.message, lang), famName(b.family), b.family, keyName(b.key)]
       .join(
