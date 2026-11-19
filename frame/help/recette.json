@@ -2,7 +2,7 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-19",
+  "at": "2026-11-20",
   "tests": 369,
   "verdicts": 232
  },
@@ -5454,10 +5454,10 @@
     "de": "GFS-Wetter: Aktualisierung gelingt nie — immer „erneut in … s“; verstehen, beheben, dann ein Kästchen „Den Starter das GFS-Wetter aktualisieren lassen“",
     "es": "Meteo GFS: la actualización nunca termina — siempre «reintentar en … s»; entender, corregir y luego una casilla «Dejar que el lanzador actualice la meteo GFS»"
    },
-   "test": "RELANCE le lanceur (il doit tourner sur cb65031d3 ou plus récent), puis recharge la page. Données, ligne GFS : touche « Construire ». Attendu : si la lecture échoue, la ligne dit « Dernière lecture ratée il y a … : » suivi de la CAUSE, et tu peux réessayer tout de suite (un échec n'arme plus l'attente) ; si une lecture a réellement eu lieu, un second appui dit « Dernière lecture de la NOAA lancée à HH:MM : attente de dix minutes entre deux départs, la suivante est possible dans N s » — jamais un compte à rebours seul. Météo : après ce refus, plus de « construit à l'instant », mais « Une lecture de la NOAA vient d'avoir lieu : « Relire » reprend ce qui est publié ». Pas encore livré : la mise",
+   "test": "RELANCE le lanceur (sur 17dd57d88 ou plus récent), puis recharge la page. (1) Données, ligne « Synoptique monde (GFS) » : si la publication est ancienne, le lanceur la relit tout seul au démarrage (environ 2 minutes) ; la ligne dit ensuite « À jour. Le lanceur relira la NOAA à HH:MM… », ou, après un échec, la cause puis « prochaine tentative à HH:MM ». (2) Pendant cette lecture automatique, calcule une route ou lis des procédures : ton geste passe tout de suite (la lecture automatique s'arrête), jamais « occupé ». (3) Le bouton « Construire » garde son refus « trop tôt » expliqué (heure du dernier départ, attente, reste). Dis ce que tu as vu, avec la capture si ça diffère.",
    "since": "2026-11-19",
    "state": "todo",
-   "delivered": "2026-11-19T21:50:32Z"
+   "delivered": "2026-11-19T23:10:42Z"
   },
   {
    "id": "SOG-0526",
