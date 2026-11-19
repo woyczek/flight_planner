@@ -169,6 +169,14 @@ export const TX = {
     'beim Schwebeflug von {by} geöffnet um {t}',
     'abierto al estacionario de {by}, a las {t}'
   ],
+  // la condition « refill » de l'atelier (SOG-0521) : jamais le lieu, comme l'atterrissage
+  keyRefill: ['s\'ouvre au ravitaillement', 'opens on refuelling', 'öffnet sich beim Auftanken', 'se abre al repostaje'],
+  openRefillMe: ['ouvert à votre ravitaillement en retardant, à {t}', 'opened on your hot refuelling, at {t}',
+    'bei Ihrem Auftanken mit laufendem Triebwerk geöffnet um {t}', 'abierto a su repostaje en caliente, a las {t}'
+  ],
+  openRefillBy: ['ouvert au ravitaillement en retardant de {by}, à {t}', 'opened when {by} refuelled hot, at {t}',
+    'beim Auftanken mit laufendem Triebwerk von {by} geöffnet um {t}', 'abierto al repostaje en caliente de {by}, a las {t}'
+  ],
   // la condition « suite d'étapes » de l'atelier (SOG-0500, lot 5) : ni le nombre d'étapes ni un lieu, et pas de progression étape par étape
   keySequence: ['s\'ouvre à la fin de ses étapes', 'opens at the end of its steps', 'öffnet sich am Ende seiner Etappen',
     'se abre al final de sus etapas'
@@ -594,6 +602,8 @@ async function record(v, id, f, source) {
     }, id, f.how, {
       from: f.from,
       to: f.to,
+      last: f.last, // un ravitaillement : le dernier relevé tenu et le relevé de départ (SOG-0521)
+      off: f.off,
       at: f.at,
       steps: f.steps,
       tier: f.tier, // le palier et la distance d'un posé de précision (SOG-0507) : relus bornés par withOpen
@@ -719,6 +729,7 @@ export function describe(tt, s, d, {
   else if (D.howOf(k) === 'landing') key = tt(TX.keyLanding); // jamais le lieu (voir TX.keyLanding)
   else if (D.howOf(k) === 'overflight') key = tt(TX.keyOverflight); // jamais le lieu (voir TX.keyOverflight)
   else if (D.howOf(k) === 'hover') key = tt(TX.keyHover); // jamais le lieu (voir TX.keyHover)
+  else if (D.howOf(k) === 'refill' && D.follows(k)) key = tt(TX.keyRefill); // jamais le lieu (voir TX.keyRefill)
   else if (D.howOf(k) === 'sequence' && D.follows(k)) key = tt(TX.keySequence); // ni le nombre d'étapes ni un lieu (voir TX.keySequence)
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
@@ -753,7 +764,8 @@ export function describe(tt, s, d, {
         .openZoneBy) :
       s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.how === 'arrival' ? (s.mine ? TX.openArrivalMe : TX
         .openArrivalBy) : s.how === 'landing' ? (s.mine ? TX.openLandingMe : TX.openLandingBy) : s.how === 'overflight' ? (s.mine ? TX
-        .openOverflightMe : TX.openOverflightBy) : s.how === 'hover' ? (s.mine ? TX.openHoverMe : TX.openHoverBy) : s.how === 'sequence' ? (
+        .openOverflightMe : TX.openOverflightBy) : s.how === 'hover' ? (s.mine ? TX.openHoverMe : TX.openHoverBy) : s.how === 'refill' ? (s
+        .mine ? TX.openRefillMe : TX.openRefillBy) : s.how === 'sequence' ? (
         s.mine ? TX.openSequenceMe : TX
         .openSequenceBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;

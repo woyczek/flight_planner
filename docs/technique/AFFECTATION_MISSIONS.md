@@ -750,6 +750,55 @@ reads what the section already computes (`drawers.js`, `drawers_view.js`; `frame
   no drawer open or under a lock, hostile entries, no place), N81 (122, 8 new: absent without a landing, present with two lines, level 1,
   `stop()`, the exact text in four languages, without a title, no number of drawer, a hostile title escaped) and the screen case N181 (390 and 1280 px, four languages, invented data).
 
+### 11.12 Refill judged in flight (SOG-0521)
+
+The retardant refill of a fire mission (`trigger_condition: { kind: refill, object }`, read by `frame/lib/mission.js`, `refillRule`) is judged
+in flight: the pilot lands at the station, on the heading asked, stays the time asked, then leaves. The user's words (19 Nov 2026): « atterrir,
+se placer contre l'objet, faire un refill (mini 5 mn), repartir » ; « orienter la bestiole dans le bon sens ». Everything is in `drawers.js` and
+`drawers_view.js` (`frame/lib/*`, the `module.js` files and the editor are not touched). The figures are NEVER copied: `drawers.js` imports
+`REFILL_RULE` from `frame/lib/mission.js` (already listed in the `meta.files` of Missions and of the Map) and the benches read the thresholds
+from the same table.
+
+- **The rule: the simulator alone.** A fix is HELD (`isRefilling`) when it is on the ground (`onGround === true`), within `radiusM` metres of
+  the station (`arrived()` of `crossing.js`, no new formula), at `gsKt <= speedMaxKt` and, when `headingDeg` is asked, with a known `headingDeg`
+  whose angular distance to it, modulo 360, is at most `headingTolDeg` (359 and 1 degrees are 2 apart). An unknown heading never counts, and
+  any unknown datum makes the fix not held. Only the simulator gives the ground and the heading, so no other source can judge it.
+- **The hold.** `refill` joins the table `HOLDS` (`refillSpec`, `isRefilling`), so `isHold`, `judgeKind` (`'hold'`) and `holding` apply: the
+  condition is met after `durationSec` seconds in a row, two held fixes never being more than `maxGapSec` apart (a longer gap, a fix not held,
+  an unknown datum or no time starts again from zero). `holding` fixes keep the heading (`fixHd`: `fixOf` of `precision.js` plus
+  `headingDeg` of `crossing.js`, which `fixOf` drops).
+- **The state « filled » and the departure** (`departure`, true by default). When the hold is complete the hold is « filled »
+  (`hold: { from, last, to, full: true }`): nothing opens, and the state stays so as long as the pilot has not left, even if he moves a little
+  (a fix on the ground in the circle but too fast or at the wrong heading changes nothing; `last` follows the last HELD fix). The drawer
+  opens at the FIRST fix that is no longer « down in the circle »: `onGround === false`, or a fix outside the circle with a readable position.
+  A fix inside the circle whose `onGround` is unknown is NOT a departure. With `departure` false the drawer opens at the end of the hold, like
+  a landing. The state lives in `v.hold` of the view, per drawer.
+- **The finding** (written by `withOpen` and `docOf`, read by `entryOf`, all bounded by `fixHd`): `{ how: 'refill', at (the departure fix, or
+  the end of the hold without departure), from (the first held fix), to (the fix that completes the hold) }` and, with a departure, `last` (the
+  last held fix before the departure) and `off` (the departure fix). An older finding stays readable; an unreadable `last` or `off` is
+  dropped, never the whole finding.
+- **`stands`** replays on the READER's key: `from` and `to` held, with a gap `>= durationSec` and `< durationSec + maxGapSec` (the honesty
+  bound Sécurisation asked for); with a departure, `last` held, `off` not held AND a departure (not on the ground in the circle), `off.at >
+  last.at` and `off.at - last.at <= maxGapSec`, `last.at >= to.at` with the wait on the ground bounded to 24 h. A wrong heading at the
+  reader's, a station that moves or a refused key refuse the finding (`shape`). **Replayed, not proven**: forged fixes that satisfy the rule
+  stand like those of a real flight.
+- **`finding` and `catchUp`** give `null` for `refill` (the hold has a state, the trace keeps one point per nautical mile).
+- **`follows`** accepts `refill` for a station that does not move, with a readable position, an empty `confirmation`, finite numbers,
+  `maxGapSec >= FIX_PERIOD_SEC`, and `radiusM`, `headingTolDeg` and `headingDeg` WITHIN the bounds of `REFILL_RULE` (`radiusBoundsM`,
+  `headingTolBoundsDeg`, `headingBoundsDeg`). `howOf` gives `'refill'`; `HOWS` and `SHARED` gain `'refill'`. A sequence of steps does NOT
+  accept `refill` as a step (`seqOf` is unchanged).
+- **View.** `judge()` goes through `holding` as for a landing and a hover; `record` passes `last` and `off` to `withOpen`. The texts, in four
+  languages and never the place: `keyRefill` (« s'ouvre au ravitaillement »), `openRefillMe` (« ouvert à votre ravitaillement en retardant, à
+  {t} »), `openRefillBy` (« ouvert au ravitaillement en retardant de {by}, à {t} »). No tier, no debrief line.
+- **Cases.** N80 (the bench `drawers.html`, 200 checks, 30 new: each threshold just inside and just outside — the radius at R - 0.1 m and
+  R + 0.1 m, the speed, the ground, the heading at plus and minus the tolerance and one more, 359 against 1, an unknown heading, the duration
+  at `durationSec - 5` and `durationSec`, a gap of `maxGapSec` and of `maxGapSec + 0.1`, the departure (in the air, outside the circle, unknown
+  ground, nothing while down, `departure` false), `stands` (true, a hold gap of `durationSec + maxGapSec`, `off` held, `off - last` over
+  `maxGapSec`, `last` before `to`, 24 h, a wrong heading at the reader's), `follows`, hostile inputs, `HOWS` and `SHARED`, a sequence refusing
+  `refill`) and N81 (`drawers_view.html`, 126 checks, 4 new: the closed key and the open line in four languages, live end to end — nothing
+  before the departure, the drawer opens at the first fix in the air — and a wrong heading that never fills). Red on the base (SOG-0521 not
+  yet there), green on the final commit.
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

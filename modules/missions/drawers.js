@@ -88,7 +88,8 @@
 //     (ctx : { mission, me, seance, now }) ; null si rien n'est à écrire (identifiants refusés).
 
 import {
-  DRAWER_IDS
+  DRAWER_IDS,
+  REFILL_RULE
 } from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M) : une seule liste, jamais recopiée
 import {
   own
@@ -96,7 +97,8 @@ import {
 import {
   crossed,
   reach,
-  arrived
+  arrived,
+  fixOf as fixCross
 } from '../../frame/lib/crossing.js'; // le service de franchissement du cadre (SOG-0447) : le MÊME jugement en vol et au rejeu d'un constat
 import {
   PRECISION,
@@ -124,10 +126,10 @@ export {
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
-export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'sequence'];
+export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'refill', 'sequence'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
-export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'sequence'];
+export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'refill', 'sequence'];
 export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
@@ -170,6 +172,17 @@ const distRead = v => {
   return typeof d === 'number' && Number.isFinite(d) && d >= 0 && d <= PRECISION[PRECISION.length - 1].nm ? d : null;
 };
 
+/** Un relevé de ravitaillement relu borné : fixOf (precision.js) et, en plus, le cap vrai (`headingDeg`, 0 à 360) que fixOf ne garde pas ;
+ *  null s'il est illisible. Le cap inconnu est absent (jamais 0). */
+function fixHd(v) {
+  const f = fixOf(v),
+    h = f ? fixCross(v)?.headingDeg : null;
+  return f && Number.isFinite(h) ? {
+    ...f,
+    headingDeg: h
+  } : f;
+}
+
 /** Une ligne de tiroir d'un carnet, bornée ; null sans état ni heure lisibles. */
 function entryOf(v) {
   const state = own(v, 'state'),
@@ -186,12 +199,22 @@ function entryOf(v) {
   // une suite d'étapes (lot 5) : de 1 à 10 constats, chacun lu borné ; un tableau trop long ou illisible, ou une suite sans étapes, rend
   // le constat illisible. Un constat sans `steps` se lit comme avant.
   if ((raw !== undefined && !steps) || (how === 'sequence' && !steps)) return null;
+  const rd = how === 'refill' ? fixHd :
+    fixOf, // un ravitaillement garde le cap de ses relevés, et porte `last` et `off` (le départ, SOG-0521)
+    last = how === 'refill' ? rd(own(v, 'last')) : null,
+    off = how === 'refill' ? rd(own(v, 'off')) : null;
   return {
     state,
     at,
     how,
-    from: fixOf(own(v, 'from')),
-    to: fixOf(own(v, 'to')),
+    from: rd(own(v, 'from')),
+    to: rd(own(v, 'to')),
+    ...(last ? {
+      last
+    } : {}),
+    ...(off ? {
+      off
+    } : {}),
     tier: tierRead(v), // le palier et la distance d'un posé de précision (SOG-0507) : lus bornés, null sinon (un ancien constat n'en a pas)
     distNm: distRead(v),
     source,
@@ -302,13 +325,13 @@ export function follows(key) {
   if (key.kind === 'zone') return !key.actor;
   if (key.kind === 'object') return !!key.object && !key.object.moving;
   if (key.kind === 'arrival') return !(key.escortMinSec > 0);
-  return !!landSpec(key) || !!overSpec(key) || !!hoverSpec(key) || !!seqOf(key);
+  return !!landSpec(key) || !!overSpec(key) || !!hoverSpec(key) || !!refillSpec(key) || !!seqOf(key);
 }
 
 /** Le genre de constat d'une clé : « landing », « overflight » ou « hover » pour les conditions de l'atelier de ce nom, `key.kind` sinon
  *  (ce que le carnet écrit dans `how`). */
 export const howOf = key => key?.kind === 'condition' && (key.condition === 'landing' || key.condition === 'overflight' || key.condition ===
-  'hover' || key.condition === 'sequence') ? key.condition : key?.kind;
+  'hover' || key.condition === 'refill' || key.condition === 'sequence') ? key.condition : key?.kind;
 
 /** Ce que le vol juge d'une clé « atterrissage » : voir landRule (frame/lib/precision.js, SOG-0516), que ce fichier applique à la règle de
  *  la clé ; null quand la clé n'est pas un atterrissage ou ne se juge pas ici. */
@@ -397,6 +420,60 @@ function hoverSpec(key) {
   };
 }
 
+/** Ce que le vol juge d'une condition « refill » (ravitaillement en retardant, SOG-0521) : { at (la station), radiusNm, speedMaxKt,
+ *  onGround: true, durationSec, maxGapSec, headingDeg | null, headingTolDeg, departure }, ou null quand elle ne se juge pas ici : pas un
+ *  refill, une station mobile ou sans position lisible, un mot de confirmation, un nombre illisible, un écart permis sous la période d'un
+ *  relevé, un rayon, une tolérance de cap ou un cap hors des bornes de REFILL_RULE (le cadre : jamais recopiées). Le départ se juge
+ *  sauf `departure` faux. */
+function refillSpec(key) {
+  const r = key && key.kind === 'condition' && key.condition === 'refill' ? key.rule : null;
+  if (!r || typeof r !== 'object' || r.kind !== 'refill' || r.confirmation !== '' || r.confirm === true) return null;
+  const R = REFILL_RULE,
+    at = r.object && !r.object.moving ? spotOf(r.object) : null,
+    num = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
+    inside = (v, [lo, hi]) => v !== null && v >= lo && v <= hi,
+    radiusM = num(r.radiusM),
+    durationSec = num(r.durationSec),
+    maxGapSec = num(r.maxGapSec),
+    speedMaxKt = num(r.speedMaxKt),
+    headingTolDeg = num(r.headingTolDeg),
+    headingDeg = r.headingDeg === null || r.headingDeg === undefined ? null : num(r.headingDeg);
+  if (!at || !inside(radiusM, R.radiusBoundsM) || !(durationSec > 0) || maxGapSec === null || maxGapSec < FIX_PERIOD_SEC || speedMaxKt ===
+    null ||
+    speedMaxKt < 0 || !inside(headingTolDeg, R.headingTolBoundsDeg) || (r.headingDeg != null && !inside(headingDeg, R.headingBoundsDeg)))
+    return null;
+  return {
+    at,
+    radiusNm: radiusM / 1852,
+    speedMaxKt,
+    onGround: true,
+    durationSec,
+    maxGapSec,
+    headingDeg,
+    headingTolDeg,
+    departure: r.departure !== false
+  };
+}
+
+/** Ce relevé est-il « tenu » au ravitaillement : posé, au rayon R de la station et sous la vitesse (arrived du cadre, sans nouvelle
+ *  formule) et, quand un cap est demandé, d'un cap connu à la tolérance près (écart angulaire modulo 360 : 359° et 1° sont à 2°). Un cap
+ *  ou une donnée inconnue ne compte jamais. */
+const isRefilling = (fix, spec) => {
+  if (arrived(fix, spec).ok !== true) return false;
+  if (spec.headingDeg === null) return true;
+  const h = fix?.headingDeg;
+  return Number.isFinite(h) && Math.abs((h - spec.headingDeg + 540) % 360 - 180) <= spec.headingTolDeg;
+};
+
+/** Ce relevé est-il un DÉPART : il n'est plus « posé dans R » — en l'air (onGround exactement faux), ou hors de R avec une position
+ *  lisible. Posé ou d'état inconnu dans R : jamais un départ. */
+const isLeaving = (fix, spec) => {
+  if (!fix) return false;
+  if (fix.onGround === false) return true;
+  const d = arrived(fix, spec).distNm;
+  return Number.isFinite(d) && d > spec.radiusNm;
+};
+
 /** Ce relevé est-il « posé » selon cette règle : au rayon, sous la vitesse, au sol ? Une donnée inconnue ne l'est jamais. */
 const isDown = (fix, spec) => arrived(fix, spec).ok === true;
 
@@ -415,11 +492,89 @@ const HOLDS = {
   hover: {
     spec: hoverSpec,
     ok: isHovering
+  },
+  refill: {
+    spec: refillSpec,
+    ok: isRefilling
   }
 };
 const holdOf = key => Object.hasOwn(HOLDS, howOf(key)) ? HOLDS[howOf(key)] : null;
 /** Vrai si cette clé se juge par une TENUE (atterrissage, stationnaire) : le vol garde l'état de la tenue (holding). */
 export const isHold = key => !!holdOf(key) && follows(key);
+
+/** La tenue d'un RAVITAILLEMENT (SOG-0521) : holding, avec l'état « rempli » en plus. hold : null, { from, last } (la tenue en cours) ou
+ *  { from, last, to, full: true } (la durée est atteinte, le pilote n'est pas reparti : « rempli », il le reste tant qu'aucun relevé n'est
+ *  un départ, même s'il bouge un peu ; `last` suit le dernier relevé tenu). f : null, ou le constat { how: 'refill', at, from, to } à la
+ *  fin de la tenue quand `departure` est faux, { how, at (le relevé de départ), from, to, last, off } au premier relevé de départ. Ne lève jamais. */
+function refilling(spec, hold, b, t) {
+  const none = {
+      hold: null,
+      f: null
+    },
+    sound = hold && typeof hold === 'object' ? {
+      from: fixHd(hold.from),
+      last: fixHd(hold.last),
+      to: fixHd(hold.to)
+    } : null,
+    t1 = sound?.last?.at ? Date.parse(sound.last.at) : NaN;
+  if (sound && hold.full === true) { // « rempli » : en attente du départ
+    if (!sound.from || !sound.last || !sound.to || !Number.isFinite(t1)) return none;
+    const keep = {
+      hold: {
+        from: sound.from,
+        last: sound.last,
+        to: sound.to,
+        full: true
+      },
+      f: null
+    };
+    if (!b || !Number.isFinite(t) || t <= t1) return keep; // sans heure (ou à rebours) : ni départ ni relevé tenu
+    if (isRefilling(b, spec)) return {
+      hold: {
+        ...keep.hold,
+        last: b
+      },
+      f: null
+    };
+    return isLeaving(b, spec) ? {
+      hold: null,
+      f: {
+        how: 'refill',
+        at: t,
+        from: sound.from,
+        to: sound.to,
+        last: sound.last,
+        off: b
+      }
+    } : keep;
+  }
+  if (!b || !Number.isFinite(t) || !isRefilling(b, spec)) return none;
+  const t0 = sound?.from?.at ? Date.parse(sound.from.at) : NaN,
+    kept = Number.isFinite(t0) && Number.isFinite(t1) && t0 <= t1 && t > t1 && t - t1 <= spec.maxGapSec * 1000,
+    start = kept ? sound.from : b,
+    done = t - (kept ? t0 : t) >= spec.durationSec * 1000;
+  if (done && spec.departure) return {
+    hold: {
+      from: start,
+      last: b,
+      to: b,
+      full: true
+    },
+    f: null
+  };
+  return {
+    hold: {
+      from: start,
+      last: b
+    },
+    f: done ? {
+      how: 'refill',
+      at: t,
+      from: start,
+      to: b
+    } : null
+  };
+}
 
 /** La TENUE d'un atterrissage ou d'un stationnaire : (clé, tenue d'avant, relevé) → { hold, f }. hold : null, ou { from, last } (le
  *  premier relevé tenu de la tenue en cours, le dernier) ; f : null, ou le constat { how: 'landing' | 'hover', at, from, to } quand le
@@ -435,8 +590,9 @@ export function holding(key, hold, fix) {
     const how = howOf(key),
       h = holdOf(key),
       spec = h ? h.spec(key) : null,
-      b = fixOf(fix),
+      b = how === 'refill' ? fixHd(fix) : fixOf(fix),
       t = b?.at ? Date.parse(b.at) : NaN;
+    if (how === 'refill' && spec) return refilling(spec, hold, b, t);
     if (!spec || !b || !Number.isFinite(t) || !h.ok(b, spec)) return none;
     const from = hold && typeof hold === 'object' ? fixOf(hold.from) : null,
       last = hold && typeof hold === 'object' ? fixOf(hold.last) : null,
@@ -645,6 +801,23 @@ function standsHeld(e, key) {
     .maxGapSec) * 1000;
 }
 
+/** Le constat d'un ravitaillement tient-il sur CETTE clé ? Comme une tenue (standsHeld : `from` et `to` tenus selon la clé du lecteur,
+ *  au cap demandé, séparés d'au moins `durationSec` et de moins de `durationSec + maxGapSec`) ; avec départ, `last` est tenu, `off` ne l'est
+ *  pas et est un départ (en l'air, ou hors de R), `off` suit `last` de `maxGapSec` au plus, et `last` ne précède pas `to` (de 24 h au plus :
+ *  l'attente au sol). Rejoué, pas prouvé : des relevés forgés qui satisfont la règle tiennent comme ceux d'un vrai vol. */
+function standsRefill(e, key) {
+  const spec = refillSpec(key);
+  if (!spec || !e.from || !e.to || !isRefilling(e.from, spec) || !isRefilling(e.to, spec)) return false;
+  const gap = Date.parse(e.to.at) - Date.parse(e.from.at);
+  if (!(gap >= spec.durationSec * 1000 && gap < (spec.durationSec + spec.maxGapSec) * 1000)) return false;
+  if (!spec.departure) return true;
+  if (!e.last || !e.off || !isRefilling(e.last, spec) || isRefilling(e.off, spec) || !isLeaving(e.off, spec)) return false;
+  const tl = Date.parse(e.last.at),
+    to = Date.parse(e.to.at),
+    gapOff = Date.parse(e.off.at) - tl;
+  return gapOff > 0 && gapOff <= spec.maxGapSec * 1000 && tl >= to && tl - to <= 24 * 3600e3;
+}
+
 /** Les relevés d'une trace gardée ({ from: ISO du départ, trail: [[lat, lon, altFt, s, aglFt?, ground?]…] }, frame/lib/trail.js) depuis
  *  cet instant, à la forme d'un relevé ; [] si la trace est illisible. Deux mille points au plus. */
 function trailFixes(trail, startMs) {
@@ -736,6 +909,7 @@ export function finding(key, prev, next, {
 export function stands(e, key) {
   if (!e || !e.to || !key || howOf(key) !== e.how) return false;
   if (e.how === 'landing' || e.how === 'hover') return standsHeld(e, key);
+  if (e.how === 'refill') return standsRefill(e, key);
   if (e.how === 'sequence') return standsSteps(e, key); // chaque preuve rejouée sur l'étape du lecteur (lot 5)
   // les deux relevés d'un constat ne font un trajet que s'ils sont à une minute au plus l'un de l'autre (la règle de l'écriture) :
   // sinon un « from » lointain tracerait une corde à travers la forme — le dernier relevé est alors jugé seul
@@ -1206,6 +1380,12 @@ function docOf(b, now) {
         from: e.from,
         to: e.to
       } : {}),
+      ...(e.how === 'refill' && e.last ? {
+        last: e.last
+      } : {}),
+      ...(e.how === 'refill' && e.off ? {
+        off: e.off
+      } : {}),
       ...(e.source ? {
         source: e.source
       } : {}),
@@ -1250,8 +1430,14 @@ export function withOpen(doc, ctx, id, how = 'hand', fix = null) {
     state: 'open',
     at,
     how,
-    from: fixOf(fix?.from),
-    to: fixOf(fix?.to),
+    from: (how === 'refill' ? fixHd : fixOf)(fix?.from),
+    to: (how === 'refill' ? fixHd : fixOf)(fix?.to),
+    ...(how === 'refill' && fixHd(fix?.last) ? {
+      last: fixHd(fix.last)
+    } : {}),
+    ...(how === 'refill' && fixHd(fix?.off) ? {
+      off: fixHd(fix.off)
+    } : {}),
     source: SOURCES.includes(fix?.source) ? fix.source : '',
     tier: how === 'landing' ? tierRead(fix) : null, // le palier et la distance d'un posé de précision (SOG-0507), relus bornés
     distNm: how === 'landing' ? distRead(fix) : null,

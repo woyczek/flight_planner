@@ -38,6 +38,9 @@
 <pre id="out"></pre>
 <script type="module">
   import * as DV from '../drawers_view.js?v=0';
+  import {
+    REFILL_RULE
+  } from '../../../frame/lib/mission.js?v=0';
   const out = document.getElementById('out'),
     stage = document.getElementById('stage'),
     rows = [];
@@ -2228,6 +2231,177 @@
     !q('[data-dwx], #dwx') && q('[data-dwd]').textContent.startsWith('<b id="dwx">Le "point"</b> — atterrissage'), q('[data-dwd]').innerHTML);
   DV.stop();
   stage.innerHTML = '';
+
+  // ---- SOG-0521 : la condition « refill » (ravitaillement en retardant) jugée en vol — une tenue complète puis un relevé en l'air.
+  // Les chiffres (rayon, tolérance de cap, écart permis) viennent de REFILL_RULE ; la durée est courte (10 s) pour le banc.
+  const RFK = {
+      kind: 'condition',
+      condition: 'refill',
+      rule: {
+        kind: 'refill',
+        label: '',
+        point: null,
+        at: null,
+        object: {
+          id: 'RF1',
+          kind: 'refill',
+          name: 'Station du banc',
+          lat: 45.0,
+          lon: 1.0,
+          moving: false
+        },
+        radiusM: REFILL_RULE.radiusM,
+        durationSec: 10,
+        maxGapSec: REFILL_RULE.maxGapSec,
+        speedMaxKt: 3,
+        headingDeg: 90,
+        headingTolDeg: REFILL_RULE.headingTolDeg,
+        departure: true,
+        confirmation: '',
+        confirm: false
+      },
+      fallbackMin: 120
+    },
+    RDRAWER = {
+      title: 'Ravitaillement',
+      message: 'Plein fait.',
+      brief: '',
+      key: RFK
+    },
+    TR = Date.now(),
+    // un relevé du simulateur, des secondes avant maintenant : posé à 5 m de la station, au cap 90°, lent, sauf indication
+    rfix = (secAgo, more = {}) => ({
+      lat: 45.0 + 5 / 111194.93,
+      lon: 1.0,
+      at: iso(TR - secAgo * 1000),
+      altFt: 100,
+      onGround: true,
+      gsKt: 1,
+      headingDeg: 90,
+      ...more
+    }),
+    rIn = (i, st) => Object.fromEntries(Object.entries(DV.describe((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''), {
+      key: RFK,
+      dueAt: null,
+      open: false,
+      ...st
+    }, {}, {})).map(([k, v]) => [k, typeof v === 'string' ? v.replace(/\s+/g, ' ') : v]));
+  ck('refill, describe : la clé dit « s\'ouvre au ravitaillement », jamais le lieu (ni le nom de la station) ; jugée en vol, l\'appareil la suit ; ouverte : « ouvert à votre ravitaillement en retardant, à 19:20Z », « ouvert au ravitaillement en retardant de BBB, à 19:20Z »',
+    say(RFK).key === 's\'ouvre au ravitaillement' && !/RF1|Station|45\.0|1\.0/.test(say(RFK).key) && say(RFK, {
+      live: true
+    }).follow === 'followed' && say(RFK, {}, {
+      open: true,
+      how: 'refill',
+      mine: true,
+      at: AT
+    }).how === 'ouvert à votre ravitaillement en retardant, à 19:20Z' && say(RFK, {}, {
+      open: true,
+      how: 'refill',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert au ravitaillement en retardant de BBB, à 19:20Z', [say(RFK), say(RFK, {}, {
+      open: true,
+      how: 'refill',
+      mine: true,
+      at: AT
+    })]);
+  ck('refill, describe, quatre langues : la clé et l\'ouverture (moi, un autre) dites en français, anglais, allemand et espagnol, sans le lieu ni les accolades',
+    [0, 1, 2, 3].every(i => {
+      const k = rIn(i, {}).key,
+        me = rIn(i, {
+          open: true,
+          how: 'refill',
+          mine: true,
+          at: AT
+        }).how,
+        by = rIn(i, {
+          open: true,
+          how: 'refill',
+          mine: false,
+          by: 'BBB',
+          at: AT,
+          srcAt: AT
+        }).how;
+      return k && me.includes('19:20Z') && by.includes('BBB') && by.includes('19:20Z') && ![k, me, by].some(t => /[{}]|RF1|Station/.test(t)) && me !== by &&
+        k !== rIn(i, {
+          key: {
+            kind: 'condition',
+            condition: 'hover',
+            rule: {}
+          }
+        }).key;
+    }) && rIn(1, {
+      open: true,
+      how: 'refill',
+      mine: true,
+      at: AT
+    }).how === 'opened on your hot refuelling, at 19:20Z', [0, 1, 2, 3].map(i => rIn(i, {
+      open: true,
+      how: 'refill',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how));
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(RDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(rfix(30, {
+    gsKt: 40,
+    onGround: false
+  }));
+  await sleep(150);
+  ctx.live.emit(rfix(20));
+  await sleep(150);
+  ctx.live.emit(rfix(15));
+  await sleep(150);
+  const rNotYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(rfix(10)); // la tenue est complète (10 s d'affilée) : « rempli », rien ne s'ouvre avant le départ
+  await sleep(150);
+  ctx.live.emit(rfix(5, {
+    gsKt: 20
+  })); // il bouge un peu : toujours « rempli »
+  await sleep(150);
+  const rFull = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(rfix(0, {
+    onGround: false
+  })); // le premier relevé en l'air : le tiroir s'ouvre
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const rb = ctx.store.get(BOOK)?.drawer_B;
+  ck('le ravitaillement : en transit puis tenu 5 s, rien ; tenue complète (10 s d\'affilée) puis un relevé posé qui bouge un peu, rien encore ; au premier relevé en l\'air, le constat « refill » est écrit (from, to, last, off, cap compris) et « Suite de la mission » dit « ouvert à votre ravitaillement en retardant, à … » sans nommer le lieu',
+    rNotYet && rFull && rb?.how === 'refill' && rb.from?.headingDeg === 90 && rb.to?.onGround === true && rb.last?.onGround === true && rb.off?.onGround === false &&
+    Date.parse(rb.to.at) - Date.parse(rb.from.at) === 10e3 && Date.parse(rb.off.at) > Date.parse(rb.last.at) && /^ouvert à votre ravitaillement en retardant, à \d\d:\d\dZ$/.test(
+      text('[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Ravitaillement') && !/RF1|Station du banc/.test(stage
+      .textContent), [rNotYet, rFull, rb, ctx.notes]);
+  DV.stop();
+  // un cap faux : la tenue n'est jamais complète, rien ne s'ouvre même après un départ
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(RDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  for (const s of [30, 25, 20, 15, 10, 5]) {
+    ctx.live.emit(rfix(s, {
+      headingDeg: 250
+    }));
+    await sleep(80);
+  }
+  ctx.live.emit(rfix(0, {
+    onGround: false
+  }));
+  await sleep(200);
+  ck('le ravitaillement au mauvais cap : la tenue n\'est jamais complète, un relevé en l\'air n\'ouvre rien', empty() && !ctx.store.get(BOOK)?.drawer_B, ctx.store.get(BOOK));
+  DV.stop();
 
   window.__bench = {
     done: true,

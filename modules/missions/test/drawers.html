@@ -27,7 +27,9 @@
 <script type="module">
   import * as D from '../drawers.js?v=0';
   import {
-    DRAWER_IDS
+    DRAWER_IDS,
+    REFILL_RULE,
+    HOLD_BOUNDS
   } from '../../../frame/lib/mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -3390,6 +3392,527 @@
   ck('débrief : jamais de lieu — une ligne n\'a que titre, genre, palier, distance, heure, auteur, « mine » ; ni coordonnées ni identifiant de point',
     dBoth.every(l => Object.keys(l).join() === 'title,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)), dBoth[0]);
 
+
+  // ---- SOG-0521 : la condition « refill » (ravitaillement en retardant) jugée en vol — une TENUE (posé à la station, au cap, le temps
+  // demandé) puis un DÉPART (l'état « rempli »). Tous les seuils sont lus dans REFILL_RULE (le cadre), jamais recopiés ; station inventée.
+  const RR = REFILL_RULE,
+    MPD = 111194.93, // mètres par degré de latitude (le rayon terrestre du cadre)
+    DUR = RR.durationSec,
+    GAP = RR.maxGapSec,
+    TOL = RR.headingTolDeg,
+    RAD = RR.radiusM,
+    SPD = HOLD_BOUNDS.landingSpeedDefault,
+    rrule = {
+      kind: 'refill',
+      label: ``,
+      point: null,
+      at: null,
+      object: {
+        id: 'RF1',
+        kind: 'refill',
+        name: ``,
+        lat: 45.0,
+        lon: 1.0,
+        moving: false
+      },
+      radiusM: RAD,
+      durationSec: DUR,
+      maxGapSec: GAP,
+      speedMaxKt: SPD,
+      headingDeg: null,
+      headingTolDeg: TOL,
+      departure: true,
+      confirmation: ``,
+      confirm: false
+    },
+    rf = (more = {}) => ({
+      kind: 'condition',
+      condition: 'refill',
+      rule: {
+        ...rrule,
+        ...more
+      },
+      fallbackMin: 60
+    }),
+    RF = rf(),
+    RFN = rf({
+      departure: false
+    }), // sans départ : le tiroir s'ouvre à la fin de la tenue
+    // un relevé posé à 5 m de la station, cap 90°, lent (`lat` : un décalage vers le nord en mètres via `m`)
+    rv = (sec, more = {}) => ({
+      lat: 45.0 + (more.m ?? 5) / MPD,
+      lon: 1.0,
+      at: iso(T0 + Math.round(sec * 1000)),
+      altFt: 100,
+      onGround: true,
+      gsKt: 1,
+      headingDeg: 90,
+      ...Object.fromEntries(Object.entries(more).filter(([k]) => k !== 'm'))
+    }),
+    reveryN = (to, more, step = 5) => Array.from({
+      length: Math.floor(to / step) + 1
+    }, (_, i) => rv(i * step, more)),
+    // la tenue rejouée relevé après relevé : { first (le premier constat), n (son rang), hold (l'état à la fin) }
+    rplay = (key, fixes) => {
+      let hold = null,
+        first = null,
+        n = -1;
+      fixes.forEach((x, i) => {
+        const r = D.holding(key, hold, x);
+        hold = r.hold;
+        if (r.f && !first) {
+          first = r.f;
+          n = i;
+        }
+      });
+      return {
+        first,
+        n,
+        hold
+      };
+    },
+    rDone = (key, more) => rplay(key, reveryN(DUR, more)).first !== null, // une tenue complète de ce relevé, sans départ
+    rMkE = (o = {}) => ({
+      how: 'refill',
+      from: rv(0),
+      to: rv(DUR),
+      last: rv(DUR),
+      off: rv(DUR + 5, {
+        onGround: false
+      }),
+      ...o
+    });
+  ck('refill, follows : une station immobile lisible, des nombres dans les bornes de REFILL_RULE, un écart permis d\'une période de relevé au moins, aucune confirmation → jugé ; les bornes elles-mêmes tiennent',
+    D.follows(RF) && D.follows(rf({
+      headingDeg: RR.headingBoundsDeg[0]
+    })) && D.follows(rf({
+      headingDeg: RR.headingBoundsDeg[1]
+    })) && D.follows(rf({
+      headingTolDeg: RR.headingTolBoundsDeg[0]
+    })) && D.follows(rf({
+      headingTolDeg: RR.headingTolBoundsDeg[1]
+    })) && D.follows(rf({
+      radiusM: RR.radiusBoundsM[0]
+    })) && D.follows(rf({
+      radiusM: RR.radiusBoundsM[1]
+    })) && D.follows(rf({
+      maxGapSec: D.FIX_PERIOD_SEC
+    })));
+  ck('refill, follows : faux pour une tolérance de cap hors bornes (juste dessous, juste dessus), un rayon hors bornes, un cap hors bornes, une station mobile ou absente, une confirmation, un écart sous la période d\'un relevé, un nombre illisible, un point à la place de la station',
+    !D.follows(rf({
+      headingTolDeg: RR.headingTolBoundsDeg[0] - 0.5
+    })) && !D.follows(rf({
+      headingTolDeg: RR.headingTolBoundsDeg[1] + 0.5
+    })) && !D.follows(rf({
+      radiusM: RR.radiusBoundsM[0] - 0.5
+    })) && !D.follows(rf({
+      radiusM: RR.radiusBoundsM[1] + 0.5
+    })) && !D.follows(rf({
+      headingDeg: RR.headingBoundsDeg[0] - 1
+    })) && !D.follows(rf({
+      headingDeg: RR.headingBoundsDeg[1] + 1
+    })) && !D.follows(rf({
+      object: {
+        ...rrule.object,
+        moving: true
+      }
+    })) && !D.follows(rf({
+      object: null
+    })) && !D.follows(rf({
+      confirmation: `OK`
+    })) && !D.follows(rf({
+      maxGapSec: D.FIX_PERIOD_SEC - 0.5
+    })) && !D.follows(rf({
+      durationSec: NaN
+    })) && !D.follows(rf({
+      speedMaxKt: `3`
+    })) && !D.follows(rf({
+      object: null,
+      at: {
+        lat: 45,
+        lon: 1
+      }
+    })) && !D.follows({
+      kind: 'condition',
+      condition: 'refill',
+      rule: {
+        ...rrule,
+        kind: 'landing'
+      }
+    }) && !D.follows({
+      kind: 'condition',
+      condition: 'refill',
+      rule: null
+    }));
+  ck('refill, rayon : R - 0,1 m tenu, R + 0,1 m non',
+    rDone(RFN, {
+      m: RAD - 0.1
+    }) === true && rDone(RFN, {
+      m: RAD + 0.1
+    }) === false, [rDone(RFN, {
+      m: RAD - 0.1
+    }), rDone(RFN, {
+      m: RAD + 0.1
+    })]);
+  ck('refill, vitesse : speedMaxKt tenu, + 0,1 non ; vitesse inconnue non',
+    rDone(RFN, {
+      gsKt: SPD
+    }) === true && rDone(RFN, {
+      gsKt: SPD + 0.1
+    }) === false && rDone(RFN, {
+      gsKt: null
+    }) === false && rDone(RFN, {
+      gsKt: undefined
+    }) === false);
+  ck('refill, sol : en l\'air non, au sol inconnu non, au sol oui',
+    rDone(RFN, {
+      onGround: false
+    }) === false && rDone(RFN, {
+      onGround: null
+    }) === false && rDone(RFN, {
+      onGround: true
+    }) === true);
+  const rfh = rf({
+      departure: false,
+      headingDeg: 100
+    }),
+    rHdgs = d => rDone(rfh, {
+      headingDeg: d
+    });
+  ck('refill, cap : cap ± tolérance tenu, ± (tolérance + 1) non (des deux côtés)',
+    rHdgs(100 + TOL) === true && rHdgs(100 - TOL) === true && rHdgs(100 + TOL + 1) === false && rHdgs(100 - TOL - 1) === false && rHdgs(100) === true,
+    [rHdgs(100 + TOL), rHdgs(100 - TOL), rHdgs(100 + TOL + 1), rHdgs(100 - TOL - 1)]);
+  const rf359 = rf({
+    departure: false,
+    headingDeg: 359,
+    headingTolDeg: 2
+  });
+  ck('refill, cap : 359° contre 1° avec une tolérance de 2° tenu (modulo 360), 359° contre 3° non, 0° contre 359° tenu',
+    D.follows(rf359) && rDone(rf359, {
+      headingDeg: 1
+    }) === true && rDone(rf359, {
+      headingDeg: 3
+    }) === false && rDone(rf359, {
+      headingDeg: 0
+    }) === true && rDone(rf({
+      departure: false,
+      headingDeg: 1,
+      headingTolDeg: 2
+    }), {
+      headingDeg: 359
+    }) === true);
+  ck('refill, cap : un cap inconnu (absent, nul, illisible, hors bornes) n\'est jamais tenu quand un cap est demandé ; quelconque ou inconnu tenu quand aucun n\'est demandé',
+    [undefined, null, NaN, 'x', 1000, -5].every(d => rHdgs(d) === false) && [undefined, null, 0, 123, 359].every(d => rDone(RFN, {
+      headingDeg: d
+    }) === true));
+  const rFull = rplay(RFN, reveryN(DUR));
+  ck('refill, durée : durationSec - 5 pas encore, durationSec fait (au relevé de durationSec, du premier au dernier)',
+    rplay(RFN, reveryN(DUR - 5)).first === null && rFull.n === DUR / 5 && rFull.first?.how === 'refill' && rFull.first.at === T0 + DUR * 1000 && rFull
+    .first.from.at === iso(T0) && rFull.first.to.at === iso(T0 + DUR * 1000) && rFull.first.from.headingDeg === 90 && rFull.first.last === undefined &&
+    rFull.first.off === undefined, rFull);
+  const afterHole = (gap, extra = 0) => {
+      const t0 = 50 + gap,
+        list = [...reveryN(50), ...Array.from({
+          length: DUR / 5 + 1
+        }, (_, i) => rv(t0 + i * 5))];
+      return rplay(RFN, list);
+    };
+  ck('refill, écart : un trou de maxGapSec tient la tenue (le premier relevé reste), maxGapSec + 0,1 la remet à zéro (le premier relevé est celui d\'après)',
+    afterHole(GAP).first?.from.at === iso(T0) && afterHole(GAP + 0.1).first?.from.at === iso(T0 + Math.round((50 + GAP + 0.1) * 1000)) && afterHole(GAP + 0.1).first.at ===
+    T0 + Math.round((50 + GAP + 0.1 + DUR) * 1000), [afterHole(GAP), afterHole(GAP + 0.1)]);
+  ck('refill, écart : des relevés espacés de maxGapSec tiennent ; espacés de maxGapSec + 0,1 ne complètent jamais la durée',
+    rplay(RFN, reveryN(DUR, undefined, GAP)).first !== null && rplay(RFN, reveryN(DUR * 3, undefined, GAP + 0.1)).first === null);
+  const stay = rplay(RF, reveryN(DUR + 120));
+  ck('refill, départ : rien tant qu\'il est posé dans R (la tenue complète puis deux minutes de plus : « rempli »), l\'état se garde (from, to, last)',
+    stay.first === null && stay.hold?.full === true && stay.hold.from.at === iso(T0) && stay.hold.to.at === iso(T0 + DUR * 1000) && stay.hold.last
+    .at === iso(T0 + (DUR + 120) * 1000), stay);
+  const off1 = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+      onGround: false
+    })]),
+    off2 = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+      m: RAD + 10
+    })]);
+  ck('refill, départ : ouvert au premier relevé en l\'air (dans R), le constat porte from, to, last (le dernier tenu) et off (le départ) ; at est celui du départ',
+    off1.first?.how === 'refill' && off1.n === DUR / 5 + 1 && off1.first.at === T0 + (DUR + 5) * 1000 && off1.first.from.at === iso(T0) && off1.first.to
+    .at === iso(T0 + DUR * 1000) && off1.first.last.at === iso(T0 + DUR * 1000) && off1.first.off.at === iso(T0 + (DUR + 5) * 1000) && off1.first.off
+    .onGround === false && off1.hold === null, off1);
+  ck('refill, départ : ouvert au premier relevé hors de R (même au sol) ; au sol à R + 0,1 m seulement : un départ, à R - 0,1 m : pas un départ',
+    off2.first?.off.onGround === true && D.stands({
+      ...off2.first
+    }, RF) === true && rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+      m: RAD + 0.1
+    })]).first !== null && rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+      m: RAD - 0.1,
+      gsKt: SPD + 5
+    })]).first === null, [off2, D.stands(off2.first || {}, RF)]);
+  ck('refill, départ : onGround inconnu (null ou absent) dans R n\'est pas un départ ; le tiroir reste « rempli »',
+    [null, undefined].every(g => {
+      const r = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+        onGround: g
+      }), rv(DUR + 10, {
+        onGround: g,
+        gsKt: 40
+      })]);
+      return r.first === null && r.hold?.full === true;
+    }));
+  const wob = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+    gsKt: 20
+  }), rv(DUR + 10, {
+    onGround: false
+  })]);
+  ck('refill, départ : tant qu\'il n\'est pas reparti, l\'état reste « rempli » même s\'il bouge un peu (vitesse ou cap hors tenue) ; last reste le dernier relevé tenu, le départ est le premier relevé en l\'air',
+    wob.first?.last.at === iso(T0 + DUR * 1000) && wob.first.off.at === iso(T0 + (DUR + 10) * 1000) && rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+      gsKt: 20,
+      headingDeg: 250
+    })]).hold?.full === true, wob);
+  const nodep = rplay(RFN, reveryN(DUR + 30));
+  ck('refill, départ : « departure » faux ouvre à la fin de la tenue, comme un atterrissage (sans last ni off), et tant que le tiroir est fermé le constat se répète',
+    nodep.n === DUR / 5 && nodep.first.how === 'refill' && nodep.first.last === undefined && nodep.first.off === undefined && rplay(RFN, [...reveryN(DUR - 5),
+      rv(DUR, {
+        onGround: false
+      })
+    ]).first === null);
+  ck('refill, départ avant la durée : un relevé en l\'air pendant la tenue la remet à zéro, rien ne s\'ouvre',
+    rplay(RF, [...reveryN(DUR - 5), rv(DUR, {
+      onGround: false
+    }), rv(DUR + 5, {
+      onGround: false
+    })]).first === null && rplay(RF, [...reveryN(DUR - 5), rv(DUR, {
+      onGround: false
+    }), rv(DUR + 5, {
+      onGround: false
+    })]).hold === null);
+  const rMk = rMkE,
+    rSd = (e, key = RF) => D.stands(e, key);
+  ck('refill, stands : le constat rejoué sur la clé du lecteur → vrai ; la même sans départ (clé departure faux, sans last ni off) → vrai',
+    rSd(rMk()) === true && rSd({
+      how: 'refill',
+      from: rv(0),
+      to: rv(DUR)
+    }, RFN) === true && rSd(off1.first) === true && rSd(nodep.first, RFN) === true, [rMk(), off1.first]);
+  ck('refill, stands : l\'écart de tenue `>= durationSec` et `< durationSec + maxGapSec` : durationSec - 0,1 faux, durationSec vrai, durationSec + maxGapSec - 0,1 vrai, durationSec + maxGapSec faux',
+    rSd(rMk({
+      to: rv(DUR - 0.1)
+    })) === false && rSd(rMk({
+      to: rv(DUR)
+    })) === true && rSd(rMk({
+      to: rv(DUR + GAP - 0.1),
+      last: rv(DUR + GAP - 0.1),
+      off: rv(DUR + GAP + 4.9, {
+        onGround: false
+      })
+    })) === true && rSd(rMk({
+      to: rv(DUR + GAP),
+      last: rv(DUR + GAP),
+      off: rv(DUR + GAP + 5, {
+        onGround: false
+      })
+    })) === false);
+  ck('refill, stands : faux avec `off` tenu (pas de départ) ; faux avec `off` posé et d\'état inconnu dans R ; faux sans `off` ou sans `last` quand la clé veut un départ',
+    rSd(rMk({
+      off: rv(DUR + 5)
+    })) === false && rSd(rMk({
+      off: rv(DUR + 5, {
+        onGround: null,
+        gsKt: 40
+      })
+    })) === false && rSd(rMk({
+      off: null
+    })) === false && rSd(rMk({
+      last: null
+    })) === false);
+  ck('refill, stands : `off - last` au plus maxGapSec (maxGapSec vrai, maxGapSec + 0,1 faux), `off` après `last` (le même instant faux) ; `last` tenu (en l\'air faux)',
+    rSd(rMk({
+      off: rv(DUR + GAP, {
+        onGround: false
+      })
+    })) === true && rSd(rMk({
+      off: rv(DUR + GAP + 0.1, {
+        onGround: false
+      })
+    })) === false && rSd(rMk({
+      off: rv(DUR, {
+        onGround: false
+      })
+    })) === false && rSd(rMk({
+      last: rv(DUR, {
+        onGround: false
+      })
+    })) === false);
+  ck('refill, stands : `last` ne précède pas `to` (faux) ; l\'attente au sol est bornée à 24 h (24 h vrai, 24 h + 0,1 s faux)',
+    rSd(rMk({
+      last: rv(DUR - 5),
+      off: rv(DUR, {
+        onGround: false
+      })
+    })) === false && rSd(rMk({
+      last: rv(DUR + 86400),
+      off: rv(DUR + 86405, {
+        onGround: false
+      })
+    })) === true && rSd(rMk({
+      last: rv(DUR + 86400.1),
+      off: rv(DUR + 86405, {
+        onGround: false
+      })
+    })) === false);
+  const rfc = rf({
+      headingDeg: 200
+    }),
+    rfok = rf({
+      headingDeg: 100
+    });
+  ck('refill, stands : un cap faux chez le lecteur (200° demandé pour des relevés à 90°, tolérance de REFILL_RULE) → faux ; un cap demandé tenu → vrai ; un cap demandé et des relevés sans cap → faux',
+    rSd(rMk(), rfc) === false && rSd(rMk(), rfok) === true && rSd(rMk({
+      from: rv(0, {
+        headingDeg: undefined
+      })
+    }), rfok) === false);
+  ck('refill, stands : faux sur une clé d\'une autre sorte, une clé qui ne se juge pas, un constat sans relevé ; vrai seulement avec le how « refill »',
+    rSd(rMk(), LAND) === false && rSd(rMk(), rf({
+      maxGapSec: 4
+    })) === false && rSd({
+      how: 'refill',
+      from: null,
+      to: null
+    }) === false && rSd(rMk({
+      how: 'landing'
+    })) === false && rSd(null) === false);
+  ck('refill, finding et catchUp rendent toujours null (la tenue a un état : holding) ; isHold vrai, judgeKind « hold » ; HOWS, SHARED et howOf',
+    D.finding(RF, rv(0), rv(5), {}) === null && D.catchUp(RF, {
+      from: iso(T0),
+      trail: [
+        [45, 1, 100, 0, 0, 1]
+      ]
+    }, null) === null && D.isHold(RF) === true && D.isHold(rf({
+      maxGapSec: 4
+    })) === false && D.judgeKind(RF) === 'hold' && D.HOWS.includes('refill') && D.SHARED.includes('refill') && D.howOf(RF) === 'refill');
+  ck('refill, une suite d\'étapes n\'accepte PAS « refill » comme étape (la suite n\'est pas jugée)',
+    !D.follows(seq(RF)) && !D.follows(seq(RF, L10)) && !D.follows(seq(L10, RF)) && D.judgeKind(seq(RF, L10)) === 'leg' && D.follows(seq(L10)));
+  const throwsNot = f => {
+    try {
+      f();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  ck('refill, entrées hostiles : ni holding, ni stands, ni follows, ni withOpen, ni readBook ne lèvent (relevé nul, heure illisible, cap absurde, tenue absurde, règle absurde)',
+    [null, undefined, 1, 'x', [], {}, rv(0, {
+      at: 'nope'
+    }), rv(0, {
+      lat: NaN
+    }), rv(0, {
+      headingDeg: {}
+    }), {
+      get lat() {
+        throw new Error('rHostile');
+      }
+    }].every(x => throwsNot(() => {
+      D.holding(RF, null, x);
+      D.holding(RF, {
+        from: x,
+        last: x,
+        to: x,
+        full: true
+      }, x);
+      D.stands({
+        how: 'refill',
+        from: x,
+        to: x,
+        last: x,
+        off: x
+      }, RF);
+      D.withOpen(null, ctx(T0), 'B', 'refill', {
+        from: x,
+        to: x,
+        last: x,
+        off: x
+      });
+    })) && [null, 1, {
+      from: {},
+      rule: 5
+    }, {
+      kind: 'condition',
+      condition: 'refill',
+      rule: {
+        get radiusM() {
+          throw new Error('rHostile');
+        }
+      }
+    }].every(k => throwsNot(() => {
+      D.follows(k);
+      D.holding(k, null, rv(0));
+      D.stands(rMk(), k);
+    })) && D.holding(RF, 'x', rv(0)).hold?.from !== undefined && D.holding(RF, {
+      from: rv(0),
+      last: rv(5),
+      full: true
+    }, rv(10)).hold === null);
+  // le carnet : un constat refill s'écrit avec ses quatre relevés (cap compris), se relit borné ; celui d'un autre ouvre le tiroir chez le lecteur
+  const rDoc = D.withOpen(null, ctx(T0 + 20 * MIN), 'B', 'refill', {
+      from: off1.first?.from,
+      to: off1.first?.to,
+      last: off1.first?.last,
+      off: off1.first?.off,
+      at: off1.first?.at,
+      source: 'xplane'
+    }),
+    rBook = D.readBook(rDoc, ID),
+    rBad = D.readBook({
+      ...(rDoc ?? {}),
+      drawer_B: {
+        ...(rDoc?.drawer_B ?? {}),
+        last: {
+          lat: 'x'
+        },
+        off: {
+          lat: 1e9,
+          lon: 1
+        }
+      }
+    }, ID),
+    rOld = D.readBook(D.withOpen(null, ctx(T0 + 20 * MIN), 'B', 'landing', {
+      from: dn(0),
+      to: dn(30),
+      at: T0 + 30e3
+    }), ID),
+    rTheirs = peer('B', T0 + (DUR + 5) * 1000, 'refill', {
+      from: off1.first?.from,
+      to: off1.first?.to,
+      last: off1.first?.last,
+      off: off1.first?.off
+    }),
+    rSt = st({
+      drawers: [{
+        id: 'B',
+        title: 'Ravitaillement',
+        key: RF
+      }],
+      others: [
+        ['BBB', rTheirs]
+      ],
+      now: T0 + 20 * MIN
+    })[0],
+    rOff = st({
+      drawers: [{
+        id: 'B',
+        title: 'Ravitaillement',
+        key: rf({
+          headingDeg: 200
+        })
+      }],
+      others: [
+        ['BBB', rTheirs]
+      ],
+      now: T0 + 20 * MIN
+    })[0];
+  ck('refill, carnet : le constat s\'écrit avec from, to, last et off (le cap des relevés compris) et se relit ; le constat d\'un ancien carnet reste lisible ; un last ou un off illisible est ignoré (jamais le constat entier)',
+    rBook?.drawers?.B?.how === 'refill' && rBook.drawers.B.last?.headingDeg === 90 && rBook.drawers.B.off?.onGround === false && rBook.drawers.B.from
+    ?.headingDeg === 90 && rDoc?.drawer_B?.last && rDoc.drawer_B.off && rBad?.drawers?.B?.how === 'refill' && !rBad.drawers.B.last && !rBad.drawers.B.off &&
+    rOld?.drawers?.B?.how === 'landing' && !rOld.drawers.B.last, [rBook, rBad, rOld]);
+  ck('refill, carnet : celui de BBB ouvre le tiroir chez AAA (« refill », par BBB) quand il tient sur la clé du lecteur ; sur un cap faux chez le lecteur il est refusé (« shape »)',
+    rSt.open === true && rSt.how === 'refill' && rSt.by === 'BBB' && rSt.refused.length === 0 && rOff.open === false && rOff.refused[0]?.why === 'shape', [rSt, rOff]);
 
   window.__bench = {
     done: true,
