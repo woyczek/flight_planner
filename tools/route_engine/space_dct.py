@@ -140,7 +140,7 @@ def check(rad, legs, spaces, typed, dep=None, arr=None):
             issues.append(('REVUE', f"Limite des directs {line['area']} (RAD {line['id']}, {words(line)}) non décidée : la base n'a pas la zone FRA du Royaume-Uni (« hors de la route libre » n'est pas définissable) ; directs dans cette tranche : {listed}"))
             continue
         weight = sum(len(r) for s in [uir, *fras] for r in s['rings'])
-        room = max(1, left // max(1, weight))      # combien de directs ces contours permettent d'examiner (chaque direct parcourt leurs sommets quelques fois)
+        room = max(0, left) // max(1, weight)      # combien de directs ces contours permettent d'examiner (chaque direct parcourt leurs sommets quelques fois) ; SOG-0517 (note de Sécurisation) : le budget épuisé n'en laisse AUCUN (avant : un direct par ligne restait examiné)
         if len(high) > room:
             skipped, high = high[room:], high[:room]
             issues.append(('REVUE', f"Limite des directs {line['area']} (RAD {line['id']}) : {len(skipped)} direct(s) dans la tranche {words(line)} non décidé(s) : les contours de l'espace sont trop lourds ({weight} sommets) pour tous les examiner."))

@@ -18192,3 +18192,25 @@ def k393(c):
     r = c.js("""(xml) => { const t0 = performance.now(); const z = window.AeroSources.aixm5(xml).airspaces; return { spaces: z.filter(x => /^S[0-9]+$/.test(x.name)).length, hub: z.filter(x => x.name === 'HUB').length, ms: performance.now() - t0 }; }""", head + hub + '</message:AIXMBasicMessage>')
     c.eq((r['spaces'], r['hub']), (5000, 1), '5 200 spaces that point to the same hub: the rings taken by a dependency are bounded in the whole file (5 000), the hub is read once, not once for each; past the budget a space without a surface of its own is no longer followed (review of Security)', what='budget')
     c.ok(r['ms'] < 20000, r, 'and the file is read in a moment (under 20 s), not in a time that grows with the product of the spaces by the size of the hub')
+
+
+@case('K397', 'Route engine, SOG-0513 lot C (note of Sécurisation): the work budget of `space_dct.check` is SHARED by the lines of the RAD and, once used up, leaves NO direct to examine for the next lines — they are all said « not decided » (before: one direct per line stayed examined, the work grew with the number of lines)',
+      'K', static=True,
+      rule='Sécurisation read ee956ca21 and noted: `room = max(1, left // weight)` keeps one direct examined per line when the budget is exhausted. The bench: an outline of 160 000 vertices (the K394 bench), two lines of the RAD (« above FL245 » and « Between FL105..FL245 ») that 400 directs climbing from 5 000 to 27 000 ft all cross: the first line examines 6 directs (1 000 000 / 160 000), 394 are said not decided; the second line has no budget left: its 400 are all said not decided.')
+def k397(c):
+    import math
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import space_dct as D, spaces as S
+    pad = lambda *x: list(x) + [''] * (12 - len(x))
+    rows = [pad('', 'x', 'UFN', 'EGTTNFRA', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed'), pad('', 'x', 'UFN', 'EGTTNFRA_4', 'EGTTNFRA', 'Between FL105..FL245', 'H24', '0NM', 'Allowed')]
+    rad = types.SimpleNamespace(book={'sheets': {D.SHEET: [{'v': v, 'row': i + 2} for i, v in enumerate(rows)]}}, active=lambda r: True)
+    box = lambda s, w, n, e: [[s, w], [s, e], [n, e], [n, w]]
+    circle = lambda la, lo, r, n: [[la + r * math.sin(2 * math.pi * k / n), lo + r * math.cos(2 * math.pi * k / n)] for k in range(n)]
+    heavy = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [circle(52.0, -1.0, 4.0, 20000)] + [circle(30.0 + 3 * k, 60.0, 1.0, 20000) for k in range(7)]},
+                     {'type': 'FRA', 'name': 'EGTT FRA WEST', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, -6.0)]}])
+    leg = lambda i: {'via': 'DCT', 'kind': 'DCT', 'nm': 29, 'natural_max_ft': 27000, 'natural_start_ft': 5000, 'natural_end_ft': 27000, 'start': {'id': f'A{i}', 'lat': 51.0 + (i % 40) * 0.05, 'lon': -1.0}, 'end': {'id': f'B{i}', 'lat': 51.0 + (i % 40) * 0.05, 'lon': -0.5}}
+    out = D.check(rad, [leg(i) for i in range(400)], heavy, True)
+    skipped = sorted(int(t.split(': ')[1].split(' direct')[0]) for lv, t in out if 'trop lourds' in t)
+    c.eq(skipped, [394, 400], 'the first line examines 6 directs (394 not decided), the second has no budget left: ALL its 400 directs are said not decided (red before: 399, one direct per line stayed examined)', what='shared budget')
