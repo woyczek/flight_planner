@@ -733,6 +733,18 @@ export function createProcedures(host) {
     const busy = reading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="procfetch"${again ? ' data-again="1"' : ''} data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? reading.text : text)}</button>`;
   };
+  /** SOG-0527 (1) : le bouton de lecture d'un terrain HORS de la carte (la ligne du dégagement) — le même geste et les mêmes mots que la
+   *  ligne du terrain : « Relire » pour une lecture qui existe (again), sinon « Lire les procédures de … » (« Lire à la demande » quand
+   *  l'État se lit ainsi) ; rien quand les procédures de son État ne se lisent pas (le bouton échouerait). */
+  function readButtonFor(icao, again = false) {
+    const k = String(icao || '').toUpperCase();
+    if (!/^[A-Z]{4}$/.test(k)) return '';
+    const ps = again ? null : host.procState?.(k);
+    if (ps && !ps.readable) return '';
+    return readButton(k, again ? tt(TX.procReread) : ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
+      icao: k
+    }), !!again);
+  }
   /** SOG-0374 : le lanceur de CE poste répond (pas une paire distante) — le paquet du Royaume-Uni se lit dans ses Téléchargements. */
   const launcherHere = () => {
     try {
@@ -2126,6 +2138,7 @@ export function createProcedures(host) {
     reset,
     choose,
     read,
+    readButtonFor,
     onChange,
     focus,
     fold,

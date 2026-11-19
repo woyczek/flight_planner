@@ -611,21 +611,21 @@ def f14(c):
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]')", what='the departure row offers the reading')
     txt = norm(c.text(f'{FUEL} [data-proc="dep"]') or '')
     c.ok(norm(row(c, 'procNoData')) in txt, f'row {txt!r}', '"aucune procédure publiée" in the language of the run')
-    c.eq(norm(c.text(f'{FUEL} [data-do="procfetch"]') or ''), norm(row(c, 'procRead').replace('{icao}', 'LFQQ')), 'the button names the aerodrome', what='button')
-    c.ge(round(c.box(f'{FUEL} [data-do="procfetch"]')['h']), 44, 'a 44 px target', what='button height')
+    c.eq(norm(c.text(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]') or ''), norm(row(c, 'procRead').replace('{icao}', 'LFQQ')), 'the button names the aerodrome', what='button')
+    c.ge(round(c.box(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]')['h']), 44, 'a 44 px target', what='button height')
     # BUGS SOG, 1 Nov (the user's capture, Aqua): the 44 px box of the link rose 10 px over the title (margin -10px) and the design's button
     # shadow painted it; whatever the design paints on buttons, the link paints nothing, and its line keeps the room of its target
     c.js("document.documentElement.style.cssText += ';--sog-btn-shadow:0 2px 6px rgb(255 0 0);--sog-btn-bg:rgb(255 0 0);--sog-btn-border:2px solid rgb(255 0 0)'")
-    c.page.hover(f'{FUEL} [data-do="procfetch"]')
-    look = c.js("(() => { const s = getComputedStyle(document.querySelector('[data-module=fuel] [data-do=procfetch]')); return [s.boxShadow, s.backgroundColor, s.borderTopWidth] })()")
+    c.page.hover(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]')
+    look = c.js("(() => { const s = getComputedStyle(document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]')); return [s.boxShadow, s.backgroundColor, s.borderTopWidth] })()")
     c.eq(look, ['none', 'rgba(0, 0, 0, 0)', '0px'], 'no shadow, background or border on the link, even hovered under a design that paints buttons', what='link look')
-    title, btn = c.box(f'{FUEL} [data-proc="dep"] .fu-proctitle'), c.box(f'{FUEL} [data-do="procfetch"]')
+    title, btn = c.box(f'{FUEL} [data-proc="dep"] .fu-proctitle'), c.box(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]')
     c.ok(btn['t'] >= title['b'] - 0.5, f'button top {btn["t"]:.1f}, title bottom {title["b"]:.1f}', 'the target does not cover the title above it')
-    c.tap(f'{FUEL} [data-do="procfetch"]')
+    c.tap(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]')
     want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the refusal reason (no launcher serves the test page: aerodb answers "no-launcher") is shown in a notification')
-    c.until("!!document.querySelector('[data-module=fuel] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
     # never silent (user, 29 Oct, EIDW: « aucun log. est-ce que ça a marché ? »): the start is said, then the end
     started = norm(row(c, 'procStarted').replace('{icao}', 'LFQQ'))
     c.ok(started in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'the start of the reading is said')
@@ -7400,12 +7400,13 @@ def _altn_taf(cat, now):
             'fcsts': [{'timeFrom': lo, 'timeTo': hi, 'fcstChange': None, 'wdir': 270, 'wspd': 8, 'visib': vis, 'clouds': cl}]}
 
 
-def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=()):
+def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=(), held=True):
     """The seeded flight with XQAL as alternate, a C30J sheet (minimum runway `min_ft`, none if None), XQAL's hard runway `hard_m` (m),
     `app` instrument approaches held in proc/manual/ beside one SID and one STAR (an index entry without any procedure is not « held »:
     aerodb's coverage table), its TAF of category `cat` kept fresh in the weather store (the test server has no
     launcher: the store asks a TAF of avwx.rest only with a key; a kept one is read first, cache/weather/taf/); the weather read by the gesture.
-    `more_ads`: more invented aerodromes of the base (SOG-0528: a far arrival)."""
+    `more_ads`: more invented aerodromes of the base (SOG-0528: a far arrival); `held=False`: XQAL out of the procedures index (its
+    procedures not held by the base, SOG-0527)."""
     import time as _t
     now = int(_t.time())
     sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
@@ -7418,9 +7419,10 @@ def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=()):
             d[1]['aircraft']['sheetId'] = 'C30J'
             d[1]['route']['altn'] = _ALT_ID
             d[1]['planned_at'] = _t.strftime('%Y-%m-%dT%H:00:00Z', _t.gmtime(now + 2 * 3600))
-    docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
-             ['proc/manual/index.json', {'schema': 1, 'aerodromes': {_ALT_ID: {'SID': 1, 'STAR': 1, 'APP': app, 'cycle': '2026-10-01',
-                                                                               'updated_at': '2026-11-01T09:00:00Z'}}}, 'reference']]
+    docs += [['aircraft/sheets/C30J.json', sheet, 'document']]
+    if held:
+        docs += [['proc/manual/index.json', {'schema': 1, 'aerodromes': {_ALT_ID: {'SID': 1, 'STAR': 1, 'APP': app, 'cycle': '2026-10-01',
+                                                                                   'updated_at': '2026-11-01T09:00:00Z'}}}, 'reference']]
     docs.append([f'cache/weather/taf/{_ALT_ID}.json', {'at': 4102444800000, 'source': 'launcher', 'data': _altn_taf(cat, now)}, 'cache'])
     route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), _ALT_ID: (270, 8)})
     c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': _ALT_ID, 'name': 'XQAL TEST', 'lat': 43.45, 'lon': 3.62,
@@ -8995,3 +8997,29 @@ def f288(c):
         c.js(_F281_NOTES_OFF)
         c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F288_{c.design}_{w}_{c.lang}_direct.png')
+
+
+@case('F289', 'Flight step, the line of the alternate: when its AIDS are not checked because the base does not hold its procedures, the '
+      'reading gesture of the Procedures card is offered right there (« Lire les procédures de XQAL »: the same words, the same call); '
+      'a tap starts the reading of that aerodrome', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0527 (1) (the user, LFFI: « la base ne tient pas les procédures à jour » — « pourquoi il n\'y a pas un bouton ou un lien '
+      '« relire » alors ? »); the ergonomist: the existing « Relire » gesture offered in place, no new word; invented aerodrome XQAL')
+def f289(c):
+    want = {'fr': 'Lire les procédures de XQAL', 'en': 'Read the procedures of XQAL', 'de': 'Verfahren von XQAL lesen',
+            'es': 'Leer los procedimientos de XQAL'}[c.lang]
+    A = f'{FUEL} [data-altnchk] li[data-crit=aids]'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 844})
+        _altn_open(c, 2500, 2, 'VFR', 5000, held=False)  # XQAL: its procedures not held by the base
+        c.until(f"document.querySelector('{A}')?.dataset.state === 'grey'", timeout=20000, what=f'{w} px: the aids not checked')
+        c.js(f"document.querySelector('{FUEL} [data-altnchk] details[data-altnfold]').open = true")
+        c.until(f"!!document.querySelector('{A} [data-do=procfetch][data-icao=XQAL]')", timeout=8000, what=f'{w} px: the reading gesture in place')
+        c.eq(norm(c.text(f'{A} [data-do=procfetch]') or ''), norm(want), 'the same words as the Procedures card', what='words')
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F289_{c.design}_{w}_{c.lang}_read.png')
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{A} [data-do="procfetch"]')
+    c.until("(window.__notes || []).slice(window.__n0).some(n => n.includes('XQAL'))", timeout=8000,
+            what='the reading of XQAL started (its start, then its answer, said)')
+    c.check_errors()

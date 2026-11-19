@@ -3529,7 +3529,20 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
-  if (pf) return Promise.resolve(S.P.read(pf.dataset.icao)).then(() => arrInfoKeep()); // « Lire » et « Relire » : un seul geste ; SOG-0325
+  if (pf) { // « Lire » et « Relire » : un seul geste ; SOG-0325
+    const k = String(pf.dataset.icao || '').toUpperCase(),
+      altn = () => k === String(S.flight.route?.altn || '').toUpperCase().trim(),
+      run = Promise.resolve(S.P.read(k));
+    if (altn()) altnChkDraw(S.C); // SOG-0527 (1) : le geste sous le dégagement dit aussitôt sa lecture en cours
+    return run.then(() => {
+      // la couverture du dégagement relue : son critère Moyens se refait sur ce qui vient d'être lu
+      if (S && altn()) {
+        S.altnData = null;
+        altnChkDraw(S.C);
+      }
+      return arrInfoKeep();
+    });
+  }
   const ho = e.target.closest('[data-do="holdopen"]');
   if (ho) { // le temps sur zone d'un point sans temps : « ⏱ + » ouvre sa ligne, le champ prêt à la frappe
     (S.holdOpen ||= new Set()).add(String(ho.dataset.id || '').toUpperCase());
@@ -5442,7 +5455,7 @@ async function altnChkDraw(C) {
     }),
     open = !!box.querySelector('details[data-altnfold]')?.open,
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span></li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span>${altnReadHtml(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
 }
 /** SOG-0398 lot 2 : le document local des terrains proposés, pour la Carte (INTEGRATION § 3 ter) : cet appareil seulement (politique
  *  cache), jamais data/, écrit par Carburant seul, avec l'événement fuel-altn-candidates. */
@@ -5463,6 +5476,14 @@ const altnPropKey = () => {
     a = S.flight.aircraft || {};
   return `${String(r.dep || '').toUpperCase()}>${String(r.arr || '').toUpperCase()}>${String(a.sheetId || a.registration || a.type || '').slice(0, 24)}`;
 };
+/** SOG-0527 (1) (l'utilisateur, LFFI : « la base ne tient pas les procédures à jour » — « pourquoi il n'y a pas un bouton ou un lien
+ *  « relire » alors ? ») : sous le critère MOYENS non vérifié (procédures non tenues, ou lues en partie), le geste de lecture de la carte
+ *  Procédures pour ce terrain (S.P.readButtonFor : mêmes mots, même appel, rien quand l'État ne se lit pas) ; '' sinon. */
+function altnReadHtml(c, id) {
+  if (c?.k !== 'aids' || !['aidsNoBase', 'aidsPartial'].includes(c.code) || typeof S.P?.readButtonFor !== 'function') return '';
+  const b = S.P.readButtonFor(id, c.code === 'aidsPartial');
+  return b ? ` ${b}` : '';
+}
 /** SOG-0528 : la distance de l'arrivée au dégagement (NM, le trait droit, comme la proposition), ou null sans l'une des positions. */
 function altnArrNm(pos, ad) {
   return pos && Number.isFinite(+ad?.lat) && Number.isFinite(+ad?.lon) ? rhumbNm(pos, {
