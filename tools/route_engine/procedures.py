@@ -76,7 +76,7 @@ class Catalog:
         return not(isinstance(need,(int,float)) and need>ceiling_ft+.01)
 
     def add_graph(self,g,ad,kind,runway='',speed=220,unable_rnav=False,ceiling_ft=None):
-        available=self.options(ad,kind,runway);used=0
+        available=self.options(ad,kind,runway);used=0;refused=0      # SOG-0529 (suite) : `refused` : le compte de CET appel (le niveau de la demande), jamais celui d'une demande précédente du même Nav
         connected=set(g)|{v for es in g.values() for v,e in es}
         for p in available:
             if unable_rnav:
@@ -84,7 +84,7 @@ class Catalog:
                 if planning.procedure_rnav(p) is not False:continue
             edges=self.edges(p,speed);endpoint=edges[-1][1] if kind=='SID' else edges[0][0]
             if not self.flyable(p,ceiling_ft):      # SOG-0529 : une procédure dont le point d'entrée (STAR) ou de sortie (SID) EXIGE une altitude au-dessus du niveau de croisière ne peut pas être volée de ce niveau : elle n'est pas « utilisée » (le raccord DCT de simulation prend alors le relais, DIT et jugé par la limite du RAD) ; LFBY → LFST au FL090 : toutes les STAR de LFST commencent à EPL « au moins 12 000 ft » : « CALCUL IMPOSSIBLE », l'IFPS « MISSING ROUTE DATA »
-                self.above=getattr(self,'above',{});self.above.setdefault((ad,kind),set()).add(p['id']);self.stats.setdefault(ad,{})[kind+'_above_level']=len(self.above[(ad,kind)])
+                refused+=1
                 continue
             if endpoint not in connected:continue
             if not p.get('partial'):used+=1      # SOG-0374 : une SID lue en partie ne remplace pas le raccord DCT de simulation (elle s'y ajoute : un tracé de plus à la recherche)
@@ -94,6 +94,8 @@ class Catalog:
                 sv=v if i==len(edges)-1 else v+'|PROC|'+p['id']
                 self.nav.nodes[su]=self.nav.nodes[u];self.nav.nodes[sv]=self.nav.nodes[v]
                 g.setdefault(su,[]).append((sv,e))
+        if refused:self.stats.setdefault(ad,{})[kind+'_above_level']=refused      # SOG-0529 : refusées à CE niveau
+        else:self.stats.get(ad,{}).pop(kind+'_above_level',None)      # (et plus rien d'un autre niveau du même Nav)
         return used
 
     def expand(self,token,start,end,dep,arr,runway_dep='',runway_arr='',speed=220,preferred=()):

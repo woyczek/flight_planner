@@ -18571,7 +18571,7 @@ def k405(c):
         out = {}
         for fl in (90, 150):
             p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'enable_fra': False, 'use_procedures': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
-            out[fl] = (p.get('ok'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['text'].startswith('ZZBB : aucune STAR')])
+            out[fl] = (p.get('ok'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['text'].startswith('ZZBB : aucune STAR')], (p.get('procedure_coverage') or {}).get('ZZBB', {}).get('STAR_above_level'))
         # SOG-0529, second condition (the ergonomics session): the engine passes ITS OWN result through the limit of the connector of the RAD (ROUTE134 / ROUTE135): a rule `ZZ_LIM_AD` « ZZBB ARR/DEP DCT = 0 NM (SID/STAR) » whose cell has a STRUCK part (removed at the import)
         sheets = RF.rad_sheets()
         row = ['', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', 'x'] + [''] * 11
@@ -18590,6 +18590,7 @@ def k405(c):
     c.ok(out[90][0] and out[90][1] and out[90][1].endswith('P4 DCT ZZBB'), str(out[90]), 'at FL090 the route is found: the STAR (first point at least 12 000 ft) is not usable at that level, the flight goes to the aerodrome by the DCT connector of simulation (red before: « CALCUL IMPOSSIBLE »)')
     c.ok(any('1 refusée(s) à ce niveau' in t and 'FL090' in t for t in out[90][2]), str(out[90][2]), 'the answer says why: the procedure is refused for this level (its entry point needs an altitude above the cruise level), not only « aucune STAR utilisée »')
     c.ok(out[150][0] and 'IAF1A' in (out[150][1] or ''), str(out[150]), 'at FL150 the STAR is used as before (the entry altitude is below the cruise level): nothing changes for the flights that can fly the procedure')
+    c.eq((out[90][3], out[150][3]), (1, None), 'the count of procedures refused by level is the one of THIS request (1 at FL090; none at FL150 on the same Nav: nothing is kept from the previous level)', what='coverage')
     c.ok(len(lim[90][0]) == 1 and 'ZZ_LIM_AD' in lim[90][0][0] and 'FL090' in lim[90][0][0] and 'ROUTE134' in lim[90][0][0] and 'à examiner, jamais une route valide' in lim[90][0][0] and 'à confirmer' in lim[90][0][0], str(lim[90]),
          'at FL090 the engine passes its own route through the limit of the connector of the RAD: ZZBB 0 NM (SID/STAR) and the direct to the aerodrome is not the first point of a STAR that can be flown at FL090: said with the RULE and « à examiner, jamais une route valide » (and « à confirmer »: a struck part of the cell was removed)')
     c.eq((lim[90][1], lim[150][0]), (['REVUE'], []), 'a REVUE, never an ERREUR (the cell had a struck part); at FL150 the STAR is flown and the limit says nothing', what='level')
