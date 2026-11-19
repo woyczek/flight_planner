@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ad258e2",
+  "organisation": "f7c16db",
   "fiches": 516,
   "untranslated": 0,
   "priorities": 481,
@@ -965,11 +965,12 @@
     {
      "id": "SOG-0512",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : régression du zoom de la carte",
      "en": "Fuel: map zoom regression",
      "de": "Kraftstoff: Rückschritt beim Kartenzoom",
-     "es": "Combustible: regresión del zoom del mapa"
+     "es": "Combustible: regresión del zoom del mapa",
+     "test": true
     }
    ]
   },
