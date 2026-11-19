@@ -3083,8 +3083,9 @@ def f109(c):
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the computed route and two alternatives')
     comps = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute']
     comp = comps[0]
-    c.eq([sorted(comp), comp['via'], comp['proposals'], comps[1]], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'proposals']), ['LUGEN', 'NEPIX'], True, dict(comp, alternatives=True)],
-         'the typed points as imposed passages and the proposals of an impossible plan asked (AeroDB 9a7f1dde3); the alternatives in a second request (SOG-0296)', what='compute args')
+    # SOG-0517: the route already in the field (not typed by the pilot) imposes nothing — it never carries itself over (F284)
+    c.eq([sorted(comp), comp['via'], comp['proposals'], comps[1]], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'proposals']), [], True, dict(comp, alternatives=True)],
+         'a route already in the field imposes no passage (SOG-0517) and the proposals of an impossible plan asked (AeroDB 9a7f1dde3); the alternatives in a second request (SOG-0296)', what='compute args')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
     c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
@@ -8711,3 +8712,46 @@ def f283(c):
     c.tap(f'{FUEL} [data-alt="0"] [data-do="rtake"]')  # data-alt counts from 0: the first route, « Via UN10 »
     d = cf_doc(c, lambda d: ((d.get('route') or {}).get('from') == 'engine'), 'the route taken, written')
     c.eq((d.get('route') or {}).get('text'), 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 'the engine\'s text kept word for word', what='verbatim')
+
+
+@case('F284', 'Route step: only the points the pilot TYPED (and the mission locks) are imposed on « Calculer A → B » — a route already in the '
+      'field never carries itself over, a route taken imposes nothing on the next computation; the line under the buttons names the imposed '
+      'passages', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0517 (AeroDB: routeArgs sent every point of the Route field as `via`, an old route carried itself over; the relay, 10 h: '
+      '« seuls les noms tapés et les verrous de mission »); fake launcher, invented flight')
+def f284(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+
+    def via():
+        n = len(st['posts'])
+        c.tap(f'{FUEL} [data-do="rcompute"]')
+        for _ in range(40):
+            # the head request only: the request of the VARIANTS of an earlier computation (alternatives: true) may arrive later, with the
+            # input of its own time
+            got = [p.get('args') or {} for p in st['posts'][n:] if (p.get('args') or {}).get('action') == 'compute'
+                   and not (p.get('args') or {}).get('alternatives')]
+            if got:
+                return got[0].get('via', [])
+            c.wait(150)
+        raise Fail('no compute request', 'a request to route/compute', 'none')
+    # the route already in the field (LUGEN, NEPIX): nothing typed, nothing imposed
+    c.eq(via(), [], 'a route already in the field: no imposed passage (it does not carry itself over)', what='old route')
+    c.eq(c.count(f'{FUEL} [data-rvia]:not([hidden])'), 0, 'no « Passages imposés » line', what='no line')
+    # the pilot types a passage: imposed, and named
+    c.page.fill(f'{FUEL} [data-k="rtext"]', '')
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS LUGEN LFML')
+    c.page.locator(f'{FUEL} [data-k="rtext"]').blur()
+    c.until(f"!!document.querySelector('{FUEL} [data-rvia]:not([hidden])')", timeout=8000, what='the line of the imposed passages')
+    c.ok('LUGEN' in (c.text(f'{FUEL} [data-rvia]') or ''), c.text(f'{FUEL} [data-rvia]'), 'the line names LUGEN')
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F284_{c.design}_390_{c.lang}_imposed.png')
+    c.eq(via(), ['LUGEN'], 'a passage the pilot typed is imposed', what='typed')
+    # a route taken: nothing imposed next time
+    c.until(f"!!document.querySelector('{FUEL} [data-alt=\"1\"] [data-do=rtake]')", timeout=10000, what='the first route of the answer')
+    c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: ((d.get('route') or {}).get('from') == 'engine'), 'the route taken, written')
+    c.eq((d.get('route') or {}).get('typed'), [], 'a route taken imposes nothing', what='typed reset')
+    c.until(f"!document.querySelector('{FUEL} [data-rvia]:not([hidden])')", timeout=8000, what='no « Passages imposés » line after a route taken')
+    c.eq(via(), [], 'the next computation is free: the route taken does not carry itself over', what='after take')

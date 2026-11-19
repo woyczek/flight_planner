@@ -886,6 +886,12 @@ const TX = {
   ],
   // le FL gris de la ligne de route, quand c'est le niveau par défaut du moteur (jamais pris pour celui du vol)
   rFlDefault: ['FL{fl} par défaut', 'FL{fl} by default', 'FL{fl} (Standard)', 'FL{fl} por defecto'],
+  // SOG-0517 : les passages que « Calculer A → B » doit passer : ceux que le pilote a tapés et ceux de la mission
+  rViaImposed: ['Passages imposés au calcul : {list} — effacez-les du champ Route pour laisser le calcul libre.',
+    'Passages imposed on the computation: {list} — erase them from the Route field to leave the computation free.',
+    'Dem Rechner vorgegebene Durchgänge: {list} — löschen Sie sie aus dem Feld Route, um die Berechnung frei zu lassen.',
+    'Pasos impuestos al cálculo: {list} — bórrelos del campo Ruta para dejar el cálculo libre.'
+  ],
   // SOG-0517 : le vol sans niveau prend celui du calcul
   rLevelSet: ['Niveau du vol fixé à FL{fl}, celui du calcul de la route : le devis et le plan de vol le portent.',
     'Flight level set to FL{fl}, the one of the route computation: the quote and the flight plan carry it.',
@@ -2982,7 +2988,7 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
-      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
+      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
       <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
@@ -3128,6 +3134,7 @@ function onPlanInput(e) {
       break;
     }
     case 'rtext':
+      if (e.type === 'input') r.typed = typedNames(r, r.text, v); // SOG-0517 : les passages que le pilote tape
       r.text = v;
       if (e.type === 'input') r.from = 'route';
       markEnds(); // la route écrite l'est pour les terrains du moment
@@ -4534,7 +4541,7 @@ function routeArgs(act, r = S.flight.route || {}, o = CF.proceduresOf(S.flight))
     action: act,
     dep: r.dep,
     arr: r.arr,
-    points: r.points,
+    points: imposedPoints(r), // SOG-0517 : les passages tapés par le pilote et les verrous de la mission, jamais toute la route
     text: r.text,
     fl: routeFl(), // SOG-0517 : le niveau du vol, sinon celui du devis ; sans niveau du tout, le moteur prend le sien (écrit ensuite)
     date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
@@ -4552,6 +4559,39 @@ function routeFl() {
   const ref = +currentSheet()?.cruise?.refAltFt,
     ft = +S.flight?.level?.ft > 0 ? +S.flight.level.ft : ref > 0 ? ref : 0;
   return ft > 0 ? Math.round(ft / 100) : null;
+}
+/** SOG-0517 : les noms d'un texte de route (points et coordonnées, en capitales), sans les voies ni les groupes. */
+function namesOfText(text) {
+  return RT.tokenize(text).filter(t => t.kind === 'name' || t.kind === 'coord').map(t => String(t.id || '').toUpperCase()).filter(Boolean);
+}
+/** SOG-0517 : les passages TAPÉS par le pilote après un changement de texte : ceux qu'il avait tapés et qui restent, plus les noms
+ *  nouveaux (absents du texte d'avant) ; le départ et l'arrivée n'en sont jamais. Quarante au plus. */
+function typedNames(r, before, after) {
+  const was = new Set(namesOfText(before)),
+    now = namesOfText(after),
+    ends = new Set([String(r?.dep || '').toUpperCase(), String(r?.arr || '').toUpperCase()]),
+    keep = new Set((Array.isArray(r?.typed) ? r.typed : []).map(x => String(x).toUpperCase()));
+  return [...new Set(now.filter(n => !ends.has(n) && (keep.has(n) || !was.has(n))))].slice(0, 40);
+}
+/** SOG-0517 (AeroDB : les points du champ Route envoyés en passages imposés reconduisaient une route ancienne) : les points que le calcul
+ *  DOIT passer — ceux que le pilote a tapés ou ajoutés (r.typed) et ceux que la mission verrouille (lock) ; jamais ceux d'un itinéraire
+ *  pris, d'un OFP ou d'une route de mission. Le départ et l'arrivée encadrent. Un vol d'avant ce changement (sans typed) : les verrous. */
+function imposedPoints(r) {
+  const pts = Array.isArray(r?.points) ? r.points : [],
+    typed = new Set((Array.isArray(r?.typed) ? r.typed : []).map(x => String(x).toUpperCase()));
+  if (pts.length < 2) return pts;
+  return [pts[0], ...pts.slice(1, -1).filter(p => p && (p.lock || typed.has(String(p.id || '').toUpperCase()))), pts.at(-1)];
+}
+/** SOG-0517 : la ligne sous les boutons du calcul — les passages imposés, nommés ; cachée sans passage. Les retirer : les effacer du
+ *  champ Route (le geste de toujours). */
+function rviaDraw() {
+  const line = S.body?.querySelector('[data-rvia]');
+  if (!line) return;
+  const ids = imposedPoints(S.flight?.route).slice(1, -1).map(p => String(p?.id || '')).filter(Boolean).slice(0, 12);
+  line.hidden = !ids.length;
+  line.textContent = ids.length ? tt(TX.rViaImposed, {
+    list: ids.join(', ')
+  }) : '';
 }
 /** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
  *  l'horloge (l'heure prévue du vol en tient lieu). */
@@ -6145,7 +6185,11 @@ function routeTake(i) {
     bubbles: true
   }));
   // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot (voies, groupes de niveau) : pas de normalisation
-  if (S.flight.route) S.flight.route.from = 'engine';
+  // SOG-0517 : un itinéraire pris n'impose aucun passage au calcul suivant (la route d'avant ne se reconduit pas)
+  if (S.flight.route) Object.assign(S.flight.route, {
+    from: 'engine',
+    typed: []
+  });
   ta.dispatchEvent(new Event('change', {
     bubbles: true
   }));
@@ -6367,6 +6411,7 @@ function routeDerived(r) {
  *  main) ; sans route résolue, « Saisir à la main » déplie les deux champs (gardés ouverts tant que la saisie à la
  *  main tient). */
 function renderRinfo() {
+  rviaDraw(); // SOG-0517 : les passages imposés au calcul, nommés
   const box = S.body?.querySelector('[data-rinfo]');
   if (!box) return;
   const r = S.flight.route || {},
@@ -6456,8 +6501,10 @@ function renderPts() {
 /** Points changés à la main : texte de la route réécrit, distance et route vraie déduites, vol courant écrit, devis
  *  refait ; la liste est redessinée sauf pendant la frappe d'un niveau (le champ garde la main). */
 function routeEdited(redraw = true) {
-  const r = S.flight.route;
+  const r = S.flight.route,
+    before = r.text || '';
   r.text = withRwys(RT.textFromPoints(r.points || [], r.text || '')); // voies gardées entre deux points restés voisins ; pistes (SOG-0089)
+  r.typed = typedNames(r, before, r.text); // SOG-0517 : un point ajouté à la main est un passage voulu
   r.from = 'points';
   const ta = S.body?.querySelector('[data-k="rtext"]');
   if (ta) ta.value = r.text;
@@ -7530,7 +7577,8 @@ function applyOfp(ofp) {
     arr,
     altn: ofp.alternate?.icao_code || '',
     manual: false,
-    from: 'ofp'
+    from: 'ofp',
+    typed: [] // SOG-0517 : la route d'un OFP n'impose aucun passage au calcul
   };
   if (+g.initial_altitude > 0) f.level = {
     ft: +g.initial_altitude
