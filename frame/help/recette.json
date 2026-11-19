@@ -4522,7 +4522,7 @@
     "de": "Eine Mission aus V3 zuweisen (minimale Geste, eine von V2 lesbare Zeile)",
     "es": "Asignar una misión desde la V3 (gesto mínimo, línea legible por la V2)"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions (niveau Courant ou plus), fiche d'une mission : « Affecter… ». Remplis Pilote (trois lettres ou un trigramme proposé), Indicatif, Décollage (date et heure UTC) et Aéronef (le type de la mission, une immatriculation facultative), puis « Affecter ». Attendu : une notification « … est affecté à …, décollage …Z », et la ligne paraît dans « Affectations de cette mission » avec « Retirer ». Si le pilote a déjà une mission à cette heure, une notification orange le dit, et un second « Affecter » écrit quand même. « Retirer » marque la ligne annulée. Le pilote retrouve la mission dans « Mes missions affectées ».",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:32:16Z"
@@ -4536,7 +4536,7 @@
     "de": "Missionswerkstatt: der V3-Editor nimmt die Form des Entwurfs an (Karte, Ablauf, Blatt) — ein einziges Autorenwerkzeug",
     "es": "Taller de misiones: el editor de la V3 toma la forma de la maqueta (mapa, secuencia, ficha) — una sola herramienta de autor"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier, une mission neuve : sous le titre, « Modèle : aucun · Choisir un modèle ». Choisis « Recherche sur un glacier » : trois tiroirs et des lieux « à placer » sont posés. « Changer de modèle » dit ce qui sera remplacé et ce qui sera gardé. « ＋ Tiroir » propose tes briques par famille. « Enregistrer comme modèle » demande un nom et le range dans « Vos modèles ». ÉCARTÉ de ton catalogue, exprès : les 32 briques 1.1 (stationnaire, atterrissage, survol, suite d'étapes, événement : SOG-0500), le modèle « Bateau mobile », l'hôpital et les coordonnées du glacier, la zone franchie par la cible et le suivi de 30 s de l'interce",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-18T20:49:49Z"
@@ -4563,7 +4563,7 @@
     "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
     "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Voir le test de SOG-0459 (un seul test pour les deux fiches).",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T03:18:26Z"
@@ -4648,7 +4648,7 @@
     "de": "Verlässt man eine Seite mit ungespeicherten Änderungen über das Menü oder „Zurück“, gehen sie ohne Rückfrage verloren",
     "es": "Salir de una pantalla con cambios sin guardar, por el menú o con «Atrás», los pierde sin preguntar"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier d'une mission : change un champ sans enregistrer, puis quitte par le menu de la suite (une autre application) ou par Retour. Attendu : une question te demande si tu veux quitter sans enregistrer ; « Rester » te laisse sur l'atelier, tes changements intacts.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T18:12:21Z"
@@ -4662,7 +4662,7 @@
     "de": "Missionen mit Schubladen: schon ihre Existenz bleibt verborgen; die ganze Mission wird nur auf ausdrücklichen Wunsch aufgedeckt",
     "es": "Misiones con cajones: se oculta incluso que existan; revelar la misión completa es una elección expresa"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Le secret des tiroirs (avec SOG-0448). Missions : ouvre une mission À TIROIRS qui t'est affectée (par exemple M-023) SANS rien dévoiler. Attendu : sa fiche, « Lire la mission », le Détail et la Carte ne montrent RIEN d'un tiroir fermé — ni titre, ni condition, ni compte, ni lieu ou objet qui n'appartient qu'à lui, pas même qu'un tiroir existe. Ouvre un tiroir (« Demander la suite », ou sa clé) : il paraît sous « Suite de la mission », titre et heure, sans numéro. Puis l'atelier de cette mission : il s'ouvre VOILÉ (la partie visible seulement) ; « Dévoiler la mission complète » montre tout ; enregistrer sans dévoiler laiss",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:37:07Z"
@@ -4676,7 +4676,7 @@
     "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
     "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions, Registre, « Ajouter des missions ». ALLER : « Copier le prompt » met dans le presse-papiers le prompt du générateur (0 à 12 tiroirs, une clé chacun, zone ronde ou en contour, zone et objet cachés par défaut, le ton décalé mais réaliste). Colle-le dans ChatGPT. RETOUR : colle sa réponse TELLE QUELLE : « 1 mission lue », la ligne « Le texte autour des blocs de code n'est pas lu. », puis « Ajouter (1) ». Rien ne dit si la mission a des tiroirs.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:38:39Z"
@@ -4727,7 +4727,7 @@
     "de": "Für alle geöffnete Schubladen: ein Live-Kanal zwischen Geräten, der nicht das Datenrepository ist — Studie",
     "es": "Cajones abiertos para todos: un canal en directo entre dispositivos que no sea el repositorio de datos — estudio"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Deux appareils (ou deux navigateurs) sur la même mission affectée, un tiroir attendu. Sur le premier, ouvre le tiroir (« Demander la suite »). Attendu : sur le second, onglet visible, la suite paraît en une quinzaine de secondes au plus (au lieu d'une minute) ; un onglet caché ou sans tiroir attendu ne lit pas plus souvent qu'avant.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T21:18:01Z"
@@ -4741,7 +4741,7 @@
     "de": "Missionswerkstatt: das Höhenprofil der Strecke unter der Karte",
     "es": "Taller de misiones: el perfil vertical del trayecto, bajo el mapa"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier, une mission avec au moins deux lieux : sous la carte, la section « Profil » (ouverte sur ordinateur, repliée au téléphone) montre le profil vertical du trajet au niveau de croisière, avec les lieux nommés sous l'axe ; déplacer un lieu le redessine. Si la croisière passe sous le relief, une alerte orange le dit (forme provisoire, à trancher jeudi avec SOG-0502). Sans relief disponible : « Relief indisponible ».",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4755,7 +4755,7 @@
     "de": "Missionswerkstatt: Start und Ziel mit dem Flugplatzfeld der Suite (samt Vervollständigung)",
     "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions, atelier d'une mission : touche « Départ » et tape « lf » : la même liste que dans Carburant propose des terrains (et des hélistations, après la reconstruction de la zone fr) avec leur nom ; choisis-en un : le code s'écrit, le nom paraît dessous, et la carte se cadre sur les deux terrains. Un texte libre (« Hôpital Nord ») reste possible.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:42:11Z"
@@ -4769,7 +4769,7 @@
     "de": "Missionswerkstatt: Bausteine nur bei „＋ Schublade“, der Ablauf als senkrechte Liste, weniger Nebentext",
     "es": "Taller de misiones: los bloques solo en «＋ Cajón», la secuencia en vertical, menos texto secundario"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier : le déroulé est une liste verticale (« Au départ », un tiroir par ligne, « ＋ Tiroir » en dernier) ; « ＋ Tiroir » ouvre sur place le choix du type et des briques ; la clé d'un tiroir se change par le même choix ; au plus une ligne de texte secondaire par groupe (le reste est dans « Comment s'en servir »). Choisir un tiroir amène sa fiche à l'écran.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4783,7 +4783,7 @@
     "de": "Missionswerkstatt: gar keine Karte bei einer Mission, deren Orte keine Position haben (Flugplätze kleingeschrieben)",
     "es": "Taller de misiones: ningún mapa en una misión cuyos lugares no tienen posición (aeródromos escritos en minúsculas)"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions, Registre : crée une mission NEUVE, et tape les terrains en minuscules (par exemple « lfrs » et « lfrn »). Attendu : la carte de l'atelier s'ouvre tout de suite, même avant tout lieu placé ; les terrains connus de la base sont reconnus malgré les minuscules et placés ; un texte que la base ne connaît pas reste du texte, sans être pris pour un terrain.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:37:03Z"
@@ -4811,7 +4811,7 @@
     "de": "Missionswerkstatt: Symbole für Werkzeuge und Hintergründe, Gebiet rund oder als Umriss, ein dritter Hintergrund mit Namen",
     "es": "Taller de misiones: iconos para herramientas y fondos, zona redonda o con contorno a elegir, un tercer fondo con nombres"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier : les outils de la carte sont des ICÔNES (sélection, point, tracé, zone, objet, recentrer, annuler, rétablir), chacune avec son nom au survol ; l'outil Zone porte sa forme (cercle ou polygone) et en change par un second toucher ou un appui long ; « Rétablir » défait un « Annuler ».",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4825,7 +4825,7 @@
     "de": "Missionswerkstatt: „Orte“ oben in der rechten Spalte, im Rahmen, mit einer rollenden Auswahlliste",
     "es": "Taller de misiones: «Lugares» arriba de la columna derecha, enmarcado, con una lista desplazable para elegir"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier : « Lieux » est en tête de la colonne de droite, dans un cadre, avec une liste de hauteur fixe qui défile ; la ligne choisie est marquée et ses champs sont dessous ; toucher un lieu sur la carte le choisit dans la liste, et l'inverse.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4911,7 +4911,7 @@
     "de": "Missionswerkstatt: Verschieben eines Gebietsmittelpunkts, Objekts oder anderen Griffs zeichnet nicht neu",
     "es": "Taller de misiones: mover el centro de una zona, un objeto u otro tirador no redibuja"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier d'une mission, carte : fais glisser le centre d'une zone ronde, puis un objet, puis un sommet d'une zone en polygone. Attendu : pendant le geste, le cercle, le polygone, le tracé et la liste des Lieux suivent le doigt, comme quand on change le rayon ; un seul « Annuler » défait le geste entier.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:42:18Z"
@@ -4925,7 +4925,7 @@
     "de": "Missionswerkstatt: Der Name des Umriss-Werkzeugs („draw its outline“) ist unklar",
     "es": "Taller de misiones: el nombre de la herramienta de contorno («draw its outline») no es claro"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier, la fiche d'une zone dans Lieux : le bouton dit « Changer en polygone » (et, sur une zone en polygone, « Changer en cercle ») ; l'outil Zone de la carte porte le même couple de mots ; dans les quatre langues.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4939,7 +4939,7 @@
     "de": "Missionswerkstatt: Ein Wendepunkt kann jeder Punkt der Luftfahrtdatenbank sein (LF485, REN…)",
     "es": "Taller de misiones: un punto de viraje puede ser cualquier punto de la base aeronáutica (LF485, REN…)"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier d'une mission, un point tournant : dans son Nom, tape « REN » ou « LF485 ». La liste propose les points de la base (balise, point de report…) avec leur nom ; choisis-en un : le code s'écrit dans le Nom et la position vient de la base. Un texte libre reste possible, sans position.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4953,7 +4953,7 @@
     "de": "Missionswerkstatt: Mit gewähltem Punkt fügt „Ziel/Wendepunkt hinzufügen“ den gewählten Punkt hinzu",
     "es": "Taller de misiones: con un punto seleccionado, añadir un objetivo o punto de viraje añade el punto seleccionado"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier : choisis un repère de la base sur la carte (une balise, par exemple), puis « + Point tournant » ou « + Cible » : c'est CE point qui est ajouté, à sa position et sous son nom (et non un lieu vide).",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -4995,7 +4995,7 @@
     "de": "Missionswerkstatt: „Speichern“ leert Briefing und Beschreibung der Mission – verloren",
     "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier d'une mission : ouvre le Récit, tape un brief, « Enregistrer ». Laisse le Récit déplié, ajoute une phrase à la description, puis « Enregistrer » à nouveau. Attendu : la seconde saisie est enregistrée (pas de « rien n'a changé ») ; ferme puis rouvre la mission : les deux textes sont là.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:42:29Z"
@@ -5039,7 +5039,7 @@
     "de": "Missionen: Beim Eingeben eines Rufzeichens werden Rufzeichen und Typen der bekannten Flotte vorgeschlagen",
     "es": "Misiones: al escribir un indicativo se proponen los indicativos y tipos de la flota conocida"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier, Équipes : dans l'Indicatif, tape deux lettres d'un indicatif de ta flotte. La liste propose « INDICATIF — TYPE · IMMAT » ; un choix remplit l'indicatif, et le type quand un seul est connu pour cet indicatif. Un texte libre reste possible.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -5108,7 +5108,7 @@
     "de": "Missionswerkstatt: Ein gewählter benannter Punkt (LFRF…) bleibt „zu platzieren“, ohne Koordinaten",
     "es": "Taller de misiones: un punto con nombre elegido (LFRF…) queda «por situar», sin coordenadas"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Atelier : un lieu dont tu tapes un code connu de la base (par exemple « LFRF ») prend aussitôt sa position et n'est plus « à placer » ; sa ligne dans Lieux dit la position.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -5122,7 +5122,7 @@
     "de": "Missionen: Schublade 1 von M23 ist sichtbar, bevor das Objekt gefunden ist – eine verborgene Schublade bleibt verborgen",
     "es": "Misiones: el cajón 1 de M23 se ve antes de encontrar el objeto — un cajón oculto debe seguir oculto hasta abrirse"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions : ouvre M23 (ou toute mission dont un tiroir s'ouvre quand on trouve un objet). Avant de trouver l'objet : rien du tiroir 1, nulle part (fiche, liseuse, Carte). Une fois l'objet trouvé (ou le tiroir demandé), il paraît sous « Suite de la mission ».",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T20:47:37Z"
@@ -5164,7 +5164,7 @@
     "de": "Missionen: „Karte anzeigen“ führt zur Karte, aber die Rückkehr zur Mission klappt nicht",
     "es": "Misiones: «Ver el mapa» lleva al Mapa, pero el regreso a la misión no funciona"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Missions : ouvre une mission, puis « Voir la carte ». La Carte montre la mission. Fais Retour (bouton du navigateur, ou geste retour du téléphone) : tu reviens sur la MÊME mission ouverte, son détail aussi s'il était ouvert, et pas sur la liste.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:26:09Z"
@@ -5223,7 +5223,7 @@
     "de": "Missionen: Toleranzen der Bewertung im Flug — benannter Transitpunkt auf 2 NM, Präzisionslandung in Stufen, Landung auf einem Flugplatz auf 1 NM",
     "es": "Misiones: tolerancias del juicio en vuelo — punto con nombre en tránsito a 2 NM, aterrizaje de precisión por niveles, aterrizaje en aeródromo a 1 NM"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Au simulateur, une mission à tiroir dont la clé est un posé de précision sur un point (pas un terrain) : pose-toi à moins de 0,5 NM du point. Attendu : le tiroir s'ouvre et sa ligne dit le palier et la distance, par exemple « ouvert à votre atterrissage — réussi (0,15 NM) » (excellent ≤ 0,05, parfait ≤ 0,1, réussi ≤ 0,2, partiel ≤ 0,5 ; au-delà, rien ne s'ouvre). Un posé sur le terrain d'arrivée compte à 1 NM, sans palier ; une escale requise est passée à 2 NM.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T08:22:21Z"
@@ -5237,7 +5237,7 @@
     "de": "Missionswerkstatt: „＋ Schublade“ öffnet ein Fenster zur Wahl der Bausteine, ein Tippen legt die Schublade an — wie im Entwurf des Nutzers",
     "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Recharge la page. Atelier d'une mission : « ＋ Tiroir · Choisir une brique ». Attendu : une fenêtre « Choisir une brique de tiroir » (plein écran au téléphone), une recherche, « Actions transverses » en tête puis les thèmes et familles, celle de ta mission ouverte. UN toucher sur une brique crée le tiroir, ferme la fenêtre, montre sa fiche et le dit (« Tiroir n ajouté », avec Annuler). « Changer la clé » ouvre la même fenêtre.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T11:06:45Z"
@@ -5355,7 +5355,7 @@
     "de": "Missionen: Die Stufe einer Präzisionslandung (und ihr Abstand) kommt in die Nachbesprechung und füllt den Bericht vor; eine Rangliste später",
     "es": "Misiones: el nivel de un aterrizaje de precisión (y su distancia) va al debriefing y rellena el informe; una clasificación, más adelante"
    },
-   "test": "À TESTER AU JALON « ATELIER FIGÉ » (pas avant : l'écran bouge encore). Après un vol de mission avec un posé de précision jugé : (1) Missions, la fiche de la mission : un bloc « Débrief » dit « <titre du tiroir> — atterrissage réussi (0,15 NM), à hh:mmZ » ; (2) Compte rendu de ce vol : « Posés de précision — Prérempli depuis : Carnet de la mission », palier et distance remplis, modifiables, rien n'est envoyé sans toi.",
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T15:41:37Z"
@@ -5437,7 +5437,7 @@
     "de": "Nutzungsprobe der Werkstatt — eine Viertelstunde, fünf Schritte (vor dem Meilenstein „Werkstatt eingefroren“)",
     "es": "Prueba de uso del taller — un cuarto de hora, cinco gestos (antes del hito «taller congelado»)"
    },
-   "test": "ESSAI D'USAGE — UN QUART D'HEURE (pas une recette fiche par fiche). Recharge la page. (1) Missions › Registre › « Créer une mission » : choisis un modèle, tape un départ et une arrivée connus de la base, ajoute un tiroir par « ＋ Tiroir », puis « Enregistrer ». (2) Ferme, puis rouvre cette mission depuis le Registre : tout ce que tu as saisi est là. (3) Change un champ SANS enregistrer, quitte l'atelier, reviens au Registre : la ligne « Brouillon » en tête, « Reprendre » rend ta saisie. (4) « Ajouter des missions » : colle une réponse de ChatGPT telle quelle : la mission est lue, ajoutée au registre et s'ouvre dans l'atelier. (5) Ouvre une mission à tiroirs comme pilote (sa fiche, « Lire la m",
+   "test": "PARCOURS DE L'ATELIER — à quoi il sert : vérifier en un seul passage que l'atelier de missions et les missions marchent de bout en bout. Tu le joues deux fois en tout : quand les défauts qui perdent le travail sont poussés, puis au jalon « atelier figé ». CE QUE TU VAS FAIRE : tu crées une mission depuis un modèle ; tu places ses terrains et un point, tu ajoutes un tiroir, tu enregistres ; tu quittes sans enregistrer et tu retrouves ton brouillon ; puis tu la regardes comme un pilote. — L'ESSENTIEL (étapes 1 à 10, environ 12 minutes). 1. Recharge la page (Ctrl + Maj + R). Compagnie › Missions › Registre › « Créer une mission ». → Sous le titre : « Modèle : aucun · Choisir un modèle » (SOG-04",
    "since": "2026-11-19",
    "state": "todo"
   }
