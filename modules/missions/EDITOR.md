@@ -1699,6 +1699,10 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 - `withPlaces` (`editor.js`) never writes `require_confirmation` on a station of retardant (a station is not « found »; what a file carries
   stays as it is).
 
+### 7 undesexagies. The kind of an object on its own row at the phone (19 Nov 2026; SOG-0521; noreg N185, N183)
+
+- In the sheet of an object (the Lieux), the select « Sorte d'objet » (`.ms-plkind`) shared its row with the name; at 390 « Station de retardant » was cut. Under a container of 850 px (the threshold of the workshop's own layout: `@container`), the kind takes `flex: 1 1 100%` — a row of its own, the full width of the sheet, **whatever the kind** (the page's rule, decided by the relay); on a wide module the row is the one of before. CSS only, no text, no data.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

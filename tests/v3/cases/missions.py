@@ -12310,3 +12310,38 @@ def n184(c):
          'a hostile brick: four places read at most (two beyond, set aside), no position read, a duplicate and a kind out of the list set aside, an unknown kind of object read « », a place cited and not posed not cited',
          what='the hostile brick')
     c.eq(g['others'], [], 'no other brick creates a place', what='the others')
+
+# SOG-0521: the sheet of an object — where the kind sits in the sheet (measured in the page)
+_OKIND_JS = """(i) => { const f = document.querySelector('%s [data-plform="' + i + '"]'), sel = f.querySelector('select[data-f=okind]'),
+    nm = f.querySelector('input[data-f=name]'), cs = getComputedStyle(f), pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+    r = sel.getBoundingClientRect(), n = nm.getBoundingClientRect();
+  return { sel: Math.round(r.width), form: Math.round(f.clientWidth - pad), cut: sel.scrollWidth > sel.clientWidth, same: Math.abs(r.top - n.top) < 8,
+    text: sel.selectedOptions[0]?.textContent || '' } }""" % E
+
+
+@case('N185', 'Missions › the workshop, the sheet of an object: at 390 the « Sorte d\'objet » sits on its OWN row, the full width of the sheet, whatever the kind '
+      '(« Station de retardant » is not cut: scrollWidth <= clientWidth); at 1280 the layout of before — the kind beside the name', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0521, the relay (19 Nov): « la sorte sur sa propre rangée au téléphone — la règle de la page, pour TOUTES les sortes » ; EDITOR.md § 7 undesexagies')
+def n185(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, _REFILL_MISSION)
+        ed_reveal(c)
+        ed_places(c)
+        for oid in ('OBJ-1', 'OBJ-2'):  # the vehicle and the station: the rule is the page's, for every kind
+            i = c.js(f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].find(x => x.querySelector('b')?.textContent.startsWith('{oid}'))?.dataset.place")
+            c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+            c.until(f"!!document.querySelector('{E} [data-plform=\"{i}\"]')", what=f'the sheet of {oid}')
+            m = c.js(_OKIND_JS, i)
+            if width == 390:
+                c.ok(m['sel'] >= m['form'] - 1 and not m['cut'] and not m['same'], m, f'{width}: {oid}: the kind on its own row, the full width of the sheet, not cut')
+            else:
+                c.ok(m['same'] and m['sel'] < m['form'] - 40 and not m['cut'], m, f'{width}: {oid}: the layout of before, the kind beside the name')
+            if oid == 'OBJ-2':
+                c.js(f"document.querySelector('{E} [data-plform=\"{i}\"]').scrollIntoView({{block: 'center'}})")
+                c.shot(f'P16a_{width}_refuel_station.png')
+            c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+

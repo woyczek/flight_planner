@@ -638,6 +638,11 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
 [data-module="missions"] .ms-attodo{margin:8px 0 0;max-height:40dvh;overflow:auto}
 [data-module="missions"] .ms-attodo[hidden]{display:none}
+/* SOG-0521 (règle de la page) : au téléphone, la sorte d'un objet est sur sa propre rangée, pleine largeur, quelle que soit la sorte
+   (« Station de retardant » n'est plus coupée) ; sur un module large, la rangée d'avant */
+@container (max-width: 849.98px){
+  [data-module="missions"] .ms-atbody .f-row>.f-field.ms-plkind{flex:1 1 100%} /* plus précis que « .ms-atbody .f-row>.f-field » */
+}
 @container (min-width: 850px){
   [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
   [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:block}
@@ -1043,7 +1048,7 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
           // le fichier en porte reste tel quel (rien n'est réécrit tant qu'on n'y touche pas)
           station = r.okind === 'refill';
         return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
-        <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
+        <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field ms-plkind"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
         ${station ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
