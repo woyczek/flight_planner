@@ -1099,7 +1099,8 @@
   }
 
   // ===== Espaces d'un profil d'affichage (mêmes règles que les cartes du studio) =====
-  const zNorm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // le nom d'un espace réduit à A-Z et 0-9 = foldAlnum du cadre (frame/lib/text.js, par window.SogFrame.text : un script classique n'importe rien) ; sans lui (chargement raté) : le texte vide, qui ne correspond à rien
+  const zNorm = v => window.SogFrame?.text?.foldAlnum(v) ?? '';
   /** Nom d'espace réduit à son cœur (sans type ni numéro), pour les correspondances de profil. */
   const zCore = name => {
     const n = String(name || '').trim(),

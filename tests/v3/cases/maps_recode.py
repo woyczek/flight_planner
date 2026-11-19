@@ -9794,6 +9794,20 @@ def d285(c):
     c.eq((r['up'], r['low'], r['none']), ('EVREUX-FAUVILLE OA', '  cognac chateaubernard ', ''), 'stripMarks then the case, blanks kept: what find.js (capitals) and ground.js (lower case) gave', what='fold')
 
 
+@case('D286', 'The classic scripts of the Map read the folding of the frame (window.SogFrame.text, SOG-0468 (2)): mission.js keyNorm and lib/vertical_profile.js zNorm keep no NFD of their own', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0468 (2): after frame/lib/text.js (86ad26e96) and window.SogFrame.text (8e25c1300, ready before the first screen), the two last copies of the accent folding in the Map are expressions of the frame: zNorm = foldAlnum, keyNorm = wordsOf with its spaces turned into underscores (exact: the only spaces are the ones wordsOf writes); without the frame text (null: the load failed) both give the empty text, a key that matches nothing, never a throw; the four benches that load these scripts outside the frame give them the text')
+def d286(c):
+    for f in ('modules/maps/mission.js', 'modules/maps/lib/vertical_profile.js'):
+        src = (ROOT / f).read_text(encoding='utf-8')
+        c.eq(('normalize(' in src, 'SogFrame' in src), (False, True), f + ': no NFD of its own, the folding of the frame', what=f)
+    c.open('maps')
+    r = c.js("""async () => { await import('/modules/maps/mission.js'); await import('/modules/maps/lib/vertical_profile.js'); const K = window.MapsMission.keyNorm, Z = window.SiaProfile.zones.norm,
+      a = { key: K('Évreux Nord-1 / Ôle'), norm: Z('Évreux-Nord 1 ôÂ'), nul: [K(null), Z(undefined)] };
+      const sf = window.SogFrame; window.SogFrame = { text: null }; const b = { key: K('Évreux'), norm: Z('Évreux') }; window.SogFrame = sf; return { a, b } }""")
+    c.eq((r['a']['key'], r['a']['norm'], r['a']['nul'], r['b']['key'], r['b']['norm']), ('evreux_nord_1_ole', 'EVREUXNORD1OA', ['', ''], '', ''), 'keyNorm and zNorm give what the copies gave; without the frame text: the empty text, no throw', what='fold')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

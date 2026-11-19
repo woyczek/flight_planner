@@ -15,6 +15,11 @@ canvas {
 }
 </style>
 </head><body><canvas id="cv"></canvas>
+<!-- le texte du cadre (SOG-0468 (2)) : mission.js et lib/vertical_profile.js, scripts classiques, le lisent de window.SogFrame.text, que le cadre pose avant le premier écran ; ici, hors du cadre, le banc le pose. -->
+<script type="module">
+import * as T from '../../../../frame/lib/text.js?v=0';
+window.SogFrame = { text: Object.freeze({ ...T }) };
+</script>
 <script type="module">
 import {
   loadProfile,

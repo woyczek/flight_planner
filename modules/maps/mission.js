@@ -9,8 +9,9 @@
   //   OUT_RATIO }.
   if (window.MapsMission) return;
   const OUT_RATIO = 1.6; // largeur / hauteur des cartes du studio (1600 × 1000)
-  const keyNorm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(
-    /^_|_$/g, '');
+  // la clé d'une référence : sans accents, en minuscules, les autres signes en un tiret bas, sans tiret bas de bord = wordsOf du cadre (frame/lib/text.js, par window.SogFrame.text : un script classique
+  // n'importe rien) dont les espaces — les seules que wordsOf écrit — deviennent des tirets bas ; sans le texte du cadre (chargement raté) : la clé vide, qui ne correspond à rien
+  const keyNorm = s => window.SogFrame?.text?.wordsOf(s).replace(/ /g, '_') ?? '';
   const num = v => {
     if (typeof v === 'number') return v;
     const m = String(v ?? '').replace(/\s/g, '').replace(',', '.').match(/[-+]?\d+(?:\.\d+)?/);

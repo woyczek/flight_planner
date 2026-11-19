@@ -33,6 +33,11 @@
 <canvas id="a"></canvas>
 <canvas id="b"></canvas>
 <pre id="out"></pre>
+<!-- le texte du cadre (SOG-0468 (2)) : mission.js et lib/vertical_profile.js, scripts classiques, le lisent de window.SogFrame.text, que le cadre pose avant le premier écran ; ici, hors du cadre, le banc le pose. -->
+<script type="module">
+import * as T from '../../../frame/lib/text.js?v=0';
+window.SogFrame = { text: Object.freeze({ ...T }) };
+</script>
 <script src="../lib/aero_symbols.js?v=0"></script>
 <script src="../lib/vertical_profile.js?v=0"></script>
 <script src="../render.js?v=0"></script>
@@ -40,7 +45,7 @@
 <script src="../render_route.js?v=0"></script>
 <script src="../profile.js?v=0"></script>
 <script src="../contours.js?v=0"></script>
-<script>
+<script type="module">
   (async () => {
     const rows = [],
       out = document.getElementById('out'),
