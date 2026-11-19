@@ -5186,6 +5186,21 @@
  ],
  "decisions": [
   {
+   "id": "Q-0117",
+   "fiche": "SOG-0507",
+   "app": "compagnie",
+   "question": "Le palier d'un posé de précision (partiel, réussi, parfait, excellent) sert-il ailleurs que dans la ligne du tiroir ?",
+   "context": "Affectation écrit le palier et la distance dans le constat du vol, et la ligne du tiroir le dit : « ouvert à votre atterrissage — réussi (0,15 NM), à 19:20Z ». Rien d'autre ne le lit aujourd'hui (ni compte rendu, ni score).",
+   "options": [
+    "Non : la ligne du tiroir et le constat suffisent",
+    "Oui : aussi dans le compte rendu de mission",
+    "Oui : aussi dans un score ou un classement des pilotes"
+   ],
+   "since": "2026-11-19",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

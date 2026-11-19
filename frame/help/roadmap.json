@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "af81072",
-  "fiches": 504,
+  "organisation": "81f24c0",
+  "fiches": 512,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -961,6 +961,15 @@
      "de": "Kraftstoff mit Karte daneben: eine Leiste zum Einstellen der Breite der beiden Bereiche",
      "es": "Combustible con el mapa al lado: una barra para ajustar el ancho de los dos paneles",
      "rank": 388
+    },
+    {
+     "id": "SOG-0512",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : régression du zoom de la carte",
+     "en": "Fuel: map zoom regression",
+     "de": "Kraftstoff: Rückschritt beim Kartenzoom",
+     "es": "Combustible: regresión del zoom del mapa"
     }
    ]
   },
@@ -3134,6 +3143,15 @@
      "de": "Routen: Scheitert der Versuch „über X“, gibt der Rechner auf, ohne „X gemieden“ zu probieren, und die Prüfung meldet fälschlich „X gemieden … +0 NM“",
      "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»",
      "test": true
+    },
+    {
+     "id": "SOG-0513",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Routes : IFPS du jour, EGLL → LFRN (BE9L, F270) — 8 erreurs : voies basses au FL270, RAD EGLF1034D/E et LF3564A via NEVIL, limite de SID EGLL, DCT en FRA du Royaume-Uni",
+     "en": "Routes: today's IFPS, EGLL → LFRN (BE9L, F270) — 8 errors: low airways at FL270, RAD via NEVIL, EGLL SID limit, DCT in UK FRA",
+     "de": "Routen: IFPS von heute, EGLL → LFRN (BE9L, F270) — 8 Fehler: untere Luftstraßen auf FL270, RAD über NEVIL, SID-Grenze EGLL, DCT im FRA des Vereinigten Königreichs",
+     "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido"
     }
    ]
   },
@@ -4073,6 +4091,15 @@
      "de": "„Schubladen“-Missionen: ein nächster Teil wird durch das Durchfliegen einer Zone freigegeben, dazu ein in X-Plane zu findendes Objekt — zuerst die Spezifikation",
      "es": "Misiones «de cajones»: una parte siguiente revelada al pasar por una zona, y un objeto que encontrar en X-Plane — primero la especificación",
      "rank": 435
+    },
+    {
+     "id": "SOG-0508",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « ＋ Tiroir » ouvre une fenêtre de choix des briques, et un toucher crée le tiroir — comme la maquette de l'utilisateur",
+     "en": "Mission workshop: “＋ Drawer” opens a brick picker window, and one tap creates the drawer — as in the user's mock-up",
+     "de": "Missionswerkstatt: „＋ Schublade“ öffnet ein Fenster zur Wahl der Bausteine, ein Tippen legt die Schublade an — wie im Entwurf des Nutzers",
+     "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario"
     }
    ]
   },
@@ -4404,6 +4431,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-carte-aerodb",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; carte ; AeroDB",
+    "en": "Missions ; carte ; AeroDB",
+    "de": "Missions ; carte ; AeroDB",
+    "es": "Missions ; carte ; AeroDB"
+   },
+   "items": [
+    {
+     "id": "SOG-0506",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
+     "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
+     "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
+     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-carte-relief",
    "app": "compagnie",
    "label": {
@@ -4688,6 +4736,27 @@
      "es": "Misiones en el teléfono: « Sortear » saca una misión cuyo archivo no se encuentra — proponer solo las jugables",
      "rank": 344,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-vol",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; vol",
+    "en": "Missions ; vol",
+    "de": "Missions ; vol",
+    "es": "Missions ; vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0507",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : tolérances de jugement en vol — point nommé en transit à 2 NM, posé de précision par paliers, posé sur un terrain à 1 NM",
+     "en": "Missions: in-flight judging tolerances — named transit point within 2 NM, precision landing by grades, landing on an aerodrome within 1 NM",
+     "de": "Missionen: Toleranzen der Bewertung im Flug — benannter Transitpunkt auf 2 NM, Präzisionslandung in Stufen, Landung auf einem Flugplatz auf 1 NM",
+     "es": "Misiones: tolerancias del juicio en vuelo — punto con nombre en tránsito a 2 NM, aterrizaje de precisión por niveles, aterrizaje en aeródromo a 1 NM"
     }
    ]
   },
@@ -6637,6 +6706,45 @@
      "de": "Daten: „Alles ist aktuell“ und „Zyklus abgelaufen: herunterladen… dann neu erstellen“ erscheinen zusammen; der Rat ist falsch, wenn nur die Veröffentlichung fehlt",
      "es": "Datos: «Todo está al día» y «Ciclo vencido: descargue… y reconstruya» aparecen juntos; el consejo es erróneo cuando solo falta publicar la base",
      "test": true
+    },
+    {
+     "id": "SOG-0509",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données, la fiche d'un pays : « Mettre à jour » est blanc et tout en bas, alors que « Prendre le fichier téléchargé » est bleu et en vue — la seule action utile est « Mettre à jour »",
+     "en": "Data, a country's sheet: “Update” is white and at the very bottom while “Take the downloaded file” is blue and in view — “Update” is the only useful action",
+     "de": "Daten, Blatt eines Landes: „Aktualisieren“ ist weiß und ganz unten, „Heruntergeladene Datei nehmen“ blau und sichtbar — nur „Aktualisieren“ ist nötig",
+     "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»"
+    },
+    {
+     "id": "SOG-0511",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : chaque jour, pendant le premier rafraîchissement, des pays « incolores » font croire qu'il y a quelque chose à faire",
+     "en": "Data: every day, during the first refresh, “colourless” countries suggest there is work to do",
+     "de": "Daten: Jeden Tag lassen „farblose“ Länder während der ersten Aktualisierung glauben, es gäbe etwas zu tun",
+     "es": "Datos: cada día, durante el primer refresco, países «sin color» hacen creer que hay algo que hacer"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-aerodb",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; AeroDB",
+    "en": "Données ; AeroDB",
+    "de": "Données ; AeroDB",
+    "es": "Données ; AeroDB"
+   },
+   "items": [
+    {
+     "id": "SOG-0510",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Données : après une mise à jour, la France et le Royaume-Uni disent toujours « parseur ancien »",
+     "en": "Data: after an update, France and the United Kingdom still say “old parser”",
+     "de": "Daten: Nach einer Aktualisierung zeigen Frankreich und das Vereinigte Königreich weiter „alter Parser“",
+     "es": "Datos: tras una actualización, Francia y el Reino Unido siguen diciendo «analizador antiguo»"
     }
    ]
   },
@@ -9196,8 +9304,14 @@
   "SIG-9cdb5bd567": {
    "fiche": "SOG-0372"
   },
+  "SIG-b576067218": {
+   "fiche": "SOG-0510"
+  },
   "SIG-c3d5390007": {
    "fiche": "SOG-0462"
+  },
+  "SIG-c89712c514": {
+   "fiche": "SOG-0509"
   },
   "SIG-f53a8897b8": {
    "fiche": "SOG-0388"
