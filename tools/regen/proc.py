@@ -305,6 +305,16 @@ def _none_read_fields(formats, stats):
     return {'code': 'none-read', 'counts': {'docs': docs, 'read': int(stats.get('read', 0)), 'pages': int(stats.get('pages', 0))}, 'reasons': [[str(k), int(n)] for k, n in stats.get('reasons', [])[:3]]}
 
 
+def _all_refused_fields(formats, stats, refused_codes):
+    """SOG-0374 (c) : l'échec « tout refusé » (chaque procédure lue refusée par le contrôle par procédure, proc_manual.screen) en codes, frère de _none_read_fields :
+    { code: 'all-refused', counts: { docs, read, pages, refused }, reasons: [[code, n], …] } — des ENTIERS (documents distincts, pages lues, pages vues, procédures refusées) et des CODES
+    (proc_manual.screen_codes : « geometry », « no-legs »), au plus trois, le plus fréquent d'abord ; jamais une phrase. `refused_codes` : { code: nombre } cumulé sur les documents."""
+    docs = len({f.get('file') for f in formats if f.get('file')})
+    top = sorted(((str(k), int(n)) for k, n in refused_codes.items() if int(n) > 0), key=lambda kv: (-kv[1], kv[0]))[:3]
+    return {'code': 'all-refused', 'counts': {'docs': docs, 'read': int(stats.get('read', 0)), 'pages': int(stats.get('pages', 0)), 'refused': sum(int(n) for n in refused_codes.values())},
+            'reasons': [[k, n] for k, n in top]}
+
+
 def fetch(name):
     """Le travail de la source `name` (une clé de SOURCES) : fn(job, args, ctx)."""
     src = SOURCES[name]
@@ -352,12 +362,14 @@ def fetch(name):
                 res.update(_none_read_fields(formats, stats))      # SOG-0433 : le même échec en CODES et en nombres (l'écran l'écrit dans la langue de l'utilisateur ; `message` reste la phrase anglaise de repli)
                 return {**res, 'runwaysKept': True} if kept else res
             if src['screen']:
-                refused = []
+                refused, refused_codes = [], {}
                 for k, d in enumerate(todo):               # ce que fait proc_manual.main() avant d'installer : le fichier, puis chaque procédure (une lecture à la main qui échoue est refusée seule)
                     problems = proc_manual.file_problems(d)
                     if problems:
                         job.log(env.clean(_summary(stats)))
                         return env.failed('interpretation file refused: ' + '; '.join(problems[:3]), warnings, stats)
+                    for code, n in proc_manual.screen_codes(d).items():      # SOG-0374 (c) : les refus comptés par code, pour l'échec « tout refusé »
+                        refused_codes[code] = refused_codes.get(code, 0) + n
                     todo[k], bad = proc_manual.screen(d)
                     refused += bad
                 warnings += [f'REFUSÉE: {x}' for x in refused]
@@ -365,7 +377,9 @@ def fetch(name):
                 stats = count(0)
                 if not todo:                               # plus aucune procédure : le fichier n'est refusé que s'il n'en reste aucune
                     job.log(env.clean(_summary(stats)))
-                    return env.failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
+                    res = env.failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
+                    res.update(_all_refused_fields(formats, stats, refused_codes))      # SOG-0374 (c) : le même échec en CODES et en entiers (l'écran l'écrit dans la langue de l'utilisateur ; `message` reste la phrase anglaise de repli)
+                    return res
             wrong = [d for d in todo if d.get('icao') != icao or any(p.get('icao') != icao for p in d['procedures'])]
             if wrong:                                      # le fichier écrit doit être celui que commit_outputs valide (proc/manual/<OACI>.json) : celui du terrain demandé, et d'aucun autre
                 job.log(env.clean(_summary(stats)))

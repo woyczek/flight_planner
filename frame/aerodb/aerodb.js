@@ -51,24 +51,29 @@
   };
   const FRAME_GAP = 10; // degrés : deux anneaux d'une zone plus proches que cela sont du même groupe (côtes, îles d'un archipel)
   const mod360 = x => (x % 360 + 360) % 360;
-  // SOG-0433 : l'échec « rien de lu » du lanceur (tools/regen/proc.py) rendu en code et en entiers, BORNÉS ici (le résultat du lanceur est une entrée non fiable) : `code` seulement s'il vaut exactement 'none-read' ;
+  // SOG-0433 : l'échec « rien de lu » du lanceur (tools/regen/proc.py) rendu en code et en entiers, BORNÉS ici (le résultat du lanceur est une entrée non fiable) : `code` seulement s'il vaut exactement 'none-read' (ou 'all-refused', ci-dessous) ;
   // `counts` { docs, read, pages } : trois entiers de 0 à 9999 ; `reasons` : au plus trois paires [code, n], le code dans la liste fermée de proc_geometry et n un entier de 1 à 9999 ; le reste est jeté
+  // SOG-0374 (c) : l'échec « tout refusé » (code 'all-refused', chaque procédure lue refusée par le contrôle) passe de même, le code reçu gardé et `counts.refused` (même borne) en plus
   const NONE_READ_CODES = new Set(['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'unread', 'name', 'repeat',
     'zigzag', 'unresolved', 'rf-arc', 'geometry', 'uncheckable', 'no-table', 'other'
   ]);
   const smallInt = (v, lo) => Number.isInteger(v) && v >= lo && v <= 9999 ? v : null;
   const noneRead = res => {
-    if (res?.code !== 'none-read') return {};
+    if (res?.code !== 'none-read' && res?.code !== 'all-refused') return {};
+    const all = res.code === 'all-refused';
     const c = res.counts && typeof res.counts === 'object' ? res.counts : {},
       counts = {
         docs: smallInt(c.docs, 0),
         read: smallInt(c.read, 0),
-        pages: smallInt(c.pages, 0)
+        pages: smallInt(c.pages, 0),
+        ...(all ? {
+          refused: smallInt(c.refused, 0)
+        } : {})
       },
       reasons = (Array.isArray(res.reasons) ? res.reasons : []).filter(x => Array.isArray(x) && NONE_READ_CODES.has(x[0]) && smallInt(x[
         1], 1) !== null).slice(0, 3).map(x => [x[0], x[1]]);
     return {
-      code: 'none-read',
+      code: res.code,
       ...(Object.values(counts).every(v => v !== null) ? {
         counts
       } : {}),

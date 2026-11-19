@@ -10996,6 +10996,83 @@ def k380(c):
 
 
 
+@case('K381', 'Procedures, SOG-0374 (c): a reading whose EVERY record is refused by the per-record check fails in CODES and INTEGERS, like « nothing read » — proc_manual.screen_codes counts the refusals by code (`no-legs`: status, kind or no points; `geometry`: legs whose printed track and distance contradict their positions; a kept record is not counted), screen keeps its return value, and the launcher answers `code: all-refused`, `counts { docs, read, pages, refused }`, `reasons` (at most three, most frequent first) beside the unchanged English message', 'K', static=True,
+      rule='SOG-0374 (c), granted by the relay (the user\'s EGLL test, 19 Nov 2026: « La lecture de EGLL a échoué »): the launcher said only `geometry check failed: …` in English; the same failure is now given in codes (proc_geometry PAGE_CODES « no-legs », CODES « geometry ») and integers, as `_none_read_fields` does (K336). Invented records only.')
+def k381(c):
+    import json
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJ = _regen()
+    import proc_geometry as G
+    import proc_manual as M
+    pos = [('ZKA01', 51.00, -1.00), ('ZKA02', 51.10, -0.50), ('ZKA03', 51.20, -0.10)]          # points fictifs
+
+    def pts(shift=0.0):
+        """Trois points d'une procédure inventée ; `shift` ajoute des NM à la distance imprimée du dernier tronçon (géométrie incohérente)."""
+        out = []
+        for i, (n, la, lo) in enumerate(pos):
+            p = {'seq': i + 1, 'id': n, 'lat': la, 'lon': lo, 'alt': None, 'leg': 'IF' if i == 0 else 'TF'}
+            if i:
+                brg, nm = G.bearing_nm((pos[i - 1][1], pos[i - 1][2]), (la, lo))
+                p['trk'], p['nm'] = round(brg, 1), round(nm, 1) + (shift if i == 2 else 0.0)
+            out.append(p)
+        return out
+
+    def rec(name, points):
+        """Une procédure inventée de l'aérodrome EGXX."""
+        return {'id': f'EGXX.STAR.{name}.RWALL', 'icao': 'EGXX', 'kind': 'STAR', 'name': name, 'runways': [], 'transition': None, 'points': points, 'source': {'kind': 'ukpkg'}, 'status': 'check'}
+    refused = [rec('ZKA1A', []), rec('ZKA1B', pts(2.0)), rec('ZKA1C', pts(3.0))]
+    doc = {'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-29', 'procedures': refused + [rec('ZKA1D', pts())]}
+    kept, problems = M.screen(doc)
+    c.eq(([p['name'] for p in kept['procedures']], len(problems) >= 3), (['ZKA1D'], True), 'screen keeps its return value: (the file without the refused records, the reasons in sentences)', what='screen')
+    c.eq(M.screen_codes(doc), {'no-legs': 1, 'geometry': 2}, 'screen_codes: one record without points (no-legs), two with contradicted legs (geometry), the good one not counted (red before: no screen_codes)', what='screen_codes')
+    fn = RJ.REGISTRY[('proc', 'ukpkg-fetch')][0]
+    mod = fn.__globals__                                     # l'espace de noms de tools/regen/proc.py chargé par load_verbs
+    f = mod['_all_refused_fields']([{'file': 'a.pdf'}, {'file': 'a.pdf'}, {'file': 'b.pdf'}, {}], {'read': 3, 'pages': 5}, {'no-legs': 1, 'geometry': 7, 'other': 2, 'zigzag': 1})
+    c.eq(f, {'code': 'all-refused', 'counts': {'docs': 2, 'read': 3, 'pages': 5, 'refused': 11}, 'reasons': [['geometry', 7], ['other', 2], ['no-legs', 1]]},
+         '_all_refused_fields: distinct documents, integers, at most three reasons, the most frequent first (ties by code)', what='fields')
+    c.ok(all(type(v) is int for v in f['counts'].values()) and all(type(n) is int for _, n in f['reasons']), str(f), 'counts and reasons are integers')
+    # le travail du lanceur, lecture remplacée par un document dont chaque procédure est refusée
+    src = mod['SOURCES']['ukpkg']
+    saved = src['read']
+    formats = [{'file': 'ukpkg_EGXX_6-2.pdf', 'ok': True, 'procedures': 2}, {'file': 'ukpkg_EGXX_6-4.pdf', 'ok': True, 'procedures': 1}]
+    src['read'] = lambda env: {'docs': [{**doc, 'procedures': json.loads(json.dumps(refused))}], 'formats': formats, 'warnings': [], 'dropped': [], 'extra': {}}
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            r = fn(RJ.Job('proc', 'ukpkg-fetch', {'icao': 'EGXX'}, author='TST'), {'icao': 'EGXX'}, {'data': td, 'secrets': td})
+    finally:
+        src['read'] = saved
+    c.eq((r['ok'], r['reason'], r.get('code'), r.get('counts'), r.get('reasons'), r['message'].startswith('geometry check failed')),
+         (False, 'failed', 'all-refused', {'docs': 2, 'read': 2, 'pages': 2, 'refused': 3}, [['geometry', 2], ['no-legs', 1]], True),
+         'the launcher: every record refused → `code` all-refused, counts { docs, read, pages, refused }, reasons in codes, the English message unchanged (red before: no code)', what='launcher')
+
+
+@case('K382', 'aerodb.fetchProcedures: the failure « every record refused » of the launcher (SOG-0374 (c)) reaches the screen in CODES and INTEGERS with the bounds of « nothing read » — `code` all-refused kept, `counts` { docs, read, pages, refused } (one bad integer drops them all), `reasons` in the closed list; « none-read » unchanged (no `refused`), any other code nothing', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0374 (c), AeroDB\'s conditions (19 Nov 2026): noneRead accepts « all-refused » with the same bounds (smallInt 0…9999 for docs, read, pages AND refused; reasons filtered by NONE_READ_CODES, n from 1 to 9999, at most three), keeps the code it received and gives `counts.refused` only for « all-refused »; the launcher answer is an untrusted input.')
+def k382(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const mk = answer => AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false, launcher: { info: () => ({ data: true, lan: false }), request: async () => null, job: async () => ({ status: 200, result: answer }) }, now: () => Date.parse('2026-11-19T12:00:00Z') });
+      const ask = async answer => mk(Object.assign({ ok: false, reason: 'failed', message: 'geometry check failed: EGXX.SID.ZKA1A.RW27: x' }, answer)).fetchProcedures('EGXX', { ground: false });
+      const out = {};
+      out.good = await ask({ code: 'all-refused', counts: { docs: 6, read: 6, pages: 15, refused: 24 }, reasons: [['geometry', 20], ['no-legs', 4]] });
+      out.badCounts = await ask({ code: 'all-refused', counts: { docs: 6, read: 6, pages: 15, refused: 99999 }, reasons: [['geometry', 20]] });
+      out.badReason = await ask({ code: 'all-refused', counts: { docs: 1, read: 1, pages: 1, refused: 2 }, reasons: [['<script>', 2], ['geometry', 2]] });
+      out.none = await ask({ code: 'none-read', counts: { docs: 9, read: 0, pages: 9, refused: 3 }, reasons: [['layout', 9]] });
+      out.other = await ask({ code: 'all-rejected', counts: { docs: 1, read: 1, pages: 1, refused: 1 }, reasons: [['geometry', 1]] });
+      return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { ok: v.ok, reason: v.reason, message: v.message, code: v.code, counts: v.counts, reasons: v.reasons }]));
+    }""")
+    g = r['good']
+    c.eq((g['ok'], g['reason'], g['code'], g['counts'], g['reasons'], g['message'].startswith('geometry check failed')),
+         (False, 'failed', 'all-refused', {'docs': 6, 'read': 6, 'pages': 15, 'refused': 24}, [['geometry', 20], ['no-legs', 4]], True),
+         'the failure carries `code` all-refused, `counts` with `refused` and `reasons` beside the English message (red before: none of them)', what='good')
+    c.eq((r['badCounts']['code'], r['badCounts']['counts'], r['badCounts']['reasons']), ('all-refused', None, [['geometry', 20]]), 'refused 99999: the counts are dropped as a whole, the rest kept', what='bounds')
+    c.eq(r['badReason']['reasons'], [['geometry', 2]], 'a reason outside the closed list is thrown away', what='reasons')
+    c.eq((r['none']['code'], r['none']['counts'], r['none']['reasons']), ('none-read', {'docs': 9, 'read': 0, 'pages': 9}, [['layout', 9]]), '« none-read » unchanged: no `refused` in its counts', what='none-read')
+    c.eq((r['other']['code'], r['other']['counts'], r['other']['reasons']), (None, None, None), 'another code: nothing of the three', what='other')
+
+
 @case('K362', 'UK SID charts of the conventional and RNAV1 form (SOG-0499, EGGW): the SID blocks of a chart are read by their PATTERN — identifier at a line head (a name cut over two lines re-joined), runway at the head of the next line, exit point at the end of the sentence, level at the exit, position from the WAYPOINTS section (decimal seconds) or the labels of the drawing, else none — the same partial record as the EGLL SIDs; noise lines, doubled print, an interlaced restriction and an amendment line are not read; the 6-1 context chart gives nothing; the EGLL template still reads', 'K', static=True,
       rule='SOG-0499, relay decision 18 Nov 2026 (the user on EGGW: « 0 of 9 pages read »): same contract as the EGLL SIDs (SOG-0374) — partial record, status `check`, path NOT read, nothing invented; a position the chart does not give is left without lat/lon (aerodb resolves the name in its base or marks a doubt); reading by PATTERNS only, never by the absolute position of a line, with guards (bounded text, line-anchored regexes, names, runways and levels validated). Invented pages only.')
 def k362(c):

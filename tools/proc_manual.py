@@ -33,21 +33,38 @@ def file_problems(doc):
     return problems
 
 
+def _screen(doc):
+    """Le contrôle PAR PROCÉDURE, fait une seule fois pour screen et screen_codes : (procédures gardées, motifs de refus en phrases, refus comptés par CODE). Code « no-legs »
+    (proc_geometry.PAGE_CODES) pour une procédure refusée pour son statut, son type ou faute de points ; « geometry » (proc_geometry.CODES) pour une procédure refusée par les écarts
+    de check_legs — une procédure compte UNE fois, quel que soit le nombre de ses écarts."""
+    kept, problems, codes = [], [], {}
+    for p in doc.get('procedures', []):
+        if p.get('status') not in ('check', 'doubt') or p.get('kind') not in ('SID', 'STAR', 'APP') or not p.get('points'):
+            problems.append(f'{p.get("id")}: statut « check » (ou « doubt »), type SID / STAR / APP et des points requis')
+            codes['no-legs'] = codes.get('no-legs', 0) + 1
+            continue
+        bad = proc_geometry.check_legs(proc_geometry.legs_of(p['points']))['gaps'] if p.get('status') == 'check' else []
+        problems += [f'{p["id"]}: {b}' for b in bad]
+        if bad:
+            codes['geometry'] = codes.get('geometry', 0) + 1
+        else:
+            kept.append(p)
+    return kept, problems, codes
+
+
 def screen(doc):
     """Contrôle PAR PROCÉDURE d'un fichier d'interprétation : (le fichier sans les procédures refusées, les motifs de refus, une ligne par motif). Une lecture à la main qui échoue n'est
     pas installée, mais elle ne refuse que sa propre procédure, jamais le fichier. Refusée : statut autre que « check » (ou « doubt »), type autre que SID / STAR / APP, pas de point, ou
     géométrie incohérente (proc_geometry : cap vrai `trk` et distance `nm` imprimés contre les positions, à la tolérance de ce que la ligne imprime). Une procédure déjà au statut « doubt »
     (le lecteur l'a marquée) n'est pas recontrôlée : elle est gardée comme douteuse, jamais refusée."""
-    kept, problems = [], []
-    for p in doc.get('procedures', []):
-        if p.get('status') not in ('check', 'doubt') or p.get('kind') not in ('SID', 'STAR', 'APP') or not p.get('points'):
-            problems.append(f'{p.get("id")}: statut « check » (ou « doubt »), type SID / STAR / APP et des points requis')
-            continue
-        bad = proc_geometry.check_legs(proc_geometry.legs_of(p['points']))['gaps'] if p.get('status') == 'check' else []
-        problems += [f'{p["id"]}: {b}' for b in bad]
-        if not bad:
-            kept.append(p)
+    kept, problems, _ = _screen(doc)
     return {**doc, 'procedures': kept}, problems
+
+
+def screen_codes(doc):
+    """SOG-0374 (c) : les refus de screen COMPTÉS PAR CODE, { 'geometry': n, 'no-legs': m } (seuls les codes présents ; une procédure gardée n'est pas comptée). Le lanceur en fait
+    l'échec « tout refusé » en codes et en entiers (tools/regen/proc.py, _all_refused_fields), comme « rien de lu »."""
+    return _screen(doc)[2]
 
 
 def verify(doc):
