@@ -18444,3 +18444,23 @@ def k402(c):
     c.ok(net['interrupted'] and net['primary']['status'] == 'CALCUL INTERROMPU' and net['alternatives'] == [], str(net['primary']), 'an interruption that no phase of `plan` catches is still an ANSWER (« CALCUL INTERROMPU »), not an exception that leaves the launcher')
     view = V.to_view(dead_res, V.to_request(dict(args)))
     c.ok(dead[0] == 'CALCUL INTERROMPU' and dead[4] and str(dead_res['primary'].get('error')).startswith('Calcul interrompu : le poste est trop lent') and view['status'] == 'interrupted' and not view['alternatives'], str((dead[0], view['status'])), 'a clock that passes the safety before any route: « CALCUL INTERROMPU » and `status: interrupted` for the screen (not « none », not « impossible »: a route may exist), no proposal, no alternative')
+
+
+@case('K403', 'Route engine, SOG-0524 (the anomaly of KJFK → EGLL, examined): the vertical profile is exact — the altitude predicted at a point of the arrival is the field elevation + the descent rate × the time to go, and the time to go is the distance over the GROUND SPEED OF THE LEGS (`planned_speed_kt`, the terminal speed on a STAR) — so a HIGHER terminal speed gives a LOWER altitude at a point (a flatter path at a fixed rate), which is why an arrival with a minimum altitude (HON2H: 7 000 ft at BNN, 15.5 NM from the field) is refused at 300 kt and accepted at 250 kt',
+      'K', static=True,
+      rule='The relay (19 Nov): « une vitesse terminale plus haute prédit une altitude PLUS BASSE à BNN, dans flight_profile.build : probablement un défaut du profil ; cas rouge avant si c\'en est un ». Examined by AeroDB with legs of the profile alone: the altitude at the start of the last leg equals 80 + rate × (distance / terminal speed) × 60 to the foot, for every terminal speed and every rate tried: it is the arithmetic of a descent at a FIXED rate that ends at the field at the end of the route (altitude at a distance d = d × rate / ground speed: the faster, the flatter, the lower). It is NOT a defect, so there is no red case: this case LOCKS the rule and states what follows from it. In the KJFK → EGLL matrix the request carried `terminal_speed_kt` (the default of the engine is 220 kt on the legs of a STAR): at 250 kt the altitude at BNN is 7 520 ft (accepted), at 300 kt 6 280 ft (refused: below the 7 000 ft minimum), and the engine takes LAM1X (+55 NM). What is NOT settled, said to the relay: the model asks the aircraft to be at the field elevation at the END of the last leg of the route and to descend at the MEAN rate of the screen (`descent_fpm` = level / duration of the descent) all the way: an arrival whose minimum altitude needs a steeper last stretch than the mean rate (450 ft/NM here: 2 000 fpm at 267 kt at most) is refused, while a real aircraft descends faster in the terminal area and a real approach goes on beyond the aerodrome reference point (the vectors). Whether the terminal descent may exceed the mean rate is a decision of the ergonomics, not a fix of `build`.')
+def k403(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import flight_profile as FP
+
+    def leg(a, b, nm, kind='AIRWAY', speed=None):
+        return dict(start={'id': a, 'lat': 0, 'lon': 0}, end={'id': b, 'lat': 0, 'lon': 0}, via='UL1' if kind == 'AIRWAY' else 'STAR1', kind=kind, nm=nm, lower=0, upper=66000, planned_speed_kt=speed)
+
+    def at_bnn(terminal, rate):
+        p = FP.build([leg('A', 'BNN', 400.0), leg('BNN', 'FLD', 15.5, kind='STAR', speed=terminal)], 80, 80, 350, speed_kt=450, climb_fps=2000 / 60, descent_fps=rate / 60)
+        return round([x for x in p['points'] if abs(x['distance_nm'] - 400.0) < 0.01][0]['altitude_ft'])
+    got = {(t, r): at_bnn(t, r) for t, r in ((250, 2000), (300, 2000), (250, 1800), (200, 2000), (None, 2000))}
+    want = {k: round(80 + k[1] * (15.5 / (k[0] or 450)) * 60) for k in got}
+    c.eq(got, want, 'the altitude at the start of the last leg is the field elevation + the rate x the distance / the ground speed of the leg, to the foot (250 kt 7 520 ft, 300 kt 6 280 ft at 2 000 fpm; 250 kt at 1 800 fpm 6 776 ft)', what='formula')
+    c.ok(got[(200, 2000)] > got[(250, 2000)] > got[(300, 2000)] and got[(250, 2000)] > got[(250, 1800)], str(got), 'a HIGHER terminal speed gives a LOWER altitude at the same point (a flatter path at a fixed rate), a lower descent rate too: the minimum altitude of an arrival (7 000 ft at BNN) is met at 250 kt / 2 000 fpm (7 520 ft) and not at 300 kt (6 280 ft), nor at 250 kt / 1 800 fpm (6 776 ft)')
