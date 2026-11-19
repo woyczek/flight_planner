@@ -19,7 +19,7 @@
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
   //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), natState(), natEnsure({ force }), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedure(id), runways(oaci), procedureStats(), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
-  //   find(texte, n), coords(ident),
+  //   find(texte, n), coords(ident), pelicandromes({ country, near, limit }) (SOG-0521 : data/pelicandromes/<pays>.json, nettoyé et gelé),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
   //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
@@ -429,6 +429,101 @@
     }
   };
   const sizeOf = r => (r?.text ?? (typeof r?.value === 'string' ? r.value : '')).length || 0;
+
+  // ---- pélicandromes (SOG-0521) : data/pelicandromes/<pays>.json, publié par le travail pelican/import (SOG-0083), lu ICI et nulle part ailleurs
+  // (l'atelier ne lit jamais le fichier lui-même). Le fichier est une entrée non fiable (comme tout data/) : taille bornée, au plus 500 sites,
+  // champs CONNUS seulement (jamais une clé que le fichier ajoute), nombres finis et bornés, textes sans caractères de commande ni < >, 200 signes.
+  const PELICAN = Object.freeze({
+    MAX_SITES: 500,
+    MAX_BYTES: 262144,
+    TEXT: 200,
+    NEAR_NM: 100,
+    NEAR_MAX_NM: 5000,
+    LIMIT: 100
+  });
+  const ownKey = (o, k) => o !== null && typeof o === 'object' && !Array.isArray(o) && Object.prototype.hasOwnProperty.call(o, k) ? o[k] :
+    undefined;
+  const boundedNum = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null;
+  const pelicanText = (v, n = PELICAN.TEXT) => typeof v === 'string' ?
+    v.replace(/[؜​‎‏‪-‮⁠-⁤⁦-⁯￹-￻﻿]/g, '').replace(/[\u0000-\u001f\u007f-\u009f<>]/g, ' ').replace(/\s+/g, ' ')
+    .trim().slice(0, n) : '';
+  /** Le fichier compilé nettoyé : { ok: true, country, datum, note, total, sites: [{ name, icao, category, lat, lon, status, country }] } ou
+   *  { ok: false, reason: 'invalid' }. Un site dont le nom manque, ou dont la position manque ou sort des bornes, est écarté et compté (`rejected`). */
+  function pelicanClean(doc, country) {
+    if (ownKey(doc, 'schema') !== 'pelicandromes' || ownKey(doc, 'version') !== 1 || !Array.isArray(ownKey(doc, 'sites'))) return {
+      ok: false,
+      reason: 'invalid'
+    };
+    const file = pelicanText(ownKey(doc, 'country'), 2).toLowerCase();
+    if (file && file !== country) return {
+      ok: false,
+      reason: 'invalid'
+    };
+    const sites = [];
+    let rejected = 0;
+    for (const s of doc.sites.slice(0, PELICAN.MAX_SITES)) {
+      const name = pelicanText(ownKey(s, 'name')),
+        lat = boundedNum(ownKey(s, 'lat'), -90, 90),
+        lon = boundedNum(ownKey(s, 'lon'), -180, 180),
+        icao = pelicanText(ownKey(s, 'icao'), 16).toUpperCase();
+      if (!name || lat === null || lon === null) {
+        rejected++;
+        continue;
+      }
+      sites.push(Object.freeze({
+        name,
+        icao: /^[A-Z0-9]{2,4}$/.test(icao) ? icao : '',
+        category: pelicanText(ownKey(s, 'category'), 60),
+        lat: Math.round(lat * 1e7) / 1e7,
+        lon: Math.round(lon * 1e7) / 1e7,
+        status: pelicanText(ownKey(s, 'status'), 60),
+        country
+      }));
+    }
+    sites.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.icao < b.icao ? -1 : a.icao > b.icao ? 1 : 0);
+    return Object.freeze({
+      ok: true,
+      country,
+      datum: 'WGS84',
+      note: pelicanText(ownKey(doc, 'note'), 400),
+      total: sites.length,
+      rejected: rejected + Math.max(0, doc.sites.length - PELICAN.MAX_SITES),
+      sites: Object.freeze(sites)
+    });
+  }
+  /** Les sites d'un fichier nettoyé, filtrés autour d'une position : { lat, lon, radius_nm?, limit? } — les plus proches d'abord, `distanceNm` posé ;
+   *  sans `near`, tous (au plus `limit`) par ordre de nom. Rend { ok: false, reason: 'near' } si la position n'est pas un couple de nombres bornés. */
+  function pelicanSelect(clean, near, limit) {
+    const cap = Number.isInteger(limit) && limit >= 1 ? Math.min(limit, PELICAN.MAX_SITES) : PELICAN.LIMIT;
+    const out = (list, extra = {}) => Object.freeze({
+      ok: true,
+      country: clean.country,
+      datum: clean.datum,
+      note: clean.note,
+      total: clean.total,
+      rejected: clean.rejected,
+      count: list.length,
+      ...extra,
+      sites: Object.freeze(list)
+    });
+    if (near === undefined || near === null) return out(clean.sites.slice(0, cap));
+    const lat = boundedNum(ownKey(near, 'lat'), -90, 90),
+      lon = boundedNum(ownKey(near, 'lon'), -180, 180),
+      r = ownKey(near, 'radius_nm') === undefined ? PELICAN.NEAR_NM : boundedNum(ownKey(near, 'radius_nm'), 0, PELICAN.NEAR_MAX_NM);
+    if (lat === null || lon === null || r === null) return {
+      ok: false,
+      reason: 'near'
+    };
+    const dist = s => distNm([lat, lon], [s.lat, s.lon]); // la distance de la page, écrite UNE fois (K375)
+    const list = clean.sites.map(s => Object.freeze({
+        ...s,
+        distanceNm: Math.round(dist(s) * 10) / 10
+      })).filter(s => s.distanceNm <= r)
+      .sort((a, b) => a.distanceNm - b.distanceNm || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    return out(list.slice(0, cap), {
+      radiusNm: r
+    });
+  }
 
   // ---- lecteur provisoire (remplacé par la couche de données du frame : FrameData.adapter, INTEGRATION.md § 3)
   /** Lecteur de fichiers sans le frame : mode GitHub (GitHubData : contents, ETag, arbre) ou lanceur (fichiers servis :
@@ -1753,6 +1848,7 @@
     }
 
     // ---- base des types (JSON en V3 ; .js de la V2 lu comme littéral tant que le lanceur l'écrit)
+    const pelicanKept = new Map(); // pays → { rev, clean } : le fichier nettoyé, tant que la révision lue est la même
     let aircraftBusy = false; // registre en cours de lecture
     let fleetMoved = false; // la compagnie a changé pendant cette lecture : le registre lu l'est de l'ancienne flotte, le suivant relit
     function aircraft() {
@@ -2921,6 +3017,40 @@
         });
         return packsP;
       },
+      /** Les pélicandromes d'un pays (SOG-0521) : `await aerodb.pelicandromes({ country?: 'fr', near?: { lat, lon, radius_nm? }, limit? })` →
+       *  { ok: true, country, datum, note, total, count, sites: [{ name, icao, category, lat, lon, status, country, distanceNm? }] } ; lat / lon sont les
+       *  POSITIONS DE CHARGEMENT vérifiées à la main (la `note` du fichier le dit : à montrer partout où elles le sont, jamais pour la navigation réelle) ;
+       *  { ok: false, reason: 'country' | 'near' | 'absent' | 'too-large' | 'invalid' }. Lu de data/pelicandromes/<pays>.json (sans écrire, sans le lanceur) : au
+       *  plus 256 ko et 500 sites, champs connus seulement, nombres bornés, textes nettoyés ; le consommateur les pose avec `textContent`, jamais en HTML. Le
+       *  résultat est gelé ; une réponse « absent » n'est pas gardée (la question suivante relit). */
+      async pelicandromes(q) {
+        const country = typeof ownKey(q, 'country') === 'string' ? ownKey(q, 'country') : ownKey(q, 'country') === undefined ? 'fr' :
+          '';
+        if (!/^[a-z]{2}$/.test(country)) return {
+          ok: false,
+          reason: 'country'
+        };
+        const path = `pelicandromes/${country}.json`,
+          r = await read(path, true);
+        if (!r) return {
+          ok: false,
+          reason: 'absent'
+        };
+        if (sizeOf(r) > PELICAN.MAX_BYTES) return {
+          ok: false,
+          reason: 'too-large'
+        };
+        const key = r.rev || '';
+        let hit = pelicanKept.get(country);
+        if (!hit || hit.rev !== key || !key) {
+          hit = {
+            rev: key,
+            clean: pelicanClean(valueOf(r), country)
+          };
+          pelicanKept.set(country, hit);
+        }
+        return hit.clean.ok ? pelicanSelect(hit.clean, ownKey(q, 'near'), ownKey(q, 'limit')) : hit.clean;
+      },
       /** Toutes les zones connues de la suite (AERODB_ZONES), publiées ou non : [{ id, names: [fr, en, de, es], frames, published }],
        *  dans l'ordre de leur nom français (« Ajouter un pays » du module Données). */
       async zones() {
@@ -4084,6 +4214,9 @@
     }, {
       prefix: 'references/',
       policy: 'reference'
+    }, {
+      prefix: 'pelicandromes/',
+      policy: 'reference'
     }, 'airline/', 'planner/', 'aircraft/', 'proc-seen/', 'cache/aerodb/'],
     writes: [{
       prefix: 'cache/aerodb/',
@@ -4119,6 +4252,10 @@
     literal,
     zoneFrame,
     CYCLED_ZONES,
+    pelican: {
+      clean: pelicanClean,
+      select: pelicanSelect
+    },
     declaration
   };
 })();

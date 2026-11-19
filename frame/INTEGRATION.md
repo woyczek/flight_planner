@@ -414,6 +414,10 @@ Modules ask each other things only through the address (no event between modules
 | `#settings?join=…`, `?config=…`, `?card=…`, `?import=…`, `?offline=…` | invitations, links, the frame | Settings | Settings' own keys |
 | `#hello?note=…` | a link (example) | the example module | shows `ctx.consume` |
 
+### 6.2 The pelican sites (`ctx.aerodb.pelicandromes`, SOG-0521)
+
+A module that needs the pelican sites (Missions' workshop, the map) asks the frame: `await ctx.aerodb.pelicandromes({ country?: 'fr', near?: { lat, lon, radius_nm? }, limit? })`. **It never reads `data/pelicandromes/<country>.json` itself** (the file is published by the job `pelican/import`; it is an untrusted input and AeroDB is the one reader). The answer is frozen: `{ ok: true, country, datum: 'WGS84', note, total, count, rejected, sites: [{ name, icao, category, lat, lon, status, country, distanceNm? }] }`, or `{ ok: false, reason }` with `reason` one of `country` (not two lower-case letters), `near`, `absent` (not published, not read: the next call reads again), `too-large`, `invalid`. `lat` / `lon` are the **loading positions**, checked by hand: show the `note` wherever they are shown, never use them for real navigation; set the texts with `textContent`. The contract, the bounds and the reading guards are in `frame/aerodb/INTEGRATION.md` (« The pelican sites: `pelicandromes()` »); case K398.
+
 ## 7. What a module must not do
 
 - No `fetch` at all (use `ctx.net`), no `localStorage` or IndexedDB of its own (use the `cache` policy), no token

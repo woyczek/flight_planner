@@ -18214,3 +18214,60 @@ def k397(c):
     out = D.check(rad, [leg(i) for i in range(400)], heavy, True)
     skipped = sorted(int(t.split(': ')[1].split(' direct')[0]) for lv, t in out if 'trop lourds' in t)
     c.eq(skipped, [394, 400], 'the first line examines 6 directs (394 not decided), the second has no budget left: ALL its 400 directs are said not decided (red before: 399, one direct per line stayed examined)', what='shared budget')
+
+
+@case('K398', 'AeroDB, SOG-0521: `aerodb.pelicandromes({ country, near, limit })` gives the pelican sites of `data/pelicandromes/<country>.json` — name, icao, category, loading position (lat, lon), status — cleaned, bounded and frozen; the file is an untrusted input (known fields only, finite bounded numbers, texts without < > or control signs, 256 kB, 500 sites), the workshop never reads the file itself',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0521 (the relay; Création\'s workshop needs the pelican sites and must not read data/pelicandromes/ itself): a function of the frame, `ctx.aerodb.pelicandromes`, over the compiled file of SOG-0083 (`pelican/import`). The bench is an INVENTED file (invented sites and names, a reader in memory): good sites, then the hostile ones — a `__proto__` key, an unknown field, a position outside the bounds, a number written as a text, `<` and `>` in a name, bidi marks, a very long name, a bad OACI code —, a file of 600 sites, a file of another country, a wrong schema, a file over 256 kB, a missing file (not remembered). The prefix is declared: `pelicandromes/` read as a reference.')
+def k398(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const good = (name, icao, lat, lon, extra = {}) => ({ name, icao, category: 'principal', lat, lon, status: 'actif', source: 'x', country: 'fr', ...extra });
+      const file = { schema: 'pelicandromes', version: 1, country: 'fr', datum: 'WGS84', note: 'positions de chargement verifiees a la main', source: { name: 'f.yaml' }, sites: [
+        good('Zeta', 'LFAA', 45.0, 5.0), good('Alpha', 'lfbb', 43.0, 1.0), good('Beta', 'TOOLONG', 48.0, 2.0),
+        good('<b>Gamma</b>\\u202e\\u200b', 'LFCC', 44.0, 3.0, { evil: 'x', extra: { deep: 1 } }),
+        good('Lat out', 'LFDD', 95.0, 3.0), good('Lon out', 'LFEE', 40.0, 190.0), good('Text lat', 'LFFF', '45', 3.0), good('', 'LFGG', 40.0, 3.0), good('No position', 'LFHH', undefined, undefined),
+        good('Long ' + 'x'.repeat(400), 'LFII', 46.0, 4.0), null, 7, 'text', [], good('Delta', 'LFJJ', 48.8, 2.3), good('Iso\\u2066late\\u2069d\\u061c', 'LFMM', 47.0, 1.0) ] };
+      const hostile = JSON.parse('{"schema":"pelicandromes","version":1,"country":"pt","note":"n","sites":[{"__proto__":{"polluted":true},"name":"Proto","icao":"LFKK","lat":10,"lon":10,"status":"s","category":"c","constructor":"x"}]}');
+      const files = { 'pelicandromes/fr.json': file, 'pelicandromes/de.json': { ...file, country: 'fr' }, 'pelicandromes/es.json': { schema: 'other', version: 1, sites: [] }, 'pelicandromes/it.json': { schema: 'pelicandromes', version: 2, sites: [] }, 'pelicandromes/pt.json': hostile };
+      files['pelicandromes/gb.json'] = { schema: 'pelicandromes', version: 1, country: 'gb', note: 'n', sites: Array.from({ length: 600 }, (_, i) => good('S' + String(i).padStart(3, '0'), 'EG' + String(i % 100).padStart(2, '0'), 50 + (i % 5) / 10, -1 + i / 1000, { country: 'gb' })) };
+      const asked = [];
+      const reader = { read: async (p) => { asked.push(p); return p === 'pelicandromes/nl.json' ? { text: 'x'.repeat(262145), rev: 'r' } : p in files && files[p] ? { value: files[p], rev: 'r' + p } : null; }, list: async () => [], watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false });
+      const all = await db.pelicandromes({ country: 'fr' });
+      const dflt = await db.pelicandromes();
+      const near = await db.pelicandromes({ country: 'fr', near: { lat: 48.9, lon: 2.4, radius_nm: 60 } });
+      const lim = await db.pelicandromes({ country: 'fr', limit: 2 });
+      const bad = await Promise.all([db.pelicandromes({ country: 'FR' }), db.pelicandromes({ country: '../fr' }), db.pelicandromes({ country: 7 }), db.pelicandromes({ country: 'fr', near: { lat: 'x', lon: 2 } }),
+        db.pelicandromes({ country: 'fr', near: { lat: 91, lon: 2 } }), db.pelicandromes({ country: 'fr', near: { lat: 48, lon: 2, radius_nm: -1 } }), db.pelicandromes({ country: 'fr', near: 'Paris' })]);
+      const other = await Promise.all(['de', 'es', 'it', 'nl', 'xx'].map(x => db.pelicandromes({ country: x })));
+      const proto = await db.pelicandromes({ country: 'pt' });
+      const gb = await db.pelicandromes({ country: 'gb' }), gbAll = await db.pelicandromes({ country: 'gb', limit: 9999 });
+      files['pelicandromes/xx.json'] = { schema: 'pelicandromes', version: 1, country: 'xx', note: 'n', sites: [good('Late', 'LFLL', 1, 1, { country: 'xx' })] };
+      const late = await db.pelicandromes({ country: 'xx' });
+      const keys = x => Object.keys(x).sort().join();
+      return { all: { ok: all.ok, names: all.sites.map(s => s.name), total: all.total, count: all.count, rejected: all.rejected, note: all.note, datum: all.datum, keys: keys(all.sites[0]), keysOfAll: keys(all), frozen: Object.isFrozen(all) && Object.isFrozen(all.sites) && Object.isFrozen(all.sites[0]), icaos: all.sites.map(s => s.icao) },
+        sameDefault: JSON.stringify(dflt) === JSON.stringify(all), long: all.sites.find(s => s.name.startsWith('Long')).name.length, gamma: all.sites.find(s => s.icao === 'LFCC').name,
+        near: { names: near.sites.map(s => s.name), d: near.sites.map(s => s.distanceNm), r: near.radiusNm, count: near.count, keys: keys(near.sites[0]) }, lim: { names: lim.sites.map(s => s.name), count: lim.count, total: lim.total },
+        bad: bad.map(x => x.reason), other: other.map(x => x.ok ? 'ok' : x.reason), proto: { ok: proto.ok, names: proto.sites.map(s => s.name), polluted: ({}).polluted === true || Object.prototype.hasOwnProperty.call(proto.sites[0], 'polluted'), keys: keys(proto.sites[0]) },
+        gb: { total: gb.total, count: gb.count, rejected: gb.rejected, all: gbAll.count }, late: late.ok, only: [...new Set(asked)].sort(), decl: AeroDB.declaration().reads.filter(x => x.prefix === 'pelicandromes/'), api: typeof db.pelicandromes };
+    }""")
+    names = ['Alpha', 'Beta', 'Delta', 'Isolated', 'Long ' + 'x' * 195, 'Zeta', 'b Gamma /b']
+    c.eq((r['all']['ok'], r['all']['names'], r['all']['total'], r['all']['count'], r['all']['rejected']), (True, names, 7, 7, 9),
+         'the good sites are kept, sorted by name; the hostile ones (a position outside the bounds, a number written as a text, no position, no name, entries that are not objects) are dropped and counted', what='clean')
+    c.eq(r['all']['icaos'], ['LFBB', '', 'LFJJ', 'LFMM', 'LFII', 'LFAA', 'LFCC'], 'a code that is not 2-4 letters or digits is emptied (« TOOLONG »), a lower-case one is upper-cased', what='icao')
+    c.eq((r['gamma'], r['long'], r['all']['note'], r['all']['datum']), ('b Gamma /b', 200, 'positions de chargement verifiees a la main', 'WGS84'),
+         'the text has no < > (replaced by a blank, blanks folded), no bidi mark, isolate (U+2066-2069), Arabic mark (U+061C) or zero-width sign (the class of frame/lib/untrusted.js: « Isolated » comes out of a name written with them); a name is cut at 200 signs; the note travels with the answer', what='text')
+    c.eq((r['all']['keys'], r['all']['keysOfAll'], r['all']['frozen'], r['sameDefault']), ('category,country,icao,lat,lon,name,status', 'count,country,datum,note,ok,rejected,sites,total', True, True),
+         'the known fields only (the unknown ones the file adds, `evil` and `extra`, and the `source` of the site do not come out), the answer is frozen, the default country is fr', what='shape')
+    c.eq((r['near']['names'], r['near']['r'], r['near']['count'], r['near']['keys']), (['Delta', 'Beta'], 60, 2, 'category,country,distanceNm,icao,lat,lon,name,status'),
+         'near a position: only the sites within the radius (Delta 7 NM, Beta 56 NM from Paris; not Zeta or Alpha), the nearest first, the distance in NM on each', what='near')
+    c.ok(r['near']['d'][0] < r['near']['d'][1] <= 60, str(r['near']['d']), 'the distances are sorted and within the radius')
+    c.eq((r['lim']['names'], r['lim']['count'], r['lim']['total']), (['Alpha', 'Beta'], 2, 7), 'the limit cuts the list, the total says how many the file holds', what='limit')
+    c.eq(r['bad'], ['country', 'country', 'country', 'near', 'near', 'near', 'near'], 'a country that is not two lower-case letters (FR, ../fr, a number) and a position that is not bounded numbers (a text, a latitude of 91, a negative radius, a string) are refused with their reason', what='refused')
+    c.eq(r['other'], ['invalid', 'invalid', 'invalid', 'too-large', 'absent'], 'a file of another country, a wrong schema, a version other than 1, a file over 256 kB, a missing file: each its reason', what='reasons')
+    c.eq((r['proto']['ok'], r['proto']['names'], r['proto']['polluted'], r['proto']['keys']), (True, ['Proto'], False, 'category,country,icao,lat,lon,name,status'), 'a `__proto__` or `constructor` key of a site pollutes nothing and does not come out', what='proto')
+    c.eq((r['gb']['total'], r['gb']['count'], r['gb']['rejected'], r['gb']['all']), (500, 100, 100, 500), 'a file of 600 sites: the first 500 are read (the rest counted as rejected), 100 given by default, at most 500 even when asked for more', what='bounds')
+    c.eq((r['late'], r['decl'], r['api']), (True, [{'prefix': 'pelicandromes/', 'policy': 'reference'}], 'function'),
+         'a missing file is not remembered (it appears: the next question reads it); the prefix `pelicandromes/` is declared as a reference read', what='declaration')
+    c.ok(all(p.startswith('pelicandromes/') for p in r['only']), str(r['only']), 'the only files read are those of pelicandromes/ (never another path built from the query)')

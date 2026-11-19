@@ -611,7 +611,19 @@ Result: `{ ok, dry, file: { name, size, sha256 } | null, sites, categories: { <c
 
 **The file is the user's, so untrusted like everything in `data/`**: at most 256 kB (before it is read), UTF-8 text, at most 500 sites; a reduced YAML grammar of the standard library (one document, scalars, **one list of flat records**: anchors, tags, `{ }` / `[ ]`, `|` / `>` blocks, tabs, nesting and duplicate keys are refused with the line); numbers finite and bounded (latitude ±90, longitude ±180, 7 decimals), booleans and `NaN` are not numbers; texts without control characters, **without `<` or `>`**, blanks collapsed, 200 signs at most. **The consumer sets the texts with `textContent`, never as HTML.** The positions are loading positions checked by hand: the note travels with the file, to be shown wherever they are.
 
-The Map layer (beta.1) is BUGS SOG's: it reads `data/pelicandromes/fr.json` through the data repository like the other published data; no AeroDB API reads it yet.
+### The pelican sites: `pelicandromes()` (SOG-0521)
+
+**`await aerodb.pelicandromes({ country?, near?, limit? })`** is the one reader of `data/pelicandromes/<country>.json` (declared as a `reference` read: prefix `pelicandromes/`). A module, Création's workshop included, never reads the file itself.
+
+- **Query** (closed; any other key is ignored): `country` — two lower-case letters, default `fr` (else `reason: 'country'`, nothing read); `near` — `{ lat, lon, radius_nm? }`, `lat` ±90 and `lon` ±180 as finite numbers (a text is refused: `reason: 'near'`), `radius_nm` 0–5 000 (default 100); `limit` — an integer, 100 by default, 500 at most.
+- **Answer**: `{ ok: true, country, datum: 'WGS84', note, total, count, rejected, radiusNm?, sites }`; each site `{ name, icao, category, lat, lon, status, country }` and, with `near`, `distanceNm` (great circle, 0.1 NM), the nearest first; without `near`, by name. `lat` / `lon` are the **loading positions** verified by hand; the `note` of the file says so and travels with the answer: show it wherever they are shown, never for real navigation. Frozen (the answer and each site).
+- **Refusals**: `{ ok: false, reason }`: `country`, `near`, `absent` (no file: not published or not read; not remembered, the next question reads again), `too-large` (more than 256 kB), `invalid` (not `schema: 'pelicandromes'` version 1, no list of sites, or the file's own `country` is another country).
+- **The file is untrusted** (a pilot can push to the data repository): the known fields only (`name`, `icao`, `category`, `lat`, `lon`, `status`; the `source` of a site and any key the file adds do not come out; `__proto__` / `constructor` are never read: keys are taken as OWN keys), finite numbers in their bounds (a text `'45'` is not a number), texts without control signs, `<` `>` or the invisible format characters of `frame/lib/untrusted.js` (bidi marks and isolates, the Arabic mark, zero-width signs; the joiners are kept as there), blanks folded, 200 signs at most (60 for a category or a status, 4 for a code: a code that is not 2–4 letters or digits comes out empty); at most 500 sites (the others counted in `rejected`); a site without a name or a position is dropped and counted. **The consumer sets the texts with `textContent`.** The guards are the frame's (`frame/lib/untrusted.js`, § 12c of `frame/INTEGRATION.md`) written again inside `aerodb.js`, which does not load frame files: they move to the shared file when aerodb may depend on it.
+- **Memory**: the cleaned file is kept per country while the revision the reader gives is the same; a changed revision is read again.
+
+Case K398 (browser; an invented file and hostile ones).
+
+The Map layer (beta.1) is BUGS SOG's and may keep reading the file through the data repository; the other consumers ask this function.
 
 ### The state per zone and « Mettre à jour »: the verbs `base/status` and `base/update` (SOG-0071, V3 § 10.44, alpha.5)
 
