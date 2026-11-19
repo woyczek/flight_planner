@@ -5369,8 +5369,7 @@
    },
    "test": "Recharge la page. Carte, sur EGLL : zoome jusqu'aux noms des voies de circulation principales (zoom 13) : les points d'attente (BY1, NEVIS, LOKKI…) et leur nom y sont déjà, sans chevaucher les autres étiquettes. La recherche du sol trouve « NEVIS » et un toucher cadre dessus.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T10:37:19Z"
+   "state": "known"
   },
   {
    "id": "SOG-0519",

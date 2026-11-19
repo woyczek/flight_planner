@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "457970e",
+  "organisation": "ccc8bce",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -2369,12 +2369,11 @@
     {
      "id": "SOG-0518",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Carte au sol : les points d'arrêt nommés (EGLL : BY1, NEVIS, LOKKI…) se cherchent à la loupe et se voient dès le zoom des voies de circulation principales",
      "en": "Ground map: named holding points (EGLL: BY1, NEVIS, LOKKI…) can be searched and are shown from the zoom of the main taxiways",
      "de": "Bodenkarte: benannte Haltepunkte (EGLL: BY1, NEVIS, LOKKI…) sind suchbar und ab dem Zoom der Hauptrollwege sichtbar",
-     "es": "Mapa de tierra: los puntos de espera con nombre (EGLL: BY1, NEVIS, LOKKI…) se pueden buscar y se ven desde el zoom de las calles de rodaje principales",
-     "test": true
+     "es": "Mapa de tierra: los puntos de espera con nombre (EGLL: BY1, NEVIS, LOKKI…) se pueden buscar y se ven desde el zoom de las calles de rodaje principales"
     }
    ]
   },
