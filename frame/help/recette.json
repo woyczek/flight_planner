@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 365,
+  "tests": 368,
   "verdicts": 232
  },
  "apps": [
@@ -5457,6 +5457,48 @@
    "test": "PARCOURS DE L'ATELIER — à quoi il sert : vérifier en un seul passage que l'atelier de missions et les missions marchent de bout en bout. Tu le joues deux fois en tout : quand les défauts qui perdent le travail sont poussés, puis au jalon « atelier figé ». CE QUE TU VAS FAIRE : tu crées une mission depuis un modèle ; tu places ses terrains et un point, tu ajoutes un tiroir, tu enregistres ; tu quittes sans enregistrer et tu retrouves ton brouillon ; puis tu la regardes comme un pilote. — L'ESSENTIEL (étapes 1 à 10, environ 12 minutes). 1. Recharge la page (Ctrl + Maj + R). Compagnie › Missions › Registre › « Créer une mission ». → Sous le titre : « Modèle : aucun · Choisir un modèle » (SOG-04",
    "since": "2026-11-19",
    "state": "todo"
+  },
+  {
+   "id": "SOG-0527",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : un message « pas à jour » sans geste pour y remédier — procédures (« Relire » absent) et météo des terrains (la page sait ce qui lui manque et doit aller le chercher)",
+    "en": "Fuel: an “out of date” message with no gesture to fix it — procedures (no “Re-read”) and airfield weather (the page knows what it lacks and should fetch it)",
+    "de": "Kraftstoff: eine Meldung „nicht aktuell“ ohne Abhilfe — Verfahren (kein „Neu lesen“) und Platzwetter (die Seite weiß, was ihr fehlt, und soll es holen)",
+    "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)"
+   },
+   "test": "Recharge la page. Carburant, un vol avec un dégagement dont la base n'a pas les procédures (ton LFFI du signalement). Attendu : (1) sous le critère « Moyens » non vérifié, le lien « Lire les procédures de … » est offert sur place ; (2) la météo du départ, de l'arrivée et des dégagements est lue d'elle-même quand elle manque ou a vieilli, sans passer par une mise à jour globale ; si la lecture échoue, la ligne dit « Météo : non vérifiée — lecture impossible (cause) » ; (3) chaque valeur de vent ou de météo affichée dit sa source et son âge (alerte au-delà de 12 h).",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T21:18:41Z"
+  },
+  {
+   "id": "SOG-0528",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : changer l'arrivée garde le terrain de dégagement sans le revérifier ni le marquer",
+    "en": "Fuel: changing the destination keeps the alternate without re-checking or flagging it",
+    "de": "Kraftstoff: Beim Ändern des Zielflughafens bleibt der Ausweichflughafen ungeprüft und unmarkiert",
+    "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo"
+   },
+   "test": "Recharge la page (pas de relance du lanceur). Carburant : LFMT → LFRN, dégagement LFFI (valable). Change l'arrivée pour LFQQ. Attendu : LFFI n'est pas retiré ; il est marqué « ne convient pas » avec sa raison (distance, moyens ou météo), et le choix te reste. Remets LFRN : LFFI redevient bon.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T21:17:27Z"
+  },
+  {
+   "id": "SOG-0529",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : LFBY → LFST au FL090, le calcul ne rend qu'un direct (ou rien) ; le plan de vol part avec un champ de route vide (Eurocontrol : EFPM214 MISSING ROUTE DATA) et « Copier pour Eurocontrol » refu",
+    "en": "Routes: LFBY → LFST at FL090, the engine returns only a direct (or nothing); the flight plan leaves with an empty route field (Eurocontrol EFPM214 MISSING ROUTE DATA) and “Copy for Eurocontrol” refuse",
+    "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
+    "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
+   },
+   "test": "Recharge la page. Carburant : un vol LFBY → LFST sans route calculée. Attendu : la case 15 du plan de vol porte « DCT », jamais vide ; « Copier pour Eurocontrol » dit quoi faire (« aucune route calculée entre … : calculez-en une ou saisissez-la ») et prévient quand le direct est long. Le calcul de route lui-même (réseau bas, repli refusé) n'est PAS encore livré (AeroDB) : ne repasse pas le plan à l'IFPS pour ça.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T21:17:30Z"
   }
  ],
  "decisions": []

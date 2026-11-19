@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5837435",
+  "organisation": "89e395c",
   "fiches": 529,
   "untranslated": 0,
   "priorities": 481,
@@ -1051,11 +1051,12 @@
     {
      "id": "SOG-0528",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : changer l'arrivée garde le terrain de dégagement sans le revérifier ni le marquer",
      "en": "Fuel: changing the destination keeps the alternate without re-checking or flagging it",
      "de": "Kraftstoff: Beim Ändern des Zielflughafens bleibt der Ausweichflughafen ungeprüft und unmarkiert",
-     "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo"
+     "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo",
+     "test": true
     }
    ]
   },
@@ -1237,11 +1238,12 @@
     {
      "id": "SOG-0527",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : un message « pas à jour » sans geste pour y remédier — procédures (« Relire » absent) et météo des terrains (la page sait ce qui lui manque et doit aller le chercher)",
      "en": "Fuel: an “out of date” message with no gesture to fix it — procedures (no “Re-read”) and airfield weather (the page knows what it lacks and should fetch it)",
      "de": "Kraftstoff: eine Meldung „nicht aktuell“ ohne Abhilfe — Verfahren (kein „Neu lesen“) und Platzwetter (die Seite weiß, was ihr fehlt, und soll es holen)",
-     "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)"
+     "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)",
+     "test": true
     }
    ]
   },
@@ -3407,11 +3409,12 @@
     {
      "id": "SOG-0529",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : LFBY → LFST au FL090, le calcul ne rend qu'un direct (ou rien) ; le plan de vol part avec un champ de route vide (Eurocontrol : EFPM214 MISSING ROUTE DATA) et « Copier pour Eurocontrol » refuse sans dire quoi faire",
      "en": "Routes: LFBY → LFST at FL090, the engine returns only a direct (or nothing); the flight plan leaves with an empty route field (Eurocontrol EFPM214 MISSING ROUTE DATA) and “Copy for Eurocontrol” refuses without saying what to do",
      "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
-     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
+     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer",
+     "test": true
     }
    ]
   },
