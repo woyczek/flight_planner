@@ -5229,6 +5229,21 @@
    "recommended": 0
   },
   {
+   "id": "Q-0119",
+   "fiche": "SOG-0513",
+   "app": "pilote",
+   "question": "La route EGLL → LFRN que tu as passée à l'IFPS ce matin (MID L612 HAWKE DCT NEVIL G27 …) : d'où venait-elle dans Carburant ?",
+   "context": "Notre calcul ne la produit dans aucun réglage, ni aujourd'hui ni depuis le 16/11 : il donne GASGU N866 SAM N63 … UT260 UPALO V20 LUVOP. Carburant trace n'importe quel texte de route. Si elle vient de notre calcul, c'est un défaut à chercher ; sinon, notre contrôle la juge maintenant comme l'IFPS.",
+   "options": [
+    "Saisie ou collée à la main (ou importée de SimBrief / Autorouter)",
+    "Calculée par « Calculer » dans Carburant ce matin",
+    "Un vol ancien, calculé avant le 16/11",
+    "Je ne sais pas"
+   ],
+   "since": "2026-11-19",
+   "state": "todo"
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

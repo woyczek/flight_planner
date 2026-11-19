@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d798ae3",
-  "fiches": 512,
+  "organisation": "5d88835",
+  "fiches": 513,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1275,6 +1275,27 @@
      "de": "NAT-Route in Kraftstoff übernommen: Koordinatenpunkte verlieren ihr Ende und werden « unbekannte Punkte »",
      "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »",
      "rank": 324
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-routes",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; routes",
+    "en": "Carburant ; routes",
+    "de": "Carburant ; routes",
+    "es": "Carburant ; routes"
+   },
+   "items": [
+    {
+     "id": "SOG-0514",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : le calcul et le contrôle de route reçoivent les vitesses de l'avion (croisière, montée, descente)",
+     "en": "Fuel: route computation and check receive the aircraft's speeds (cruise, climb, descent)",
+     "de": "Kraftstoff: Routenberechnung und -prüfung erhalten die Geschwindigkeiten des Flugzeugs (Reise, Steigen, Sinken)",
+     "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)"
     }
    ]
   },
