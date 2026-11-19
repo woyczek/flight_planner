@@ -380,8 +380,8 @@ export function groundLayout(toC, zReal, W, H) {
         it,
         pts
       });
-    } else if (it.kind === 'apron' || it.kind === 'hold' ? at(zReal, Z_NAME) : at(zReal,
-        Z_PARK)) { // les aires (leur nom) et les points d'attente (rouges : « no entry ») dès le zoom des noms, avant les postes (SOG-0195)
+    } else if (it.kind === 'hold' ? at(zReal, Z_LINE) : it.kind === 'apron' ? at(zReal, Z_NAME) : at(zReal, Z_PARK)) {
+      // les points d'attente (rouges : « no entry ») avec leur nom au zoom du trait et du nom des voies principales (SOG-0518 : ils venaient à Z_NAME, après elles) ; les aires (leur nom) à Z_NAME ; les postes à Z_PARK (SOG-0195)
       const p = toC(it.point[1], it.point[0]);
       if (p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10) shown.push({
         it,

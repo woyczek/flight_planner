@@ -3249,10 +3249,13 @@ _GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r
   return { items: r ? r.items.length : 0, hits: g.hits.length, twy: g.hits.filter(h => h.pts).length, pts: g.hits.filter(h => !h.pts).length,
            names: [...g.drawn.values()].filter(Boolean).length, asked: g.drawn.size } }"""
 
+# the holds and the stands among the drawn points of the ground layer, and the hold names drawn: [holds, stands, names]
+_HOLDSTAND_JS = """() => { const g = window.__mp.S.ground, r = [...g.cache.values()].find(x => x.items); const hs = new Set(r.items.filter(i => i.kind === 'hold').map(i => i.id)); return [g.hits.filter(h => !h.pts && hs.has(h.id)).length, g.hits.filter(h => !h.pts && !hs.has(h.id)).length, [...g.drawn].filter(([k, v]) => v && hs.has(k)).length] }"""
 
-@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines and taxiway names at 13, holds at 15, stands at 16; absent without AeroDB’s ground()', 'D',
+
+@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines, taxiway names and holds at 13, stands at 16; absent without AeroDB’s ground()', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
-      rule='V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
+      rule='SOG-0518 (the ergonomist agreed): the holds and their names come at the zoom of the names of the main taxiways, 13 (they came at 15 from SOG-0195). V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
 def d112(c):
     _ground_open(c, aerodb=False)
     _ground_at(c, 15)
@@ -3265,10 +3268,12 @@ def d112(c):
     c.ok(st and st['hits'] == 0, f'{st}', 'under zoom 13 nothing is drawn')
     _ground_at(c, 13, 1500)
     st = c.js(_GSTAT)
-    c.ok(st and st['twy'] > 50 and st['pts'] == 0, f'{st}', 'at 13: the taxiway lines (and their names, SOG-0297), no stand')
+    nh = c.js(_HOLDSTAND_JS)
+    c.ok(st and st['twy'] > 50 and nh[0] > 0 and nh[1] == 0 and nh[2] > 0, f'{st} {nh}', 'at 13: the taxiway lines and their names, and the holds with their names (SOG-0518: the threshold of the main taxiways), no stand')
     _ground_at(c, 14, 1200)
     st = c.js(_GSTAT)
-    c.ok(st and st['twy'] > 50 and st['pts'] == 0, f'{st}', 'at 14: the same, still no stand')
+    nh = c.js(_HOLDSTAND_JS)
+    c.ok(st and st['twy'] > 50 and nh[0] > 0 and nh[1] == 0, f'{st} {nh}', 'at 14: the same, still no stand')
     _ground_at(c, 15, 1200)
     st = c.js(_GSTAT)
     holds = c.js("() => (window.__mp.S.ground.hits || []).filter(h => h.id && !h.pts && /^hold|^h/.test(String(h.id))).length")
@@ -9924,6 +9929,44 @@ def d292(c):
       document.body.append(wrap); window.scrollTo(0, 0); return true }""")
     c.wait(500)
     c.shot(f'D292_awy_route_mora_{c.width}.png')
+
+
+@case('D294', 'The ground search finds a holding point by its name and frames it (SOG-0518): nothing to add, the case proves it', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0518 (the user, capture EGLL: « un contrôle donne le nom du point d arrêt »; then: « plutôt avec la recherche sol, non ? », and the search of the ground FINDS the holds already): the filter of the ground list (the ground search, « un poste, une attente ») finds a hold by its name, the row says its kind, and a touch on the row frames the hold at zoom 17; the loupe of the Map is not changed')
+def d294(c):
+    _ground_open(c)
+    _ground_at(c, 16, 1200, _PARK_AT)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=6000, what='rows listed')
+    c.page.fill('.mp-gd-q', 'w41')
+    c.wait(400)
+    rows = c.js("() => [...document.querySelectorAll('.mp-gd-row')].map(b => b.dataset.kind + ':' + b.querySelector('b').textContent)")
+    c.ok(any(r.startswith('hold:W41') for r in rows), str(rows), 'the ground search finds a holding point by its name (the row says its kind)')
+    c.tap('.mp-gd-row[data-kind="hold"]')
+    c.wait(1500)
+    g = c.js("() => { const k = window.__mpMap.getCenter(); return { c: [k.lat, k.lng], z: window.__mpMap.getZoom(), hl: window.__mp.S.ground.hl } }")
+    it = c.js("() => { const g = window.__mp.S.ground, r = [...g.cache.values()].find(x => x.items), h = r.items.find(i => i.id && g.hl && g.hl === 'g:hold:' + i.name); return h ? (h.point || h.line[0]) : null }")
+    c.ok(it is not None and abs(g['c'][0] - it[1]) < 0.003 and abs(g['c'][1] - it[0]) < 0.003 and g['z'] >= 16.5, f'{g} {it}', 'a touch on the row frames the hold, close enough to read it (zoom 17)')
+
+
+@case('D295', 'SOG-0518 (captures): the holding points with their names at zoom 13, and the ground search finding one — the delivered state, at 390 and 1280', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='SOG-0518: the delivered state, to be read by the ergonomist then the user: the holds (red) and their names appear at the zoom of the main taxiways (13), placed without overlap; the ground search finds a hold by its name')
+def d295(c):
+    _ground_open(c)
+    _ground_at(c, 13.4, 1800, (2.3794, 48.7233))
+    c.shot(f'D295_holds_z13_{c.width}.png')
+    _ground_at(c, 16, 1200, _PARK_AT)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=6000, what='rows listed')
+    c.page.fill('.mp-gd-q', 'w4')
+    c.wait(500)
+    c.shot(f'D295_ground_search_{c.width}.png')
 
 
 def _no_duplicate_names():
