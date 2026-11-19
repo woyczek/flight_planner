@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "788c3e5",
-  "fiches": 515,
+  "organisation": "ec23633",
+  "fiches": 516,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1296,6 +1296,15 @@
      "en": "Fuel: route computation and check receive the aircraft's speeds (cruise, climb, descent)",
      "de": "Kraftstoff: Routenberechnung und -prüfung erhalten die Geschwindigkeiten des Flugzeugs (Reise, Steigen, Sinken)",
      "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)"
+    },
+    {
+     "id": "SOG-0517",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : « Calculer » impose comme passages les points d'une route déjà présente, et le plan de vol perd les changements de niveau écrits par le moteur",
+     "en": "Fuel: “Compute” imposes the points of an existing route as waypoints, and the flight plan loses the level changes written by the engine",
+     "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
+     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
     }
    ]
   },
