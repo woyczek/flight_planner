@@ -369,7 +369,8 @@ function keepView(L) {
  *  Une zone ronde est aussi un point en son centre (c'est par lui qu'elle se déplace) ; `sel` : le rang du lieu choisi — une zone
  *  ronde choisie montre la poignée de son rayon (« radius:i », à l'est de son rond) ; une zone en contour est un point en son milieu,
  *  et choisie elle montre ses sommets (« vertex:i:k ») et le milieu de chaque côté (« mid:i:k » : il ajoute un sommet après le
- *  sommet k). Un point qu'une poignée déplace porte `movable`. `onward` : les jetons de la suite de route du tiroir choisi — elle est
+ *  sommet k). Un point qu'une poignée déplace porte `movable` — jamais un lieu `locked` (SOG-0506 : un point nommé de la base, à la
+ *  position de la base ; l'auteur le libère en effaçant son code). `onward` : les jetons de la suite de route du tiroir choisi — elle est
  *  dessinée par ses lieux situés (« onward »).
  *  `labels` [{ id, lat, lon, text }] : l'étiquette de chaque lieu dessiné — son identifiant (à défaut le début de son nom : le code
  *  d'un terrain), vingt-quatre signes au plus —, sur son point, ou au milieu de son contour. */
@@ -465,7 +466,7 @@ export function mapFeatures(rows, {
       lon: at.lon,
       label,
       kind: r.kind,
-      ...(MOVABLE.includes(r.kind) ? {
+      ...(MOVABLE.includes(r.kind) && r.locked !== true ? { // SOG-0506 : un point verrouillé par la base n'a pas de poignée
         movable: true
       } : {})
     });

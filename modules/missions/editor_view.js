@@ -588,6 +588,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-adsug .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="missions"] .ms-atbody textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
 [data-module="missions"] .ms-plcheck{display:flex;gap:8px;align-items:center;min-height:44px;margin:4px 0}
+[data-module="missions"] .ms-plform input[readonly]{background:var(--sog-surface-2,#eef);color:var(--sog-muted,#555);border-style:dashed} /* SOG-0506 : la position verrouillée par la base */
+[data-module="missions"] .ms-plsrc{margin:4px 0 8px}
 [data-module="missions"] .ms-atbody .ms-plbody>.f-muted{white-space:normal;overflow:visible} /* le détail d'un lieu n'est jamais coupé */
 [data-module="missions"] .ms-plcheck>input{flex:0 0 auto;width:20px;height:20px}
 [data-module="missions"] .ms-plfold{margin:4px 0 8px}
@@ -1016,11 +1018,15 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
       }
       // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
       // sa liste est posée dans la rangée (data-adsug) ; les autres champs du lieu gardent data-k="edplace"
+      // SOG-0506 : un point nommé de la base, à la position de la base, est verrouillé — ses champs de position en lecture seule, la source dite
       const named = ['pt', 'target', 'rdv'].includes(r.kind),
+        src = edSrcOf(s, r),
+        lock = src ? ' readonly' : '',
+        srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
         nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
       return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${nameField}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
-        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
+        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
@@ -1495,11 +1501,17 @@ function edMapFeats(s, doc, run = null) {
   // à sa réponse (adPosOf) le Cadre et la carte les lisent
   for (const t of [e.base?.origin?.name, e.base?.destination?.name, e.cadre?.dep, e.cadre?.arr])
     for (const k of ED.codeCands(t)) adPosOf(s, k);
-  return EM.mapFeatures(run ? rows : edPilotRows(e, doc, edShown(e, rows)), { // SOG-0459 : le voile, puis la vue du pilote
+  // SOG-0459 : le voile, puis la vue du pilote ; SOG-0506 : un lieu verrouillé par la base est marqué (la carte ne lui donne pas de poignée)
+  const drawn = run ? rows : edPilotRows(e, doc, edShown(e, rows)).map(r => r && edSrcOf(s, r) ? {
+    ...r,
+    locked: true
+  } : r);
+  return EM.mapFeatures(drawn, {
     zones: e.base?.zones,
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
     adPos: name => adPosOf(s, ED.adCodeOf(name)), // le code d'un terrain quelle que soit la casse écrite (SOG-0469)
-    path: TR.pathOf(MS.readMission(doc)),
+    // SOG-0506 : la route passe par le départ et l'arrivée là où la carte les montre — la position de la base quand le fichier n'en écrit pas
+    path: TR.pathOf(MS.readMission(ED.endsAt(doc, k => adPosOf(s, k)))),
     run,
     sel: run ? -1 : edMapSel(e),
     // la suite de route du tiroir choisi, dessinée elle aussi (les identifiants d'aujourd'hui de ses lieux)
@@ -1582,6 +1594,9 @@ function edMapHint(s) {
     k: edMapVertex(e) + 1,
     name: edPlaceName(r)
   }) : s.tt(EDTX.atHint_contour, {
+    name: edPlaceName(r)
+  });
+  if (ED.MOVABLE.includes(r.kind) && edSrcOf(s, r)) return s.tt(EDTX.atHint_locked, { // SOG-0506 : verrouillé par la base
     name: edPlaceName(r)
   });
   return s.tt(!ED.MOVABLE.includes(r.kind) || (r.kind === 'zone' && r.poly) ? EDTX.atHint_fixed : r.kind === 'zone' && r.radius ? EDTX
@@ -1769,7 +1784,7 @@ function edMapShow(s) {
     selLabel: edPlaceName((e.places || [])[edMapSel(e)]),
     ref: edMapRef(e),
     onPick: i => edMapPick(s, e, i),
-    onMove: m => edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i, -1, m.drag),
+    onMove: m => edSrcOf(s, edPlaces(e)[m.i]) ? edRefresh(s) : edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i, -1, m.drag),
     onRadius: m => edMapGesture(s, e, rows => ED.placeRadius(rows, m.i, m.km), m.i, -1, m.drag),
     onVertex: m => edMapGesture(s, e, rows => ED.moveVertex(rows, m.i, m.k, m), m.i, m.k, m.drag),
     onDragCancel: () => edMapDragCancel(s, e),
@@ -2313,7 +2328,8 @@ function edPlaceFromBase(s, e, {
   at = -1,
   code,
   lat,
-  lon
+  lon,
+  from = ''
 }) {
   // garde de Sécurisation : la base est un fichier du dépôt, non fiable — position dans les limites, code court, sinon rien n'est écrit
   const bound = (v, max) => v !== null && v !== undefined && String(v).trim() !== '' && Number.isFinite(+v) && Math.abs(+v) <= max;
@@ -2346,7 +2362,134 @@ function edPlaceFromBase(s, e, {
     const input = s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`);
     putProp(input, 'value', row[f]);
   }
+  // SOG-0506 : la base vient de donner cette position à ce code — le lieu est verrouillé sans attendre de la redemander
+  if (from) edPtSrcKnow(s, clean, edPos(row), from);
+  edSrcPaint(s);
   return i;
+}
+
+/** SOG-0506 : les genres de points de la base que la fiche d'un lieu nomme (aerodb.coordsAll : aerodrome, navaid, point, vrp ; un repère
+ *  de la carte dit « fix » pour un point du réseau). Tout autre genre : le code seul. */
+const SRC_KINDS = Object.freeze({
+  aerodrome: 'aerodrome',
+  navaid: 'navaid',
+  point: 'point',
+  fix: 'point',
+  vrp: 'vrp'
+});
+
+/** SOG-0506 : deux positions à moins de 1e-4 degré l'une de l'autre (la base est écrite à cinq décimales dans le lieu). */
+const edSamePos = (a, b) => !!a && !!b && Math.abs(+a.lat - +b.lat) <= 1e-4 && Math.abs(+a.lon - +b.lon) <= 1e-4;
+
+/** SOG-0506 : la clé du cache des sources des points (le code et la position du lieu). */
+const edPtKey = (code, at) => `${code}@${(+at.lat).toFixed(4)},${(+at.lon).toFixed(4)}`;
+
+/** SOG-0506 : retient que la base place `code` à `at` (genre `kind`) — le cache des sources des points, borné à 400 entrées (vidé au-delà). */
+function edPtSrcKnow(s, code, at, kind) {
+  if (!at) return;
+  s.ptSrc ||= new Map();
+  if (s.ptSrc.size >= 400) s.ptSrc.clear();
+  s.ptSrc.set(edPtKey(code, at), {
+    kind: Object.hasOwn(SRC_KINDS, kind) ? SRC_KINDS[kind] : ''
+  });
+}
+
+/** SOG-0506 : la base place-t-elle le point `code` à la position `at` ? Demandé UNE fois par code et par position (aerodb.coordsAll, les
+ *  homonymes du plus proche au plus lointain) : { kind } quand un lieu de ce code est à cette position, null sinon ou tant que la
+ *  réponse n'est pas venue (à sa réponse, l'atelier est redessiné sur place). La base est un fichier du dépôt, non fiable : une
+ *  position hors bornes ne compte pas. */
+function edPtSrc(s, code, at) {
+  const a = s.ctx.aerodb;
+  if (!at || typeof a?.coordsAll !== 'function') return null;
+  s.ptSrc ||= new Map();
+  const k = edPtKey(code, at);
+  if (!s.ptSrc.has(k)) {
+    if (s.ptSrc.size >= 400) s.ptSrc.clear();
+    s.ptSrc.set(k, undefined);
+    Promise.resolve().then(() => a.coordsAll(code, {
+      near: [+at.lat, +at.lon]
+    })).catch(() => []).then(all => {
+      const hit = (Array.isArray(all) ? all : []).find(x => Math.abs(+x?.item?.lat) <= 90 && Math.abs(+x?.item?.lon) <= 180 &&
+        edSamePos(x
+          .item, at));
+      const v = hit ? {
+        kind: Object.hasOwn(SRC_KINDS, hit.kind) ? SRC_KINDS[hit.kind] : ''
+      } : null;
+      s.ptSrc.set(k, v);
+      if (v && state() === s && s.ed) edRefresh(s);
+    });
+  }
+  return s.ptSrc.get(k) || null;
+}
+
+/** SOG-0506 : la SOURCE d'un lieu — { code, kind } quand c'est un point nommé de la base À LA POSITION DE LA BASE, null sinon. La source
+ *  n'est pas une clé du fichier : c'est le nom égal au code (un point tournant, une cible, un rendez-vous ; le code du terrain pour le
+ *  départ et l'arrivée) et la position égale à celle que la base donne à ce code. Un tel lieu est verrouillé : ses champs de position
+ *  en lecture seule, pas de poignée sur la carte. L'auteur le libère en effaçant le code : le lieu garde sa position, comme point libre
+ *  (le geste de SOG-0495 : un nom tapé ne déplace pas un lieu situé). */
+function edSrcOf(s, r) {
+  const at = edPos(r);
+  if (!r || !at) return null;
+  if (r.kind === 'dep' || r.kind === 'arr') {
+    const code = ED.adCodeOf(r.name),
+      p = code ? adPosOf(s, code) : null;
+    return p && edSamePos(p, at) ? {
+      code,
+      kind: 'aerodrome'
+    } : null;
+  }
+  if (!['pt', 'target', 'rdv'].includes(r.kind)) return null;
+  const code = String(r.name ?? '').trim();
+  if (!/^[A-Z0-9][A-Z0-9./-]{1,23}$/.test(code)) return null; // le nom qu'edPlaceFromBase écrit : le code, en majuscules
+  const v = edPtSrc(s, code, at);
+  return v ? {
+    code,
+    kind: v.kind
+  } : null;
+}
+
+/** SOG-0506 : ce que la fiche d'un lieu verrouillé dit de sa source (« Position de la base aéronautique : le terrain XTST —
+ *  verrouillée. … ») ; '' sans source. */
+function edSrcText(s, src) {
+  if (!src) return '';
+  const what = s.tt(EDTX[`plSrc_${src.kind}`] || EDTX.plSrc_plain, {
+    code: src.code
+  });
+  return s.tt(EDTX.plSrc, {
+    src: what
+  });
+}
+
+/** SOG-0506 : la fiche ouverte d'un lieu dit SUR PLACE s'il est verrouillé (la frappe de son Nom, la réponse de la base) : ses champs de
+ *  position en lecture seule ou non, la ligne de sa source ; rien n'est écrit qui ne change. */
+function edSrcPaint(s) {
+  const e = s.ed,
+    i = e?.placeEdit,
+    form = Number.isInteger(i) && i >= 0 ? s.el.querySelector(`[data-plform="${i}"]`) : null;
+  if (!form) return;
+  const src = edSrcOf(s, (e.places || [])[i]),
+    line = form.querySelector('[data-plsrc]');
+  for (const f of ['lat', 'lon']) putProp(form.querySelector(`input[data-f="${f}"]`), 'readOnly', !!src);
+  put(line, edSrcText(s, src));
+  putProp(line, 'hidden', !src);
+}
+
+/** SOG-0506 : le départ ou l'arrivée (`key`) que l'auteur vient de saisir au Cadre, quand c'est un terrain que la base connaît et que sa
+ *  ligne des Lieux n'a pas de position : la position de la base y est ÉCRITE (elle part dans le fichier avec le code, et le lieu est
+ *  verrouillé). Un terrain du fichier que l'auteur n'a pas retouché n'est pas réécrit (ouvrir une mission n'y change rien : la carte le
+ *  place par la base, ED.endsAt). → vrai quand la position a été écrite. */
+function edEndFill(s, e, key) {
+  if (!e || key !== 'dep' && key !== 'arr' || String(e.cadre?.[key] ?? '') === String(ED.cadreOf(e.base)[key] ?? '')) return false;
+  const rows = edPlaces(e),
+    at = rows.findIndex(r => r?.kind === key),
+    r = rows[at];
+  if (!r || edPos(r) || edHid(e, at)) return false;
+  const p = adPosOf(s, ED.adCodeOf(r.name));
+  if (!p) return false;
+  r.lat = String(+(+p.lat).toFixed(5));
+  r.lon = String(+(+p.lon).toFixed(5));
+  for (const f of ['lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${at}"] input[data-f="${f}"]`), 'value', r[f]);
+  return true;
 }
 
 /** SOG-0495 : le nom d'un point tournant, d'une cible ou d'un rendez-vous venu d'être tapé (un « change ») est-il un point de la base ?
@@ -2370,7 +2513,8 @@ function edNameBase(s, e, i) {
       at: i,
       code: word,
       lat: +hit.item.lat,
-      lon: +hit.item.lon
+      lon: +hit.item.lon,
+      from: hit.kind // SOG-0506 : le genre du point dans la base, pour nommer la source
     });
     edRefresh(s);
   });
@@ -2412,6 +2556,7 @@ function edCadreSet(s, key, value) {
     if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.places.filter((_, i) => i !== at);
     else if (fresh) e.places = [fresh, ...e.places];
   }
+  if (key === 'dep' || key === 'arr') edEndFill(s, e, key); // SOG-0506 : un terrain que la base connaît prend sa position
 }
 
 /** Après chaque dessin de la page (module.js l'appelle à la fin de son dessin, et au démontage avec null) : dans l'atelier, la carte
@@ -3001,6 +3146,8 @@ export function edInput(s, ev) {
         key: 'missions-veil'
       });
     }
+    // SOG-0506 : la position d'un lieu verrouillé par la base ne se saisit pas (le champ est en lecture seule ; une page forgée non plus)
+    if (row && (f === 'lat' || f === 'lon') && edSrcOf(s, row)) return putProp(ev.target, 'value', row[f]);
     edUndoClear(e); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
     // l'identifiant d'un objet est donné par l'atelier : il ne se saisit pas, même par une page forgée (Sécurisation, 18 nov.)
     if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f) && !(row.kind === 'object' &&
@@ -3112,6 +3259,7 @@ function adPosOf(s, icao) {
       ED.noteAerodrome(k, !!v); // un texte n'est un terrain que si la base le connaît (SOG-0469)
       if (v && state() === s && s.ed) {
         edRecode(s);
+        for (const key of ['dep', 'arr']) edEndFill(s, s.ed, key); // SOG-0506 : la position de la base écrite au terrain saisi
         edRefresh(s);
       }
     });
@@ -3224,6 +3372,7 @@ function edRefresh(s) {
     label = edTodoBtnHtml(s, doc);
   if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
   e.mapFeats = edMapFeats(s, doc, run);
+  edSrcPaint(s); // SOG-0506 : la fiche ouverte dit si son lieu est verrouillé par la base
   edMapShow(s);
   edProfile(s, doc); // SOG-0464 : le profil suit la route que la carte vient de recevoir (au plus un dessin par route : sa clé)
   if (run) {
@@ -3628,7 +3777,8 @@ export function edClick(s, b) {
         kind: 'pt',
         code: r.id,
         lat: r.lat,
-        lon: r.lon
+        lon: r.lon,
+        from: r.kind // SOG-0506 : le genre du repère, la source du lieu
       });
       if (at < 0) return edMapShow(s);
       return edMapPick(s, e, at);
@@ -3791,7 +3941,8 @@ export function edClick(s, b) {
           kind: b.dataset.kind,
           code: ref.id,
           lat: ref.lat,
-          lon: ref.lon
+          lon: ref.lon,
+          from: ref.kind // SOG-0506 : le genre du repère, la source du lieu
         });
         return at < 0 ? edMapShow(s) : edMapPick(s, s.ed, at);
       }

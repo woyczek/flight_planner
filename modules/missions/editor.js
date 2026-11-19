@@ -54,6 +54,8 @@
 //     Équipes, Risques, Chronologie et le théâtre ne comptent pas dans « À compléter » (décision du 13 nov., SOG-0287).
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
 //     un terrain dont le code OACI ne change pas garde sa position, sinon elle tombe (à placer dans Lieux).
+//   endsAt(doc, posOf) → le document (le même objet quand rien ne manque) dont le départ et l'arrivée sans position prennent celle
+//     que posOf(code) donne de la base (SOG-0506) — pour DESSINER la route et le profil, jamais pour écrire le fichier.
 //   blank() → le document d'une mission neuve (schéma de la V2, helo-xp-mission 2.0), vide.
 //   duplicate(doc) → une copie : l'opération et l'historique retirés, le reste gardé (l'identifiant se change ensuite par withCadre).
 //   numbering(rows, family, letter) → { id, series, nextSeries } : l'identifiant suivant de la famille (« T-086 »), sa série en cours.
@@ -168,6 +170,34 @@ export function codeCands(text) {
 /** Le premier code possible d'un nom de lieu (voir codeCands), '' sinon. */
 export function adCodeOf(name) {
   return codeCands(name)[0] || '';
+}
+
+/** SOG-0506 : le document dont l'origine et la destination sans position (un code connu de la base, écrit sans ses coordonnées) prennent
+ *  la position que `posOf(code)` donne ({ lat, lon } borné, sinon rien) — la route que la carte dessine et le profil sous elle passent
+ *  alors par le terrain que la carte montre déjà là. Pour l'affichage seulement : le fichier n'est pas réécrit en l'ouvrant. Le même
+ *  objet quand rien ne manque ou que la base ne dit rien ; jamais d'exception. */
+export function endsAt(doc, posOf) {
+  const d = obj(doc);
+  let out = d;
+  if (typeof posOf !== 'function') return doc;
+  for (const key of ['origin', 'destination']) {
+    const p = d[key];
+    if (!p || typeof p !== 'object' || Array.isArray(p) || numText(p.lat) !== '' && numText(p.lon) !== '') continue;
+    const code = adCodeOf(placeText(p)),
+      q = code ? posOf(code) : null,
+      lat = +q?.lat,
+      lon = +q?.lon;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+    if (out === d) out = {
+      ...d
+    };
+    out[key] = {
+      ...p,
+      lat,
+      lon
+    };
+  }
+  return out === d ? doc : out;
 }
 
 /** Un code lu dans un texte : { icao, name } ou null. Un code écrit en MAJUSCULES (« XTST · Base », « Base (XTST) ») est lu comme il l'a

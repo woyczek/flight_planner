@@ -313,6 +313,24 @@ offers under « ＋ Tiroir » only the kinds the flight judges: for each kind it
 pilot's screen says) must stay `!(hand || time || follows(key))` for every kind of key: noreg N155 checks it, and will turn red the
 day `follows` judges a kind (the landing, then the overflight, then the hover, then the sequence, did) that `notJudgedYet` still calls not judged.
 
+## 4 sexies. A named place of the base (SOG-0506, 19 Nov 2026)
+
+When the author chooses or types a point of the aeronautical base (an aerodrome, a helistation, a beacon, a network point, a reporting point), the
+workshop writes it in the form of before, **with its complete position**:
+
+```yaml
+origin: { name: XTST TEST (XTST), icao: XTST, lat: 44.55, lon: 1.85 }   # typed in Départ: the position of the base, written since SOG-0506
+turning_points:
+  - { id: PT3, name: XTST, lat: 44.55, lon: 1.85 }                      # the name is the code, the position is the base's (SOG-0495)
+```
+
+- **No new key.** The workshop reads the source of a place from these fields: the name equal to a code (a turning point, a target, a rendezvous) or the
+  code of the terrain (`icao`, or the code at the end of the name), AND the position equal to the one the base gives to that code. Such a place is locked
+  in the workshop (its position is not typed nor dragged); the name changed, it is a free point with the same position. A reader that does not know this
+  rule reads an ordinary place.
+- An origin or a destination written without a position (the workshop before SOG-0506, a hand-written file) is read as before (`missionFlight` gives
+  `depAt: null`, the frame resolves the terrain by its `icao`); the workshop draws its route through the position of the base without rewriting the file.
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

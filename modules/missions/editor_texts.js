@@ -105,6 +105,17 @@ export const EDTX = {
     'Name oder Kennung: Meldepunkt, Funkfeuer, Netzpunkt', 'nombre, o código: notificación, radioayuda, punto de red'
   ],
   plNameList: ['Points proposés', 'Suggested points', 'Vorgeschlagene Punkte', 'Puntos propuestos'],
+  // SOG-0506 : un point nommé de la base donne sa position et la verrouille — la fiche du lieu dit sa source
+  plSrc: ['Position de la base aéronautique : {src} — verrouillée. Effacez le code pour la libérer.',
+    'Position from the aeronautical base: {src} — locked. Erase the code to free it.',
+    'Position aus der Luftfahrtdatenbank: {src} — gesperrt. Löschen Sie die Kennung, um sie freizugeben.',
+    'Posición de la base aeronáutica: {src} — bloqueada. Borre el código para liberarla.'
+  ],
+  plSrc_aerodrome: ['le terrain {code}', 'the aerodrome {code}', 'der Flugplatz {code}', 'el aeródromo {code}'],
+  plSrc_navaid: ['la balise {code}', 'the beacon {code}', 'das Funkfeuer {code}', 'la radioayuda {code}'],
+  plSrc_point: ['le point du réseau {code}', 'the network point {code}', 'der Netzpunkt {code}', 'el punto de red {code}'],
+  plSrc_vrp: ['le point de report {code}', 'the reporting point {code}', 'der Meldepunkt {code}', 'el punto de notificación {code}'],
+  plSrc_plain: ['{code}', '{code}', '{code}', '{code}'],
   plOKind: ['Sorte d\'objet', 'Kind of object', 'Art des Objekts', 'Tipo de objeto'],
   ok_wreck: ['épave', 'wreck', 'Wrack', 'restos'],
   ok_raft: ['radeau', 'raft', 'Rettungsinsel', 'balsa'],
@@ -658,6 +669,12 @@ export const EDTX = {
   ],
   atHint_fixed: ['{name} : ce lieu ne se déplace pas sur la carte.', '{name}: this place is not moved on the map.',
     '{name}: dieser Ort wird nicht auf der Karte verschoben.', '{name}: este lugar no se mueve en el mapa.'
+  ],
+  // SOG-0506 : un point verrouillé par la base ne se déplace pas sur la carte
+  atHint_locked: ['{name} : position de la base, verrouillée — effacez son code pour le déplacer.',
+    '{name}: position from the base, locked — erase its code to move it.',
+    '{name}: Position aus der Datenbank, gesperrt — löschen Sie die Kennung, um ihn zu verschieben.',
+    '{name}: posición de la base, bloqueada — borre su código para moverlo.'
   ],
   atHint_contour: ['{name} : son milieu la déplace ; un sommet se déplace ; le point entre deux sommets en ajoute un.',
     '{name}: its middle moves it; a vertex is dragged; the point between two vertices adds one.',

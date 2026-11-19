@@ -1544,6 +1544,35 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   a gesture of the author; the list still offers only still objects; the mention « s'ouvre au geste ou à l'heure de repli » of the drawer shows (it comes from
   `MS.notJudgedYet` of the read key, which is true for a moving object). Captures `P13e_390_objet_mobile.png`, `P13e_1280_objet_mobile.png`.
 
+### 7 tresquinquagies. A named point of the base gives its position and locks it (19 Nov 2026; SOG-0506; noreg N163, N164, N120)
+
+- **The cause, measured** (the user: « lfrf ne semble toujours pas connu comme point »). SOG-0495 gave a position to a turning point, a target or a
+  rendezvous named by a code — never to the DEPARTURE or the ARRIVAL typed in the Cadre: `edNameBase` takes `pt`, `target` and `rdv` only, and
+  `placeWith` (editor.js) drops the position of a terrain whose code changes. The line of the Lieux stayed « à placer »; the map drew the terrain at the
+  position of the base (`mapFeatures`, `adPos`), but the dashed route was read from the FILE (`edMapFeats` → `TR.pathOf(MS.readMission(doc))` →
+  `missionFlight` `depAt = at(mission.origin)`, null without `lat`/`lon`): the route — and the profile, which reads the same line (`edProfile`) — skipped
+  it. Measured in N164 before the fix: the route of a file whose departure is « XTST » without a position started at PT1, `[[44.8, 1.2], [44, 2]]`.
+  For a turning point, the position is taken at the choice in the list or when the Name is left (`change`), not at each key: a code typed in full alone
+  in the list closes it (`ad_field.js`, « le code complet déjà tapé et seul de sa liste »), the place stays « à placer » until the field is left. A point
+  added to the mission is not added to the route of the departure by itself (« Ajouter un lieu… », or Tracé) — unchanged.
+- **A named point of the base is LOCKED**: chosen or typed, it writes its complete position (five decimals) with its code as its name; its latitude and
+  longitude are read only (`readonly`, a dashed field) and the sheet names the source: « Position de la base aéronautique : le terrain XTST —
+  verrouillée. Effacez le code pour la libérer. » (`plSrc`, the kind: terrain, balise, point du réseau, point de report). The map gives it no handle
+  (`mapFeatures`: a row `locked` is not `movable`); a gesture that would still come is refused (`onMove`), and the line under the map says
+  « PT3 · XTST : position de la base, verrouillée — effacez son code pour le déplacer. » (`atHint_locked`). A forged typing in a locked field is put back.
+- **The source is not a key of the file** (no new key, nothing for Sécurisation to bound): it is read from what the file already says — the name equal to
+  the code (a turning point, a target, a rendezvous: `[A-Z0-9][A-Z0-9./-]{1,23}`, as `edPlaceFromBase` writes it) or the code of the terrain (departure,
+  arrival: `icao`, or the code in the name), AND the position equal to the one the base gives to that code (1e-4 degree). `edSrcOf` asks the base once per
+  code and position (`aerodb.coordsAll` with `near`, for the homonyms; `adPosOf` for a terrain), keeps the answer (400 entries at most) and redraws in place
+  (`edSrcPaint`). A file written by hand with a name that is a code but another position is a free point, as before.
+- **Freed by erasing the code**: the name no longer the code, the place keeps its position as a free point (the gesture of SOG-0495: a name typed never
+  moves a placed point); its fields are written again and the map moves it. No new word.
+- **The departure and the arrival**: a terrain the author types in Départ or Arrivée and the base knows writes its position in its line of the Lieux
+  (`edEndFill`, at the typing and at the answer of the base): the file carries `origin: { name, icao, lat, lon }`. A terrain of the file the author did not
+  retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of
+  the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it.
+- Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through XTST beside it).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
