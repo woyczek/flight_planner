@@ -7400,13 +7400,15 @@ def _altn_taf(cat, now):
             'fcsts': [{'timeFrom': lo, 'timeTo': hi, 'fcstChange': None, 'wdir': 270, 'wspd': 8, 'visib': vis, 'clouds': cl}]}
 
 
-def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=(), held=True):
+def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=(), held=True, typed=False, wx_down=False):
     """The seeded flight with XQAL as alternate, a C30J sheet (minimum runway `min_ft`, none if None), XQAL's hard runway `hard_m` (m),
     `app` instrument approaches held in proc/manual/ beside one SID and one STAR (an index entry without any procedure is not « held »:
     aerodb's coverage table), its TAF of category `cat` kept fresh in the weather store (the test server has no
     launcher: the store asks a TAF of avwx.rest only with a key; a kept one is read first, cache/weather/taf/); the weather read by the gesture.
     `more_ads`: more invented aerodromes of the base (SOG-0528: a far arrival); `held=False`: XQAL out of the procedures index (its
-    procedures not held by the base, SOG-0527)."""
+    procedures not held by the base, SOG-0527); `typed=True`: the flight opened WITHOUT its aerodromes, typed after the opening, and
+    no gesture « Lire la météo » (SOG-0527 (2): the page reads what it lacks by itself); `wx_down=True`: the METAR sources do not
+    answer (aborted), the read fails."""
     import time as _t
     now = int(_t.time())
     sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
@@ -7423,10 +7425,26 @@ def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=(), held=True):
     if held:
         docs += [['proc/manual/index.json', {'schema': 1, 'aerodromes': {_ALT_ID: {'SID': 1, 'STAR': 1, 'APP': app, 'cycle': '2026-10-01',
                                                                                    'updated_at': '2026-11-01T09:00:00Z'}}}, 'reference']]
-    docs.append([f'cache/weather/taf/{_ALT_ID}.json', {'at': 4102444800000, 'source': 'launcher', 'data': _altn_taf(cat, now)}, 'cache'])
-    route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), _ALT_ID: (270, 8)})
+    if not wx_down:  # a source that answers nothing: no TAF kept either (SOG-0527 (2), F290)
+        docs.append([f'cache/weather/taf/{_ALT_ID}.json', {'at': 4102444800000, 'source': 'launcher', 'data': _altn_taf(cat, now)}, 'cache'])
+    if typed:
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                for k in ('dep', 'arr', 'altn'):
+                    d[1]['route'].pop(k, None)
+    if wx_down:
+        import re as _re
+        c.context.route(_re.compile(r'aviationweather\.gov|metar\.vatsim\.net|avwx\.rest', _re.I), lambda r: r.abort())
+    else:
+        route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), _ALT_ID: (270, 8)})
     c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': _ALT_ID, 'name': 'XQAL TEST', 'lat': 43.45, 'lon': 3.62,
                                                                            'elev': 50, 'hardLen': hard_m}, *more_ads]})
+    if typed:
+        to_step(c, 0)
+        for k, v in (('dep', 'LFRS'), ('arr', 'LFML'), ('altn', _ALT_ID)):
+            c.page.fill(f'{FUEL} input[data-k="{k}"]', v)
+            c.page.locator(f'{FUEL} input[data-k="{k}"]').dispatch_event('change')
+        return
     wait_quote(c)
     to_step(c, 0)
     c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
@@ -9022,4 +9040,42 @@ def f289(c):
     c.tap(f'{A} [data-do="procfetch"]')
     c.until("(window.__notes || []).slice(window.__n0).some(n => n.includes('XQAL'))", timeout=8000,
             what='the reading of XQAL started (its start, then its answer, said)')
+    c.check_errors()
+
+
+@case('F290', 'Flight step, the line of the alternate: the weather of the aerodromes is read BY THE PAGE when it lacks — a flight opened '
+      'without its aerodromes, then the departure, arrival and alternate typed: no gesture « Lire la météo », the TAF of the alternate is read '
+      'and its weather judged; never « pas encore lue (étape Météo) » left on screen', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=True, langs4=True,
+      rule='SOG-0527 (2) (the user: « la page sait ce qui lui manque pour les N terrains de dégagement, pour avoir la bonne météo ou le metar. '
+      'pas l\'utilisateur. »); the ergonomist: Fuel asks itself what is missing or aged, once per need, the cache respected; before, a '
+      'change of aerodrome read the weather again only when it had been read already; invented aerodrome XQAL, sheet and TAF')
+def f290(c):
+    # 1. the weather does not answer: the alternate's criterion says the read failed and its cause — never « pas encore lue (étape
+    # Météo) », which sent the pilot to a gesture that would fail the same way (red before: that sentence)
+    failed = {'fr': 'Météo : non vérifiée — lecture impossible', 'en': 'Weather: not checked — could not be read',
+              'de': 'Wetter: nicht geprüft — konnte nicht gelesen werden', 'es': 'Meteorología: no comprobada — no se pudo leer'}[c.lang]
+    W = f'{FUEL} [data-altnchk] li[data-crit=wx]'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 844})
+        _altn_open(c, 2500, 2, 'VFR', 5000, wx_down=True)
+        c.until(f"(document.querySelector('{W}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(norm(failed))})",
+                timeout=25000, what=f'{w} px: the failure of the read said, with its cause')
+        txt = norm(c.text(W) or '')
+        c.ok(norm(failed) + ' (' in txt, txt, f'{w} px: the cause in brackets')
+        # for the relay: the screen this case proves — the failure and its cause, the fold open, the notes closed
+        c.js(f"document.querySelector('{FUEL} [data-altnchk] details[data-altnfold]').open = true")
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F290_{c.design}_{w}_{c.lang}_failed.png')
+    # 2. the aerodromes typed after the opening: their weather read without a gesture (non-regression)
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 844})
+        _altn_open(c, 2500, 2, 'VFR', 5000, typed=True)
+        c.until(f"document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx]')?.dataset.state === 'ok'", timeout=25000,
+                what=f'{w} px: the weather of the alternate read without a gesture, and judged')
+        c.js(f"document.querySelector('{FUEL} [data-altnchk] details[data-altnfold]').open = true")
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F290_{c.design}_{w}_{c.lang}_wx.png')
     c.check_errors()

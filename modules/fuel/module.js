@@ -810,10 +810,20 @@ const TX = {
       'Wetter: nicht geprüft — Datum oder Dauer des Flugs fehlt (Ankunftszeit am Ausweichflugplatz unbekannt).',
       'Meteorología: no comprobada — falta la fecha o la duración del vuelo (hora de llegada al alternativo desconocida).'
     ],
-    wxNotRead: ['Météo : non vérifiée — la météo des terrains n’est pas encore lue (étape Météo).',
-      'Weather: not checked — the aerodromes’ weather is not read yet (Weather step).',
-      'Wetter: nicht geprüft — das Flugplatzwetter ist noch nicht gelesen (Schritt Wetter).',
-      'Meteorología: no comprobada — la meteorología de los aeródromos aún no se ha leído (paso Meteorología).'
+    wxNotRead: ['Météo : non vérifiée — la météo des terrains n’est pas encore lue.',
+      'Weather: not checked — the aerodromes’ weather is not read yet.',
+      'Wetter: nicht geprüft — das Flugplatzwetter ist noch nicht gelesen.',
+      'Meteorología: no comprobada — la meteorología de los aeródromos aún no se ha leído.'
+    ],
+    // SOG-0527 (2) : la page lit d'elle-même ce qui manque ; pendant la lecture, et quand elle échoue (sa cause)
+    wxReading: ['Météo : lecture de la météo des terrains…', 'Weather: reading the aerodromes’ weather…',
+      'Wetter: Flugplatzwetter wird gelesen…', 'Meteorología: leyendo la meteorología de los aeródromos…'
+    ],
+    wxUnreachable: ['source météo injoignable', 'weather source unreachable', 'Wetterquelle nicht erreichbar',
+      'fuente meteorológica inaccesible'
+    ],
+    wxFailed: ['Météo : non vérifiée — lecture impossible ({why})', 'Weather: not checked — could not be read ({why})',
+      'Wetter: nicht geprüft — konnte nicht gelesen werden ({why})', 'Meteorología: no comprobada — no se pudo leer ({why})'
     ],
     wxNoTaf: ['Météo : non vérifiée — aucun TAF lu pour ce terrain.', 'Weather: not checked — no TAF read for this aerodrome.',
       'Wetter: nicht geprüft — kein TAF für diesen Flugplatz gelesen.',
@@ -3708,12 +3718,70 @@ async function wxCorridor() {
   }
   return s.wxCorr = out;
 }
-/** Relit la météo un peu après un changement de terrain, si elle a déjà été lue ou si la météo réelle est cochée. */
+/** Relit la météo un peu après un changement de terrain, si elle a déjà été lue ou si la météo réelle est cochée (avant toute lecture,
+ *  la lecture d'ouverture — S.wxTried, retentée à chaque dessin jusqu'à ce que la route ait ses terrains — s'en charge ; SOG-0527 (2) :
+ *  sans cette garde, l'ouverture d'un vol lisait deux fois et gênait les travaux du lanceur). */
 function scheduleWx() {
   clearTimeout(S.wxTimer);
   if (!S.wx && !S.flight.weather?.real) return;
   S.wxTimer = setTimeout(() => wxFetch(false), 1200);
 }
+/** SOG-0527 (2) : après un dessin ou une lecture, un temps calme puis wxAuto (ce qui MANQUE ou a VIEILLI, une fois par heure) ; un appel
+ *  déjà prévu est gardé — les dessins rapprochés ne le repoussent jamais (F133). */
+function wxAutoSoon() {
+  if (S.wxAutoTimer) return;
+  const s = S;
+  S.wxAutoTimer = setTimeout(() => {
+    s.wxAutoTimer = null;
+    if (!gone(s)) wxAuto();
+  }, 1200);
+}
+/** SOG-0527 (2) : ce qui MANQUE ou a VIEILLI pour le départ, l'arrivée et le dégagement du vol : [{ id, kind: 'metar' | 'taf' }] — un
+ *  METAR absent ou de plus de WX_METAR_OLD_S ; un TAF absent ou ancien (valide depuis plus de WX_TAF_OLD_S) quand le vol a une date (un TAF
+ *  ne sert qu'à une heure donnée). Terrains au code OACI seulement. */
+function wxNeeds() {
+  const r = S.flight.route || {},
+    now = Date.now() / 1000,
+    dated = wxWhen() != null,
+    out = [];
+  for (const id of [...new Set([r.dep, r.arr, r.altn].map(x => String(x || '').toUpperCase().trim()).filter(isIcaoAlpha))]) {
+    const m = S.wx?.metar?.[id],
+      t = S.wx?.taf?.[id];
+    if (!m || !(now - +m.obsTime <= WX_METAR_OLD_S)) out.push({
+      id,
+      kind: 'metar'
+    });
+    if (dated && (!t || !(now - +t.validTimeFrom <= WX_TAF_OLD_S))) out.push({
+      id,
+      kind: 'taf'
+    });
+  }
+  return out;
+}
+/** SOG-0527 (2) : lit la météo des terrains quand quelque chose manque ou a vieilli (wxNeeds) — UNE tentative par terrain, par sorte et
+ *  par heure (S.wxAsked), jamais en boucle ; la lecture passe par la couche météo du cadre (ctx.weather : son cache et ses sources, la clé
+ *  de l'appareil jamais vue ici). Hors ligne : rien n'est demandé. */
+function wxAuto() {
+  if (!S?.flight || S.wxBusy || S.ctx.net?.online?.() === false) return;
+  const hour = Math.floor(Date.now() / 3600e3),
+    asked = S.wxAsked ||= new Set(),
+    fresh = wxNeeds().filter(n => !asked.has(`${n.id}|${n.kind}|${hour}`));
+  if (!fresh.length) return;
+  for (const n of fresh) asked.add(`${n.id}|${n.kind}|${hour}`);
+  if (asked.size > 200) S.wxAsked = new Set(fresh.map(n => `${n.id}|${n.kind}|${hour}`)); // borné : seule l'heure en cours compte
+  return wxFetch(false);
+}
+/** SOG-0527 (2) : les besoins du moment (wxNeeds) posés comme demandés pour l'heure — appelé par TOUTE lecture (wxFetch), celle de
+ *  l'ouverture et le geste compris : wxAuto ne redemande pas aussitôt ce qu'une lecture vient d'aller chercher. */
+function wxMarkAsked() {
+  const hour = Math.floor(Date.now() / 3600e3),
+    asked = S.wxAsked ||= new Set();
+  for (const n of wxNeeds()) asked.add(`${n.id}|${n.kind}|${hour}`);
+}
+/** SOG-0527 (2) : un METAR plus vieux est relu (une heure : une observation par heure au moins) ; un TAF valide depuis plus longtemps est
+ *  relu (sept heures : un TAF s'émet toutes les six heures). */
+const WX_METAR_OLD_S = 3600,
+  WX_TAF_OLD_S = 7 * 3600;
 /** METAR et TAF des terrains du couloir par la couche météo du cadre (ctx.weather.metar / taf : aviationweather.gov
  *  relayé par le lanceur, sinon metar.vatsim.net et avwx.rest avec la clé de l'appareil ; gardés 30 min par terrain) ;
  *  hors ligne, sa réserve. Les TAF seulement quand une date de vol les rend utiles (terrains avec METAR, départ,
@@ -3732,6 +3800,11 @@ async function wxFetch(loud = false) {
   }
   const W = s.ctx.weather,
     cacheOnly = s.ctx.net?.online?.() === false;
+  // SOG-0527 (2) : la ligne du dégagement dit la lecture en cours, puis son échec et sa cause (jamais « allez à l'étape Météo »)
+  s.wxBusy = true;
+  s.wxFail = null;
+  wxMarkAsked(); // toute lecture compte : ce qu'elle va chercher n'est pas redemandé dans l'heure (pas de seconde lecture à l'ouverture)
+  if (s.C) altnChkDraw(s.C);
   try {
     if (!W) throw Object.assign(new Error('ctx.weather'), {
       unreachable: true
@@ -3745,6 +3818,8 @@ async function wxFetch(loud = false) {
         cacheOnly
       }) : null;
     if (gone(s)) return;
+    // une source qui ne répond pas rend un résultat « offline » (aucune exception) : un échec, dit avec sa cause, jamais « pas encore lue »
+    if (!cacheOnly && (m.offline || t?.offline)) s.wxFail = tt(TX.altnWhy.wxUnreachable);
     const newest = Math.max(0, ...Object.values(m.items).map(x => +x?.obsTime || 0)); // heure du plus récent METAR gardé
     S.wx = {
       metar: m.items,
@@ -3757,10 +3832,14 @@ async function wxFetch(loud = false) {
   } catch (e) {
     if (gone(s)) return;
     if (S.wx) S.wx.cached = true;
+    s.wxFail = String(e.offline ? tt(TX.offline) : e.unreachable ? tt(TX.wxRelay) : e?.message || '?').slice(0, 160);
     if (loud) S.ctx.notify(e.offline ? tt(TX.offline) : e.unreachable ? tt(TX.wxRelay) : tt(TX.sbError, {
       e: e.message
     }), 'warn');
+  } finally {
+    s.wxBusy = false;
   }
+  if (!gone(s)) wxAutoSoon(); // ce qui a changé pendant la lecture (un terrain saisi) est revu ensuite, une fois par heure au plus
   s.wxAd = s.wxAd || {};
   for (const id of ids)
     if (!(id in s.wxAd)) s.wxAd[id] = ((await s.ctx.aerodb?.aerodromes?.({
@@ -5446,7 +5525,11 @@ async function altnChkDraw(C) {
     },
     w = crits.filter(c => c.state === J.state).map(c => tt(TX.altnK[c.k])).join(', '),
     fmt = n => Number(n).toLocaleString(S.ctx.lang()),
-    why = c => tt(TX.altnWhy[c.code], {
+    why = c => ['wxNotRead', 'wxNoTaf', 'wxNoKey'].includes(c.code) && (S.wxBusy || S.wxFail) ? (S.wxBusy ? tt(TX.altnWhy.wxReading) : tt(
+      TX.altnWhy
+      .wxFailed, {
+        why: S.wxFail
+      })) : tt(TX.altnWhy[c.code], {
       ...c.v,
       l: c.v.l != null ? fmt(c.v.l) : '',
       m: c.v.m != null ? fmt(c.v.m) : '',
@@ -8090,6 +8173,7 @@ function refresh() {
   openInLinks(C);
   fplDraw(C);
   altnChkDraw(C); // SOG-0398 : la ligne du dégagement suit le terrain, la fiche, la durée du vol
+  wxAutoSoon(); // SOG-0527 (2) : la météo qui manque ou a vieilli est demandée d'elle-même
   fmsState();
   acSelected();
   renderSummary(C);
@@ -9358,6 +9442,7 @@ export function unmount() {
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);
+  clearTimeout(S.wxAutoTimer);
   S.body = null;
   S = null;
 }
