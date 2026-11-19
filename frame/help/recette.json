@@ -5444,21 +5444,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0129",
-   "fiche": "",
-   "app": "",
-   "question": "Pour un écran encore en exploration (l'atelier), écrit-on les manuels et l'aide une seule fois, au jalon « figé », au lieu de les refaire à chaque lot ?",
-   "context": "Ta question : itérer avec traductions, documentation et factorisation refaites sans cesse coûte cher. Réponse de l'ergonome : deux régimes. EXPLORATION : on itère sur une maquette, aucun code avant ton oui ; le code qui bouge encore ne livre que l'obligatoire (textes d'écran en quatre langues, cas d'intégrité et de sécurité). INDUSTRIALISATION au jalon « figé » : manuels et aide en quatre langues, documentation, factorisation, parcours de recette, une seule fois. Cela change ta règle « tout changement de page → manuels en quatre langues dans le commit du lot » : d'où la question.",
-   "options": [
-    "Oui : au jalon « figé », une seule fois",
-    "Non : à chaque lot, comme aujourd'hui",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
