@@ -5444,36 +5444,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0127",
-   "fiche": "SOG-0518",
-   "app": "pilote",
-   "question": "Points d'attente sur la Carte : à partir de quel zoom leurs NOMS s'affichent-ils ?",
-   "context": "Ton refus vient de doublons : à EGLL, 37 attentes portent le nom de la voie où elles se trouvent (A10E, N5E…). Elles n'auront plus qu'UNE étiquette, celle de la voie, et l'attente gardera son trait rouge. Sans les doublons, il reste à EGLL 42 noms d'attente au zoom 13, 30 au zoom 14 et environ 3 au zoom 15 (l'ancien réglage). Ce que tu demandais : voir le nom de l'attente qu'un contrôle annonce.",
-   "options": [
-    "Zoom 14 : 30 noms sur Heathrow (recommandé par BUGS SOG)",
-    "Zoom 13 : 42 noms, comme les voies principales",
-    "Zoom 15 : comme avant, presque rien avant d'être très près",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0128",
-   "fiche": "SOG-0525",
-   "app": "maintenance",
-   "question": "Météo GFS : autorises-tu UNE lecture d'essai de la NOAA par la session BUGS SOG, pour connaître dès ce soir la cause des échecs ?",
-   "context": "Aucune mise à jour GFS n'a réussi depuis le 17/11 et la cause n'est gardée nulle part. L'essai : lire la liste des sorties du modèle, une seule requête, rien d'enregistré. Sans essai, le correctif dira la cause à ton prochain rafraîchissement.",
-   "options": [
-    "Oui : une lecture d'essai ce soir",
-    "Non : j'attends le correctif, qui me dira la cause à mon prochain essai"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0129",
    "fiche": "",
    "app": "",
