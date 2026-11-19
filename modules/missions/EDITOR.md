@@ -1575,6 +1575,12 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   frame's action note, `ms` 10 s): `edNameUndo` gives the place back its former position AND the name it had before the typing (`e.nameWas`, kept at
   the first key of the Name), free again — nothing is done if the place was touched since. A free name that is not a known code moves nothing, says
   nothing. « Annuler le geste » of the map is not used: it never undoes a typing (SOG-0471). Capture `P14c_390_deplace.png`.
+- **A typed code moves a place only if it has no homonym** (the relay, on SOG-0506; noreg N171, N126 and N169 unchanged): the rule above is for a code
+  with ONE publishable point in the base (`EM.publishable`, the same guard as the licence). A name TYPED (no `pick`) whose code has several publishable
+  points at distinct positions (`edNameBase` counts them in the answer of `coordsAll`) changes nothing — a placed point stays where it is, a place with
+  no position stays « à placer », nothing is locked, nothing is said — and the list of the Name proposes them all; only the CHOICE of one in the list
+  (`pick`) moves and locks, as before. A homonym listed twice at the same position counts once. The search around the place is the usual one (`near`,
+  the nearest zones): a homonym in a far zone not yet opened is not seen.
 - **The departure and the arrival**: a terrain the author types in Départ or Arrivée and the base knows writes its position in its line of the Lieux
   (`edEndFill`, at the typing and at the answer of the base): the file carries `origin: { name, icao, lat, lon }`. A terrain of the file the author did not
   retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of

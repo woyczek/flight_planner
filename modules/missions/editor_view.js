@@ -2742,7 +2742,9 @@ function edEndFill(s, e, key) {
  *  le nom d'avant). `pick` : le point choisi dans la liste du Nom ({ code, lat, lon } du champ commun, qui ne dit pas sa source) — seul
  *  CE lieu de la base, à cette position, est retenu ; `was` : le nom du lieu avant la frappe. Une seule demande à la fois par lieu (le
  *  « change » qui suit un choix ne la refait pas) ; rien n'est changé si le nom a changé entre-temps, si une demande plus récente l'a
- *  remplacée ou si la base ne connaît rien de publiable (un nom libre ne déplace rien). */
+ *  remplacée ou si la base ne connaît rien de publiable (un nom libre ne déplace rien). Un nom TAPÉ (sans `pick`) n'agit que si la base n'a
+ *  qu'UN point publiable de ce code : avec des homonymes (relais, SOG-0506), rien ne bouge — un lieu placé reste où il est, un lieu sans
+ *  position reste « à placer » — et la liste du champ commun les propose ; le CHOIX d'un point dans la liste déplace et verrouille. */
 function edNameBase(s, e, i, {
   pick = null,
   was
@@ -2765,7 +2767,11 @@ function edNameBase(s, e, i, {
     if (asks.get(i) !== key) return; // une demande plus récente pour ce lieu
     asks.delete(i);
     // SOG-0506 (Sécurisation) : le premier lieu publiable, borné (et, pour un choix de la liste, celui-là même)
-    const hit = (Array.isArray(all) ? all : []).find(x => EM.publishable(x) && edPos(x.item) && (!at || edSamePos(x.item, at)));
+    const pubs = (Array.isArray(all) ? all : []).filter(x => EM.publishable(x) && edPos(x.item)),
+      hit = pubs.find(x => !at || edSamePos(x.item, at));
+    // SOG-0506 (relais) : un nom TAPÉ ne déplace ni ne verrouille que si la base n'a qu'UN point publiable de ce code ; avec des homonymes
+    // (positions distinctes) rien ne bouge et la liste du champ commun les propose : seul un CHOIX de la liste (`at`) tranche
+    if (!at && hit && pubs.some(x => !edSamePos(x.item, hit.item))) return;
     const now = state() === s && s.ed === e ? e.places?.[i] : null;
     if (!hit || !now || now.id !== row.id || String(now.name || '').trim().toUpperCase() !== word) return;
     const from = edPos(now),

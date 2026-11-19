@@ -11672,3 +11672,78 @@ def n177(c):
     c.tap(f'{_KW} [data-do=edkindoff]')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+# SOG-0506 (the relay): a code TYPED moves or locks a place only when the base has ONE publishable point of that code. The invented base: two reporting points
+# of the same code XHOM, at two positions (44.95 N, 1.1 E and 44.2 N, 1.9 E), and the XPT01 of the trial base (a single one).
+_HOM_AT = [[44.95, 1.1], [44.2, 1.9]]
+_HOM_BASE = dict(_PB_BASE, vrp=_PB_BASE['vrp'] + [{'id': 'XHOM', 'name': 'HOMONYME NORD', 'lat': _HOM_AT[0][0], 'lon': _HOM_AT[0][1]},
+                                                  {'id': 'XHOM', 'name': 'HOMONYME SUD', 'lat': _HOM_AT[1][0], 'lon': _HOM_AT[1][1]}])
+
+
+@case('N171', 'Missions › the workshop, a code TYPED moves a place only when the base has no homonym (SOG-0506, the relay): on an invented base with two publishable points of the '
+      'code XHOM (two positions), a turning point without position, then placed by hand (44.5 N, 1.1 E, « Pont nord »), on which « xhom » is typed stays where it is, free, with no notification, and the '
+      'list of the Name proposes the two XHOM; choosing one of them in the list moves it to its position and locks it; a code with a single point (« xpt01 ») typed still moves it '
+      '(case N169)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0506 (the relay: a typed name moves or locks a place only if the base has ONE publishable point of that code, counted with EM.publishable like the licence guard; '
+      'the CHOICE in the list decides among homonyms): modules/missions/editor_view.js `edNameBase`; EDITOR.md § 7 tresquinquagies')
+def n171(c):
+    w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
+    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null")  # noqa: E731
+    name = f'{E} [data-plform] input[data-k=edplname]'
+    note = lambda t: c.js(_MOVED_NOTE, norm(row(c, 'plMoved', EDTX_FILE).replace('{name}', t)))  # noqa: E731
+
+    def typed(text):
+        """The Name of the open sheet typed and left (the change of the field)."""
+        c.page.fill(name, text)
+        c.page.locator(name).press('Tab')
+
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _lk_open(c, w, base=_HOM_BASE)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{name}')", what='the sheet of a new turning point')
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    # 0. a place WITHOUT position follows the same rule: « xhom » typed, it stays « à placer » (no position, not locked, nothing said)
+    typed('xhom')
+    c.wait(1500)
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0], note('PT3 · XHOM')], ['xhom', '', '', [False, False], []],
+         '« xhom » typed on a place with no position, two homonyms in the base: it stays to place, free, and nothing is said', what='homonyms, no position')
+    c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
+    typed('Pont nord')
+    c.wait(600)
+    # 1. « xhom » typed: two homonyms, nothing moves, nothing is locked, nothing is said
+    typed('xhom')
+    c.wait(1500)
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0], note('PT3 · XHOM')], ['xhom', '44.5', '1.1', [False, False], []],
+         '« xhom » typed on a placed point that has two homonyms in the base: it stays where it is, free, and nothing is said', what='homonyms typed')
+    # 2. the list of the Name proposes the two XHOM
+    c.page.fill(name, '')
+    c.page.locator(name).press_sequentially('xhom', delay=40)
+    c.until(f"({_AD_SUG}).filter(x => x.startsWith('XHOM@')).length === 2", timeout=8000, what='the two XHOM proposed for « xhom »')
+    got = c.quiet(_AD_SUG)
+    c.ok(sorted(x for x in got if x.startswith('XHOM@')) == sorted(f'XHOM@{a},{b}' for a, b in _HOM_AT) or len([x for x in got if x.startswith('XHOM@')]) == 2, got,
+         'the list of the Name proposes the two XHOM, each with its position')
+    # 3. the choice of one of them decides: moved to its position and locked
+    south = next(k for k, x in enumerate(got) if x.startswith('XHOM@44.2'))
+    for _ in range(south + 1):
+        c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.2'", timeout=8000, what='the point moved to the XHOM chosen in the list')
+    c.until(f"({_LK_STATE})()[0].every(x => x)", timeout=5000, what='the chosen point locked')
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0], len(note('PT3 · XHOM'))], ['XHOM', '44.2', '1.9', [True, True], 1],
+         'one of the XHOM chosen in the list: its position, locked, said', what='chosen')
+    # 4. a code with a single point typed still moves a placed point (N169)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.page.fill(name, '')
+    typed('Pont nord')
+    c.wait(600)
+    c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
+    typed('xpt01')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved to the single XPT01')
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0]], ['XPT01', '44.9', '1.45', [True, True]], 'a code with a single point typed still moves the place', what='single')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    ed_leave(c)
+    c.js(_REG_CLEAR)
