@@ -7808,7 +7808,64 @@ def k163(c):
          'kind STAR / SID: the conventional charts only (the AIP codes the RNAV procedures, never a CONV chart); another kind: nothing', what='star sid')
 
 
-@case('K164', 'The ten-minute gap of weather/world counts the jobs that reached the NOAA: a job that failed before any read (the tool crashes, nothing written) does not forbid a new try (« prochain essai dans 578 s »)', 'K', static=True,
+@case('K404', 'The launcher keeps the result of EVERY job by verb (cause, message, hour), bounded, and weather/world status says the last one (SOG-0525: a countdown with no reason)', 'K', static=True,
+      rule='SOG-0525 (the user: GFS never refreshes, always a countdown; the relay, GO): the launcher kept the last result of only four base verbs (last_results.json); the failure of a weather/world read was lost as soon as another job ran (here a base/publish), so the screen could say a countdown and never a cause. Every job (not a pure read) now leaves { state, ended, ok, reason, message } under its verb in data/local/last_results.json, at most 80 verbs, the text cleaned and short; the action status of weather/world gives it back as last')
+def k404(c):
+    import json
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    fake = chr(10).join(['import sys', 'print("lecture impossible : HTTP 503", file=sys.stderr)', 'print("aucun synoptique monde ecrit", file=sys.stderr)', 'sys.exit(0)', ''])
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        script = os.path.join(td, 'fake_world.py')
+        open(script, 'w', encoding='utf-8').write(fake)
+        jobs = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={})
+
+        def journal(key=None):
+            path = os.path.join(data, 'local', 'last_results.json')
+            end = time.time() + 5
+            while True:   # the journal is written just after the state turns done: wait for the key
+                doc = {}
+                try:
+                    doc = json.load(open(path, encoding='utf-8'))
+                except (OSError, ValueError):
+                    pass
+                if key is None or key in doc or time.time() > end:
+                    return doc
+                time.sleep(0.05)
+
+        def wait(j):
+            end = time.time() + 20
+            v = j.view()['job']
+            while v['state'] == 'running' and time.time() < end:
+                time.sleep(0.1)
+                v = j.view()['job']
+            return v
+        s = jobs.start('weather', 'world', {})
+        v = wait(jobs)
+        c.eq((s.get('ok'), (v['result'] or {}).get('reason')), (True, 'no-run'), 'a read that finds no run', what='no-run')
+        doc = journal('weather/world')
+        w = doc.get('weather/world') or {}
+        c.ok(w.get('reason') == 'no-run' and w.get('ok') is False and isinstance(w.get('ended'), int) and 'HTTP 503' in str(w.get('message') or w.get('result')), str(w)[:300], 'its cause, its message and its hour are kept under weather/world')
+        s = jobs.start('weather', 'world', {'action': 'status'})
+        v = wait(jobs)
+        last = (v['result'] or {}).get('last') or {}
+        c.ok(last.get('reason') == 'no-run' and last.get('ok') is False and isinstance(last.get('ended'), int), str(v['result'])[:300], 'the status says the last read: its reason and its hour')
+        # every verb, bounded
+        reg = {('x', 'v' + str(i)): ((lambda job, a, ctx: {'ok': False, 'reason': 'r', 'message': 'm' * 500}), (lambda a: {})) for i in range(95)}
+        j2 = RJ.Jobs(reg, {'data': data}, min_gap={})
+        for i in range(95):
+            j2.start('x', 'v' + str(i), {})
+            wait(j2)
+        doc = journal('x/v94')
+        mine = {k: v for k, v in doc.items() if k.startswith('x/')}
+        c.ok(0 < len(mine) and len(doc) <= 80 and all(len(str(v.get('message') or '')) <= 300 for v in mine.values()), str(len(doc)) + ' verbs, ' + str(len(mine)) + ' of them x/', 'a verb that is not a base one is kept too, at most 80 verbs in the file, a message at most 300 signs')
+
+
+@case('K164', 'The ten-minute gap of weather/world counts the jobs that READ a forecast time: a job that failed before any read (the tool crashes, nothing found, no run, an invalid folder, the wait exceeded) does not forbid a new try (« prochain essai dans 578 s »)', 'K', static=True,
       rule='Lot of 11 Nov 2026, challenge b of AeroDB (granted by the ergonomics session; user complaint « prochain essai dans 578 s »): MIN_GAP (600 s) was set when the job STARTED, so a job that failed at once (tool crash, unsafe path, cancelled before the first forecast time) still forbade a new try for ten minutes. A job that read the NOAA (the tool ran to its end, or said one forecast time) keeps the gap: the server is public')
 def k164(c):
     import os
@@ -7822,6 +7879,8 @@ def k164(c):
             '    print("Traceback: boom", file=sys.stderr); sys.exit(3)\n'
             'if mode == "slow":\n'
             '    import time; time.sleep(30)\n'
+            'if mode == "etapenone":\n'
+            '    print("@etape 1/3", flush=True); print("lecture interrompue", file=sys.stderr); sys.exit(0)\n'
             'if mode == "none":\n'
             '    print("lecture impossible : timed out", file=sys.stderr); print("aucun synoptique monde \u00e9crit", file=sys.stderr); sys.exit(0)\n'
             'print("@etape 1/3", flush=True); sys.exit(4)\n')
@@ -7856,9 +7915,9 @@ def k164(c):
         s, v = play('crash')
         c.eq(s.get('ok'), True, 'and it does not hold the next try either', what='retry after cancel')
         s, v = play('none')
-        c.eq((s.get('ok'), (v['result'] or {}).get('reason')), (True, 'no-run'), 'the tool ran to its end and found no run (the NOAA was asked)', what='no run')
+        c.eq((s.get('ok'), (v['result'] or {}).get('reason'), (v['result'] or {}).get('reached')), (True, 'no-run', False), 'the tool ran to its end and found no run: no-run, and it says it did not reach a forecast time (SOG-0525)', what='no run')
         s, v = play('crash')
-        c.eq((s.get('ok'), s.get('status'), s.get('reason')), (False, 429, 'too-soon'), 'the NOAA was asked: the ten minutes hold (the server is public)', what='gap holds')
+        c.eq((s.get('ok'), s.get('status'), s.get('reason')), (True, None, None), 'a no-run does not arm the ten minutes either: nothing was read, nothing was published, a new try is not refused (SOG-0525: always a countdown after a no-run)', what='no-run does not hold')
         jobs2 = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={('weather', 'world'): 600})
         open(os.path.join(td, 'mode.txt'), 'w').write('read')
         s = jobs2.start('weather', 'world', {})
@@ -7868,6 +7927,17 @@ def k164(c):
             time.sleep(0.1)
         again = jobs2.start('weather', 'world', {})
         c.eq((again.get('ok'), again.get('reason')), (False, 'too-soon'), 'a job that read a forecast time (@etape) and then failed holds the gap too', what='etape holds')
+        jobs3 = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={('weather', 'world'): 600})
+        open(os.path.join(td, 'mode.txt'), 'w').write('etapenone')
+        s = jobs3.start('weather', 'world', {})
+        time.sleep(1.0)
+        end3 = time.time() + 10
+        while jobs3.view()['job']['state'] == 'running' and time.time() < end3:
+            time.sleep(0.1)
+        v3 = jobs3.view()['job']
+        c.eq(((v3['result'] or {}).get('reason'), (v3['result'] or {}).get('reached')), ('no-run', None), 'a no-run AFTER a forecast time was read (the NOAA was read): the start is not given back (Securite, SOG-0525)', what='no-run after etape')
+        again = jobs3.start('weather', 'world', {})
+        c.eq((again.get('ok'), again.get('reason')), (False, 'too-soon'), 'and the ten minutes hold: no download chained by repeated presses', what='etapenone holds')
 
 
 @case('K167', 'proc/lnm: the SQLite URI of the Little Navmap base escapes `%` (a profile folder named « 100%41 » was opened as « 100A »: unreadable), `#` and `?` too (N1 of the security review)', 'K', static=True,

@@ -90,6 +90,17 @@ function metaText() {
   }));
   return parts.join(' · ');
 }
+/** SOG-0525 : la cause de la dernière lecture ratée que le lanceur a gardée : « Dernière lecture ratée il y a 7 min : Aucun run publié… (lecture impossible : HTTP 503) » ; rien si elle a réussi ou si le lanceur n'en dit rien. */
+function lastHtml() {
+  const l = S.world.status?.last;
+  if (!l || l.ok || (!l.reason && !l.message)) return '';
+  const a = M.ago(l.at, S.now ?? Date.now()),
+    when = a ? tt(a.unit === 'h' ? TX.world.agoH : TX.world.agoMin, {
+      n: a.n
+    }) : '',
+    why = tt(M.own(TX.world.why, l.reason) || TX.world.why.failed);
+  return `<p class="f-warn" data-world-last>${esc(tt(TX.world.last, { when, why }))}${l.message ? ` <span class="f-muted">(${esc(l.message)})</span>` : ''}</p>`;
+}
 /** La fin d'une construction en phrases : ce qu'elle a publié, ou la raison de l'échec. */
 function resultHtml() {
   const r = S.world.result;
@@ -99,9 +110,11 @@ function resultHtml() {
     n: r.steps ?? '?',
     s: r.bytes !== null ? M.fmtBytes(r.bytes, lang()) : '?',
     t: r.seconds ?? '?'
-  }) + (r.kept ? ` ${tt(TX.world.kept)}` : '') + (r.resumed ? ` ${tt(TX.world.resumed, { k: r.resumed, n: r.of ?? r.steps ?? '?' })}` : '') : r.kind === 'refused' ? tt(TX.refused[r.key] || TX.refused.failed, {
-    n: r.wait
-  }) : tt(M.own(TX.world.why, r.reason) || TX.world.why.failed);
+  }) + (r.kept ? ` ${tt(TX.world.kept)}` : '') + (r.resumed ? ` ${tt(TX.world.resumed, { k: r.resumed, n: r.of ?? r.steps ?? '?' })}` : '') : r.kind === 'refused' ? tt(r.key === 'tooSoon' ? TX.world.tooSoon : TX
+    .refused[r.key] || TX.refused.failed, {
+      n: r.wait,
+      t: M.lastStartClock(r.wait, Date.now())
+    }) : tt(M.own(TX.world.why, r.reason) || TX.world.why.failed);
   return `<div data-world-result data-result="${esc(r.kind)}"><p${r.kind === 'done' ? '' : ' class="f-warn"'}><b>${esc(head)}</b></p></div>`;
 }
 /** Le détail replié : où la publication vit (locale au poste), d'où viennent les données, le bouton et sa raison, la marche ou la fin. */
@@ -109,6 +122,7 @@ function bodyHtml() {
   const gate = worldGate(),
     r = S.world;
   return `<p class="f-muted" data-world-hint>${esc(tt(TX.world.hint))}</p><p class="f-muted" data-world-local>${esc(tt(TX.world.local))}</p>
+    ${lastHtml()}
     <p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>
     ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
     ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span>${r.resumedNow ? `<span class="f-muted" data-world-resumed>${esc(tt(TX.world.resumed, { k: r.resumedNow.have, n: r.resumedNow.of }))}</span>` : ''}<div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
@@ -118,7 +132,7 @@ export function worldRowHtml() {
   if (!S.world) return '';
   const st = M.worldState(S.world.status, S.now ?? Date.now()),
     pill = `<span class="f-badge"${kind(st.level)} data-pill>${esc(tt(TX.world.state[st.state]))}</span>`,
-    open = S.world.phase === 'running' || !!S.world.result;
+    open = S.world.phase === 'running' || !!S.world.result || !!lastHtml();
   return `<details class="f-card" data-set="world" data-status="used" data-phase="${esc(S.world.phase || '')}" data-state="${esc(st.state)}"${open ? ' open' : ''}>
     <summary><span class="d-sum"><b>${esc(tt(TX.world.name))}</b><span class="f-muted" data-world-meta>${esc(metaText())}</span></span>${pill}</summary>${bodyHtml()}</details>`;
 }
@@ -175,8 +189,9 @@ export async function worldEnd(me, final) {
       key: f.key,
       wait: f.wait
     };
-    S.ctx.notify(tt(TX.refused[f.key] || TX.refused.failed, {
-      n: f.wait
+    S.ctx.notify(tt(f.key === 'tooSoon' ? TX.world.tooSoon : TX.refused[f.key] || TX.refused.failed, {
+      n: f.wait,
+      t: M.lastStartClock(f.wait, Date.now())
     }), 'err');
   } else if (w?.ok) {
     S.world.status = w;

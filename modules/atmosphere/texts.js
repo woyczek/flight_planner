@@ -86,8 +86,11 @@ export const TX = {
   ],
   wbWhyTimeout: ['plus de 15 minutes', 'over 15 minutes', 'über 15 Minuten', 'más de 15 minutos'],
   wbWhyCancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada'],
-  wbSoon: ['Synoptique monde construit à l’instant', 'World synoptic built just now', 'Weltsynoptik soeben erstellt',
-    'Sinóptico mundial construido hace un momento'
+  // SOG-0525 : une lecture de la NOAA vient d'avoir lieu (le lanceur en attend dix minutes avant la suivante) : ce n'est pas « construit » (elle a pu échouer après quelques échéances)
+  wbSoon: ['Une lecture de la NOAA vient d’avoir lieu : « Relire » reprend ce qui est publié',
+    'A NOAA read has just taken place: “Read again” reads what is published',
+    'Ein NOAA-Lesevorgang hat gerade stattgefunden: „Neu lesen“ liest das Veröffentlichte',
+    'Acaba de hacerse una lectura de la NOAA: «Releer» lee lo publicado'
   ],
   wbReread: ['Relire', 'Read again', 'Neu lesen', 'Releer'],
   wbWhySoon: ['trop tôt, réessayez dans {n} s', 'too soon, try again in {n} s', 'zu früh, in {n} s erneut versuchen',

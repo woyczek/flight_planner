@@ -49,7 +49,41 @@ export function worldOf(final) {
     bytes: num(r.bytes),
     age: num(r.age),
     seconds: num(r.seconds, 1e6),
-    reason: typeof r.reason === 'string' && /^[\w-]{1,30}$/.test(r.reason) ? r.reason : ''
+    reason: typeof r.reason === 'string' && /^[\w-]{1,30}$/.test(r.reason) ? r.reason : '',
+    last: worldLast(r.last)
+  };
+}
+/** SOG-0525 : la dernière lecture de la NOAA que le lanceur a gardée (data/local/last_results.json, par verbe) : { at (ms), ok, reason, message } ou null ; une entrée d'une autre forme : rien (entrée non fiable). */
+export function worldLast(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const at = Number.isFinite(v.ended) && v.ended > 0 && v.ended < 4e9 ? v.ended * 1000 : null,
+    reason = typeof v.reason === 'string' && /^[\w-]{1,30}$/.test(v.reason) ? v.reason : '',
+    message = typeof v.message === 'string' ? v.message.replace(/[\p{Cc}<>]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+  return at === null && !reason && !message ? null : {
+    at,
+    ok: v.ok === true,
+    reason,
+    message
+  };
+}
+/** L'attente que le lanceur tient entre deux departs de la lecture (tools/regen/weather.py MIN_GAP : 600 s) : l'heure du dernier depart se deduit de ce qu'il reste a attendre. */
+export const WORLD_GAP_S = 600;
+/** L'heure locale hh:mm du depart de la derniere lecture, d'apres le refus du lanceur (`wait` s restantes sur WORLD_GAP_S) a `now` (ms) ; '' sans attente lisible. */
+export function lastStartClock(wait, now) {
+  if (!Number.isFinite(wait) || wait < 0 || !Number.isFinite(now)) return '';
+  const d = new Date(now + wait * 1000 - WORLD_GAP_S * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+/** Le temps écoulé depuis `at` (ms), en minutes jusqu'à deux heures, puis en heures : { n, unit: 'min' | 'h' } ; null sans heure. */
+export function ago(at, now) {
+  if (!Number.isFinite(at) || !Number.isFinite(now)) return null;
+  const min = Math.max(0, Math.round((now - at) / 6e4));
+  return min < 120 ? {
+    n: min,
+    unit: 'min'
+  } : {
+    n: Math.round(min / 60),
+    unit: 'h'
   };
 }
 /** L'âge de la publication en heures entières : d'après `built` (à `now`), à défaut `age` en secondes ; null sans l'un ni l'autre. */

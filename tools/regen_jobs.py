@@ -455,8 +455,9 @@ class Jobs:
             self._save()
         self._remember(job)
 
-    LAST_VERBS = {('base', 'pickup'), ('base', 'fetch'), ('base', 'build'), ('base', 'update')}
+    LAST_VERBS = {('base', 'pickup'), ('base', 'fetch'), ('base', 'build'), ('base', 'update'), ('weather', 'world')}
     LAST_LIST, LAST_TEXT, LAST_DEPTH = 50, 300, 6
+    LAST_MAX = 80     # SOG-0525 : au plus quatre-vingts verbes dans le journal ; au-delà, les plus anciens des verbes sans fil à raconter s'en vont
 
     def _trim(self, v, depth=0):
         """Un résultat borné pour le journal persistant : listes à LAST_LIST éléments, textes nettoyés (secrets, chemins) et courts, clés privées (_…) retirées, profondeur bornée."""
@@ -475,12 +476,14 @@ class Jobs:
         return v if isinstance(v, (int, float, bool)) or v is None else str(v)[:60]
 
     def _remember(self, job):
-        """SOG-0265 / journal persistant : le DERNIER résultat de pickup, fetch, build et update, gardé dans data/local/last_results.json (jamais commité), pour que l'écran dise le fil de la dernière opération
-        même après une autre opération ou un redémarrage. Ne lève jamais : un journal qui ne s'écrit pas ne gêne pas le travail."""
+        """SOG-0265 / journal persistant : le DERNIER résultat de pickup, fetch, build et update (et du synoptique monde), gardé dans data/local/last_results.json (jamais commité), pour que l'écran dise le fil de la dernière opération
+        même après une autre opération ou un redémarrage. SOG-0525 : et de CHAQUE travail qui n'est pas une pure lecture, par verbe, en court ({ state, ended, ok, reason, message }) : la cause d'un échec ne se perd plus dès qu'un autre travail passe.
+        Une action « status » (une lecture) ne remplace jamais le résultat d'une construction. Ne lève jamais : un journal qui ne s'écrit pas ne gêne pas le travail."""
         try:
             key = (job.data.get('set'), job.data.get('verb'))
             data = self.ctx.get('data')
-            if key not in self.LAST_VERBS or not data or job.released:
+            args = job.data.get('args')
+            if not data or job.released or (key not in self.LAST_VERBS and key in READ_ONLY) or (isinstance(args, dict) and args.get('action') == 'status'):
                 return
             folder = os.path.join(str(data), 'local')
             os.makedirs(folder, exist_ok=True)
@@ -493,9 +496,17 @@ class Jobs:
             except (OSError, ValueError):
                 doc = {}
             res = job.data.get('result')
-            doc[f'{key[0]}/{key[1]}'] = {'job': job.id, 'state': job.data.get('state'), 'ended': job.data.get('ended'),
-                                         'ok': res.get('ok') if isinstance(res, dict) else None, 'reason': res.get('reason') if isinstance(res, dict) else None,
-                                         'args': self._trim(job.data.get('args')), 'result': self._trim(res)}
+            rec = {'job': job.id, 'state': job.data.get('state'), 'ended': job.data.get('ended'),
+                   'ok': res.get('ok') if isinstance(res, dict) and isinstance(res.get('ok'), bool) else None,
+                   'reason': self._trim(res.get('reason')) if isinstance(res, dict) and isinstance(res.get('reason'), str) else None,
+                   'message': self._trim(res.get('message')) if isinstance(res, dict) and isinstance(res.get('message'), str) else None}
+            if key in self.LAST_VERBS:
+                rec.update({'args': self._trim(job.data.get('args')), 'result': self._trim(res)})
+            doc[f'{key[0]}/{key[1]}'] = rec
+            if len(doc) > self.LAST_MAX:
+                old = sorted((k for k in doc if tuple(str(k).split('/', 1)) not in self.LAST_VERBS), key=lambda k: (doc[k].get('ended') or 0) if isinstance(doc[k], dict) else 0)
+                for k in old[:len(doc) - self.LAST_MAX]:
+                    del doc[k]
             tmp = path + '.tmp'
             with open(tmp, 'w', encoding='utf-8') as f:
                 json.dump(doc, f, ensure_ascii=False, indent=1)

@@ -214,13 +214,30 @@ def _migrate(data):
     return moved
 
 
+def _last(data):
+    """SOG-0525 : le dernier résultat d'une construction (le journal du lanceur, data/local/last_results.json) : { ended, ok, reason, message } borné, ou None ; une entrée illisible ou d'une autre forme : rien."""
+    try:
+        with open(os.path.join(str(data), 'local', 'last_results.json'), encoding='utf-8') as f:
+            r = json.load(f).get('weather/world')
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not isinstance(r, dict):
+        return None
+    ended, ok, reason, msg = r.get('ended'), r.get('ok'), r.get('reason'), r.get('message')
+    return {'ended': ended if isinstance(ended, int) and not isinstance(ended, bool) and 0 < ended < 4e9 else None,
+            'ok': ok if isinstance(ok, bool) else None,
+            'reason': reason[:30] if isinstance(reason, str) and re.fullmatch(r'[\w-]{1,30}', reason) else None,
+            'message': ' '.join(msg.split())[:300] if isinstance(msg, str) else None}
+
+
 def run(job, args, ctx):
     data = ctx['data']
     dest = os.path.join(data, *DEST)
     moved = _migrate(data)
     if args['action'] == 'status':
         part = _partial(data)
-        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {})}
+        last = _last(data)
+        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {}), **({'last': last} if last else {})}
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):
@@ -249,7 +266,7 @@ def run(job, args, ctx):
             if job.cancelled() or time.time() > end:
                 proc.kill()
                 proc.wait()
-                return {'ok': False, 'reason': 'cancelled' if job.cancelled() else 'timeout', 'seconds': round(time.time() - t0, 1), **({'reached': False} if job.cancelled() and not seen else {})}
+                return {'ok': False, 'reason': 'cancelled' if job.cancelled() else 'timeout', 'seconds': round(time.time() - t0, 1), **({} if seen else {'reached': False})}
             time.sleep(0.3)
         reader.join(5)
         lines = lines[-6:]
@@ -259,9 +276,9 @@ def run(job, args, ctx):
         if proc.returncode != 0:
             return {'ok': False, 'reason': 'failed', 'message': said[:300], 'seconds': round(time.time() - t0, 1), **({} if seen else {'reached': False})}      # sorti en erreur sans avoir lu une échéance : la NOAA n'a pas été lue, le délai ne compte pas
         if not os.path.isdir(out):
-            return {'ok': False, 'reason': 'no-run', 'message': said[:300], 'seconds': round(time.time() - t0, 1)}      # aucune publication écrite : l'ancienne reste
+            return {'ok': False, 'reason': 'no-run', 'message': said[:300], 'seconds': round(time.time() - t0, 1), **({} if seen else {'reached': False})}      # aucune publication écrite : l'ancienne reste ; le départ n'est rendu que si aucune échéance n'a été lue (sondes légères) : sinon la NOAA a été lue, l'attente tient
         if not _valid(out):
-            return {'ok': False, 'reason': 'invalid', 'message': 'the folder written is not a valid world forecast: nothing replaced', 'seconds': round(time.time() - t0, 1)}
+            return {'ok': False, 'reason': 'invalid', 'message': 'the folder written is not a valid world forecast: nothing replaced', 'seconds': round(time.time() - t0, 1), **({} if seen else {'reached': False})}
         old = dest + '.old'
         shutil.rmtree(old, ignore_errors=True)
         if os.path.isdir(dest):

@@ -862,6 +862,19 @@ export const TX = {
     ],
     build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
     running: ['Construction en cours…', 'Building…', 'Aufbau läuft …', 'Construyendo…'],
+    // SOG-0525 : la CAUSE de la dernière lecture ratée (le lanceur la garde), jamais un compte à rebours sans raison
+    last: ['Dernière lecture ratée {when} : {why}', 'Last read failed {when}: {why}', 'Letzter Lesevorgang {when} fehlgeschlagen: {why}',
+      'Última lectura fallida {when}: {why}'
+    ],
+    agoMin: ['il y a {n} min', '{n} min ago', 'vor {n} Min.', 'hace {n} min'],
+    agoH: ['il y a {n} h', '{n} h ago', 'vor {n} Std.', 'hace {n} h'],
+    // le compte a rebours ne vient JAMAIS seul : il dit ce qui l'a arme (le depart de la derniere lecture, l'attente de dix minutes entre deux departs), puis ce qui reste
+    tooSoon: [
+      'Dernière lecture de la NOAA lancée à {t} : attente de dix minutes entre deux départs, la suivante est possible dans {n} s.',
+      'Last NOAA read started at {t}: ten minutes are kept between two starts, the next one is possible in {n} s.',
+      'Letzter NOAA-Lesevorgang um {t} gestartet: zwischen zwei Starts liegen zehn Minuten, der nächste ist in {n} s möglich.',
+      'Última lectura de la NOAA iniciada a las {t}: diez minutos de espera entre dos inicios, la siguiente es posible en {n} s.'
+    ],
     done: ['Construit : run {r}, {n} étapes, {s} ({t} s)', 'Built: run {r}, {n} steps, {s} ({t} s)',
       'Aufgebaut: Lauf {r}, {n} Schritte, {s} ({t} s)', 'Construido: pasada {r}, {n} pasos, {s} ({t} s)'
     ],

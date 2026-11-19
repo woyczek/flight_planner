@@ -4702,6 +4702,73 @@ def l50(c):
     c.check_errors()
 
 
+@case('L175', 'Données: the synoptic row says the CAUSE of the last failed read (the launcher keeps it), and a refusal because a read just took place says so: never a bare countdown (SOG-0525)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0525 (the user: GFS never refreshes, always « réessayez dans xxx s »): the row said a countdown (the refusal too-soon of the launcher) and never why the last read failed; the launcher now keeps the result of every read and the status gives it back as last; the row says it in clear (the reason in words, the message of the NOAA, how long ago), and the refusal says that a read just took place')
+def l175(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    status = _view('done', step='Terminé', result={'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000,
+                                                     'last': {'ended': int(now.timestamp()) - 420, 'ok': False, 'reason': 'no-run', 'message': 'lecture impossible : HTTP 503'}})
+    st = _launcher(c, [status], verbs=_VERBS + ['weather/world'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world] [data-world-last]')", timeout=12000, what='the cause of the last failed read is said')
+    t = norm(c.text('[data-world-last]'))
+    c.ok(norm(WT('no-run')) in t and 'HTTP 503' in t and '7' in t, t, 'the last failed read: the reason in words, the message of the NOAA, and how long ago (7 min)')
+    c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=8000, what='the row is idle')
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.js("document.querySelector('[data-verb=world-build]').scrollIntoView({block:'center'})")
+    st['start'] = (429, {'reason': 'too-soon', 'wait': 300})
+    c.tap('[data-verb=world-build]')
+    c.until("!!document.querySelector('[data-world-result][data-result=refused]')", timeout=12000, what='the refusal is said')
+    r = norm(c.text('[data-world-result]'))
+    # the countdown never comes alone: it says what armed it, the start of the last read (hh:mm, here 300 s of the 600 s ago: 5 minutes ago) and the gap of ten minutes between two starts
+    hm = c.js("() => [300, 360].map(s => { const d = new Date(Date.now() - s * 1000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') })")
+    c.ok(any(x in r for x in hm) and '300' in r and norm(WT('tooSoon')).split('{t}')[0] in r, f'{r} {hm}', 'a refusal because a read just took place says what armed the wait: the time of the last start, the gap between two starts, and the seconds left; never a bare « try again in N s »')
+    c.check_errors()
+
+
+@case('L176', 'SOG-0525 (captures): the synoptic row after a failed read, the refusal too soon, and the Météo line right after a read — the delivered state at 390 and 1280 (invented data)', 'L', tags=('data',),
+      designs=('standard',), night=False,
+      rule='SOG-0525: the delivered state, to be read by the relay before the push: (1) the Données row says « Dernière lecture ratée il y a 7 min : cause (message) »; (2) the refusal because a read just took place says the time of the last start, the ten minutes kept between two starts and what is left; (3) the Météo line right after a read says that a read has just taken place and offers « Relire », a button of that very line. Invented data only')
+def l176(c):
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    status = _view('done', step='Terminé', result={'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000,
+                                                        'last': {'ended': int(now.timestamp()) - 420, 'ok': False, 'reason': 'no-run', 'message': 'lecture impossible : HTTP 503'}})
+    st = _launcher(c, [status], verbs=_VERBS + ['weather/world'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world] [data-world-last]')", timeout=12000, what='the cause of the last failed read is said')
+    c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=8000, what='the row is idle')
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.js("document.querySelector('[data-set=world]').scrollIntoView({block:'start'})")
+    c.wait(400)
+    c.shot(f'L176_donnees_derniere_lecture_{c.width}.png')
+    st['start'] = (429, {'reason': 'too-soon', 'wait': 300})
+    c.js("document.querySelector('[data-verb=world-build]').scrollIntoView({block:'center'})")
+    c.tap('[data-verb=world-build]')
+    c.until("!!document.querySelector('[data-world-result][data-result=refused]')", timeout=12000, what='the refusal is said')
+    c.js("document.querySelector('[data-set=world]').scrollIntoView({block:'start'})")
+    c.wait(400)
+    c.shot(f'L176_donnees_trop_tot_{c.width}.png')
+    # the Meteo line right after a read: the same launcher answers too soon to the build of the Meteo screen
+    c.open('atmosphere', flight=True)
+    c.until("() => !!document.querySelector('[data-module=atmosphere] [data-at=wnote] [data-at=wbBuild]')", timeout=15000, what='the Meteo line offers the build (the synoptic is old)')
+    c.js("() => { document.querySelector('[data-module=atmosphere] [data-at=wbBuild]').scrollIntoView({block: 'center'}); return true }")
+    c.js("() => { document.querySelector('[data-module=atmosphere] [data-at=wbBuild]').click(); return true }")
+    c.until("() => !!document.querySelector('[data-module=atmosphere] [data-at=wnote] [data-at=wbReread]')", timeout=15000, what='the line says a read has just taken place and offers Relire')
+    c.settle()
+    c.shot(f'L176_meteo_apres_lecture_{c.width}.png')
+    t = c.js("() => document.querySelector('[data-module=atmosphere] [data-at=wnote]').textContent.replace(/\s+/g, ' ').trim()")
+    c.ok(len(t) > 10, t, 'the line of the Meteo screen, with its button « Relire »')
+
+
 @case('L51', 'Données: without weather/world in regen/verbs the synoptic row is grey with its reason and nothing is sent', 'L', tags=('data',),
       designs=('standard',), screens=False, night=False,
       rule='SOG-0138: the verb is read from regen/verbs like the others; an old launcher greys « Construire » with « ne connaît pas encore cette opération »')

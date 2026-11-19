@@ -14,7 +14,7 @@ network, so the cases that need data use the module's offline demonstration (`#a
 """
 import re
 
-from lib import MAP_JS, Fail, Skip, case, norm, tx
+from lib import MAP_JS, ROOT, Fail, Skip, case, norm, tx
 
 T = 'modules/atmosphere/texts.js'
 ATM = '[data-module="atmosphere"]'
@@ -563,6 +563,17 @@ _WB_JS = """async () => {
   out.keys = Object.keys(TXm.TX).filter(k => /^wb/.test(k)).length;
   return out;
 }"""
+
+
+@case('E100', 'The world line of the Météo says the truth on a refusal too soon: a read just took place, NOT « built just now » (SOG-0525)', 'E', static=True,
+      rule='SOG-0525 (the user: GFS never refreshes): the refusal too-soon of the launcher (a read just took place) was said « Synoptique monde construit à l instant » even when that read had failed after reading some forecast times; nothing was built. The sentence says a read has just taken place, in the four languages, without the words built / construit / erstellt / construido')
+def e100(c):
+    import re
+    src = (ROOT / 'modules' / 'atmosphere' / 'texts.js').read_text(encoding='utf-8')
+    m = re.search(r"wbSoon: \[(.*?)\]," + chr(10), src.replace(chr(13), ''), flags=re.S)
+    parts = re.findall(r"'([^']*)'", m.group(1)) if m else []
+    c.eq(len(parts), 4, 'the sentence exists in four languages', what=str(parts))
+    c.ok(parts and not any(re.search(r'construit|built|erstellt|construido', x, re.I) for x in parts), str(parts), 'and none of them says the synoptic was built')
 
 
 @case('E18', 'Synoptic world line: absent or over 12 h old, the Météo screen says so and « Build » runs the launcher’s weather/world job (one at a time), follows it, reads the layer again; without a launcher it says where', 'E',
