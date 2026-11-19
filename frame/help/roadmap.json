@@ -4,8 +4,8 @@
  "updated": "2026-11-20",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "81c2048",
-  "fiches": 529,
+  "organisation": "4ae1f93",
+  "fiches": 530,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3340,6 +3340,27 @@
      "en": "Fuel: warn when the cruising level does not follow the semicircular rule (without blocking)",
      "de": "Kraftstoff: warnen, wenn die Reiseflughöhe der Halbkreisregel nicht folgt (ohne zu sperren)",
      "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-carburant-langues",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; Carburant ; langues",
+    "en": "Routes ; Carburant ; langues",
+    "de": "Routes ; Carburant ; langues",
+    "es": "Routes ; Carburant ; langues"
+   },
+   "items": [
+    {
+     "id": "SOG-0531",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : les raisons du moteur de route ne sont écrites qu'en français ; Carburant les montre telles quelles en anglais, allemand et espagnol",
+     "en": "Routes: the route engine's reasons are written in French only; Fuel shows them as they are in English, German and Spanish",
+     "de": "Routen: Die Begründungen der Routenberechnung sind nur auf Französisch; Kraftstoff zeigt sie unverändert auf Englisch, Deutsch und Spanisch",
+     "es": "Rutas: los motivos del motor de rutas solo están en francés; Combustible los muestra tal cual en inglés, alemán y español"
     }
    ]
   },
