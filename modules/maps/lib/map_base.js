@@ -199,8 +199,9 @@ export async function startTiles(container, {
       onStyleLoad?.(map);
     });
     map.on('error', e => {
-      if (e?.sourceId === 'otm')
-        return; // une tuile du fond topographique qui ne vient pas n'abandonne pas la carte : la Carte bascule sur son fond de repli (SOG-0300)
+      // une TUILE qui ne vient pas (5xx, 429 de l'hôte des tuiles) n'abandonne pas le fond : MapLibre la redemande, elle reste vide ; abandonner ici rendait la Carte à son fond uni, qui ne zoome pas
+      // du tout (SOG-0512). Sont abandonnés : le style ou une source qui ne viennent pas (une erreur sans tuile) et le délai dépassé. Le fond topographique (otm) : même règle pour ses sources (SOG-0300 : la Carte bascule sur son repli)
+      if (e?.tile || e?.sourceId === 'otm') return;
       finish(null);
     });
     map.on('load', () => {

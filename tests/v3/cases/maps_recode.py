@@ -9808,6 +9808,23 @@ def d286(c):
     c.eq((r['a']['key'], r['a']['norm'], r['a']['nul'], r['b']['key'], r['b']['norm']), ('evreux_nord_1_ole', 'EVREUXNORD1OA', ['', ''], '', ''), 'keyNorm and zNorm give what the copies gave; without the frame text: the empty text, no throw', what='fold')
 
 
+@case('D287', 'The base map survives a tile that does not come: one tile in error before the load no longer abandons the whole base (the wheel zooms on it)', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=True, phone=False,
+      rule='SOG-0512 (the wheel does not zoom on the Map beside Fuel, the user Chrome): startTiles gave up the MapLibre base on ANY error of a source before the load (finish(null)), one tile in 5xx or 429 from the tile host was enough, and the Map fell back to its plain background, which has no zoom at all; only the topographic source (otm) was spared. A tile that does not come is MapLibre business (it asks again, the tile stays empty); the base is given up when the style itself does not come (error without a source) or after the wait')
+def d287(c):
+    style = json.dumps({'version': 8, 'name': 'tiles', 'sources': {'r': {'type': 'raster', 'tiles': ['https://tiles.example.test/{z}/{x}/{y}.png'], 'tileSize': 256}},
+                        'layers': [{'id': 'bg', 'type': 'background', 'paint': {'background-color': '#dde'}}, {'id': 'r', 'type': 'raster', 'source': 'r'}]})
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda route: route.fulfill(status=200, content_type='application/json', body=style))
+    c.context.route(re.compile(r'^https://tiles\.example\.test/'), lambda route: route.fulfill(status=500, body='no'))
+    c.open('maps', flight=True)
+    c.until("() => !!document.querySelector('[data-module=maps] .maplibregl-canvas')", timeout=20000, what='the MapLibre base, although every tile answers 500')
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    c.until("() => !!window.__mp.S.map", timeout=15000, what='the loaded base')
+    z0 = c.js("() => window.__mp.S.map.getZoom()")
+    c.js("() => { window.__mp.S.map.zoomTo(window.__mp.S.map.getZoom() + 1, { animate: false }); return true }")
+    c.ok(c.js("() => window.__mp.S.map.getZoom()") > z0, str(z0), 'and it zooms')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
