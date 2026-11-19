@@ -457,7 +457,7 @@ async function edModelPick(s, id, own) {
 // étroite, même sur un grand écran), les lignes d'équipe et d'événement gardent leur forme étroite. Les règles des champs
 // de chaque étape (ms-edteam, ms-pl…) restent dans module.js. Module large : la carte et le déroulé à gauche, la fiche à droite.
 const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
-[data-module="missions"] .ms-atgrid{display:flex;flex-direction:column}
+[data-module="missions"] .ms-atgrid{display:flex;flex-direction:column;padding-bottom:6rem}
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atplaces{order:2}

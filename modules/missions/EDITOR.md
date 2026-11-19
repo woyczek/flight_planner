@@ -1646,6 +1646,7 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
   count of indexed missions after the code of a family.
 
 - **The foot of the workshop declares itself to the frame** (SOG-0517; noreg N178, red before, frame case A354): `.ms-atfoot` carries `data-f-foot`, so a floating note (« Brouillon repris. », the move of a place, « Annuler ») sits above « Enregistrer », « Annuler » and « À compléter », never over them.
+- **The list of the unfolding keeps a room under it for a note** (SOG-0517 follow-up; noreg N129, red before): since the foot is declared, the frame lifts the note (« Tiroir 5 ajouté… Annuler », six seconds) just above it, over the last rows of the list when the page is scrolled to its end; « ＋ Tiroir », the last row, could no longer be touched (a short window at 1280). `.ms-atgrid` ends with `padding-bottom: 6rem`, so the last row scrolls above the note.
 
 ### 7 sexquinquagies. A « refill » kind of object: the retardant station of an aerodrome (19 Nov 2026; the user's request for the fire missions; noreg N179)
 
