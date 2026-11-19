@@ -1095,6 +1095,19 @@ About thirty `<details><summary>` were written by hand (Data, Settings, Fuel, Re
 
 Migrating a builder changes nothing of what it draws: the bench proves `fold()` equal to the original text of four builders (Data cycle, packs, recette, tokens); a migrating file keeps its class and its own `data-` attribute (`attrs`), and gains `data-fold` only when it passes a key. What stays with the caller: what an opening does (read a file, start a map), in its `set`. Owners migrate one at a time: Data and Settings first, Fuel last; the missions registry is NOT migrated (it becomes a table, SOG-0498).
 
+## 12g. Precision landings (`frame/lib/precision.js`, SOG-0516)
+
+SOG-0507 put the tiers of a precision landing (excellent ≤ 0.05 NM, parfait ≤ 0.1, réussi ≤ 0.2, partiel ≤ 0.5) in `modules/missions/drawers.js`. The mission report must pre-fill `results.precisionLandings` with the landings OF THE PILOT, and a module never imports another module: the pure judgement lives here, owned by Assignment. Pure at import (no page, no storage, no network); it imports only `crossing.js` and `untrusted.js`; no `window.SogFrame.*` (a module imports it itself).
+
+| Export | Gives |
+|---|---|
+| `PRECISION`, `TIERS`, `tierOf(distNm)` | the tiers, bounds included; `tierOf` is `''` beyond 0.5 NM and for a non-finite, negative or non-number distance. MOVED from `drawers.js`, which re-exports them |
+| `TIER_TEXT` | the four words of the tiers in `[fr, en, de, es]` (`drawers_view.js` reads them here) |
+| `landTier(rule, fix)` | `{ tier, distNm }`: the distance of the fix to the target of the landing rule (`arrived().distNm` of `crossing.js`, no new formula) and its tier; `{ tier: '', distNm: null }` for an unreadable rule, a landing on an airfield (`rule.point` ORIGIN or DESTINATION), an unreadable fix or beyond 0.5 NM |
+| `precisionLandings(drawers, book)` | `[{ id, tier, distNm, at }]` in the order of `at`: one row per landing finding of the RAW logbook `pilot/<TRI>/missions/<ID>.json` (the `landing` finding of a drawer whose key is an off-airfield landing, and each `landing` proof of a `sequence` finding, paired with the rule of the step of the same rank); at most 12 drawers and 10 proofs |
+
+**The rule: recomputed, never read.** The logbook and all it carries are untrusted (written by any pilot). It is read bounded (`own`, `plain`), never throws on an absent or wrongly typed value, and the tier written in it (`tier`, `distNm`) is ignored: the tier is recomputed by `landTier` from the fix `to` on the rule of the mission. A row without a recomputed tier is omitted. Every module that imports it lists `'../../frame/lib/precision.js'` (and `crossing.js`, `untrusted.js`) in its `meta.files` (case I26); no line in `sw.js`: no screen of the shell imports it. The bench `frame/lib/test/precision.html` (`window.__precisionBench`, case A360) proves the tiers equal to those before the move on a corpus of bounds, then `landTier` and `precisionLandings` on hostile input.
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

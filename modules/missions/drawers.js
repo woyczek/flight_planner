@@ -33,7 +33,7 @@
 // LES TOLÉRANCES DE L'UTILISATEUR (SOG-0507, l'utilisateur, 19/11/2026) REMPLACENT le rayon du fichier de mission là où il les a posées :
 //   · une escale requise d'une arrivée : TRANSIT_NM = 2 NM (stopsDone) ; · une arrivée posée sur un terrain : AD_NM = 1 NM (finding, stands,
 //   catchUp), la vitesse et le sol restant les règles de la clé ; · un posé de PRÉCISION (condition « atterrissage » de l'atelier, et ses
-//   étapes d'une suite) sur un point géographique : des PALIERS de distance au point visé (PRECISION, TIERS, tierOf : excellent ≤ 0,05 NM,
+//   étapes d'une suite) sur un point géographique : des PALIERS de distance au point visé (PRECISION, TIERS, tierOf, landTier : DÉPLACÉS dans frame/lib/precision.js, SOG-0516, et réexportés ici : excellent ≤ 0,05 NM,
 //   parfait ≤ 0,1, réussi ≤ 0,2, partiel ≤ 0,5 ; au-delà, manqué — « posé » dès le dernier palier) ; quand le point visé est un terrain de
 //   la route (ORIGIN, DESTINATION), la tolérance du terrain, sans palier. Le stationnaire, le survol, l'objet et la zone gardent le rayon de
 //   l'auteur. Le constat d'un posé de précision porte `tier` et `distNm` (relevé `to`, millième de NM) ; chez le lecteur le palier est
@@ -93,9 +93,30 @@ import {
 import {
   crossed,
   reach,
-  arrived,
-  fixOf as fixRead
+  arrived
 } from '../../frame/lib/crossing.js'; // le service de franchissement du cadre (SOG-0447) : le MÊME jugement en vol et au rejeu d'un constat
+import {
+  PRECISION,
+  TIERS,
+  tierOf,
+  AD_NM,
+  FIX_PERIOD_SEC,
+  msOf,
+  isoOf,
+  fixOf,
+  spotOf,
+  landRule,
+  landTier
+} from '../../frame/lib/precision.js'; // SOG-0516 : les paliers d'un posé de précision et leurs petites lectures, DÉPLACÉS dans le cadre (le compte rendu les lit aussi)
+// l'API de ce fichier reste la même : ce que le cadre porte maintenant est réexporté tel quel
+export {
+  PRECISION,
+  TIERS,
+  tierOf,
+  AD_NM,
+  FIX_PERIOD_SEC,
+  msOf
+};
 
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
@@ -118,43 +139,6 @@ const CREW_MAX = 12;
 // mission, là où l'utilisateur les a posés — ses mots, via le relais : « toujours valable à 2 nm », « forcément… ± 1 nm ».
 /** Une escale requise d'une arrivée (`key.required`) est passée à cette distance, en milles marins, et non au rayon de l'arrivée. */
 export const TRANSIT_NM = 2;
-/** Une arrivée posée sur un terrain est « dans la zone » à cette distance, en milles marins, quel que soit `key.radiusNm` (la vitesse et
- *  le sol restent les règles de la clé) ; un posé de précision sur un terrain de la route (ORIGIN, DESTINATION) l'a aussi, sans palier. */
-export const AD_NM = 1;
-/** Les paliers d'un posé de précision sur un point géographique, du meilleur au plus large : distance au point visé, bornes COMPRISES.
- *  Au-delà du dernier : manqué. Les mots sont des identifiants de données ; leur texte à l'écran se traduit dans la vue. */
-export const PRECISION = Object.freeze([{
-  tier: 'excellent',
-  nm: 0.05
-}, {
-  tier: 'parfait',
-  nm: 0.1
-}, {
-  tier: 'réussi',
-  nm: 0.2
-}, {
-  tier: 'partiel',
-  nm: 0.5
-}].map(Object.freeze));
-/** Les identifiants des paliers, du meilleur au plus large. */
-export const TIERS = ['excellent', 'parfait', 'réussi', 'partiel'];
-/** Le palier d'une distance au point visé (milles marins), ou '' au-delà du dernier palier ; '' aussi pour une distance non finie ou
- *  négative. Les bornes sont comprises : exactement 0,2 NM, c'est « réussi ». */
-export const tierOf = distNm => {
-  if (typeof distNm !== 'number' || !Number.isFinite(distNm) || distNm < 0) return '';
-  const p = PRECISION.find(x => distNm <= x.nm);
-  return p ? p.tier : '';
-};
-/** Une distance de constat arrondie au millième de mille. */
-const roundNm = d => Math.round(d * 1000) / 1000;
-
-/** Un instant en millisecondes d'un texte ISO borné, sinon null. */
-export const msOf = v => {
-  const t = typeof v === 'string' && v.length <= 40 ? Date.parse(v) : NaN;
-  return Number.isFinite(t) ? t : null;
-};
-/** Le texte ISO d'un instant, '' sans instant. */
-const isoOf = ms => Number.isFinite(ms) ? new Date(ms).toISOString() : '';
 /** Un trigramme en majuscules, '' sinon. */
 const triOf = v => {
   const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
@@ -165,22 +149,6 @@ const midOf = v => {
   const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
   return MID.test(s) ? s : '';
 };
-/** Un relevé de position gardé dans un carnet : { at, lat, lon, altFt, aglFt, onGround, gsKt } à PLEINE précision, relu borné par le
- *  service du cadre (fixOf de crossing.js : la porte d'un relevé venu d'un fichier) ; null s'il est illisible, ou à 0°, 0°. Un champ
- *  inconnu est absent. */
-function fixOf(v) {
-  const f = fixRead(v);
-  if (!f || (f.lat === 0 && f.lon === 0)) return null;
-  const out = {
-    lat: f.lat,
-    lon: f.lon
-  };
-  if (f.t !== null) out.at = isoOf(f.t);
-  for (const k of ['altFt', 'aglFt', 'onGround', 'gsKt'])
-    if (f[k] !== null && f[k] !== undefined) out[k] = f[k];
-  return out;
-}
-
 /** Le chemin du carnet de ce pilote pour cette mission, ou null (voir l'en-tête). */
 export function bookPath(trigram, missionId) {
   const t = triOf(trigram),
@@ -339,65 +307,21 @@ export function follows(key) {
 export const howOf = key => key?.kind === 'condition' && (key.condition === 'landing' || key.condition === 'overflight' || key.condition ===
   'hover' || key.condition === 'sequence') ? key.condition : key?.kind;
 
-/** La période d'un relevé du simulateur, en secondes (LIVE_SIM de frame/app.js) : un écart permis plus court (`maxGapSec`) ne peut
- *  jamais être tenu. */
-export const FIX_PERIOD_SEC = 5;
-
-/** Un point { lat, lon } lisible (nombres dans leurs bornes), ou null. */
-const spotOf = p => p && typeof p === 'object' && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 && Number.isFinite(p.lon) && Math.abs(p
-    .lon) <=
-  180 ? {
-    lat: p.lat,
-    lon: p.lon
-  } : null;
-
-/** Ce que le vol juge d'une condition « atterrissage » : { at, radiusNm, speedMaxKt, onGround: true, durationSec, maxGapSec, tiered },
- *  ou null quand elle ne se juge pas ici : pas un atterrissage, ni point lisible ni objet immobile, un mot de confirmation demandé par
- *  l'auteur (pas encore jugé, par prudence), un écart permis sous la période d'un relevé, un nombre illisible.
- *  LES TOLÉRANCES DE L'UTILISATEUR PRIMENT sur le rayon du fichier (`radiusM`, plus lu ; SOG-0507, l'utilisateur, 19/11) : un posé de
- *  précision sur un point géographique se juge par PALIERS, « posé » dès le dernier (0,5 NM : radiusNm) ; quand le point visé est un
- *  terrain de la route (`rule.point` : ORIGIN, DESTINATION), c'est la tolérance du terrain, AD_NM, sans palier. `tiered` : vrai hors
- *  terrain (le constat porte alors son palier et sa distance). */
+/** Ce que le vol juge d'une clé « atterrissage » : voir landRule (frame/lib/precision.js, SOG-0516), que ce fichier applique à la règle de
+ *  la clé ; null quand la clé n'est pas un atterrissage ou ne se juge pas ici. */
 function landSpec(key) {
-  const r = key && key.kind === 'condition' && key.condition === 'landing' ? key.rule : null;
-  if (!r || typeof r !== 'object' || r.kind !== 'landing' || r.confirmation !== '') return null;
-  const at = r.at ? spotOf(r.at) : r.object && !r.object.moving ? spotOf(r.object) : null,
-    num = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
-    durationSec = num(r.durationSec),
-    maxGapSec = num(r.maxGapSec),
-    speedMaxKt = num(r.speedMaxKt),
-    field = r.point === 'ORIGIN' || r.point === 'DESTINATION';
-  if (!at || !(durationSec > 0) || maxGapSec === null || maxGapSec < FIX_PERIOD_SEC || speedMaxKt === null || speedMaxKt < 0)
-    return null;
-  return {
-    at,
-    radiusNm: field ? AD_NM : PRECISION[PRECISION.length - 1].nm,
-    speedMaxKt,
-    onGround: true,
-    durationSec,
-    maxGapSec,
-    tiered: !field
-  };
+  return landRule(landOf(key));
 }
 
-/** Le palier et la distance d'un relevé posé selon la règle d'un posé de précision : { tier, distNm } (distNm arrondie au millième de
- *  mille, par ce que `arrived` rend déjà), ou null hors posé de précision (atterrissage au terrain, autre clé, relevé illisible). */
-function landTier(fix, spec) {
-  if (!spec || spec.tiered !== true) return null;
-  const d = arrived(fix, spec).distNm;
-  return typeof d === 'number' && Number.isFinite(d) ? {
-    tier: tierOf(d),
-    distNm: roundNm(d)
-  } : null;
-}
+/** La règle d'une clé « atterrissage » (null pour toute autre clé) : celle dont landTier (cadre) recalcule le palier. */
+const landOf = key => key && key.kind === 'condition' && key.condition === 'landing' ? key.rule : null;
 
 /** Le PALIER d'un constat REJOUÉ sur la clé de celui qui lit : recalculé de `e.to` (le relevé du constat), jamais le `tier` écrit par
  *  l'autre ; '' quand la clé n'est pas un posé de précision (terrain, autre condition), le relevé illisible ou au-delà du dernier
  *  palier. Pour l'étape d'une suite : la preuve et `stepKey(règle)`. */
 export function replayTier(e, key) {
   try {
-    const t = landTier(e && e.to, landSpec(key));
-    return t ? t.tier : '';
+    return landTier(landOf(key), e && e.to).tier;
   } catch {
     return '';
   }
@@ -518,6 +442,8 @@ export function holding(key, hold, fix) {
       kept = Number.isFinite(t0) && Number.isFinite(t1) && t0 <= t1 && t > t1 && t - t1 <= spec.maxGapSec * 1000,
       start = kept ? from : b,
       ts = kept ? t0 : t;
+    const land = landTier(landOf(key),
+      b); // un posé de précision : son palier et sa distance, recalculés ici (rien hors posé de précision, ni au-delà du dernier palier)
     return {
       hold: {
         from: start,
@@ -528,7 +454,7 @@ export function holding(key, hold, fix) {
         at: t,
         from: start,
         to: b,
-        ...(landTier(b, spec) || {}) // un posé de précision : le palier et la distance du relevé `to` au point visé (SOG-0507)
+        ...(land.tier ? land : {}) // un posé de précision : le palier et la distance du relevé `to` au point visé (SOG-0507)
       } : null
     };
   } catch {
@@ -1010,7 +936,7 @@ export function stateOf(drawers, {
       other = found.find(c => c.by && c.by !== tri) || null,
       got = own(seenOf, id),
       // le palier d'un posé de précision : RECALCULÉ du relevé du constat sur la clé de celui qui lit, jamais le palier écrit (SOG-0507)
-      land = w && w.how === 'landing' && w.to ? landTier(w.to, landSpec(key)) : null;
+      land = w && w.how === 'landing' && w.to ? landTier(landOf(key), w.to) : null;
     out.push({
       id,
       title: typeof d.title === 'string' ? d.title : '',

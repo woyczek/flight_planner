@@ -5420,6 +5420,14 @@ def a353(c):
     c.check_errors()
 
 
+@case('A360', 'The precision landings of the frame (SOG-0516, frame/lib/precision.js): PRECISION, TIERS and tierOf re-exported by drawers.js give EXACTLY the tiers of before on a corpus of bounds (0, 0.05, 0.0501, 0.1, 0.1001, 0.2, 0.2001, 0.5, 0.5001, NaN, -1, Infinity, null, text); landTier recomputes the tier on the rule; precisionLandings reads a hostile logbook bounded and never throws', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0516 (lot A; V3 Frame: pure at import, the logbook is untrusted, the tier is ALWAYS recomputed on the rule of the mission, never the written one): the bench frame/lib/test/precision.html (window.__precisionBench) shows the tiers equal to the hard-written ones of before, landTier on a point, a still object, an airfield, an unreadable fix and a hostile rule, and precisionLandings on two landings and a sequence in order, a lying written tier ignored, a hostile logbook (__proto__, giant arrays, wrong types), an airfield landing excluded, a mission without drawer')
+def a360(c):
+    _bench(c, 'frame/lib/test/precision.html', '__precisionBench')
+    c.eq(c.js('window.__precisionBench.pass'), 109, 'the threshold is the total of the bench: 109 assertions pass', what='bench total')
+
+
 @case('A353', 'SogFrame.fold (SOG-0468 (3), the classic screens of Settings): the frame loads frame/lib/fold.js with its start and gives it, frozen and ready before the first screen; the service worker keeps it for offline', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (3) (Réglages: groups.js builds its groups and keeps the open ones synchronously): window.SogFrame.fold is { fold, wireFolds, foldOf, openFold } of frame/lib/fold.js, frozen, set before the first screen is drawn; frame/sw.js lists lib/fold.js in its shell')

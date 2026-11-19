@@ -31,6 +31,9 @@
 //   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
 
 import * as D from './drawers.js';
+import {
+  TIER_TEXT
+} from '../../frame/lib/precision.js';
 import * as AV from './assign_view.js'; // SOG-0443 : « Affecter… » dans la rangée de la fiche, appelé à chaque dessin (show) et par stop()
 import {
   fmtZ
@@ -128,12 +131,7 @@ export const TX = {
   openLandingTierBy: ['ouvert à l\'atterrissage de {by} — {tier} ({d} NM), à {t}', 'opened when {by} landed — {tier} ({d} NM), at {t}',
     'bei der Landung von {by} geöffnet — {tier} ({d} NM) um {t}', 'abierto al aterrizaje de {by} — {tier} ({d} NM), a las {t}'
   ],
-  tier: {
-    excellent: ['excellent', 'excellent', 'ausgezeichnet', 'excelente'],
-    parfait: ['parfait', 'perfect', 'perfekt', 'perfecto'],
-    réussi: ['réussi', 'good', 'gelungen', 'logrado'],
-    partiel: ['partiel', 'partial', 'teilweise', 'parcial']
-  },
+  tier: TIER_TEXT, // les quatre mots des paliers : ceux du cadre (frame/lib/precision.js, SOG-0516)
   decSep: [',', '.', ',', ','], // le séparateur décimal de la langue (une distance s'écrit avec deux décimales)
   // la condition « survol » de l'atelier (SOG-0500, lot 2) : jamais le lieu, comme l'atterrissage
   keyOverflight: ['s\'ouvre au survol', 'opens on overflight', 'öffnet sich beim Überflug', 'se abre al sobrevolar'],

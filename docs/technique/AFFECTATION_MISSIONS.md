@@ -699,6 +699,7 @@ The user's figures (19 Nov 2026) REPLACE the radius written in the mission file,
   { tier: 'réussi', nm: 0.2 }, { tier: 'partiel', nm: 0.5 }]` (frozen), `TIERS = ['excellent', 'parfait', 'réussi', 'partiel']`.
   `tierOf(distNm)` returns the tier, or `''` beyond 0.5 NM, for a non-finite or negative distance and for anything but a number. The bounds
   are INCLUDED: exactly 0.2 NM is `réussi`. The tier words are data identifiers; their text is translated in the view.
+- **Where the tiers live (SOG-0516).** `PRECISION`, `TIERS` and `tierOf` now live in `frame/lib/precision.js` (with `AD_NM`, `FIX_PERIOD_SEC`, `landRule`, `landTier(rule, fix)` and `precisionLandings`, read by the mission report); `drawers.js` imports and re-exports them, nothing else changes. See `frame/INTEGRATION.md` § 12g.
 - **Required stopover: 2 NM.** `stopsDone` reaches each `key.required` point at `TRANSIT_NM`, not at the arrival's `radiusNm`.
 - **Arrival on an airfield: 1 NM.** Every `kind: 'arrival'` key is judged `{ ...key, radiusNm: AD_NM }` (`adKey`) in `finding`, `stands` and
   `catchUp`; speed and ground stay the key's rules.

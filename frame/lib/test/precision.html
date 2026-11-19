@@ -1,0 +1,549 @@
+<!doctype html>
+<!-- Banc du posé de précision (frame/lib/precision.js, SOG-0516, lot A) : (1) PRECISION, TIERS et tierOf réimportés par modules/missions/drawers.js donnent EXACTEMENT les paliers d'avant, sur un corpus de distances aux bornes
+     (les paliers attendus sont écrits en dur ici) ; (2) landTier : un point, un objet immobile, un terrain, un relevé illisible, une règle hostile ; (3) precisionLandings : deux posés et une suite dans l'ordre, un `tier` écrit mensonger
+     ignoré (le palier est recalculé), un carnet hostile, un posé au terrain exclu, une mission sans tiroir, jamais d'exception. Missions et positions inventées. Page nue ; window.__precisionBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>precision — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import * as P from '../precision.js';
+  import * as D from '../../../modules/missions/drawers.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__precisionBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__precisionBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const eq = (name, got, want) => ck(name, JSON.stringify(got) === JSON.stringify(want), `obtenu ${JSON.stringify(got)}, attendu ${JSON.stringify(want)}`);
+  const noThrow = (name, fn) => {
+    try {
+      fn();
+      ck(name, true);
+    } catch (e) {
+      ck(name, false, String(e));
+    }
+  };
+
+  // (1) les paliers d'avant, écrits en dur
+  const corpus = [0, 0.05, 0.0501, 0.1, 0.1001, 0.2, 0.2001, 0.5, 0.5001, NaN, -1, Infinity, null, 'texte', '0.05', undefined, {}, -0];
+  const before = ['excellent', 'excellent', 'parfait', 'parfait', 'réussi', 'réussi', 'partiel', 'partiel', '', '', '', '', '', '', '', '', '', 'excellent'];
+  corpus.forEach((d, i) => {
+    const label = typeof d === 'number' && Object.is(d, -0) ? '-0' : typeof d === 'object' && d ? '{}' : String(d);
+    ck(`tierOf(${label}) = '${before[i]}' (cadre)`, P.tierOf(d) === before[i], `obtenu '${P.tierOf(d)}'`);
+    ck(`tierOf(${label}) réexporté par drawers.js : le même palier`, D.tierOf(d) === before[i], `obtenu '${D.tierOf(d)}'`);
+  });
+  ck('PRECISION, TIERS : les mêmes objets que ceux que drawers.js réexporte', D.PRECISION === P.PRECISION && D.TIERS === P.TIERS && D.AD_NM === P.AD_NM && D.FIX_PERIOD_SEC === P.FIX_PERIOD_SEC);
+  eq('PRECISION : quatre paliers, bornes comprises', P.PRECISION.map(x => [x.tier, x.nm]), [
+    ['excellent', 0.05],
+    ['parfait', 0.1],
+    ['réussi', 0.2],
+    ['partiel', 0.5]
+  ]);
+  ck('PRECISION est gelé (la liste et chaque palier)', Object.isFrozen(P.PRECISION) && P.PRECISION.every(Object.isFrozen));
+  eq('TIERS : les quatre identifiants, du meilleur au plus large', P.TIERS, ['excellent', 'parfait', 'réussi', 'partiel']);
+  eq('AD_NM et FIX_PERIOD_SEC : 1 et 5', [P.AD_NM, P.FIX_PERIOD_SEC], [1, 5]);
+  eq('TIER_TEXT : les quatre mots en quatre langues', Object.keys(P.TIER_TEXT), P.TIERS);
+  ck('TIER_TEXT : quatre textes par palier', P.TIERS.every(t => P.TIER_TEXT[t].length === 4 && P.TIER_TEXT[t].every(x => typeof x === 'string' && x)));
+  eq('TIER_TEXT : les mots français et anglais', P.TIERS.map(t => [P.TIER_TEXT[t][0], P.TIER_TEXT[t][1]]), [
+    ['excellent', 'excellent'],
+    ['parfait', 'perfect'],
+    ['réussi', 'good'],
+    ['partiel', 'partial']
+  ]);
+
+  // (2) landTier
+  const NM = 1 / 60; // un mille marin en degrés de latitude
+  const iso = (m) => new Date(Date.UTC(2026, 10, 19, 10, m, 0)).toISOString();
+  const rule = (extra = {}) => ({
+    kind: 'landing',
+    confirmation: '',
+    at: {
+      lat: 48,
+      lon: 2
+    },
+    durationSec: 10,
+    maxGapSec: 10,
+    speedMaxKt: 30,
+    ...extra
+  });
+  const fixAt = (nm, m = 5) => ({
+    lat: 48 + nm * NM,
+    lon: 2,
+    at: iso(m),
+    onGround: true,
+    gsKt: 0
+  });
+  const NONE = {
+    tier: '',
+    distNm: null
+  };
+  const lt = (r, f) => P.landTier(r, f);
+  const close = (v, w) => typeof v === 'number' && Math.abs(v - w) < 0.002;
+  const a = lt(rule(), fixAt(0.03));
+  ck('landTier : un point, 0,03 NM : excellent', a.tier === 'excellent' && close(a.distNm, 0.03), JSON.stringify(a));
+  const b = lt(rule(), fixAt(0.15));
+  ck('landTier : un point, 0,15 NM : réussi', b.tier === 'réussi' && close(b.distNm, 0.15), JSON.stringify(b));
+  const c = lt(rule(), fixAt(0.45));
+  ck('landTier : un point, 0,45 NM : partiel', c.tier === 'partiel' && close(c.distNm, 0.45), JSON.stringify(c));
+  eq('landTier : au-delà de 0,5 NM : sans palier ni distance', lt(rule(), fixAt(0.7)), NONE);
+  const o = lt(rule({
+    at: undefined,
+    object: {
+      lat: 48,
+      lon: 2,
+      moving: false
+    }
+  }), fixAt(0.08));
+  ck('landTier : un objet immobile, 0,08 NM : parfait', o.tier === 'parfait' && close(o.distNm, 0.08), JSON.stringify(o));
+  eq('landTier : un objet qui bouge : rien', lt(rule({
+    at: undefined,
+    object: {
+      lat: 48,
+      lon: 2,
+      moving: true
+    }
+  }), fixAt(0.03)), NONE);
+  eq('landTier : un terrain (ORIGIN) : rien', lt(rule({
+    point: 'ORIGIN'
+  }), fixAt(0.03)), NONE);
+  eq('landTier : un terrain (DESTINATION) : rien', lt(rule({
+    point: 'DESTINATION'
+  }), fixAt(0.03)), NONE);
+  ck('landTier : un autre point (ALTERNATE, ou un mot libre) reste un posé de précision', lt(rule({
+    point: 'ALTERNATE'
+  }), fixAt(0.03)).tier === 'excellent');
+  for (const [name, f] of [
+      ['null', null],
+      ['texte', 'texte'],
+      ['nombre', 12],
+      ['vide', {}],
+      ['latitude fausse', {
+        lat: 'x',
+        lon: 2
+      }],
+      ['hors bornes', {
+        lat: 95,
+        lon: 2
+      }],
+      ['tableau', [48, 2]]
+    ]) eq(`landTier : relevé illisible (${name}) : rien`, lt(rule(), f), NONE);
+  for (const [name, r] of [
+      ['null', null],
+      ['texte', 'landing'],
+      ['tableau', []],
+      ['autre genre', rule({
+        kind: 'hover'
+      })],
+      ['mot de confirmation', rule({
+        confirmation: 'oui'
+      })],
+      ['durée fausse', rule({
+        durationSec: '10'
+      })],
+      ['écart sous la période', rule({
+        maxGapSec: 4
+      })],
+      ['vitesse négative', rule({
+        speedMaxKt: -1
+      })],
+      ['point hors bornes', rule({
+        at: {
+          lat: 91,
+          lon: 2
+        }
+      })],
+      ['__proto__', JSON.parse('{"__proto__":{"kind":"landing","confirmation":""},"kind":"x"}')],
+      ['sans clé propre', Object.create(rule())]
+    ]) eq(`landTier : règle hostile (${name}) : rien`, lt(r, fixAt(0.03)), NONE);
+  noThrow('landTier : aucun argument, aucune exception', () => {
+    P.landTier();
+    P.landTier(undefined, undefined);
+  });
+  const trap = {
+    get lat() {
+      throw new Error('piège');
+    },
+    lon: 2
+  };
+  noThrow('landTier : un relevé à accesseur qui lève : aucune exception', () => eq('  … et rien', lt(rule(), trap), NONE));
+  ck('landTier : un `tier` écrit dans le relevé est ignoré', lt(rule(), {
+    ...fixAt(0.3),
+    tier: 'excellent',
+    distNm: 0
+  }).tier === 'partiel');
+
+  // (3) precisionLandings
+  const key = r => ({
+    kind: 'condition',
+    condition: 'landing',
+    rule: r
+  });
+  const drawers = [{
+    id: 'B',
+    key: key(rule())
+  }, {
+    id: 'C',
+    key: key(rule({
+      point: 'DESTINATION'
+    }))
+  }, {
+    id: 'D',
+    key: {
+      kind: 'condition',
+      condition: 'sequence',
+      steps: [{
+        kind: 'overflight',
+        at: {
+          lat: 49,
+          lon: 3
+        }
+      }, rule({
+        at: {
+          lat: 49,
+          lon: 3
+        }
+      }), rule({
+        at: {
+          lat: 50,
+          lon: 4
+        }
+      })]
+    }
+  }, {
+    id: 'E',
+    key: {
+      kind: 'condition',
+      condition: 'zone'
+    }
+  }];
+  const fixB = {
+    ...fixAt(0.04),
+    lat: 48 + 0.04 * NM
+  };
+  const at49 = nm => ({
+    lat: 49 + nm * NM,
+    lon: 3,
+    at: iso(30),
+    onGround: true,
+    gsKt: 0
+  });
+  const at50 = nm => ({
+    lat: 50 + nm * NM,
+    lon: 4,
+    at: iso(40),
+    onGround: true,
+    gsKt: 0
+  });
+  const book = {
+    schema: 1,
+    mission: 'M-001',
+    drawer_B: {
+      state: 'open',
+      at: iso(20),
+      how: 'landing',
+      from: fixAt(2),
+      to: fixB,
+      tier: 'partiel', // mensonger : le vrai palier est excellent
+      distNm: 0.5
+    },
+    drawer_C: {
+      state: 'open',
+      at: iso(15),
+      how: 'landing',
+      from: fixAt(2),
+      to: fixAt(0.01),
+      tier: 'excellent',
+      distNm: 0
+    },
+    drawer_D: {
+      state: 'open',
+      at: iso(41),
+      how: 'sequence',
+      steps: [{
+        how: 'overflight',
+        from: at49(2),
+        to: at49(0),
+        at: iso(25),
+        tier: 'excellent'
+      }, {
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.15),
+        at: iso(30),
+        tier: 'excellent',
+        distNm: 0
+      }, {
+        how: 'landing',
+        from: at50(2),
+        to: at50(0.08),
+        at: Date.UTC(2026, 10, 19, 10, 40)
+      }]
+    },
+    drawer_E: {
+      state: 'open',
+      at: iso(10),
+      how: 'zone',
+      to: fixAt(0.01)
+    }
+  };
+  const got = P.precisionLandings(drawers, book);
+  eq('precisionLandings : deux posés et une suite, dans l\'ordre de `at` (le posé au terrain exclu)', got.map(x => [x.id, x.tier]), [
+    ['B', 'excellent'],
+    ['D', 'réussi'],
+    ['D', 'parfait']
+  ]);
+  eq('precisionLandings : `at` en millisecondes, pour le constat comme pour la preuve', got.map(x => x.at), [Date.parse(iso(20)), Date.parse(iso(30)), Date.UTC(2026, 10, 19, 10, 40)]);
+  ck('precisionLandings : les distances sont recalculées, jamais celles qui sont écrites', close(got[0].distNm, 0.04) && close(got[1].distNm, 0.15) && close(got[2].distNm, 0.08), JSON.stringify(got));
+  const sorted = P.precisionLandings(drawers, {
+    ...book,
+    drawer_B: {
+      ...book.drawer_B,
+      at: iso(50)
+    }
+  });
+  eq('precisionLandings : l\'ordre suit `at`, non celui des tiroirs', sorted.map(x => x.id), ['D', 'D', 'B']);
+  eq('precisionLandings : un posé au-delà de 0,5 NM : omis', P.precisionLandings(drawers, {
+    ...book,
+    drawer_B: {
+      ...book.drawer_B,
+      to: fixAt(0.9)
+    }
+  }).map(x => x.id), ['D', 'D']);
+  eq('precisionLandings : un tiroir scellé ou fermé : omis', P.precisionLandings(drawers, {
+    ...book,
+    drawer_B: {
+      state: 'sealed',
+      at: iso(20)
+    },
+    drawer_D: {
+      state: 'closed'
+    }
+  }), []);
+  eq('precisionLandings : une preuve « overflight » : omise (seul le posé compte)', P.precisionLandings(drawers, book).filter(x => x.at === Date.parse(iso(25))), []);
+  eq('precisionLandings : une mission sans tiroir', P.precisionLandings([], book), []);
+  eq('precisionLandings : un carnet vide', P.precisionLandings(drawers, {}), []);
+  eq('precisionLandings : une preuve au-delà des règles de la suite, ou loin de la règle de son rang : omise', P.precisionLandings([drawers[2]], {
+    drawer_D: {
+      state: 'open',
+      at: iso(41),
+      how: 'sequence',
+      steps: [{
+          how: 'landing',
+          from: at49(2),
+          to: at49(0.01),
+          at: iso(30)
+        },
+        {
+          how: 'landing',
+          from: at49(2),
+          to: at49(0.01),
+          at: iso(31)
+        },
+        {
+          how: 'landing',
+          from: at49(2),
+          to: at49(0.01),
+          at: iso(32)
+        },
+        {
+          how: 'landing',
+          from: at49(2),
+          to: at49(0.01),
+          at: iso(33)
+        }
+      ]
+    }
+  }).map(x => x.at), [Date.parse(iso(31))]);
+  eq('precisionLandings : un constat de tiroir ne compte que pour une clé « atterrissage »', P.precisionLandings([{
+    id: 'E',
+    key: {
+      kind: 'condition',
+      condition: 'zone'
+    }
+  }], {
+    drawer_E: {
+      state: 'open',
+      at: iso(1),
+      how: 'landing',
+      to: fixAt(0.01)
+    }
+  }), []);
+  eq('precisionLandings : la clé veut un posé, le carnet dit « zone » : omis', P.precisionLandings([drawers[0]], {
+    drawer_B: {
+      state: 'open',
+      at: iso(1),
+      how: 'zone',
+      to: fixAt(0.01)
+    }
+  }), []);
+  // les bornes : 12 tiroirs, 10 preuves
+  const many = Array.from({
+    length: 30
+  }, (_, i) => ({
+    id: 'BCDEFGHIJKLM'[i % 12],
+    key: key(rule())
+  }));
+  const bookMany = Object.fromEntries([...'BCDEFGHIJKLM'].map(l => [`drawer_${l}`, {
+    state: 'open',
+    at: iso(1),
+    how: 'landing',
+    to: fixAt(0.01)
+  }]));
+  ck('precisionLandings : au plus 12 tiroirs lus', P.precisionLandings(many, bookMany).length === 12);
+  const bigRules = Array.from({
+    length: 40
+  }, () => rule());
+  const bigProofs = Array.from({
+    length: 5000
+  }, (_, i) => ({
+    how: 'landing',
+    from: fixAt(2),
+    to: fixAt(0.01),
+    at: iso(i % 50)
+  }));
+  const bigSeq = P.precisionLandings([{
+    id: 'B',
+    key: {
+      kind: 'condition',
+      condition: 'sequence',
+      steps: bigRules
+    }
+  }], {
+    drawer_B: {
+      state: 'open',
+      at: iso(1),
+      how: 'sequence',
+      steps: bigProofs
+    }
+  });
+  ck('precisionLandings : au plus 10 preuves par tiroir, un tableau géant sans exception', bigSeq.length === 10, String(bigSeq.length));
+  const huge = Array.from({
+    length: 200000
+  }, () => ({
+    id: 'B',
+    key: key(rule())
+  }));
+  noThrow('precisionLandings : une liste de 200 000 tiroirs : lue en bornes, sans exception', () => ck('  … 1 ligne au plus par tiroir lu', P.precisionLandings(huge, bookMany).length <= 12));
+  // hostile
+  const hostile = [
+    ['null', null, null],
+    ['texte', 'texte', 'texte'],
+    ['nombres', 12, 7],
+    ['tableaux', [], []],
+    ['tiroirs non tableau', {
+      length: 5
+    }, book],
+    ['carnet tableau', drawers, [book]],
+    ['carnet __proto__', drawers, JSON.parse('{"__proto__":{"drawer_B":{"state":"open","how":"landing"}},"drawer_B":null}')],
+    ['tiroir __proto__', JSON.parse('[{"id":"B","__proto__":{"key":1}}]'), book],
+    ['tiroirs nus', [null, 1, 'x', [], {}, {
+      id: 1
+    }, {
+      id: 'B'
+    }, {
+      id: 'B',
+      key: 3
+    }, {
+      id: 'B',
+      key: {
+        kind: 'condition'
+      }
+    }, {
+      id: 'zz',
+      key: key(rule())
+    }], book],
+    ['entrées fausses', drawers, {
+      drawer_B: 'x',
+      drawer_C: [1],
+      drawer_D: {
+        state: 'open',
+        how: 'sequence',
+        steps: 'x'
+      },
+      drawer_E: null
+    }],
+    ['preuves fausses', drawers, {
+      drawer_D: {
+        state: 'open',
+        at: iso(1),
+        how: 'sequence',
+        steps: [null, 1, 'x', [], {
+          how: 'landing'
+        }, {
+          how: 'landing',
+          to: 3,
+          at: 'demain'
+        }, {
+          how: 'landing',
+          to: fixAt(0.01),
+          at: NaN
+        }]
+      }
+    }],
+    ['heure fausse', drawers, {
+      drawer_B: {
+        state: 'open',
+        at: 'hier',
+        how: 'landing',
+        to: fixAt(0.01)
+      }
+    }],
+    ['règle de suite hostile', [{
+      id: 'D',
+      key: {
+        kind: 'condition',
+        condition: 'sequence',
+        steps: [null, 'x', 7, [], JSON.parse('{"__proto__":{"kind":"landing"}}')]
+      }
+    }], {
+      drawer_D: {
+        state: 'open',
+        at: iso(1),
+        how: 'sequence',
+        steps: [1, 2, 3, 4, 5].map(() => ({
+          how: 'landing',
+          to: fixAt(0.01),
+          at: iso(1)
+        }))
+      }
+    }]
+  ];
+  for (const [name, d, bk] of hostile) {
+    let r, err = '';
+    try {
+      r = P.precisionLandings(d, bk);
+    } catch (e) {
+      err = String(e);
+    }
+    ck(`precisionLandings : entrée hostile (${name}) : un tableau, sans exception`, !err && Array.isArray(r), err);
+  }
+  eq('precisionLandings : un tiroir __proto__ ou un carnet dont le prototype porte les clés : rien', [P.precisionLandings(hostile[6][1], hostile[6][2]), P.precisionLandings(hostile[7][1], hostile[7][2])], [
+    [],
+    []
+  ]);
+  const trapBook = {
+    get drawer_B() {
+      throw new Error('piège');
+    }
+  };
+  noThrow('precisionLandings : un carnet à accesseur qui lève : aucune exception', () => eq('  … et rien', P.precisionLandings(drawers, trapBook), []));
+  // un tiroir illisible n'empêche pas les autres
+  eq('precisionLandings : un tiroir illisible n\'empêche pas les autres', P.precisionLandings([null, ...drawers], book).map(x => x.id), ['B', 'D', 'D']);
+  noThrow('precisionLandings : sans argument', () => P.precisionLandings());
+
+  window.__precisionBench.done = true;
+  out.append(`\n${window.__precisionBench.pass} passed, ${window.__precisionBench.fail} failed\n`);
+</script>
+</body>
+</html>
