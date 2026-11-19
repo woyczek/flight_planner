@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 362,
+  "tests": 363,
   "verdicts": 233
  },
  "apps": [
@@ -5413,6 +5413,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T14:16:24Z"
+  },
+  {
+   "id": "SOG-0524",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : la réponse du calcul dépend de la charge du poste — ESSA → LEMG « calcul impossible (budget de recherche) » quand le poste est chargé ; borner en états, pas en temps",
+    "en": "Routes: the computed answer depends on machine load — ESSA → LEMG “impossible (search budget)” when busy; bound by states, not time",
+    "de": "Routen: die Antwort hängt von der Last des Rechners ab — ESSA → LEMG „unmöglich (Suchbudget)“ unter Last; nach Zuständen begrenzen, nicht nach Zeit",
+    "es": "Rutas: la respuesta depende de la carga del equipo — ESSA → LEMG «imposible (presupuesto de búsqueda)» con carga; acotar por estados, no por tiempo"
+   },
+   "test": "Carburant : calcule ESSA → LEMG, puis refais-le pendant que le poste est occupé (une reconstruction de zone en cours, par exemple). Attendu : la même route les deux fois (environ 1 650 NM). Si le poste est vraiment trop lent, la réponse dit « calcul interrompu, poste trop lent », jamais « calcul impossible ».",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T16:57:36Z"
   }
  ],
  "decisions": [
