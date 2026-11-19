@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
   "tests": 349,
-  "verdicts": 219
+  "verdicts": 220
  },
  "apps": [
   "pilote",
@@ -4699,13 +4699,16 @@
    },
    "test": "D'abord, une fois : relance du lanceur, puis Données → « Mettre à jour » (France), puis reconstruis la zone fr. Carte : touche R 205 /11, puis R 7 B. Attendu : chaque rubrique UNE fois, avec ses lignes dessous — Nature du danger, Organisme et conditions de pénétration (le gestionnaire, par exemple « DE GAULLE APP, ORLY APP », et les conditions d'entrée, tirés des remarques quand l'ENR 5.1 ne les donne pas), Horaires, Remarques — au-delà de trois lignes, le reste se replie ; textes tels que publiés.",
    "since": "2026-11-18",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-18T18:33:43Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "R 205 /11 · zone réglementée Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : H24 Conditions et remarques de l’AIP : Managers: Conditions et remarques de l’AIP : DE GAULLE APP, ORLY APP. Conditions et remarques de l’AIP : Entry conditions:  plus d’autres. le gestionnaire n’est pas récupéré, ni les conditions d’entrées.  Une autre R 7 B · zone réglementée  Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : Possible activation except public HOL : Horaires publiés : Overall area : MON-FRI : 0800 - 1600 Horaires publiés : North of AWY V20 northerly limit : MON-THU : 1600 - 0600 and other times by NOTAM Horaires publiés : (SUM : -1HR)  Conditions et remarques de l’AIP : CDC CINQ MARS LA PILE. Conditions et remarques de l’AIP : IFR/VFR : avoidance mandatory during activity except for AWY V20, follow ACC instructions. Conditions et remarques de l’AIP : Activity known on : PARIS ACC/FIC and BREST ACC. Organisme et fréquence : PARIS ACC/FIC and BREST ACC Source : SIA (2026-10-29)  1/ la présentation n’est pas formidable ; 2/ des infos sont à glaner là dedans.",
-    "at": "2026-11-18T16:27:02Z"
-   }
+   "at": "2026-11-19T08:43:02Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "R 205 /11 · zone réglementée Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : H24 Conditions et remarques de l’AIP : Managers: Conditions et remarques de l’AIP : DE GAULLE APP, ORLY APP. Conditions et remarques de l’AIP : Entry conditions:  plus d’autres. le gestionnaire n’est pas récupéré, ni les conditions d’entrées.  Une autre R 7 B · zone réglementée  Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : Possible activation except public HOL : Horaires publiés : Overall area : MON-FRI : 0800 - 1600 Horaires publiés : North of AWY V20 northerly limit : MON-THU : 1600 - 0600 and other times by NOTAM Horaires publiés : (SUM : -1HR)  Conditions et remarques de l’AIP : CDC CINQ MARS LA PILE. Conditions et remarques de l’AIP : IFR/VFR : avoidance mandatory during activity except for AWY V20, follow ACC instructions. Conditions et remarques de l’AIP : Activity known on : PARIS ACC/FIC and BREST ACC. Organisme et fréquence : PARIS ACC/FIC and BREST ACC Source : SIA (2026-10-29)  1/ la présentation n’est pas formidable ; 2/ des infos sont à glaner là dedans.",
+     "at": "2026-11-18T16:27:02Z"
+    }
+   ]
   },
   {
    "id": "SOG-0463",
@@ -5608,42 +5611,6 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
-  },
-  {
-   "id": "Q-0119",
-   "fiche": "SOG-0513",
-   "app": "pilote",
-   "question": "La route EGLL → LFRN que tu as passée à l'IFPS ce matin (MID L612 HAWKE DCT NEVIL G27 …) : d'où venait-elle dans Carburant ?",
-   "context": "Notre calcul ne la produit dans aucun réglage, ni aujourd'hui ni depuis le 16/11 : il donne GASGU N866 SAM N63 … UT260 UPALO V20 LUVOP. Carburant trace n'importe quel texte de route. Si elle vient de notre calcul, c'est un défaut à chercher ; sinon, notre contrôle la juge maintenant comme l'IFPS.",
-   "options": [
-    "Saisie ou collée à la main (ou importée de SimBrief / Autorouter)",
-    "Calculée par « Calculer » dans Carburant ce matin",
-    "Un vol ancien, calculé avant le 16/11",
-    "Je ne sais pas"
-   ],
-   "since": "2026-11-19",
-   "state": "answered",
-   "choice": 3,
-   "text": "j’ai fait un egll / lfrn, calculer. je recommence. reproduit. premier résultat.",
-   "at": "2026-11-19T08:42:04Z"
-  },
-  {
-   "id": "Q-0120",
-   "fiche": "SOG-0513",
-   "app": "pilote",
-   "question": "Le contrôle des directs au Royaume-Uni (ROUTE165 de ton IFPS) demande un nouveau lecteur (parseur 31) : toutes tes zones devront être reconstruites UNE fois. Quand ?",
-   "context": "Le lecteur garde l'espace supérieur de Londres et la zone FRA ouest du Royaume-Uni. Le parseur change pour toutes les zones : l'écran Données les dira « à reconstruire » (une seule fois). Le push attend la correction de l'étiquette « à publier » (SOG-0510). Le moteur est testé d'ici là sur des contours inventés.",
-   "options": [
-    "Dès que SOG-0510 est livrée : je reconstruis tout une fois",
-    "Plus tard : grouper avec le prochain changement de lecteur",
-    "Jamais pour ça : le contrôle des directs au Royaume-Uni ne vaut pas une reconstruction"
-   ],
-   "since": "2026-11-19",
-   "state": "answered",
-   "recommended": 0,
-   "choice": 0,
-   "text": "",
-   "at": "2026-11-19T08:42:42Z"
   }
  ]
 }
