@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "202a338",
+  "organisation": "a77057b",
   "fiches": 529,
   "untranslated": 0,
   "priorities": 481,
@@ -7735,11 +7735,12 @@
     {
      "id": "SOG-0525",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Météo GFS : le rafraîchissement n'aboutit jamais — toujours « réessayer dans … s » ; comprendre, corriger, puis une case « Laisser le lanceur mettre à jour la météo GFS »",
      "en": "GFS weather: refresh never succeeds — always “retry in … s”; understand, fix, then a “Let the launcher update GFS weather” box",
      "de": "GFS-Wetter: Aktualisierung gelingt nie — immer „erneut in … s“; verstehen, beheben, dann ein Kästchen „Den Starter das GFS-Wetter aktualisieren lassen“",
-     "es": "Meteo GFS: la actualización nunca termina — siempre «reintentar en … s»; entender, corregir y luego una casilla «Dejar que el lanzador actualice la meteo GFS»"
+     "es": "Meteo GFS: la actualización nunca termina — siempre «reintentar en … s»; entender, corregir y luego una casilla «Dejar que el lanzador actualice la meteo GFS»",
+     "test": true
     }
    ]
   },
