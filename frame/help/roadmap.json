@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ed1127c",
-  "fiches": 520,
+  "organisation": "94aa413",
+  "fiches": 521,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4829,6 +4829,27 @@
      "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)",
      "rank": 461,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-securite",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; sécurité",
+    "en": "Missions ; sécurité",
+    "de": "Missions ; sécurité",
+    "es": "Missions ; sécurité"
+   },
+   "items": [
+    {
+     "id": "SOG-0522",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : le YAML du registre, des missions et de l'import se lit au schéma CORE partout (dates qui restent du texte, pas de !!set, !!binary ni « << »)",
+     "en": "Missions: the register, mission and import YAML is read with the CORE schema everywhere (dates stay text; no !!set, !!binary or “<<”)",
+     "de": "Missionen: Das YAML von Register, Missionen und Import wird überall mit dem CORE-Schema gelesen (Daten bleiben Text; kein !!set, !!binary oder „<<“)",
+     "es": "Misiones: el YAML del registro, las misiones y la importación se lee con el esquema CORE en todas partes (las fechas siguen siendo texto; sin !!set, !!binary ni «<<»)"
     }
    ]
   },
