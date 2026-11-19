@@ -759,7 +759,7 @@ export function createProcedures(host) {
       }) : '' : d.k === 'ok' ? tt(TX.procUkOk, {
         n: d.n
       }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.k === 'released' ? tt(TX
-        .procUkReleased) : d.k === 'none' ? d.p ? tt(TX.procNoneRead, {
+        .procUkReleased) : d.k === 'none' ? d.p ? tt(noneRow(d.p), {
         icao: k,
         ...d.p,
         wn: ''
@@ -1743,7 +1743,7 @@ export function createProcedures(host) {
       }, 'ok');
     } else if (none) {
       // SOG-0433 : la phrase écrite ici, dans la langue de l'écran ; la phrase anglaise du lanceur (`message`) n'est qu'un repli
-      say(TX.procNoneRead, {
+      say(noneRow(none), {
         icao,
         ...none,
         wn
@@ -2031,9 +2031,11 @@ export function createProcedures(host) {
     return code => cat?.READ_REASONS?.[code] ? ctx.t(cat.READ_REASONS[code]) : String(code || '?');
   }
   /** SOG-0433 : l'échec « rien de lu » dit par le lanceur en code et en entiers (tools/regen/proc.py) → les paramètres de procNoneRead (sans
-   *  icao ni wn), la phrase écrite ici dans la langue de l'écran ; null pour une autre réponse. Entrée non fiable : bornée. */
+   *  icao ni wn), la phrase écrite ici dans la langue de l'écran ; null pour une autre réponse. Entrée non fiable : bornée. SOG-0374 (c) :
+   *  l'échec « tout refusé » (code 'all-refused', counts.refused en plus) rend aussi `refused` : la phrase est alors procAllRefused
+   *  (noneRow). */
   function noneReadParams(res, why) {
-    if (res?.code !== 'none-read' || !res.counts || typeof res.counts !== 'object') return null;
+    if (!['none-read', 'all-refused'].includes(res?.code) || !res.counts || typeof res.counts !== 'object') return null;
     const n = v => Math.max(0, Math.min(9999, Math.round(+v || 0))),
       rs = (Array.isArray(res.reasons) ? res.reasons : []).slice(0, 3).filter(x => Array.isArray(x) && /^[a-z-]{1,20}$/.test(String(x[
           0])) &&
@@ -2042,9 +2044,14 @@ export function createProcedures(host) {
       d: n(res.counts.docs),
       read: n(res.counts.read),
       pages: n(res.counts.pages),
+      ...(res.code === 'all-refused' ? {
+        refused: n(res.counts.refused)
+      } : {}),
       why: rs ? ` (${rs})` : ''
     };
   }
+  /** SOG-0374 (c) : la phrase d'un échec lu en codes (noneReadParams) — « tout refusé » quand il porte `refused`, sinon « rien de lu ». */
+  const noneRow = p => p && p.refused !== undefined ? TX.procAllRefused : TX.procNoneRead;
   /** La phrase anglaise « no procedure could be read » d'un lanceur plus ancien, sans codes : le repli procReasons['none-read']. */
   const noneReadOld = res => res?.reason === 'failed' && /no procedure could be read/i.test(res.message || '');
   /** SOG-0374 : « Lire les départs dans le paquet du Royaume-Uni » — aerodb.fetchProcedures(icao, { source: 'ukpkg' }) (le lanceur lit le

@@ -394,6 +394,13 @@ export const TX = {
     '{icao}: kein Verfahren gelesen — {d} Dokument(e), {read} von {pages} Seite(n) gelesen{why}.{wn}',
     '{icao}: ningún procedimiento leído — {d} documento(s), {read} de {pages} página(s) leída(s){why}.{wn}'
   ],
+  // SOG-0374 (c) : l'échec « tout refusé » (code 'all-refused' : des fiches lues, toutes refusées par le contrôle ; counts { docs, read,
+  // pages, refused }, reasons [[code, n]] — 'geometry', 'no-legs'), jamais la phrase anglaise du lanceur
+  procAllRefused: ['{icao} : {refused} procédure(s) lue(s) mais refusée(s) par le contrôle — {read} page(s) lue(s) sur {pages}{why}.{wn}',
+    '{icao}: {refused} procedure(s) read but refused by the check — {read} of {pages} page(s) read{why}.{wn}',
+    '{icao}: {refused} Verfahren gelesen, aber von der Prüfung abgelehnt — {read} von {pages} Seite(n) gelesen{why}.{wn}',
+    '{icao}: {refused} procedimiento(s) leído(s) pero rechazado(s) por el control — {read} de {pages} página(s) leída(s){why}.{wn}'
+  ],
   procCountRead: [' {read} pages lues sur {pages}.', ' {read} pages read of {pages}.', ' {read} Seiten von {pages} gelesen.',
     ' {read} páginas leídas de {pages}.'
   ],

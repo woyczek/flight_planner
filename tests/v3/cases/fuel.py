@@ -8865,3 +8865,31 @@ def f286(c):
         c.js(_F281_NOTES_OFF)  # the notes closed: the capture shows the field
         c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F286_{c.design}_{w}_{c.lang}_level.png')
+
+
+@case('F285', 'A reading whose procedures were ALL refused by the check, said in the screen\'s language from the launcher\'s code '
+      '(« all-refused »): how many were refused, how many pages were read, the reasons — never « La lecture a échoué »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0374 (c) (the user\'s case: EGLL, 6 pages read of 15, 24 procedures refused, said « La lecture de EGLL a échoué »); the contract '
+      'of Procédures: { reason: failed, code: all-refused, counts { docs, read, pages, refused }, reasons [[code, n]] }, the same form as '
+      '« none-read » (F258) with `refused`; the expected sentence WRITTEN here, its plurals agreed with the number before them')
+def f285(c):
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try { db.fetchProcedures = async () => ({ ok: false, reason: 'failed', code: 'all-refused', counts: { docs: 15, read: 6, pages: 15, refused: 24 },
+            reasons: [['no-legs', 4], ['<b>x</b>', 2]], message: 'every procedure read was refused by the check' }) } catch (e) {}
+          return db } } } }) })()""")
+    open_proc(c)
+    wait_rows(c, 'arr')
+    open_foot(c, 'arr')
+    c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
+    want = {'fr': 'LFML : 24 procédures lues mais refusées par le contrôle — 6 pages lues sur 15',
+            'en': 'LFML: 24 procedures read but refused by the check — 6 of 15 pages read',
+            'de': 'LFML: 24 Verfahren gelesen, aber von der Prüfung abgelehnt — 6 von 15 Seiten gelesen',
+            'es': 'LFML: 24 procedimientos leídos pero rechazados por el control — 6 de 15 páginas leídas'}[c.lang]
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(want), timeout=8000,
+            what=f'the failure said « {want} … »')
+    note = next(norm(n) for n in c.note_log() if norm(want) in norm(n))
+    legs = norm(tx('frame/aerodb/catalogue.js', "no-legs'", c.lang, after='READ_REASONS = {'))
+    c.ok(f'({legs} ×4)' in note, note, 'the reason by the catalogue, with its count')
+    c.ok('<b>' not in note and 'every procedure' not in note, note, 'a reason code outside the form dropped; never the launcher\'s English sentence')
