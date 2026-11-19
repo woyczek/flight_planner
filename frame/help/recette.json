@@ -5445,6 +5445,35 @@
    "state": "todo"
   },
   {
+   "id": "Q-0124",
+   "fiche": "",
+   "app": "",
+   "question": "Rationalisation : réduit-on le nombre de sessions, en fusionnant les rôles voisins ?",
+   "context": "Tu demandes de limiter les agents pour limiter les échanges. Ce que je conteste : les sous-agents de codage (Sonnet, Opus) ne coûtent rien au quota Fable ; ce qui l'a vidé, ce sont les messages ENTRE sessions arrivant sur des sessions Fable à long contexte (une soixantaine chez moi le 18/11), et les captures lues. Les quatre sessions Fable sont passées sur Opus ce soir. Ce qui réduit vraiment les échanges, c'est moins de SESSIONS : treize sont actives. Fusions possibles sans perdre un propriétaire de fichiers : Création + Affectation en une session « Missions » ; Procédures dans AeroDB ; Réglages dans V3 Frame ; les deux sessions Fable d'origine (Création, Affectation, au repos depuis leur relais) archivées. On passerait de treize à huit. Coût : une note de passation par session absorbée, et une demi-journée de rodage.",
+   "options": [
+    "Oui aux trois fusions et à l'archivage, une à la fois, après le lot en cours de chaque session",
+    "Seulement l'archivage des deux sessions d'origine et Réglages dans V3 Frame ; les autres restent",
+    "Non : on garde les sessions, on réduit seulement les messages (un par lot, plus de messages d'information)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-19",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0125",
+   "fiche": "SOG-0443",
+   "app": "compagnie",
+   "question": "Les fichiers de mission de la V3 doivent-ils rester lisibles par la V2 ?",
+   "context": "Une session a rapporté que tu avais dit le 18/11 : « aucune obligation de compatibilité avec la v2 (n'a jamais été utilisée). seules les fonctionnalités importent ». L'ergonome ne retire pas une contrainte sur le dire d'une autre session : confirme-le ici.",
+   "options": [
+    "Non : aucune compatibilité V2 exigée, seules les fonctionnalités comptent",
+    "Oui : une mission V3 doit rester lisible par la V2"
+   ],
+   "since": "2026-11-19",
+   "state": "todo"
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
