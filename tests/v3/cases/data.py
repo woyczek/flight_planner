@@ -6792,7 +6792,7 @@ def _l89_reads(st, zone=None):
     return [p for p in st['posts'] if p['verb'] == 'cycle' and (p['args'].get('zone') == zone)]
 
 
-@case('L89', 'Données: the gestures of the country sheet (SOG-0262, lot B) — « Mettre à jour ce pays » is the update of ONE country (what it does said under it, grey with its reason), « Prendre le fichier téléchargé » is the primary gesture when a file is seen in Downloads with « Choisir un autre fichier… » as a link under it, « Choisir le fichier… » alone when nothing is seen, the per-file state is re-read after each gesture, the card of the running operation shows on the sheet',
+@case('L89', 'Données: the gestures of the country sheet (SOG-0262, lot B) — « Mettre à jour ce pays » is the update of ONE country (what it does said under it, grey with its reason), « Prendre le fichier téléchargé » is the secondary (white) gesture when a file is seen in Downloads with « Choisir un autre fichier… » as a link under it, « Mettre à jour ce pays » staying the primary one (SOG-0509), « Choisir le fichier… » alone when nothing is seen, the per-file state is re-read after each gesture, the card of the running operation shows on the sheet',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
       rule='SOG-0262 (the user: « transférer les boutons « prendre le fichier téléchargé » et « choisir le fichier » »; the ergonomist: the sheet is the only place where one acts; one purpose, never two stacked equal buttons; a grey button writes why): the sheet carries startUpdate([zone]) (fetch of what is missing, then the build of that country only), the pickup of that country, the chooser of a file of that source; the lists of Downloads are re-read after each gesture; the busy card is on the sheet')
 def l89(c):
@@ -6842,14 +6842,14 @@ def l89(c):
     c.eq([r[0], r[1], norm(r[2])], [True, 'up-to-date', norm(CWB('upToDate'))], 'up to date: the button is grey and says why', what='grey up to date')
     _l89_sheet(c, 'fr')
     r = c.js("(() => { const b = document.querySelector('[data-sheet=fr] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=fr] [data-sheet-update-plan]'); return [b.disabled, w && w.textContent.trim(), b.className] })()")
-    c.eq([r[0], norm(r[1]), 'primary' in r[2]], [False, norm(CWB('doLine').replace('{l}', _trow('doPick', lang, after='  zx: {') + ', ' + CWB('doBuild'))), False],
-         'lot D1: a country whose file is SEEN in Downloads: the gesture takes it then builds (said under the button), and it is no longer the primary button (the pickup is)', what='seen file')
-    # ---- 3. a file SEEN in Downloads: « Prendre le fichier téléchargé » is THE primary gesture, « Choisir un autre fichier… » a link under it
+    c.eq([r[0], norm(r[1]), 'primary' in r[2]], [False, norm(CWB('doLine').replace('{l}', _trow('doPick', lang, after='  zx: {') + ', ' + CWB('doBuild'))), True],
+         'lot D1: a country whose file is SEEN in Downloads: the gesture takes it then builds (said under the button), and it is the primary button (SOG-0509: the pickup is the secondary one)', what='seen file')
+    # ---- 3. a file SEEN in Downloads: « Prendre le fichier téléchargé » is the secondary (white) gesture (SOG-0509), « Choisir un autre fichier… » a link under it
     hand = '[data-sheet=fr] [data-hand=sia]'
     c.eq([c.attr(hand, 'data-hand-state'), norm(c.text(f'{hand} [data-verb=pickup]')), 'primary' in cls(f'{hand} [data-verb=pickup]'), c.attr(f'{hand} [data-verb=pickup]', 'data-zones'),
           norm(c.text(f'{hand} [data-hand-alt] [data-act=zone-upload]')), 'd-link' in cls(f'{hand} [data-hand-alt] [data-act=zone-upload]')],
-         ['seen', PICK, True, 'fr', norm(UP('chooseOther')), True], 'a file seen: « Prendre le fichier téléchargé » (primary, for that country) with « Choisir un autre fichier… » as a link under it', what='seen')
-    c.eq(c.js("document.querySelectorAll('[data-sheet=fr] button.primary').length"), 1, 'ONE primary gesture in the sheet, never two equal buttons stacked', what='one primary')
+         ['seen', PICK, False, 'fr', norm(UP('chooseOther')), True], 'a file seen: « Prendre le fichier téléchargé » (white, for that country) with « Choisir un autre fichier… » as a link under it', what='seen')
+    c.eq(c.js("[...document.querySelectorAll('[data-sheet=fr] button.primary')].map(b => b.dataset.act || b.dataset.verb)"), ['sheet-update'], 'ONE primary gesture in the sheet — « Mettre à jour ce pays » — never two equal buttons stacked', what='one primary')
     c.eq([c.attr('[data-sheet=fr] [data-hand=dircam]', 'data-hand-state'), c.count('[data-sheet=fr] [data-hand=dircam] button')], ['none', 1], 'the DIRCAM line, nothing seen: its « Choisir le fichier… » alone', what='dircam line')
     seen0 = c.js("[...document.querySelectorAll('[data-sheet=fr] [data-sheet-source=sia] [data-file-state]')].map(f => f.dataset.fileState)")
     c.eq(seen0, ['seen', 'missing'], 'the files: one seen, one missing', what='files before')
@@ -8170,12 +8170,12 @@ def l102(c):
     c.ok(c.js("getComputedStyle(document.querySelector('[data-sheet-source=navpt] .d-cells1 > li > b, [data-sheet] .d-cells1 > li > b')).textTransform") == 'uppercase', 'caps', 'the word of a step is in small capitals')
     c.ok(c.js("[...document.querySelectorAll('[data-sheet] .d-sh')].every(h => getComputedStyle(h).textTransform === 'uppercase')"), 'caps', '« Fichiers à prendre · 1 vu, 0 manque » is in small capitals, with its counts')
     c.ok(c.count('[data-sheet] [data-inventory-count]') >= 1, 'count', 'the count of the files is on the heading')
-    card, pb = rect('[data-sheet] [data-sheet-source=navpt]'), rect('[data-sheet] [data-sheet-source=navpt] [data-hand] button.primary')
+    card, pb = rect('[data-sheet] [data-sheet-source=navpt]'), rect('[data-sheet] [data-sheet-source=navpt] [data-hand] [data-verb=pickup]')
     c.eq(c.count('[data-sheet-gestures]'), 0, 'no stack of buttons detached at the bottom of the sheet', what='no stack')
     c.ok(card['t'] <= pb['t'] and pb['b'] <= card['b'] + 1, (card, pb), 'the gestures of a source are INSIDE its card (« Prendre le fichier téléchargé » under the expected files)')
-    up, last = rect('[data-sheet] [data-sheet-update]'), rect('[data-sheet] [data-sheet-source]:last-of-type')
-    c.ok(up['t'] >= last['b'] - 1, (up, last), '« Mettre à jour ce pays » stays at the BOTTOM of the sheet, under the sources')
-    c.ok(pb['w'] >= (card['w'] - 40) * 0.9, (pb, card), 'the primary button is on the full width of its card')
+    up, first = rect('[data-sheet] [data-sheet-update]'), rect('[data-sheet] [data-sheet-source]')
+    c.ok(up['b'] <= first['t'] + 1, (up, first), '« Mettre à jour ce pays » is at the HEAD of the sheet, above the sources (SOG-0509)')
+    c.ok(pb['w'] >= (card['w'] - 40) * 0.9, (pb, card), 'the pickup button is on the full width of its card')
     if wide:
         c.ok(sh['l'] > mp['r'] and c.js("getComputedStyle(document.querySelector('[data-sheet]')).position") == 'sticky', sh, 'the sheet is a card at the RIGHT, sticky')
         y0 = c.js("window.scrollY")
@@ -11062,4 +11062,47 @@ def l170(c):
     c.eq([pub['disabled'], pub['reason']], [True, 'nothing'], 'sync-status sees nothing to send: Publier is grey, « Rien à publier »', what='Publier grey')
     c.eq([gone(), line()], [['base'], text('staleCycle')], 'nothing to publish: the former advice, without the publication mark (publishing is not possible)', what='witness nothing')
     c.eq([c.count('[data-all-fresh]'), c.count('[data-stale-publish]')], [0, 0], 'and never the pair: no « Tout est à jour. » beside it', what='witness nothing: one message')
+    c.check_errors()
+
+
+# what the sheet of a country shows: where « Mettre à jour ce pays » is (visible without scrolling past the opening, the first button after the state line), its class, and where the pickup is
+_L171_JS = r"""(zone) => { const sh = document.querySelector(`[data-sheet=${zone}]`), u = sh.querySelector('[data-sheet-update] [data-act=sheet-update]'), pk = sh.querySelector('[data-verb=pickup]');
+  sh.scrollIntoView({ block: 'start' });
+  const r = u.getBoundingClientRect(), after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING),
+    before = [...sh.querySelectorAll('button')].filter(b => b !== u && !b.closest('.d-sheeth') && !b.closest('.d-cells3') && after(b, u)).map(b => b.dataset.act || b.dataset.verb || b.className);
+  return { visible: r.top >= 0 && r.bottom <= window.innerHeight, top: Math.round(r.top), bottom: Math.round(r.bottom), vh: window.innerHeight, primary: u.classList.contains('primary'), disabled: u.disabled,
+    afterNow: after(sh.querySelector('[data-sheet-now]') || sh.querySelector('.d-cells3'), u), before,
+    primaries: [...sh.querySelectorAll('button.primary')].map(b => b.dataset.act || b.dataset.verb || b.className),
+    pickup: pk ? { primary: pk.classList.contains('primary'), after: after(u, pk) } : null,
+    aboveSources: after(u, sh.querySelector('[data-sheet-source]')) } }"""
+
+
+@case('L171', 'Données: in the sheet of a country « Mettre à jour ce pays » is THE main action — blue, right under the state sentence and in view without scrolling, the first button of the sheet; « Prendre le fichier téléchargé » (a file seen in Downloads) is white and comes after it (SOG-0509)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0509 (the user; the relay): the update takes the file seen in Downloads, downloads what is missing, then builds (zoneUpdate, no question); « Prendre le fichier téléchargé » does a dry plan with a question that lists the files and takes THAT source alone — secondary, not removed; one button.primary in the sheet when it is live; grey (up to date), no primary')
+def l171(c):
+    lang = c.lang
+    st, _x4 = _l89_open(c, {'sia_seen': True})
+    m = lambda zone: c.js(_L171_JS, zone)
+    # ---- a. France: a file is SEEN in Downloads (the SIA zip). The update is in view at once, blue, the first button after the state line
+    _l89_sheet(c, 'fr')
+    r = m('fr')
+    c.ok(r['visible'], r, f'« Mettre à jour ce pays » is in view without scrolling past the opening of the sheet ({c.width} px wide)')
+    c.eq([r['primary'], r['disabled'], r['afterNow'], r['before'], r['aboveSources']], [True, False, True, [], True], 'it is live and primary, after the state sentence, no other button of the sheet (the header and the facts apart) before it, above the sources', what='update first')
+    # ---- b. the pickup is still there, white, and after the update
+    c.eq([c.count('[data-sheet=fr] [data-hand=sia] [data-verb=pickup]'), r['pickup']], [1, {'primary': False, 'after': True}], '« Prendre le fichier téléchargé » is still there, without the class primary, and after the update in the page', what='pickup secondary')
+    # ---- c. ONE button.primary in the sheet
+    c.eq(r['primaries'], ['sheet-update'], 'one single primary button in the sheet: the update', what='one primary')
+    if lang == 'fr' and c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-sheet=fr]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L171_{c.width}_fr_head.png')
+    # ---- d. witnesses: a country to update with no file seen (the United Kingdom) — same place, primary; a country up to date (Spain) — grey, no primary
+    _l89_sheet(c, 'gb')
+    r = m('gb')
+    c.ok(r['visible'], r, 'a country to update, no file seen: the button is in view too')
+    c.eq([r['primary'], r['disabled'], r['afterNow'], r['before'], r['aboveSources'], r['pickup']], [True, False, True, [], True, None], 'a country to update with no file seen: the same place, primary, no pickup button', what='witness gb')
+    _l89_sheet(c, 'es')
+    r = m('es')
+    c.eq([r['primary'], r['disabled'], r['primaries'], r['aboveSources']], [False, True, [], True], 'a country that is up to date: the button is grey, never primary (as before), still at the head', what='witness es')
     c.check_errors()

@@ -1,6 +1,6 @@
 // V3 data — la carte du monde, les paquets de pays et la fiche d'un pays (SOG-0262) : l'entrée de la base. La carte dessine les contours des pays (ceux d'aerodb : ctx.aerodb.zoneOutlines) en SVG, cadrée sur la couverture ; les paquets sont la liste principale,
 // chacun avec son état résumé, un seul ouvert à la fois ; un toucher sur un pays (de la carte ou d'un paquet) ouvre sa fiche (à droite de la carte en large, en plein écran au téléphone). Lot A : la fiche se lit (les faits du pays — construit, publié —, puis pour chaque
-// source son « téléchargé » et l'inventaire de ses fichiers). Lot B : la fiche est l'endroit où l'on agit — « Mettre à jour ce pays », « Prendre le fichier téléchargé » (geste principal quand un fichier est vu dans Téléchargements) et « Choisir le fichier… » —, et « ce qui reste à faire
+// source son « téléchargé » et l'inventaire de ses fichiers). Lot B : la fiche est l'endroit où l'on agit — « Mettre à jour ce pays », « Prendre le fichier téléchargé » (geste secondaire quand un fichier est vu dans Téléchargements : « Mettre à jour ce pays » est le principal, en tête de la fiche) et « Choisir le fichier… » —, et « ce qui reste à faire
 // ce mois-ci » (todo.js) se lit sous la carte. Rien ici n'écrit dans data/ ; les lectures du lanceur (base/cycle, base/coverage) sont des travaux en lecture seule, passés l'un après l'autre (state.js : serial), à l'ouverture et après chaque opération.
 import * as M from './model.js';
 import {
@@ -733,7 +733,7 @@ function chooseHintHtml(sid) {
     arc = typeof f?.file === 'string' && f.file !== f.name ? ` (${f.file.replace(/[\p{Cc}]/gu, ' ').slice(0, 80)})` : '';
   return `<p class="f-muted" data-choose-hint="${esc(sid)}">${esc(tt(TX.cwb.zip.hint, { f: arc, p: DIRCAM_MEMBER.split('/').pop() }))}</p>`;
 }
-/** Les gestes d'une source prise à la main, UN seul but : un fichier vu dans Téléchargements — « Prendre le fichier téléchargé » est le geste principal (il lance la prise de ce pays) et « Choisir un autre fichier… » un lien dessous ; rien de vu — « Choisir le fichier… » seul.
+/** Les gestes d'une source prise à la main, UN seul but : un fichier vu dans Téléchargements — « Prendre le fichier téléchargé » (blanc : le geste secondaire, qui montre les fichiers dans une question avant de prendre CETTE source seule ; le bouton principal est « Mettre à jour ce pays », en tête de la fiche) et « Choisir un autre fichier… » un lien dessous ; rien de vu — « Choisir le fichier… » seul.
  *  Le bouton de choix dit sa source (`data-source`) : la ligne DIRCAM lit l'ENR 5.7 dans l'archive du SIA (upload.js). `msg` : l'avancement de l'envoi et ce que le dernier geste a dit (reçu, manquant, refusé) restent sur le bloc de la source du dernier geste. */
 function handHtml(sid, zone, z, item, cy, msg) {
   const busy = busyNow(),
@@ -748,7 +748,7 @@ function handHtml(sid, zone, z, item, cy, msg) {
     off = busy || g.disabled,
     grey = greyOnce(busy ? 'busy' : g.reason, 'base',
       'sheet'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
-  return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="seen"><p class="d-zact"><span class="f-muted" data-hand-seen>${esc(tt(TX.cwb.seenLine))}</span> <button type="button" class="primary" data-verb="pickup" data-zones="${esc(zone)}" data-source="${esc(sid)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-hand-grey data-grey="${esc(grey)}">${esc(tt(grey === 'busy' && progressHere() ? TX.zx.greyBusy : TX.greyReason[grey]))}</span>` : ''}</p>
+  return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="seen"><p class="d-zact"><span class="f-muted" data-hand-seen>${esc(tt(TX.cwb.seenLine))}</span> <button type="button" data-verb="pickup" data-zones="${esc(zone)}" data-source="${esc(sid)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-hand-grey data-grey="${esc(grey)}">${esc(tt(grey === 'busy' && progressHere() ? TX.zx.greyBusy : TX.greyReason[grey]))}</span>` : ''}</p>
     <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${hint}${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
 }
 /** La source calculée sur ce poste que base/cycle dit à part (`local`, K185) : { id, label[4], at, personal, zoneCount } ; null sans. */
@@ -784,8 +784,6 @@ function sourceHtml(id, zone, z, inCov, msg) {
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(reg === 'auto' && fb ? TX.cw.regime.autoFallback : TX.cw.regime[reg]))}</p>` : ''}</div>
     ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>${fetchFailHtml(id, zone)}` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) || (fb && !handUi) ? '' : handWhyHtml(id)}${handUi ? inventoryHtml(id, item, cy, zone, seenNamesOf(id, z, item, cy)) : ''}${handUi ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
 }
-/** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
- *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
 /** Ce qu'il faut faire MAINTENANT pour un pays, d'après l'état du lanceur : { k: 'fresh' | 'pick' | 'file' | 'tick' | 'update' } (une seule chose) ; null quand rien n'est dit (pas de lanceur, état non lu, geste grisé pour une autre raison). La phrase de tête de la fiche et le bouton « Mettre à jour ce pays » le lisent
  *  tous deux : ils ne peuvent pas se contredire (SOG-0318). `seenAny` : un fichier est vu dans Téléchargements pour une source à la main du pays. */
 function nowOf(id, seenAny, rename = '') {
@@ -831,8 +829,9 @@ function nowHtml(id, seenAny, rename = '', step = null, cy = null, needs = []) {
   }
   return n ? `<p class="d-now" data-sheet-now data-now="${n.k}"><b>${esc(tt(n.k === 'rename' ? TX.now.rename : n.k === 'pick' && byEdition(id) ? TX.now.pickEdition : TX.now[n.k], { n: rename }))}</b></p>` : '';
 }
-
-function updateBlockHtml(id, primary, seenAny = false, step = null) {
+/** Le geste « Mettre à jour ce pays » : TOUJOURS le bouton principal de la fiche quand il est actif (SOG-0509), posé sous la phrase d'état. Le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul : il prend le fichier vu dans Téléchargements, télécharge ce qui manque, puis construit le pays, sans question ; la ligne dessous dit ce qu'il va faire ;
+ *  gris (sans la classe `primary`), il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà) ; en cours, il devient son avancement. `seenAny` : un fichier vu dans Téléchargements : la ligne dit alors « prendre le fichier, construire ». */
+function updateBlockHtml(id, seenAny = false, step = null) {
   const T = TX.cwb,
     gate = updateGate([id]),
     plan = S.status && statusKnown() ? M.downloadPlan(S.status, [id]) : null;
@@ -861,7 +860,7 @@ function updateBlockHtml(id, primary, seenAny = false, step = null) {
       l: [plan.fetch.includes(id) ? tt(T.doDl) : '', plan.build.includes(id) ? tt(T.doBuild) : ''].filter(Boolean).join(', ')
     });
   }
-  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${primary && !off ? ' class="primary"' : ''} data-act="sheet-update" data-zone="${esc(id)}"${retake ? ' data-retake="1"' : ''}${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
+  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${off ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}"${retake ? ' data-retake="1"' : ''}${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
 }
 /** Le téléchargement de ce pays qui vient d'échouer (la fin de « Mettre à jour » le dit) : ce que le site a répondu ; le fichier choisi à la main reste le chemin (la FAA : l'abonnement du cycle, UN fichier). '' sans échec. */
 function failedHtml(id) {
@@ -944,7 +943,7 @@ function depositOnly(id) {
   const v = viewOf(id, cy, false);
   return takingStepOf(id, z, cy, v.avail, v.split)?.k === 'edition-unknown';
 }
-/** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
+/** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » (le bouton principal, juste sous la phrase d'état, ou son avancement) ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
  *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
 function sheetHtml() {
   const id = S.cw.sheet;
@@ -998,14 +997,13 @@ function sheetHtml() {
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(badgeTone)}"${badgeText.length > 24 ? ' data-long' : ''} data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, badgeTone) || ''}</b> ${esc(badgeText)}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
     ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${off ? `<span class="d-st" data-off-state>${esc(badgeText)}</span>` : stepWord ? `<span class="d-st" data-step-state="${esc(step.k)}"><i class="f-dot" aria-hidden="true"${kind(badgeTone)}></i>${esc(stepWord)}</span>` : zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div>${off ? '' : `<ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul>`}</div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
-    ${inCov && !off ? nowHtml(id, seenAny, rename, step, cy, needs) : ''}${inCov && !off ? contentsHtml(cy) : ''}
+    ${inCov && !off ? nowHtml(id, seenAny, rename, step, cy, needs) : ''}${inCov ? updateBlockHtml(id, seenAny && !rename, step) : ''}${inCov && !off ? contentsHtml(cy) : ''}
     ${S.cw.proc?.state === 'ready' && !off ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
-    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}${inCov && progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny && !rename, step) : ''}
+    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}
     <h4 class="d-sh">${esc(tt(off ? T.sourcesZone : T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => off ? offSourceHtml(s, cy) : sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${off ? offCopyHtml(id) : ''}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
     ${inCov && !off ? sheetPublishHtml(id, z) : ''}
-    ${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny && !rename, step) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
