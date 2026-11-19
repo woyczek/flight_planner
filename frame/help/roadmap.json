@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "542a675",
-  "fiches": 514,
+  "organisation": "88f2969",
+  "fiches": 515,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4513,6 +4513,27 @@
      "es": "Taller de misiones: el perfil vertical del trayecto, bajo el mapa",
      "rank": 451,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-compte-rendu",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; compte rendu",
+    "en": "Missions ; compte rendu",
+    "de": "Missions ; compte rendu",
+    "es": "Missions ; compte rendu"
+   },
+   "items": [
+    {
+     "id": "SOG-0516",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : le palier d'un posé de précision (et sa distance) va au débrief de mission et pré-remplit le compte rendu ; un classement, plus tard",
+     "en": "Missions: the grade of a precision landing (and its distance) goes to the mission debrief and pre-fills the report; a ranking, later",
+     "de": "Missionen: Die Stufe einer Präzisionslandung (und ihr Abstand) kommt in die Nachbesprechung und füllt den Bericht vor; eine Rangliste später",
+     "es": "Misiones: el nivel de un aterrizaje de precisión (y su distancia) va al debriefing y rellena el informe; una clasificación, más adelante"
     }
    ]
   },

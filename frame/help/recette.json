@@ -5214,36 +5214,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0119",
-   "fiche": "SOG-0513",
-   "app": "pilote",
-   "question": "La route EGLL → LFRN que tu as passée à l'IFPS ce matin (MID L612 HAWKE DCT NEVIL G27 …) : d'où venait-elle dans Carburant ?",
-   "context": "Notre calcul ne la produit dans aucun réglage, ni aujourd'hui ni depuis le 16/11 : il donne GASGU N866 SAM N63 … UT260 UPALO V20 LUVOP. Carburant trace n'importe quel texte de route. Si elle vient de notre calcul, c'est un défaut à chercher ; sinon, notre contrôle la juge maintenant comme l'IFPS.",
-   "options": [
-    "Saisie ou collée à la main (ou importée de SimBrief / Autorouter)",
-    "Calculée par « Calculer » dans Carburant ce matin",
-    "Un vol ancien, calculé avant le 16/11",
-    "Je ne sais pas"
-   ],
-   "since": "2026-11-19",
-   "state": "todo"
-  },
-  {
-   "id": "Q-0120",
-   "fiche": "SOG-0513",
-   "app": "pilote",
-   "question": "Le contrôle des directs au Royaume-Uni (ROUTE165 de ton IFPS) demande un nouveau lecteur (parseur 31) : toutes tes zones devront être reconstruites UNE fois. Quand ?",
-   "context": "Le lecteur garde l'espace supérieur de Londres et la zone FRA ouest du Royaume-Uni. Le parseur change pour toutes les zones : l'écran Données les dira « à reconstruire » (une seule fois). Le push attend la correction de l'étiquette « à publier » (SOG-0510). Le moteur est testé d'ici là sur des contours inventés.",
-   "options": [
-    "Dès que SOG-0510 est livrée : je reconstruis tout une fois",
-    "Plus tard : grouper avec le prochain changement de lecteur",
-    "Jamais pour ça : le contrôle des directs au Royaume-Uni ne vaut pas une reconstruction"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
@@ -5640,22 +5610,40 @@
    "at": "2026-11-17T10:14:56Z"
   },
   {
-   "id": "Q-0117",
-   "fiche": "SOG-0507",
-   "app": "compagnie",
-   "question": "Le palier d'un posé de précision (partiel, réussi, parfait, excellent) sert-il ailleurs que dans la ligne du tiroir ?",
-   "context": "Affectation écrit le palier et la distance dans le constat du vol, et la ligne du tiroir le dit : « ouvert à votre atterrissage — réussi (0,15 NM), à 19:20Z ». Rien d'autre ne le lit aujourd'hui (ni compte rendu, ni score).",
+   "id": "Q-0119",
+   "fiche": "SOG-0513",
+   "app": "pilote",
+   "question": "La route EGLL → LFRN que tu as passée à l'IFPS ce matin (MID L612 HAWKE DCT NEVIL G27 …) : d'où venait-elle dans Carburant ?",
+   "context": "Notre calcul ne la produit dans aucun réglage, ni aujourd'hui ni depuis le 16/11 : il donne GASGU N866 SAM N63 … UT260 UPALO V20 LUVOP. Carburant trace n'importe quel texte de route. Si elle vient de notre calcul, c'est un défaut à chercher ; sinon, notre contrôle la juge maintenant comme l'IFPS.",
    "options": [
-    "Non : la ligne du tiroir et le constat suffisent",
-    "Oui : aussi dans le compte rendu de mission",
-    "Oui : aussi dans un score ou un classement des pilotes"
+    "Saisie ou collée à la main (ou importée de SimBrief / Autorouter)",
+    "Calculée par « Calculer » dans Carburant ce matin",
+    "Un vol ancien, calculé avant le 16/11",
+    "Je ne sais pas"
+   ],
+   "since": "2026-11-19",
+   "state": "answered",
+   "choice": 3,
+   "text": "j’ai fait un egll / lfrn, calculer. je recommence. reproduit. premier résultat.",
+   "at": "2026-11-19T08:42:04Z"
+  },
+  {
+   "id": "Q-0120",
+   "fiche": "SOG-0513",
+   "app": "pilote",
+   "question": "Le contrôle des directs au Royaume-Uni (ROUTE165 de ton IFPS) demande un nouveau lecteur (parseur 31) : toutes tes zones devront être reconstruites UNE fois. Quand ?",
+   "context": "Le lecteur garde l'espace supérieur de Londres et la zone FRA ouest du Royaume-Uni. Le parseur change pour toutes les zones : l'écran Données les dira « à reconstruire » (une seule fois). Le push attend la correction de l'étiquette « à publier » (SOG-0510). Le moteur est testé d'ici là sur des contours inventés.",
+   "options": [
+    "Dès que SOG-0510 est livrée : je reconstruis tout une fois",
+    "Plus tard : grouper avec le prochain changement de lecteur",
+    "Jamais pour ça : le contrôle des directs au Royaume-Uni ne vaut pas une reconstruction"
    ],
    "since": "2026-11-19",
    "state": "answered",
    "recommended": 0,
-   "choice": 1,
-   "text": "un classement, pourquoi pas. mais /a minima/ - débrief de mission - CR de mission (pré-remplissage).",
-   "at": "2026-11-19T08:40:29Z"
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-19T08:42:42Z"
   }
  ]
 }
