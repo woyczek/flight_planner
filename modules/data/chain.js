@@ -213,9 +213,24 @@ export function chainButton() {
     what: doesText(plan)
   };
 }
-/** Sous le bouton de l'en-tête : le cycle dépassé, la carte de l'opération qui a refusé le départ, la marche de la chaîne ou sa fin. */
+/** Ce qui reste aux zones de la base d'après l'état du lanceur : { lone, none, fresh }. `lone` : les zones que le bouton ne traite pas mais qui attendent encore quelque chose (un fichier, la coche d'usage personnel, un état à lire) ; `none` : rien à lancer (état connu, aucune zone à traiter, aucun autre jeu dans la chaîne) ;
+ *  `fresh` : none sans lone, le seul cas où l'écran dit « Tout est à jour. ». La condition est ici, pour que l'en-tête de la base (panels.js) et la ligne du cycle publié (chainBelowHtml) lisent la même. */
+export function zonesLeft(sc = updateScope(), plan = chainPlan()) {
+  const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
+    none = sc.known && sc.n === 0 && !plan.runs.length;
+  return {
+    lone,
+    none,
+    fresh: none && !lone
+  };
+}
+/** Les zones de la base sont-elles toutes au cycle courant, sans rien à faire ni à attendre ? (zonesLeft().fresh) */
+export const zonesFresh = (sc, plan) => zonesLeft(sc, plan).fresh;
+/** Sous le bouton de l'en-tête : le cycle dépassé, la carte de l'opération qui a refusé le départ, la marche de la chaîne ou sa fin. Quand les zones sont au cycle courant, que la publication de la base est en retard ET qu'il y a quelque chose à publier, la ligne dit de publier (data-stale-publish), pas de télécharger ni de reconstruire ; sans rien à publier (publishGate : 'nothing') le conseil de publier serait faux, l'ancienne ligne reste, seule (SOG-0505). */
 export function chainBelowHtml() {
-  const stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }) + (g === 'base' ? staleBy() : ''))}</p>`).join('');
+  const publish = S.attn?.base ? zonesFresh() && publishGate().reason !== 'nothing' : false,
+    stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => g === 'base' && publish ? `<p class="f-warn" data-stale="base" data-stale-publish>${esc(tt(TX.staleDone, { x: S.attn.base, y: S.cycleId }))}</p>` :
+      `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }) + (g === 'base' ? staleBy() : ''))}</p>`).join('');
   return `${stale}${busyCardHtml('base', 'chain')}${chainHtml()}`;
 }
 

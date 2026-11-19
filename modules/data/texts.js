@@ -1918,6 +1918,12 @@ export const TX = {
     'Zyklus {x} überholt: Laden Sie die Quellen des Zyklus {y} herunter und bauen Sie dann neu auf',
     'Ciclo {x} superado: descargue las fuentes del ciclo {y} y luego reconstruya'
   ],
+  // les zones sont reconstruites au cycle en vigueur mais la publication est restée à l'ancien : c'est elle qu'il faut faire, pas retélécharger (SOG-0505)
+  staleDone: ['Les zones sont au cycle {y}, la publication reste au cycle {x} : publiez la base',
+    'The zones are at cycle {y}, the publication stays at cycle {x}: publish the base',
+    'Die Zonen sind im Zyklus {y}, die Veröffentlichung bleibt im Zyklus {x}: veröffentlichen Sie die Basis',
+    'Las zonas están en el ciclo {y}, la publicación sigue en el ciclo {x}: publique la base'
+  ],
   chainAsk: [
     'Tout mettre à jour, cycle AIRAC {c} : {sets}. Pour chaque jeu, télécharger puis construire, dans cet ordre ; la taille des téléchargements n’est pas connue d’avance ; aucune purge. Puis une seule publication, si tout a réussi.{skipped}',
     'Update all, AIRAC cycle {c}: {sets}. For each data set, download then build, in this order; the size of the downloads is not known beforehand; no purge. Then one publication, if everything succeeded.{skipped}',

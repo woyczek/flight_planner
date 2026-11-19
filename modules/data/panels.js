@@ -43,7 +43,8 @@ import {
 } from './busy.js';
 import {
   chainBelowHtml,
-  chainButton
+  chainButton,
+  zonesLeft
 } from './chain.js';
 import {
   updateGate,
@@ -747,10 +748,13 @@ function stateHeadHtml() {
     miss = missingList().length > 0, // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
     all = chainButton(); // « Tout mettre à jour (n) » : la base ET les autres jeux, la chaîne (chain.js)
   // « Tout est à jour. » seulement quand rien n'est à reconstruire, en échec, attendu de l'utilisateur ou sans état dans la portée, et que la chaîne n'a aucun jeu à lancer ; sinon, sans zone que le bouton traite, ce que les zones attendent : jamais deux phrases qui se contredisent
-  const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
-    none = sc.known && sc.n === 0 && !all.plan.runs.length,
+  // (la condition est celle de zonesLeft, chain.js, que lit aussi la ligne du cycle publié) ; publication en retard : le conseil « publiez » de chainBelowHtml est le seul message, jamais « Tout est à jour. » à côté (SOG-0505)
+  const {
+    lone,
+    none
+  } = zonesLeft(sc, all.plan),
     reason = greyOnce(all.gate.reason, 'base', all.only ? 'head' : 'chain'),
-    action = none ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
+    action = none ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : S.attn?.base ? '' : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
     `<p class="d-verbs" data-update-row>${all.html}</p>`,
     why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(all.gate.reason)}">${esc(tt(TX.greyReason[all.gate.reason]))}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
   const left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :

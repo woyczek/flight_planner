@@ -3964,9 +3964,11 @@ def l83(c):
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
         c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -140)")
         c.shot(f'L83_{c.width}_{lang}_delivered.png')   # the failure of one zone unfolded, the bilan of the run under the button
-    # ---- the whole coverage up to date: the sentence and « Tout est à jour. », no button
+    # ---- the whole coverage up to date: the sentence and « Tout est à jour. », no button (nothing published behind: with the published France one cycle behind the screen says to publish instead, L170)
     st['status'] = _ALL_OK()
     st['views'], st['i'] = [fetched], 0
+    c.page.add_init_script(_FRESH_JS)   # after the stub's own script
+    c.page.evaluate("sessionStorage.setItem('__freshFr', '1')")
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
     c.settle()
@@ -3974,6 +3976,7 @@ def l83(c):
     c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=10000, what='the sentence with its one number')
     c.eq([keys(), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 0, norm(_trow('allFresh', lang))], 'everything up to date: one number, no button, « Tout est à jour. »', what='all fresh')
     c.eq(norm(c.text('[data-state-sentence]')).endswith(norm(_trow('stateBase', lang) + ' ' + BT('upToDate', 5))), True, 'the sentence says the five zones are up to date', what='sentence fresh')
+    c.page.evaluate("sessionStorage.removeItem('__freshFr')")   # the later steps run as before, the published France one cycle behind
     # ---- the launcher does not know base/status: the sentence says the cycle and why it cannot say more; the button is grey with its reason beside it
     st['verbs'] = ['base/fetch', 'base/build', 'base/purge']
     c.page.reload()
@@ -6403,12 +6406,15 @@ def l87(c):
     c.eq([c.count('[data-all-fresh]'), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-hand-alone]'))], [0, 0, norm(_trow('handAlone', lang, row=0 if _one(lang, 3) else 1).replace('{z}', z(3)))],
          'nothing to rebuild but three zones that wait: no « Tout est à jour. », no empty button, the sentence says what they wait for', what='hand alone')
     st['status'] = full()
+    c.page.add_init_script(_FRESH_JS)   # after the stub's own script: the published France is the cycle in force, so « Tout est à jour. » is the whole message (with it one behind the screen says to publish, L170)
+    c.page.evaluate("sessionStorage.setItem('__freshFr', '1')")
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
     _l87_ready(c, st, 'all fresh')
     c.eq([keys(), c.count('[data-all-fresh]'), c.count('[data-hand-alone]'), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 1, 0, 0, norm(_trow('allFresh', lang))],
          'everything up to date (the notices do not count): « Tout est à jour. », nothing else, no button', what='all fresh')
+    c.page.evaluate("sessionStorage.removeItem('__freshFr')")   # the later steps run as before, the published France one cycle behind
     _unfold(c, 'af')
     c.eq(c.count('[data-state-zones] [data-zone-notice]'), 10, 'the information lines stay under their zones', what='notices stay')
     # ---- 8. the busy sentence is said ONCE: by the card, not again under the button
@@ -10981,3 +10987,79 @@ def l169(c):
     c.eq([[k, f] for k, f in pairs if f != k], [], 'each fold carries data-fold with its key', what='data-fold')
     c.eq(len({f for _, f in pairs}), len(pairs), 'the keys are unique on the screen', what='unique')
     c.eq(c.count('[data-module=data] details[data-fold]'), len(pairs), 'no other fold of the screen carries a key', what='no other key')
+
+
+_L170_DOWNLOAD = {'fr': 'téléchargez', 'en': 'download', 'de': 'laden sie', 'es': 'descargue'}   # the verb of « Cycle X dépassé : téléchargez … » that the new line must not say
+_L170_SYNC = {'changes': 3, 'ahead': 1, 'merging': False, 'last': None}   # built zones not published yet: Publier is live
+_L170_NOTHING = {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}   # nothing to send: Publier is grey (« Rien à publier »)
+
+
+@case('L170', 'Données: zones all up to date, built and not published, the published set one cycle behind — ONE message: the line names the publication (« publiez la base ») with « Publier » live, never « Tout est à jour. » beside « téléchargez … reconstruisez »; the witnesses keep their line (SOG-0505)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0505 (the ergonomist, L164/L169 capture): the state per zone of the launcher (all up to date) and S.attn.base (the published cycle, one behind) are two readings; zones at the cycle in force + publication late + something to publish = the advice is to publish (TX.staleDone, [data-stale-publish]) and « Tout est à jour. » is not said; zones NOT up to date + published cycle gone by = « téléchargez … reconstruisez » as before; zones up to date + nothing late = « Tout est à jour. » as before; published cycle late but NOTHING to publish = the former advice, alone (publishing is not possible, so never « publiez »)')
+def l170(c):
+    lang = c.lang
+    _today, cur, prev, _nxt = _cycles()
+    x, y = _name(prev), _name(cur)
+    # the fake launcher with the state of the zones (base/status) and of the station (sync-status: built zones not published yet), and a frame that carries ctx.data.sync.gesture (the init script of L12)
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    _sync_cfg(c, True)
+    st = _launcher(c, [], verbs=_VERBS, sync=_L170_SYNC)
+    c.page.add_init_script(_SYNC_JS)
+    st['status'] = _ALL_OK()        # the five zones up to date; France is published at the previous cycle (the default fixture)
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    c.page.add_init_script(_FRESH_JS)   # after the stub's own script: with sessionStorage __freshFr the published France is the current cycle (the witness 2)
+    _all_open(c)
+    line = lambda: norm(c.text('[data-update-all] [data-stale=base]') or '')
+    gone = lambda: c.js("[...document.querySelectorAll('[data-update-all] [data-stale]')].map(p => p.dataset.stale + (p.hasAttribute('data-stale-publish') ? '+publish' : ''))")
+    text = lambda key: norm(_trow(key, lang).replace('{x}', x).replace('{y}', y))   # read AFTER the measure of the pair: on the old base TX.staleDone does not exist
+
+    def reload():
+        c.page.reload()
+        _head(c)
+        _all_open(c)
+
+    def shot(name, sel='[data-state-head]'):
+        if c.width in (390, 1280):
+            c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+            c.js(f"document.querySelector('{sel}').scrollIntoView({{ block: 'start' }}); window.scrollBy(0, -90)")
+            c.shot(f'L170_{c.width}_{lang}_{name}.png')
+    # ---- a. the zones are all up to date AND built, not published; the published set is one cycle behind: one line, naming the publication, « Publier » live
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1 && !!document.querySelector('[data-update-all] [data-stale=base]') && !!document.querySelector('[data-publish] [data-verb=publish]')", timeout=12000, what='the sentence with its one number, the line of the published cycle and the Publier card')
+    # the measure of the fault itself, before any text of the new line is read: « Tout est à jour. » and « téléchargez … » must never be on the screen together
+    fresh_said, download_said = c.count('[data-all-fresh]') > 0, _L170_DOWNLOAD[lang] in line().lower()
+    c.ok(not (fresh_said and download_said), {'all_fresh': fresh_said, 'download': download_said}, 'never « Tout est à jour. » AND « téléchargez … » together')
+    pub = _publish_state(c)
+    want_state = f"{_trow('pubFiles', lang, row=1).replace('{n}', '3')} · {_trow('pubCommits', lang, row=0).replace('{n}', '1')}"
+    c.eq([pub['disabled'], pub['reason'], pub['reasons'], pub['state']], [False, None, 0, norm(want_state)], 'the card « Publier la base » is live and says what is to publish (3 files · 1 commit): something is built and not published, no grey reason', what='Publier live')
+    c.eq(_L170_DOWNLOAD[lang] in line().lower(), False, 'the line does not say to download', what='no download advice')
+    c.eq([gone(), line()], [['base+publish'], text('staleDone')], 'zones up to date, publication behind, Publier live: ONE line, the publication one — « Les zones sont au cycle Y, la publication reste au cycle X : publiez la base »', what='coherent line')
+    c.eq([c.count('[data-all-fresh]'), norm(c.text('[data-update-all]') or '').count(norm(_trow('allFresh', lang))), c.count('[data-build] [data-verb=update]')],
+         [0, 0, 0], '« Tout est à jour. » is not said beside it and the button stays absent (nothing to rebuild)', what='no all-fresh')
+    shot('coherent')
+    shot('coherent_publish', '[data-publish]')
+    # ---- b. witness 1: one zone is to rebuild AND the published cycle is gone by — the advice is the old one, to download and rebuild
+    st['status'] = _FR_STALE()
+    reload()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 2 && !!document.querySelector('[data-update-all] [data-stale=base]')", timeout=12000, what='one zone to rebuild, four up to date')
+    c.eq([gone(), line()], [['base'], text('staleCycle')], 'a zone to rebuild + a published cycle behind: « Cycle X dépassé : téléchargez … reconstruisez », without the publication mark', what='witness stale')
+    c.eq([c.count('[data-all-fresh]'), c.count('[data-build] [data-verb=update]')], [0, 1], 'and the button is there, no « Tout est à jour. »', what='witness button')
+    shot('witness')
+    # ---- c. witness 2: all up to date and nothing behind (the published France is the cycle in force) — « Tout est à jour. » as before, no warning line
+    c.page.evaluate("sessionStorage.setItem('__freshFr', '1')")
+    st['status'] = _ALL_OK()
+    reload()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=12000, what='the sentence with its one number')
+    c.eq([c.count('[data-all-fresh]'), norm(c.text('[data-all-fresh]') or ''), c.count('[data-update-all] [data-stale]'), c.count('[data-stale-publish]')], [1, text('allFresh'), 0, 0],
+         'zones up to date and no published cycle behind: « Tout est à jour. » as before, no line about a cycle', what='witness fresh')
+    # ---- d. witness 3: the published cycle is behind but there is NOTHING to publish (sync-status 0 / 0, the gesture is there) — « publiez » would be false: the former line, alone, and no « Tout est à jour. » either
+    c.page.evaluate("sessionStorage.removeItem('__freshFr')")
+    st['sync'] = _L170_NOTHING
+    reload()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1 && !!document.querySelector('[data-update-all] [data-stale=base]')", timeout=12000, what='the line of the published cycle')
+    pub = _publish_state(c)
+    c.eq([pub['disabled'], pub['reason']], [True, 'nothing'], 'sync-status sees nothing to send: Publier is grey, « Rien à publier »', what='Publier grey')
+    c.eq([gone(), line()], [['base'], text('staleCycle')], 'nothing to publish: the former advice, without the publication mark (publishing is not possible)', what='witness nothing')
+    c.eq([c.count('[data-all-fresh]'), c.count('[data-stale-publish]')], [0, 0], 'and never the pair: no « Tout est à jour. » beside it', what='witness nothing: one message')
+    c.check_errors()
