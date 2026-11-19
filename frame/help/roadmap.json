@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "32ff2c3",
+  "organisation": "e3266e5",
   "fiches": 518,
   "untranslated": 0,
   "priorities": 481,
@@ -6826,11 +6826,12 @@
     {
      "id": "SOG-0511",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données : chaque jour, pendant le premier rafraîchissement, des pays « incolores » font croire qu'il y a quelque chose à faire",
      "en": "Data: every day, during the first refresh, “colourless” countries suggest there is work to do",
      "de": "Daten: Jeden Tag lassen „farblose“ Länder während der ersten Aktualisierung glauben, es gäbe etwas zu tun",
-     "es": "Datos: cada día, durante el primer refresco, países «sin color» hacen creer que hay algo que hacer"
+     "es": "Datos: cada día, durante el primer refresco, países «sin color» hacen creer que hay algo que hacer",
+     "test": true
     }
    ]
   },
