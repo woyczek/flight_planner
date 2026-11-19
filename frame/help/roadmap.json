@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "52efbaa",
+  "organisation": "7815db9",
   "fiches": 521,
   "untranslated": 0,
   "priorities": 481,
@@ -1291,11 +1291,12 @@
     {
      "id": "SOG-0514",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : le calcul et le contrôle de route reçoivent les vitesses de l'avion (croisière, montée, descente)",
      "en": "Fuel: route computation and check receive the aircraft's speeds (cruise, climb, descent)",
      "de": "Kraftstoff: Routenberechnung und -prüfung erhalten die Geschwindigkeiten des Flugzeugs (Reise, Steigen, Sinken)",
-     "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)"
+     "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)",
+     "test": true
     },
     {
      "id": "SOG-0517",
@@ -4573,11 +4574,12 @@
     {
      "id": "SOG-0516",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : le palier d'un posé de précision (et sa distance) va au débrief de mission et pré-remplit le compte rendu ; un classement, plus tard",
      "en": "Missions: the grade of a precision landing (and its distance) goes to the mission debrief and pre-fills the report; a ranking, later",
      "de": "Missionen: Die Stufe einer Präzisionslandung (und ihr Abstand) kommt in die Nachbesprechung und füllt den Bericht vor; eine Rangliste später",
-     "es": "Misiones: el nivel de un aterrizaje de precisión (y su distancia) va al debriefing y rellena el informe; una clasificación, más adelante"
+     "es": "Misiones: el nivel de un aterrizaje de precisión (y su distancia) va al debriefing y rellena el informe; una clasificación, más adelante",
+     "test": true
     }
    ]
   },
