@@ -1748,17 +1748,21 @@ def f62(c):
 
 def route_metar(c, items):
     """The METAR of the weather layer, answered by the test: `items` {ICAO: (wdir, wspd)}; aviationweather's JSON (through the launcher's relay or
-    not) and metar.vatsim.net's raw text (without a launcher)."""
+    not) and metar.vatsim.net's raw text (without a launcher). SOG-0527 (3): a third value, (wdir, wspd, age_s), makes that
+    observation age_s seconds old."""
     import re as _re
     import time as _t
     now = int(_t.time())
 
+    def at(w):
+        return now - (int(w[2]) if len(w) > 2 else 0)
+
     def raw(i, w):
-        return f'{i} {_t.strftime("%d%H%M", _t.gmtime(now))}Z {w[0]:03d}{w[1]:02d}KT CAVOK 15/10 Q1015'
+        return f'{i} {_t.strftime("%d%H%M", _t.gmtime(at(w)))}Z {w[0]:03d}{w[1]:02d}KT CAVOK 15/10 Q1015'
 
     def aw(route):
         route.fulfill(status=200, content_type='application/json', body=json.dumps([
-            {'icaoId': i, 'obsTime': now, 'reportTime': now, 'wdir': w[0], 'wspd': w[1], 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}],
+            {'icaoId': i, 'obsTime': at(w), 'reportTime': at(w), 'wdir': w[0], 'wspd': w[1], 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}],
              'temp': 15, 'dewp': 10, 'altim': 1015, 'rawOb': raw(i, w), 'fltCat': 'VFR'} for i, w in items.items()]))
 
     def vatsim(route):
@@ -9078,4 +9082,29 @@ def f290(c):
         c.js(_F281_NOTES_OFF)
         c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F290_{c.design}_{w}_{c.lang}_wx.png')
+    c.check_errors()
+
+
+@case('F291', 'Fuel, every wind or weather value shown says its SOURCE and its AGE: the METAR card of each aerodrome (« METAR 14:20Z · il y '
+      'a 5 min »); beyond 12 h the age is an alert (« plus de 12 h »)', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True,
+      langs4=True,
+      rule='SOG-0527 (3), the ergonomist: « toute valeur de vent ou de météo affichée dans Carburant (vents de la route, METAR, TAF) dit sa '
+      'SOURCE et son ÂGE, en alerte au-delà de 12 h »; invented METAR, one of them 14 h old (the test answers the weather layer)')
+def f291(c):
+    ago = {'fr': 'il y a', 'en': 'ago', 'de': 'vor', 'es': 'hace'}[c.lang]
+    old = {'fr': 'plus de 12 h', 'en': 'over 12 h', 'de': 'über 12 h', 'es': 'más de 12 h'}[c.lang]
+    route_metar(c, {'LFRS': (270, 10, 300), 'LFML': (300, 12, 14 * 3600), 'LFMT': (270, 8, 300)})
+    c.open('fuel', docs=flight_docs(), airfields=True)
+    wait_quote(c)
+    to_step(c, 2)  # the Weather step: the cards of the aerodromes
+    c.js(f"document.querySelector('{FUEL} [data-do=wx]')?.click()")
+    c.until(f"document.querySelectorAll('{FUEL} [data-wx] .fu-wx [data-age]').length >= 2", timeout=20000, what='the cards say their age')
+    card = lambda i: c.js(f"""(() => {{ const b = [...document.querySelectorAll('{FUEL} [data-wx] .fu-wx')].find(x => x.querySelector('b')?.textContent === '{i}');
+      const a = b?.querySelector('[data-age]'); return b ? [a?.dataset.age || '', a?.textContent || '', b.querySelector('.f-row')?.textContent || ''] : null }})()""")
+    rs, ml = card('LFRS'), card('LFML')
+    c.ok(bool(rs) and rs[0] == 'ok' and ago in rs[1] and old not in rs[1] and 'METAR' in rs[2], rs, 'LFRS (5 min): its source and its age, quiet')
+    c.ok(bool(ml) and ml[0] == 'old' and old in ml[1], ml, 'LFML (14 h): its age is an alert, « plus de 12 h »')
+    c.js(_F281_NOTES_OFF)
+    c.js(f"document.querySelector('{FUEL} [data-wx]').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F291_{c.design}_{c.lang}_age.png')
     c.check_errors()

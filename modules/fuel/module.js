@@ -1508,6 +1508,9 @@ const TX = {
     '{m}-Vorhersage für {t}{run}, gelesen am {r}.', 'Previsión {m} para las {t}{run}, leída el {r}.'
   ],
   aloftRun: [' (run de {r})', ' ({r} run)', ' (Lauf {r})', ' (pasada de las {r})'],
+  // SOG-0527 (3) : l'âge de toute donnée de vent ou de météo affichée, en alerte au-delà de 12 h
+  ageAgo: ['il y a {d}', '{d} ago', 'vor {d}', 'hace {d}'],
+  ageOld: ['plus de 12 h', 'over 12 h', 'über 12 h', 'más de 12 h'],
   aloftCols: [
     ['Point', 'Point', 'Punkt', 'Punto'],
     ['Niveau', 'Level', 'Fläche', 'Nivel'],
@@ -3995,7 +3998,7 @@ function renderAloft(c = aloftCalc()) {
   if (!c) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftNone))}</p>`;
   const hh = sec => fmtZ(sec * 1000),
     pts = S.flight.route.points;
-  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: fmtDateZ(A.at, S.ctx.lang()) }))}</p>
+  box.innerHTML = `<p class="f-muted" data-aloftat>${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: fmtDateZ(A.at, S.ctx.lang()) }))}${ageHtml(A.run || Date.parse(A.at) / 1000)}</p>
     <div class="f-scroll"><table class="f-table"><thead><tr>${TX.aloftCols.map((h, i) => `<th${i ? ' class="f-num"' : ''}>${esc(tt(h))}</th>`).join('')}</tr></thead><tbody>
     ${c.points.map((w, i) => w ? `<tr><td>${esc(pts[i].id || '')}</td><td class="f-num">${flTxt(w.levelFt)}</td><td class="f-num">${String(w.dirDeg).padStart(3, '0')}° ${esc(speedTxt(w.kt))}</td><td class="f-num">${w.tempC} °C</td><td class="f-num">${w.isaDev > 0 ? '+' : ''}${w.isaDev}</td></tr>` : '').join('')}
     </tbody></table></div>`;
@@ -4186,7 +4189,7 @@ function renderWx() {
       } = x;
       if (!st) return `<div class="f-item"><span><b>${esc(id)}</b> <span class="f-muted">${esc([where(x), tt(TX.wxNoData)].filter(Boolean).join(' · '))}</span></span></div>`;
       const rw = ad ? WIND.bestRunwayEnd(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
-      return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc([ad?.name, where(x), `${st.source} ${hhmm(st.at)}`].filter(Boolean).join(' · '))}</span>${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
+      return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc([ad?.name, where(x), `${st.source} ${hhmm(st.at)}`].filter(Boolean).join(' · '))}</span>${ageHtml(st.source === 'TAF' ? +S.wx?.taf?.[id]?.validTimeFrom : st.at)}${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
       <dl class="f-dl"><dt>${esc(tt(TX.wxWind))}</dt><dd>${esc(wind(st.wdir, st.wspd, st.wgst))}</dd>
       ${rw ? `<dt>${esc(tt(TX.wxRwy, { r: rw.ident }))}</dt><dd>${esc(tt(TX.wxComp, { h: Math.abs(rw.head), hw: tt(rw.head >= 0 ? TX.wxHead : TX.wxTail), c: rw.cross, s: tt(rw.side === 'L' ? TX.wxLeft : TX.wxRight) }))} <span class="f-muted">(${esc(tt(TX.wxRwyHint))})</span></dd>` : ''}
       <dt>${esc(tt(TX.wxCeil))}</dt><dd>${st.ceil != null ? `${st.ceil.toLocaleString(S.ctx.lang())} ft` : esc(tt(TX.wxNoCeil))}${st.wx ? ` · ${esc(st.wx)}` : ''}</dd>
@@ -4287,13 +4290,33 @@ function applyRealWind() {
 function windSourceLine(text) {
   const el = S.body?.querySelector('[data-windsrc]');
   if (!el) return;
-  const src = S.flight.windSource;
-  el.textContent = text || (src?.kind === 'weather' ? tt(TX.wxSrc, {
-    l: src.ids.join(', ')
-  }) + (src.aloftFailed ? ` ${tt(TX.aloftFailed)}` : '') : src?.kind === 'aloft' ? tt(TX.aloftSrc, {
-    m: src.model
-  }) + (src.pending ? ` (${tt(TX.aloftPending)})` : '') : '');
+  const src = S.flight.windSource,
+    line = text || (src?.kind === 'weather' ? tt(TX.wxSrc, {
+      l: src.ids.join(', ')
+    }) + (src.aloftFailed ? ` ${tt(TX.aloftFailed)}` : '') : src?.kind === 'aloft' ? tt(TX.aloftSrc, {
+      m: src.model
+    }) + (src.pending ? ` (${tt(TX.aloftPending)})` : '') : ''),
+    // SOG-0527 (3) : l'âge de ce qui donne le vent — la sortie de la prévision (sinon sa lecture), le plus vieux des METAR moyennés
+    obs = src?.kind === 'weather' ? (src.ids || []).map(id => +S.wx?.metar?.[id]?.obsTime).filter(t => t > 0) : [],
+    t = text ? null : src?.kind === 'aloft' ? +S.aloft?.run || Date.parse(S.aloft?.at || '') / 1000 : obs.length ? Math.min(...obs) : null;
+  el.innerHTML = esc(line) + ageHtml(t);
 }
+/** SOG-0527 (3) (l'ergonome : « toute valeur de vent ou de météo affichée dit sa source et son âge, en alerte au-delà de 12 h ») : « il y
+ *  a 35 min » après une donnée datée (t : secondes depuis 1970), discret ; au-delà d'AGE_OLD_S, en alerte avec « plus de 12 h ». '' sans
+ *  date lisible. */
+function ageHtml(t) {
+  const sec = +t;
+  if (!(sec > 0)) return '';
+  const age = Math.max(0, Date.now() / 1000 - sec),
+    old = age > AGE_OLD_S;
+  return ` <span class="${old ? 'f-warn' : 'f-muted'}" data-age="${old ? 'old' : 'ok'}">${esc(tt(TX.ageAgo, {
+    d: fmtDur(age / 60, {
+      wholeHour: true
+    })
+  }) + (old ? ` · ${tt(TX.ageOld)}` : ''))}</span>`;
+}
+/** SOG-0527 (3) : au-delà, une donnée de vent ou de météo est dite en alerte. */
+const AGE_OLD_S = 12 * 3600;
 
 // ---------------------------------------------------------------- choix de l'appareil (registre d'aerodb)
 /** Ouvre (ou referme) la recherche d'appareil sous la ligne de l'appareil retenu. */

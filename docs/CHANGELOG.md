@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel: every wind or weather value shown says its source and its age** (SOG-0527 (3)) — the METAR or TAF card of each aerodrome, the line of the wind of the quote and the forecast of the winds aloft say « il y a … », an alert « plus de 12 h » beyond twelve hours; F291.
 - **Fuel: the page reads by itself the weather it lacks** (SOG-0527 (2)) — for the departure, arrival and alternate, a missing or aged METAR (over an hour) and, when the flight has a date, a missing or old TAF are asked once per aerodrome, kind and hour through the frame's weather layer (its cache); the alternate's criterion says « reading… » then the cause of a failure, never « go to the Weather step »; F290.
 - **Fuel: the line of the alternate offers the reading of its procedures where its aids are not checked** (SOG-0527 (1)) — the gesture of the Procedures card, same words, same call; F289.
 - **Fuel: item 15 of the flight plan is never empty** (SOG-0529 (2), the IFPS: « EFPM214: MISSING ROUTE DATA ») — a route that is only the departure and the arrival is written « DCT »; the review fold and the copy say « no route computed between … : compute one or type it », then the judgement of the route check when it judged the route, else the length of the direct only (directs are limited by Eurocontrol according to the region), never a prediction; F288.
