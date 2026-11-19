@@ -5393,7 +5393,7 @@
    "fiche": "SOG-0521",
    "app": "compagnie",
    "question": "Le « LUA déjà existant » qui pose les objets au pélicandrome (tuyau, personnages, citernes) : où est-il, et qui le reprend ?",
-   "context": "Il n'est pas dans le dépôt de la suite. Ta maquette a un dossier xplane-objects (JoinFS, sonde de terrain LUA) dans E: ools\\mission-editor. La liaison avec le plugin dash-8-firefight (remplir deux fois plus vite) est à PRÉVOIR, pas à développer.",
+   "context": "Il n'est pas dans le dépôt de la suite. Ta maquette a un dossier xplane-objects (JoinFS, sonde de terrain LUA) dans E:\\tools\\mission-editor. La liaison avec le plugin dash-8-firefight (remplir deux fois plus vite) est à PRÉVOIR, pas à développer.",
    "options": [
     "C'est celui de xplane-objects de la maquette : à reprendre dans la suite (une session dédiée)",
     "Un autre LUA (dis où dans le texte)",
