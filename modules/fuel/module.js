@@ -4523,16 +4523,18 @@ async function routeAskRun(s, act, r, o, box, retry) {
   if (gone(s) || !S.body) return;
   routeAltsDraw();
   altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
-  // SOG-0517 : un vol sans niveau prend celui que le moteur a pris (« default » : FL180) — écrit dans le vol, le devis et le plan de vol
-  // le portent ; la seconde demande part avec lui (sinon elle se croirait d'une autre entrée et relancerait le calcul)
-  const took = n.level?.basis === 'default' && Number.isInteger(n.level.fl) && n.level.fl >= 10 && n.level.fl <= 660 ? n.level.fl : null;
-  if (took && !(+S.flight.level?.ft > 0) && routeFl() === null) {
-    S.flight.level = {
-      ft: took * 100
-    };
+  // SOG-0517 : un vol sans niveau prend celui du calcul — écrit dans le vol (page 1), le devis, le profil et le plan de vol le portent, et
+  // dit. Refus de recette (l'utilisateur : « j'ai vidé le niveau de vol. j'ai calculé. … le niveau de vol n'est pas renseigné dans la
+  // page 1 ») : c'est le niveau ENVOYÉ (celui de la fiche, routeFl), sinon celui que le moteur a pris (« default » : FL180) ; la seconde
+  // demande part avec lui (sinon elle se croirait d'une autre entrée et relancerait le calcul)
+  const okFl = v => Number.isInteger(v) && v >= 10 && v <= 660,
+    took = okFl(args.fl) ? args.fl : n.level?.basis === 'default' && okFl(n.level.fl) ? n.level.fl : null;
+  if (took && !(+S.flight.level?.ft > 0)) {
     args.fl = took;
-    saveFlight();
-    refresh();
+    // setLevel, le geste du champ Niveau : le champ de la page 1 le montre (il n'est dessiné qu'une fois), les niveaux des points et le
+    // vent en altitude sont refaits à ce niveau (le profil), puis le vol écrit et le devis refait (F286, rouge : le vol portait le
+    // niveau, le champ restait vide)
+    setLevel(took * 100);
     S.ctx.notify(tt(TX.rLevelSet, {
       fl: String(took).padStart(3, '0')
     }), 'info');

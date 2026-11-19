@@ -8827,3 +8827,41 @@ def f281(c):
     c.js(f"document.querySelector('{FUEL} [data-rdefperf]').scrollIntoView({{ block: 'center' }})")  # the line on screen, clear of the sticky bar
     c.wait(300)
     c.shot(f'F281_{c.design}_{c.lang}_default.png')  # for the relay: the line « Vitesses par défaut du moteur »
+
+
+@case('F286', 'Route step, a flight whose level was emptied: « Calculer A → B » leaves at the level of the aircraft sheet (FL250), and that '
+      'level is WRITTEN in the flight — the Level field of the first step shows it, the variants leave with it, and it is said',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0517, refused at acceptance (the user, 19 Nov: « j\'ai vidé le niveau de vol. j\'ai calculé. accepté. le niveau de vol n\'est '
+      'pas renseigné dans la page 1. le profil est donc incohérent »); the relay: the level sent to the computation is ALWAYS written in '
+      'the flight and shown on the first step, from the sheet or the engine\'s FL180, with the notification; fake launcher, invented sheet')
+def f286(c):
+    st = _route_launcher(c, ['route/compute'])
+    sheet = {'id': 'XT1', 'name': 'Essai', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'refAltFt': 25000}}
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J', 'sheetId': 'XT1', 'registration': 'F-RAJA'}
+            d[1].pop('level', None)  # the level emptied
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs + [['aircraft/sheets/XT1.json', sheet, 'document']], airfields=True)
+    to_step(c, 1)
+    c.js("window.__n0 = (window.__notes || []).length")
+    sent = _compute_now(c, st)
+    c.eq(sent[0].get('fl'), 250, 'the level of the sheet (FL250) sent', what='sent')
+    d = cf_doc(c, lambda d: ((d.get('level') or {}).get('ft') or 0) == 25000, 'the level sent, written in the flight')
+    c.eq((d.get('level') or {}).get('ft'), 25000, 'the flight carries FL250, the level its route was computed at', what='written')
+    c.until("(window.__notes || []).slice(window.__n0).some(x => x.includes('FL250'))", timeout=5000, what='said (FL250)')
+    c.ok(all(a.get('fl') == 250 for a in sent[1:]), [a.get('fl') for a in sent], 'the variants leave with FL250')
+    to_step(c, 0)  # the first step: its Level field
+    F = f'{FUEL} input[data-k="fl"]'
+    c.until(f"!!document.querySelector('{F}')", timeout=8000, what='the Level field')
+    c.ok('250' in (c.js(f"document.querySelector('{F}').value") or ''), c.js(f"document.querySelector('{F}').value"),
+         'the Level field of the first step shows FL250')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)  # the notes closed: the capture shows the field
+        c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F286_{c.design}_{w}_{c.lang}_level.png')
