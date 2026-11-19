@@ -1098,49 +1098,38 @@
       srcAt: AT,
       ...st
     }, {}, {}).how.replace(/\s+/g, ' ');
-  ck('posé de précision, describe : « ouvert à votre atterrissage — réussi (0,15 NM), à 19:20Z » en français ; en anglais « good (0.15 NM) » avec le point décimal ; en allemand et en espagnol la virgule',
-    sayIn(0, {
-      mine: true,
-      tier: 'réussi',
-      distNm: 0.15
-    }) === 'ouvert à votre atterrissage — réussi (0,15 NM), à 19:20Z' && sayIn(1, {
-      mine: true,
-      tier: 'réussi',
-      distNm: 0.15
-    }) === 'opened on your landing — good (0.15 NM), at 19:20Z' && sayIn(2, {
-      mine: true,
-      tier: 'réussi',
-      distNm: 0.15
-    }) === 'bei Ihrer Landung geöffnet — gelungen (0,15 NM) um 19:20Z' && sayIn(3, {
-      mine: true,
-      tier: 'réussi',
-      distNm: 0.15
-    }) === 'abierto a su aterrizaje — logrado (0,15 NM), a las 19:20Z', [0, 1, 2, 3].map(i => sayIn(i, {
+  // la ligne d'ouverture d'un posé de précision ne dit que COMMENT et QUAND (le palier et la distance ne sont dits qu'une fois, au Débrief)
+  const LANDME = ['ouvert à votre atterrissage, à 19:20Z', 'opened on your landing, at 19:20Z', 'bei Ihrer Landung geöffnet um 19:20Z', 'abierto a su aterrizaje, a las 19:20Z'],
+    LANDBY = ['ouvert à l\'atterrissage de BBB, à 19:20Z', 'opened when BBB landed, at 19:20Z', 'bei der Landung von BBB geöffnet um 19:20Z', 'abierto al aterrizaje de BBB, a las 19:20Z'],
+    TIERWORDS = /excellent|parfait|réussi|partiel|perfect|good|partial|ausgezeichnet|perfekt|gelungen|teilweise|excelente|perfecto|logrado|parcial|NM/;
+  ck('posé de précision, describe : la ligne d\'ouverture est celle sans palier, « ouvert à votre atterrissage, à 19:20Z » et ses trois traductions, sans palier ni « NM »',
+    [0, 1, 2, 3].every(i => ['excellent', 'parfait', 'réussi', 'partiel'].every(t => {
+      const r = sayIn(i, {
+        mine: true,
+        tier: t,
+        distNm: 0.15
+      });
+      return r === LANDME[i] && !TIERWORDS.test(r);
+    })), [0, 1, 2, 3].map(i => sayIn(i, {
       mine: true,
       tier: 'réussi',
       distNm: 0.15
     })));
-  ck('posé de précision, describe : celui d\'un autre — « ouvert à l\'atterrissage de BBB — excellent (0,03 NM), à 19:20Z » ; les quatre mots des paliers dans les quatre langues',
-    sayIn(0, {
+  ck('posé de précision, describe : celui d\'un autre — « ouvert à l\'atterrissage de BBB, à 19:20Z » et ses trois traductions, sans palier ni « NM »',
+    [0, 1, 2, 3].every(i => ['excellent', 'parfait', 'réussi', 'partiel'].every(t => {
+      const r = sayIn(i, {
+        mine: false,
+        by: 'BBB',
+        tier: t,
+        distNm: 0.03
+      });
+      return r === LANDBY[i] && !TIERWORDS.test(r);
+    })), [0, 1, 2, 3].map(i => sayIn(i, {
       mine: false,
       by: 'BBB',
       tier: 'excellent',
       distNm: 0.03
-    }) === 'ouvert à l\'atterrissage de BBB — excellent (0,03 NM), à 19:20Z' && sayIn(1, {
-      mine: false,
-      by: 'BBB',
-      tier: 'parfait',
-      distNm: 0.1
-    }) === 'opened when BBB landed — perfect (0.10 NM), at 19:20Z' && [
-      ['excellent', 'excellent', 'ausgezeichnet', 'excelente'],
-      ['parfait', 'perfect', 'perfekt', 'perfecto'],
-      ['réussi', 'good', 'gelungen', 'logrado'],
-      ['partiel', 'partial', 'teilweise', 'parcial']
-    ].every(([t, ...w]) => w.every((word, i) => sayIn(i + 1, {
-      mine: true,
-      tier: t,
-      distNm: 0.5
-    }).includes(word))));
+    })));
   ck('posé de précision, describe : sans palier connu (atterrissage au terrain, ancien constat, distance inconnue, palier hostile) → les phrases d\'avant, sans palier',
     [{
       tier: null,
@@ -1184,8 +1173,8 @@
   })));
   await until(() => !!q('[data-dw="B"][data-open]'));
   const pb = ctx.store.get(BOOK)?.drawer_B;
-  ck('posé de précision de bout en bout : posé 10 s à 0,15 NM du point, le constat est écrit avec tier « réussi » et distNm 0,15, et « Suite de la mission » dit « ouvert à votre atterrissage — réussi (0,15 NM), à … »',
-    pb?.how === 'landing' && pb.tier === 'réussi' && pb.distNm === 0.15 && /^ouvert à votre atterrissage — réussi \(0,15 NM\), à \d\d:\d\dZ$/.test(text(
+  ck('posé de précision de bout en bout : posé 10 s à 0,15 NM du point, le constat est écrit avec tier « réussi » et distNm 0,15, et « Suite de la mission » dit « ouvert à votre atterrissage, à … », sans palier ni « NM » (ils ne sont dits que dans le Débrief)',
+    pb?.how === 'landing' && pb.tier === 'réussi' && pb.distNm === 0.15 && /^ouvert à votre atterrissage, à \d\d:\d\dZ$/.test(text(
       '[data-dw="B"] [data-dw-how]').replace(/\s+/g, ' ')), [pb, text('[data-dw="B"] [data-dw-how]')]);
   DV.stop();
   // la source ne dit pas « au sol » (GPS du navigateur, VATSIM) : la condition n'est jamais satisfaite, le tiroir attend son repli ou le geste

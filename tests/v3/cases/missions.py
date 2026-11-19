@@ -4419,7 +4419,7 @@ phases:
 
 @case('N181', 'Missions: the debrief of my mission — under « Suite de la mission », a block « Débrief » with one line per precision landing '
       'judged (mine, then a crew mate\'s: « Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z — BBB »; the TITLE of the drawer, never its number), the tier recomputed on MY key whatever '
-      'the record says, the decimal separator of the language, no place, no score; seen from the first level',
+      'the record says (said once, here: the opening line of the drawer carries only how and when), the decimal separator of the language, no place, no score; seen from the first level',
       'N', tags=('missions',), designs=('standard',), langs4=True,
       rule='SOG-0516, lot B (the ergonomist, 19 Nov 2026): « Débrief » in the sheet of MY mission, under the sequel, from a pure datum '
       '(modules/missions/drawers.js `debriefOf`: one line per judged precision landing, mine and the crew mates\', the tier recomputed with '
@@ -4481,6 +4481,12 @@ def n181(c):
     c.ok(shown, shown, 'visible at the first level (Découverte): it is not a gesture')
     c.js(f"document.querySelector('{S} [data-dw-debrief-head]').scrollIntoView({{block: 'center'}})")
     c.settle()
+    # the opening line of the drawer card says only how and when (the tier is said once, in the debrief): WRITTEN here, in four languages, no tier, no « NM »
+    OPEN = {'fr': 'ouvert à votre atterrissage, à {t}', 'en': 'opened on your landing, at {t}', 'de': 'bei Ihrer Landung geöffnet um {t}', 'es': 'abierto a su aterrizaje, a las {t}'}
+    card = norm(c.text(f'{S} [data-dw="C"] [data-dw-how]'))
+    c.eq(card, norm(OPEN[lang].format(t=clock(-720))), 'the card of the drawer says how and when it opened, without the tier nor the distance',
+         what='opening line')
+    c.ok(re.search(r'réussi|parfait|good|perfect|gelungen|perfekt|logrado|perfecto|NM', card) is None, card, 'no tier word and no « NM » in the opening line')
     c.shot(f'N181_{c.design}_{c.width}_{c.lang}_debrief.png')
     c.js(_DW_CLEAR)
 

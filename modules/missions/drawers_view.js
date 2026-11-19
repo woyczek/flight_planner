@@ -25,8 +25,8 @@
 //   describe(tt, state, drawer, { live, notJudged, inRange }) → { key, note, how, follow } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
 //   « pas encore jugé en vol » ou « sans position en direct », comment et quand il s'est ouvert) — pur : l'aperçu de l'éditeur peut
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
-//   Un posé de PRÉCISION (SOG-0507) dit son palier (excellent, parfait, réussi, partiel) et sa distance en NM, deux décimales, séparateur
-//   de la langue (TX.decSep) ; un atterrissage au terrain ou un ancien constat garde la phrase sans palier.
+//   Un posé de PRÉCISION (SOG-0507) : son palier (excellent, parfait, réussi, partiel) et sa distance en NM, deux décimales, séparateur
+//   de la langue (TX.decSep), ne sont dits qu'UNE fois, dans le Débrief ; la ligne d'ouverture du tiroir ne dit que comment et quand.
 //   « Débrief » (SOG-0516, lot B) : SOUS « Suite de la mission », une ligne par posé de précision jugé (drawers.js debriefOf : les miens et ceux des
 //   équipiers, le palier recalculé chez le lecteur), à tous les niveaux ; présent seulement s'il a une ligne ; ni score ni classement ni lieu.
 //   debriefLine(tt, ligne) → le texte d'une ligne du débrief, dans la langue de tt (pur).
@@ -131,14 +131,6 @@ export const TX = {
   openLandingBy: ['ouvert à l\'atterrissage de {by}, à {t}', 'opened when {by} landed, at {t}',
     'bei der Landung von {by} geöffnet um {t}',
     'abierto al aterrizaje de {by}, a las {t}'
-  ],
-  // un posé de PRÉCISION (SOG-0507) : le palier et la distance au point visé ; sans palier connu (terrain, ancien constat), les phrases
-  // d'avant. Les mots des paliers sont ceux de drawers.js (TIERS) : des identifiants de données, dits ici dans les quatre langues.
-  openLandingTierMe: ['ouvert à votre atterrissage — {tier} ({d} NM), à {t}', 'opened on your landing — {tier} ({d} NM), at {t}',
-    'bei Ihrer Landung geöffnet — {tier} ({d} NM) um {t}', 'abierto a su aterrizaje — {tier} ({d} NM), a las {t}'
-  ],
-  openLandingTierBy: ['ouvert à l\'atterrissage de {by} — {tier} ({d} NM), à {t}', 'opened when {by} landed — {tier} ({d} NM), at {t}',
-    'bei der Landung von {by} geöffnet — {tier} ({d} NM) um {t}', 'abierto al aterrizaje de {by} — {tier} ({d} NM), a las {t}'
   ],
   // le débrief de MA mission (SOG-0516, lot B) : une ligne par posé de précision jugé, le mien puis ceux des équipiers ; jamais un lieu
   debriefHead: ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'],
@@ -785,15 +777,10 @@ export function describe(tt, s, d, {
         s.mine ? TX.openSequenceMe : TX
         .openSequenceBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;
-    const tierRow = s.how === 'landing' && typeof s.tier === 'string' && Object.hasOwn(TX.tier, s.tier) && Number.isFinite(s.distNm) ? (s
-      .mine ? TX.openLandingTierMe : TX.openLandingTierBy) : null;
-    how = tt(tierRow || row, {
+    // la ligne d'ouverture ne dit que COMMENT et QUAND : le palier et la distance d'un posé de précision ne sont dits qu'une fois, au Débrief
+    how = tt(row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),
-      by: s.by || '',
-      ...(tierRow ? {
-        tier: tt(TX.tier[s.tier]),
-        d: s.distNm.toFixed(2).replace('.', tt(TX.decSep)) // deux décimales, le séparateur de la langue
-      } : {})
+      by: s.by || ''
     });
   }
   return {
