@@ -5431,6 +5431,20 @@
    "state": "todo"
   },
   {
+   "id": "Q-0123",
+   "fiche": "SOG-0523",
+   "app": "pilote",
+   "question": "Scène des pélicandromes : autorises-tu le lanceur à ÉCRIRE dans ton dossier X-Plane (Custom Scenery/SOG Pélicandromes et scenery_packs.ini) et à LANCER DSFTool.exe ?",
+   "context": "Tu l'as dit à Création (« dsftool : oui », « dans le dossier x-plane défini par la suite »). Le relais ne peut pas élargir seul les accès du lanceur : c'est à toi de le confirmer ici. Sécurisation relirait ensuite : écriture limitée à ce seul paquet, sans rien d'autre dans X-Plane, et DSFTool lancé avec des arguments fixes. Sinon : la suite prépare le paquet dans sa propre sortie, et tu le compiles et le copies avec une notice.",
+   "options": [
+    "Oui : le lanceur écrit ce paquet et lance DSFTool, après la relecture de Sécurisation",
+    "Non : la suite prépare le paquet, je le compile et le copie moi-même",
+    "Plus tard"
+   ],
+   "since": "2026-11-19",
+   "state": "todo"
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
