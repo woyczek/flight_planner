@@ -330,6 +330,18 @@
     'XARR'
   ]);
 
+  // SOG-0513 : une voie dont le nom ressemble à une vitesse (M189, N866, M140) reste une voie ; les vrais groupes restent des groupes
+  qeq('tokenize : « M189 », « N866 », « M140 » sont des voies, jamais des groupes de vitesse', tokenize(
+    'EGLL MID L612 HAWKE M189 NEVIL N866 SAM M140 XPT LFRN').map(t => [t.kind === 'group' ? 'group' : 'name', t.id || '']), [
+    ['name', 'EGLL'], ['name', 'MID'], ['name', 'L612'], ['name', 'HAWKE'], ['name', 'M189'], ['name', 'NEVIL'], ['name', 'N866'],
+    ['name', 'SAM'], ['name', 'M140'], ['name', 'XPT'], ['name', 'LFRN']
+  ]);
+  qeq('tokenize : N0236F270, M082F350, K0800A045 et la vitesse seule N0450 restent des groupes', tokenize(
+    'N0236F270 XPT M082F350 XPU K0800A045 XPV N0450 XPW').map(t => t.kind), ['group', 'name', 'group', 'name', 'group', 'name', 'group',
+    'name'
+  ]);
+  ck('leadingGroup : « M189 » en tête n\'est pas un groupe ; « N0236F270 » l\'est', leadingGroup('M189 XPT') === '' && leadingGroup(
+    'N0236F270 XPT') === 'N0236F270');
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

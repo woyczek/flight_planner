@@ -8615,3 +8615,19 @@ def f280(c):
     c.ok(got[0].startswith(norm(want)), got, '« copiez-le à la main », the words written here (never read from the module)')
     copied = {'fr': 'Plan de vol copié', 'en': 'Flight plan copied', 'de': 'Flugplan kopiert', 'es': 'Plan de vuelo copiado'}[L]
     c.ok(copied not in got[0], got, 'never « Plan de vol copié »')
+
+
+@case('F282', 'The ICAO flight plan keeps the airways whose name looks like a speed — « M189 », « N866 », « M140 » — between their points: never '
+      '« DCT » in their place; the true speed-level groups (« N0236F270 », « M082F350 ») stay groups', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=False,
+      rule='SOG-0513 (the user\'s IFPS of 19 Nov, ROUTE165 « DCT HAWKE..NEVIL »; AeroDB\'s replay: the engine wrote « HAWKE M189 NEVIL »): '
+      'frame/lib/route_text.js read a bare « M189 » as a speed group and dropped it; invented points around real airway names')
+def f282(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""() => Promise.all([import('/modules/fuel/fpl.js'), import('/frame/lib/route_text.js')]).then(([F, RT]) => [
+      F.item15('XDEP DCT XPA L612 XPB M189 XPC/F270 N866 XPD M140 XPE DCT XARR', { dep: 'XDEP', arr: 'XARR', speedKt: 236, levelFt: 27000 }).route,
+      RT.tokenize('N0236F270 XPA M082F350 XPB K0800A045 XPC N0450 XPD M189 XPE').map(t => t.kind === 'group' ? 'group' : t.id)])""")
+    c.eq(got[0], 'N0236F270 XPA L612 XPB M189 XPC N866 XPD M140 XPE', 'item 15: each airway between its points, no DCT in place of M189, N866, '
+         'M140 (the group of XPC is the one in force: not written twice)', what='item 15')
+    c.eq(got[1], ['group', 'XPA', 'group', 'XPB', 'group', 'XPC', 'group', 'XPD', 'M189', 'XPE'], 'the true groups stay groups, a bare « M189 » is '
+         'a name', what='tokens')

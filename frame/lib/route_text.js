@@ -45,7 +45,10 @@ const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[
     W: [-1, -1]
   },
   NUM = /^-?\d+(?:\.\d+)?$/,
-  GROUP = /^[NKM]\d{3,4}([FASM]\d{3,4})?$/,
+  // SOG-0513 : un groupe vitesse-niveau de l'item 15 porte son niveau (« N0236F270 », « M082F350 », « K0800A045 »), ou c'est une
+  // vitesse seule à quatre chiffres (« N0450 ») ; jamais un mot nu « M189 », « N866 » : ce sont des VOIES (le niveau facultatif les
+  // retirait, et deux points voisins recevaient « DCT » — l'IFPS de l'utilisateur, ROUTE165 « DCT HAWKE..NEVIL »)
+  GROUP = /^(?:(?:[NK]\d{4}|M\d{3})(?:[FA]\d{3}|[SM]\d{4})|[NK]\d{4})$/,
   AIRWAY = /^[A-Z]{1,2}\d{1,4}[A-Z]?$/,
   PROC = /\d[A-Z]$/,
   NAME = /^[A-Z0-9]{2,7}$/;
