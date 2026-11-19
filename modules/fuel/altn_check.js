@@ -11,6 +11,9 @@
 //   weatherOf(taf, t, o) → critère MÉTÉO : la pire catégorie de vol (FAA : VFR, MVFR, IFR, LIFR) des groupes du TAF entre une heure avant
 //     et une heure après l'arrivée au dégagement (t, secondes), groupes TEMPO et PROB compris : un INDICATEUR ; VFR ou MVFR vert, IFR
 //     orange, LIFR rouge (Q-0075). o : { read (la météo a été lue), noTaf (TAF indisponible sur cet appareil) }.
+//   distOf(nm) → SOG-0528 : critère DISTANCE du dégagement choisi, la règle de la proposition (candidates) — au-delà de CAND_MAX_NM de
+//     l'arrivée : ne convient pas (rouge) ; en deçà de CAND_MIN_NM : réserve (orange, même météo probable) ; entre les deux, ou distance
+//     inconnue : null (rien à dire, aucun critère de plus).
 //   judge(criteria) → { state, ok, grey } : le pire état — err, puis warn, puis grey (un critère non vérifié ne laisse jamais le vert),
 //     sinon ok ; ok et grey : les nombres de critères bons et non vérifiés.
 //   SOG-0398 lot 2, « Proposer un dégagement » :
@@ -130,6 +133,29 @@ export function weatherOf(taf, t, {
     a,
     b
   });
+}
+
+/** SOG-0528 : le critère DISTANCE (voir l'en-tête) ; nm : la distance de l'arrivée au dégagement (le trait droit, comme candidates). */
+export function distOf(nm) {
+  if (!num(nm) || +nm < 0) return null;
+  const d = Math.round(+nm);
+  return +nm > CAND_MAX_NM ? {
+    k: 'dist',
+    state: 'err',
+    code: 'distFar',
+    v: {
+      d,
+      max: CAND_MAX_NM
+    }
+  } : +nm < CAND_MIN_NM ? {
+    k: 'dist',
+    state: 'warn',
+    code: 'distNear',
+    v: {
+      d,
+      min: CAND_MIN_NM
+    }
+  } : null;
 }
 
 /** SOG-0398 lot 2 : les bornes de la proposition — distance à l'arrivée (NM), terrains de la liste de Carburant, terrains du document de la

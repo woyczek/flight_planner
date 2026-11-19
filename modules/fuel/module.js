@@ -718,7 +718,8 @@ const TX = {
   altnK: {
     rwy: ['piste', 'runway', 'Piste', 'pista'],
     aids: ['moyens', 'aids', 'Navigationshilfen', 'medios'],
-    wx: ['météo', 'weather', 'Wetter', 'meteorología']
+    wx: ['météo', 'weather', 'Wetter', 'meteorología'],
+    dist: ['distance', 'distance', 'Entfernung', 'distancia'] // SOG-0528
   },
   altnFold: ['Critères du dégagement', 'Alternate criteria', 'Kriterien des Ausweichflugplatzes', 'Criterios del alternativo'],
   altnHard: ['en dur', 'hard', 'befestigte', 'pavimentada'],
@@ -770,6 +771,17 @@ const TX = {
       'Aids: not checked — the aerodrome’s procedures partly read, no approach among the pages read.',
       'Navigationshilfen: nicht geprüft — Verfahren des Flugplatzes teilweise gelesen, kein Anflug in den gelesenen Seiten.',
       'Medios: no comprobados — procedimientos del aeródromo leídos en parte, sin aproximación en las páginas leídas.'
+    ],
+    // SOG-0528 : la distance de l'arrivée, la règle de la proposition (30 à 300 NM)
+    distFar: ['Distance : {d} NM de l’arrivée, au-delà des {max} NM d’un dégagement.',
+      'Distance: {d} NM from the arrival, beyond the {max} NM of an alternate.',
+      'Entfernung: {d} NM vom Zielflugplatz, über den {max} NM eines Ausweichflugplatzes.',
+      'Distancia: {d} NM de la llegada, más allá de los {max} NM de un alternativo.'
+    ],
+    distNear: ['Distance : {d} NM de l’arrivée, en deçà de {min} NM (même météo probable).',
+      'Distance: {d} NM from the arrival, under {min} NM (likely the same weather).',
+      'Entfernung: {d} NM vom Zielflugplatz, unter {min} NM (wahrscheinlich dasselbe Wetter).',
+      'Distancia: {d} NM de la llegada, por debajo de {min} NM (probablemente el mismo tiempo).'
     ],
     aidsNoBase: ['Moyens : non vérifiés — la base ne tient pas les procédures de ce terrain.',
       'Aids: not checked — the base does not hold this aerodrome’s procedures.',
@@ -5347,6 +5359,24 @@ async function altnChkDraw(C) {
     return altnChkDraw(S.C);
   }
   if (S.altnData.pending) return;
+  // SOG-0528 (l'utilisateur : « LFMT - LFRN - LFFI, c'est valable. si on change lfrn par lfqq, lffi n'est pas annoncé comme non
+  // valable ») : la position de l'arrivée, relue quand l'arrivée change ; la ligne se dessine sans elle en attendant (rien de vide)
+  const arrId = String(S.flight.route?.arr || '').toUpperCase().trim();
+  if (S.altnArr?.arr !== arrId) {
+    S.altnArr = {
+      arr: arrId,
+      pending: true
+    };
+    Promise.race([altnArrPos(S.flight.route || {}).catch(() => null), new Promise(r => setTimeout(() => r(null), ALTN_CHK_WAIT_MS))])
+      .then(pos => {
+        if (gone(s) || S.altnArr?.arr !== arrId) return;
+        S.altnArr = {
+          arr: arrId,
+          pos
+        };
+        altnChkDraw(S.C);
+      });
+  }
   const sheet = C?.sheet || null,
     q = C?.q,
     dep = Date.parse(S.flight.planned_at || ''),
@@ -5356,8 +5386,10 @@ async function altnChkDraw(C) {
       AC.weatherOf(S.wx?.taf?.[id] || null, t, {
         read: !!S.wx,
         noTaf: !!S.wx?.noTaf
-      })
-    ],
+      }),
+      // SOG-0528 : la distance de l'arrivée (règle de la proposition), dite seulement hors des bornes ; jamais le dégagement retiré
+      AC.distOf(altnArrNm(S.altnArr?.pos, S.altnData.ad))
+    ].filter(Boolean),
     J = AC.judge(crits),
     SIGN = {
       ok: '✓',
@@ -5397,6 +5429,13 @@ const altnPropKey = () => {
     a = S.flight.aircraft || {};
   return `${String(r.dep || '').toUpperCase()}>${String(r.arr || '').toUpperCase()}>${String(a.sheetId || a.registration || a.type || '').slice(0, 24)}`;
 };
+/** SOG-0528 : la distance de l'arrivée au dégagement (NM, le trait droit, comme la proposition), ou null sans l'une des positions. */
+function altnArrNm(pos, ad) {
+  return pos && Number.isFinite(+ad?.lat) && Number.isFinite(+ad?.lon) ? rhumbNm(pos, {
+    lat: +ad.lat,
+    lon: +ad.lon
+  }) : null;
+}
 /** La position de l'arrivée : le dernier point de la route quand c'est elle, sinon aerodb. */
 async function altnArrPos(r) {
   const last = (r.points || []).at(-1);

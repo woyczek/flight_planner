@@ -7398,11 +7398,12 @@ def _altn_taf(cat, now):
             'fcsts': [{'timeFrom': lo, 'timeTo': hi, 'fcstChange': None, 'wdir': 270, 'wspd': 8, 'visib': vis, 'clouds': cl}]}
 
 
-def _altn_open(c, hard_m, app, cat, min_ft=5000):
+def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=()):
     """The seeded flight with XQAL as alternate, a C30J sheet (minimum runway `min_ft`, none if None), XQAL's hard runway `hard_m` (m),
     `app` instrument approaches held in proc/manual/ beside one SID and one STAR (an index entry without any procedure is not « held »:
     aerodb's coverage table), its TAF of category `cat` kept fresh in the weather store (the test server has no
-    launcher: the store asks a TAF of avwx.rest only with a key; a kept one is read first, cache/weather/taf/); the weather read by the gesture."""
+    launcher: the store asks a TAF of avwx.rest only with a key; a kept one is read first, cache/weather/taf/); the weather read by the gesture.
+    `more_ads`: more invented aerodromes of the base (SOG-0528: a far arrival)."""
     import time as _t
     now = int(_t.time())
     sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
@@ -7421,7 +7422,7 @@ def _altn_open(c, hard_m, app, cat, min_ft=5000):
     docs.append([f'cache/weather/taf/{_ALT_ID}.json', {'at': 4102444800000, 'source': 'launcher', 'data': _altn_taf(cat, now)}, 'cache'])
     route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), _ALT_ID: (270, 8)})
     c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': _ALT_ID, 'name': 'XQAL TEST', 'lat': 43.45, 'lon': 3.62,
-                                                                           'elev': 50, 'hardLen': hard_m}]})
+                                                                           'elev': 50, 'hardLen': hard_m}, *more_ads]})
     wait_quote(c)
     to_step(c, 0)
     c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
@@ -8893,3 +8894,41 @@ def f285(c):
     legs = norm(tx('frame/aerodb/catalogue.js', "no-legs'", c.lang, after='READ_REASONS = {'))
     c.ok(f'({legs} ×4)' in note, note, 'the reason by the catalogue, with its count')
     c.ok('<b>' not in note and 'every procedure' not in note, note, 'a reason code outside the form dropped; never the launcher\'s English sentence')
+
+
+# SOG-0528: an invented arrival far from the alternate XQAL (43.45, 3.62): about 420 NM, beyond the 300 NM of an alternate
+_FAR_AD = {'icao': 'XQNR', 'name': 'XQNR TEST', 'lat': 50.5, 'lon': 3.1, 'elev': 40, 'hardLen': 2500}
+
+
+@case('F287', 'Flight step: the alternate already chosen is judged again when the arrival changes — beyond 300 NM of the new arrival (the '
+      'rule of the proposal), its line says « ne convient pas » with the reason « distance »; the alternate stays in the flight, marked, '
+      'never removed; back to the first arrival, the line is good again', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=True, langs4=True,
+      rule='SOG-0528 (the user, 19 Nov: « LFMT - LFRN - LFFI, c\'est valable. si on change lfrn par lfqq, lffi n\'est pas annoncé comme '
+      'non valable »); the relay: every change of departure, arrival, aircraft or time judges the chosen alternates again with the existing '
+      'rules; one no longer suitable is MARKED with its reason, never removed in silence; invented aerodrome XQAL, sheet and TAF')
+def f287(c):
+    T = 'modules/fuel/module.js'
+    line = f'{FUEL} [data-altnchk] .fu-altnline'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 844})
+        _altn_open(c, 2500, 2, 'VFR', 5000, more_ads=[_FAR_AD])  # LFRS → LFML, alternate XQAL about 70 NM from LFML: good
+        c.until(f"document.querySelector('{line}')?.dataset.state === 'ok'", timeout=20000, what=f'{w} px: the line good with LFML')
+        c.eq(c.count(f'{FUEL} [data-altnchk] li[data-crit=dist]'), 0, 'within the bounds: nothing said of the distance', what='in range')
+        # the arrival changed to XQNR (invented, about 420 NM from XQAL): the alternate is judged again
+        c.page.fill(f'{FUEL} input[data-k="arr"]', 'XQNR')
+        c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
+        c.until(f"document.querySelector('{line}')?.dataset.state === 'err'", timeout=20000, what=f'{w} px: the line « ne convient pas »')
+        c.eq(c.js(f"document.querySelector('{FUEL} [data-altnchk] li[data-crit=dist]')?.dataset.state"), 'err',
+             'the reason: the distance from the new arrival', what='dist')
+        head = norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
+        c.ok(norm(tx(T, 'dist', c.lang, after='altnK: {')) in head, head, 'the sentence names the distance')
+        d = cf_doc(c, lambda d: ((d.get('route') or {}).get('arr') == 'XQNR'), 'the arrival written')
+        c.eq((d.get('route') or {}).get('altn'), _ALT_ID, 'the alternate stays in the flight, marked, never removed', what='kept')
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.js(_F281_NOTES_OFF)
+        c.shot(f'F287_{c.design}_{w}_{c.lang}_far.png')
+        # back to LFML: good again
+        c.page.fill(f'{FUEL} input[data-k="arr"]', 'LFML')
+        c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
+        c.until(f"document.querySelector('{line}')?.dataset.state === 'ok'", timeout=20000, what=f'{w} px: good again with LFML')
