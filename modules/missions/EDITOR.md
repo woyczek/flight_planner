@@ -1468,8 +1468,8 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   envoyé à l'ouverture » shows for a drawer that sends one, or when the flight judges messages.
 - **The control** (Affectation): for every kind of key the reader gives, `MS.notJudgedYet(k) === !(hand || time || follows(k))` (case N155) — the pilot's
   screen and « ＋ Tiroir » never diverge. It went RED on the landing when Affectation's 3c2e2abba made `follows` accept it (N155 named `landing`, twice), and on
-  the overflight when 4c9b10ef3 did (N155 names `overflight` and `overflight+obj`), and on the hover when 9cbbf9e11 did (`hover`, `hover+obj`); each time the same lot makes `notJudgedYet` of `frame/lib/mission.js` say
-  false for it (see § 7 duoquinquagies, « The landing is judged », « The overflight is judged » and « The hover is judged »).
+  the overflight when 4c9b10ef3 did (N155 names `overflight` and `overflight+obj`), on the hover when 9cbbf9e11 did (`hover`, `hover+obj`) and on the sequence when 72d7ef7dc did (`sequence`); each time the same lot makes `notJudgedYet` of `frame/lib/mission.js` say
+  false for it (see § 7 duoquinquagies, « The landing is judged », « The overflight is judged », « The hover is judged » and « The sequence is judged »).
 
 ### 7 duoquinquagies. The 32 bricks of the 1.1 conditions in the catalogue (18 Nov 2026; SOG-0500 (d); noreg N156, N138, N139)
 
@@ -1524,6 +1524,18 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   at least, like the landing (`landingGapMin`). N155 now covers the THREE judged conditions — landing, overflight, hover — each on a point, on a still object and on a
   moving object, so that the copy never diverges from `follows`; it was RED for the hover before this lot (`THE control: ['hover', 'hover+obj']`). Only the sequence and
   the event stay not judged. Captures `P13d_390_stationnaire.png`, `P13d_1280_stationnaire.png` (the sheet of a hover).
+
+- **The sequence is judged** (SOG-0500, after Affectation's 72d7ef7dc; noreg N155, N162, N139, N156). `follows` accepts a condition `sequence` of one to ten steps
+  (`SEQ_MAX`), each a landing, an overflight or a hover that `follows` accepts as a condition alone, and with NO overflight to confirm (a « Demander la suite » in the
+  middle of a sequence is not judged, by prudence); a sequence in a sequence, an event as a step, none or eleven steps are not. `conditionJudged` of `frame/lib/mission.js`
+  gains the sequence by calling itself on each step with the step's kind (still one rule per kind, commented « suit follows », no import of `drawers.js`; `confirm` of the
+  reader's overflight rule is true unless the file writes `require_confirmation: false`), so `notJudgedYet` says false in exactly those conditions. « ＋ Tiroir » offers
+  « Une suite d'étapes » (its flag comes from `follows` applied to the sequence the workshop writes by default: one hover on the first point) and the catalogue's one
+  sequence brick (55 offered instead of 54): the brick keeps the confirmation words of its two steps, so the drawer born of it still says « s'ouvre au geste ou à
+  l'heure de repli » until they are cleared — the offer follows the KEY, the mention follows the file. N155 covers the sequence (a file's sequences B to J: judged, a moving
+  step, a word, an overflight to confirm or not, ten steps, eleven, none, a gap under one fix period; and eleven keys built by hand that the reader never gives); it was RED
+  before this lot (`THE control: ['sequence']`). N162 plays the variants of a sequence and the sheet of a judged one at 390 and 1280. Only the event stays not judged.
+  Captures `P13f_390_suite.png`, `P13f_1280_suite.png` (the sheet of a sequence of steps, without the « not judged » mention).
 
 - **A moving object says « (mobile : non jugé) »** (SOG-0500, the ergonomist's touch-up of 19 Nov; noreg N161). In the sheet of a drawer whose judged condition (landing,
   overflight, hover) already follows a MOVING object, the object select used to show the file's value with a « ? » — the mechanism of « the file's value designates
