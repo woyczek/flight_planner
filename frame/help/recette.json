@@ -5509,10 +5509,10 @@
     "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
    },
-   "test": "Recharge la page. Carburant : un vol LFBY → LFST sans route calculée. Attendu : la case 15 du plan de vol porte « DCT », jamais vide ; « Copier pour Eurocontrol » dit quoi faire (« aucune route calculée entre … : calculez-en une ou saisissez-la ») et prévient quand le direct est long. Le calcul de route lui-même (réseau bas, repli refusé) n'est PAS encore livré (AeroDB) : ne repasse pas le plan à l'IFPS pour ça.",
+   "test": "RELANCE le lanceur (sur a357bed08 ou plus récent), puis recharge la page. Carburant : BE9L, LFBY → LFST au FL090 (forcé), calcule la route. Attendu : plus de « calcul impossible » ; si les procédures de LFST exigent plus haut que FL090, le calcul le dit et propose un raccord en direct jugé par la limite des directs, ou rend la route « à examiner » avec chaque règle nommée — jamais une route qu'Eurocontrol refusera présentée comme bonne ; la case 15 n'est jamais vide (« DCT » au pire). Passe ce plan à l'IFPS et colle sa réponse. Le niveau « Auto » (le moteur choisit un niveau valide) n'est pas encore livré : il viendra de Features SOG.",
    "since": "2026-11-19",
    "state": "todo",
-   "delivered": "2026-11-19T21:17:30Z"
+   "delivered": "2026-11-19T22:19:13Z"
   }
  ],
  "decisions": []
