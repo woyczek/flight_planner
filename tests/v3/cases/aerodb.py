@@ -7104,7 +7104,9 @@ def k144(c):
         'def compute(job, args, ctx):\n'
         '    time.sleep(float(args.get("sleep", 0)))\n'
         '    return {"ok": True, "alternatives": []}\n'
-        'VERBS = {("route", "compute"): (compute, lambda a: dict(a) if isinstance(a, dict) else None)}\n')
+        'def levels(job, args, ctx):\n'
+        '    return {"ok": True, "levels": []}\n'
+        'VERBS = {("route", "compute"): (compute, lambda a: dict(a) if isinstance(a, dict) else None), ("route", "levels"): (levels, lambda a: dict(a) if isinstance(a, dict) else None)}\n')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         root = Path(td) / 'root'
         shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
@@ -7168,6 +7170,12 @@ def k144(c):
             until(g.get('job'))
             st, alone = start(('route', 'compute'), {'action': 'check'})
             c.eq((st, until(alone.get('job')).get('state')), (200, 'done'), 'alone, as before', what='alone')
+            st, g2 = start(('ground', 'fetch'), {'icao': 'LFBD'})
+            st2, lv = start(('route', 'levels'), {'levels': [90]})
+            vl = until(lv.get('job'))
+            c.eq((st, st2, vl.get('state'), view(g2.get('job')).get('state')), (200, 200, 'done', 'running'), 'route/levels starts beside the ground read like route/compute (SOG-0529: it was 409 « a job is already running ») and answers while the read goes on', what='levels beside')
+            call('POST', '/__setup/regen/job/cancel', {'id': g2.get('job')})
+            until(g2.get('job'))
         finally:
             p.terminate()
             try:
@@ -18596,4 +18604,78 @@ def k405(c):
     c.eq((lim[90][1], lim[150][0]), (['REVUE'], []), 'a REVUE, never an ERREUR (the cell had a struck part); at FL150 the STAR is flown and the limit says nothing', what='level')
 
 
+@case('K406', 'Route engine and launcher, SOG-0529 (the level « Auto » of Carburant): `route/levels` gives, in ONE call, the head route at each level asked (1 to 12, in the order of the caller) — { fl, ok, valid, connector, reason, distance_nm, route, errors, states } — and stops at the first valid level when `first_valid`; a level whose arrival needs a direct connector that the RAD refuses is NOT valid (and says why), a level that flies a published arrival is valid with `connector: procedure`',
+      'K', static=True,
+      rule='SOG-0529 (the relay: « « Auto » ne retient qu\'un niveau où une route VALIDE existe » ; the list in one call granted, `levels` <= 12, `first_valid`, `connector`, `reason`; the budget of states per level is the one of the head route). Measured on the base of the workstation (LFBY → LFST, 238 kt): FL090 `valid: false`, `connector: direct`, « raccord direct de 64,2 NM à l\'arrivée au-delà de la limite de 0 NM du RAD (LF_LIM_AD) » ; FL120, FL150, FL170 valid, `connector: procedure`, 480,1 NM, 43 states each; four levels in 4,4 s. The bench: the invented base of K405 (a STAR whose first point needs 12 000 ft) and a rule `ZZ_LIM_AD` (0 NM for the aerodrome).')
+def k406(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    route_verbs = RJ.REGISTRY[('route', 'levels')]
+    pts = {'A0': (50.0, 0.6), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'S1': (50.0, 11.6)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
+    ways = [{'route': 'UL1', 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': 5000, 'upper': 46000} for a, b in zip(['A0', 'P1', 'P2', 'P3'], ['P1', 'P2', 'P3', 'P4'])]
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    star = {'icao': 'ZZBB', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR', 'name': 'IAF1A', 'id': 'ZZBB.STAR.IAF1A', 'runways': ['09'], 'points': [
+        {'id': 'P4', 'lat': pts['P4'][0], 'lon': pts['P4'][1], 'alt': {'type': 'min', 'ft': 12000}}, {'id': 'S1', 'lat': pts['S1'][0], 'lon': pts['S1'][1], 'alt': {'type': 'at', 'ft': 3000}}]}]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(folder)
+        for k, v in files.items():
+            with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        os.makedirs(os.path.join(data, 'proc', 'manual'))
+        with open(os.path.join(data, 'proc', 'manual', 'ZZBB.json'), 'w', encoding='utf-8') as f:
+            json.dump(star, f)
+        os.makedirs(os.path.join(data, 'route'))
+        sheets = RF.rad_sheets()
+        for name, rows in sheets:
+            if name == 'Annex 3A Conditions':
+                rows.append(['', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', '1. ZZ** ARR/DEP DCT = 50NM EXC a. (ZZBB) ARR/DEP DCT = 0NM (SID/STAR)'] + [''] * 11)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, sheets)
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        template = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 90, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False})
+        both = P.levels(template, [90, 150, 170], data, rad, None, first_valid=False)
+        first = P.levels(template, [90, 150, 170], data, rad, None, first_valid=True)
+        order = P.levels(template, [150, 90], data, rad, None, first_valid=True)
+        cancelled = P.levels(template, [90, 150, 170], data, rad, None, stop=lambda: True)
+        ticks = []
 
+        def slow_clock():
+            ticks.append(1)
+            return 0 if len(ticks) <= 2 else 400      # begin and the test before the first level: 0 s ; the test before the second level: 400 s (budget 300 s)
+        timed = P.levels(template, [90, 150, 170], data, rad, None, clock=slow_clock)
+        seen = []
+
+        def stop_after_one():
+            seen.append(1)
+            return len(seen) > 1      # false before the first level, true before the second
+        flag = P.levels(template, [90, 150, 170], data, rad, None, stop=stop_after_one)
+    by = {r['fl']: r for r in both['levels']}
+    c.eq(([r['fl'] for r in cancelled['levels']], cancelled['stopped'], cancelled['asked']), ([], 'cancelled', 3), 'the stop of the launcher (`job.cancelled`) is tested BEFORE each level: already true, no level is computed, `stopped: cancelled`, `asked` says three were asked (a cancelled or released job no longer holds the solver lock for the levels left)', what='cancelled')
+    c.eq(([r['fl'] for r in timed['levels']], timed['stopped'], timed['asked'], P.LEVELS_BUDGET_S), ([90], 'time', 3, 300), 'the time of the WHOLE call is bounded (300 s, tested before each level): over it after the first level, one level is answered, `stopped: time`, the others are not computed (`asked` 3)', what='time')
+    c.eq(([r['fl'] for r in flag['levels']], flag['stopped']), ([90], 'cancelled'), 'a cancellation that comes during a level stops before the next one: the levels already computed are given back', what='cancel between')
+    from regen_jobs import READ_ONLY, SIDE
+    c.ok(('route', 'levels') in READ_ONLY and ('route', 'levels') in SIDE, 'READ_ONLY: ' + str(('route', 'levels') in READ_ONLY) + ' SIDE: ' + str(('route', 'levels') in SIDE), 'route/levels is declared like route/compute: a job that only reads (its view does not replace the last job that WROTE) and a SIDE job (it starts beside ground/fetch, no 409) — SOG-0206 as for the computation')
+    c.eq((by[90]['ok'], by[90]['valid'], by[90]['connector']), (True, False, 'direct'), 'FL090: a route is found (the connector of simulation) but it is NOT valid: the arrival is a direct connector while a published STAR exists (`connector: direct`)', what='fl90')
+    c.ok('limite de 0 NM du RAD (ZZ_LIM_AD)' in by[90]['reason'] and 'jamais une route valide' in by[90]['reason'], by[90]['reason'], 'and `reason` says it in one line, with the rule: the screen can show « à FL090 : raccord direct refusé »')
+    c.eq((by[150]['ok'], by[150]['valid'], by[150]['connector'], by[150]['reason']), (True, True, 'procedure', 'route valide'), 'FL150: the published arrival is flown: valid, `connector: procedure`', what='fl150')
+    c.eq((both['first_valid'], both['stopped'], [r['fl'] for r in both['levels']], both['asked']), (150, 'end', [90, 150, 170], 3), 'without `first_valid` all the levels are answered, in the order asked, and the first valid one is named (150)', what='all')
+    c.eq((first['first_valid'], first['stopped'], [r['fl'] for r in first['levels']]), (150, 'first-valid', [90, 150]), 'with `first_valid` the calculation stops at the first valid level: FL170 is not computed', what='first_valid')
+    c.eq(([r['fl'] for r in order['levels']], order['first_valid']), ([150], 150), 'the order is the caller\'s: asked [150, 90], the first level is valid: one level computed', what='order')
+    c.ok(all(isinstance(r['states'], int) and r['states'] <= P.HEAD_STATES and not r['interrupted'] for r in both['levels']), str([r['states'] for r in both['levels']]), 'each level is counted in states (the budget of the head route), none interrupted')
+    check = route_verbs[1]
+    good = {'adep': 'ZZAA', 'adest': 'ZZBB', 'levels': [90, 150], 'first_valid': True, 'speed_kt': 238}
+    c.eq((check(good) is not None, check(dict(good, levels=list(range(100, 113)))) is None, check(dict(good, levels=[])) is None, check(dict(good, levels=[9])) is None, check(dict(good, levels=[True])) is None, check(dict(good, levels='350')) is None,
+          check(dict(good, fl=350)) is None, check(dict(good, first_valid='yes')) is None, check({'adep': 'ZZAA', 'adest': 'ZZBB'}) is None, check(dict(good, zzz=1)) is None),
+         (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')

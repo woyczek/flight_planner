@@ -131,6 +131,55 @@ def _compute_fresh(job, args, ctx):
     return {'ok': True, 'plan': res, 'rad': {'title': rad.get('title'), 'start': rad.get('start')} if rad else None, 'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None}
 
 
+# ----------------------------------------------------------------------------------------------------------------------- route/levels
+LEVEL_KEYS = ('levels', 'first_valid')
+
+
+def _level_args(a, level):
+    """Les arguments d'UN niveau : la forme de l'écran de Carburant (celle de route/compute), sans `levels` ni `first_valid`, avec `fl` et sans alternatives ni propositions."""
+    rest = {k: v for k, v in a.items() if k not in LEVEL_KEYS}
+    return dict(rest, action='compute', fl=level, alternatives=False, proposals=False)
+
+
+def check_levels(a):
+    """Contrôle d'arguments (→ 400 si None) : les arguments de route/compute (forme de l'écran, jamais `fl` ni `route`) + `levels` : [1 à 12 entiers de 10 à 660] et `first_valid` : booléen."""
+    try:
+        from route_engine import plan, view
+        if not isinstance(a, dict) or 'levels' not in a or 'fl' in a or a.get('action') not in (None, 'levels'):
+            return None
+        wanted = plan.check_levels(a['levels'])
+        if 'first_valid' in a and not isinstance(a['first_valid'], bool):
+            return None
+        rest = {k: v for k, v in a.items() if k != 'action'}
+        plan.check_request(view.to_request(_level_args(rest, wanted[0])))
+        return dict(rest, levels=wanted)
+    except ValueError:
+        return None
+
+
+def levels(job, args, ctx):
+    """route/levels : le calcul de tête à chaque niveau demandé, en un appel (voir route_engine/plan.py levels) : { ok: True, levels: [{ fl, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }], first_valid, stopped, asked }
+    ou { ok: False, reason: 'no-rad' | 'invalid' | 'failed', message } ; `levels` : de 1 à 12 entiers, dans l'ordre des préférences de l'appelant ; `first_valid` : on s'arrête au premier niveau valide (une route trouvée, un contrôle sans erreur, aucune limite de raccord dépassée)."""
+    from route_engine import plan, view
+    data = ctx['data']
+    rad_file, fra_file = _paths(data)
+    if regen_jobs.merge_pending(ctx):
+        return {'ok': False, 'reason': 'failed', 'message': 'a merge is pending in data/ (interrupted synchronisation): the data may be incomplete; "Synchronise" settles it'}
+    if not os.path.isfile(rad_file):
+        return {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'}
+    wanted = args['levels']
+    job.step('route : niveaux', 0, len(wanted), 'calcul')
+    try:
+        template = view.to_request(_level_args(args, wanted[0]))
+        res = plan.levels(template, wanted, data, rad_file, fra_file if os.path.isfile(fra_file) else None, bool(args.get('first_valid')), stop=job.cancelled)
+    except ValueError as e:
+        return {'ok': False, 'reason': 'invalid', 'message': regen_jobs.clean_error(str(e), ctx)[:300]}
+    except (OSError, KeyError, TypeError, IndexError, ZeroDivisionError, AttributeError, RecursionError) as e:
+        return {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
+    job.step('route : niveaux', len(res['levels']), len(wanted), 'calcul')
+    return dict(res, ok=True)
+
+
 # ----------------------------------------------------------------------------------------------------------------------- route/import-rad
 def check_import(a):
     """Contrôle d'arguments (→ 400 si None) : { dry?: booléen (vrai par défaut), books?: [{ name, size }] } et rien d'autre."""
@@ -283,4 +332,4 @@ def fra_points(job, args, ctx):
     return {'ok': True, 'cycle': book['start'], 'count': len(points), '_points': points}
 
 
-VERBS = {('route', 'compute'): (compute, check_compute), ('route', 'import-rad'): (import_rad, check_import), ('route', 'fra-points'): (fra_points, check_fra_points)}
+VERBS = {('route', 'compute'): (compute, check_compute), ('route', 'levels'): (levels, check_levels), ('route', 'import-rad'): (import_rad, check_import), ('route', 'fra-points'): (fra_points, check_fra_points)}

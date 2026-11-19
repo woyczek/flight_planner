@@ -239,7 +239,7 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
-READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('base', 'last'), ('aircraft', 'registry'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output'), ('proc', 'lnm'), ('signalement', 'lister'), ('signalement', 'detail')}
+READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('base', 'last'), ('aircraft', 'registry'), ('route', 'compute'), ('route', 'levels'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output'), ('proc', 'lnm'), ('signalement', 'lister'), ('signalement', 'detail')}
 # SOG-0206 : la page lit seule, en fond, la couche sol d'un terrain (ground/fetch, ~30 s) dès qu'elle a lu ses procédures ; le contrôle de route que le pilote lance à ce moment-là
 # était refusé (409 « a job is already running ») et l'écran disait « n'a pas répondu ». Un travail de SIDE (le calcul et le contrôle de route, qui ne font que lire la base et les
 # procédures) part donc à côté d'un travail de BACKGROUND (qui n'écrit que proc/ground/, jamais ce que le calcul lit) : un seul à côté à la fois, jamais à côté d'un autre travail.
@@ -248,7 +248,7 @@ READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('base
 PARALLEL = {('base', 'status'), ('base', 'cycle'), ('base', 'coverage'), ('base', 'last'), ('aircraft', 'registry'), ('route', 'fra-points'), ('ground', 'state'), ('pdf', 'status'), ('signalement', 'lister'), ('signalement', 'detail')}
 # SOG-0410 : la liste « Mes signalements » et la fiche d'un signalement (signalement/lister, /detail) sont des LECTURES brèves ; elles partent à côté d'un travail qui écrit (une reconstruction de la base ne rend pas la liste muette : 409). noter et commenter ÉCRIVENT : ils restent seuls.
 BACKGROUND = {('ground', 'fetch')}
-SIDE = {('route', 'compute')}
+SIDE = {('route', 'compute'), ('route', 'levels')}      # SOG-0529 : route/levels lit comme route/compute (relecture de Sécurisation : ni « dernier travail qui a écrit », ni 409 à côté de ground/fetch)
 
 
 def clean_error(text, ctx=None):

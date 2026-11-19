@@ -590,3 +590,76 @@ def compute(request, data, rad_file, fra_file):
     finally:
         engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.STATE_CEIL = None
         engine.SEARCH_CAP_S = 120.0
+
+
+MAX_LEVELS = 12      # SOG-0529 (le niveau « Auto » de Carburant) : au plus douze niveaux par appel
+
+
+def check_levels(levels):
+    """La liste des niveaux d'un appel `levels` : [entiers de 10 à 660], 1 à MAX_LEVELS, sans doublon (l'ordre est celui de l'appelant : il est celui de ses préférences) ; ValueError sinon."""
+    if not isinstance(levels, list) or not 1 <= len(levels) <= MAX_LEVELS:
+        raise ValueError(f'levels : une liste de 1 à {MAX_LEVELS} niveaux')
+    out = []
+    for x in levels:
+        if isinstance(x, bool) or not isinstance(x, int) or not 10 <= x <= 660:
+            raise ValueError('levels : des entiers de 10 à 660 (FL010 à FL660)')
+        if x not in out:
+            out.append(x)
+    return out
+
+
+def level_summary(level, res):
+    """Une ligne par niveau, pour l'appelant (SOG-0529) : { fl, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }.
+    `valid` : une route trouvée, un contrôle SANS erreur et aucune limite de raccord du RAD dépassée (un raccord direct que l'IFPS refusera n'est JAMAIS une route valide : `reason` le dit) ;
+    `connector` : 'procedure' (chaque extrémité qui a des procédures publiées en utilise une), 'direct' (une extrémité a des procédures publiées mais est volée par un raccord DCT : aucune n'est volable à ce niveau) ou 'none' (aucune extrémité n'a de procédure publiée : le raccord direct est le seul)."""
+    p = res['primary']
+    errors = [i['text'] for i in p.get('issues') or [] if i['level'] == 'ERREUR']
+    exceeded = [x for x in ((p.get('dct_limits') or {}).get('checked') or []) if x.get('state') == 'exceeded']
+    kinds = {l.get('kind') for l in p.get('legs') or []}
+    coverage = p.get('procedure_coverage') or {}
+    ends = [(p.get('dep'), 'SID' in kinds), (p.get('arr'), bool(kinds & {'STAR', 'APPROACH_LINK'}))]
+    have = [(ad, used) for ad, used in ends if ad and any(k.endswith('_total') and v for k, v in (coverage.get(ad) or {}).items())]
+    connector = 'none' if not have else 'procedure' if all(used for _ad, used in have) else 'direct'
+    ok = bool(p.get('ok'))
+    valid = ok and not errors and not exceeded and not res.get('interrupted')
+    if res.get('interrupted'):
+        reason = 'calcul interrompu : le poste est trop lent'
+    elif not ok:
+        reason = str(p.get('error') or p.get('status') or 'aucune route').split('. ')[0][:200]
+    elif exceeded:
+        x = exceeded[0]
+        reason = f"raccord direct de {x['leg_nm']:g} NM à {'l’arrivée' if x['end'] == 'arr' else 'au départ'} au-delà de la limite de {x['limit_nm']:g} NM du RAD ({x['rule']}) : à examiner, jamais une route valide"
+    elif errors:
+        reason = errors[0][:200]
+    else:
+        reason = 'route valide'
+    return {'fl': level, 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
+            'errors': [e[:160] for e in errors[:3]], 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}
+
+
+LEVELS_BUDGET_S = 300      # SOG-0529 (relecture de Sécurisation) : le temps de l'appel ENTIER (douze niveaux de 120 s au pire tiendraient le verrou des calculs pendant 24 minutes) ; testé AVANT chaque niveau
+
+
+def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=None, budget_s=LEVELS_BUDGET_S, clock=time.monotonic):
+    """SOG-0529 : le calcul d'UNE demande à chaque niveau de `levels` (dans l'ordre de l'appelant), en un appel : { levels: [level_summary], first_valid: le premier niveau VALIDE ou None, stopped: 'first-valid' | 'end' | 'cancelled' | 'time', asked }.
+    Chaque niveau est la route de TÊTE seule (ni alternatives ni propositions) avec le budget d'états de la tête (HEAD_STATES : `compute` le pose à chaque appel) ; `first_valid` : on s'arrête au premier niveau valide.
+    `stop` (le `job.cancelled` du lanceur) et `budget_s` (le temps de l'appel entier) sont testés AVANT chaque niveau : l'arrêt rend les niveaux déjà calculés (`stopped` 'cancelled' ou 'time' ; `asked` dit combien étaient demandés)."""
+    wanted = check_levels(levels)
+    out, first, why = [], None, 'end'
+    begin = clock()
+    for level in wanted:
+        if stop is not None and stop():
+            why = 'cancelled'
+            break
+        if clock() - begin >= budget_s:
+            why = 'time'
+            break
+        res = compute(dict(template, fl=level, alternatives=False), data, rad_file, fra_file)
+        row = level_summary(level, res)
+        out.append(row)
+        if row['valid'] and first is None:
+            first = level
+            if first_valid:
+                why = 'first-valid'
+                break
+    return {'levels': out, 'first_valid': first, 'stopped': why, 'asked': len(wanted)}
