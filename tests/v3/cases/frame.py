@@ -5120,7 +5120,7 @@ def a252(c):
 
 @case('A253', 'The Signaler page: typing touches only memory — no reload of the device, no write per character, the list is not redrawn; the draft is written 800 ms after the last key, at departure, and found again after a reload (SOG-0409); phone too', 'A',
       tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=False,
-      rule='SOG-0409 (the user, 14 Nov 2026: « que fait la page bugs pour être aussi peu réactive ? un refresh à chaque caractère ?? »; measured: 200 characters = 3 800 IndexedDB reads, 200 writes of device/signaler.json — the draft lives under device/ and the watcher of app.js ran loadDevice() at each character; 531 ms long task on a phone-speed CPU): a key press changes the memory, the two counters and the Send button, nothing else')
+      rule='SOG-0409 (a report of 14 Nov 2026: the Signaler page was slow to type in; measured: 200 characters = 3 800 IndexedDB reads, 200 writes of device/signaler.json — the draft lives under device/ and the watcher of app.js ran loadDevice() at each character; 531 ms long task on a phone-speed CPU): a key press changes the memory, the two counters and the Send button, nothing else')
 def a253(c):
     c.open('signaler', docs=LEVEL3)
     c.until("!!document.querySelector('[data-form]')", timeout=20000, what='the form')
@@ -10594,7 +10594,7 @@ def _sg_roadmap(reports=None):
 
 
 _SG_HOSTILE = 'SIG-1000000004'
-_SG_SLOW = 'SIG-02d3670a2b'
+_SG_SLOW = 'SIG-1000000005'
 
 
 def _sg_reports53():
@@ -10607,9 +10607,9 @@ def _sg_reports53():
         items.append({'id': i, 'kind': kind, 'title': title, 'text': text, 'screen': screen, 'ctx': {'lang': 'fr', 'design': 'standard', 'size': 'phone', 'version': '0721a0c'},
                       'at': f'2026-11-{18 - n // 4:02d}T{10 + n % 4:02d}:38:00Z', 'state': 'new', 'gravity': g, 'frequency': f, 'comments': [], **kw})
     add('SIG-1000000001', 'regression', 'Islande : la récupération Avians échoue, pas de repli', 'Le serveur ne répond pas.', 'data', 'blocking', 'always', fiche='SOG-0368', state='fiche')
-    add(_SG_SLOW, 'bug', 'bugs : lenteur', 'que fait la page « bugs » pour être aussi peu réactive ? des tâches en background ? je tape bien trop vite. un refresh à chaque caractère ??',
+    add(_SG_SLOW, 'bug', 'Recherche : la liste est lente', 'Quand je tape un mot dans la recherche, la liste met du temps à répondre. Est-ce qu’elle se recharge à chaque lettre ?',
         'signaler', 'annoying', 'often', fiche='SOG-0409', state='fiche', answer='Le brouillon s’écrivait à chaque signe.',
-        comments=[{'id': 'COM-00000000a1', 'at': '2026-11-17T15:20:00Z', 'text': 'C’est bon. C’était quoi ?'}])
+        comments=[{'id': 'COM-00000000a1', 'at': '2026-11-17T15:20:00Z', 'text': 'Merci, c’est réglé.'}])
     add('SIG-1000000002', 'bug', 'NAT : la lecture du jour échoue en silence', 'Rien ne vient.', 'data', 'annoying', 'rare', fiche='SOG-0447', refused=True)
     add('SIG-1000000003', 'request', 'Évitement des zones : récupérer les NOTAM', 'Une demande.', 'maps', 'minor', 'often')
     add(_SG_HOSTILE, 'bug', '<img src=x onerror="window.__pwn=1">‮evil', '<script>window.__pwn=2</script><img src=x onerror="window.__pwn=3">', 'fuel',
@@ -10753,14 +10753,14 @@ def a267(c):
     c.until("document.querySelectorAll('[data-grp=unrated] li[data-id]').length === 14", what='seven more rows of À classer')
     c.eq(len(st['posts']), n0, '« Voir les n suivants » shows rows already there: no call to the launcher', what='posts')
     # the four states: colour AND words
-    s = c.js("""Object.fromEntries(['SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002'].map(i => { const b = document.querySelector(`[data-mine] li[data-id="${i}"] [data-st]`);
+    s = c.js("""Object.fromEntries(['SIG-1000000003', 'SIG-1000000001', 'SIG-1000000005', 'SIG-1000000002'].map(i => { const b = document.querySelector(`[data-mine] li[data-id="${i}"] [data-st]`);
       return [i, [b.dataset.kind || '', b.textContent.trim(), getComputedStyle(b).color]] }))""")
-    c.eq([s[i][0] for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002')], ['warn', 'accent', 'ok', 'err'], 'no card: yellow; a card being done: blue; a card done: green; refused: red', what='colours')
+    c.eq([s[i][0] for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-1000000005', 'SIG-1000000002')], ['warn', 'accent', 'ok', 'err'], 'no card: yellow; a card being done: blue; a card done: green; refused: red', what='colours')
     c.eq(len({s[i][2] for i in s}), 4, 'four different colours on screen', what='computed colours')
-    c.eq([norm(s[i][1]) for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002')],
+    c.eq([norm(s[i][1]) for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-1000000005', 'SIG-1000000002')],
          [_sgt('stNone', L), _sgt('stCard', L, f='SOG-0368'), _sgt('stDone', L, f='SOG-0409'), _sgt('stRefused', L)], 'and the state in words', what='words')
     row = norm(c.text(f'[data-mine] li[data-id="{_SG_SLOW}"]'))
-    for want in (_sgt('bug', L), 'bugs : lenteur', _sgt('signaler', L, after='scr: {'), _sgt('annoying', L) + ' · ' + _sgt('often', L, after='freqLow')):
+    for want in (_sgt('bug', L), 'Recherche : la liste est lente', _sgt('signaler', L, after='scr: {'), _sgt('annoying', L) + ' · ' + _sgt('often', L, after='freqLow')):
         c.ok(norm(want) in row, row, f'the row says « {want} » (kind, title, screen, priority)')
     c.ok(c.js(f"document.querySelector('[data-mine] li[data-id=\"{_SG_SLOW}\"] a').getAttribute('href')") == f'#signaler?sig={_SG_SLOW}', '', 'a row is a link to the sheet of the report')
     hs = c.js("[...document.querySelectorAll('[data-mine] a.f-sg-row, [data-mine] [data-more], [data-q]')].map(e => e.getBoundingClientRect().height).filter(h => h < 43.5)")
@@ -10793,14 +10793,14 @@ def a268(c):
     c.until("!!document.querySelector('[data-grp=found] li[data-id=\"SIG-1000000003\"]')", timeout=8000, what='the accented title found')
     c.eq(c.js("[...document.querySelectorAll('[data-grp=found] li[data-id=\"SIG-1000000003\"] .f-sg-t mark')].map(m => m.textContent)"), ['Évitement', 'récup'], 'accent- and case-blind, each word marked at the start of a word', what='marks')
     c.eq(c.count('[data-grp=found] li[data-id]'), 1, 'every word must be found', what='rows')
-    # the cards: « lente » finds the report « lenteur » and the card SOG-0409 « … lente à la frappe » (its title in the language of the run: « slow » in English), with its linked report
+    # the cards: « lente » finds the report titled « … est lente » and the card SOG-0409 « … lente à la frappe » (its title in the language of the run: « slow » in English), with its linked report
     c.page.fill('[data-q]', 'lente' if L == 'fr' else 'slow')
     c.until("!!document.querySelector('[data-grp=cards] li[data-card=\"SOG-0409\"]')", timeout=8000, what='the card found')
     card = c.js("(() => { const li = document.querySelector('[data-grp=cards] li[data-card=\"SOG-0409\"]'); return [li.querySelector('a').getAttribute('href'), li.textContent, (li.closest('[data-grp]').querySelector('h3').textContent || '').trim()] })()")
     c.eq(card[0], '#roadmap?fiche=SOG-0409', 'a card found opens in the Roadmap', what='card link')
     c.ok(_sgt('linkedOne', L, n=1) in norm(card[1]) and norm(card[2]).startswith(_sgt('cards', L)), card, 'the « Fiches » group says how many reports are linked to the card')
     if L == 'fr':
-        c.ok(c.count(f'[data-grp=found] li[data-id="{_SG_SLOW}"]') == 1, '', 'the report « bugs : lenteur » is found by the start of « lenteur »')
+        c.ok(c.count(f'[data-grp=found] li[data-id="{_SG_SLOW}"]') == 1, '', 'the report « Recherche : la liste est lente » is found by the start of « lente »')
     # nothing
     c.page.fill('[data-q]', 'lenteur zzz')
     c.until("(document.querySelector('[data-mine] [data-none]')?.textContent || '').includes('zzz')", timeout=8000, what='the empty sentence')
@@ -10837,7 +10837,7 @@ def a269(c):
     c.eq(c.count('[data-form]'), 0, 'the sheet is shown instead of the form', what='form')
     ctx = norm(c.text('[data-ctx]'))
     c.ok('0721a0c' in ctx and _sgt('phone', L, after='size: {') in ctx, ctx, 'the noted context: date, screen, size, design, language, version')
-    c.ok('je tape bien trop vite' in c.text('[data-body]'), c.text('[data-body]'), 'the text of the report')
+    c.ok('je tape un mot dans la recherche' in c.text('[data-body]'), c.text('[data-body]'), 'the text of the report')
     ft = norm(c.text('[data-ftitle]'))
     c.ok('SOG-0409' in ft and ('lente à la frappe' if L == 'fr' else 'slow to type in') in ft, ft, 'the linked card: its id and its title from roadmap.json')
     c.eq(c.attr('[data-open-rm]', 'href'), '#roadmap?fiche=SOG-0409', 'the link to the card in the Roadmap', what='link')
