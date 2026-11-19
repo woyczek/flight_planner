@@ -5460,6 +5460,20 @@
    "recommended": 0
   },
   {
+   "id": "Q-0128",
+   "fiche": "SOG-0525",
+   "app": "maintenance",
+   "question": "Météo GFS : autorises-tu UNE lecture d'essai de la NOAA par la session BUGS SOG, pour connaître dès ce soir la cause des échecs ?",
+   "context": "Aucune mise à jour GFS n'a réussi depuis le 17/11 et la cause n'est gardée nulle part. L'essai : lire la liste des sorties du modèle, une seule requête, rien d'enregistré. Sans essai, le correctif dira la cause à ton prochain rafraîchissement.",
+   "options": [
+    "Oui : une lecture d'essai ce soir",
+    "Non : j'attends le correctif, qui me dira la cause à mon prochain essai"
+   ],
+   "since": "2026-11-19",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
