@@ -12001,3 +12001,30 @@ def n178(c):
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
         ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+@case('N192', 'Missions › a floating note never covers a button of the foot of a mission\'s first page (« Préparer ce vol », « Retour »…): the foot '
+      'is declared to the frame (data-f-foot), the note rises above it, at 390 and 1280',
+      'N', tags=('missions',), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0517 / A354 (the frame, b37ff8030): a sticky foot that is not a .f-bar declares itself with data-f-foot, and the frame puts '
+      'the notes above it; the first page\'s .ms-actions is sticky above the tab bar (decision of the relay with Création, 19 Nov)')
+def n192(c):
+    open_missions(c)
+    c.tap(f'{M} [data-list] [data-id="X-002A"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"X-002A\"] .ms-first > .ms-actions')", what='the first page and its foot')
+    c.ok(c.count(f'{M} .ms-first > .ms-actions[data-f-foot]') == 1, '', 'the foot is declared to the frame')
+    c.js("() => window.SogFrame.notify('Note de passage', 'info', { action: { label: 'Annuler', run() {} } })")  # an action: the note stays
+    c.until("!!document.querySelector('#fNotes .f-note')", what='a note is shown')
+    for w in (390, 1280):
+        # a short window: the first page is longer than it, its foot sticks at the bottom, where the note sits (without data-f-foot the
+        # note covers 4 of its buttons at 390, 3 at 1280)
+        c.page.set_viewport_size({'width': w, 'height': 420})
+        c.js("() => dispatchEvent(new Event('resize'))")
+        c.until(f"""() => {{ const n = document.getElementById('fNotes').getBoundingClientRect(), f = document.querySelector('{M} .ms-first > .ms-actions').getBoundingClientRect();
+                           return n.height > 0 && n.bottom <= f.top + 1 }}""", timeout=4000, what=f'{w} px: the note above the foot')
+        hit = c.js(f"""() => {{ const n = document.getElementById('fNotes').getBoundingClientRect();
+                        return [...document.querySelectorAll('{M} .ms-first > .ms-actions a, {M} .ms-first > .ms-actions button')].filter(x => {{
+                          const r = x.getBoundingClientRect(); return r.width && r.left < n.right && r.right > n.left && r.top < n.bottom && r.bottom > n.top }}).length }}""")
+        c.eq(hit, 0, f'{w} px: the note cuts no button of the foot', what=f'no overlap {w}')
+        c.shot(f'N192_{c.design}_{w}_{c.lang}_note.png')
+    c.check_errors()
