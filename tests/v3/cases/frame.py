@@ -5316,6 +5316,42 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A344', 'Settings: the groups are the frame\u2019s folds (SogFrame.fold) — each carries data-fold = group:<id>, a group opened by hand stays open when the screen is drawn again, one left alone stays folded (SOG-0468 (3))', 'A',
+      langs4=False, screens=False, designs=('standard',), night=False,
+      rule='SOG-0468 (3): frame/settings/groups.js builds the group with fold() and keeps it with wireFolds(); the state kept (the groups opened by hand) is the same as before, the tag data-fold is what is new')
+def a344(c):
+    c.open('fuel')
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens #settings')
+    c.until("document.querySelectorAll('#fView > .f-screen > details.f-group').length >= 2", what='the groups are drawn')
+    ids = lambda: c.js("[...document.querySelectorAll('#fView > .f-screen > details.f-group')].map(g => g.dataset.group)")
+    shut = c.js("[...document.querySelectorAll('#fView > .f-screen > details.f-group')].filter(g => !g.open).map(g => g.dataset.group)")
+    c.ok(len(shut) >= 2, shut, 'at least two groups are folded at the opening (the case opens one, leaves one)')
+    mine, other = shut[0], shut[1]
+    c.js(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{mine}\"]').open = true")
+    c.until(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{mine}\"]').open", what=f'{mine} opened by hand')
+    # the screen drawn again: closed with the gear, opened again
+    c.tap('#fDevice')
+    c.until("location.hash !== '#settings'", what='the gear closes the screen')
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens #settings again')
+    c.until("document.querySelectorAll('#fView > .f-screen > details.f-group').length >= 2", what='the groups are drawn again')
+    c.eq(c.js(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{mine}\"]').open"), True, 'the group opened by hand is still open', what='kept open')
+    c.eq(c.js(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{other}\"]').open"), False, 'the one left alone is still folded', what='kept folded')
+    # closing it by hand forgets it
+    c.js(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{mine}\"]').open = false")
+    c.tap('#fDevice')
+    c.until("location.hash !== '#settings'", what='closed again')
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='opened again')
+    c.until("document.querySelectorAll('#fView > .f-screen > details.f-group').length >= 2", what='drawn once more')
+    c.eq(c.js(f"document.querySelector('#fView > .f-screen > details.f-group[data-group=\"{mine}\"]').open"), False, 'a group closed by hand is not kept open', what='forgotten')
+    # the contract of the frame\u2019s fold: every group carries its key, unique
+    keys = c.js("[...document.querySelectorAll('#fView > .f-screen > details.f-group')].map(g => [g.dataset.group, g.getAttribute('data-fold')])")
+    c.eq(keys, [[g, f'group:{g}'] for g in ids()], 'each group carries data-fold = group:<id>', what='data-fold')
+    c.check_errors()
+
+
 @case('A343', 'Settings › Company, the folds of access.js on SogFrame.text (SOG-0468 (2)): the code proposed from a name, the acronym of an added theme and the value of an added series give what the hand-written folds gave — accents, ligatures, signs outside the lists, a name of 60 signs', 'A',
       tags=('airline',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (2) (a refactor without a change of behaviour): access.js folds a text in four places — catId (only caller: proposeCode, the code proposed from the first word of a name: slug of 24, dashes out, 8 signs), the acronym of an added theme (foldAlnum, then /^[A-Z][A-Z0-9]{1,7}$/), the value of an added series (stripMarks, then the signs outside A-Za-z0-9 _./()- become blanks, 40 signs); the four now come from window.SogFrame.text (no copy, no fallback) and the case plays the three paths through the screen with the expectations of the old code')

@@ -57,6 +57,11 @@
   ];
   const OPEN = new Set(); // groupes ouverts à la main, gardés d'un dessin à l'autre (le temps de la page)
   const WIRED = new WeakSet(); // vues déjà écoutées (toggle, lignes du bloc d'état)
+  /** Le pli du cadre (SogFrame.fold : fold, wireFolds, frame/lib/fold.js), prêt avant le premier écran ; sans repli : s'il manque, le cadre est en panne. */
+  const FD = () => window.SogFrame.fold;
+  /** La clé du pli d'un groupe (data-fold) : « group:<groupe> » ; l'inverse, `groupOf`, rend le groupe d'une clé, '' si ce n'en est pas une. */
+  const foldKey = g => `group:${g}`;
+  const groupOf = key => String(key).startsWith('group:') ? String(key).slice(6) : '';
   /** Nom de la carte d'un morceau de HTML (data-card), '' sans. */
   const keyOf = h => (h.match(/data-card="([\w-]+)"/) || [])[1] || '';
   /** Les cartes à plat au niveau Découverte (lvl 1), sinon rangées sous les titres des groupes, repliés sauf ceux ouverts
@@ -70,7 +75,16 @@
     if (lvl === 1) return top.join('') + ORDER1.flatMap(by).join('');
     const fold = (g, keys) => {
       const inG = keys.flatMap(by);
-      return inG.length ? `<details class="f-group" data-group="${g}"${OPEN.has(g) ? ' open' : ''}><summary><span>${esc(t(T.groups[g]))}</span>${T.groupHint[g] ? `<span class="f-ghint f-muted">${esc(t(T.groupHint[g]))}</span>` : ''}<i class="f-status-dot" data-attn hidden title="${esc(t(T.groupAttn))}"></i></summary>${inG.join('')}</details>` : '';
+      return inG.length ? FD().fold({
+        cls: 'f-group',
+        attrs: {
+          'data-group': g
+        },
+        key: foldKey(g),
+        open: OPEN.has(g),
+        head: `<span>${esc(t(T.groups[g]))}</span>${T.groupHint[g] ? `<span class="f-ghint f-muted">${esc(t(T.groupHint[g]))}</span>` : ''}<i class="f-status-dot" data-attn hidden title="${esc(t(T.groupAttn))}"></i>`,
+        body: inG.join('')
+      }) : '';
     };
     // Administration : trop grosse pour un pli, une LIGNE qui ouvre sa page (`#settings?card=admin`) avec son retour
     const adminRow = by('admin').length ? `<a class="f-group f-grow" data-group="admin" href="#settings?card=admin"><span>${esc(t(T.groups.admin))}</span><span class="f-ghint f-muted">${esc(t(T.groupHint.admin))}</span></a>` : '';
@@ -156,11 +170,12 @@
   function wireGroups(view) {
     if (WIRED.has(view)) return;
     WIRED.add(view);
-    view.addEventListener('toggle', e => {
-      const g = e.target;
-      if (g instanceof HTMLDetailsElement && g.matches('.f-group') && g.isConnected) g.open ? OPEN.add(g.dataset.group) : OPEN.delete(
-        g.dataset.group);
-    }, true);
+    FD().wireFolds(view, (key, open) => {
+      const g = groupOf(key);
+      if (g) open ? OPEN.add(g) : OPEN.delete(g);
+    }, {
+      get: key => OPEN.has(groupOf(key))
+    });
     view.addEventListener('click', e => {
       const b = e.target.closest?.('[data-go^="card:"]'),
         g = b && goCard(view, b.dataset.go)?.closest('details.f-group');
