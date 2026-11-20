@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-20",
-  "tests": 369,
+  "tests": 370,
   "verdicts": 232
  },
  "apps": [
@@ -5513,6 +5513,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T23:43:16Z"
+  },
+  {
+   "id": "SOG-0533",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte porte « F330 » en tête et « /F350 » plus loin",
+    "en": "Fuel: the route is computed at FL350 and the flight plan filed at FL330; the text carries “F330” at the start and “/F350” further on",
+    "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
+    "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante"
+   },
+   "test": "Recharge la page (pas de relance du lanceur). Carburant : calcule une route au FL270, puis change le niveau du vol (FL250) sans recalculer. Attendu : sous la route, « Route calculée pour le FL270 — à recalculer : le vol est au FL250 » et un lien « Recalculer » ; au-dessus de « Copier pour Eurocontrol », « Plan de vol au FL250 sur une route calculée pour le FL270 : recalculez la route avant de copier ». Après « Recalculer », les deux phrases disparaissent et le plan copié porte le même niveau en tête et dans la route.",
+   "since": "2026-11-20",
+   "state": "todo",
+   "delivered": "2026-11-20T17:27:52Z"
   }
  ],
  "decisions": [

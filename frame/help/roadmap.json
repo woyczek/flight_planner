@@ -4,7 +4,7 @@
  "updated": "2026-11-20",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a0182c0",
+  "organisation": "823c03a",
   "fiches": 532,
   "untranslated": 0,
   "priorities": 481,
@@ -1150,11 +1150,12 @@
     {
      "id": "SOG-0533",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte porte « F330 » en tête et « /F350 » plus loin",
      "en": "Fuel: the route is computed at FL350 and the flight plan filed at FL330; the text carries “F330” at the start and “/F350” further on",
      "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
-     "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante"
+     "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante",
+     "test": true
     }
    ]
   },
