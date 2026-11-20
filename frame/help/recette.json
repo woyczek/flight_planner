@@ -5560,6 +5560,22 @@
    "since": "2026-11-20",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0132",
+   "fiche": "SOG-0532",
+   "app": "pilote",
+   "question": "Les voies aériennes de la Belgique : d'où les lire ?",
+   "context": "Mesuré par AeroDB : aucune source de voies belges n'est lue ; les 145 tronçons belges de la base viennent d'un ancien cycle (01/10). Depuis SOG-0532, une route qui traverse la Belgique est dite « non vérifiable » pour la Belgique, nommée, au lieu d'être comptée conforme. Ajouter une source officielle (l'AIP belge) qui serait lue depuis un nouvel hôte est ta décision ; rien n'est ajouté sans ton mot.",
+   "options": [
+    "Je colle les pages de voies de l'AIP belge (ENR 3) dans un signalement depuis l'application ; AeroDB les lit",
+    "Le lanceur lit l'eAIP belge (un hôte de plus, relu par Sécurisation avant)",
+    "Plus tard : la Belgique reste « non vérifiable », dite à l'écran",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-20",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
