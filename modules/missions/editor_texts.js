@@ -694,10 +694,6 @@ export const EDTX = {
   // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir)
   rtEarlier: ['← Plus tôt', '← Earlier', '← Früher', '← Antes'],
   rtLater: ['Plus tard →', 'Later →', 'Später →', 'Después →'],
-  rtTitle: ['Route du départ', 'Route of the departure', 'Route des Abflugs', 'Ruta de la salida'],
-  rtNone: ['Aucun lieu dans la route du départ.', 'No place in the route of the departure.', 'Kein Ort in der Route des Abflugs.',
-    'Ningún lugar en la ruta de la salida.'
-  ],
   rtChipDel: ['Retirer {id} de la route', 'Remove {id} from the route', '{id} aus der Route entfernen', 'Quitar {id} de la ruta'],
   rtNoId: ['Ce lieu n\'a pas d\'identifiant : il n\'entre pas dans une route.',
     'This place has no identifier: it does not enter a route.',
@@ -846,8 +842,7 @@ export const EDTX = {
     'Die Mission trägt bereits so viele Orte dieser Art wie möglich.',
     'La misión ya lleva tantos lugares de este tipo como puede.'
   ],
-  atFlow: ['Déroulé de la mission', 'Unfolding of the mission', 'Ablauf der Mission', 'Desarrollo de la misión'],
-  // SOG-0459, l'atelier voilé : le déroulé ne dit que le départ ; « Dévoiler la mission complète » est sur TOUTE mission ouverte voilée
+  // SOG-0459, l'atelier voilé : « Dévoiler la mission complète » est sur TOUTE mission ouverte voilée (le bouton de l'itinéraire)
   veilBtn: ['Dévoiler la mission complète', 'Reveal the whole mission', 'Die ganze Mission aufdecken', 'Desvelar la misión completa'],
   veilAsk: ['Dévoiler la mission complète ? Vous ne pourrez plus la découvrir en la jouant.',
     'Reveal the whole mission? You will no longer be able to discover it by playing it.',
@@ -875,7 +870,6 @@ export const EDTX = {
     'Die Mission {id} ist nicht mehr im Register: ihr Entwurf kann nicht wieder aufgenommen werden.',
     'La misión {id} ya no está en el registro: su borrador no se puede recuperar.'
   ],
-  atStart: ['Au départ', 'At the departure', 'Beim Abflug', 'A la salida'],
   atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
@@ -886,10 +880,10 @@ export const EDTX = {
   atKey_condition: ['clé : pas encore jugée en vol', 'key: not judged in flight yet', 'Schlüssel: im Flug noch nicht bewertet',
     'llave: aún no juzgada en vuelo'
   ],
+  atItin: ['Itinéraire', 'Itinerary', 'Reiseroute', 'Itinerario'],
+  atOut: ['Hors itinéraire', 'Off the itinerary', 'Außerhalb der Reiseroute', 'Fuera del itinerario'],
+  atMission: ['Mission', 'Mission', 'Mission', 'Misión'],
   atKey_hand: ['clé : geste du pilote', 'key: the pilot\'s gesture', 'Schlüssel: Geste des Piloten', 'llave: gesto del piloto'],
-  atSheet: ['Au départ — visible par le pilote', 'At the departure — visible to the pilot', 'Beim Abflug — für den Piloten sichtbar',
-    'A la salida — visible para el piloto'
-  ],
   atLine_none: ['à remplir', 'to fill in', 'auszufüllen', 'por rellenar'],
   // « Lieux » sans lieu propre : rien à compléter (une mission n'en exige pas), la ligne le dit sans dire « à remplir » (SOG-0500)
   atLine_noplace: ['aucun lieu', 'no place', 'kein Ort', 'ningún lugar'],

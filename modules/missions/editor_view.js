@@ -20,8 +20,8 @@
 // Le contour (troisième brique) : la forme d'une zone dans sa fiche (« Changer en polygone » / « Changer en cercle » : ED.toContour,
 // toRound) ; les sommets du contour choisi sur la carte (ED.moveVertex, insertVertex ; s.ed.mapVertex : le sommet choisi, pour
 // « Retirer ce sommet ») ; « Dessiner sur la carte » depuis la fiche d'un tiroir (s.ed.drawFor : sa lettre — ce qui est posé devient sa
-// clé) ; une ligne des Lieux ouverte est le lieu choisi sur la carte.
-// Tracé (push 3b) : la route du départ en pastilles sous la liste des Lieux (s.ed.route : ses identifiants retouchés, ED.withRoute dans
+// clé) ; une ligne de l'itinéraire ouverte est le lieu choisi sur la carte.
+// Tracé (push 3b) : la route du départ, dans les lignes de l'itinéraire (s.ed.route : ses identifiants retouchés, ED.withRoute dans
 // edDoc) ; l'outil « Tracé » de la carte ajoute le lieu touché à la route choisie — celle du départ, ou la suite de route du tiroir
 // choisi dans le déroulé — et reste en main ; la suite de route du tiroir choisi est dessinée sur la carte.
 // Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
@@ -81,11 +81,10 @@
 // CAT.readCatalog avant d'être écrit. Le même nom remplace le modèle après la question du cadre (l'historique du dépôt des données garde
 // l'ancien) ; le nom d'un modèle de la suite est refusé. Le modèle écrit est relu aussitôt parmi « Vos modèles » (edMine).
 //
-// « Lieux » en tête de la colonne de droite (SOG-0472, décision de l'ergonome) : un cadre (edPlacesCardHtml) où la liste des lieux — les
-// lignes d'edPlacesHtml, un bouton par ligne — a une hauteur fixe et défile en elle-même ; la ligne choisie est marquée et les champs du
-// lieu choisi sont SOUS la liste, dans le même cadre. Carte et liste sont liées : un lieu touché sur la carte choisit sa ligne et la fait
-// venir à l'écran DANS la liste (edPlShow, après chaque dessin : la colonne ne défile pas) ; une ligne touchée choisit le lieu sur la
-// carte. Au téléphone, le cadre se met sous la carte (l'ordre des blocs, en CSS). Les cinq autres groupes de la fiche gardent leur pli.
+// « Itinéraire » dans la colonne de droite (SOG-0482, lot 1) : UNE liste ordonnée (edItinHtml, ED.itinRows) — le départ, les lieux de la route du départ, chaque
+// tiroir suivi, en retrait, du lieu que sa clé cite et de sa suite de route, l'arrivée, puis « Hors itinéraire » ; la fiche de la ligne touchée s'ouvre SOUS elle (un
+// seul pli à la fois) et les flèches de la route sont dans cette fiche. Carte et liste sont liées : un lieu touché sur la carte ouvre sa ligne et la fait venir à
+// l'écran (edPlShow) ; une ligne touchée choisit le lieu sur la carte. La fiche « Mission » est toujours présente, sous la liste. Au téléphone, le cadre se met sous la carte.
 //
 // Moins de texte (SOG-0467, l'avis de l'ergonome qui fait règle : on COUPE plutôt que rapetisser) : une phrase d'explication ne reste à
 // l'écran que dans un état vide, une alerte ou une question ; les autres sont dans l'aide « Comment s'en servir » (missions-editor). Au
@@ -460,19 +459,26 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atgrid{display:flex;flex-direction:column;padding-bottom:6rem}
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
-[data-module="missions"] .ms-atplaces{order:2}
 [data-module="missions"] .ms-atprof{order:1}
-[data-module="missions"] .ms-atflow{order:3}
+[data-module="missions"] .ms-atitin{order:3}
 [data-module="missions"] .ms-atsheet{order:4}
+[data-module="missions"] .ms-atsheet[data-trial]{order:2}
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
 [data-module="missions"] .ms-atplhead>h3{margin:0}
-[data-module="missions"] .ms-pllist{position:relative;max-height:min(36dvh,264px);overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-pllist>.ms-plrow{display:block;padding:0}
-[data-module="missions"] .ms-pllist>.ms-plrow:last-child{border-bottom:0}
+[data-module="missions"] .ms-itinhead{grid-template-columns:auto auto minmax(0,1fr) auto}
+[data-module="missions"] .ms-itin-list{position:relative;margin:0;border:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-list>.ms-plrow{display:block;padding:0;border-bottom:1px solid var(--sog-line,#ddd);scroll-margin-top:calc(var(--f-head-h,57px) + 8px);scroll-margin-bottom:6rem}
+[data-module="missions"] .ms-itin-list>.ms-plrow.ms-itin-in{margin-left:1.25rem;border-left:2px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-list>.ms-atpart{display:block;width:100%;margin:0;border-radius:0;border-top:0;border-right:0;border-bottom:1px solid var(--sog-line,#ddd);text-align:left}
+[data-module="missions"] .ms-itin-out{margin:0;padding:10px 8px 4px;background:var(--sog-surface-2,#eef)}
+[data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-mv{display:flex;flex-wrap:wrap;gap:8px;padding:6px 8px;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-mv>button{min-height:44px}
+[data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
 [data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
-[data-module="missions"] .ms-atplaces [data-edplaces]>.ms-plform{border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-list>.ms-plform{padding:8px 8px 8px 12px;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmap{margin:0 0 12px}
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
@@ -511,7 +517,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow>button[hidden]{display:none}
 [data-module="missions"] .ms-atmaphintrow>button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="missions"] .ms-atflowlist{margin:0}
 [data-module="missions"] .ms-atpart{font:inherit;cursor:pointer;border-left:4px solid var(--sog-muted,#888)}
 [data-module="missions"] .ms-atpart[data-kind=start]{border-left-color:var(--ok,#1e7e34)}
 [data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--sog-accent,#1a73e8);outline-offset:-2px}
@@ -582,8 +587,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-chipmove>p{flex:1 1 100%;margin:0}
 [data-module="missions"] .ms-chipmove>p[hidden]{display:none}
 [data-module="missions"] .ms-chipmove>button{min-height:44px}
-[data-module="missions"] .ms-atflowhead{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-[data-module="missions"] .ms-atflowhead>h3{margin:0}
 [data-module="missions"] .ms-trstate{display:block;font-size:var(--sog-size-s);font-weight:600;color:var(--sog-muted,#666)}
 [data-module="missions"] .ms-trstate:empty{display:none}
 [data-module="missions"] .ms-trstate[data-open="1"]{color:var(--ok,#1e7e34)}
@@ -604,7 +607,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
 [data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
 [data-module="missions"] .ms-atbody .f-row.ms-adrow{position:relative} /* SOG-0465 : la liste des terrains proposés s'y pose */
-[data-module="missions"] .ms-atsheet{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* la fiche choisie monte sous l'en-tête (edSheetShow) */
+[data-module="missions"] .ms-atsheet{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
 [data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
@@ -636,6 +639,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
 [data-module="missions"] .ms-attodo{margin:8px 0 0;max-height:40dvh;overflow:auto}
 [data-module="missions"] .ms-attodo[hidden]{display:none}
+/* SOG-0482 : la fiche d'un lieu s'ouvre sous sa ligne, dans la colonne étroite de l'itinéraire, à toute largeur : la sorte y est toujours sur sa propre rangée */
+[data-module="missions"] .ms-itin-list .f-row>.f-field.ms-plkind{flex:1 1 100%}
 /* SOG-0521 (règle de la page) : au téléphone, la sorte d'un objet est sur sa propre rangée, pleine largeur, quelle que soit la sorte
    (« Station de retardant » n'est plus coupée) ; sur un module large, la rangée d'avant */
 @container (max-width: 849.98px){
@@ -978,7 +983,7 @@ function dms(s, lat, lon) {
 /** Un nombre écrit dans une phrase (« portée 0,3 NM ») : la virgule décimale, sauf en anglais ; le champ, lui, garde sa saisie. */
 const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : String(v ?? '').replace('.', ',');
 
-/** Ce que dit une ligne des Lieux, en texte (SOG-0468) : { title(r), detail(r, i), zk, ok } — UNE source pour la liste (edPlacesHtml) et pour
+/** Ce que dit une ligne des Lieux, en texte (SOG-0468) : { title(r), detail(r, i), zk, ok } — UNE source pour la liste (edItinHtml) et pour
  *  la mise à jour sur place d'edRefresh, qui ne fabrique plus la liste en HTML pour n'en relire que ces deux textes. `rows` : les lignes de
  *  la séance ; `doc` : le document de la séance (qui cite une zone ou un objet comme clé). */
 function edPlaceTexts(s, rows, doc) {
@@ -1016,45 +1021,29 @@ function edPlaceTexts(s, rows, doc) {
   };
 }
 
-/** Les Lieux (la maquette editeur_lieux_*.png ; SOG-0472) : une ligne par lieu dans une liste de hauteur fixe qui défile — toucher une
- *  ligne la choisit (le lieu aussi sur la carte) et ouvre ses champs SOUS la liste ; « + Zone », « + Point tournant », « + Rendez-vous »
- *  (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte ; la route du départ. `listOnly` : les lignes seules
- *  (SOG-0478, un geste en cours). Les lignes non encore retouchées sont lues du document (les rangs sont ceux d'edPlaces). */
-function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
+/** La fiche d'un lieu (ses champs, « OK », « Retirer ») : celle d'aujourd'hui, extraite de la liste des Lieux — l'itinéraire (SOG-0482) la pose SOUS
+ *  la ligne choisie. `said` : { zk, ok } de edPlaceTexts. Tout texte du fichier passe par esc(). */
+function edPlaceFormHtml(s, r, i, {
+  zk,
+  ok
+}) {
   const e = s.ed,
-    rows = e.places || ED.placesOf(doc),
-    badge = {
-      dep: TX.plDep,
-      arr: TX.plArr,
-      target: TX.plTarget,
-      zone: TX.plZone,
-      pt: TX.plPt,
-      rdv: TX.plRdv,
-      object: EDTX.plObject
-    },
-    {
-      zk,
-      ok,
-      detail,
-      title
-    } = edPlaceTexts(s, rows, doc),
-    field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`,
-    form = (r, i) => {
-      const fixed = r.kind === 'dep' || r.kind === 'arr',
-        num = ' inputmode="decimal" maxlength="12"';
-      // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
-      if (r.kind === 'object') {
-        // la règle des sept : le nom, la sorte, la latitude, la longitude, la portée, « trouvé sur la parole du pilote », et UN repli
-        // « Hauteur — facultatif » (la hauteur de détection et l'altitude de l'objet), fermé d'office, qui dit son contenu quand il est rempli
-        const heights = [r.height ? s.tt(EDTX.plHeightIs, {
-            h: dec(s, r.height)
-          }) : '', r.alt ? s.tt(EDTX.plAltIs, {
-            a: dec(s, r.alt)
-          }) : ''].filter(Boolean).join(' · '),
-          // SOG-0521 : une station de retardant ne se « trouve » pas — ni portée, ni « trouvé sur la parole du pilote », ni hauteurs ; ce que
-          // le fichier en porte reste tel quel (rien n'est réécrit tant qu'on n'y touche pas)
-          station = r.okind === 'refill';
-        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
+    field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`;
+  const fixed = r.kind === 'dep' || r.kind === 'arr',
+    num = ' inputmode="decimal" maxlength="12"';
+  // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
+  if (r.kind === 'object') {
+    // la règle des sept : le nom, la sorte, la latitude, la longitude, la portée, « trouvé sur la parole du pilote », et UN repli
+    // « Hauteur — facultatif » (la hauteur de détection et l'altitude de l'objet), fermé d'office, qui dit son contenu quand il est rempli
+    const heights = [r.height ? s.tt(EDTX.plHeightIs, {
+        h: dec(s, r.height)
+      }) : '', r.alt ? s.tt(EDTX.plAltIs, {
+        a: dec(s, r.alt)
+      }) : ''].filter(Boolean).join(' · '),
+      // SOG-0521 : une station de retardant ne se « trouve » pas — ni portée, ni « trouvé sur la parole du pilote », ni hauteurs ; ce que
+      // le fichier en porte reste tel quel (rien n'est réécrit tant qu'on n'y touche pas)
+      station = r.okind === 'refill';
+    return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field ms-plkind"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
         ${station ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
@@ -1062,32 +1051,21 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
-      }
-      // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
-      // sa liste est posée dans la rangée (data-adsug) ; les autres champs du lieu gardent data-k="edplace"
-      // SOG-0506 : un point nommé de la base, à la position de la base, est verrouillé — ses champs de position en lecture seule, la source dite
-      const named = ['pt', 'target', 'rdv'].includes(r.kind),
-        src = edSrcOf(s, r),
-        lock = src ? ' readonly' : '',
-        srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
-        nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
-      return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${nameField}</div>`}
+  }
+  // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
+  // sa liste est posée dans la rangée (data-adsug) ; les autres champs du lieu gardent data-k="edplace"
+  // SOG-0506 : un point nommé de la base, à la position de la base, est verrouillé — ses champs de position en lecture seule, la source dite
+  const named = ['pt', 'target', 'rdv'].includes(r.kind),
+    src = edSrcOf(s, r),
+    lock = src ? ' readonly' : '',
+    srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
+    nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
+  return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${nameField}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
-    },
-    id = e.cadre.id.trim().toUpperCase(),
-    shown = edShown(e, rows); // SOG-0459 : l'atelier voilé ne montre pas les lignes cachées (elles restent à leur rang)
-  // « + Cible » : jamais dans l'atelier voilé (une cible cachée ne doit pas se deviner à son absence)
-  // SOG-0472 : la ligne entière est le bouton qui choisit le lieu (sur la carte aussi) ; la ligne choisie est marquée
-  const on = i => e.placeEdit === i || e.placeEdit < 0 && edMapSel(e) === i,
-    list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${i}"${on(i) ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(title(r))}</b><span class="f-muted">${esc(detail(r, i))}</span></span></button></div>`).join('');
-  if (listOnly) return list; // SOG-0478 : un geste en cours ne remplace que les lignes
-  const open = e.placeEdit >= 0 && rows[e.placeEdit] && shown[e.placeEdit] ? form(rows[e.placeEdit], e.placeEdit) : '';
-  return `<div data-edplaces><div class="ms-pllist" data-pllist>${list}</div>${open}</div>
-    <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
 }
 
 /** La route du départ de la séance : ses identifiants (s.ed.route quand elle a été retouchée, sinon ceux du fichier). */
@@ -1178,20 +1156,6 @@ function edChipsShow(s, where, moved) {
   const [earlier, later] = row.querySelectorAll('button');
   putProp(earlier, 'disabled', !!ends.first);
   putProp(later, 'disabled', !!ends.last);
-}
-
-/** La route du départ en pastilles (SOG-0444, Tracé ; jamais « des identifiants séparés par des virgules »), sous la liste des Lieux :
- *  chaque lieu dit son identifiant (le départ et l'arrivée : le code de leur terrain) et se retire par sa croix ; « Ajouter un
- *  lieu… » en ajoute un à la fin, comme l'outil « Tracé » de la carte. Soixante lieux au plus. */
-function edRouteHtml(s, rows) {
-  const e = s.ed,
-    route = edRoute(e),
-    name = r => r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id,
-    by = new Map(edShown(e, rows).filter(Boolean).map(r => [ED.routeToken(r), r]).filter(x => x[0])),
-    options = [...by].map(([t, r]) => [t, [name(r), r.kind === 'dep' || r.kind === 'arr' ? '' : r.name].filter(Boolean).join(' · ')]);
-  return `<div class="ms-edroute ms-edsub" data-edroute><h4>${esc(s.tt(EDTX.rtTitle))}</h4>${route.length ? '' : `<p class="f-muted">${esc(s.tt(EDTX.rtNone))}</p>`}
-    <div class="ms-chips" data-rtchips>${edChipsHtml(s, 'start', edRouteChips(e, rows))}</div>${edChipMoveHtml(s, 'start', edRouteChips(e, rows))}
-    ${route.length < ED.ROUTE_MAX ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="edroute" data-f="add"><option value=""></option>${options.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}</div>`;
 }
 
 /** L'étape Récit (cinq éléments : résumé, description, objectif principal, objectifs secondaires, charge). */
@@ -1298,50 +1262,132 @@ function edLine(s, doc, k) {
   }) : s.tt(EDTX.atLine_none);
 }
 
-/** Le contenu d'un groupe déplié : le formulaire de son étape (inchangé). Les Lieux ont leur cadre (edPlacesCardHtml). */
+/** Le contenu d'un groupe déplié : le formulaire de son étape (inchangé). L'itinéraire a son cadre (edItinHtml). */
 const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'story' ? edStoryHtml(s) : k === 'risks' ? edRisksHtml(s) : k ===
   'timeline' ? edTimelineHtml(s) : edCadreHtml(s);
 
-/** « Lieux » en tête de la colonne de droite (SOG-0472) : un cadre — sa marque (✓ ou !), son nom, son contenu en une ligne (les mêmes
- *  que ceux d'un groupe : edRefresh les suit), puis les Lieux (edPlacesHtml). */
-function edPlacesCardHtml(s, doc) {
-  const ok = edStepOk(s.ed, doc, 'places');
-  return `<section class="f-card ms-atplaces" data-atplaces data-grp="places"><div class="ms-atplhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(TX.stepPlaces))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span></div><div class="ms-atbody">${edPlacesHtml(s, false, doc)}</div></section>`;
+/** Les lignes de l'itinéraire d'un lieu qui sont ses déplacements (SOG-0482) : sous la ligne choisie d'un lieu de la route du départ ou d'une
+ *  suite de route, au-dessus de sa fiche — « ← Plus tôt » / « Plus tard → » (désactivés aux bouts, les ancres ne comptent pas ; rien pour moins de
+ *  deux lieux libres) et « Retirer … de la route » / « … de la suite ». Les gestes d'aujourd'hui (edchipmove, edroutedel, eddrchipdel), `data-it`
+ *  les adresse à la ligne choisie. Rien pour un autre lieu. */
+function edItinMoveHtml(s, l, rows) {
+  const e = s.ed;
+  if (l.where !== 'start' && l.where !== 'drawer') return '';
+  const start = l.where === 'start',
+    r = start ? null : edDrawers(e).find(x => x.id === l.drawer),
+    row = rows[l.i];
+  if (!start && !r || !row) return '';
+  const text = (row.kind === 'dep' || row.kind === 'arr' ? String(row.name || '').split(' · ')[0] : row.id) || row.id,
+    chips = start ? edRouteChips(e, rows) : edDrawerChips(e, r),
+    ends = edChipEnds(chips, l.n),
+    w = start ? 'start' : 'drawer',
+    attrs = `data-where="${w}" data-it="1"${start ? '' : ` data-dr="${esc(l.drawer)}"`}`,
+    btn = (step, label, off) => `<button type="button" data-do="edchipmove" ${attrs} data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
+  return `<div class="ms-itin-mv" data-chipmove="${w}">${chips.filter(c => !c.fixed).length < 2 ? '' : `${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}`}<button type="button" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: text }))}</button></div>`;
 }
 
-/** La fiche du départ (la partie A du fichier) : les six étapes de l'éditeur en six groupes repliables, un seul déplié à la fois ; chaque
+/** L'itinéraire (SOG-0482, lot 1 ; la maquette : modules/missions/maquette/atelier_itineraire.html) : UNE liste ordonnée — le départ, les lieux de la
+ *  route du départ, chaque tiroir avec en retrait le lieu que sa clé cite et sa suite de route, l'arrivée, puis « Hors itinéraire » (les lieux que
+ *  rien ne cite) — qui REMPLACE les Lieux, le déroulé et la route du départ en pastilles. Choisir une ligne ouvre sa fiche SOUS elle (un lieu : edPlaceFormHtml ;
+ *  un tiroir : edDrawerHtml), une seule à la fois. L'ordre vient de ED.itinRows (pure) ; le voile (SOG-0459) : une ligne cachée n'a pas de ligne, aucun
+ *  tiroir. En bas, jusqu'au lot 3, les boutons d'ajout d'aujourd'hui. Les lignes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
+function edItinHtml(s, doc, run = null) {
+  const e = s.ed,
+    rows = e.places || ED.placesOf(doc),
+    shown = edShown(e, rows),
+    said = edPlaceTexts(s, rows, doc),
+    badge = {
+      dep: TX.plDep,
+      arr: TX.plArr,
+      target: TX.plTarget,
+      zone: TX.plZone,
+      pt: TX.plPt,
+      rdv: TX.plRdv,
+      object: EDTX.plObject
+    },
+    reader = e.veil ? [] : edMission(doc)?.drawers || [],
+    drows = e.veil ? [] : edDrawers(e),
+    route = edRoute(e),
+    lines = ED.itinRows(rows, route, reader.map(d => ({
+      ...(drows.find(r => r.id === d.id) || {}),
+      id: d.id
+    })), {
+      shown: i => !!shown[i],
+      now: id => ED.refNow(id, e.base, e.places)
+    }),
+    ok = edStepOk(e, doc, 'places'),
+    todo = new Set(edDrawersTodo(doc).map(t => t.name)),
+    sel = e.sel || 'start',
+    id = e.cadre.id.trim().toUpperCase(),
+    placeOn = e.placeEdit >= 0 && rows[e.placeEdit] && shown[e.placeEdit] ? e.placeEdit : -1;
+  // la ligne dont la fiche est ouverte : celle que l'auteur a touchée (e.itAt), sinon la première du lieu (choisi sur la carte)
+  let openAt = placeOn < 0 ? -1 : lines.findIndex(l => l.kind === 'place' && l.i === placeOn && l.at === e.itAt);
+  if (openAt < 0 && placeOn >= 0) openAt = lines.findIndex(l => l.kind === 'place' && l.i === placeOn);
+  const mapOn = placeOn < 0 ? edMapSel(e) : -1,
+    mapAt = mapOn < 0 ? -1 : lines.findIndex(l => l.kind === 'place' && l.i === mapOn),
+    firstOf = new Set(),
+    options = [...new Map(rows.map((r, i) => [i, r]).filter(([i, r]) => shown[i] && r && ED.routeToken(r)).map(([, r]) => [ED.routeToken(r),
+      r
+    ]))]
+    .map(([t, r]) => [t, [r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id, r.kind === 'dep' || r.kind ===
+      'arr' ? '' : r.name
+    ].filter(Boolean).join(' · ')]),
+    add = route.length < ED.ROUTE_MAX ? `<label class="f-field ms-itin-add" data-edroute><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="edroute" data-f="add"><option value=""></option>${options.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : '',
+    html = [];
+  let addDone = false,
+    outDone = false;
+  lines.forEach((l, k) => {
+    if (!addDone && !(l.kind === 'place' && (l.where === 'dep' || l.where === 'start'))) {
+      html.push(add);
+      addDone = true;
+    }
+    if (l.where === 'out' && !outDone) {
+      html.push(`<h4 class="ms-itin-out" data-itinout>${esc(s.tt(EDTX.atOut))}</h4>`);
+      outDone = true;
+    }
+    if (l.kind === 'drawer') {
+      const d = reader.find(x => x.id === l.drawer);
+      if (!d) return;
+      html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`);
+      if (sel === d.id && !run) html.push(edDrawerHtml(s, doc));
+      return;
+    }
+    const r = rows[l.i],
+      first = !firstOf.has(l.i);
+    firstOf.add(l.i);
+    html.push(`<div class="ms-plrow${l.in ? ' ms-itin-in' : ''}" data-place="${l.i}" data-kind="${esc(r.kind)}" data-at="${esc(l.at)}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${l.i}" data-at="${esc(l.at)}"${first ? ' data-first="1"' : ''}${k === openAt || k === mapAt ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(said.title(r))}</b><span class="f-muted">${esc(said.detail(r, l.i))}</span></span></button></div>`);
+    if (k === openAt && !run) html.push(edItinMoveHtml(s, l, rows), edPlaceFormHtml(s, r, l.i, said));
+  });
+  if (!addDone) html.push(add);
+  return `<section class="f-card ms-atitin" data-atitin data-atflow data-atplaces data-grp="places"><div class="ms-atplhead ms-itinhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(EDTX.atItin))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span>${e.veil ? `<button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button>` : `<button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button>`}</div>
+    <div class="f-list ms-itin-list" data-edplaces data-pllist>${html.join('')}</div>
+    <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}${!e.veil && reader.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-haspopup="dialog"><b>${esc(s.tt(EDTX.dwAdd))}</b><span class="f-muted">${esc(s.tt(EDTX.dwAddSub))}</span></button>` : ''}</div></section>`;
+}
+
+/** Redessine l'itinéraire SEUL (un déplacement ou un retrait de route : la carte, le profil et les marques suivent par edRefresh) et rend le focus au
+ *  bouton `focusSel` quand il existe encore et n'est pas désactivé — on presse « Plus tard → » plusieurs fois de suite sans le chercher (SOG-0449). */
+function edItinRepaint(s, focusSel = '') {
+  const sec = s.el?.querySelector?.('[data-atitin]');
+  if (!sec || !s.ed) return;
+  const doc = edDoc(s.ed);
+  sec.outerHTML = edItinHtml(s, doc, edTrialRun(s, doc));
+  const f = focusSel ? s.el.querySelector(`[data-atitin] ${focusSel}`) : null;
+  if (f && !f.disabled) f.focus({
+    preventScroll: true
+  });
+  edRefresh(s);
+}
+
+/** La fiche de la mission (SOG-0482 : « Mission », toujours là, jamais remplacée par la fiche d'un tiroir) : les étapes de l'éditeur en groupes repliables, un seul déplié à la fois ; chaque
  *  groupe dit son contenu en une ligne et porte sa marque (✓ ou !). */
 function edSheetHtml(s, doc) {
   const names = edNames();
-  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3>
+  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atMission))}</h3>
     <div data-steps>${ED.STEPS.filter(k => k !== 'places').map(k => {
     const ok = edStepOk(s.ed, doc, k),
       open = s.ed.step === k;
     return `<div class="ms-atgrp" data-grp="${k}" data-open="${open ? '1' : ''}"><button type="button" class="ms-atsum" data-do="edstep" data-step="${k}" aria-expanded="${open}"${open ? ' aria-current="step"' : ''}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="${k}" aria-hidden="true">${ok ? '✓' : '!'}</span><b>${esc(s.tt(names[k]))}</b><span class="ms-atline f-muted" data-line="${k}">${esc(edLine(s, doc, k))}</span></button>${open ? `<div class="ms-atbody" data-edform>${edGroupBody(s, k)}</div>` : ''}</div>`;
   }).join('')}</div></section>`;
-}
-
-/** La ligne « Au départ » du déroulé : son nom et, en une ligne, les deux bouts de la mission. */
-function edStartRowHtml(s, on) {
-  const c = s.ed.cadre;
-  return `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on ? ' aria-current="true"' : ''}><span class="ms-atparthead"><b>${esc(s.tt(EDTX.atStart))}</b></span><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>`;
-}
-
-/** Le déroulé de la mission (SOG-0467 : une liste verticale, les lignes de liste de la suite) : « Au départ » (visible), puis un tiroir
- *  par ligne dans l'ordre — sa marque, « Tiroir n · son titre », sa clé en une ligne ; lus par le lecteur (frame/lib/mission.js) sur
- *  le document de la séance — et « ＋ Tiroir » (douze au plus), qui ouvre la fenêtre des briques (SOG-0508, kwSync). Une ligne se
- *  touche : sa fiche s'ouvre (SOG-0445). Les lignes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
-function edFlowHtml(s, doc, run = null) {
-  const e = s.ed;
-  // SOG-0459, l'atelier voilé : « Au départ » seul, et « Dévoiler la mission complète » à la place d'« Essayer les clés »
-  if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div>
-    <div class="f-list ms-atflowlist">${edStartRowHtml(s, true)}</div></section>`;
-  const drawers = edMission(doc)?.drawers || [],
-    todo = new Set(edDrawersTodo(doc).map(t => t.name)),
-    sel = e.sel || 'start',
-    on = id => sel === id ? ' aria-current="true"' : '';
-  return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div>
-    <div class="f-list ms-atflowlist">${edStartRowHtml(s, sel === 'start')}${drawers.map(d => `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-haspopup="dialog"><b>${esc(s.tt(EDTX.dwAdd))}</b><span class="f-muted">${esc(s.tt(EDTX.dwAddSub))}</span></button>` : ''}</div></section>`;
 }
 
 /** SOG-0508 : la fenêtre des briques en vie — { s, el, sig, pool, fresh, off } ; une à la fois, posée dans document.body (kwSync). */
@@ -2273,28 +2319,22 @@ function edMapPick(s, e, i) {
   e.mapSel = i;
   e.placeAsk = -1;
   e.placeEdit = i;
-  draw(s); // edAfter → edPlShow : la ligne vient à l'écran dans la liste, la colonne ne défile pas (SOG-0472)
+  e.itAt = ''; // SOG-0482 : la fiche s'ouvre sous la PREMIÈRE ligne du lieu
+  e.sel = 'start'; // une seule fiche ouverte : celle d'un tiroir se ferme
+  e.itScroll = true;
+  draw(s); // edAfter → edPlShow : la ligne vient à l'écran si elle n'y est pas, rien d'autre ne défile
   edMapFocus(e, i);
 }
 
-/** La liste des Lieux après un dessin (SOG-0472) : elle reprend là où elle était (e.plTop, gardé quand on la fait défiler), puis la ligne
- *  choisie vient à l'écran DANS la liste — seule la liste défile, jamais la colonne ni la page. Une réaction au dessin : seul scrollTop
- *  change, et seulement s'il le faut. */
+/** Après un dessin : un lieu choisi SUR LA CARTE (e.itScroll, posé par edMapPick) dont la ligne n'est pas à l'écran y est amené par un
+ *  défilement au plus court (`block: 'nearest'`) — jamais un autre défilement (SOG-0482 : la page défile, la liste ne défile plus en elle-même). */
 function edPlShow(s) {
-  const e = s.ed,
-    list = s.el?.querySelector?.('[data-pllist]');
-  if (!e || !list) return;
-  list.onscroll = () => {
-    e.plTop = list.scrollTop;
-  };
-  if (list.scrollTop !== (e.plTop || 0)) list.scrollTop = e.plTop || 0;
-  const i = e.placeEdit >= 0 ? e.placeEdit : edMapSel(e),
-    row = i >= 0 ? list.querySelector(`[data-place="${i}"]`) : null;
-  if (!row) return;
-  const top = row.offsetTop,
-    bottom = top + row.offsetHeight,
-    to = top < list.scrollTop ? top : bottom > list.scrollTop + list.clientHeight ? bottom - list.clientHeight : list.scrollTop;
-  if (to !== list.scrollTop) list.scrollTop = e.plTop = to;
+  const e = s.ed;
+  if (!e?.itScroll) return;
+  e.itScroll = false;
+  s.el?.querySelector?.('[data-edplaces] [data-place] [aria-current]')?.closest?.('[data-place]')?.scrollIntoView?.({
+    block: 'nearest'
+  });
 }
 
 /** Une zone à contour choisie est cadrée sur la carte, avec une marge (l'ergonome, 18 nov. : ses poignées s'entassent quand elle est
@@ -2321,7 +2361,6 @@ function edMapVertexPick(s, e, m) {
 function edMapGesture(s, e, change, i, vertex = -1, live = false) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
   if (live) {
-    if (!e.dragBase) e.lastLive = ''; // un geste neuf : la liste des Lieux n'a encore rien montré de lui
     e.dragBase ||= edPlaces(e);
     e.places = change(e.dragBase);
     return edLive(s, e);
@@ -2348,10 +2387,7 @@ function edLive(s, e) {
   e.liveAsk = requestAnimationFrame(() => {
     e.liveAsk = 0;
     if (state() !== s || s.ed !== e || !e.dragBase) return;
-    edRefresh(s);
-    const list = s.el.querySelector('[data-pllist]'),
-      html = list ? edPlacesHtml(s, true) : '';
-    if (list && e.lastLive !== html) list.innerHTML = e.lastLive = html;
+    edRefresh(s); // SOG-0482 : le titre et la ligne de chaque ligne du lieu suivent le doigt, sur place (edRefresh)
   });
 }
 
@@ -2360,7 +2396,6 @@ function edLiveStop(e) {
   if (e.liveAsk) cancelAnimationFrame(e.liveAsk);
   e.liveAsk = 0;
   e.dragBase = null;
-  e.lastLive = '';
 }
 
 /** Un geste lâché sans fin (le doigt est parti, la poignée a disparu) : les lignes reprennent leur état d'avant le geste, tout est
@@ -2537,7 +2572,7 @@ function edAdRoom(el, ev) {
  *  la colonne défile jusqu'à elle — le même geste que le champ de terrain (edAdRoom : scrollIntoView, la marge sous l'en-tête posée en
  *  CSS) ; une fiche déjà vue ne bouge pas. Une réaction au toucher, rien n'est réécrit. */
 function edSheetShow(s) {
-  const sheet = s.el?.querySelector?.('[data-atsheet]');
+  const sheet = s.el?.querySelector?.('[data-drawer]');
   if (!sheet) return;
   const top = sheet.getBoundingClientRect().top,
     foot = s.el.querySelector('.ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
@@ -2956,8 +2991,21 @@ const edDrawers = e => e.drawers || DR.drawerRowsOf(e.base);
 /** La ligne du tiroir choisi, prête à être retouchée (les lignes de la séance sont créées à la première retouche : choisir un tiroir
  *  sans rien y changer n'écrit rien). → la ligne, ou null. */
 function edDrawerRow(e) {
+  return edDrawerRowOf(e, e.sel);
+}
+
+/** La ligne du tiroir d'identifiant `id` (comme edDrawerRow : les lignes de la séance naissent à la première retouche). → la ligne, ou null. */
+function edDrawerRowOf(e, id) {
   if (!e.drawers) e.drawers = DR.drawerRowsOf(e.base).map(r => structuredClone(r)); // une copie entière : les règles et leurs étapes aussi
-  return e.drawers.find(r => r.id === e.sel) || null;
+  return e.drawers.find(r => r.id === id) || null;
+}
+
+/** Le rang, dans sa route, du lieu de la ligne choisie de l'itinéraire (e.itAt : « start:2 » ou « drawer:B:1 ») ; -1 quand la ligne choisie n'est pas
+ *  de la route (ou de la suite du tiroir `where`) demandée. */
+function edItN(e, where) {
+  const m = String(e.itAt || '').split(':');
+  return where === 'start' && m[0] === 'start' && /^\d+$/.test(m[1] || '') ? +m[1] : m[0] === 'drawer' && m[1] === where && /^\d+$/.test(m[
+    2] || '') ? +m[2] : -1;
 }
 
 /** La clé d'un tiroir dite en clair (`trigger`, que la V2 imprime sur le pli scellé : le pilote la lit AVANT l'ouverture) — des mots
@@ -3226,7 +3274,7 @@ function edDrawerHtml(s, doc) {
     rows = edDrawers(e),
     at = rows.findIndex(r => r.id === e.sel),
     r = rows[at];
-  if (!r) return edSheetHtml(s, doc);
+  if (!r) return '';
   const places = e.places || ED.placesOf(doc),
     now = id => ED.refNow(id, e.base, e.places), // l'identifiant d'aujourd'hui d'un lieu cité par le fichier
     label = p => [p.id, p.name].filter(Boolean).join(' · '),
@@ -3284,7 +3332,7 @@ function edDrawerHtml(s, doc) {
     open = e.dopen || {},
     // un groupe repliable : son titre est un bouton qui dit son contenu en une ligne (replié sur un module étroit seulement)
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
-  return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
+  return `<section class="f-card ms-itin-sheet" data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
       <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-haspopup="dialog"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span class="ms-kindchg" data-kindchg>${esc(s.tt(EDTX.dwKeyChange))}</span>${read && MS.notJudgedYet(read.key) || DR.KEYS.includes(r.key) && !DR.judgedKind(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${body}${emits || DR.judgedKind('event') ? edEmitHtml(s, r) : ''}</div>
@@ -3477,7 +3525,7 @@ export function edHtml(s) {
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}${edModelHtml(s)}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}${edFlowHtml(s, doc, run)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : `${edPlacesCardHtml(s, doc)}${e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}`}</div></div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
     <div class="ms-atfoot" data-f-foot><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
@@ -3794,7 +3842,6 @@ function edRefresh(s) {
     put(mark, ok ? '✓' : '!');
     putData(mark, 'kind', ok ? 'ok' : 'warn');
   }
-  put(q('[data-flowline]'), ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
   const drow = (e.sel || 'start') === 'start' ? null : edDrawers(e).find(r => r.id === e.sel);
   if (drow) {
     const lines = edDrawerLines(s, drow, id => ED.refNow(id, e.base, e.places));
@@ -3857,9 +3904,10 @@ function edRefresh(s) {
       said = edPlaceTexts(s, rows, doc);
     rows.forEach((r, i) => {
       if (!shown[i]) return; // une ligne cachée par le voile n'a pas de ligne à l'écran
-      const live = places.querySelector(`[data-place="${i}"]`);
-      put(live?.querySelector('.ms-plbody > b'), said.title(r));
-      put(live?.querySelector('.ms-plbody > .f-muted'), said.detail(r, i));
+      for (const live of places.querySelectorAll(`[data-place="${i}"]`)) { // SOG-0482 : un lieu cité deux fois a deux lignes
+        put(live.querySelector('.ms-plbody > b'), said.title(r));
+        put(live.querySelector('.ms-plbody > .f-muted'), said.detail(r, i));
+      }
     });
   }
   // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
@@ -4056,9 +4104,14 @@ export function edClick(s, b) {
       };
       return draw(s);
     }
-    case 'edsel': { // une carte du déroulé : la fiche du départ, ou celle d'un tiroir (jamais dans l'atelier voilé)
+    case 'edsel': { // une ligne de tiroir de l'itinéraire : sa fiche s'ouvre sous elle (jamais dans l'atelier voilé) ; celle d'un lieu se ferme
       const id = String(b.dataset.sel || '');
       s.ed.sel = !s.ed.veil && id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
+      if (s.ed.sel !== 'start') {
+        s.ed.placeEdit = -1; // une seule fiche ouverte (SOG-0482)
+        s.ed.mapSel = -1;
+        s.ed.itAt = '';
+      }
       s.ed.drawerAsk = '';
       s.ed.dopen = {};
       s.ed.kinds = '';
@@ -4152,39 +4205,46 @@ export function edClick(s, b) {
       const e = s.ed,
         start = b.dataset.where === 'start';
       if (e.veil && !start) return; // la suite de route d'un tiroir : jamais dans l'atelier voilé
-      const r = start ? null : edDrawerRow(e),
+      const it = !!b.dataset.it, // SOG-0482 : la ligne choisie de l'itinéraire (son rang dans la route : e.itAt), pas une pastille
+        r = start ? null : it ? edDrawerRowOf(e, b.dataset.dr) : edDrawerRow(e),
         where = start ? 'start' : r?.id,
-        n = where ? edChipSel(e, where) : -1,
+        n = it ? edItN(e, where) : where ? edChipSel(e, where) : -1,
         step = b.dataset.step === '-1' ? -1 : 1;
       if (n < 0) return;
       const list = start ? edRoute(e) : r.route,
         // la route du départ garde son départ premier et son arrivée dernière ; la suite d'un tiroir est libre
         made = start ? ED.routeMoveStart(list, n, step) : ED.routeMove(list, n, step, w => !!ED.refNow(w, e.base, e.places));
-      if (made.route === list) return edChipsShow(s, where, false);
+      if (made.route === list) return it ? undefined : edChipsShow(s, where, false);
       if (start) e.route = made.route;
       else r.route = made.route;
+      edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      if (it) { // la ligne déplacée RESTE choisie, sa fiche ouverte ; le bouton pressé garde le focus
+        e.itAt = start ? `start:${made.at}` : `drawer:${r.id}:${made.at}`;
+        return edItinRepaint(s, `[data-do="edchipmove"][data-step="${step}"]`);
+      }
       e.chipSel = {
         where,
         n: made.at
       };
-      edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       edChipsShow(s, where, true);
       return edRefresh(s);
     }
-    case 'edroutedel': { // un lieu retiré de la route du départ (sa pastille)
+    case 'edroutedel': { // un lieu retiré de la route du départ (sa pastille, ou la ligne choisie de l'itinéraire)
       const n = +b.dataset.n,
         route = edRoute(s.ed);
       s.ed.chipSel = null;
+      s.ed.itAt = ''; // la fiche reste ouverte sous la première ligne du lieu (il peut être passé « hors itinéraire »)
       // le départ en tête et l'arrivée en queue ne se retirent pas (une route sans départ n'a pas de sens) : leur croix n'est pas
       // donnée, et une page forgée ne les retire pas non plus
       if (Number.isInteger(n) && n >= ED.routeFree(route).lo && n <= ED.routeFree(route).hi) s.ed.route = route.filter((_, k) => k !== n);
       edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }
-    case 'eddrchipdel': { // un lieu retiré de la suite de route
-      const r = edDrawerRow(s.ed),
+    case 'eddrchipdel': { // un lieu retiré de la suite de route (sa pastille, ou la ligne choisie de l'itinéraire)
+      const r = b.dataset.it ? edDrawerRowOf(s.ed, b.dataset.dr) : edDrawerRow(s.ed),
         n = +b.dataset.n;
       s.ed.chipSel = null;
+      s.ed.itAt = '';
       if (r && Number.isInteger(n) && n >= 0) r.route = r.route.filter((_, i) => i !== n);
       edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
@@ -4305,7 +4365,15 @@ export function edClick(s, b) {
       if (edHid(s.ed, +b.dataset.i)) return; // SOG-0459 : une ligne cachée ne s'ouvre pas
       edPlaces(s.ed); // SOG-0472 : la liste est toujours montrée, les lignes de la séance naissent quand on en ouvre une
       s.ed.placeAsk = -1;
-      s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
+      {
+        // SOG-0482 : la fiche s'ouvre sous la ligne TOUCHÉE (un lieu cité deux fois a deux lignes) ; la même ligne touchée la referme
+        const i = +b.dataset.i,
+          at = String(b.dataset.at || '').slice(0, 60),
+          same = s.ed.placeEdit === i && (s.ed.itAt ? s.ed.itAt === at : b.dataset.first === '1');
+        s.ed.placeEdit = same ? -1 : i;
+        s.ed.itAt = same ? '' : at;
+        s.ed.sel = 'start'; // une seule fiche ouverte : celle d'un tiroir se ferme
+      }
       // la liste et la carte disent le même lieu : la ligne ouverte est le lieu choisi sur la carte (refermée : plus aucun)
       s.ed.mapSel = s.ed.placeEdit;
       s.ed.mapVertex = -1;

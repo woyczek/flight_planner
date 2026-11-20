@@ -70,6 +70,10 @@
 //     enregistrement (un lieu neuf va au bout de sa sorte, un lieu du fichier ne se retire pas sans dévoiler) ; veilRows(rows,
 //     hidden) → les lignes, une ligne cachée devenue null (les rangs ne bougent pas : un filtre d'affichage, jamais un retrait) ;
 //     veilTodo(doc, shown) → « À compléter » sans rien du caché (ni tiroir, ni lieu caché ; « à placer » des seules lignes montrées).
+//   itinRows(rows, route, drawers, { shown, now }) → les lignes de l'ITINÉRAIRE (SOG-0482, lot 1) : le départ, les lieux de la route du départ, chaque
+//     tiroir suivi, EN RETRAIT, du lieu que sa clé cite (zone, objet) puis de sa suite de route, l'arrivée, puis les lieux que rien ne cite (`out`) ;
+//     chaque ligne { kind: 'place' | 'drawer', where: 'dep' | 'arr' | 'start' | 'key' | 'drawer' | 'out', i (le rang du lieu dans `rows`), n (le rang
+//     dans la route), drawer (l'identifiant), in (en retrait), at (la clé de la ligne : un lieu cité deux fois a deux lignes) } ; pure, sans exception.
 //   stepState(doc, step) → 'ok' | 'todo'.
 //   regAdd(regDoc, entry) → { doc } | { error: 'taken' } ; regEdit(regDoc, idx, regId, cadre, path, now) → { doc } | { error: 'stale' }.
 //   yamlText(doc, Y, now) : le texte du fichier (en-tête daté, puis le document).
@@ -1632,6 +1636,83 @@ export function routeMoveStart(route, n, step) {
     route: [...list.slice(0, lo), ...made.route, ...list.slice(hi + 1)],
     at: made.at + lo
   };
+}
+
+/** Les lignes de l'itinéraire (SOG-0482, lot 1) : UNE liste ordonnée de ce que le pilote vivra — le départ ; chaque lieu de la route du
+ *  départ dans son ordre (hors les ancres ORIGIN et DESTINATION, qui sont le départ et l'arrivée) ; puis, tiroir par tiroir dans l'ordre
+ *  du fichier, une ligne de tiroir et, EN RETRAIT sous elle, le lieu que sa clé cite (une zone de passage, un objet à trouver) quand la
+ *  route du départ ne le porte pas déjà, puis chaque lieu de sa suite de route ; l'arrivée ; enfin « hors itinéraire » : les autres lieux,
+ *  dans l'ordre des lignes. Un lieu cité deux fois a deux lignes (leur clé `at` les distingue). Un jeton qui ne désigne aucun lieu, ou un
+ *  lieu que `shown(i)` cache (l'atelier voilé), n'a pas de ligne. `rows` : les lignes des Lieux ; `route` : les jetons de la route du
+ *  départ ; `drawers` : [{ id, key, zone, object, route }] dans l'ordre (vide en atelier voilé) ; `now(id)` : l'identifiant d'aujourd'hui
+ *  d'un lieu cité par le fichier. Des entrées hostiles (un texte, null, un nombre) sont lues comme absentes : jamais d'exception.
+ *  → [{ kind, where, i, n, drawer, in, at }] ; une ligne de tiroir : { kind: 'drawer', where: 'drawer', drawer, at: 'drawer:<id>' }. */
+export function itinRows(rows, route, drawers, o = {}) {
+  const list = Array.isArray(rows) ? rows : [],
+    shown = typeof o?.shown === 'function' ? o.shown : () => true,
+    now = typeof o?.now === 'function' ? o.now : id => String(id ?? ''),
+    up = v => String(v ?? '').toUpperCase(),
+    ok = i => Number.isInteger(i) && i >= 0 && list[i] && typeof list[i] === 'object' && !!shown(i),
+    by = new Map(),
+    out = [],
+    used = new Set(),
+    tok = Array.isArray(route) ? route : [];
+  list.forEach((r, i) => {
+    const t = r && typeof r === 'object' ? up(routeToken(r)) : '';
+    if (t && !by.has(t)) by.set(t, i);
+  });
+  const at = (where, i, n, d) => where === 'dep' || where === 'arr' ? where : where === 'start' ? `start:${n}` : where === 'key' ? `key:${d}` :
+    where === 'drawer' ? `drawer:${d}:${n}` : `out:${i}`,
+    place = (where, i, n = -1, d = '', inn = false) => {
+      used.add(i);
+      out.push({
+        kind: 'place',
+        where,
+        i,
+        n,
+        drawer: d,
+        in: inn,
+        at: at(where, i, n, d)
+      });
+    },
+    dep = list.findIndex(r => r && r.kind === 'dep'),
+    arr = list.findIndex(r => r && r.kind === 'arr'),
+    free = routeFree(tok),
+    onRoute = new Set();
+  tok.forEach(t => {
+    const i = by.get(up(t));
+    if (i !== undefined) onRoute.add(i);
+  });
+  if (ok(dep)) place('dep', dep);
+  for (let n = free.lo; n <= free.hi && n < tok.length; n++) {
+    const i = by.get(up(tok[n]));
+    if (i !== undefined && ok(i)) place('start', i, n);
+  }
+  for (const d of Array.isArray(drawers) ? drawers : []) {
+    if (!d || typeof d !== 'object' || typeof d.id !== 'string' || !d.id) continue;
+    out.push({
+      kind: 'drawer',
+      where: 'drawer',
+      i: -1,
+      n: -1,
+      drawer: d.id,
+      in: false,
+      at: `drawer:${d.id}`
+    });
+    const kind = d.key === 'zone' ? 'zone' : d.key === 'object' ? 'object' : '',
+      cited = kind ? up(now(d[kind])) : '',
+      ki = cited ? list.findIndex(r => r && r.kind === kind && r.id && up(r.id) === cited) : -1;
+    if (ki >= 0 && ok(ki) && !onRoute.has(ki)) place('key', ki, -1, d.id, true);
+    (Array.isArray(d.route) ? d.route : []).forEach((w, n) => {
+      const i = by.get(up(now(w)));
+      if (i !== undefined && ok(i)) place('drawer', i, n, d.id, true);
+    });
+  }
+  if (ok(arr)) place('arr', arr);
+  list.forEach((r, i) => {
+    if (ok(i) && !used.has(i)) place('out', i);
+  });
+  return out;
 }
 
 /** Un lieu ajouté à la route du départ : AVANT le terrain d'arrivée quand il la termine (il reste dernier), sinon à la fin. La route
