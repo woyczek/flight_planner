@@ -9294,7 +9294,9 @@ def f293(c):
     c.eq(norm(c.text(f'{FUEL} [data-rstale] [data-do=rcompute]') or ''), norm({'fr': 'Recalculer', 'en': 'Compute again',
          'de': 'Neu berechnen', 'es': 'Recalcular'}[c.lang]), 'with « Recalculer »', what='button')
     fpl = item15()
-    c.ok('F250 ' in fpl[:12] and 'LUGEN/N0330F270' in fpl, fpl, 'reproduced: item 15 « F250 » at its head and « /F270 » further on')
+    # the group of the engine written again with the quote's speed (the speed of the flight plan): its level, F270, is the engine's
+    c.ok('F250 ' in fpl[:12] and re.search(r'LUGEN/N\d{4}F270\b', fpl) is not None, fpl,
+         'reproduced: item 15 « F250 » at its head and « /F270 » further on')
     c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale]') or ''), norm(stale[1]), 'above « Copier pour Eurocontrol »: said before copying',
          what='before')
     c.ok(c.js(f"""(() => {{ const p = document.querySelector('{FUEL} [data-fpl] [data-fplstale]'),
@@ -9313,6 +9315,8 @@ def f293(c):
         c.js(_F281_NOTES_OFF)
         c.js(f"document.querySelector('{FUEL} [data-rstale]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F293_{c.design}_{w}_{c.lang}_stale.png')
+        c.js(f"document.querySelector('{FUEL} [data-fpl] [data-fplstale]').scrollIntoView({{block: 'center'}})")  # above the copy button
+        c.shot(f'F293_{c.design}_{w}_{c.lang}_copy.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     # 3. « Recalculer »: computed at FL250, taken — the level of the computation and of the flight plan are the same number, nothing said
