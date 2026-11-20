@@ -18974,7 +18974,7 @@ def k406(c):
          (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')
 
 
-def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=()):
+def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_cycle='2026-10-29'):
     """SOG-0532 : une base INVENTÉE pour les cas du moteur de route (deux terrains ZZAA et ZZBB, des points A0 P1 P2 P3 P4 B0 sur une ligne, des voies `lanes` = [(nom, [points], plancher_ft, plafond_ft)], une STAR de ZZBB si `star_min`, le RAD de test + `rad_rows` en annexe 3A Conditions) ; rend (data, rad). Aucune donnée de l'utilisateur."""
     import json
     import os
@@ -18991,11 +18991,11 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=()):
     files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
              'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
     data = os.path.join(td, 'data')
-    folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+    folder = os.path.join(data, 'sia', 'base', 'xx', base_cycle)
     os.makedirs(folder)
     for k, v in files.items():
         with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
-            json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            json.dump({'schema': 2, 'zone': 'xx', 'cycle': base_cycle, 'kind': k, 'data': v}, f)
     if star_min:
         os.makedirs(os.path.join(data, 'proc', 'manual'))
         star = {'icao': 'ZZBB', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR', 'name': 'IAF1A', 'id': 'ZZBB.STAR.IAF1A', 'runways': ['09'], 'points': [
@@ -19123,3 +19123,40 @@ def k484(c):
     c.eq([(i['values']['point'], i['values']['down_fl'], i['values']['up_fl'], i['values']['filed_fl']) for i in found], [('P3', 240, 350, 330)], 'F240 at P1 then F350 at P3, the filed level being FL330: ONE ERROR `level_yoyo`, with the point of the climb, the lowest level, the level of the climb (red before: nothing said)', what='yoyo')
     c.eq((yo.get('verdict'), [x['code'] for x in yo['violations'] if x['code'] == 'level_yoyo']), ('violates', ['level_yoyo']), 'the verdict is `violates` and the yoyo is in `violations`', what='verdict')
     c.eq(([i for i in up['issues'] if i.get('code') == 'level_yoyo'], [i for i in down['issues'] if i.get('code') == 'level_yoyo']), ([], []), 'a climb alone (FL330 then F350) and a descent alone (FL330 then F240) are not a yoyo', what='controls')
+
+
+
+@case('K483', 'Route engine, SOG-0532 (3)(6) and the Belgian cycle: what the check could NOT verify is said apart from what is forbidden, NAMED, as a CODE with its values — a direct connector whose limit is unknown (no SID, no STAR, no limit read) and a State whose data are of an old cycle are `unverifiable`, never counted « conforming »; the verdict of the answer is `unverifiable` (and not `violates`)',
+      'K', static=True,
+      rule='SOG-0532 (3)(6) (the ergonomics session, 20 Nov: « Raccord sans SID ni STAR et limite inconnue = « non vérifiable », nommé ; jamais compté conforme » ; « tant qu\'un État traversé n\'a que des données périmées, la route est « non vérifiable » pour cet État, nommé »). Diagnosed on the refused plan: Belgium has no airways in the cycle of 29 Oct (the older cycle of 1 Oct is used, said in a review lost among others). The bench: an invented base (cycle 29 Oct 2026) asked on 2 Dec 2026 (34 days later: stale), two aerodromes with no limit in the RAD and no procedure.')
+def k483(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, base_cycle='2026-10-01')
+        old = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09', 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+        td2 = tempfile.mkdtemp(prefix='k483_', dir=td)
+        data2, rad2 = _sog532_bench(td2)
+        fresh = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09', 'alternatives': False, 'proposals': False}), data2, rad2, None)['primary']
+    codes = lambda p: sorted((x['code'], (x['values'] or {}).get('end') or (x['values'] or {}).get('zone')) for x in p.get('unverifiable') or [])
+    c.eq(codes(old), [('connector_unknown', 'arr'), ('connector_unknown', 'dep'), ('stale_cycle', 'xx')], 'the base of the cycle of 1 Oct read for a flight of 9 Nov (39 days: stale): the two connectors of unknown limit and the State of an old cycle are `unverifiable`, each with its code (red before: no `unverifiable` list)', what='old')
+    stale = [x for x in old.get('unverifiable') or [] if x['code'] == 'stale_cycle']
+    c.eq((stale[0]['values']['cycle'], stale[0]['values'].get('current')) if stale else None, ('2026-10-01', '2026-10-01'), 'the stale cycle names the cycle that is read (and the zone); the current cycle is named when the base knows it', what='stale values')
+    c.eq(old.get('verdict'), 'unverifiable', 'the verdict is `unverifiable`: not `conform`, not `violates` (nothing known is broken)', what='verdict old')
+    c.eq(codes(fresh), [('connector_unknown', 'arr'), ('connector_unknown', 'dep')], 'inside the cycle: no stale State, the two connectors are still unverifiable (no limit read: never counted conforming)', what='fresh')
+
+
+@case('K485', 'Route engine, SOG-0532 (2): the level written in the route is the level asked — a level group is written only when it CHANGES the level (never « POINT/F330 » for a flight already at FL330); after a real change the return to the filed level is written',
+      'K', static=True,
+      rule='SOG-0532 (2) (the ergonomics session, 20 Nov: « Le niveau écrit est le niveau demandé. Trouver d\'où vient le FL350 et le dire »). Found: nothing in the engine raises the level (the profile comes back to `fl × 100`); the FL350 of the refused plan was the level of the calculation (the plan was filed at FL330). A group at the filed level when the flight is already there (`NOMKA/F330` after the end of the climb) is no change and is not written any more. Unit case on `engine.level_marks` (legs and changes invented).')
+def k485(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine as E
+    legs = [{'via': 'DCT', 'start': {'id': 'A'}, 'end': {'id': 'B'}}, {'via': 'U1', 'start': {'id': 'B'}, 'end': {'id': 'C'}}, {'via': 'U1', 'start': {'id': 'C'}, 'end': {'id': 'D'}}, {'via': 'U2', 'start': {'id': 'D'}, 'end': {'id': 'E'}}]
+    chg = lambda point, to_ft: {'point': point, 'to_ft': to_ft}
+    c.eq(E.level_marks(legs, [chg('B', 33000)], [], 330), {}, 'a change to the filed level while the flight is already at it (the end of the climb): no group', what='no-op')
+    c.eq(E.level_marks(legs, [chg('B', 33000), chg('C', 19500), chg('D', 33000)], [], 330), {2: 190, 3: 330}, 'a real change (down to F190) is written, and the return to the filed level too (the groups of the steps asked are unchanged)', what='real change')
+    c.eq(E.level_marks(legs, [chg('C', 19500)]), {2: 190}, 'without the filed level (the old call) nothing changes', what='old call')

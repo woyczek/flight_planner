@@ -148,6 +148,8 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
                 if lim['state'] == 'known' and lim['nm'] > 0 and nm > lim['nm']:
                     checked.append({'ad': ad, 'end': end, 'point': b if end == 'dep' else a, 'leg_nm': nm, 'state': 'exceeded', 'limit_nm': lim['nm'], 'rule': lim['rule']})
                     issues.append(('ERREUR' if typed and not lim.get('struck') else 'REVUE', f'{ad} : le direct de repli de {nm:g} NM {"au départ" if end == "dep" else "à l’arrivée"} (aucun réseau de cet État dans la base) dépasse la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]}) : l’IFPS le refusera (ROUTE134) ; il faut les {"SID" if end == "dep" else "STAR"} et le réseau de cet État', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': lim['nm'], 'rule': lim['rule'], 'no_network': True}}))
+                elif lim['state'] != 'known':      # SOG-0532 (6) : le direct de repli d'un terrain sans réseau dont la limite n'est pas lue : « non vérifiable », nommé
+                    issues.append(('REVUE', f'{ad} : le direct de repli de {nm:g} NM {"au départ" if end == "dep" else "à l’arrivée"} (aucun réseau de cet État dans la base) : limite du RAD non lue pour ce terrain, non vérifiable', {'code': 'connector_unknown', 'values': {'ad': ad, 'end': end, 'nm': nm, 'reason': 'no_network_no_limit', 'rule': lim['rule']}, 'unverifiable': True}))
                 continue
         if not ad or leg.get('procedure_id') or leg.get('no_network') or leg.get('via') != 'DCT' or leg.get('kind') in ('SID', 'STAR', 'APPROACH_LINK'):      # SOG-0474 : le direct sans réseau est dit à part
             continue
@@ -177,7 +179,7 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
             said = ' (une partie barrée de la cellule du RAD a été retirée à l’import : à confirmer)' if lim.get('struck') else ''
             if pts is None:
                 rec['state'] = 'unknown'
-                issues.append(('REVUE', f'{ad} : limite du direct au raccord de 0 NM (RAD {lim["rule"]}) : la route doit {"commencer au dernier point d’une SID" if end == "dep" else "finir au premier point d’une STAR"} ; la base ne lit aucune {proc} pour {ad}, on ne peut pas dire si {far} en est un (à examiner)'))
+                issues.append(('REVUE', f'{ad} : limite du direct au raccord de 0 NM (RAD {lim["rule"]}) : la route doit {"commencer au dernier point d’une SID" if end == "dep" else "finir au premier point d’une STAR"} ; la base ne lit aucune {proc} pour {ad}, on ne peut pas dire si {far} en est un (à examiner)', {'code': 'connector_unknown', 'values': {'ad': ad, 'end': end, 'nm': nm, 'reason': 'no_procedure_read', 'rule': lim['rule']}, 'unverifiable': True}))
             elif far in pts:
                 rec['state'] = 'within'
             else:
@@ -189,6 +191,6 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
                     issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, limite de 0 NM du RAD ({lim["rule"]}){said} : {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} volable{(" à FL" + format(ceiling_ft / 100, "03.0f")) if ceiling_ft else ""} ; la route sera refusée par l’IFPS (ROUTE{"135" if end == "dep" else "134"}) : à examiner, jamais une route valide', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': 0, 'rule': lim['rule'], 'point': far, 'struck': bool(lim.get('struck'))}}))
         else:
             why = 'limite avec niveau ou horaire, non décidée' if lim['state'] == 'complex' else 'aucune limite lue pour ce terrain'
-            issues.append(('REVUE', f'{ad} : limite du direct au raccord à examiner ({why}) ; direct de {nm:g} NM'))
+            issues.append(('REVUE', f'{ad} : limite du direct au raccord à examiner ({why}) ; direct de {nm:g} NM', {'code': 'connector_unknown', 'values': {'ad': ad, 'end': end, 'nm': nm, 'reason': 'conditional' if lim['state'] == 'complex' else 'no_limit', 'rule': lim['rule']}, 'unverifiable': True}))
         checked.append(rec)
     return {'checked': checked, 'not_applied': note}, issues
