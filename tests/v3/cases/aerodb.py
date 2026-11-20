@@ -19120,7 +19120,7 @@ def k484(c):
         up = check('ZZAA DCT A0 UH1 P1/F350 UH1 B0 DCT ZZBB')
         down = check('ZZAA DCT A0 UH1 P1/F240 UH1 B0 DCT ZZBB')
     found = [i for i in yo['issues'] if i.get('code') == 'level_yoyo']
-    c.eq([(i['values']['point'], i['values']['down_fl'], i['values']['up_fl'], i['values']['filed_fl']) for i in found], [('P3', 240, 350, 330)], 'F240 at P1 then F350 at P3, the filed level being FL330: ONE ERROR `level_yoyo`, with the point of the climb, the lowest level, the level of the climb (red before: nothing said)', what='yoyo')
+    c.eq([(i['values']['down_point'], i['values']['down_fl'], i['values']['up_point'], i['values']['up_fl'], i['values']['filed_fl']) for i in found], [('P1', 240, 'P3', 350, 330)], 'F240 at P1 then F350 at P3, the filed level being FL330: ONE ERROR `level_yoyo`, with the point and the level of the descent, the point and the level of the climb (SOG-0532 lot 2 bis: two points)', what='yoyo')
     c.eq((yo.get('verdict'), [x['code'] for x in yo['violations'] if x['code'] == 'level_yoyo']), ('violates', ['level_yoyo']), 'the verdict is `violates` and the yoyo is in `violations`', what='verdict')
     c.eq(([i for i in up['issues'] if i.get('code') == 'level_yoyo'], [i for i in down['issues'] if i.get('code') == 'level_yoyo']), ([], []), 'a climb alone (FL330 then F350) and a descent alone (FL330 then F240) are not a yoyo', what='controls')
 
@@ -19228,3 +19228,50 @@ def k488(c):
     c.eq(RF.reasons_of(row(' ' * RF.MAX_CONDITION + 'DEP (EDGGFIR)', 'H24')), ['unread'], 'the same for the condition: an aerodrome in a space written after 4 000 signs is not read', what='cut condition')
     c.eq((RF._space_unread('DEP ' * 250000), RF._space_unread('DEP EDGGFIR'), RF._space_unread('DEP EGGW & VIA KONAN'), RF._space_unread('RFL ABV FL245 IN (EDMMCTAE)')), (False, True, False, True), 'the test « a space after a keyword » is LINEAR (a million signs of keywords and no space answer at once, one pass per segment) and keeps the former readings (an aerodrome in a space, a plain aerodrome, a level in a space)', what='linear')
     c.eq((RF.reasons_of(row('DEP (EDGGFIR, EDMMFIR) EXC DEP EDDN', 'H24')), RF.reasons_of(row('VIA EDYYUTA AND-THEN VIA (EBBUCTA, EHAACTA)', 'H24')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + 'RFL ABV FL245 IN (EDMMCTAE)', 'H24'))), (['space_unread'], ['space_unread'], ['space_unread']), 'the reasons of the usual cells are unchanged', what='same readings')
+
+
+@case('K489', 'Route engine, SOG-0532 lot 2 bis: the reasons carry the VALUES that the screen needs for its sentence — `rad_block` and `rad_rule` the `target` (the element of the ROUTE that triggered the rule: a leg « UH1 P1–P2 » or a point), `space_dct_limit` { from_point, to_point, nm, limit_nm, space }, `level_yoyo` { down_point, down_fl, up_point, up_fl } (TWO points: the descent, then the climb); the strings are bounded',
+      'K', static=True,
+      rule='SOG-0532 lot 2 bis (the ergonomics session fixed the sentences of the screen: « {target} : route interdite par le RAD ({id}) », « {from_point}–{to_point} : direct de {nm} NM, limite {limit_nm} NM dans {space} », « Descente au FL{down_fl} à {down_point}, puis remontée au FL{up_fl} à {up_point} »). Three values were missing: the screen fell back to a sentence without them. The bench: an invented base and invented rules (a rule that forbids the point P2; a rule « compulsory via P3 » for the traffic by N1, which the route does not fly), and the London spaces of K394 for the direct.')
+def k489(c):
+    import sys
+    import tempfile
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import engine as E, plan as P, space_dct as D, spaces as S, view as V
+    row = lambda rid, target, util: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, util, 'H24', 'S', 'invented', '', 'ZZACC', 'ZZ']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=[row('ZZ2001', 'P2', 'NOT AVBL FOR TFC')])
+        block = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+        td2 = tempfile.mkdtemp(prefix='k489_', dir=td)
+        data2, rad2 = _sog532_bench(td2, rules_2b=[row('ZZ2002', 'N1', 'COMPULSORY FOR TFC\nVIA P3')])
+        rule = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False}), data2, rad2, None)['primary']
+    got = lambda p, code: [i['values'] for i in p['issues'] if i.get('code') == code]
+    c.eq([v.get('target') for v in got(block, 'rad_block')], ['UH1 P1–P2'], '`rad_block`: the target is the FIRST leg of the route that the rule touches (the point P2 is the end of the leg P1–P2 of the airway UH1), as « UH1 P1–P2 » (red before: no `target`)', what='block')
+    c.eq([(v.get('id'), v.get('target')) for v in got(rule, 'rad_rule')], [('ZZ2002', 'P3')], '`rad_rule`: a rule « compulsory via P3 » whose target N1 is not on the route has no leg: the target is the POINT of its condition that the route flies (P3)', what='rule')
+    # the direct in the London space (the case K394)
+    pad = lambda *x: list(x) + [''] * (12 - len(x))
+    rows = [pad('', '2112 [02 DEC 2021]', 'UFN', 'EGTTNFRA', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed')]
+    radx = types.SimpleNamespace(book={'sheets': {D.SHEET: [{'v': v, 'row': i + 2} for i, v in enumerate(rows)]}}, active=lambda r: True)
+    box = lambda s, w, n, e: [[s, w], [s, e], [n, e], [n, w]]
+    uir = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, 2.0)]},
+                   {'type': 'FRA', 'name': 'EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM)', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, -4.0)]},
+                   {'type': 'FRA', 'name': 'EGPX FRA', 'lower': 'FL 255', 'upper': 'FL 660', 'rings': [box(54.0, -8.0, 56.0, 2.0)]}])
+    leg = {'via': 'DCT', 'kind': 'DCT', 'nm': 29, 'natural_max_ft': 27000, 'start': {'id': 'HAWKE', 'lat': 51.0, 'lon': -1.0}, 'end': {'id': 'NEVIL', 'lat': 51.0, 'lon': -0.5}}
+    coded = D.check(radx, [leg], uir, True, None, None, True)
+    c.eq([(x[0], x[2]['code'], x[2]['values']) for x in coded], [('ERREUR', 'space_dct_limit', {'from_point': 'HAWKE', 'to_point': 'NEVIL', 'nm': 29, 'limit_nm': 0, 'space': 'EGTTNFRA'})], '`space_dct_limit`: the two points of the direct, its length, the limit and the space', what='space')
+    c.eq([len(x) for x in D.check(radx, [leg], uir, True)], [2], 'without `coded` the answer is the pair (level, text) as before (the cases of the module)', what='pairs')
+
+    # `notVerified`: each item has the target too (« {target} — {reason} ({id}) »)
+    row2 = lambda rid, target, util, clock: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, util, clock, 'S', 'invented', '', 'ACC', 'ZZ']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td3:
+        data3, rad3 = _sog532_bench(td3, rules_2b=[row2('ZZ3002', 'P2', 'NOT AVBL FOR TFC', 'ZZD999D NOT ACT'), row2('ZZ3004', 'P3', 'NOT AVBL FOR TFC' + chr(10) + 'ABV FL245 AT (P1 UH1 P2)', 'H24')])
+        nv = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False}), data3, rad3, None)['primary']['not_verified']
+    c.eq({x['id']: x.get('target') for x in nv[0]['items']}, {'ZZ3002': 'UH1 P1–P2', 'ZZ3004': 'UH1 P2–P3'}, 'each item of `not_verified` carries the `target`: the first leg of the route that the rule aims at (red before: no `target`)', what='items target')
+    # the yoyo : two points
+    legs = [{'via': 'DCT', 'start': {'id': 'A'}, 'end': {'id': 'B'}}, {'via': 'U1', 'start': {'id': 'B'}, 'end': {'id': 'C'}}, {'via': 'U1', 'start': {'id': 'C'}, 'end': {'id': 'D'}}]
+    c.eq(E.yoyo([(None, 330), ('B', 240), ('C', 350)]), {'down_point': 'B', 'down_fl': 240, 'up_point': 'C', 'up_fl': 350}, '`level_yoyo`: the point of the DESCENT and the point of the CLIMB, with their levels', what='yoyo')
+    c.eq(E.yoyo([(None, 330), ('B', 280), ('C', 240), ('D', 300)]), {'down_point': 'C', 'down_fl': 240, 'up_point': 'D', 'up_fl': 300}, 'two descents then a climb: the descent named is the LOWEST (the one that the climb undoes)', what='lowest')
+    c.eq((E.yoyo([(None, 330), ('B', 350), ('C', 370)]), E.yoyo([(None, 330), ('B', 240)])), (None, None), 'a climb alone and a descent alone are not a yoyo', what='none')
+    c.eq([len(E.yoyo([(None, 330), ('P' * 100, 240), ('Q' * 100, 350)])[k]) for k in ('down_point', 'up_point')], [40, 40], 'the points of a typed route are cut at 40 signs', what='bounded')
+    c.eq(E.rad_flight.leg_label({'via': 'UL607', 'start': {'id': 'KOK'}, 'end': {'id': 'BUPAL'}}), 'UL607 KOK–BUPAL', 'the label of a leg: the airway and its two points; a direct has only the points', what='label')

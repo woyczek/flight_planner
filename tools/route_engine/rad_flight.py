@@ -154,15 +154,23 @@ def not_verified(rad, legs, dep, arr, candidates, known_ids=None, airway=None):
         if 'ESPACE' in assessment:
             entry['spaces_only'] += 1
             continue
-        applicability, _affected = target(rule, ctx, legs, rad)
+        applicability, flown_legs = target(rule, ctx, legs, rad)
         if applicability is True or applicability == UNSURE:
             entry['flown'] += 1
             if len(entry['items']) < MAX_NV_ITEMS:
                 found = reasons_of(values)
-                entry['items'].append(dict(id=rule.get('id'), sheet=rule.get('sheet'), row=rule.get('row'), reason=found[0], reasons=found))
+                entry['items'].append(dict(id=rule.get('id'), sheet=rule.get('sheet'), row=rule.get('row'), reason=found[0], reasons=found, **({'target': leg_label(legs[flown_legs[0]])} if flown_legs else {})))      # SOG-0532 lot 2 bis : `target`, l'élément de la ROUTE visé par la règle (le premier tronçon touché ; absent si la règle n'a pas de tronçon)
     out = [s for s in states.values() if s['flown'] or s['spaces_only']]
     out.sort(key=lambda s: (-s['flown'], -s['spaces_only'], s['state']))
     return out[:MAX_NV_STATES]
+
+
+def leg_label(leg):
+    """SOG-0532 lot 2 bis : l'endroit de la route d'un tronçon, en une chaîne bornée : « UL607 KOK–BUPAL » (la voie, ses deux points), « KOK–BUPAL » pour un direct."""
+    a = str((leg.get('start') or {}).get('id') or '')[:20]
+    b = str((leg.get('end') or {}).get('id') or '')[:20]
+    via = str(leg.get('via') or '')[:20]
+    return f'{via} {a}–{b}' if via and via != 'DCT' else f'{a}–{b}'
 
 
 @functools.lru_cache(maxsize=8192)      # SOG-0468 (5) : le calcul demande les noms d'une voie des centaines de milliers de fois (221 000 appels, 0,7 s sur trois vols) ; une fonction pure d'un texte : mémorisée, et rendue en ensemble NON modifiable (les appelants ne font que lire)
@@ -418,13 +426,15 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None
         if not affected:
             affected=[i for i,l in enumerate(legs) if l['kind']=='SID'] if sheet.endswith('DEP') else [i for i,l in enumerate(legs) if l['kind'] in ['STAR','APPROACH_LINK']] if sheet.endswith('ARR') else []
         phases=sorted({legs[i]['kind'] for i in affected})
+        focus=None      # SOG-0532 lot 2 bis : l'élément de la route qui a déclenché la règle quand elle n'a aucun tronçon : le point de sa condition (« obligatoire pour le trafic par Y » : Y)
         if mode=='COMPULSORY FOR TFC' and not affected and sheet=='Annex 2B':      # SOG-0354 L5 (4) défaut 4 : « X obligatoire pour le trafic par Y » et X absent de la route : le constat n'a aucun tronçon ; il se corrige D'ABORD en passant par X à côté de Y (`compel`), Y n'est écarté (`fallback`) que si cette reprise échoue (plan.plan)
             via=re.fullmatch(r'VIA\s+([A-Z0-9_*(), /-]+)',m[2] or '')
             for point in sorted(names(via[1])) if via else []:
                 if re.fullmatch('[A-Z0-9]{2,8}',point) and point in ctx['points']:
+                    focus=focus or point
                     if re.fullmatch('[A-Z0-9]{2,8}',v[7] or ''):avoids.append(dict(kind='compel',point=v[7],before=point,id=rule['id'],sheet=sheet,row=rule['row']))
                     avoids.append(dict(kind='point',point=point,fallback=True,id=rule['id'],sheet=sheet,row=rule['row']))
-        findings.append(dict(id=rule['id'],sheet=sheet,row=rule['row'],segments=affected,phases=phases,text=f"RAD {rule['id']} ({sheet}, ligne {rule['row']}) : {mode} ; contexte départ–SID–route–STAR–arrivée pris en compte."))
+        findings.append(dict(id=rule['id'],sheet=sheet,row=rule['row'],segments=affected,phases=phases,target=(leg_label(legs[affected[0]]) if affected else focus),text=f"RAD {rule['id']} ({sheet}, ligne {rule['row']}) : {mode} ; contexte départ–SID–route–STAR–arrivée pris en compte."))
         point_rule=sheet=='Annex 2B' and bool(v[7]) and not any(v[i] for i in [4,5,6]) and re.fullmatch('[A-Z0-9]{2,8}',v[7]) and v[7] not in [dep,arr]      # SOG-0354 L5 (4) d2 A : la cible de la règle est un POINT (LE2666 : DELOG) : le constat exclut le POINT (toutes les arêtes qui le touchent), pas les seuls tronçons de la route trouvée : la route suivante y arrivait par un AUTRE tronçon du même point (une 2e reprise, 2,8 s)
         for i in affected:
             l=legs[i]

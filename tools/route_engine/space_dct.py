@@ -116,7 +116,7 @@ def inside_area(line, uir, fras, west, lat, lon):
     return S.inside(uir, lat, lon) and not any(S.inside(f, lat, lon) for f in out)
 
 
-def check(rad, legs, spaces, typed, dep=None, arr=None):
+def check(rad, legs, spaces, typed, dep=None, arr=None, coded=False):
     """[(niveau, texte)] : les directs trop longs pour la zone (ERREUR pour une route tapée, REVUE sinon) et ce qui n'est pas décidé (REVUE) ; `spaces` : les espaces de la base de Londres (`spaces.read`) ou une fonction qui les rend (lue seulement si un direct est dans la tranche d'une ligne)."""
     lines = rows(rad)
     if not lines:
@@ -151,7 +151,7 @@ def check(rad, legs, spaces, typed, dep=None, arr=None):
                 issues.append(('REVUE', f"Direct {c['a']}..{c['b']} ({c['nm']:.0f} NM) : le milieu est à moins de {BOUNDARY_NM:g} NM d'une limite de {line['area']} : la limite du RAD (RAD {line['id']}, {line['nm']} NM) n'est pas décidée."))
                 continue
             if inside_area(line, uir, fras, west, lat, lon) and c['nm'] > line['nm'] + .5:
-                issues.append(('ERREUR' if typed else 'REVUE', f"ROUTE165 (RAD {line['id']}, annexe 3B FRA LIM) : le direct {c['a']}..{c['b']} ({c['nm']:.0f} NM) est trop long pour {line['area']} {words(line)} : la limite est de {line['nm']} NM."))
+                issues.append(('ERREUR' if typed else 'REVUE', f"ROUTE165 (RAD {line['id']}, annexe 3B FRA LIM) : le direct {c['a']}..{c['b']} ({c['nm']:.0f} NM) est trop long pour {line['area']} {words(line)} : la limite est de {line['nm']} NM.", *([{'code': 'space_dct_limit', 'values': {'from_point': str(c['a'])[:40], 'to_point': str(c['b'])[:40], 'nm': round(c['nm']), 'limit_nm': line['nm'], 'space': str(line['area'])[:40]}}] if coded and typed else [])))      # SOG-0532 lot 2 bis : le code et ses valeurs (l'écran compose la phrase)
     return issues
 
 

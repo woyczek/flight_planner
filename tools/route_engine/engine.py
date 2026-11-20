@@ -93,10 +93,11 @@ MAX_VERDICT_ITEMS=100      # SOG-0532 : au plus cent raisons dans `violations` e
 
 def yoyo(levels):
     """SOG-0532 (1) / PROF326 d'Eurocontrol : la suite des niveaux écrits d'un vol, [(point, niveau)] dans l'ordre de la route (le premier est le niveau déposé) : une DESCENTE suivie d'une REMONTÉE est un yoyo critique, jamais permis. Rend (point de la remontée, niveau le plus bas, niveau de la remontée) ou None."""
-    low=None
+    low=None;low_point=None
     for (_pa,la),(pb,lb) in zip(levels,levels[1:]):
-        if lb<la:low=lb if low is None else min(low,lb)
-        elif lb>la and low is not None:return pb,low,lb
+        if lb<la:
+            if low is None or lb<low:low,low_point=lb,pb
+        elif lb>la and low is not None:return dict(down_point=str(low_point)[:40],down_fl=low,up_point=str(pb)[:40],up_fl=lb)
     return None
 
 def written_route(dep,legs,via=(),marks=None):
@@ -1029,7 +1030,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if words[-1]!=arr: words.append(arr)
     marks={n:l for n,l in marks.items() if 0<n<len(words)-1}
     jump=yoyo([(None,fl)]+[(words[n],marks[n]) for n in sorted(marks)]) if marks else None
-    if jump:issue('ERREUR',f'Yoyo de niveau : F{jump[1]:03d} puis F{jump[2]:03d} en {jump[0]} : une descente suivie d’une remontée en croisière (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',point=jump[0],down_fl=jump[1],up_fl=jump[2],filed_fl=fl)      # le départ et l'arrivée ne portent jamais de groupe (le niveau déposé est celui du champ niveau)
+    if jump:issue('ERREUR',f'Yoyo de niveau : descente au FL{jump["down_fl"]:03d} à {jump["down_point"]}, puis remontée au FL{jump["up_fl"]:03d} à {jump["up_point"]} (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',filed_fl=fl,**jump)      # SOG-0532 lot 2 bis : les DEUX points (la descente, puis la remontée)      # le départ et l'arrivée ne portent jamais de groupe (le niveau déposé est celui du champ niveau)
     if dep not in nav.ads: issue('ERREUR','AD de départ inconnu : '+dep)
     if arr not in nav.ads: issue('ERREUR','AD d’arrivée inconnu : '+arr)
     airways={e['route'] for e in nav.edges}; procedure_names={p['token'] for p in nav.procedures.items}; connectors=airways|procedure_names|{w for w in words if route_connector(w,nav,airways,procedure_names)}; parsed=[]; active_fra=set()
@@ -1127,7 +1128,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         lowered=[]
         level_changes=level_marks(legs,profile.get('changes') or [],lowered,fl)
         jump=yoyo([(None,fl)]+[(legs[k]['start']['id'],level_changes[k]) for k in sorted(level_changes)])
-        if jump:issue('ERREUR',f'Yoyo de niveau : F{jump[1]:03d} puis F{jump[2]:03d} en {jump[0]} : une descente suivie d’une remontée en croisière (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',point=jump[0],down_fl=jump[1],up_fl=jump[2],filed_fl=fl)
+        if jump:issue('ERREUR',f'Yoyo de niveau : descente au FL{jump["down_fl"]:03d} à {jump["down_point"]}, puis remontée au FL{jump["up_fl"]:03d} à {jump["up_point"]} (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',filed_fl=fl,**jump)      # SOG-0532 lot 2 bis : les DEUX points (la descente, puis la remontée)
         if level_changes:
             if written_route(dep,legs,mandatory)==route:
                 route=written_route(dep,legs,mandatory,level_changes); written=True
@@ -1229,7 +1230,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         hit=bool(affected)
         if hit:
             violations.append(block)
-            issue('ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}){" enfreinte : aucune route sans infraction, la meilleure est rendue" if fallback else ""}.','rad_block',id=block['id'],sheet=block['sheet'],row=block['row'])      # SOG-0532 (3) : une règle connue enfreinte est une ERREUR, jamais une revue (route calculée comme route tapée)
+            issue('ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}){" enfreinte : aucune route sans infraction, la meilleure est rendue" if fallback else ""}.','rad_block',id=block['id'],sheet=block['sheet'],row=block['row'],target=rad_flight.leg_label(affected[0]))      # SOG-0532 lot 2 bis : `target` : l'élément de la ROUTE que la règle atteint (le premier tronçon touché)      # SOG-0532 (3) : une règle connue enfreinte est une ERREUR, jamais une revue (route calculée comme route tapée)
             for l in affected: l['alerts'].append('Interdiction RAD '+block['id'])
     # Full-flight conditions see the expanded SID/STAR, not only filed endpoints.
     elapsed=0.
@@ -1241,7 +1242,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     for nv in not_verified:
         issue('REVUE',f"RAD, État {nv['state']} : "+(f"{nv['flown']} règle(s) visent un tronçon ou un point de cette route et n'ont pas pu être vérifiées" if nv['flown'] else '')+(' ; ' if nv['flown'] and nv['spaces_only'] else '')+(f"{nv['spaces_only']} règle(s) ne visent qu'un espace que la base ne connaît pas" if nv['spaces_only'] else '')+'.','rad_unread',True,state=nv['state'],flown=nv['flown'],spaces_only=nv['spaces_only'])
     for finding in rad_summary['findings']:
-        if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'],'rad_rule',id=finding['id'],sheet=finding['sheet'],row=finding['row'])      # SOG-0532 (3)
+        if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'],'rad_rule',id=finding['id'],sheet=finding['sheet'],row=finding['row'],**({'target':finding['target']} if finding.get('target') else {}))      # SOG-0532 lot 2 bis : `target` : le tronçon ou le point de la route qui a déclenché la règle      # SOG-0532 (3)
         for index in finding['segments']:
             leg=legs[index];leg['alerts'].append('RAD '+finding['id']+' : '+', '.join(finding['phases']));leg['compatible']=False
     for c in candidates:
@@ -1257,7 +1258,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
                 issue('REVUE',f'{ad} : aucune {kind} complète connectée utilisée ; raccord DCT de simulation. Catalogue : {stats.get(kind+"_total",0)} procédures, {stats.get(kind+"_usable",0)} résolues, {stats.get(kind+"_incomplete",0)} incomplètes, {stats.get(kind+"_doubt",0)} douteuses.'+(f' {stats[kind+"_above_level"]} refusée(s) à ce niveau : leur point {"d’entrée" if kind=="STAR" else "de sortie"} exige une altitude au-dessus du niveau de croisière FL{fl:03d}.' if stats.get(kind+'_above_level') else ''))
     dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures,fl*100,strict=True)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
     for level,text,*meta in dct_issues:issue(level,text,*([meta[0]['code'],meta[0].get('unverifiable',False)] if meta else []),**(meta[0]['values'] if meta else {}))
-    for level,text in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),True,dep,arr):issue(level,text,*(['space_dct_limit'] if level=='ERREUR' else []))      # SOG-0532 (3) : un direct décidé trop long est une ERREUR, route calculée ou tapée      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
+    for level,text,*meta in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),True,dep,arr,True):issue(level,text,*([meta[0]['code']] if meta else []),**(meta[0]['values'] if meta else {}))      # SOG-0532 (3) : un direct décidé trop long est une ERREUR, route calculée ou tapée      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
     gaps=[dict(name='FRA : géométrie et NPZ',reason='Points FRA, rôles E/X/I/A/D, niveaux numériques et horaires simples utilisés. Volumes des FRA, NPZ et règles complexes non fournis par la liste de points : les liaisons sont des candidates à contrôler.' if fra_loaded else 'Aucune liste FRA ne couvre cette date. Les DCT ne sont pas des autorisations FRA.'),
           dict(name='Sens et vitesses limites',reason='Sens autorisés et limites de vitesse absents des fichiers airways ; vitesse sol saisie utilisée pour le profil.'),
           dict(name='RAD complet',reason='Le vol entier, SID/STAR développées comprises, est le périmètre du contrôle. Seules les formes de conditions explicitement prises en charge sont décidées. Conditions complexes, doublons ambigus, plafonnements conditionnels et géométrie des espaces restent à interpréter.'),
