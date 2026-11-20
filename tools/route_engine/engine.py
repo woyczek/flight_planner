@@ -85,6 +85,10 @@ def split_level(word):
     m=re.fullmatch(r'(.+)/(?:[NK]\d{4}|M\d{3})?F(\d{3})',word)      # SOG-0431 : aussi « POINT/N0405F200 » (vitesse et niveau, le groupe que le plan de vol écrit : la vitesse n'est pas lue ici)
     return (m.group(1),int(m.group(2))) if m else (word,None)
 
+def today():
+    """SOG-0532 (7) : la date du jour (UTC, « AAAA-MM-JJ », sans heure : on ne suppose pas d'heure de départ) quand la demande n'en donne pas. Jamais une date figée dans le code : le cycle AIRAC de la base et les règles du RAD en dépendent."""
+    return dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d')
+
 def written_route(dep,legs,via=(),marks=None):
     """SOG-0401 : le texte de la route depuis ses tronçons, écrit comme `Nav.format_path` l'écrit (une voie, puis le point où elle se termine ; les tronçons qui se suivent sur la même voie ne font qu'un mot), avec, en plus, un groupe de niveau « POINT/Fnnn »
     sur le point de DÉPART des tronçons que `marks` désigne ({ indice du tronçon : niveau en centaines de pieds }) : ce point reste dans le texte, la voie est répétée après lui (« B1 SITET/F195 B1 KEPAD »). Le départ (indice 0) et l'arrivée n'en portent jamais."""
@@ -930,7 +934,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     dep=str(request.get('dep','')).strip().upper(); arr=str(request.get('arr','')).strip().upper()
     for ad in [dep,arr]:
         if not re.fullmatch(r'[A-Z0-9]{3,4}|[A-Z]{2}\d{3}',ad,re.A): raise ValueError('Code aérodrome invalide : '+ad)      # SOG-0466 lot 2 : ou le code de liste d'une hélistation (« LF418 »)
-    when=dt.datetime.fromisoformat(str(request.get('date','2026-11-09T12:00')).replace('Z','+00:00'))
+    when=dt.datetime.fromisoformat(str(request.get('date') or today()).replace('Z','+00:00'))      # SOG-0532 (7) : sans date, celle du jour
     # UI and CLI inputs are UTC. Offset-aware ISO requests are normalized to UTC.
     if when.tzinfo: when=when.astimezone(dt.timezone.utc).replace(tzinfo=None)
     fl=int(request.get('fl',180))

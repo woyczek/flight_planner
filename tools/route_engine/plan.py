@@ -151,7 +151,7 @@ def drop_contexts():
 
 def context(request, root):
     """Les données de navigation et le RAD de la date, GARDÉS d'un calcul à l'autre tant que l'empreinte de leurs fichiers ne change pas (voir plus haut, SOG-0296) ; refaits sinon."""
-    date = dt.datetime.fromisoformat(str(request.get('date', '2026-11-09T12:00')).replace('Z', '+00:00'))
+    date = dt.datetime.fromisoformat(str(request.get('date') or engine.today()).replace('Z', '+00:00'))      # SOG-0532 (7) : sans date, celle du jour
     if date.tzinfo:
         date = date.astimezone(dt.timezone.utc)
     date = date.date()
@@ -276,7 +276,8 @@ def plan(request, root):
         if getattr(nav, 'states_total', 0) > limit['ceil'] - next_attempt['cost']:
             raise SearchBudget(limit['what'] + '. Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
-    request.setdefault('date', '2026-11-09T12:00')
+    if not request.get('date'):
+        request['date'] = engine.today()      # SOG-0532 (7) : la date du vol, à défaut celle du jour (jamais une date figée dans le code)
     context_began = time.perf_counter()
     nav, rad = context(request, root)
     nav.fra_floors = fra_floor.floors(rad) if fra_floor.CAP_SEARCH else {}      # SOG-0401 (lot 3) : les planchers de route libre de la Suisse et de l'Italie (RAD, annexe 3B) : le graphe de la recherche y ramène le plafond des voies SEULEMENT si CAP_SEARCH (faux par défaut : la route la plus courte est gardée)

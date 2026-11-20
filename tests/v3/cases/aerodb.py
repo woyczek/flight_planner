@@ -18972,3 +18972,68 @@ def k406(c):
     c.eq((check(good) is not None, check(dict(good, levels=list(range(100, 113)))) is None, check(dict(good, levels=[])) is None, check(dict(good, levels=[9])) is None, check(dict(good, levels=[True])) is None, check(dict(good, levels='350')) is None,
           check(dict(good, fl=350)) is None, check(dict(good, first_valid='yes')) is None, check({'adep': 'ZZAA', 'adest': 'ZZBB'}) is None, check(dict(good, zzz=1)) is None),
          (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')
+
+
+def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None):
+    """SOG-0532 : une base INVENTÉE pour les cas du moteur de route (deux terrains ZZAA et ZZBB, des points A0 P1 P2 P3 P4 B0 sur une ligne, des voies `lanes` = [(nom, [points], plancher_ft, plafond_ft)], une STAR de ZZBB si `star_min`, le RAD de test + `rad_rows` en annexe 3A Conditions) ; rend (data, rad). Aucune donnée de l'utilisateur."""
+    import json
+    import os
+    import sys
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I
+    pts = {'A0': (50.0, 0.6), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'B0': (50.0, 11.6)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
+    lanes = lanes or [('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 46000)]
+    ways = []
+    for name, chain, lower, upper in lanes:
+        ways += [{'route': name, 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': lower, 'upper': upper} for a, b in zip(chain, chain[1:])]
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    data = os.path.join(td, 'data')
+    folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+    os.makedirs(folder)
+    for k, v in files.items():
+        with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+            json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+    if star_min:
+        os.makedirs(os.path.join(data, 'proc', 'manual'))
+        star = {'icao': 'ZZBB', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR', 'name': 'IAF1A', 'id': 'ZZBB.STAR.IAF1A', 'runways': ['09'], 'points': [
+            {'id': 'P4', 'lat': pts['P4'][0], 'lon': pts['P4'][1], 'alt': {'type': 'min', 'ft': star_min}}, {'id': 'B0', 'lat': pts['B0'][0], 'lon': pts['B0'][1], 'alt': {'type': 'at', 'ft': 3000}}]}]}
+        with open(os.path.join(data, 'proc', 'manual', 'ZZBB.json'), 'w', encoding='utf-8') as f:
+            json.dump(star, f)
+    os.makedirs(os.path.join(data, 'route'))
+    sheets = RF.rad_sheets()
+    for name, rows in sheets:
+        if name == 'Annex 3A Conditions':
+            rows.extend(rad_rows)
+    book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+    RF.write_xlsx(book, sheets)
+    rad = os.path.join(data, 'route', 'rad.json.gz')
+    I.write(rad, I.merge([], [I.read_book(book)[1]]))
+    return data, rad
+
+
+@case('K480', 'Route engine, SOG-0532 (7): the date of the calculation is the date of the flight, and without one the date of the DAY — never a date frozen in the code (before: 9 November 2026 at 12:00, so a calculation without a date used the AIRAC cycle and the RAD of that day for ever)',
+      'K', static=True,
+      rule='SOG-0532 (7) (the ergonomics session, 20 Nov: « La date du calcul est celle du vol, à défaut celle du jour ; pas de date figée dans le code »). The code had three copies of « 2026-11-09T12:00 » (plan.compute, plan.context, engine.assess). Now `engine.today()` (UTC, « AAAA-MM-JJ », no time of day: no departure time is assumed) answers all three. The bench: an invented base (two aerodromes, one lane) and the clock of the engine put on a day the base has never seen.')
+def k480(c):
+    import tempfile
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine as E, plan as P, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+        kept = E.today
+        try:
+            E.today = lambda: '2026-12-02'
+            none = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+            given = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-15T09:30', 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+        finally:
+            E.today = kept
+    c.ok(str(none.get('date', '')).startswith('2026-12-02'), str(none.get('date')), 'without a date the answer is dated the DAY of the clock (2 December), not 9 November (red before: « 2026-11-09T12:00Z »)')
+    c.ok(str(given.get('date', '')).startswith('2026-11-15T09:30'), str(given.get('date')), 'with a date (and its time) the flight\'s own date is kept')
+    c.ok(none.get('ok') and given.get('ok'), str((none.get('ok'), given.get('ok'))), 'both are calculated')
+    import inspect
+    src = inspect.getsource(E) + inspect.getsource(P)
+    c.ok('2026-11-09' not in src, str(src.count('2026-11-09')), 'no date frozen in the code of the engine (engine.py, plan.py)')
