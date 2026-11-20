@@ -5576,6 +5576,21 @@
    "since": "2026-11-20",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0133",
+   "fiche": "SOG-0532",
+   "app": "pilote",
+   "question": "Routes : faut-il aller chercher les contours des espaces (FIR, UTA, CTA) pour vérifier plus de règles du RAD ?",
+   "context": "L'annexe 2B du cycle compte 8 194 règles. Apprendre à mieux lire leur texte en débloque environ 900 (décidé, en cours). Environ 3 000 autres (37 %) ne se vérifient que si l'on sait où passent les limites des espaces et à quelle FIR appartient chaque terrain : une donnée que la base n'a pas, hors de France. Il faudrait choisir une source (officielle d'abord), peut-être un hôte de plus pour le lanceur.",
+   "options": [
+    "Pas maintenant : ces règles restent dites « non vérifiable », on y revient après le jalon de l'atelier",
+    "Oui : AeroDB cherche les sources officielles et me rend leurs conditions d'usage avant tout import",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-20",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
