@@ -629,6 +629,17 @@ const TX = {
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
   // SOG-0402 : « Copier pour Eurocontrol » et son pli de relecture
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
+  // SOG-0533 : le niveau changé après le calcul de la route prise — sous la route, puis au-dessus de « Copier pour Eurocontrol »
+  rStale: ['Route calculée pour le FL{c} — à recalculer : le vol est au FL{f}',
+    'Route computed for FL{c} — compute again: the flight is at FL{f}',
+    'Route für FL{c} berechnet — neu berechnen: der Flug ist auf FL{f}',
+    'Ruta calculada para el FL{c} — volver a calcular: el vuelo está en el FL{f}'
+  ],
+  fplStale: ['Plan de vol au FL{f} sur une route calculée pour le FL{c} : recalculez la route avant de copier',
+    'Flight plan at FL{f} on a route computed for FL{c}: compute the route again before copying',
+    'Flugplan auf FL{f} mit einer für FL{c} berechneten Route: Route vor dem Kopieren neu berechnen',
+    'Plan de vuelo en el FL{f} con una ruta calculada para el FL{c}: vuelva a calcular la ruta antes de copiar'
+  ],
   // SOG-0529 (2) : une route qui n'est qu'un direct (case 15 « DCT ») — ce qu'il faut faire ; puis sa longueur
   fplDirect: ['Aucune route calculée entre {dep} et {arr} : calculez-en une ou saisissez-la (la case 15 porte « DCT »).',
     'No route computed between {dep} and {arr}: compute one or type it (item 15 carries « DCT »).',
@@ -2868,6 +2879,7 @@ const STYLE = `
 [data-module="fuel"] .fu-altnprop li[data-state="grey"]>.fu-altnsign{color:var(--sog-muted)}
 [data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
 [data-module="fuel"] .fu-sug[hidden]{display:none}
+[data-module="fuel"] [data-rstale][hidden]{display:none} /* SOG-0533 : la ligne « à recalculer » est un .f-row (display:flex) */
 [data-module="fuel"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
 [data-module="fuel"] .fu-sugitem:last-child{border-bottom-width:0}
 [data-module="fuel"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
@@ -3068,7 +3080,7 @@ function renderPlanBody() {
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
-      <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
+      <div data-routealts></div><p class="f-row f-warn fu-rage" data-rstale hidden><span data-rstaletext></span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
       <p class="f-muted" data-natwarn hidden></p><p class="f-muted" data-awywarn hidden></p>
@@ -4715,6 +4727,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
       fl: String(took).padStart(3, '0')
     }), 'info');
   }
+  S.ralts.fl = okFl(args.fl) ? args.fl : null; // SOG-0533 : le niveau de CE calcul (une route prise le garde)
   if (S.ralts.more === 'busy') altsMore(s, args); // SOG-0296 : la seconde demande, sans attendre
   return routeDrawn(s);
 }
@@ -5443,8 +5456,9 @@ function fplDraw(C, textOnly = false) {
     box.querySelector('[data-fplbody]').innerHTML = inner;
     return;
   }
-  const open = !!box.querySelector('details[data-fplfold]')?.open;
-  box.innerHTML = `<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
+  const open = !!box.querySelector('details[data-fplfold]')?.open,
+    stale = routeStale(C); // SOG-0533 : dit AVANT de copier, au-dessus du bouton (la copie reste permise)
+  box.innerHTML = `${stale ? `<p class="f-warn" data-fplstale>${esc(tt(TX.fplStale, stale))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
 }
 /** SOG-0529 (2) : une route qui n'est qu'un direct — « aucune route calculée … : calculez-en une ou saisissez-la », puis : si le contrôle
  *  de route d'AeroDB a jugé CE texte (« Contrôler », S.rcheck) et y a trouvé des écarts, SES phrases (RE.faultLines, trois au plus) ;
@@ -5490,9 +5504,12 @@ async function fplCopy() {
   // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
   // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
   // SOG-0529 (2) : une route qui n'est qu'un direct : la même notification dit quoi faire, et prévient d'un direct long
-  const direct = fplDirectNotes(F.m).join(' ');
-  S.ctx.notify(`${shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied)}${direct ? ` ${direct}` : ''}`,
-    shown || hf || direct ? 'warn' : 'ok');
+  // SOG-0533 : une route calculée pour un autre niveau : la notification le redit
+  const direct = fplDirectNotes(F.m).join(' '),
+    st = routeStale(S.C),
+    stale = st ? tt(TX.fplStale, st) : '';
+  S.ctx.notify(`${shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied)}${direct ? ` ${direct}` : ''}${stale ? ` ${stale}` : ''}`,
+    shown || hf || direct || stale ? 'warn' : 'ok');
 }
 /** SOG-0398 : l'attente au plus des lectures de la base pour la ligne du dégagement (terrain, couverture). */
 const ALTN_CHK_WAIT_MS = 4000;
@@ -6447,9 +6464,11 @@ function routeTake(i) {
   }));
   // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot (voies, groupes de niveau) : pas de normalisation
   // SOG-0517 : un itinéraire pris n'impose aucun passage au calcul suivant (la route d'avant ne se reconduit pas)
+  // SOG-0533 : et le niveau de son calcul (celui de l'itinéraire, sinon celui de la demande) : un niveau changé ensuite le dit
   if (S.flight.route) Object.assign(S.flight.route, {
     from: 'engine',
-    typed: []
+    typed: [],
+    calcFl: [a.fl, S.ralts?.fl, S.ralts?.n?.level?.fl].find(flOk) ?? null
   });
   ta.dispatchEvent(new Event('change', {
     bubbles: true
@@ -6476,6 +6495,28 @@ function routeTake(i) {
   }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
   altsClear(true); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis), même pour une liste venue du document (SOG-0224)
+}
+/** Un niveau de vol en centaines de pieds, entier, de FL010 à FL660 (une entrée de data/ : jamais pris sans cette borne). */
+const flOk = v => Number.isInteger(v) && v >= 10 && v <= 660;
+/** SOG-0533 : une route prise (from 'engine') calculée pour un autre niveau que celui du plan de vol (le devis, C.levelFt, que la case
+ *  15 écrit en tête) : { c, f }, le niveau du calcul et celui du vol (centaines de pieds) ; null sinon — une route tapée, d'un OFP, d'un
+ *  vol d'avant (sans calcFl), ou au même niveau. */
+function routeStale(C = S.C) {
+  const r = S.flight?.route || {},
+    c = flOk(r.calcFl) ? r.calcFl : null,
+    f = +C?.levelFt > 0 ? Math.round(+C.levelFt / 100) : null;
+  return r.from === 'engine' && c && f && c !== f ? {
+    c: String(c).padStart(3, '0'),
+    f: String(f).padStart(3, '0')
+  } : null;
+}
+/** SOG-0533 : « Route calculée pour le FL… — à recalculer », avec « Recalculer », sous la liste des itinéraires ; cachée sinon. */
+function staleDraw(C) {
+  const p = S.body?.querySelector('[data-rstale]'),
+    x = routeStale(C);
+  if (!p) return;
+  p.hidden = !x;
+  p.querySelector('[data-rstaletext]').textContent = x ? tt(TX.rStale, x) : '';
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
@@ -8363,6 +8404,7 @@ function refresh() {
   lvlMix(C);
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
+  staleDraw(C); // SOG-0533 : la route calculée pour un autre niveau
   fplDraw(C);
   altnChkDraw(C); // SOG-0398 : la ligne du dégagement suit le terrain, la fiche, la durée du vol
   wxAutoSoon(); // SOG-0527 (2) : la météo qui manque ou a vieilli est demandée d'elle-même

@@ -9235,3 +9235,98 @@ def f292(c):
     c.ok(len(sent) >= 1, sent, 'the computation left')
     c.ok(len(st.get('cancels') or []) > n_cancel, st.get('cancels'), 'the search of « Auto » cancelled (regen/job/cancel) before it')
     c.check_errors()
+
+
+@case('F293', 'Route step: a route taken keeps the level of ITS computation — the level changed afterwards marks it « computed for FL270 — '
+      'compute again » under the route, and « Copier pour Eurocontrol » says it BEFORE copying (a line above the button) and in the '
+      'copy\'s notification; computed again at the new level and taken, the level of the computation and the level of the flight plan '
+      'are the same number', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0533 (AeroDB\'s diagnosis of SOG-0532: a route computed at FL350, the flight plan filed at FL330 with « F330 » at its head '
+      'and « /F350 » further on — the level was changed after the computation); a fake launcher, invented sheet, no callsign nor '
+      'registration')
+def f293(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    # the engine writes its level on the point where the cruise begins (« LUGEN/N0330F270 »)
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN/N0330F270 UN10 NEPIX MEN1A LFML', 370, 270, segs)]
+    stale = {'fr': ('Route calculée pour le FL270 — à recalculer : le vol est au FL250',
+                    'Plan de vol au FL250 sur une route calculée pour le FL270 : recalculez la route avant de copier'),
+             'en': ('Route computed for FL270 — compute again: the flight is at FL250',
+                    'Flight plan at FL250 on a route computed for FL270: compute the route again before copying'),
+             'de': ('Route für FL270 berechnet — neu berechnen: der Flug ist auf FL250',
+                    'Flugplan auf FL250 mit einer für FL270 berechneten Route: Route vor dem Kopieren neu berechnen'),
+             'es': ('Ruta calculada para el FL270 — volver a calcular: el vuelo está en el FL250',
+                    'Plan de vuelo en el FL250 con una ruta calculada para el FL270: vuelva a calcular la ruta antes de copiar')}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}  # no registration: the flight plan writes the neutral one
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+
+    def item15():
+        c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = true")
+        t = c.text(f'{FUEL} [data-fpl] [data-fpltext]') or ''
+        c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = false")
+        return next((x.strip() for x in t.split('\n') if re.match(r'-N\d{4}F\d{3}\b', x.strip())), '')
+
+    # 1. computed at FL270 and taken: the head of item 15 and the engine's level are one number; nothing said
+    sent = _compute_now(c, st)
+    c.eq(sent[0].get('fl'), 270, 'computed at the flight\'s level, FL270', what='sent')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: (d.get('route') or {}).get('from') == 'engine', 'the route taken, written')
+    c.eq((d.get('route') or {}).get('calcFl'), 270, 'the route keeps the level of its computation', what='calcFl')
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
+    c.ok(item15().startswith('-N') and 'F270 ' in item15()[:12] and '/N' not in item15(), item15(),
+         'item 15 at FL270, the engine\'s level not written twice')
+    c.ok(not c.shown(f'{FUEL} [data-rstale]') and c.count(f'{FUEL} [data-fplstale]') == 0, 'nothing said', 'the same level: nothing said')
+    # 2. the level changed after the computation (reproduced: « F250 » at the head, « /F270 » further on): said under the route, and
+    # above « Copier pour Eurocontrol », before copying
+    to_step(c, 0)
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
+    c.page.locator(f'{FUEL} input[data-k="fl"]').dispatch_event('change')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-rstale]:not([hidden])')", timeout=8000, what='the route marked « à recalculer »')
+    c.eq(norm(c.text(f'{FUEL} [data-rstale] [data-rstaletext]') or ''), norm(stale[0]), 'under the route: computed for FL270, to compute again',
+         what='route')
+    c.eq(norm(c.text(f'{FUEL} [data-rstale] [data-do=rcompute]') or ''), norm({'fr': 'Recalculer', 'en': 'Compute again',
+         'de': 'Neu berechnen', 'es': 'Recalcular'}[c.lang]), 'with « Recalculer »', what='button')
+    fpl = item15()
+    c.ok('F250 ' in fpl[:12] and 'LUGEN/N0330F270' in fpl, fpl, 'reproduced: item 15 « F250 » at its head and « /F270 » further on')
+    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale]') or ''), norm(stale[1]), 'above « Copier pour Eurocontrol »: said before copying',
+         what='before')
+    c.ok(c.js(f"""(() => {{ const p = document.querySelector('{FUEL} [data-fpl] [data-fplstale]'),
+        b = document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]');
+        return !!(p.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) }})()"""), 'after', 'the line comes before the button')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]').getAttribute('aria-disabled')"), None,
+         'the copy stays permitted', what='copy')
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{FUEL} [data-fpl] [data-do="fplcopy"]')
+    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(stale[1]),
+            timeout=6000, what='the copy says it too')
+    c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = false")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{FUEL} [data-rstale]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F293_{c.design}_{w}_{c.lang}_stale.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    # 3. « Recalculer »: computed at FL250, taken — the level of the computation and of the flight plan are the same number, nothing said
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN/N0330F250 UN10 NEPIX MEN1A LFML', 370, 250, segs)]
+    n0 = len(st['posts'])
+    c.tap(f'{FUEL} [data-rstale] [data-do="rcompute"]')
+    c.until(f"!document.querySelector('{FUEL} [data-rbusy]') && !!document.querySelector('{FUEL} [data-altlist] [data-alt] [data-do=rtake]')",
+            timeout=15000, what='the new answer drawn')
+    again = [p['args'] for p in st['posts'][n0:] if (p.get('args') or {}).get('action') == 'compute']
+    c.eq(again[0].get('fl') if again else None, 250, 'computed again at the new level, FL250', what='again')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    cf_doc(c, lambda d: (d.get('route') or {}).get('calcFl') == 250, 'the route taken at FL250, written')
+    c.until(f"!document.querySelector('{FUEL} [data-rstale]:not([hidden])') && !document.querySelector('{FUEL} [data-fplstale]')",
+            timeout=8000, what='nothing said any more')
+    fpl = item15()
+    c.ok('F250 ' in fpl[:12] and '/N' not in fpl, fpl, 'item 15 at FL250, one level from its head to its end')
+    c.check_errors()
