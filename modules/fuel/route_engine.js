@@ -539,7 +539,8 @@ function notVerifiedOf(list) {
       spaces_only: int(own('spaces_only')),
       items: (Array.isArray(own('items')) ? own('items') : []).slice(0, 40).filter(i => i && typeof i === 'object').map(i => ({
         id: text(Object.hasOwn(i, 'id') ? i.id : '', 32),
-        target: text(Object.hasOwn(i, 'target') ? i.target : '', 40), // l'endroit de la route (lot 2 bis d'AeroDB) ; '' sans lui
+        // l'endroit de la route (lot 2 bis d'AeroDB, 6c0987086 : un tronçon « UL607 KOK–BUPAL », 62 signes au plus) ; '' sans lui
+        target: text(Object.hasOwn(i, 'target') ? i.target : '', 80),
         reason: /^[a-z][a-z_]{0,31}$/.test(Object.hasOwn(i, 'reason') ? i.reason : '') ? i.reason : 'unread'
       })).filter(i => i.id)
     };

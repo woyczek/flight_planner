@@ -620,12 +620,6 @@ const TX = {
     'paso por 30° oeste hacia las {at}'
   ],
   // SOG-0401 : ce qui a été vérifié, et ce qui ne l'a pas été, en tête des itinéraires ; le détail dans le pli
-  rRadLine: [
-    'Contrôle de simulation : {d} condition(s) RAD vérifiée(s), {r} non vérifiée(s), {k} espace(s) inconnu(s) — ce n’est pas une validation',
-    'Simulation check: {d} RAD condition(s) checked, {r} not checked, {k} unknown space(s) — this is not a validation',
-    'Simulationsprüfung: RAD-Bedingungen geprüft: {d}, nicht geprüft: {r}, unbekannte Lufträume: {k} — das ist keine Validierung',
-    'Control de simulación: condiciones RAD comprobadas: {d}, no comprobadas: {r}, espacios desconocidos: {k} — no es una validación'
-  ],
   // insécables : « 0 écart contrôlé » d'un bloc (l'ergonome, capture F250 : coupé après « écart »)
   rFaults0: ['0 écart contrôlé', '0 checked deviations', '0 geprüfte Abweichungen', '0 desviaciones controladas'],
   // SOG-0532 (3), (4) : une route qui enfreint une règle connue — sur sa ligne, à sa prise, et avant « Copier pour Eurocontrol »
@@ -6077,10 +6071,9 @@ function routeAltsDraw() {
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
-  // SOG-0401 : ce qui a été vérifié et ce qui ne l'a pas été, sous « Calculé à … », sans pli
-  const R = A.n?.rad,
-    radLine = R && A.list?.length ? `<p class="f-row f-muted fu-rage" data-radline><span>${esc(tt(TX.rRadLine, { d: R.decided, r: R.review, k: R.unknown_spaces.length }))}</span></p>` : '';
-  box.innerHTML = head + radLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  // SOG-0532 (l'ergonome, 20/11) : la ligne « Contrôle de simulation : … » est retirée — ses comptes, ceux de tout le calcul, doublaient
+  // et contredisaient les groupes des verdicts ; « Seul Eurocontrol valide un plan. » se dit sous « conforme » (verdictWord)
+  box.innerHTML = head + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -6556,7 +6549,8 @@ function routeStale(C = S.C) {
 /** SOG-0532 (3) : le mot du verdict sur la ligne d'un itinéraire qui n'enfreint rien de connu — « conforme à ce que nous savons lire »
  *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
 function verdictWord(a) {
-  if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(RR.ROWS.conform))}</span>`;
+  // SOG-0532 (l'ergonome) : sous le SEUL verdict « conforme », une ligne courte et visible — jamais dans un pli
+  if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(RR.ROWS.conform))}</span><small class="f-muted fu-rshare" data-onlyeuro>${esc(tt(RR.ROWS.onlyEurocontrol))}</small>`;
   if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable))}</b>`;
   return '';
 }

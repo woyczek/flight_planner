@@ -19,6 +19,10 @@ export const ROWS = {
   conform: ['conforme à ce que nous savons lire', 'conforms to what we can read', 'entspricht dem, was wir lesen können',
     'conforme a lo que sabemos leer'
   ],
+  // sous le seul verdict « conforme » (l'ergonome, 20/11)
+  onlyEurocontrol: ['Seul Eurocontrol valide un plan.', 'Only Eurocontrol validates a plan.', 'Nur Eurocontrol validiert einen Plan.',
+    'Solo Eurocontrol valida un plan.'
+  ],
   groupViolates: ['Règles connues enfreintes', 'Known rules broken', 'Verletzte bekannte Regeln', 'Reglas conocidas infringidas'],
   groupUnverifiable: ['Non vérifiable : {n} point(s)', 'Cannot be verified: {n} point(s)', 'Nicht prüfbar: {n} Punkt(e)',
     'No verificable: {n} punto(s)'

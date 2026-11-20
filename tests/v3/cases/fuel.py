@@ -7970,7 +7970,7 @@ _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review
       screens=False, langs4=True,
       rule='SOG-0401 (the user: « validité ifps : échec », 22 errors of route on a proposal said « sans incompatibilité détectée »); the '
       'ergonomist, 17/11: the line from the numbers of AeroDB 9929e1afa, « 0 écart contrôlé », the detail in the fold read at its opening; '
-      'SOG-0403 R1 (AeroDB 733af8fbf): the hour judged at 30° west, the field `point`; a fake launcher')
+      'SOG-0403 R1 (AeroDB 733af8fbf): the hour judged at 30° west, the field `point`; a fake launcher; SOG-0532 (the ergonomist, 20 Nov, choice (a)): the line « Contrôle de simulation : … » is REMOVED — expectation changed on purpose')
 def f250(c):
     T = 'modules/fuel/module.js'
     L = c.lang
@@ -7980,14 +7980,10 @@ def f250(c):
     open_proc(c)
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='« Calculer A → B »')
     _compute_now(c, st)
-    Lx = f'{FUEL} [data-routealts] [data-radline]'
-    c.until(f"!!document.querySelector('{Lx}')", timeout=10000, what='the line of what was checked')
-    want = re.sub(r'\((s|en|es|e|n|x)\)', r'\1', tx(T, 'rRadLine', L)).replace('{d}', '412').replace('{r}', '37').replace('{k}', '2')
-    c.eq(norm(c.text(f'{Lx} > span') or ''), norm(want), 'the numbers of the check, and « ce n\'est pas une validation »', what='line')
-    order = c.js(f"[...document.querySelector('{FUEL} [data-routealts]').children].map(e => e.hasAttribute('data-rage') ? 'age' : "
-                 f"e.hasAttribute('data-radline') ? 'rad' : '').filter(Boolean)")
-    c.eq(order[:2], ['age', 'rad'], 'right under « Calculé à … »', what='place')
-    c.eq(c.count(f'{Lx} details, {FUEL} details[data-radline]'), 0, 'no fold on the line', what='no fold')
+    # SOG-0532 (the ergonomist, 20 Nov, choice (a) — expectation changed on purpose): the line « Contrôle de simulation : 412 … » is removed
+    # (its counts, those of the whole computation, repeated and contradicted the groups of the verdicts)
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rage]')", timeout=10000, what='« Calculé à … »')
+    c.eq(c.count(f'{FUEL} [data-radline]'), 0, 'no line « Contrôle de simulation » any more', what='removed')
     rows = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => e.textContent)")
     c.ok(rows and all(norm(tx(T, 'rFaults0', L)) in norm(r) for r in rows), rows, '« 0 écart contrôlé » on each itinerary')
     # the fold: written only when opened
@@ -8001,7 +7997,7 @@ def f250(c):
     c.ok(any('LSLI1008A' in x for x in rev) and any('ED3518A' in x for x in rev) and not any('LF9999' in x for x in rev), rev,
          'the conditions left to examine, not the decided ones')
     c.eq(c.count(f'{F} [data-radreview] li b'), len(rev), 'a reason that is markup is text (one <b>, the identifier, per line)', what='escaped')
-    c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
+    c.js(f"document.querySelector('{FUEL} [data-routealts] [data-rage]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F250_{c.design}_390_{L}.png')
     # SOG-0403 R1: the free route whose tracks were judged at 30° west says so
     sec = _free_time_sections()
@@ -9627,3 +9623,69 @@ def f296(c):
         c.js(f"document.querySelector('{R1}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F296_{c.design}_{w}_{c.lang}_spaces.png')
     c.check_errors()
+
+
+@case('F297', 'Route step: under the ONLY verdict « conforme à ce que nous savons lire », a short visible line « Seul Eurocontrol valide un '
+      'plan. » (never in a fold); nothing under « enfreint » nor « non vérifiable »; the line « Contrôle de simulation : … » is gone',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0532 (the ergonomist, 20 Nov, choice (a): the line of the counts of the whole computation removed, « Seul Eurocontrol valide '
+      'un plan. » under « conforme » only); a fake launcher, an invented route and rule')
+def f297(c):
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'rad': _RAD_VIEW}
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [
+        # AeroDB 6c0987086 (lot 2 bis): the values of the full sentences — {target}, the two points of the yoyo, space_dct_limit
+        dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=4, faulty=True, verdict='violates',
+             violations=[{'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'},
+                         {'code': 'rad_block', 'values': {'id': 'XX9002', 'sheet': 'Annexe X', 'row': 3, 'target': 'XQ1 LUGEN–NEPIX'}, 'text': 'x'},
+                         {'code': 'level_yoyo', 'values': {'down_point': 'LUGEN', 'down_fl': 240, 'up_point': 'NEPIX', 'up_fl': 270,
+                                                           'filed_fl': 270}, 'text': 'y'},
+                         {'code': 'space_dct_limit', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 48, 'limit_nm': 30,
+                                                                'space': 'XQTA'}, 'text': 'z'}], unverifiable=[]),
+        dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[],
+             unverifiable=[{'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}]),
+        dict(_alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, segs, sid=False), verdict='conform', violations=[], unverifiable=[])]
+    want = {'fr': 'Seul Eurocontrol valide un plan.', 'en': 'Only Eurocontrol validates a plan.', 'de': 'Nur Eurocontrol validiert einen Plan.',
+            'es': 'Solo Eurocontrol valida un plan.'}[c.lang]
+    full = {'fr': ['LUGEN–NEPIX : règle du RAD non respectée (XX9001)', 'XQ1 LUGEN–NEPIX : route interdite par le RAD (XX9002)',
+                   'Descente au FL240 à LUGEN, puis remontée au FL270 à NEPIX (« yoyo »)', 'LUGEN–NEPIX : direct de 48 NM, limite 30 NM dans XQTA'],
+            'en': ['LUGEN–NEPIX: RAD rule not met (XX9001)', 'XQ1 LUGEN–NEPIX: route prohibited by the RAD (XX9002)',
+                   'Descent to FL240 at LUGEN, then climb back to FL270 at NEPIX (“yoyo”)', 'LUGEN–NEPIX: direct of 48 NM, limit 30 NM in XQTA'],
+            'de': ['LUGEN–NEPIX: RAD-Regel nicht eingehalten (XX9001)', 'XQ1 LUGEN–NEPIX: Route durch das RAD verboten (XX9002)',
+                   'Sinkflug auf FL240 bei LUGEN, dann Steigflug zurück auf FL270 bei NEPIX („Jo-Jo“)',
+                   'LUGEN–NEPIX: Direktstrecke von 48 NM, Grenze 30 NM in XQTA'],
+            'es': ['LUGEN–NEPIX: regla del RAD no respetada (XX9001)', 'XQ1 LUGEN–NEPIX: ruta prohibida por el RAD (XX9002)',
+                   'Descenso al FL240 en LUGEN, y luego subida al FL270 en NEPIX («yoyó»)', 'LUGEN–NEPIX: directo de 48 NM, límite 30 NM en XQTA']}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 3", timeout=10000, what='the three verdicts')
+    under = [norm(c.text(f'{A} [data-alt="{i}"] [data-onlyeuro]') or '') for i in range(3)]
+    c.eq(under, ['', '', norm(want)], 'the line under « conforme » only, nothing under the two others', what='only')
+    c.ok(c.js(f"""(() => {{ const e = document.querySelector('{A} [data-alt="2"] [data-onlyeuro]');
+        return !!e && !e.closest('details') && e.getBoundingClientRect().height > 0 }})()"""), 'folded', 'visible, never in a fold')
+    c.eq(c.count(f'{FUEL} [data-radline]'), 0, 'no line « Contrôle de simulation » any more', what='removed')
+    # the full sentences now that the engine gives their values (AeroDB 6c0987086): never the fallback
+    c.js(f"document.querySelectorAll('{A} [data-alt=\"0\"] details[data-reasons]').forEach(d => d.open = true)")
+    lines = [norm(x) for x in c.js(f"[...document.querySelectorAll('{A} [data-alt=\"0\"] details[data-reasons=violates] li')].map(e => e.textContent)")]
+    c.eq(lines, [norm(x) for x in full], 'the full sentences: the place of the rule, the two points of the yoyo, the direct in its space',
+         what='full')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{A} [data-alt=\"2\"]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F297_{c.design}_{w}_{c.lang}_conform.png')
+        c.js(f"document.querySelectorAll('{A} [data-alt=\"0\"] details[data-reasons]').forEach(d => d.open = true)")
+        c.js(f"document.querySelector('{A} [data-alt=\"0\"]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F297_{c.design}_{w}_{c.lang}_faulty.png')
+    c.check_errors()
+
