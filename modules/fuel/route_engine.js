@@ -525,6 +525,26 @@ function reasonsOf(list) {
     };
   });
 }
+/** SOG-0532 lot 2 (AeroDB c93f3cb25) : les règles du RAD non vérifiées d'un itinéraire, par État (une entrée non sûre) : quarante
+ *  États au plus, un code d'État de deux lettres, les comptes entiers bornés, quarante règles au plus par État { id, reason } (la
+ *  référence telle qu'Eurocontrol la cite, la raison en code ; la feuille et la ligne du classeur ne sont pas lues). */
+function notVerifiedOf(list) {
+  const int = v => Number.isInteger(v) && v >= 0 && v <= 99999 ? v : 0;
+  return (Array.isArray(list) ? list : []).slice(0, 40).filter(x => x && typeof x === 'object').map(x => {
+    const own = k => Object.hasOwn(x, k) ? x[k] : undefined,
+      state = text(own('state'), 4).toUpperCase();
+    return {
+      state,
+      flown: int(own('flown')),
+      spaces_only: int(own('spaces_only')),
+      items: (Array.isArray(own('items')) ? own('items') : []).slice(0, 40).filter(i => i && typeof i === 'object').map(i => ({
+        id: text(Object.hasOwn(i, 'id') ? i.id : '', 32),
+        target: text(Object.hasOwn(i, 'target') ? i.target : '', 40), // l'endroit de la route (lot 2 bis d'AeroDB) ; '' sans lui
+        reason: /^[a-z][a-z_]{0,31}$/.test(Object.hasOwn(i, 'reason') ? i.reason : '') ? i.reason : 'unread'
+      })).filter(i => i.id)
+    };
+  }).filter(x => /^[A-Z]{2}$/.test(x.state));
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -532,7 +552,9 @@ function altOf(a, role, errors, reviews = []) {
     // SOG-0532 (3) : une route qui enfreint une règle connue (la meilleure rendue faute de route conforme : faulty, verdict 'violates',
     // ses violations) — jamais acceptée ; le nombre des règles enfreintes, borné (une violation sans tronçon n'est pas un tronçon en erreur)
     vio = Array.isArray(a?.violations) ? Math.min(a.violations.length, 300) : 0,
-    faulty = a?.faulty === true || a?.verdict === 'violates' || vio > 0;
+    faulty = a?.faulty === true || a?.verdict === 'violates' || vio > 0,
+    unv = reasonsOf(a?.unverifiable),
+    keep = unv.filter(r => r.code !== 'rad_unread' || (Number.isInteger(r.values.flown) && r.values.flown > 0));
   return {
     role,
     name: text(a?.name, 60),
@@ -545,12 +567,19 @@ function altOf(a, role, errors, reviews = []) {
       true, // un contrôle incomplet n'est jamais présenté comme contrôlé
     faulty, // SOG-0532 (3)
     violations: faulty ? vio || faults || 1 : 0,
-    // SOG-0532 (3) : le verdict (le plus grave : enfreint > non vérifiable > conforme ; null d'une réponse plus ancienne) et ses raisons
-    verdict: faulty ? 'violates' : VERDICTS.includes(a?.verdict) ? a.verdict : null,
+    // SOG-0532 (3) : le verdict (le plus grave : enfreint > non vérifiable > conforme ; null d'une réponse plus ancienne) et ses raisons ;
+    // lot 2 (l'ergonome) : une ligne d'État sans règle portant sur la route n'en est pas une, et des règles qui ne portent que sur des
+    // espaces ne rendent jamais la route « non vérifiable » (une note à part, spacesOnly)
+    verdict: faulty ? 'violates' : !VERDICTS.includes(a?.verdict) ? null : a.verdict === 'unverifiable' && unv.length && !keep.length ?
+      'conform' : a.verdict,
     reasons: {
       violates: reasonsOf(a?.violations),
-      unverifiable: reasonsOf(a?.unverifiable)
+      unverifiable: keep
     },
+    spacesOnly: unv.filter(r => r.code === 'rad_unread').reduce((n, r) => n + (Number.isInteger(r.values.spaces_only) && r.values
+      .spaces_only >
+      0 ? Math.min(r.values.spaces_only, 99999) : 0), 0),
+    notVerified: notVerifiedOf(a?.notVerified), // SOG-0532 lot 2 : les règles du RAD non vérifiées, par État
     errors,
     reviews: a?.incomplete === true ? reviews : [],
     faults,

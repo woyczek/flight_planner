@@ -23,6 +23,40 @@ export const ROWS = {
   groupUnverifiable: ['Non vérifiable : {n} point(s)', 'Cannot be verified: {n} point(s)', 'Nicht prüfbar: {n} Punkt(e)',
     'No verificable: {n} punto(s)'
   ],
+  // rad_unread (lot 2 d'AeroDB ; mots décidés par l'ergonome le 20/11) : une ligne par État dont des règles portent sur la route ; la
+  // ligne EST le bouton qui ouvre sa liste
+  rad_unread: ['{zone} : {n} règle(s) du RAD portent sur cette route', '{zone}: {n} RAD rule(s) apply to this route',
+    '{zone}: {n} RAD-Regel(n) betreffen diese Route', '{zone}: {n} regla(s) del RAD se aplican a esta ruta'
+  ],
+  // les règles qui ne portent que sur des espaces : UNE note sous le groupe, hors compte, sous tout verdict
+  spacesOnly: ['Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées ({n} dans les États traversés).',
+    'The RAD rules that only apply to airspaces are not verified ({n} in the States crossed).',
+    'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft ({n} in den überflogenen Staaten).',
+    'Las reglas del RAD que solo se aplican a espacios no se verifican ({n} en los Estados sobrevolados).'
+  ],
+  // une règle de la liste : l'endroit d'abord, la référence à la fin ; sans endroit : la référence d'abord
+  ruleLine: ['{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})'],
+  ruleLine0: ['{id} — {why}', '{id} — {why}', '{id} — {why}', '{id} — {why}'],
+  unread_zone_state: ['dépend de l’activité d’une zone — à vérifier le jour du vol',
+    'depends on the activity of an area — to check on the day of the flight',
+    'hängt von der Aktivität eines Gebiets ab — am Flugtag zu prüfen',
+    'depende de la actividad de una zona — a comprobar el día del vuelo'
+  ],
+  unread_schedule: ['horaire que nous ne savons pas lire', 'schedule we cannot read', 'Zeitplan, den wir nicht lesen können',
+    'horario que no sabemos leer'
+  ],
+  unread_level_along_points: ['niveau imposé sur plusieurs points de suite', 'level imposed over several points in a row',
+    'vorgeschriebene Flugfläche über mehrere aufeinanderfolgende Punkte', 'nivel impuesto en varios puntos seguidos'
+  ],
+  unread_aircraft: ['dépend du type d’aéronef ou de son équipement', 'depends on the aircraft type or its equipment',
+    'hängt vom Luftfahrzeugmuster oder seiner Ausrüstung ab', 'depende del tipo de aeronave o de su equipo'
+  ],
+  unread_space_unread: ['passage dans un espace absent de la base', 'passage in an airspace missing from the base',
+    'Durchflug eines Luftraums, der in der Basis fehlt', 'paso por un espacio ausente de la base'
+  ],
+  unread_unread: ['règle que nous ne savons pas lire', 'rule we cannot read', 'Regel, die wir nicht lesen können',
+    'regla que no sabemos leer'
+  ],
   more: ['et {n} autre(s)', 'and {n} other(s)', 'und {n} weitere', 'y {n} otro(s)'],
   engineFr: ['', 'engine text, in French:', 'Text der Routenberechnung, auf Französisch:', 'texto del motor, en francés:'],
   // 1, 2 : le RAD ; {target} = l'élément de la route qui a déclenché la règle (sans lui : la phrase sans endroit)
@@ -181,6 +215,20 @@ function connHead(v, t, lang) {
   });
 }
 
+/** SOG-0532 lot 2 : une ligne de la liste ouvrable d'un État — « {target} — {raison} ({id}) », sans endroit « {id} — {raison} » ; les
+ *  cinq codes d'horaire (schedule_*) disent une seule phrase ; une raison inconnue : « règle que nous ne savons pas lire ». */
+export function ruleLine(item, t) {
+  const r = String(item?.reason || ''),
+    why = t(r.startsWith('schedule_') ? ROWS.unread_schedule : ROWS[`unread_${r}`] || ROWS.unread_unread);
+  return item?.target ? t(ROWS.ruleLine, {
+    target: item.target,
+    why,
+    id: String(item?.id || '—')
+  }) : t(ROWS.ruleLine0, {
+    id: String(item?.id || '—'),
+    why
+  });
+}
 /** La phrase d'une raison (voir l'en-tête). */
 export function compose(reason, t, lang = 'fr', ctx = {}) {
   const c = reason?.code,
@@ -251,6 +299,12 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
         routes: routes.join(', ')
       });
     }
+    case 'rad_unread':
+      // une seule moitié : les règles qui portent sur la route (flown) ; flown = 0 : pas de ligne (route_engine.js l'écarte)
+      return has(v.state) && Number.isInteger(v.flown) && v.flown > 0 ? t(ROWS.rad_unread, {
+        zone: zoneName(v.state, lang),
+        n: v.flown
+      }) : fallback;
     case 'network_gap':
       return has(v.from_point) && has(v.to_point) && has(v.nm) ? t(ROWS.network_gap, {
         from: v.from_point,

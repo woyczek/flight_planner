@@ -3618,7 +3618,7 @@ def _ctl_seg(a, b, control, layer, reason=''):
 @case('F123', 'Route step: each proposed route says its share — controlled / incomplete / fallback in three words and three numbers, never « contrôlé » alone before 100 % —, its sections by layer, « Prendre » repeats it, the Map gets the control of each segment',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0161 (AeroDB: the longest controlled route; reference ESSB → LEMO 22 / 65 / 14): control per route and per section, from the '
-      'launcher\'s answer; route_alts.json carries control per segment for the Map\'s layer (BUGS SOG); a fake launcher')
+      'launcher\'s answer; route_alts.json carries control per segment for the Map\'s layer (BUGS SOG); a fake launcher; SOG-0532 (the ergonomist, 20 Nov): « le partage n\'est montré que sous 100 % » — expectation changed on purpose')
 def f123(c):
     st = _route_launcher(c, ['route/compute'])
     segs = [_ctl_seg('LFRS', 'LUGEN', 'fallback', 'SID', 'connecteur de simulation : aucune SID lue'),
@@ -3637,9 +3637,13 @@ def f123(c):
     c.tap(f'{FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 2", what='two routes')
     shares = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-share]')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
-    c.eq(len(shares), 2, 'each route says its share', what='shares')
-    c.ok(shares[0].count('%') == 3 and '22 %' in shares[0] and '65 %' in shares[0] and '14 %' in shares[0], shares, 'three words and three numbers: 22 / 65 / 14')
-    c.ok('%' not in shares[1] and shares[1], shares, '« contrôlé » alone only at 100 %')
+    # SOG-0532 (the ergonomist, 20 Nov — expectation changed on purpose): the share is shown only under 100 %, each number with its word
+    # (« distance contrôlée : 22 % · données incomplètes : 65 % · sans réseau : 14 % »), the null parts left out
+    c.eq(len(shares), 1, 'only the route under 100 % says its share', what='shares')
+    c.ok(shares[0].count('%') == 3 and '22 %' in shares[0] and '65 %' in shares[0] and '14 %' in shares[0] and shares[0].count(':') >= 3, shares,
+         'three numbers, each with its word: 22 / 65 / 14')
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt="1"] [data-share]'), 0, 'at 100 %: no share beside the route (never read as a green light)',
+         what='100 %')
     # SOG-0263 (user, 12 Nov: the NAT tracks): the route that takes them says « via NAT A », and « périmée » when they are
     nat = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => [e.querySelector('[data-nat]')?.textContent || '', "
                f"!!e.querySelector('[data-natstale]')])")
@@ -3716,7 +3720,7 @@ def f124(c):
 @case('F125', 'Route step: an impossible plan lists the engine\'s fallback proposals apart, under « Propositions non validées », each with its share and sections, never said « contrôlé »; « Prendre » says « proposition non validée : à vérifier »',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0161 continued (AeroDB 9a7f1dde3: the request field `proposals: true`; without a computed route the recovery proposals come back as '
-      'alternatives `proposal` / `incomplete` with their `control`): never mixed with the checked routes, never « contrôlé » alone even at 100 %; a fake launcher')
+      'alternatives `proposal` / `incomplete` with their `control`): never mixed with the checked routes, never « contrôlé » alone even at 100 %; a fake launcher; SOG-0532 (the ergonomist, 20 Nov): « le partage n\'est montré que sous 100 % » — expectation changed on purpose')
 def f125(c):
     st = _route_launcher(c, ['route/compute'])
     segs = [_ctl_seg('LFRS', 'LUGEN', 'controlled', 'SID'), _ctl_seg('LUGEN', 'LFML', 'fallback', 'FRA', 'raccord direct : aucun chemin contrôlé')]
@@ -3735,7 +3739,9 @@ def f125(c):
     c.eq(c.count(f'{FUEL} [data-altlist]:not([data-proposals]) [data-alt]'), 0, 'never mixed with checked routes (none here)', what='checked routes')
     c.eq(c.count(f'{FUEL} [data-rnone]'), 1, 'the engine\'s message stays said above', what='message')
     shares = c.js(f"[...document.querySelectorAll('{FUEL} [data-proposals] [data-alt] [data-share]')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
-    c.ok(len(shares) == 2 and all('%' in x for x in shares), shares, 'each proposal says its share in numbers, never « contrôlé » alone (even at 100 %)')
+    # SOG-0532 (the ergonomist, 20 Nov — expectation changed on purpose): the share only under 100 %; never « contrôlé » alone
+    c.ok(len(shares) == 1 and '40 %' in shares[0] and '60 %' in shares[0], shares,
+         'the proposal under 100 % says its share in numbers; the one at 100 % shows none')
     c.eq(c.count(f'{FUEL} [data-proposals] [data-alt="0"] [data-sections] [data-section]'), 2, 'and its sections', what='sections')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-proposals] [data-altname]')].map(e => e.textContent.trim())")
     c.eq(names, [row(c, 'rProposal').replace('{n}', '1'), row(c, 'rProposal').replace('{n}', '2')], 'named « Proposition 1 », « Proposition 2 »', what='names')
@@ -9441,13 +9447,14 @@ def f295(c):
         {'code': 'level_yoyo', 'values': {'point': 'LUGEN', 'down_fl': 240, 'up_fl': 270, 'filed_fl': 270}, 'text': _F295_YOYO}]
     unverif = [
         {'code': 'connector_unknown', 'values': {'ad': 'LFRS', 'end': 'dep', 'nm': 12, 'reason': 'no_limit', 'rule': 'XX9004'}, 'text': 'x'},
-        {'code': 'network_gap', 'values': {'from_point': 'NEPIX', 'to_point': 'LUGEN', 'nm': 61}, 'text': 'y'}]
+        {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'y'}]
     many = [{'code': 'network_gap', 'values': {'from_point': f'XQP{i}', 'to_point': f'XQQ{i}', 'nm': 20 + i}, 'text': 'z'} for i in range(9)]
     st['alts'] = [
         dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=4, faulty=True, verdict='violates',
              violations=violates, unverifiable=unverif),
         dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[], unverifiable=many,
-             control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []}),
+             # SOG-0532 (the ergonomist, 20 Nov): « le partage n'est montré que sous 100 % » — fixture changed on purpose (was 100 %)
+             control={'controlledPct': 80, 'incompletePct': 20, 'fallbackPct': 0, 'errorPct': 0, 'sections': []}),
         dict(_alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, segs, sid=False), verdict='conform', violations=[], unverifiable=[])]
     want = {
         'fr': {'v': 'enfreint 4 règles connues', 'u': 'Non vérifiable : 9 points', 'c': 'conforme à ce que nous savons lire',
@@ -9455,26 +9462,26 @@ def f295(c):
                'lines': ['LUGEN–NEPIX : règle du RAD non respectée (XX9001)', 'Route interdite par le RAD (XX9002)',
                          'Arrivée à LFML : direct de 48,5 NM depuis NEPIX, limite 30 NM (RAD XX9003)', _F295_YOYO,
                          'Départ de LFRS : direct de 12 NM — limite du RAD non lue pour ce terrain',
-                         'Aucune voie dans la base entre NEPIX et LUGEN : direct de 61 NM']},
+                         'Aucune voie dans la base entre LUGEN et NEPIX : direct de 61 NM']},
         'en': {'v': 'breaks 4 known rules', 'u': 'Cannot be verified: 9 points', 'c': 'conforms to what we can read',
                'gv': 'Known rules broken', 'gu': 'Cannot be verified: 2 points', 'more': 'and 2 others',
                'lines': ['LUGEN–NEPIX: RAD rule not met (XX9001)', 'Route prohibited by the RAD (XX9002)',
                          'Arrival at LFML: direct of 48.5 NM from NEPIX, limit 30 NM (RAD XX9003)', 'engine text, in French: ' + _F295_YOYO,
                          'Departure from LFRS: direct of 12 NM — RAD limit not read for this aerodrome',
-                         'No airway in the base between NEPIX and LUGEN: direct of 61 NM']},
+                         'No airway in the base between LUGEN and NEPIX: direct of 61 NM']},
         'de': {'v': 'verletzt 4 bekannte Regeln', 'u': 'Nicht prüfbar: 9 Punkte', 'c': 'entspricht dem, was wir lesen können',
                'gv': 'Verletzte bekannte Regeln', 'gu': 'Nicht prüfbar: 2 Punkte', 'more': 'und 2 weitere',
                'lines': ['LUGEN–NEPIX: RAD-Regel nicht eingehalten (XX9001)', 'Route durch das RAD verboten (XX9002)',
                          'Ankunft in LFML: Direktstrecke von 48,5 NM ab NEPIX, Grenze 30 NM (RAD XX9003)',
                          'Text der Routenberechnung, auf Französisch: ' + _F295_YOYO,
                          'Abflug von LFRS: Direktstrecke von 12 NM — RAD-Grenze für diesen Flugplatz nicht gelesen',
-                         'Keine Luftstraße in der Basis zwischen NEPIX und LUGEN: Direktstrecke von 61 NM']},
+                         'Keine Luftstraße in der Basis zwischen LUGEN und NEPIX: Direktstrecke von 61 NM']},
         'es': {'v': 'infringe 4 reglas conocidas', 'u': 'No verificable: 9 puntos', 'c': 'conforme a lo que sabemos leer',
                'gv': 'Reglas conocidas infringidas', 'gu': 'No verificable: 2 puntos', 'more': 'y 2 otros',
                'lines': ['LUGEN–NEPIX: regla del RAD no respetada (XX9001)', 'Ruta prohibida por el RAD (XX9002)',
                          'Llegada a LFML: directo de 48,5 NM desde NEPIX, límite 30 NM (RAD XX9003)', 'texto del motor, en francés: ' + _F295_YOYO,
                          'Salida de LFRS: directo de 12 NM — límite del RAD no leído para este aeródromo',
-                         'Ninguna aerovía en la base entre NEPIX y LUGEN: directo de 61 NM']}}[c.lang]
+                         'Ninguna aerovía en la base entre LUGEN y NEPIX: directo de 61 NM']}}[c.lang]
     zero = {'fr': '0 écart contrôlé', 'en': '0 checked deviations', 'de': '0 geprüfte Abweichungen', 'es': '0 desviaciones controladas'}[c.lang]
     docs = proc_flight()
     for d in docs:
@@ -9516,4 +9523,107 @@ def f295(c):
         c.shot(f'F295_{c.design}_{w}_{c.lang}_groups.png')
         c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F295_{c.design}_{w}_{c.lang}_verdicts.png')
+    c.check_errors()
+
+
+@case('F296', 'Route step, the rules of the RAD not verified: ONE line per State whose rules apply to the route — « Belgique : 9 règles du '
+      'RAD portent sur cette route » —, the line itself opens its list « {target} — {reason} ({id}) » (« {id} — {reason} » without a '
+      'target), seven then « et N autres »; the rules that only apply to airspaces are ONE note under the group, out of the count, even '
+      'under « conforme »; « Non vérifiable : N point(s) » counts the lines; the share of the check only under 100 %, each number with its word',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0532 lot 2 (AeroDB c93f3cb25: `rad_unread` { state, flown, spaces_only }, `notVerified` per State, items { id, reason }); '
+      'the ergonomist\'s words decided on 20 Nov (ergonome_MOTS_RAD_UNREAD_SOG-0532_DECIDES.md); a fake launcher, invented rules')
+def f296(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    why = ['zone_state', 'schedule_airac', 'level_along_points', 'aircraft', 'space_unread', 'schedule_dst', 'schedule_days',
+           'schedule_list', 'something_new']
+    items = [dict({'id': f'XX{9100 + i}', 'sheet': 'Annexe X', 'row': 40 + i, 'reason': r}, **({'target': 'LUGEN–NEPIX'} if i == 0 else {}))
+             for i, r in enumerate(why)]
+    unverif = [{'code': 'rad_unread', 'values': {'state': 'be', 'flown': 9, 'spaces_only': 5}, 'text': 'RAD non lu'},
+               {'code': 'stale_cycle', 'values': {'zone': 'be', 'cycle': '2026-10-01', 'routes': ['XQ1']}, 'text': 'cycle'},
+               {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}]
+    spaces = [{'code': 'rad_unread', 'values': {'state': 'be', 'flown': 0, 'spaces_only': 4}, 'text': 'RAD non lu'}]
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), verdict='unverifiable', violations=[],
+                       unverifiable=unverif, notVerified=[{'state': 'BE', 'flown': 9, 'spaces_only': 5, 'items': items}],
+                       control={'controlledPct': 60, 'incompletePct': 30, 'fallbackPct': 0, 'errorPct': 10, 'sections': []}),
+                  dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[],
+                       unverifiable=spaces, control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})]
+    want = {
+        'fr': {'title': 'Non vérifiable : 3 points', 'state': 'Belgique : 9 règles du RAD portent sur cette route',
+               'first': 'LUGEN–NEPIX — dépend de l’activité d’une zone — à vérifier le jour du vol (XX9100)',
+               'second': 'XX9101 — horaire que nous ne savons pas lire', 'unknown': 'XX9108 — règle que nous ne savons pas lire',
+               'more': 'et 2 autres', 'conform': 'conforme à ce que nous savons lire',
+               'note5': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées (5 dans les États traversés).',
+               'note4': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées (4 dans les États traversés).',
+               'share': 'en infraction : 10 % · distance contrôlée : 60 % · données incomplètes : 30 %'},
+        'en': {'title': 'Cannot be verified: 3 points', 'state': 'Belgium: 9 RAD rules apply to this route',
+               'first': 'LUGEN–NEPIX — depends on the activity of an area — to check on the day of the flight (XX9100)',
+               'second': 'XX9101 — schedule we cannot read', 'unknown': 'XX9108 — rule we cannot read',
+               'more': 'and 2 others', 'conform': 'conforms to what we can read',
+               'note5': 'The RAD rules that only apply to airspaces are not verified (5 in the States crossed).',
+               'note4': 'The RAD rules that only apply to airspaces are not verified (4 in the States crossed).',
+               'share': 'in breach: 10 % · distance checked: 60 % · incomplete data: 30 %'},
+        'de': {'title': 'Nicht prüfbar: 3 Punkte', 'state': 'Belgien: 9 RAD-Regeln betreffen diese Route',
+               'first': 'LUGEN–NEPIX — hängt von der Aktivität eines Gebiets ab — am Flugtag zu prüfen (XX9100)',
+               'second': 'XX9101 — Zeitplan, den wir nicht lesen können', 'unknown': 'XX9108 — Regel, die wir nicht lesen können',
+               'more': 'und 2 weitere', 'conform': 'entspricht dem, was wir lesen können',
+               'note5': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft (5 in den überflogenen Staaten).',
+               'note4': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft (4 in den überflogenen Staaten).',
+               'share': 'regelwidrig: 10 % · geprüfte Strecke: 60 % · unvollständige Daten: 30 %'},
+        'es': {'title': 'No verificable: 3 puntos', 'state': 'Bélgica: 9 reglas del RAD se aplican a esta ruta',
+               'first': 'LUGEN–NEPIX — depende de la actividad de una zona — a comprobar el día del vuelo (XX9100)',
+               'second': 'XX9101 — horario que no sabemos leer', 'unknown': 'XX9108 — regla que no sabemos leer',
+               'more': 'y 2 otros', 'conform': 'conforme a lo que sabemos leer',
+               'note5': 'Las reglas del RAD que solo se aplican a espacios no se verifican (5 en los Estados sobrevolados).',
+               'note4': 'Las reglas del RAD que solo se aplican a espacios no se verifican (4 en los Estados sobrevolados).',
+               'share': 'en infracción: 10 % · distancia controlada: 60 % · datos incompletos: 30 %'}}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 2", timeout=10000, what='the verdicts of the two routes')
+    R0, R1 = f'{A} [data-alt="0"]', f'{A} [data-alt="1"]'
+    # 1. one count, the lines of the group (a State line and a stale cycle are points)
+    c.eq(norm(c.text(f'{R0} [data-verdict]') or ''), norm(want['title']), 'one count: the lines of the group', what='title')
+    c.eq(norm(c.text(f'{R0} [data-share]') or ''), norm(want['share']), 'under 100 %: each number with its word, the part in breach first, the null part left out',
+         what='share')
+    c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
+    G = f'{R0} details[data-reasons="unverifiable"]'
+    c.eq(norm(c.text(f'{G} > summary') or ''), norm(want['title']), 'the group says the same count', what='group')
+    # 2. the State line IS the button of its list
+    c.eq(norm(c.text(f'{G} li[data-reason=rad_unread] > details[data-staterules] > summary') or ''), norm(want['state']),
+         'one line for the State, which opens its list', what='state')
+    c.js(f"document.querySelector('{G} [data-staterules]').open = true")
+    rules = [norm(x) for x in c.js(f"[...document.querySelectorAll('{G} [data-staterules] > ul > li')].map(e => e.textContent)")]
+    c.eq([len(rules)] + rules[:2], [7, norm(want['first']), norm(want['second'])],
+         'the place first, the reference last; without a place, the reference first; the schedules say one sentence', what='rules')
+    c.eq(norm(c.text(f'{G} [data-rulesmore] > summary') or ''), norm(want['more']), '« et 2 autres »', what='more')
+    rest = [norm(x) for x in c.js(f"[...document.querySelectorAll('{G} [data-rulesmore] li')].map(e => e.textContent)")]
+    c.eq(rest[-1:], [norm(want['unknown'])], 'an unknown reason: « règle que nous ne savons pas lire »', what='unknown')
+    c.ok(not any('Annexe' in x for x in rules + rest), rules, 'neither sheet nor row of the workbook')
+    # 3. the spaces only: one note under the group, out of the count
+    c.eq(norm(c.text(f'{R0} [data-spacesonly]') or ''), norm(want['note5']), 'one note under the group, out of the count', what='note')
+    # 4. spaces only: never « non vérifiable » by itself — « conforme », the note under it; at 100 %, no share
+    c.eq(norm(c.text(f'{R1} [data-verdict]') or ''), norm(want['conform']), 'the spaces alone never make the route unverifiable',
+         what='conform')
+    c.eq(norm(c.text(f'{R1} [data-spacesonly]') or ''), norm(want['note4']), 'the note under « conforme » too', what='note conform')
+    c.eq(c.count(f'{R1} [data-share]'), 0, 'at 100 %: no share', what='100 %')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelectorAll('{R0} details[data-reasons], {G} [data-staterules]').forEach(d => d.open = true)")
+        c.js(f"document.querySelector('{G}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F296_{c.design}_{w}_{c.lang}_states.png')
+        c.js(f"document.querySelector('{R0} [data-share]').scrollIntoView({{block: 'center'}})")  # the part in breach, first on the line
+        c.shot(f'F296_{c.design}_{w}_{c.lang}_share.png')
+        c.js(f"document.querySelector('{R1}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F296_{c.design}_{w}_{c.lang}_spaces.png')
     c.check_errors()
