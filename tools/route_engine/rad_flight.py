@@ -88,6 +88,83 @@ def unread_spaces_issue(summary,limit=8):
     return f"Règles RAD NON appliquées : {total} règle(s) dont la cible est un espace sans contour dans la base{first} — tous les espaces : {shown}{more} ; l'IFPS les applique, la route peut être refusée par elles.",total
 
 
+
+
+# SOG-0532 lot 2 : « dire ce qui n'est pas vérifié, sans noyer » : par État, le COMPTE des règles du RAD (annexe 2B) dont la CIBLE est volée et que le contrôle n'a pas pu décider (avec, par règle, la référence et la raison en CODE), et le COMPTE de celles qui ne visent qu'un espace que la base ne connaît pas ; jamais celles où la route n'apparaît que dans une condition.
+MAX_NV_STATES = 40
+MAX_NV_ITEMS = 40
+_SPACE = r'(?:[A-Z]{2,6}(?:FIR|UIR|CTA|UTA|FRA|ACC|SECT|TMA|CTR)[A-Z0-9]*|[A-Z]{3,6}(?:ZON|ZOC)[A-Z]?)'
+_SPACE_RE = re.compile(r'\b' + _SPACE + r'\b')
+_REASONS = (      # (code, cellule, motif) : la PREMIÈRE raison qui correspond est celle que la règle porte ; les autres suivent dans `reasons`
+    ('zone_state', 9, re.compile(r'\b(?:NOT\s+ACT|ACT|NOT\s+AVBL|AVBL)\b')),
+    ('schedule_airac', 9, re.compile(r'\bAIRAC\b')),
+    ('schedule_dst', 9, re.compile(r'\(\s*\d\d:\d\d\s*-\s*\d\d:\d\d\s*\)')),
+    ('schedule_days', 9, re.compile(r'\b(?:MON|TUE|WED|THU|FRI|SAT|SUN)\b')),
+    ('schedule_season', 9, re.compile(r'\b(?:SUMMER|WINTER|HOL|SUMMERTIME|WINTERTIME)\b')),
+    ('level_along_points', 8, re.compile(r'\b(?:ABV|BLW)\s+FL\d+\s+AT\s+\(')),
+    ('aircraft', 8, re.compile(r'\b(?:ACFT|TYP|PBN|NAV)\b')),
+    ('space_unread', 8, None),
+)
+
+
+_KEYWORD = re.compile(r'\b(?:ARR/DEP|DEP/ARR|DEP|ARR|VIA)\b')
+_RFL_IN = re.compile(r'\bRFL\s+(?:ABV|BLW)\s+FL\d+\s+IN\b')
+
+
+def _space_unread(text):
+    """Un aérodrome ou un passage « dans » un espace : un mot-clé (DEP, ARR, VIA…) suivi, dans le MÊME segment (coupé sur « & » et le saut de ligne), d'un nom d'espace ; ou un niveau demandé « dans » un espace. UN parcours par segment (linéaire : le premier mot-clé, puis l'espace cherché après lui)."""
+    for segment in re.split(r'[&\n]', text):
+        keyword = _KEYWORD.search(segment)
+        if keyword and _SPACE_RE.search(segment, keyword.end()):
+            return True
+    return bool(_RFL_IN.search(text))
+
+
+def reasons_of(values):
+    """Les raisons (codes) pour lesquelles une règle n'est pas décidée, d'après ses cellules « condition » et « horaire » : une liste, la première est la principale ; `unread` quand aucune forme connue n'est reconnue. Chaque cellule est COUPÉE à MAX_CONDITION signes avant tout motif (le classeur vient d'un fichier non fiable : le coût reste borné)."""
+    out = []
+    for code, column, rx in _REASONS:
+        text = str(values[column] or '')[:MAX_CONDITION].upper() if len(values) > column else ''
+        if (rx.search(text) if rx is not None else _space_unread(text)) and code not in out:
+            out.append(code)
+    clock = str(values[9] or '')[:MAX_CONDITION] if len(values) > 9 else ''
+    if len([x for x in clock.split(LINE) if re.match(r'\s*\d+\.', x)]) > 1 and 'schedule_list' not in out:
+        out.append('schedule_list')
+    return out or ['unread']
+
+
+LINE = chr(10)
+
+
+def not_verified(rad, legs, dep, arr, candidates, known_ids=None, airway=None):
+    """SOG-0532 lot 2 : [{ state, flown, spaces_only, items: [{ id, sheet, row, reason, reasons }] }], l'État qui a le plus de règles d'abord, au plus MAX_NV_STATES États et MAX_NV_ITEMS règles par État ; seules les règles de l'annexe 2B restées « à interpréter » comptent : `flown` = la cible est volée par cette route (ou le serait : le doute de sens), `spaces_only` = la cible est un espace que la base ne connaît pas (un compte, jamais une liste) ; une règle dont la route n'apparaît que dans une condition n'est pas comptée."""
+    ctx = context(legs, dep, arr)
+    ctx['airway'] = airway
+    ctx['known'] = known_ids
+    states = {}
+    for rule in candidates:
+        if rule.get('change') == 'DEL' or rule.get('sheet') != 'Annex 2B':
+            continue
+        assessment = str(rule.get('assessment') or '')
+        if not assessment.startswith('À interpréter'):
+            continue
+        values = rule['values']
+        state = (str(rule.get('id') or '')[:2] or str((values[14] if len(values) > 14 else '') or '')[:2]).upper()      # l'État de la règle : les deux premières lettres de sa référence (EBEG1004 : EB)
+        entry = states.setdefault(state, dict(state=state, flown=0, spaces_only=0, items=[]))
+        if 'ESPACE' in assessment:
+            entry['spaces_only'] += 1
+            continue
+        applicability, _affected = target(rule, ctx, legs, rad)
+        if applicability is True or applicability == UNSURE:
+            entry['flown'] += 1
+            if len(entry['items']) < MAX_NV_ITEMS:
+                found = reasons_of(values)
+                entry['items'].append(dict(id=rule.get('id'), sheet=rule.get('sheet'), row=rule.get('row'), reason=found[0], reasons=found))
+    out = [s for s in states.values() if s['flown'] or s['spaces_only']]
+    out.sort(key=lambda s: (-s['flown'], -s['spaces_only'], s['state']))
+    return out[:MAX_NV_STATES]
+
+
 @functools.lru_cache(maxsize=8192)      # SOG-0468 (5) : le calcul demande les noms d'une voie des centaines de milliers de fois (221 000 appels, 0,7 s sur trois vols) ; une fonction pure d'un texte : mémorisée, et rendue en ensemble NON modifiable (les appelants ne font que lire)
 def aliases(text):
     text=re.sub('[^A-Z0-9]','',text.upper())

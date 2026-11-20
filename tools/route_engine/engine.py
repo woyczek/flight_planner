@@ -1237,8 +1237,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
     rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion,natural=not marks and not written)      # SOG-0513 (A) : sans changement de niveau dans la route, les règles de niveau jugent le profil du niveau déposé
     atomic_ids={(b['sheet'],b['row']) for b in violations}
-    unread_rules=rad_flight.unread_spaces_issue(rad_summary)      # SOG-0501 (c) : les règles dont la cible est un espace sans contour (LDZOC…) : dites avec leur nombre
-    if unread_rules:issue('REVUE',unread_rules[0])
+    not_verified=rad_flight.not_verified(rad,legs,dep,arr,candidates,set(nav.ids)|used_routes,nav.airway_portion)      # SOG-0532 lot 2 : par État, le COMPTE des règles du RAD dont la cible est volée et non décidées (avec leur raison en code), et celui des règles qui ne visent qu'un espace inconnu ; la phrase « Règles RAD NON appliquées » (SOG-0501 (c)) n'est plus dite : une ligne par État
+    for nv in not_verified:
+        issue('REVUE',f"RAD, État {nv['state']} : "+(f"{nv['flown']} règle(s) visent un tronçon ou un point de cette route et n'ont pas pu être vérifiées" if nv['flown'] else '')+(' ; ' if nv['flown'] and nv['spaces_only'] else '')+(f"{nv['spaces_only']} règle(s) ne visent qu'un espace que la base ne connaît pas" if nv['spaces_only'] else '')+'.','rad_unread',True,state=nv['state'],flown=nv['flown'],spaces_only=nv['spaces_only'])
     for finding in rad_summary['findings']:
         if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'],'rad_rule',id=finding['id'],sheet=finding['sheet'],row=finding['row'])      # SOG-0532 (3)
         for index in finding['segments']:
@@ -1282,7 +1283,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result=dict(ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
-        coverage=nav.coverage,rad_summary=rad_summary,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
+        coverage=nav.coverage,rad_summary=rad_summary,not_verified=not_verified,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
         procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},

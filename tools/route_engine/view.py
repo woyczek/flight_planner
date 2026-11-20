@@ -140,7 +140,7 @@ def points_of(r):
 def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
-    return {'id': f'alt{i}', 'verdict': r.get('verdict'), 'violations': r.get('violations') or [], 'unverifiable': r.get('unverifiable') or [], 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
+    return {'id': f'alt{i}', 'verdict': r.get('verdict'), 'violations': r.get('violations') or [], 'unverifiable': r.get('unverifiable') or [], 'notVerified': r.get('not_verified') or [], 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
             'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
             **({'nat': nat_of(segs)} if nat_of(segs) else {}),       # SOG-0263
             **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],
@@ -197,7 +197,7 @@ def to_view(plan_result, request, include_raw=False):
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     changes = (p.get('profile_changes') or [])[:MAX_CHANGES] if p.get('ok') else []
-    return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': rad_view(p), 'dct_limits': p.get('dct_limits') if p.get('ok') else None, 'fra_floors': p.get('fra_floors') if p.get('ok') else None,
+    return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'not_verified': p.get('not_verified') or [], 'rad': rad_view(p), 'dct_limits': p.get('dct_limits') if p.get('ok') else None, 'fra_floors': p.get('fra_floors') if p.get('ok') else None,
             'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'timing': plan_result.get('timing'), 'sections': plan_result.get('sections'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
             'profile_changes': changes, 'profile_changes_total': p.get('profile_changes_total', len(changes)) if p.get('ok') else 0,       # SOG-0401 : de la route de tête seulement
             **({'plan': plan_result} if include_raw else {})}

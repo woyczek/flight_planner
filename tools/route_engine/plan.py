@@ -56,6 +56,9 @@ def check_request(request):
         if not isinstance(v, t):
             raise ValueError(f'{k} : type invalide')
         out[k] = v
+    for k, lo, hi in (('speed_kt', 50, 1000), ('terminal_speed_kt', 50, 1000), ('climb_fpm', 100, 10000), ('descent_fpm', 100, 10000)):      # SOG-0532 (Sécurisation) : les vitesses (50 à 1 000 kt) et les taux (100 à 10 000 ft/min) bornés : la recherche et le profil divisent par la vitesse
+        if k in out and not lo <= out[k] <= hi:
+            raise ValueError(f'{k} : de {lo} à {hi}')
     for k in ('dep', 'arr', 'dep_runway', 'arr_runway'):
         # SOG-0466 lot 2 : un aérodrome (dep, arr) peut être une HÉLISTATION au code de liste du SIA à cinq signes (« LF418 » : deux lettres et trois chiffres) ; les champs de piste gardent leurs quatre signes
         ok = r'[A-Za-z0-9]{1,4}|[A-Za-z]{2}\d{3}' if k in ('dep', 'arr') else r'[A-Za-z0-9]{1,4}'

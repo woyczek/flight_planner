@@ -19160,3 +19160,71 @@ def k485(c):
     c.eq(E.level_marks(legs, [chg('B', 33000)], [], 330), {}, 'a change to the filed level while the flight is already at it (the end of the climb): no group', what='no-op')
     c.eq(E.level_marks(legs, [chg('B', 33000), chg('C', 19500), chg('D', 33000)], [], 330), {2: 190, 3: 330}, 'a real change (down to F190) is written, and the return to the filed level too (the groups of the steps asked are unchanged)', what='real change')
     c.eq(E.level_marks(legs, [chg('C', 19500)]), {2: 190}, 'without the filed level (the old call) nothing changes', what='old call')
+
+
+@case('K486', 'Route engine, SOG-0532 lot 2: what the check could not verify is SAID WITHOUT DROWNING — at most ONE line per State, only the rules whose TARGET the route flies (not those where the route appears only in a condition), each with its reference and its reason as a CODE; the rules aimed at spaces alone are a COUNT per State, no list; the long review « Règles RAD NON appliquées » is not in the answer any more',
+      'K', static=True,
+      rule='SOG-0532 lot 2 (the ergonomics session, 20 Nov, § 3 bis: « au plus une ligne par État traversé » ; « seulement les règles dont la CIBLE est volée (pas celles où la route n\'apparaît que dans une condition) » ; « liste ouvrable avec la référence et la raison en mots simples » ; « les règles qui ne visent que des espaces : un compte par État, pas de liste. La liste de 157 règles « non appliquées » sort de l\'écran »). Diagnosed on the refused plan: nine of the sixteen errors were never named. The bench: an invented base and invented rules (two States ZZ and ZY): rules on the point P2 / P3 (flown) whose schedule depends on the state of a zone, on a month of AIRAC, or whose level is judged along a run of points; a rule on a point that the route does not fly (the route is only in its condition); a rule aimed at a space that the base does not know.')
+def k486(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    row = lambda rid, target, util, clock, state='ZZ': ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, util, clock, 'S', 'invented test rule', '', 'ACC', state]
+    rules = [row('ZZ3002', 'P2', 'NOT AVBL FOR TFC', 'ZZD999D NOT ACT'),
+             row('ZZ3003', 'P2', 'NOT AVBL FOR TFC', 'AIRAC NOV - AIRAC MAR SAT H24'),
+             row('ZZ3004', 'P3', 'NOT AVBL FOR TFC\nABV FL245 AT (P1 UH1 P2)', 'H24'),
+             row('ZZ3005', 'Q9', 'NOT AVBL FOR TFC\nVIA P2', 'ZZD999D NOT ACT'),
+             row('ZZ3006', 'ZZFIRAA', 'NOT AVBL FOR TFC', 'H24'),
+             row('ZY3001', 'P1', 'NOT AVBL FOR TFC', 'ZZD999D NOT ACT', 'ZY')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules)
+        request = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        res = P.compute(request, data, rad, None)
+        p = res['primary']
+        view = V.to_view(res, request)
+    nv = {x['state']: x for x in p.get('not_verified') or []}
+    c.eq(sorted(nv), ['ZY', 'ZZ'], 'one entry per State (ZZ and ZY), no more (red before: no `not_verified`)', what='states')
+    c.eq((nv['ZZ']['flown'], nv['ZZ']['spaces_only'], nv['ZY']['flown'], nv['ZY']['spaces_only']), (3, 1, 1, 0), 'ZZ: three rules whose target is flown (P2 twice, P3) and ONE aimed at a space of the base that is not known (a count); ZY: one rule on P1', what='counts')
+    items = {x['id']: x['reason'] for x in nv['ZZ']['items']}
+    c.eq(items, {'ZZ3002': 'zone_state', 'ZZ3003': 'schedule_airac', 'ZZ3004': 'level_along_points'}, 'each rule of the list has its reference and its reason as a CODE (zone state, month of AIRAC, level along a run of points); the rule where the route is only in the condition (ZZ3005) and the rule aimed at a space (ZZ3006) are NOT in the list', what='items')
+    lines = [x for x in p.get('unverifiable') or [] if x['code'] == 'rad_unread']
+    c.eq(sorted((x['values']['state'], x['values']['flown'], x['values']['spaces_only']) for x in lines), [('ZY', 1, 0), ('ZZ', 3, 1)], 'the answer has ONE line (`rad_unread`) per State, with the numbers as values', what='lines')
+    c.ok(not any('NON appliquées' in i['text'] for i in p['issues']), str([i['text'][:50] for i in p['issues'] if 'RAD' in i['text']]), 'the review « Règles RAD NON appliquées » (the long list of rules aimed at spaces) is not in the answer any more')
+    c.eq((p.get('verdict'), (view.get('not_verified') or [{}])[0].get('state')), ('unverifiable', 'ZZ'), 'the verdict is `unverifiable`; the view carries `not_verified` (the State with the most rules first)', what='view')
+
+
+@case('K487', 'Route engine, SOG-0532 lot 2 (the review of Sécurisation): the speeds (50 to 1 000 kt) and the climb and descent rates (100 to 10 000 ft/min) of a request are bounded; a speed of 0 (a division by zero in the search and the profile), a value out of the bounds or not a number is refused at the door with its field',
+      'K', static=True,
+      rule='SOG-0532 lot 2 (Sécurisation, review of 74b6fe5f6: « `check_request` ne borne ni `speed_kt`, ni `climb_fpm`, ni `descent_fpm` : un `speed_kt` à 0 donne une ZeroDivisionError … une borne au prochain lot d\'AeroDB serait bienvenue (vitesse 50 à 1000 kt, taux 100 à 10 000 fpm) »).')
+def k487(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P
+
+    def refused(**extra):
+        try:
+            P.check_request(dict({'dep': 'ZZAA', 'arr': 'ZZBB', 'fl': 250}, **extra))
+            return None
+        except ValueError as e:
+            return str(e)
+    c.eq([refused(speed_kt=0), refused(speed_kt=1001), refused(speed_kt=float('nan')), refused(climb_fpm=99), refused(descent_fpm=10001), refused(terminal_speed_kt=10)],
+         ['speed_kt : de 50 à 1000', 'speed_kt : de 50 à 1000', 'speed_kt : de 50 à 1000', 'climb_fpm : de 100 à 10000', 'descent_fpm : de 100 à 10000', 'terminal_speed_kt : de 50 à 1000'], 'each value out of the bounds (a speed of 0, 1 001, not a number; a rate of 99 or 10 001; a terminal speed of 10) is refused with its field (red before: accepted, a ZeroDivisionError in the search)', what='refused')
+    c.eq([refused(speed_kt=450), refused(speed_kt=238, climb_fpm=2000, descent_fpm=1500, terminal_speed_kt=220), refused(speed_kt=50), refused(speed_kt=1000, climb_fpm=10000)], [None] * 4, 'the values of a real flight, and the bounds themselves, are accepted', what='accepted')
+
+
+@case('K488', 'Route engine, SOG-0532 lot 2 (the review of Sécurisation): the reading of the reasons of a rule (`rad_flight.reasons_of`) has a bounded cost whatever the cell — the cells are cut at MAX_CONDITION signs before any pattern, and the test « a space after a keyword » runs once per segment (linear, no `.*?` retried at every keyword); the RAD comes from an untrusted file of data/',
+      'K', static=True,
+      rule='SOG-0532 lot 2 (Sécurisation, review of 8e4a1713c: « `reasons_of` joue ses regex sur `values[8]` et `values[9]` entiers … le motif `space_unread` est quadratique : une cellule de 32 000 signes faite de « DEP » répété … le lanceur reste bloqué dans l\'extension C de `re` »). No stopwatch (the lesson of K359): the answer of a huge cell equals the answer of its first MAX_CONDITION signs, and the reasons of a cell of keywords are the expected ones.')
+def k488(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import rad_flight as RF
+    row = lambda util, clock: ['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZZ9001', '', '', '', 'P2', util, clock, 'S', 'invented', '', 'ACC', 'ZZ']
+    head = ('ZZD999D NOT ACT' + ' ' * RF.MAX_CONDITION)[:RF.MAX_CONDITION]
+    tail_only = ' ' * RF.MAX_CONDITION + 'ZZD999D NOT ACT'
+    c.eq((RF.reasons_of(row('NOT AVBL FOR TFC', head)), RF.reasons_of(row('NOT AVBL FOR TFC', head + 'x' * 1000000))), (['zone_state'], ['zone_state']), 'a cell of 1 000 000 signs gives the same reasons as its first MAX_CONDITION signs', what='head')
+    c.eq(RF.reasons_of(row('NOT AVBL FOR TFC', tail_only)), ['unread'], 'what lies BEYOND the MAX_CONDITION first signs of a cell is not read: a state of zone written after 4 000 signs gives no reason (red without the cut: `zone_state`)', what='cut')
+    c.eq(RF.reasons_of(row(' ' * RF.MAX_CONDITION + 'DEP (EDGGFIR)', 'H24')), ['unread'], 'the same for the condition: an aerodrome in a space written after 4 000 signs is not read', what='cut condition')
+    c.eq((RF._space_unread('DEP ' * 250000), RF._space_unread('DEP EDGGFIR'), RF._space_unread('DEP EGGW & VIA KONAN'), RF._space_unread('RFL ABV FL245 IN (EDMMCTAE)')), (False, True, False, True), 'the test « a space after a keyword » is LINEAR (a million signs of keywords and no space answer at once, one pass per segment) and keeps the former readings (an aerodrome in a space, a plain aerodrome, a level in a space)', what='linear')
+    c.eq((RF.reasons_of(row('DEP (EDGGFIR, EDMMFIR) EXC DEP EDDN', 'H24')), RF.reasons_of(row('VIA EDYYUTA AND-THEN VIA (EBBUCTA, EHAACTA)', 'H24')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + 'RFL ABV FL245 IN (EDMMCTAE)', 'H24'))), (['space_unread'], ['space_unread'], ['space_unread']), 'the reasons of the usual cells are unchanged', what='same readings')
