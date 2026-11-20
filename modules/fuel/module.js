@@ -617,6 +617,20 @@ const TX = {
   ],
   // insécables : « 0 écart contrôlé » d'un bloc (l'ergonome, capture F250 : coupé après « écart »)
   rFaults0: ['0 écart contrôlé', '0 checked deviations', '0 geprüfte Abweichungen', '0 desviaciones controladas'],
+  // SOG-0532 (3), (4) : une route qui enfreint une règle connue — sur sa ligne, à sa prise, et avant « Copier pour Eurocontrol »
+  rFaulty: ['enfreint {n} règle(s) connue(s)', 'breaks {n} known rule(s)', 'verletzt {n} bekannte Regel(n)',
+    'infringe {n} regla(s) conocida(s)'
+  ],
+  rTakenFaulty: ['Itinéraire pris — il enfreint {n} règle(s) connue(s) : Eurocontrol refusera ce plan.',
+    'Route taken — it breaks {n} known rule(s): Eurocontrol will refuse this plan.',
+    'Route übernommen — sie verletzt {n} bekannte Regel(n): Eurocontrol wird diesen Plan ablehnen.',
+    'Itinerario tomado: infringe {n} regla(s) conocida(s); Eurocontrol rechazará este plan.'
+  ],
+  fplViolations: ['{n} règle(s) connue(s) enfreinte(s) — Eurocontrol refusera ce plan',
+    '{n} known rule(s) broken — Eurocontrol will refuse this plan',
+    '{n} bekannte Regel(n) verletzt — Eurocontrol wird diesen Plan ablehnen',
+    '{n} regla(s) conocida(s) infringida(s): Eurocontrol rechazará este plan'
+  ],
   rRadSpaces: ['Espaces inconnus de la base : leurs règles RAD ne sont pas vérifiées',
     'Spaces unknown to the base: their RAD rules are not checked',
     'Der Basis unbekannte Lufträume: ihre RAD-Regeln werden nicht geprüft',
@@ -4683,7 +4697,8 @@ async function routeAskRun(s, act, r, o, box, retry) {
       text: String(r.text || ''),
       segments: a?.segments || [],
       faults: a?.faults || 0,
-      errors: a?.errors || []
+      errors: a?.errors || [],
+      violations: a?.faulty ? a.violations : 0 // SOG-0532 (4)
     };
     const lines = RE.faultLines(a);
     if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${limitsHtml(n)}`;
@@ -5457,8 +5472,9 @@ function fplDraw(C, textOnly = false) {
     return;
   }
   const open = !!box.querySelector('details[data-fplfold]')?.open,
-    stale = routeStale(C); // SOG-0533 : dit AVANT de copier, au-dessus du bouton (la copie reste permise)
-  box.innerHTML = `${stale ? `<p class="f-warn" data-fplstale>${esc(tt(TX.fplStale, stale))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
+    stale = routeStale(C), // SOG-0533 : dit AVANT de copier, au-dessus du bouton (la copie reste permise)
+    vio = routeViolations(); // SOG-0532 (4) : de même pour une route qui enfreint des règles connues
+  box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}${stale ? `<p class="f-warn" data-fplstale>${esc(tt(TX.fplStale, stale))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
 }
 /** SOG-0529 (2) : une route qui n'est qu'un direct — « aucune route calculée … : calculez-en une ou saisissez-la », puis : si le contrôle
  *  de route d'AeroDB a jugé CE texte (« Contrôler », S.rcheck) et y a trouvé des écarts, SES phrases (RE.faultLines, trois au plus) ;
@@ -5507,7 +5523,10 @@ async function fplCopy() {
   // SOG-0533 : une route calculée pour un autre niveau : la notification le redit
   const direct = fplDirectNotes(F.m).join(' '),
     st = routeStale(S.C),
-    stale = st ? tt(TX.fplStale, st) : '';
+    nv = routeViolations(),
+    stale = [nv ? tt(TX.fplViolations, {
+      n: nv
+    }) : '', st ? tt(TX.fplStale, st) : ''].filter(Boolean).join(' ');
   S.ctx.notify(`${shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied)}${direct ? ` ${direct}` : ''}${stale ? ` ${stale}` : ''}`,
     shown || hf || direct || stale ? 'warn' : 'ok');
 }
@@ -6033,7 +6052,7 @@ function routeAltsDraw() {
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty>${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : ''}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal || a.faulty))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -6468,7 +6487,8 @@ function routeTake(i) {
   if (S.flight.route) Object.assign(S.flight.route, {
     from: 'engine',
     typed: [],
-    calcFl: [a.fl, S.ralts?.fl, S.ralts?.n?.level?.fl].find(flOk) ?? null
+    calcFl: [a.fl, S.ralts?.fl, S.ralts?.n?.level?.fl].find(flOk) ?? null,
+    violations: a.faulty ? a.violations : 0 // SOG-0532 (4) : dit avant « Copier pour Eurocontrol »
   });
   ta.dispatchEvent(new Event('change', {
     bubbles: true
@@ -6487,7 +6507,10 @@ function routeTake(i) {
     taken: a.name || ''
   };
   routeAltsDraw();
-  if (a.proposal) S.ctx.notify(tt(TX.rTakenProposal, {
+  if (a.faulty) S.ctx.notify(tt(TX.rTakenFaulty, {
+    n: a.violations
+  }), 'warn'); // SOG-0532 (3) : une route fautive n'est jamais confirmée « contrôlé » en vert
+  else if (a.proposal) S.ctx.notify(tt(TX.rTakenProposal, {
     share: shareText(a.control, true) || tt(TX.rIncomplete)
   }), 'warn'); // une proposition d'un plan impossible : non validée, à vérifier
   else if (a.control) S.ctx.notify(tt(TX.rTakenShare, {
@@ -6509,6 +6532,14 @@ function routeStale(C = S.C) {
     c: String(c).padStart(3, '0'),
     f: String(f).padStart(3, '0')
   } : null;
+}
+/** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
+ *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */
+function routeViolations() {
+  const r = S.flight?.route || {},
+    n = v => Number.isInteger(v) && v > 0 && v <= 300 ? v : 0;
+  if (r.from === 'engine') return n(r.violations);
+  return S.rcheck && S.rcheck.text === String(r.text || '') ? n(S.rcheck.violations) : 0;
 }
 /** SOG-0533 : « Route calculée pour le FL… — à recalculer », avec « Recalculer », sous la liste des itinéraires ; cachée sinon. */
 function staleDraw(C) {

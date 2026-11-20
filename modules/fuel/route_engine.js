@@ -497,7 +497,11 @@ function pointsOf(list) {
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
-    faults = Math.max(segments.filter(s => s.state === 'error').length, Math.round(num(a?.faults, 0, 999) || 0));
+    faults = Math.max(segments.filter(s => s.state === 'error').length, Math.round(num(a?.faults, 0, 999) || 0)),
+    // SOG-0532 (3) : une route qui enfreint une règle connue (la meilleure rendue faute de route conforme : faulty, verdict 'violates',
+    // ses violations) — jamais acceptée ; le nombre des règles enfreintes, borné (une violation sans tronçon n'est pas un tronçon en erreur)
+    vio = Array.isArray(a?.violations) ? Math.min(a.violations.length, 300) : 0,
+    faulty = a?.faulty === true || a?.verdict === 'violates' || vio > 0;
   return {
     role,
     name: text(a?.name, 60),
@@ -506,8 +510,10 @@ function altOf(a, role, errors, reviews = []) {
     fl: num(a?.fl, 0, 700) !== null ? Math.round(+a.fl) : null,
     incomplete: a?.incomplete === true,
     proposal: a?.proposal === true, // une proposition de repli d'un plan impossible : jamais validée, montrée à part
-    accepted: !faults && !errors.length && a?.incomplete !== true && a?.proposal !==
+    accepted: !faulty && !faults && !errors.length && a?.incomplete !== true && a?.proposal !==
       true, // un contrôle incomplet n'est jamais présenté comme contrôlé
+    faulty, // SOG-0532 (3)
+    violations: faulty ? vio || faults || 1 : 0,
     errors,
     reviews: a?.incomplete === true ? reviews : [],
     faults,
@@ -645,8 +651,8 @@ export function normalize(res, action = 'compute', asked = null) {
     limitation: text(res.limitation, 400),
     // SOG-0161 (AeroDB 329847a19) : ce que la réponse est — une route calculée, des propositions de repli, rien ; déduit des itinéraires
     // pour une réponse plus ancienne
-    status: ['computed', 'proposal', 'none'].includes(res.status) ? res.status : !plans.length ? 'none' : plans[0].proposal ? 'proposal' :
-      'computed',
+    status: ['computed', 'proposal', 'none', 'faulty'].includes(res.status) ? res.status : !plans.length ? 'none' : plans[0].proposal ?
+      'proposal' : plans[0].faulty ? 'faulty' : 'computed', // SOG-0532 (3) : 'faulty', la meilleure route rendue fautive
     cache: cacheOf(res.cache),
     gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => ({
       name: text(g?.name, 80),

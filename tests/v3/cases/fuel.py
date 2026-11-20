@@ -9334,3 +9334,87 @@ def f293(c):
     fpl = item15()
     c.ok('F250 ' in fpl[:12] and '/N' not in fpl, fpl, 'item 15 at FL250, one level from its head to its end')
     c.check_errors()
+
+
+@case('F294', 'Route step: the best route returned FAULTY by the engine (no conforming route: alternatives[0].faulty, verdict « violates », '
+      'a violation that is no segment — a direct connector beyond the RAD limit) is never said « 0 écart contrôlé » nor « contrôlé » in '
+      'green: its line and its taking say « enfreint 1 règle connue »; above « Copier pour Eurocontrol »: « 1 règle connue enfreinte — '
+      'Eurocontrol refusera ce plan », the copy stays permitted', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True,
+      langs4=True,
+      rule='SOG-0532 (3), (4) (AeroDB 63f7aebc9: a known rule broken is an ERROR, the best route returned marked faulty, status « faulty »); '
+      'the relay: the defect first, alone — the ergonomist\'s words of § 3, points 3 and 4; a fake launcher, invented rule and values, no '
+      'callsign nor registration')
+def f294(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]  # every segment ok: the violation is no segment
+    bad = dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True, verdict='violates',
+               violations=[{'code': 'connector_limit', 'values': {'ad': 'LFML', 'end': 'arr', 'nm': 48, 'limit_nm': 30, 'rule': 'XX9999',
+                                                                    'point': 'NEPIX'},
+                            'text': 'Raccord NEPIX–LFML : direct de 48 NM à l’arrivée, au-delà de la limite de 30 NM du RAD (XX9999)'}],
+               unverifiable=[], control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})
+    st['alts'] = [bad]
+    st['extra'] = {'status': 'faulty'}
+    want = {'fr': ('enfreint 1 règle connue', 'Itinéraire pris — il enfreint 1 règle connue : Eurocontrol refusera ce plan.',
+                   '1 règle connue enfreinte — Eurocontrol refusera ce plan'),
+            'en': ('breaks 1 known rule', 'Route taken — it breaks 1 known rule: Eurocontrol will refuse this plan.',
+                   '1 known rule broken — Eurocontrol will refuse this plan'),
+            'de': ('verletzt 1 bekannte Regel', 'Route übernommen — sie verletzt 1 bekannte Regel: Eurocontrol wird diesen Plan ablehnen.',
+                   '1 bekannte Regel verletzt — Eurocontrol wird diesen Plan ablehnen'),
+            'es': ('infringe 1 regla conocida', 'Itinerario tomado: infringe 1 regla conocida; Eurocontrol rechazará este plan.',
+                   '1 regla conocida infringida: Eurocontrol rechazará este plan')}[c.lang]
+    zero = {'fr': '0 écart contrôlé', 'en': '0 checked deviations', 'de': '0 geprüfte Abweichungen', 'es': '0 desviaciones controladas'}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}  # no registration: the flight plan writes the neutral one
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    R = f'{FUEL} [data-altlist] [data-alt="0"]'
+    c.until(f"!!document.querySelector('{R} [data-do=rtake]')", timeout=10000, what='the faulty route, with « Choisir »')
+    line = norm(c.text(R) or '')
+    c.ok(norm(zero) not in line, line, 'a faulty route is never said « 0 écart contrôlé »')
+    c.eq(norm(c.text(f'{R} [data-faulty]') or ''), norm(want[0]), 'its line says it breaks 1 known rule', what='line')
+    c.ok(c.js(f"document.querySelector('{R}').classList.contains('fu-raltbad')") is True, 'not marked',
+         'its line is marked faulty, never accepted')
+    share = norm(c.text(f'{R} [data-share]') or '')
+    c.ok(share != norm({'fr': 'contrôlé', 'en': 'checked', 'de': 'geprüft', 'es': 'controlado'}[c.lang]), share,
+         'never « contrôlé » alone')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F294_{c.design}_{w}_{c.lang}_line.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    # taken: the notification says it, never a green « contrôlé »
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{R} [data-do="rtake"]')
+    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(want[1]),
+            timeout=6000, what='the taking says it breaks 1 known rule')
+    d = cf_doc(c, lambda d: (d.get('route') or {}).get('from') == 'engine', 'the route taken, written')
+    c.eq((d.get('route') or {}).get('violations'), 1, 'the route keeps the number of known rules it breaks', what='kept')
+    # above « Copier pour Eurocontrol », before copying; the copy stays permitted and says it too
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-fplviolations]')", timeout=8000, what='the sentence above the copy button')
+    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplviolations]') or ''), norm(want[2]), 'said before copying', what='before')
+    c.ok(c.js(f"""(() => {{ const p = document.querySelector('{FUEL} [data-fpl] [data-fplviolations]'),
+        b = document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]');
+        return !!(p.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) }})()"""), 'after', 'the sentence comes before the button')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]').getAttribute('aria-disabled')"), None,
+         'the copy stays permitted', what='copy')
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{FUEL} [data-fpl] [data-do="fplcopy"]')
+    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(want[2]),
+            timeout=6000, what='the copy says it too')
+    c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = false")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{FUEL} [data-fpl] [data-fplviolations]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F294_{c.design}_{w}_{c.lang}_copy.png')
+    st['extra'] = None
+    c.check_errors()
