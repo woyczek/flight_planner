@@ -5127,8 +5127,8 @@ def k103(c):
         pp = r3['plan']['primary']
         c.eq((r3['plan']['coverage_gaps'], r3['plan']['rad_search_attempts'], sorted(k for k in r3['plan'] if k in ('recovery', 'coverage_gaps', 'rad_search_attempts'))), ([], [], ['coverage_gaps', 'rad_search_attempts', 'recovery']),
              'RouteSim of 9 Nov 16 h: the plan carries the gaps of coverage, the RAD retries and the fallback (recovery, null when not needed), bounded', what='plan keys')
-        c.eq((r3['ok'], pp['ok'], pp['status'], pp['route'], pp['issues'][0]['text'].startswith('Aucune route sans infraction'), any('LF9003' in i['text'] for i in pp['issues'])), (True, True, 'CONTRÔLE PARTIEL — À VÉRIFIER', 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW', True, True),
-             'a RAD rule that forbids A1 between SITET and KEPAD (SOG-0401: never a route lost to a decided rule): no route without infraction exists, the best is RETURNED (no DCT invented, the imposed passage is not removed), the rule it breaks is said in a REVUE and the status is a partial control', what='block')
+        c.eq((r3['ok'], pp['ok'], pp['status'], pp['route'], pp['issues'][0]['text'].startswith('Aucune route sans infraction'), any('LF9003' in i['text'] for i in pp['issues'])), (True, True, 'ERREURS DÉTECTÉES', 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW', True, True),
+             'a RAD rule that forbids A1 between SITET and KEPAD (SOG-0401: never a route lost to a decided rule): no route without infraction exists, the best is RETURNED (no DCT invented, the imposed passage is not removed), the rule it breaks is an ERROR (SOG-0532 (3): no more demotion to a review) and the status says the errors, not a partial control', what='block')
         c.ok(isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the answer carries the list of the alternatives (three at most) and of their failures (a route that is returned with a REVUE does not search the automatic alternatives)')
         # an unknown aerodrome and a bad level are said, never an exception (with the ordinary RAD again: the forbidding rule above would now return the best route with a REVUE, SOG-0401)
         RF.write_xlsx(rad, RF.rad_sheets())
@@ -13250,7 +13250,7 @@ def k303(c):
         finally:
             F.solve = solve
         said = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Point REGHI écarté')]
-        broken = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Règle RAD enfreinte') and 'LF2096' in i['text']]
+        broken = [i['text'] for i in res['primary'].get('issues', []) if i['level'] == 'ERREUR' and i.get('code') == 'rad_rule' and (i.get('values') or {}).get('id') == 'LF2096']      # SOG-0532 (3): the rule broken is an ERROR with its code, no more a review « Règle RAD enfreinte »
         failed = [a for a in res['rad_search_attempts'] if a.get('error') and any(x.get('fallback') for x in a.get('excluded', []))]
         c.ok(said == [] and len(broken) == 1 and len(failed) == 1, str((said, broken, len(failed))),
              'when the pass by ETIKI fails and the fallback has nowhere to go (this bench has ONE entry, REGHI), the fallback is TRIED (one attempt without a route) and the answer does NOT say that REGHI was set aside (SOG-0504: it said « détour de +8 NM » for a retry that had failed; this case asserted that sentence); the rule is said broken. The fallback that succeeds is K376')
@@ -15149,8 +15149,8 @@ def k331(c):
     c.ok(view['dct_limits'] == p['dct_limits'] and view['alternatives'][0]['faults'] >= 1, str(view['dct_limits'])[:120], 'the view carries `dct_limits`, the alternative counts the fault')
     res2, view2 = run(action='compute', via=[])
     p2 = res2['primary']
-    c.eq(([i['text'] for i in p2['issues'] if i['level'] == 'ERREUR' and 'Raccord' in i['text']], sum('au-delà de la limite de 10 NM' in i['text'] for i in p2['issues'] if i['level'] == 'REVUE')), ([], 1),
-         'the CALCULATED route (the search writes it, no SID in the base): no ERREUR, one REVUE that says the direct is above the limit', what='e2e calculated')
+    c.eq((len([i['text'] for i in p2['issues'] if i['level'] == 'ERREUR' and 'Raccord' in i['text'] and (i.get('values') or {}).get('limit_nm') == 10]), sum('au-delà de la limite de 10 NM' in i['text'] for i in p2['issues'] if i['level'] == 'REVUE')), (1, 0),
+         'the CALCULATED route (the search writes it, no SID in the base): the direct above the limit that is KNOWN is an ERROR with its code (SOG-0532 (3): a known rule that is broken is never a review), no REVUE for it', what='e2e calculated')
 
 
 @case('K334', 'Route engine, SOG-0424 (the time of the RAD control): what depends only on the workbook and on the pair of aerodromes is computed ONCE per context — the readings of the words of a rule (`tokens`), the matching of a group and an aerodrome (`Rad.match`), the active rows and their words (`Rad._candidate_index`), the atomic prohibitions of a pair (`Rad.blocks`, `rad_flight.static_blocks`: once per (departure, arrival, level), not once per evaluation of a route) — and the answer is the SAME: the mentions, their reasons (the groups of a mention are sorted: the order of a set changed from one process to the next), the blocks; cold EDDF → LFMN 4.5 s → 3.4 s, EDDF → LEMD 11.4 s (loaded workstation) → 3.7 s, the same routes and the same findings',
@@ -15646,8 +15646,8 @@ def k332(c):
     res5, view5 = run('xx', 'ZQ', **{'action': 'compute', 'via': []})
     p5 = res5['primary']
     said5 = [i for i in p5['issues'] if 'LF9201' in i['text']]
-    c.eq((p5['ok'], any('SITET' in (l['start']['id'], l['end']['id']) for l in p5['legs']), [i['level'] for i in said5], 'aucune route sans infraction' in ' '.join(i['text'] for i in p5['issues']), [i['level'] for i in p5['issues'] if i['level'] == 'ERREUR'], view5['status']), (True, True, ['REVUE'], True, [], 'computed'),
-         'the rule of the ergonomics session: a CALCULATED route is never lost to a rule that is decided — with the rule LF9201 (form A, SITET, not satisfied by this flight) the only link of the bench goes through SITET: the search without the blocks gives the best route, the answer says « aucune route sans infraction », names the rule LF9201 in a REVUE (never an ERREUR) and the status is `computed` (red before: no route, a proposal)', what='calculated form A')
+    c.eq((p5['ok'], any('SITET' in (l['start']['id'], l['end']['id']) for l in p5['legs']), [i['level'] for i in said5], any(i.get('code') == 'no_conforming_route' for i in p5['issues']), sorted(i.get('code') for i in p5['issues'] if i['level'] == 'ERREUR'), view5['status']), (True, True, ['ERREUR'], True, ['rad_block', 'rad_rule'], 'faulty'),
+         'the rule of the ergonomics session: a CALCULATED route is never lost to a rule that is decided — with the rule LF9201 (form A, SITET, not satisfied by this flight) the only link of the bench goes through SITET: the search without the blocks gives the best route, the answer says « aucune route sans infraction », names the rule LF9201 as an ERROR with its code (SOG-0532 (3): a known rule broken is never a review any more) and the status is `faulty` (the best route, marked faulty; red before: no route, a proposal)', what='calculated form A')
     big = 'DEP (' + 'AAAA, ' * 1000 + 'BBBB)'
     c.eq((RFL.condition(big, ctx('XXXX', 'YYYY'), G()), RFL.condition('DEP (AAAA, XXXX)', ctx('XXXX', 'YYYY'), G())), (None, True), 'a cell of more than 4 000 signs is not decided (the cost of the reading stays bounded); a short one is', what='bounded')
 
@@ -15781,8 +15781,8 @@ def k335(c):
     c.eq([m['assessment'][:10] for m in res2['primary']['rad'] if m['id'] == 'LF9401'], ['Condition '], 'filed at FL250 the same rule is decided and not violated (red before: « to interpret » at any level)', what='other level')
     res3, view3 = run(350, **{'action': 'compute', 'via': []})
     p3 = res3['primary']
-    c.eq((p3['ok'], [i['level'] for i in p3['issues'] if 'LF9401' in i['text']], [i['level'] for i in p3['issues'] if i['level'] == 'ERREUR'], 'aucune route sans infraction' in ' '.join(i['text'] for i in p3['issues']), view3['status']), (True, ['REVUE'], [], True, 'computed'),
-         'a CALCULATED route that still breaks the decided level rule is RETURNED with a REVUE that says it (never an ERREUR that would lose the route)', what='calculated')
+    c.eq((p3['ok'], [i['level'] for i in p3['issues'] if 'LF9401' in i['text']], [i.get('code') for i in p3['issues'] if i['level'] == 'ERREUR'], any(i.get('code') == 'no_conforming_route' for i in p3['issues']), view3['status']), (True, ['ERREUR'], ['rad_rule'], True, 'faulty'),
+         'a CALCULATED route that still breaks the decided level rule is RETURNED as the best route, marked `faulty`, with the rule as an ERROR with its code (SOG-0532 (3): no more demotion to a review) and the review « Aucune route sans infraction »', what='calculated')
 @case('K337', 'Route engine, SOG-0401 (a segment rule applies to ANY portion of the segment, EDLO1003): « T703 from ARBAX to DEXIT, ONLY AVBL FOR TFC ARR (…) » was decided « no infraction » for a flight on TIVDA T703 BEPAS because the flight did not reach DEXIT; the rule now applies to every leg of the airway that lies inside the segment, the legs that lie against the direction of the segment (or an airway order that cannot be read) leave it « to be interpreted » unless both readings agree',
       'K', static=True,
       rule='SOG-0401 (the ergonomics session: « une règle décidée à tort est pire qu\'une règle à examiner » — EDLO1003 refused by Eurocontrol on EGGW → LQSA, decided « sans infraction » here). Cause: `target` applied a segment rule (airway, from, to) only if the flight started the segment at `from` AND reached `to` on the same airway; a flight on a PORTION (ARBAX–BARIX–BEPAS inside ARBAX–DEXIT) was « not concerned » and the rule was recorded as evaluated without infraction. Measured with the reference routes: 1 rule wrong (EDLO1003), 3 more that became undecided before the two-hypothesis reading (ED3202, EDLO1021, LS2529: decided again, their conclusion is the same applicable or not). Bench: a fixture network (A1: OLZOM–SITET–KEPAD–BOYNE) and three segment rules.')
@@ -18974,7 +18974,7 @@ def k406(c):
          (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')
 
 
-def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None):
+def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=()):
     """SOG-0532 : une base INVENTÉE pour les cas du moteur de route (deux terrains ZZAA et ZZBB, des points A0 P1 P2 P3 P4 B0 sur une ligne, des voies `lanes` = [(nom, [points], plancher_ft, plafond_ft)], une STAR de ZZBB si `star_min`, le RAD de test + `rad_rows` en annexe 3A Conditions) ; rend (data, rad). Aucune donnée de l'utilisateur."""
     import json
     import os
@@ -18982,7 +18982,7 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None):
     sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
     import route_fixture as RF
     from route_engine import import_books as I
-    pts = {'A0': (50.0, 0.6), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'B0': (50.0, 11.6)}
+    pts = {'A0': (50.0, 0.6), 'N1': (50.0, 1.4), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'B0': (50.0, 11.6)}
     airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
     lanes = lanes or [('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 46000)]
     ways = []
@@ -19007,6 +19007,8 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None):
     for name, rows in sheets:
         if name == 'Annex 3A Conditions':
             rows.extend(rad_rows)
+        if name == 'Annex 2B':
+            rows.extend(r + [''] * (17 - len(r)) for r in rules_2b)
     book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
     RF.write_xlsx(book, sheets)
     rad = os.path.join(data, 'route', 'rad.json.gz')
@@ -19037,3 +19039,35 @@ def k480(c):
     import inspect
     src = inspect.getsource(E) + inspect.getsource(P)
     c.ok('2026-11-09' not in src, str(src.count('2026-11-09')), 'no date frozen in the code of the engine (engine.py, plan.py)')
+
+
+@case('K481', 'Route engine, SOG-0532 (3): THREE verdicts, never confused — a rule of the RAD that the engine knows and that the route breaks is an ERROR for a calculated route as for a typed one (before: demoted to « REVUE » when no route avoided it, the route stayed « valid » and « Auto » could keep it); the answer says `verdict: violates` with the rule as a CODE and its values; the best route is still returned, marked faulty, and never counted valid',
+      'K', static=True,
+      rule='SOG-0532 (3) (the ergonomics session, 20 Nov: « Une règle connue enfreinte est une ERREUR : plus de rétrogradation. Le moteur réessaie avec l\'exclusion ; s\'il ne trouve rien de conforme, il le dit et rend la meilleure route marquée « enfreint N règles connues », la liste à l\'écran. Une telle route n\'est jamais « valide » et « Auto » ne la retient pas »). Reasons as code + values (SOG-0531): `issues[].code`, `issues[].values`; the answer has `verdict` (`violates` | `unverifiable` | `conform`), `violations`, `unverifiable`. The bench: an invented base (two aerodromes, ONE lane through P2) and an invented rule of the RAD that forbids the point P2 for all traffic: no route avoids it.')
+def k481(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    rule = ['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZZ2001', '', '', '', 'P2', 'NOT AVBL FOR TFC', 'H24', 'S', 'invented test rule', '', 'ZZACC', 'ZZ']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=[rule])
+        request = {'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False}
+        res = P.compute(V.to_request(request), data, rad, None)
+        p = res['primary']
+        view = V.to_view(res, V.to_request(request))
+        lv = P.levels(V.to_request(request), [250], data, rad, None)
+        td2 = tempfile.mkdtemp(prefix='k481_', dir=td)
+        data2, rad2 = _sog532_bench(td2)
+        ok_res = P.compute(V.to_request(request), data2, rad2, None)['primary']
+    errors = [i for i in p['issues'] if i['level'] == 'ERREUR']
+    demoted = [i for i in p['issues'] if i['level'] == 'REVUE' and 'Règle RAD enfreinte' in i['text']]
+    c.ok(bool(p.get('ok')) and p.get('route'), str(p.get('route') or p.get('error')), 'a route is found (the best one: the only lane passes P2)')
+    c.ok(any(i.get('code') == 'rad_block' and (i.get('values') or {}).get('id') == 'ZZ2001' for i in errors), str([(i['level'], i.get('code')) for i in p['issues']]), 'the known rule broken is an ERROR, with its CODE and its values (id, annex, row) — red before: a « REVUE »')
+    c.eq(demoted, [], 'no demotion: nothing says « Règle RAD enfreinte » as a review any more', what='no demotion')
+    c.eq((p.get('verdict'), [x.get('code') for x in p.get('violations') or []], p.get('status')), ('violates', ['rad_block'], 'ERREURS DÉTECTÉES'), 'the answer says `verdict: violates`, the list of the rules broken, and the status of the errors (not « CONTRÔLE PARTIEL — À VÉRIFIER »)', what='verdict')
+    c.ok(any(i.get('code') == 'no_conforming_route' for i in p['issues']), str([i.get('code') for i in p['issues']]), 'and it says that no route conforms (a review with the number of rules broken), as the ergonomics session asked')
+    alt = (view.get('alternatives') or [{}])[0]
+    c.eq((view.get('status'), alt.get('faulty'), alt.get('verdict'), (alt.get('violations') or [{}])[0].get('code')), ('faulty', True, 'violates', 'rad_block'), 'the screen receives the best route as the FIRST alternative, marked `faulty`, with its violations (status `faulty`: no route conforms)', what='view')
+    c.eq((lv['levels'][0]['ok'], lv['levels'][0]['valid'], lv['first_valid']), (True, False, None), '`route/levels`: the level is not valid (the route breaks a known rule): « Auto » does not keep it', what='levels')
+    c.ok(ok_res.get('verdict') != 'violates' and not any(i['level'] == 'ERREUR' for i in ok_res['issues']), str((ok_res.get('verdict'), [i['text'][:60] for i in ok_res['issues'] if i['level'] == 'ERREUR'])), 'control: the same flight on the base without the rule has no error and is not `violates`')

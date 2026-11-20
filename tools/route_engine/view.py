@@ -140,7 +140,7 @@ def points_of(r):
 def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
-    return {'id': f'alt{i}', 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
+    return {'id': f'alt{i}', 'verdict': r.get('verdict'), 'violations': r.get('violations') or [], 'unverifiable': r.get('unverifiable') or [], 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
             'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
             **({'nat': nat_of(segs)} if nat_of(segs) else {}),       # SOG-0263
             **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],
@@ -175,12 +175,14 @@ def to_view(plan_result, request, include_raw=False):
         issues = [{'level': 'error', 'text': p.get('error') or p.get('status') or 'Calcul impossible'}]
         alts = []
     else:
-        issues = [dict({'level': level_of(x['level']), 'text': x['text']}, **({'kind': issue_kind(x['text'])} if issue_kind(x['text']) else {})) for x in p.get('issues') or []]
+        issues = [dict({'level': level_of(x['level']), 'text': x['text']}, **({'kind': issue_kind(x['text'])} if issue_kind(x['text']) else {}), **({'code': x['code'], 'values': x.get('values') or {}} if x.get('code') else {})) for x in p.get('issues') or []]      # SOG-0532 / SOG-0531 : le code et les valeurs d'une raison (l'écran compose la phrase dans la langue)
         alts = [alternative(1, p, fl)]
     if request.get('mode') == 'calculate':
         accepted = bool(p.get('ok')) and not any(x['level'] == 'ERREUR' for x in p.get('issues') or [])
         alts = ([alternative(1, p, fl)] if accepted else []) + [alternative(i, a, fl) for i, a in enumerate(plan_result.get('alternatives') or [], 2 if accepted else 1)]
         alts = alts[:3]
+        if not alts and p.get('ok'):      # SOG-0532 (3) : aucune route conforme : la MEILLEURE est rendue, marquée fautive (`faulty`, `verdict: violates`, ses `violations`) ; elle n'est jamais « calculée et acceptée »
+            alts = [dict(alternative(1, p, fl), faulty=True)]
     # SOG-0161 : sans route calculée ni alternative, les propositions de repli du moteur (recovery : un direct, des tronçons raccordés, un repli FRA) sont rendues comme des alternatives `proposal: true`, `incomplete: true` : jamais « contrôlées »,
     # leur part de distance contrôlée est dans `control` ; la page les montre comme telles (route partielle à examiner)
     if request.get('mode') == 'calculate' and request.get('proposals') and not alts:      # opt-in : `proposals: true` dans la demande de l'écran (le contrat d'avant : aucune alternative sans route calculée)
@@ -191,7 +193,7 @@ def to_view(plan_result, request, include_raw=False):
         if not alts:
             issues.append({'level': 'review', 'text': x})
     # SOG-0161 : `status` dit ce que l'écran a reçu — 'computed' (une route calculée et acceptée), 'proposal' (rien de calculé : des propositions de repli, routes PARTIELLES à examiner : `proposal: true` sur chacune), 'none' ; la phrase `message` le dit ; `ok` reste vrai (la réponse est valide)
-    status = ('interrupted' if plan_result.get('interrupted') else 'none') if not alts else 'proposal' if alts[0].get('proposal') else 'computed'      # SOG-0524 : 'interrupted' : le garde-fou de temps a joué (le poste est trop lent) et rien n'est calculé : ce n'est PAS une absence de route (`issues` le dit)
+    status = ('interrupted' if plan_result.get('interrupted') else 'none') if not alts else 'proposal' if alts[0].get('proposal') else 'faulty' if alts[0].get('faulty') else 'computed'      # SOG-0524 : 'interrupted' : le garde-fou de temps a joué (le poste est trop lent) et rien n'est calculé : ce n'est PAS une absence de route (`issues` le dit)
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     changes = (p.get('profile_changes') or [])[:MAX_CHANGES] if p.get('ok') else []

@@ -352,21 +352,15 @@ def plan(request, root):
             if fallback.get('ok'):
                 primary = fallback
                 request['_rad_fallback'] = True
-                primary.setdefault('issues', []).insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
         except engine.Interrupted:
             interrupted = True
         except (ValueError, SearchBudget):
             pass
     if request.get('mode', 'calculate') == 'calculate' and primary.get('ok'):
-        # SOG-0401 (règle de l'ergonome) : une route CALCULÉE reste rendue quand les reprises RAD n'ont pas écarté toutes ses infractions : les règles décidées qu'elle enfreint sont DITES (REVUE), jamais un refus qui ferait perdre la route
-        ids = {f['id'] for f in (primary.get('rad_summary') or {}).get('findings', [])}
-        broken = [i for i in primary.get('issues', []) if i['level'] == 'ERREUR' and (i['text'].startswith('Interdiction RAD explicite') or any(i['text'].startswith(f'RAD {x} (') for x in ids))]
-        if broken:
-            for i in broken:
-                i['level'], i['text'] = 'REVUE', 'Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' + i['text']
-            primary['issues'].insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
-            if not any(i['level'] == 'ERREUR' for i in primary['issues']):
-                primary['status'] = 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if primary.get('data_gaps') else 'CONTRÔLE PARTIEL — À VÉRIFIER'
+        # SOG-0532 (3) (l'ergonome, 20 nov.) : plus de rétrogradation. Une règle CONNUE enfreinte est une ERREUR, pour une route calculée comme pour une route tapée ; si les reprises RAD n'ont rien trouvé de conforme, le moteur le DIT (une revue avec le nombre de règles) et rend la meilleure route, marquée fautive (`verdict: violates`) : elle n'est jamais « valide » et « Auto » ne la retient pas
+        broken = [i for i in primary.get('issues', []) if i['level'] == 'ERREUR' and i.get('code') in ('rad_block', 'rad_rule')]
+        if broken and not any(i.get('code') == 'no_conforming_route' for i in primary['issues']):
+            primary['issues'].insert(0, {'level': 'REVUE', 'code': 'no_conforming_route', 'values': {'violations': len(broken)}, 'text': f'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue, elle enfreint {len(broken)} règle(s) connue(s) (listées dans les erreurs) : Eurocontrol refusera ce plan.'})
     for x in avoids if request.get('mode', 'calculate') == 'calculate' else []:      # SOG-0354 L5 (4) défaut 4 : un point écarté est un DÉTOUR : la réponse le dit, avec les deux distances
         if x.get('fallback') and primary.get('distance_nm') and head_nm:
             primary.setdefault('issues', []).append({'level': 'REVUE', 'text': f"Point {x['point']} écarté (règle RAD {x['id']} : passer par le point obligatoire n'a pas abouti) : détour de {primary['distance_nm'] - head_nm:+.0f} NM ({head_nm:.0f} → {primary['distance_nm']:.0f} NM)."})
@@ -635,7 +629,7 @@ def level_summary(level, res):
     else:
         reason = 'route valide'
     return {'fl': level, 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
-            'errors': [e[:160] for e in errors[:3]], 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}
+            'errors': [e[:160] for e in errors[:3]], 'verdict': p.get('verdict'), 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}      # SOG-0532 (3) : `verdict` (violates | unverifiable | conform) : le même mot que la réponse de route/compute
 
 
 LEVELS_BUDGET_S = 300      # SOG-0529 (relecture de Sécurisation) : le temps de l'appel ENTIER (douze niveaux de 120 s au pire tiendraient le verrou des calculs pendant 24 minutes) ; testé AVANT chaque niveau

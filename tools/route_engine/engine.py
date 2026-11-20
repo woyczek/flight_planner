@@ -953,7 +953,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
     generated=request.get('mode','calculate')=='calculate'; fallback=bool(request.get('_rad_fallback'))      # SOG-0401 (règle de l'ergonome) : le calcul ne perd jamais une route à cause d'une règle qu'il sait décider : sans route sans infraction, la MEILLEURE route est rendue (`_rad_fallback`) et les règles qu'elle enfreint sont DITES (une REVUE, jamais un refus)
     blocks=[] if fallback else rad.blocks(dep,arr,None)
     route=str(request.get('route','')).strip().upper(); issues=[]; legs=[]
-    def issue(level,text): issues.append(dict(level=level,text=text))
+    def issue(level,text,code=None,**values):      # SOG-0532 (3) / SOG-0531 : une raison qui compte pour le verdict porte un CODE stable et ses valeurs (l'écran compose la phrase dans la langue ; `text` reste la phrase française des journaux)
+        issues.append(dict(level=level,text=text,**({'code':code,'values':values} if code else {})))
     if generated:
         radius=float(request.get('radius',40))
         if not 1<=radius<=100: raise ValueError('Rayon de raccordement : 1 à 100 NM.')
@@ -1175,7 +1176,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         hit=bool(affected)
         if hit:
             violations.append(block)
-            issue('REVUE' if fallback else 'ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}){" enfreinte : aucune route sans infraction, la meilleure est rendue" if fallback else ""}.')
+            issue('ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}){" enfreinte : aucune route sans infraction, la meilleure est rendue" if fallback else ""}.','rad_block',id=block['id'],sheet=block['sheet'],row=block['row'])      # SOG-0532 (3) : une règle connue enfreinte est une ERREUR, jamais une revue (route calculée comme route tapée)
             for l in affected: l['alerts'].append('Interdiction RAD '+block['id'])
     # Full-flight conditions see the expanded SID/STAR, not only filed endpoints.
     elapsed=0.
@@ -1186,7 +1187,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     unread_rules=rad_flight.unread_spaces_issue(rad_summary)      # SOG-0501 (c) : les règles dont la cible est un espace sans contour (LDZOC…) : dites avec leur nombre
     if unread_rules:issue('REVUE',unread_rules[0])
     for finding in rad_summary['findings']:
-        if (finding['sheet'],finding['row']) not in atomic_ids:issue('REVUE' if fallback else 'ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'])
+        if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'],'rad_rule',id=finding['id'],sheet=finding['sheet'],row=finding['row'])      # SOG-0532 (3)
         for index in finding['segments']:
             leg=legs[index];leg['alerts'].append('RAD '+finding['id']+' : '+', '.join(finding['phases']));leg['compatible']=False
     for c in candidates:
@@ -1200,9 +1201,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
             if kind not in selected_kinds:
                 stats=nav.procedures.stats.get(ad,{})
                 issue('REVUE',f'{ad} : aucune {kind} complète connectée utilisée ; raccord DCT de simulation. Catalogue : {stats.get(kind+"_total",0)} procédures, {stats.get(kind+"_usable",0)} résolues, {stats.get(kind+"_incomplete",0)} incomplètes, {stats.get(kind+"_doubt",0)} douteuses.'+(f' {stats[kind+"_above_level"]} refusée(s) à ce niveau : leur point {"d’entrée" if kind=="STAR" else "de sortie"} exige une altitude au-dessus du niveau de croisière FL{fl:03d}.' if stats.get(kind+'_above_level') else ''))
-    dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures,fl*100)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
-    for level,text in dct_issues:issue(level,text)
-    for level,text in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),request.get('mode')=='validate',dep,arr):issue(level,text)      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
+    dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures,fl*100,strict=True)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
+    for level,text,*meta in dct_issues:issue(level,text,*([meta[0]['code']] if meta else []),**(meta[0]['values'] if meta else {}))
+    for level,text in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),True,dep,arr):issue(level,text,*(['space_dct_limit'] if level=='ERREUR' else []))      # SOG-0532 (3) : un direct décidé trop long est une ERREUR, route calculée ou tapée      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
     gaps=[dict(name='FRA : géométrie et NPZ',reason='Points FRA, rôles E/X/I/A/D, niveaux numériques et horaires simples utilisés. Volumes des FRA, NPZ et règles complexes non fournis par la liste de points : les liaisons sont des candidates à contrôler.' if fra_loaded else 'Aucune liste FRA ne couvre cette date. Les DCT ne sont pas des autorisations FRA.'),
           dict(name='Sens et vitesses limites',reason='Sens autorisés et limites de vitesse absents des fichiers airways ; vitesse sol saisie utilisée pour le profil.'),
           dict(name='RAD complet',reason='Le vol entier, SID/STAR développées comprises, est le périmètre du contrôle. Seules les formes de conditions explicitement prises en charge sont décidées. Conditions complexes, doublons ambigus, plafonnements conditionnels et géométrie des espaces restent à interpréter.'),
@@ -1221,9 +1222,11 @@ def assess(request,_nav=None,_rad=None,_path=None):
             issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.')
     if request.get('fl_basis')=='default':issues.insert(0,dict(level='REVUE',text=f"Niveau du vol absent : le calcul est fait au FL{fl:03d}, le niveau par défaut du moteur ; un autre niveau donne d'autres voies (les voies ont leurs bandes de niveau)."))      # SOG-0517 : la demande n'avait pas de niveau (Carburant : le vol sans niveau) : dit EN TÊTE (l'IFPS de l'utilisateur du 19/11 : calculé au FL180, déposé au FL270)
     errors=[x for x in issues if x['level']=='ERREUR']
+    violations=[dict(code=x.get('code') or 'other',values=x.get('values') or {},text=x['text'][:300]) for x in errors]      # SOG-0532 (3) : les règles CONNUES enfreintes (jamais confondues avec ce qui n'a pas pu être vérifié)
+    unverifiable=[dict(code=x['code'],values=x.get('values') or {},text=x['text'][:300]) for x in issues if x['level']=='REVUE' and x.get('unverifiable')]      # ce que le contrôle n'a pas pu vérifier, nommé
     data_gaps=[dict(start=l['start']['id'],end=l['end']['id'],via=l['via'],reason=l['data_gap']) for l in legs if l.get('data_gap')]
     status='ERREURS DÉTECTÉES' if errors else 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if data_gaps else 'CONTRÔLE PARTIEL — À VÉRIFIER'
-    result=dict(ok=True,status=status,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
+    result=dict(ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
         coverage=nav.coverage,rad_summary=rad_summary,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
