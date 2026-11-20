@@ -4,7 +4,7 @@
  "updated": "2026-11-20",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d69d80c",
+  "organisation": "8b7ec95",
   "fiches": 532,
   "untranslated": 0,
   "priorities": 481,
@@ -3399,11 +3399,12 @@
     {
      "id": "SOG-0532",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : le moteur rend une route qu'il sait enfreindre des règles (yoyo de niveau, voie hors de son étendue, RAD) sous le libellé « contrôle partiel »",
      "en": "Routes: the engine returns a route it knows breaks rules (level yo-yo, airway outside its vertical extent, RAD) under the label “partial check”",
      "de": "Routen: Die Routenberechnung liefert eine Route, von der sie weiß, dass sie Regeln verletzt (Höhen-Jojo, Strecke außerhalb ihrer vertikalen Ausdehnung, RAD), unter der Bezeichnung „teilweise geprüft“",
-     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»"
+     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»",
+     "test": true
     }
    ]
   },
