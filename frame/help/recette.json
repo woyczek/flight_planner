@@ -5531,6 +5531,21 @@
    "since": "2026-11-19",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0131",
+   "fiche": "SOG-0532",
+   "app": "pilote",
+   "question": "Une case « Coller la réponse d'Eurocontrol » dans Carburant : la veux-tu, et quand ?",
+   "context": "Tu y collerais les erreurs rendues par la validation d'Eurocontrol ; le moteur retrouverait chaque référence dans le RAD compilé, exclurait ce qui est refusé et recalculerait. C'est un écran neuf, donc ton mot. Avant cela, le moteur doit cesser de rendre des routes qu'il sait fausses (SOG-0532, points 1 à 7) : sinon la case ne ferait que masquer le défaut.",
+   "options": [
+    "Oui, après les points 1 à 7 de SOG-0532 et après le jalon « atelier figé »",
+    "Non, je continue de te coller les réponses",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-20",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }

@@ -4,8 +4,8 @@
  "updated": "2026-11-20",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e20b033",
-  "fiches": 530,
+  "organisation": "9ea393b",
+  "fiches": 531,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3361,6 +3361,27 @@
      "en": "Routes: the route engine's reasons are written in French only; Fuel shows them as they are in English, German and Spanish",
      "de": "Routen: Die Begründungen der Routenberechnung sind nur auf Französisch; Kraftstoff zeigt sie unverändert auf Englisch, Deutsch und Spanisch",
      "es": "Rutas: los motivos del motor de rutas solo están en francés; Combustible los muestra tal cual en inglés, alemán y español"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-carburant-plan-de-vol",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; Carburant ; plan de vol",
+    "en": "Routes ; Carburant ; plan de vol",
+    "de": "Routes ; Carburant ; plan de vol",
+    "es": "Routes ; Carburant ; plan de vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0532",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : le moteur rend une route qu'il sait enfreindre des règles (yoyo de niveau, voie hors de son étendue, RAD) sous le libellé « contrôle partiel »",
+     "en": "Routes: the engine returns a route it knows breaks rules (level yo-yo, airway outside its vertical extent, RAD) under the label “partial check”",
+     "de": "Routen: Die Routenberechnung liefert eine Route, von der sie weiß, dass sie Regeln verletzt (Höhen-Jojo, Strecke außerhalb ihrer vertikalen Ausdehnung, RAD), unter der Bezeichnung „teilweise geprüft“",
+     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»"
     }
    ]
   },
