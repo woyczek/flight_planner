@@ -9540,7 +9540,9 @@ def f296(c):
                {'code': 'stale_cycle', 'values': {'zone': 'be', 'cycle': '2026-10-01', 'routes': ['XQ1']}, 'text': 'cycle'},
                {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}]
     spaces = [{'code': 'rad_unread', 'values': {'state': 'be', 'flown': 0, 'spaces_only': 4}, 'text': 'RAD non lu'}]
-    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), verdict='unverifiable', violations=[],
+    # the relay (20 Nov): a share « en infraction » goes with a known rule broken — the route breaks one, its unverifiable lines stay
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True, verdict='violates',
+                       violations=[{'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'}],
                        unverifiable=unverif, notVerified=[{'state': 'BE', 'flown': 9, 'spaces_only': 5, 'items': items}],
                        control={'controlledPct': 60, 'incompletePct': 30, 'fallbackPct': 0, 'errorPct': 10, 'sections': []}),
                   dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[],
@@ -9587,7 +9589,8 @@ def f296(c):
     c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 2", timeout=10000, what='the verdicts of the two routes')
     R0, R1 = f'{A} [data-alt="0"]', f'{A} [data-alt="1"]'
     # 1. one count, the lines of the group (a State line and a stale cycle are points)
-    c.eq(norm(c.text(f'{R0} [data-verdict]') or ''), norm(want['title']), 'one count: the lines of the group', what='title')
+    c.eq(norm(c.text(f'{R0} [data-verdict]') or ''), norm({'fr': 'enfreint 1 règle connue', 'en': 'breaks 1 known rule',
+         'de': 'verletzt 1 bekannte Regel', 'es': 'infringe 1 regla conocida'}[c.lang]), 'the most serious verdict on the line', what='verdict')
     c.eq(norm(c.text(f'{R0} [data-share]') or ''), norm(want['share']), 'under 100 %: each number with its word, the part in breach first, the null part left out',
          what='share')
     c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
