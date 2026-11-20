@@ -9418,3 +9418,102 @@ def f294(c):
         c.shot(f'F294_{c.design}_{w}_{c.lang}_copy.png')
     st['extra'] = None
     c.check_errors()
+
+
+_F295_YOYO = 'Yoyo de niveau : F240 puis F270 en LUGEN.'
+
+
+@case('F295', 'Route step: three verdicts, never confused, on each computed route — « enfreint N règles connues », « Non vérifiable : N '
+      'point(s) », « conforme à ce que nous savons lire » — and under the route the two groups « Règles connues enfreintes » and « Non '
+      'vérifiable » when they have lines, each line composed in the language of the screen from { code, values }, starting with the '
+      'place of the route, without sheet nor row; seven lines at most, then « et N autre(s) »; an engine text without its values shown '
+      'with the mention of its language outside French', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0532 (3), SOG-0531 (the contract of frame/aerodb/INTEGRATION.md « three verdicts », « what the check could NOT verify »); '
+      'the ergonomist\'s words of 20 Nov (ergonome_MOTS_CODES_SOG-0532_CORRIGES.md); a fake launcher, an invented route, rules and values')
+def f295(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    violates = [
+        {'code': 'rad_rule', 'values': {'id': 'XX9001', 'sheet': 'Annexe X', 'row': 12, 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'},
+        {'code': 'rad_block', 'values': {'id': 'XX9002', 'sheet': 'Annexe X', 'row': 13}, 'text': 'Interdiction XX9002'},
+        {'code': 'connector_limit', 'values': {'ad': 'LFML', 'end': 'arr', 'nm': 48.5, 'limit_nm': 30, 'rule': 'XX9003', 'point': 'NEPIX'},
+         'text': 'Raccord NEPIX–LFML'},
+        {'code': 'level_yoyo', 'values': {'point': 'LUGEN', 'down_fl': 240, 'up_fl': 270, 'filed_fl': 270}, 'text': _F295_YOYO}]
+    unverif = [
+        {'code': 'connector_unknown', 'values': {'ad': 'LFRS', 'end': 'dep', 'nm': 12, 'reason': 'no_limit', 'rule': 'XX9004'}, 'text': 'x'},
+        {'code': 'network_gap', 'values': {'from_point': 'NEPIX', 'to_point': 'LUGEN', 'nm': 61}, 'text': 'y'}]
+    many = [{'code': 'network_gap', 'values': {'from_point': f'XQP{i}', 'to_point': f'XQQ{i}', 'nm': 20 + i}, 'text': 'z'} for i in range(9)]
+    st['alts'] = [
+        dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=4, faulty=True, verdict='violates',
+             violations=violates, unverifiable=unverif),
+        dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[], unverifiable=many,
+             control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []}),
+        dict(_alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, segs, sid=False), verdict='conform', violations=[], unverifiable=[])]
+    want = {
+        'fr': {'v': 'enfreint 4 règles connues', 'u': 'Non vérifiable : 9 points', 'c': 'conforme à ce que nous savons lire',
+               'gv': 'Règles connues enfreintes', 'gu': 'Non vérifiable : 2 points', 'more': 'et 2 autres',
+               'lines': ['LUGEN–NEPIX : règle du RAD non respectée (XX9001)', 'Route interdite par le RAD (XX9002)',
+                         'Arrivée à LFML : direct de 48,5 NM depuis NEPIX, limite 30 NM (RAD XX9003)', _F295_YOYO,
+                         'Départ de LFRS : direct de 12 NM — limite du RAD non lue pour ce terrain',
+                         'Aucune voie dans la base entre NEPIX et LUGEN : direct de 61 NM']},
+        'en': {'v': 'breaks 4 known rules', 'u': 'Cannot be verified: 9 points', 'c': 'conforms to what we can read',
+               'gv': 'Known rules broken', 'gu': 'Cannot be verified: 2 points', 'more': 'and 2 others',
+               'lines': ['LUGEN–NEPIX: RAD rule not met (XX9001)', 'Route prohibited by the RAD (XX9002)',
+                         'Arrival at LFML: direct of 48.5 NM from NEPIX, limit 30 NM (RAD XX9003)', 'engine text, in French: ' + _F295_YOYO,
+                         'Departure from LFRS: direct of 12 NM — RAD limit not read for this aerodrome',
+                         'No airway in the base between NEPIX and LUGEN: direct of 61 NM']},
+        'de': {'v': 'verletzt 4 bekannte Regeln', 'u': 'Nicht prüfbar: 9 Punkte', 'c': 'entspricht dem, was wir lesen können',
+               'gv': 'Verletzte bekannte Regeln', 'gu': 'Nicht prüfbar: 2 Punkte', 'more': 'und 2 weitere',
+               'lines': ['LUGEN–NEPIX: RAD-Regel nicht eingehalten (XX9001)', 'Route durch das RAD verboten (XX9002)',
+                         'Ankunft in LFML: Direktstrecke von 48,5 NM ab NEPIX, Grenze 30 NM (RAD XX9003)',
+                         'Text der Routenberechnung, auf Französisch: ' + _F295_YOYO,
+                         'Abflug von LFRS: Direktstrecke von 12 NM — RAD-Grenze für diesen Flugplatz nicht gelesen',
+                         'Keine Luftstraße in der Basis zwischen NEPIX und LUGEN: Direktstrecke von 61 NM']},
+        'es': {'v': 'infringe 4 reglas conocidas', 'u': 'No verificable: 9 puntos', 'c': 'conforme a lo que sabemos leer',
+               'gv': 'Reglas conocidas infringidas', 'gu': 'No verificable: 2 puntos', 'more': 'y 2 otros',
+               'lines': ['LUGEN–NEPIX: regla del RAD no respetada (XX9001)', 'Ruta prohibida por el RAD (XX9002)',
+                         'Llegada a LFML: directo de 48,5 NM desde NEPIX, límite 30 NM (RAD XX9003)', 'texto del motor, en francés: ' + _F295_YOYO,
+                         'Salida de LFRS: directo de 12 NM — límite del RAD no leído para este aeródromo',
+                         'Ninguna aerovía en la base entre NEPIX y LUGEN: directo de 61 NM']}}[c.lang]
+    zero = {'fr': '0 écart contrôlé', 'en': '0 checked deviations', 'de': '0 geprüfte Abweichungen', 'es': '0 desviaciones controladas'}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt]').length === 3", timeout=10000, what='the three routes')
+    words = [norm(c.text(f'{A} [data-alt="{i}"] [data-verdict]') or '') for i in range(3)]
+    c.eq(words, [norm(want['v']), norm(want['u']), norm(want['c'])], 'the three verdicts, one per route, never confused', what='verdicts')
+    c.ok(all(norm(zero) not in norm(c.text(f'{A} [data-alt="{i}"]') or '') for i in range(3)), zero, 'no « 0 écart contrôlé » beside a verdict')
+    # the groups of the faulty route: both shown, the lines composed from { code, values }, starting with the place, no sheet nor row
+    R0 = f'{A} [data-alt="0"]'
+    c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
+    heads = [norm(x) for x in c.js(f"[...document.querySelectorAll('{R0} details[data-reasons] > summary')].map(e => e.textContent)")]
+    c.eq(heads, [norm(want['gv']), norm(want['gu'])], 'the two groups, each with its title', what='groups')
+    got = [norm(x) for x in c.js(f"[...document.querySelectorAll('{R0} details[data-reasons] li')].map(e => e.textContent)")]
+    c.eq(got, [norm(x) for x in want['lines']], 'each line in the language of the screen, from its code and values', what='lines')
+    c.ok(not any('Annexe' in x for x in got), got, 'neither sheet nor row of the workbook')
+    # the relay: the share of the check (« contrôlé 100 % · … ») never reads as a verdict — under the route text, away from the verdict
+    c.ok(c.js(f"""(() => {{ const r = document.querySelector('{A} [data-alt="1"] .fu-raltroute'),
+        s = document.querySelector('{A} [data-alt="1"] [data-share]');
+        return !!(r && s && (r.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING)) }})()"""), 'before', 'the share under the route text')
+    # nine unverifiable lines: seven, then « et 2 autres »
+    R1 = f'{A} [data-alt="1"]'
+    c.eq(c.count(f'{R1} details[data-reasons="unverifiable"] > ul > li'), 7, 'seven lines at most', what='seven')
+    c.eq(norm(c.text(f'{R1} [data-reasonsmore] > summary') or ''), norm(want['more']), 'then « et 2 autres », which opens the rest',
+         what='more')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
+        c.js(f"document.querySelector('{R0} details[data-reasons]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F295_{c.design}_{w}_{c.lang}_groups.png')
+        c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F295_{c.design}_{w}_{c.lang}_verdicts.png')
+    c.check_errors()

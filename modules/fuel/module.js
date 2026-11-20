@@ -35,6 +35,7 @@ import {
 } from '../../frame/lib/airline.js';
 import * as ZG from './zone_gap.js'; // « zone manquante » : ce qui manque, le geste, les replis externes (SOG-0143)
 import * as RE from './route_engine.js'; // le calcul et le contrôle de route du lanceur (RouteSim, SOG-0080, SOG-0081)
+import * as RR from './route_reasons.js'; // SOG-0532 : les raisons du moteur composées dans la langue de l'écran
 import * as RL from '../../frame/lib/route_legend.js'; // la légende commune des itinéraires avec la Carte (SOG-0134)
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
@@ -119,7 +120,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
-    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js', 'fpl.js', 'altn_check.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js', 'altn_check.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
@@ -2849,7 +2850,7 @@ const STYLE = `
 /* « zone manquante » (SOG-0143) : ce qui manque, le geste, les replis externes — trois éléments sur une ou deux lignes */
 [data-module="fuel"] .fu-zonegap{display:flex;flex-wrap:wrap;gap:.2em .8em;align-items:center;margin:.3em 0}
 [data-module="fuel"] .fu-zonegap a[data-zonelink]{min-height:44px;display:inline-flex;align-items:center}
-[data-module="fuel"] .fu-rfaults>summary,[data-module="fuel"] .fu-faultmore>summary{min-height:44px;display:flex;align-items:center}
+[data-module="fuel"] .fu-rfaults>summary,[data-module="fuel"] .fu-faultmore>summary,[data-module="fuel"] .fu-rverdicts>summary{min-height:44px;display:flex;align-items:center}
 [data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
    les réglages du devis : un libellé long passe à la ligne sans décaler les champs ; plusieurs couples par ligne sur un grand écran */
@@ -4700,8 +4701,13 @@ async function routeAskRun(s, act, r, o, box, retry) {
       errors: a?.errors || [],
       violations: a?.faulty ? a.violations : 0 // SOG-0532 (4)
     };
-    const lines = RE.faultLines(a);
-    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${limitsHtml(n)}`;
+    // SOG-0532 (3) : les règles enfreintes dites par leurs codes (le groupe « Règles connues enfreintes ») ne repassent pas en texte
+    const lines = RE.faultLines(a?.reasons?.violates?.length ? {
+        ...a,
+        errors: []
+      } : a),
+      ok = !a?.verdict || a.verdict === 'conform' ? `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>` : '';
+    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : ok}${a ? verdictsHtml(a, true) : ''}${limitsHtml(n)}`;
     S.ralts = null;
     if (a) altsPublish('check', [a], [r.points || []]); // la route tapée est déjà lue : ses points (INTEGRATION § 3 bis)
     renderPts();
@@ -6050,9 +6056,10 @@ function routeAltsDraw() {
     routes = both.filter(([a]) => !a.proposal),
     props = both.filter(([a]) => a.proposal);
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
-  const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
+  const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections|verdicts)"/g,
+      '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty>${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : ''}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal || a.faulty))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.verdict || a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal || a.faulty || a.verdict === 'unverifiable'))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -6514,8 +6521,9 @@ function routeTake(i) {
     share: shareText(a.control, true) || tt(TX.rIncomplete)
   }), 'warn'); // une proposition d'un plan impossible : non validée, à vérifier
   else if (a.control) S.ctx.notify(tt(TX.rTakenShare, {
-    share: shareText(a.control)
-  }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
+      share: shareText(a.control, a.verdict === 'unverifiable')
+    }), a.control.controlledPct >= 100 && a.verdict !== 'unverifiable' ? 'ok' :
+    'warn'); // SOG-0161 : la confirmation redit le partage ; SOG-0532 (3) : une route non vérifiable n'est jamais « contrôlé » en vert
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
   altsClear(true); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis), même pour une liste venue du document (SOG-0224)
 }
@@ -6532,6 +6540,31 @@ function routeStale(C = S.C) {
     c: String(c).padStart(3, '0'),
     f: String(f).padStart(3, '0')
   } : null;
+}
+/** SOG-0532 (3) : le mot du verdict sur la ligne d'un itinéraire qui n'enfreint rien de connu — « conforme à ce que nous savons lire »
+ *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
+function verdictWord(a) {
+  if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(RR.ROWS.conform))}</span>`;
+  if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(tt(RR.ROWS.groupUnverifiable, {
+    n: a.reasons.unverifiable.length || 1
+  }))}</b>`;
+  return '';
+}
+/** SOG-0532 (3) : les deux groupes, montrés s'ils ont des lignes — « Règles connues enfreintes », « Non vérifiable : N point(s) » ;
+ *  chaque ligne composée dans la langue de l'écran (RR.compose, posée par esc), sept au plus, puis « et N autre(s) » qui ouvre le
+ *  reste. `open` : dépliés (le contrôle d'une route tapée). */
+function verdictsHtml(a, open = false) {
+  const lang = S.ctx.lang(),
+    line = r => `<li data-reason="${esc(r.code)}">${esc(RR.compose(r, tt, lang, { fl: a.fl }) || '—')}</li>`,
+    group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
+    R = a.reasons || {
+      violates: [],
+      unverifiable: []
+    };
+  return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', tt(RR.ROWS
+    .groupUnverifiable, {
+      n: R.unverifiable.length
+    }), 'f-warn');
 }
 /** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
  *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */

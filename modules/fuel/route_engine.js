@@ -494,6 +494,37 @@ function pointsOf(list) {
   }
   return out;
 }
+/** SOG-0532 (3), SOG-0531 : les verdicts du moteur, jamais confondus. */
+const VERDICTS = ['conform', 'unverifiable', 'violates'];
+/** SOG-0532 (3) : les valeurs d'une raison (une entrée non sûre) : seize clés au plus, nommées en minuscules (jamais __proto__) ; un
+ *  nombre fini, un booléen, une chaîne (80 signes) ou une liste de chaînes (douze, 24 signes) ; le reste écarté. Jamais du HTML : l'écran
+ *  les pose par textContent ou esc. */
+function valuesOf(v) {
+  const out = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const k of Object.keys(v).slice(0, 16)) {
+    if (!/^[a-z][a-z_]{0,23}$/.test(k)) continue;
+    const x = v[k];
+    if (typeof x === 'number' && Number.isFinite(x)) out[k] = x;
+    else if (typeof x === 'boolean') out[k] = x;
+    else if (typeof x === 'string') out[k] = text(x, 80);
+    else if (Array.isArray(x)) out[k] = x.slice(0, 12).filter(s => typeof s === 'string').map(s => text(s, 24)).filter(Boolean);
+  }
+  return out;
+}
+/** SOG-0532 (3) : une liste de raisons { code, values, text } du moteur, bornée : quarante au plus, un code en minuscules (sinon
+ *  'other'), le texte français à 300 signes. */
+function reasonsOf(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 40).filter(x => x && typeof x === 'object').map(x => {
+    const own = k => Object.hasOwn(x, k) ? x[k] : undefined,
+      code = text(own('code'), 40);
+    return {
+      code: /^[a-z][a-z_]{0,39}$/.test(code) ? code : 'other',
+      values: valuesOf(own('values')),
+      text: text(own('text'), 300)
+    };
+  });
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -514,6 +545,12 @@ function altOf(a, role, errors, reviews = []) {
       true, // un contrôle incomplet n'est jamais présenté comme contrôlé
     faulty, // SOG-0532 (3)
     violations: faulty ? vio || faults || 1 : 0,
+    // SOG-0532 (3) : le verdict (le plus grave : enfreint > non vérifiable > conforme ; null d'une réponse plus ancienne) et ses raisons
+    verdict: faulty ? 'violates' : VERDICTS.includes(a?.verdict) ? a.verdict : null,
+    reasons: {
+      violates: reasonsOf(a?.violations),
+      unverifiable: reasonsOf(a?.unverifiable)
+    },
     errors,
     reviews: a?.incomplete === true ? reviews : [],
     faults,
