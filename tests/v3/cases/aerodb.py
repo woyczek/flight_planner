@@ -10521,7 +10521,7 @@ def k272(c):
     c.eq(b['airway'], {'60': [[-180, -180], [179, 179]]}, 'an airway segment across the date line is sampled the short way round', what='airway')
 
 
-@case('K273', 'Route engine: a LOW airway (ceiling under the requested level) is not taken away from the climb and the descent (SOG-0161, LFOE → KTPA); it is avoided, never forbidden (a low link can be the only one)', 'K', static=True,
+@case('K273', 'Route engine: a LOW airway (ceiling under the requested level) is not taken away from the climb and the descent (SOG-0161, LFOE → KTPA); it is EXCLUDED from the middle of the flight (SOG-0532 (1): the level is constant; before: avoided at a cost × 3 and never forbidden)', 'K', static=True,
       rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): on the real base LFOE → KTPA at FL370 left the high network at JFK, went down to 17 500 ft and followed V and T airways for 700 NM down the coast (the profile: cruise FL364 until NM 3311, then 17 500 ft on V44, V139, T307, T303, V1, T211). A low airway is not taken outside the climb of the departure and the descent towards the arrival: its cost is multiplied by 3 there (engine.Nav.search, LOW_PENALTY), the climb and the descent counted on the distance they need (from the level, the rate and the speed of the request) × 1.3; kinds other than the airways (procedures, connectors, DCT, FRA) are not concerned; never forbidden: with no other link the low airway is taken. Real base after: LFOE → KTPA 34 NM of low airway (the arrival), 4 274 NM against 4 256')
 def k273(c):
     import json
@@ -10564,7 +10564,7 @@ def k273(c):
     ok, route, nm = run(True)
     c.eq((ok, '>CH ' in route),(True, True), 'with a high airway that goes round (97 NM more), the middle of a 1 000 NM flight at FL350 goes round by the high airway (via CH), not by the shorter low one (17 999 ft), far from the climb and the descent', what='avoided')
     ok, route, nm = run(False)
-    c.eq((ok, ' L1:B>D ' in route), (True, True), 'with no other link the low airway is taken in the middle too (B to D): avoided, never forbidden', what='only link')
+    c.eq((ok, ' L1:B>D ' in route), (True, False), 'with no other link the low airway is NOT taken in the middle (B to D) any more (SOG-0532 (1): the level is constant, a lane out of its extent is excluded, no more cost × 3): the base has no link at this level, one direct joins the two parts (SOG-0476), said', what='only link')
     ok, route, nm = run(True, fl=170)
     c.eq((ok, '>CH ' in route), (True, False), 'at FL170 the low airway is NOT low (its ceiling is the level): the shorter one is flown', what='not low')
 
@@ -14169,7 +14169,7 @@ def k319(c):
             rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
             RF.write_xlsx(rad, RF.rad_sheets())
             I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
-            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False, 'allow_levels': True}, **req)      # SOG-0532 (1): the steps are asked (by default the level is constant and a low airway is excluded)
             request = V.to_request(args)
             res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
             return res, V.to_view(res, request)
@@ -14304,7 +14304,7 @@ def k321(c):
             rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
             RF.write_xlsx(rad, RF.rad_sheets())
             I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
-            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False, 'allow_levels': True}, **req)      # SOG-0532 (1): the steps are asked (by default the level is constant and a low airway is excluded)
             request = V.to_request(args)
             res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
             return res, V.to_view(res, request)
@@ -14314,20 +14314,20 @@ def k321(c):
     # the search: the text carries the two changes
     res, view = run(action='compute', via=[])
     p = res['primary']
-    c.eq((p['route'], view['alternatives'][0]['route']), (written, written),
-         'the route the SEARCH writes carries the level changes: SITET/F190 (the descent to the ceiling FL195 of A1, written as the cruise level F190 below it, begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); the view has the same text (red before: `' + plain + '`, one level for the whole flight)', what='search text')
+    c.eq((p['route'], view['alternatives'][0]['route'], [i.get('code') for i in p['issues'] if i['level'] == 'ERREUR']), (written, plain, ['level_yoyo']),
+         'the route the SEARCH writes carries the level changes: SITET/F190 (the descent to the ceiling FL195 of A1, written as the cruise level F190 below it, begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); SOG-0532 (1): this descent followed by a climb is a YOYO (PROF326 of Eurocontrol), an ERROR with its code `level_yoyo`: the route stays what the steps write (explicit steps) but the view puts an alternative WITHOUT the yoyo first (the plain route, one level for the whole flight)', what='search text')
     c.eq(short(p), [{'point': 'SITET', 'end_point': 'KEPAD', 'from_ft': 35000, 'to_ft': 19500, 'via': 'B1', 'kind': 'ceiling'}, {'point': 'MIDPT', 'end_point': 'BOYNE', 'from_ft': 19500, 'to_ft': 35000, 'via': 'B2', 'kind': 'release'}],
          '`profile_changes` is what it was (the groups are written FROM it): the descent at SITET, the release at MIDPT', what='changes')
     c.eq(view['profile_changes'], p['profile_changes'], 'the view carries the same `profile_changes`', what='view changes')
     revue = [i['text'] for i in p['issues'] if 'Profil adapté aux plafonds' in i['text']]
-    c.eq((len(revue), revue[0].endswith('voir `profile_changes` ; la route porte les changements de niveau (POINT/Fnnn).') if revue else None, [i['text'] for i in p['issues'] if i['level'] == 'ERREUR']), (1, True, []),
-         'the REVUE « Profil adapté aux plafonds » says that the route carries the changes; no ERREUR (the search is unchanged)', what='revue')
+    c.eq((len(revue), revue[0].endswith('voir `profile_changes` ; la route porte les changements de niveau (POINT/Fnnn).') if revue else None, [i['code'] for i in p['issues'] if i['level'] == 'ERREUR']), (1, True, ['level_yoyo']),
+         'the REVUE « Profil adapté aux plafonds » says that the route carries the changes; the only ERREUR is the yoyo (SOG-0532 (1))', what='revue')
     # the round trip: the generated text is read back without a parse error, the same legs, the same changes, the same text
     res2, view2 = run(action='check', route=written)
     q = res2['primary']
     ids = lambda r: [(l['via'], l['start']['id'], l['end']['id']) for l in r['legs']]
-    c.eq((q['ok'], q['route'], ids(q) == ids(p), short(q) == short(p), [i['text'] for i in q['issues'] if i['level'] == 'ERREUR'], view2['alternatives'][0]['route']), (True, written, True, True, [], written),
-         'checked back, the text with its groups is accepted: the same legs, the same `profile_changes`, the text returned as read, no ERREUR (the filed levels FL195 then FL350 are inside the bands of the legs)', what='round trip')
+    c.eq((q['ok'], q['route'], ids(q) == ids(p), short(q) == short(p), [i['code'] for i in q['issues'] if i['level'] == 'ERREUR'], view2['alternatives'][0]['route']), (True, written, True, True, ['level_yoyo'], written),
+         'checked back, the text with its groups is accepted: the same legs, the same `profile_changes`, the text returned as read, the only ERREUR is the yoyo F190 then F350 (SOG-0532 (1)); the filed levels are inside the bands of the legs', what='round trip')
     # the same route typed at ONE level: still refused, its text is the typed one
     res3, _ = run(action='check', route=plain)
     q3 = res3['primary']
@@ -14336,7 +14336,7 @@ def k321(c):
     # a group that puts a leg out of its band is judged at ITS level
     res4, _ = run(action='check', route='LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD/F350 A1 MIDPT B2 BOYNE DCT EIDW')
     q4 = res4['primary']
-    c.eq(([i['text'].split(' de la voie')[0] for i in q4['issues'] if i['level'] == 'ERREUR'], q4['route']), (['Tronçon A1 KEPAD–MIDPT : niveau FL350 hors de la bande FL090–FL195'], 'LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD/F350 A1 MIDPT B2 BOYNE DCT EIDW'),
+    c.eq(([i['text'].split(' de la voie')[0] for i in q4['issues'] if i['level'] == 'ERREUR' and i.get('code') != 'level_yoyo'], q4['route']), (['Tronçon A1 KEPAD–MIDPT : niveau FL350 hors de la bande FL090–FL195'], 'LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD/F350 A1 MIDPT B2 BOYNE DCT EIDW'),
          'a group FL350 on KEPAD (the start of A1, ceiling FL195) is an ERREUR at the level of the GROUP, and the text comes back as typed', what='group out of band')
     # groups on the departure and the arrival are ignored, on an airway or out of range refused
     res5, _ = run(action='check', route='LFPO/F350 DCT OLZOM B1 SITET/F195 B1 KEPAD A1 MIDPT B2 BOYNE DCT EIDW/F100')
@@ -14353,7 +14353,7 @@ def k321(c):
     # the alternatives carry their own groups, at their own level
     res8, _ = run(action='compute', via=[], alternatives=True)
     alts = [a['route'] for a in res8['alternatives']]
-    c.ok(alts and all('SITET/F190 B1 KEPAD A1 MIDPT/F' in r for r in alts) and len(set(alts)) == len(alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) carries its own groups: F190 down, then its own level back up')
+    c.ok(len(alts) == 3 and all(r == plain for r in alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) is the plain route, one level: SOG-0532 (1): a descent to F190 followed by a climb back is a yoyo (PROF326), an ERROR; it is no longer offered')
     # the helpers
     legs = [{'via': v, 'start': {'id': a}, 'end': {'id': b}} for v, a, b in (('DCT', 'LFPO', 'A'), ('B1', 'A', 'B'), ('B1', 'B', 'C'), ('DCT', 'C', 'EIDW'))]
     c.eq((E.written_route('LFPO', legs), E.written_route('LFPO', legs, (), {0: 300, 2: 195, 3: 150}), E.written_route('LFPO', legs, ('B',))), ('LFPO DCT A B1 C DCT EIDW', 'LFPO DCT A B1 B/F195 B1 C/F150 DCT EIDW', 'LFPO DCT A B1 B B1 C DCT EIDW'),
@@ -15638,7 +15638,7 @@ def k332(c):
          (True, [], [], 1, False), 'the CALCULATED route (CAP_SEARCH false): found, the airways are NOT capped, no ERREUR, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated)', what='calculated floor')
     FF.CAP_SEARCH = True
     try:
-        res6, _ = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': []})
+        res6, _ = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': [], 'allow_levels': True})      # SOG-0532 (1): with the steps asked (the level constant excludes a capped airway instead of flying it at its cap)
     finally:
         FF.CAP_SEARCH = False
     capped = [l for l in res6['primary']['legs'] if l.get('fra_floor_cap')]
@@ -18206,8 +18206,8 @@ def k358(c):
         finally:
             results_cache.ENABLED = True
     c.eq(island[0], 'CONTRÔLE PARTIEL — À VÉRIFIER', 'the arrival is on a part of the network whose airways stop below the level and that touches nothing: the route is returned, to examine (not « CALCUL IMPOSSIBLE »)', what='status')
-    c.ok(bool(island[1]) and 'PTEEE' in island[1] and ' DCT ISAAA UN800 ISCCC DCT LQXX' in island[1], str(island[1]), 'the route goes to PTEEE (the last point of the main network), ONE direct leg to the isolated part (ISAAA, its nearest point), its airway, then the aerodrome (the step down to FL280 for an airway that stops at FL285 is the engine own)')
-    c.eq((len(island[2]), 'PTEEE' in island[2][0] and 'ISAAA' in island[2][0] and ' NM ' in island[2][0], island[3].count('gap')), (1, True, 1), 'one REVUE says « la base n\'a pas de liaison entre PTEEE et ISCCC », the length of the direct; exactly one leg is marked gap', what='review')
+    c.ok(bool(island[1]) and 'PTEEE' in island[1] and ' DCT ISBBB UN800 ISCCC DCT LQXX' in island[1], str(island[1]), 'the route goes to PTEEE (the last point of the main network), ONE direct leg to the isolated part (ISBBB, its nearest point that the descent can fly: SOG-0532 (1), the airway that stops at FL285 is excluded beyond the descent; ISAAA is too far from the aerodrome), its airway, then the aerodrome (the step down to FL280 for an airway that stops at FL285 is the engine own)')
+    c.eq((len(island[2]), 'PTEEE' in island[2][0] and 'ISBBB' in island[2][0] and ' NM ' in island[2][0], island[3].count('gap')), (1, True, 1), 'one REVUE says « la base n\'a pas de liaison entre PTEEE et ISCCC », the length of the direct; exactly one leg is marked gap', what='review')
     c.ok(bool(back[1]) and back[0] != 'CALCUL IMPOSSIBLE' and back[3].count('gap') == 1, str(back[:2]), 'the other way (departure on the isolated part): a route too, with its one direct')
     c.ok(normal[0] != 'CALCUL IMPOSSIBLE' and not normal[2] and 'gap' not in normal[3], str(normal[:3]), 'a flight whose arrival is reachable has no such leg nor such review: nothing changes for it')
 
@@ -19071,3 +19071,55 @@ def k481(c):
     c.eq((view.get('status'), alt.get('faulty'), alt.get('verdict'), (alt.get('violations') or [{}])[0].get('code')), ('faulty', True, 'violates', 'rad_block'), 'the screen receives the best route as the FIRST alternative, marked `faulty`, with its violations (status `faulty`: no route conforms)', what='view')
     c.eq((lv['levels'][0]['ok'], lv['levels'][0]['valid'], lv['first_valid']), (True, False, None), '`route/levels`: the level is not valid (the route breaks a known rule): « Auto » does not keep it', what='levels')
     c.ok(ok_res.get('verdict') != 'violates' and not any(i['level'] == 'ERREUR' for i in ok_res['issues']), str((ok_res.get('verdict'), [i['text'][:60] for i in ok_res['issues'] if i['level'] == 'ERREUR'])), 'control: the same flight on the base without the rule has no error and is not `violates`')
+
+
+
+@case('K482', 'Route engine, SOG-0532 (1) and (5): by default the level is CONSTANT — a lane whose extent does not contain the cruise level is EXCLUDED from the search (no more cost × 3 that lets a low lane carry a flight at FL330: PROF195 / PROF407 of Eurocontrol), except in the natural climb and descent, and there only if the profile stays under its ceiling with a margin; the route has no level group written',
+      'K', static=True,
+      rule='SOG-0532 (1)(5) (the ergonomics session, 20 Nov: « une voie dont l\'étendue ne contient pas le niveau de croisière est EXCLUE de la recherche, hors montée et descente naturelles (plus de coût ×3) » ; « un tronçon dont le plafond est sous le niveau demandé n\'est pris au départ que si le profil reste sous ce plafond, avec une marge, sur tout le tronçon ; sinon il est exclu »). Diagnosed on the refused plan EGGW → LQSA: L9 (F075–F245) and L607 (F065–F195) carried a flight at FL330, the profile was « adapted » (levels written down then up). The bench: an invented base (two aerodromes 423 NM apart on a line); (M) the ONLY lane in the middle has the ceiling F245; (W) a low lane near the departure whose ceiling is F205 (the climb passes under it) or F095 (the climb is above it before its end).')
+def k482(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    HIGH = 46000
+
+    def run(lanes, fl, **extra):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, lanes=lanes)
+            res = P.compute(V.to_request(dict({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False}, **extra)), data, rad, None)
+        return res['primary']
+    middle = [('UH1', ['A0', 'P1'], 5000, HIGH), ('L9', ['P1', 'P2', 'P3'], 6500, 24500), ('UH2', ['P3', 'P4', 'B0'], 5000, HIGH)]
+    high = run(middle, 330)
+    low = run(middle, 230)
+    c.ok('L9' not in (high.get('route') or '') and 'P1 DCT P3' in (high.get('route') or ''), str(high.get('route') or high.get('error')), '(M) FL330: the only lane of the middle has the ceiling F245: it is EXCLUDED; the two parts of the network are joined by ONE direct (SOG-0476: never a route lost), said (red before: a route over L9 with a profile « adapted » and levels written down then up)')
+    c.ok(any('liaison' in i['text'] and i['level'] == 'REVUE' for i in high.get('issues') or []), str([i['text'][:60] for i in high.get('issues') or []][:6]), '(M) and the answer says that the base has no link at this level')
+    c.ok(low.get('ok') and 'L9' in (low.get('route') or '') and '/F' not in low['route'] and not [i for i in low['issues'] if i['level'] == 'ERREUR'], str(low.get('route')), '(M) control FL230: the lane contains the level, it is flown, no level group, no error')
+    near = [('UH1', ['A0', 'N1'], 2000, 20500), ('UH2', ['N1', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, HIGH)]
+    ok_near = run(near, 330)
+    c.ok(ok_near.get('ok') and 'UH1' in (ok_near.get('route') or '') and '/F' not in ok_near['route'] and not [i for i in ok_near['issues'] if i['level'] == 'ERREUR'] and ok_near.get('profile_changes_total', 0) == 0, str(ok_near.get('route') or ok_near.get('error')), '(W) a low lane (ceiling F205) in the natural climb near the departure is flown when the profile stays under it with a margin: constant level, no group written')
+    tight = [('UH1', ['A0', 'N1'], 2000, 9500), ('UH2', ['N1', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, HIGH)]
+    no_tight = run(tight, 330)
+    c.ok(not no_tight.get('ok') or 'UH1' not in (no_tight.get('route') or ''), str(no_tight.get('route') or no_tight.get('error')), '(W) a lane of ceiling F095 at 46 NM from the departure is NOT taken: the climb is above it at its end (a low lane is not a free passage in the first miles)')
+
+
+@case('K484', 'Route engine, SOG-0532 (1): a descent followed by a climb in cruise — the YOYO of Eurocontrol (PROF326) — is an ERROR with its code and its values for a route that carries level groups, typed or written; a climb alone or a descent alone is not',
+      'K', static=True,
+      rule='SOG-0532 (1) (the ergonomics session, 20 Nov: « Pas de yoyo, jamais … aucun plan rendu ne descend pour remonter »). Diagnosed on the refused plan: `REMBA/F240 UL607 SPI Q50 ARCKY L607 ROPUV/F350` and `HAREM/F240 T104 DKB Z818 ELVAG/F350` (PROF326 twice). The check reads the levels written along the route: the filed level, then each group; a lower level followed later by a higher one is the yoyo. The bench: an invented base (one lane F050–F460).')
+def k484(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+
+        def check(route, fl=330):
+            return P.compute(V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'route': route, 'date': '2026-11-09T12:00', 'alternatives': False}), data, rad, None)['primary']
+        yo = check('ZZAA DCT A0 UH1 P1/F240 UH1 P3/F350 UH1 B0 DCT ZZBB')
+        up = check('ZZAA DCT A0 UH1 P1/F350 UH1 B0 DCT ZZBB')
+        down = check('ZZAA DCT A0 UH1 P1/F240 UH1 B0 DCT ZZBB')
+    found = [i for i in yo['issues'] if i.get('code') == 'level_yoyo']
+    c.eq([(i['values']['point'], i['values']['down_fl'], i['values']['up_fl'], i['values']['filed_fl']) for i in found], [('P3', 240, 350, 330)], 'F240 at P1 then F350 at P3, the filed level being FL330: ONE ERROR `level_yoyo`, with the point of the climb, the lowest level, the level of the climb (red before: nothing said)', what='yoyo')
+    c.eq((yo.get('verdict'), [x['code'] for x in yo['violations'] if x['code'] == 'level_yoyo']), ('violates', ['level_yoyo']), 'the verdict is `violates` and the yoyo is in `violations`', what='verdict')
+    c.eq(([i for i in up['issues'] if i.get('code') == 'level_yoyo'], [i for i in down['issues'] if i.get('code') == 'level_yoyo']), ([], []), 'a climb alone (FL330 then F350) and a descent alone (FL330 then F240) are not a yoyo', what='controls')

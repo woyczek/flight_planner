@@ -89,6 +89,14 @@ def today():
     """SOG-0532 (7) : la date du jour (UTC, « AAAA-MM-JJ », sans heure : on ne suppose pas d'heure de départ) quand la demande n'en donne pas. Jamais une date figée dans le code : le cycle AIRAC de la base et les règles du RAD en dépendent."""
     return dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d')
 
+def yoyo(levels):
+    """SOG-0532 (1) / PROF326 d'Eurocontrol : la suite des niveaux écrits d'un vol, [(point, niveau)] dans l'ordre de la route (le premier est le niveau déposé) : une DESCENTE suivie d'une REMONTÉE est un yoyo critique, jamais permis. Rend (point de la remontée, niveau le plus bas, niveau de la remontée) ou None."""
+    low=None
+    for (_pa,la),(pb,lb) in zip(levels,levels[1:]):
+        if lb<la:low=lb if low is None else min(low,lb)
+        elif lb>la and low is not None:return pb,low,lb
+    return None
+
 def written_route(dep,legs,via=(),marks=None):
     """SOG-0401 : le texte de la route depuis ses tronçons, écrit comme `Nav.format_path` l'écrit (une voie, puis le point où elle se termine ; les tronçons qui se suivent sur la même voie ne font qu'un mot), avec, en plus, un groupe de niveau « POINT/Fnnn »
     sur le point de DÉPART des tronçons que `marks` désigne ({ indice du tronçon : niveau en centaines de pieds }) : ce point reste dans le texte, la voie est répétée après lui (« B1 SITET/F195 B1 KEPAD »). Le départ (indice 0) et l'arrivée n'en portent jamais."""
@@ -372,7 +380,9 @@ class Nav:
 
     LOW_MARGIN_FT=1000      # SOG-0161 : une voie dont le plafond est sous le niveau demandé de plus que cela est « basse » (V, T, L…)
     LOW_ALLOW=1.3           # la montée / la descente, comptées sur la distance qu'elles demandent × ce coefficient (la STAR, les virages)
-    LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
+    LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente (paliers demandés : `level_strategy: adapt`) ; sans paliers demandés (le défaut, SOG-0532) la voie est EXCLUE
+    LOW_CLIMB_MARGIN_FT=1000      # SOG-0532 (5) : la marge entre le profil naturel et le plafond d'une voie prise à la montée ou à la descente
+    DETOUR=1.15      # SOG-0532 (5) : la distance de la route est au plus 15 % au-dessus du grand cercle (l'altitude au bout d'un tronçon de montée est celle de cette distance)
     nat_rejected=frozenset()      # SOG-0354 L5 (1) : les tracks écartées pour CE vol (sections.solve, avec l'option `sections`) : la recherche entière qui suit ne les prend pas non plus ; remis à vide par plan.plan à chaque demande
 
     def search(self,*args,**kwargs):
@@ -421,14 +431,31 @@ class Nav:
             climb_nm=0 if initial_band else max(0,cruise-flight['departure'])/flight['climb_fps']*kt*self.LOW_ALLOW      # SOG-0354 L2b (3) : une section qui part d'une porte (une bande donnée) est en croisière : pas de montée libre
             descent_nm=0 if gate else max(0,cruise-flight['arrival'])/flight['descent_fps']*kt*self.LOW_ALLOW      # ... et une section qui finit à une porte n'a pas de descente d'arrivée
             first,last=self.nodes[start],targets[-1];from_start={};to_end={}
+        strict=bool(flight and flight.get('strict'))      # SOG-0532 : niveau constant (stratégie `natural`, le défaut) : plus de coût ×3, l'exclusion
+        def lane_fits(u,v,e,top,ds_u,de_v):
+            """SOG-0532 (1)(5) : une voie BASSE (plafond sous le niveau de croisière) n'est prise que si le profil NATUREL reste dans sa bande sur tout le tronçon : à la montée (le tronçon u → v est parcouru pendant la montée : l'altitude au bout, avec un détour de 15 %, plus la marge, sous le plafond ; l'altitude au début, sans détour, au moins au plancher) ou à la descente (symétrique, vers l'arrivée). Distances : le grand cercle depuis le départ / vers l'arrivée."""
+            floor=max(x for x in (self.edge_band(e,'start')[0],self.edge_band(e,'end')[0],-1e9))
+            floor=floor if floor>-1e8 else None
+            cf=flight['climb_fps']/kt;df=flight['descent_fps']/kt
+            if not initial_band:
+                ds_v=from_start.get(v)
+                if ds_v is None:ds_v=from_start[v]=nm(first,self.nodes[v])
+                if min(cruise,flight['departure']+ds_v*self.DETOUR*cf)+self.LOW_CLIMB_MARGIN_FT<=top and (floor is None or flight['departure']+ds_u*cf>=floor):return True
+            if not gate:
+                de_u=to_end.get(u)
+                if de_u is None:de_u=to_end[u]=nm(self.nodes[u],last)
+                if min(cruise,flight['arrival']+de_u*self.DETOUR*df)+self.LOW_CLIMB_MARGIN_FT<=top and (floor is None or flight['arrival']+de_v*df>=floor):return True
+            return False
         def low_factor(u,v,e):
             """SOG-0161 (LFOE → KTPA : de JFK à Tampa, 700 NM en V et T à 17 500 ft pour un vol au FL370) : une voie BASSE (plafond sous le niveau demandé) ne se prend pas hors de la montée du départ et de la descente vers l'arrivée : son coût est multiplié (jamais interdite : un maillon bas peut être la seule liaison)."""
             if not flight or e.get('kind') not in (None,'AIRWAY') or e.get('route')=='DCT' or e.get('connector'):return 1
-            if max(self.edge_band(e,'start')[1],self.edge_band(e,'end')[1])>=cruise-self.LOW_MARGIN_FT:return 1
+            top=max(self.edge_band(e,'start')[1],self.edge_band(e,'end')[1])
+            if top>=cruise-self.LOW_MARGIN_FT:return 1
             ds=from_start.get(u)
             if ds is None:ds=from_start[u]=nm(first,self.nodes[u])
             de=to_end.get(v)
             if de is None:de=to_end[v]=nm(self.nodes[v],last)
+            if strict:return 1 if lane_fits(u,v,e,top,ds,de) else None      # SOG-0532 (1)(5) : le niveau est CONSTANT : une voie dont l'étendue ne contient pas le niveau de croisière est EXCLUE (None), sauf dans la montée et la descente naturelles, et là seulement si le profil reste dans sa bande, avec une marge, sur tout le tronçon
             return 1 if ds<=climb_nm or de<=descent_nm else self.LOW_PENALTY
         q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
         labels[origin[:3]].append((0,low,high,origin))
@@ -484,7 +511,9 @@ class Nav:
                 c,d=round(c,6),round(d,6)
                 next_index=index+1 if index<len(names) and self.nodes[v]['id']==names[index] and nm(self.nodes[v],self.nodes[waypoints[index]])<.15 else index
                 qualifies=e.get('kind')=='FRA' and (not getattr(g,'required_fra_area',None) or e.get('fra_area')==g.required_fra_area)
-                next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])*low_factor(u,v,e)
+                factor=low_factor(u,v,e)
+                if factor is None:continue      # SOG-0532 : la voie est exclue
+                next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])*factor
                 bucket=labels[next_state[:3]]
                 new_t,c_t,d_t=new+1e-10,c+.001,d-.001      # SOG-0354 L2b (1) : les trois seuils une fois, la boucle sans générateur (6,3 millions de tours par recherche de 6 000 états) : même test, mot pour mot
                 dominated=False
@@ -517,12 +546,28 @@ class Nav:
         self.last_search=dict(algorithm='parcours en largeur (liaison sans altitude)',expanded=len(seen),seconds=0.0,found=False,fra_reachable=fra_seen)
         return False
 
-    def bridge_gap(self,g,a,b,fl,steps=False):
+    def lane_possible(self,e,first,last,flight):
+        """SOG-0532 : une voie est-elle UTILISABLE à ce niveau, à la grosse maille (la connexité des deux parties du réseau, `bridge_gap`) : elle contient le niveau de croisière, ou son plafond est au-dessus du profil naturel à son bout le plus loin du départ (montée) ou de l'arrivée (descente), avec la marge et le détour. Les planchers et les virages sont jugés par la recherche (`lane_fits`)."""
+        top=max(self.edge_band(e,'start')[1],self.edge_band(e,'end')[1])
+        cruise=flight['ceiling']
+        if top>=cruise-self.LOW_MARGIN_FT:return True
+        kt=flight['speed_kt']/3600;cf=flight['climb_fps']/kt;df=flight['descent_fps']/kt
+        u,v=self.nodes.get(e.get('a')),self.nodes.get(e.get('b'))
+        if not u or not v:return True
+        ds=max(nm(first,u),nm(first,v));de=max(nm(u,last),nm(v,last))
+        floor=max(self.edge_band(e,'start')[0],self.edge_band(e,'end')[0])      # le plancher : le profil naturel, à son bout le plus proche du départ (de l'arrivée), doit être au-dessus
+        floor=floor if floor>-1e8 else None
+        climb=flight['departure']+ds*self.DETOUR*cf+self.LOW_CLIMB_MARGIN_FT<=top and (floor is None or flight['departure']+min(nm(first,u),nm(first,v))*cf>=floor)
+        descent=flight['arrival']+de*self.DETOUR*df+self.LOW_CLIMB_MARGIN_FT<=top and (floor is None or flight['arrival']+min(nm(u,last),nm(v,last))*df>=floor)
+        return climb or descent
+
+    def bridge_gap(self,g,a,b,fl,steps=False,flight=None):
         global BRIDGE_VISITS
         BRIDGE_VISITS=0      # SOG-0524 (suite) : les visites de cette recherche, comptées (K359 les assertait en secondes : sous charge, rouge)
         """SOG-0476 : (NM, de, vers) le plus court direct d'un point atteignable DEPUIS `a` à un point d'où `b` est atteignable, à NO_NETWORK_MAX_NM au plus ; None sinon. Les deux parties du graphe ne se touchent pas (la base n'a pas de voie entre elles) : le direct
         est le seul lien, dit en revue (jamais une route perdue). Parcours en largeur sans altitude, grille d'un degré sur le plus grand des deux ensembles : borné par la taille du graphe."""
-        usable=lambda e:not e.get('nat') and (steps or not isinstance(e.get('upper'),(int,float)) or e['upper']>=fl*100)      # les routes NAT ne relient pas : la couche NAT les pose à part (sections) ; une voie dont le plafond est sous le niveau demandé n'est pas utilisable à ce niveau (sauf si les paliers sont permis)
+        first,last=self.nodes[a],self.nodes[b]
+        usable=lambda e:not e.get('nat') and (steps or not isinstance(e.get('upper'),(int,float)) or e['upper']>=fl*100) and (not (flight and flight.get('strict')) or e.get('kind') not in (None,'AIRWAY') or e.get('route')=='DCT' or self.lane_possible(e,first,last,flight))      # SOG-0532 : niveau constant : une voie basse ne relie que dans la montée et la descente      # les routes NAT ne relient pas : la couche NAT les pose à part (sections) ; une voie dont le plafond est sous le niveau demandé n'est pas utilisable à ce niveau (sauf si les paliers sont permis)
         def reach(start,adj):
             seen={start};todo=[start]
             while todo:
@@ -611,15 +656,16 @@ class Nav:
 
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
+        strict=bool(terminal.get('_level_lock'))      # SOG-0532 : niveau constant (le défaut ; des paliers seulement si l'utilisateur les demande) : le graphe garde TOUTES les voies, la recherche exclut celles dont l'étendue ne contient pas le niveau (sauf montée et descente, avec marge)
         cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
-        cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
+        cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,strict,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
             self.graph_seconds=0.0
             return self._routing_cache[cache_key]
         import time
         if not hasattr(self,'_routing_base'):self._routing_base=collections.OrderedDict()
-        base_key=json.dumps([dep,arr,fl,radius,profile_options,allow_steps,via,str(when),enable_fra,{k:v for k,v in cost_fields.items() if k not in ('_rad_avoid',)},sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)      # SOG-0468 (1) : le graphe SANS les règles RAD (la construction, 1 à 3 s) ne dépend ni des interdictions ni des évitements : une reprise RAD ne le refait pas, elle n'applique que ses règles
+        base_key=json.dumps([dep,arr,fl,radius,profile_options,allow_steps,strict,via,str(when),enable_fra,{k:v for k,v in cost_fields.items() if k not in ('_rad_avoid',)},sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)      # SOG-0468 (1) : le graphe SANS les règles RAD (la construction, 1 à 3 s) ne dépend ni des interdictions ni des évitements : une reprise RAD ne le refait pas, elle n'applique que ses règles
         base=self._routing_base.get(base_key)
         if base is None:
             if DEADLINE is not None and time.perf_counter()>DEADLINE:raise interrupted(round(SEARCH_CAP_S))      # SOG-0524 : plus de graphe écarté « faute de temps » (la réponse dépendait de la charge du poste) : seul le garde-fou de temps interrompt
@@ -649,7 +695,7 @@ class Nav:
         if base is None:
             if dep==arr: raise ValueError('Choisir deux aérodromes différents.')
             if dep not in self.ads or arr not in self.ads: raise ValueError('Aérodrome absent d’AeroDB : '+(dep if dep not in self.ads else arr))
-            a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if allow_steps else fl)
+            a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if (allow_steps or strict) else fl)
             terminal=terminal or {}
             when=when or dt.datetime.combine(self.date,dt.time(12))
             if enable_fra and getattr(self,'fra',None) and self.fra.book:
@@ -707,7 +753,8 @@ class Nav:
                     e=dict(route='DCT',nm=d,connector=True,**({'no_network':True} if fallback else {}))
                     if isdep: g.setdefault(airport,[]).append((k,e))
                     else: g.setdefault(k,[]).append((airport,e))
-            link=self.bridge_gap(g,a,b,fl,allow_steps)      # SOG-0476 : l'arrivée n'est PAS atteignable depuis le départ AU NIVEAU DEMANDÉ (un réseau isolé ou plafonné : l'Islande, à 452 NM de celui du Royaume-Uni, ses voies s'arrêtent à FL285) : jamais une route perdue ; UN direct entre les deux parties, dit
+            flight0=dict(profile_options or {},departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,strict=strict) if strict and profile_options else None
+            link=self.bridge_gap(g,a,b,fl,allow_steps,flight0)      # SOG-0476 : l'arrivée n'est PAS atteignable depuis le départ AU NIVEAU DEMANDÉ (un réseau isolé ou plafonné : l'Islande, à 452 NM de celui du Royaume-Uni, ses voies s'arrêtent à FL285) : jamais une route perdue ; UN direct entre les deux parties, dit
             if link:
                 gap,u,v=link
                 g.setdefault(u,[]).append((v,dict(route='DCT',nm=gap,connector=True,no_network='gap')))
@@ -751,7 +798,7 @@ class Nav:
         graph.rad_avoid=frozenset(r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='point')      # SOG-0354 L5 (4) défaut 4 : les points qu'une règle RAD fait éviter (repli) : ni entrée ni sortie de route NAT ou de route libre
         graph.rad_compel={r['before']:r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='compel'}      # { Y : X } : Y s'atteint (se quitte) par X (la route libre)
         if profile_options:
-            graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
+            graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr),strict=strict)   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)
         self._graph_cost=max(getattr(self,'_graph_cost',0.0),self.graph_seconds)      # SOG-0475 : le coût d'un graphe de CE calcul (remis à 0 par plan.plan)
         self._routing_cache[cache_key]=(graph,a,b)
@@ -978,7 +1025,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if not words or words[0]!=dep:
         words.insert(0,dep); marks={n+1:l for n,l in marks.items()}
     if words[-1]!=arr: words.append(arr)
-    marks={n:l for n,l in marks.items() if 0<n<len(words)-1}      # le départ et l'arrivée ne portent jamais de groupe (le niveau déposé est celui du champ niveau)
+    marks={n:l for n,l in marks.items() if 0<n<len(words)-1}
+    jump=yoyo([(None,fl)]+[(words[n],marks[n]) for n in sorted(marks)]) if marks else None
+    if jump:issue('ERREUR',f'Yoyo de niveau : F{jump[1]:03d} puis F{jump[2]:03d} en {jump[0]} : une descente suivie d’une remontée en croisière (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',point=jump[0],down_fl=jump[1],up_fl=jump[2],filed_fl=fl)      # le départ et l'arrivée ne portent jamais de groupe (le niveau déposé est celui du champ niveau)
     if dep not in nav.ads: issue('ERREUR','AD de départ inconnu : '+dep)
     if arr not in nav.ads: issue('ERREUR','AD d’arrivée inconnu : '+arr)
     airways={e['route'] for e in nav.edges}; procedure_names={p['token'] for p in nav.procedures.items}; connectors=airways|procedure_names|{w for w in words if route_connector(w,nav,airways,procedure_names)}; parsed=[]; active_fra=set()
@@ -1075,6 +1124,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if (generated or _path is not None) and not marks:
         lowered=[]
         level_changes=level_marks(legs,profile.get('changes') or [],lowered)
+        jump=yoyo([(None,fl)]+[(legs[k]['start']['id'],level_changes[k]) for k in sorted(level_changes)])
+        if jump:issue('ERREUR',f'Yoyo de niveau : F{jump[1]:03d} puis F{jump[2]:03d} en {jump[0]} : une descente suivie d’une remontée en croisière (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',point=jump[0],down_fl=jump[1],up_fl=jump[2],filed_fl=fl)
         if level_changes:
             if written_route(dep,legs,mandatory)==route:
                 route=written_route(dep,legs,mandatory,level_changes); written=True
