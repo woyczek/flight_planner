@@ -280,18 +280,18 @@
         'AIP Frankreich ENR 5.1 (SIA): Art der Gefahr, Stelle und Bedingungen der P-, R-, D-Gebiete',
         'ENR 5.1 del AIP de Francia (SIA): naturaleza del peligro, organismo y condiciones de las zonas P, R, D'),
       gives: L4(
-        'La page ENR 5.1 de l’eAIP du SIA, lue une fois par cycle : pour chaque zone P / R / D de France, la nature du danger, l’organisme et les conditions de pénétration, tels que l’AIP les écrit (jamais traduits).',
-        'The ENR 5.1 page of the SIA eAIP, read once per cycle: for each P / R / D area of France, the nature of the danger, the authority and the penetration conditions, as the AIP words them (never translated).',
-        'Die ENR-5.1-Seite des eAIP des SIA, einmal pro Zyklus gelesen: für jedes P-/R-/D-Gebiet Frankreichs die Art der Gefahr, die Stelle und die Einflugbedingungen, wie das AIP sie schreibt (nie übersetzt).',
-        'La página ENR 5.1 del eAIP del SIA, leída una vez por ciclo: para cada zona P / R / D de Francia, la naturaleza del peligro, el organismo y las condiciones de penetración, tal como las escribe el AIP (nunca traducidos).'
+        'La page ENR 5.1 de l’eAIP du SIA, lue une fois par cycle : pour chaque zone P / R / D de France, la nature du danger, l’organisme et les conditions de pénétration, tels que l’AIP les écrit (jamais traduits) ; et la page ENR 1.7 (SOG-0530) : le tableau des niveaux de croisière, lu pour le contrôle du niveau.',
+        'The ENR 5.1 page of the SIA eAIP, read once per cycle: for each P / R / D area of France, the nature of the danger, the authority and the penetration conditions, as the AIP words them (never translated); and the ENR 1.7 page (SOG-0530): the table of cruising levels, read for the level check.',
+        'Die ENR-5.1-Seite des eAIP des SIA, einmal pro Zyklus gelesen: für jedes P-/R-/D-Gebiet Frankreichs die Art der Gefahr, die Stelle und die Einflugbedingungen, wie das AIP sie schreibt (nie übersetzt); und die Seite ENR 1.7 (SOG-0530): die Tabelle der Reiseflugebenen, gelesen für die Prüfung der Flugfläche.',
+        'La página ENR 5.1 del eAIP del SIA, leída una vez por ciclo: para cada zona P / R / D de Francia, la naturaleza del peligro, el organismo y las condiciones de penetración, tal como las escribe el AIP (nunca traducidos); y la página ENR 1.7 (SOG-0530): la tabla de niveles de crucero, leída para el control del nivel.'
       ),
       src: 'enr51',
       link: 'https://www.sia.aviation-civile.gouv.fr/',
       howto: L4(
-        'Page publique du SIA (la même que les procédures), lue par le lanceur à chaque cycle AIRAC ; une seule page, jamais d’aspiration.',
-        'Public SIA page (the same site as the procedures), read by the launcher at each AIRAC cycle; one page only, never a bulk download.',
-        'Öffentliche Seite des SIA (dieselbe Site wie die Verfahren), vom Starter bei jedem AIRAC-Zyklus gelesen; nur eine Seite, nie ein Massen-Download.',
-        'Página pública del SIA (el mismo sitio que los procedimientos), leída por el lanzador en cada ciclo AIRAC; una sola página, nunca una descarga masiva.'
+        'Page publique du SIA (la même que les procédures), lue par le lanceur à chaque cycle AIRAC ; deux pages (ENR 5.1 et ENR 1.7), jamais d’aspiration.',
+        'Public SIA page (the same site as the procedures), read by the launcher at each AIRAC cycle; two pages (ENR 5.1 and ENR 1.7), never a bulk download.',
+        'Öffentliche Seite des SIA (dieselbe Site wie die Verfahren), vom Starter bei jedem AIRAC-Zyklus gelesen; nur zwei Seiten (ENR 5.1 und ENR 1.7), nie ein Massen-Download.',
+        'Página pública del SIA (el mismo sitio que los procedimientos), leída por el lanzador en cada ciclo AIRAC; dos páginas (ENR 5.1 y ENR 1.7), nunca una descarga masiva.'
       ),
       licence: 'SIA (source citée)',
       hand: 'none',

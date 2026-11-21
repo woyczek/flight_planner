@@ -60,6 +60,7 @@ NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
 DFS = 'https://aip.dfs.de/datasets/rest/'     # DFS « AIP Datasets » (API REST v1.2) : les métadonnées à cette adresse, un jeu à <adresse><amendement>/<nom du fichier>
 ENR51_HOST = 'https://www.sia.aviation-civile.gouv.fr/'     # SOG-0462 lot B : l'eAIP du SIA (le même hôte que les procédures)
 ENR51_PAGE_BYTES = 16 * 1024 * 1024     # la page fait 6,7 Mo (cycle du 29 oct. 2026)
+ENR17_PAGE_BYTES = 4 * 1024 * 1024      # SOG-0530 : la page ENR 1.7 fait 178 Ko (cycle du 29 oct. 2026)
 DFS_SETS = {'Routes': ('ED Routes', 'Routes'), 'Waypoints': ('ED Waypoints', 'Waypoints'), 'Navaids': ('ED Navaids', 'Navaids'), 'Airspace': ('ED Airspace StrokedBorders', 'Airspace_StrokedBorders'), 'AirportHeliport': ('ED AirportHeliport', 'AirportHeliport'), 'Runway': ('ED Runway', 'Runway')}      # DFS lots 1 et 2 : jeu → (nom de la fiche des métadonnées, début du nom de fichier) ; « StrokedBorders » : géométries résolues dans le fichier (l'autre jeu, « ReferencedBorders », renvoie à des frontières à part) ; lot 3 : les terrains et les pistes ; les SID / STAR (ED Procedure, 83 Mo) ne passent pas par ici : travail du lanceur à part
 DFS_KINDS = tuple(DFS_SETS)
 DFS_FILES = {k: re.compile(r'^ED_' + DFS_SETS[k][1] + r'_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z', re.A) for k in DFS_KINDS}      # un motif PAR jeu, en ASCII (re.A : « \d » n'accepte pas les chiffres d'une autre écriture)
@@ -456,13 +457,15 @@ def dfs(data):
     return files, errors
 
 
-def enr51_url(cycle):
-    """L'adresse de la page ENR 5.1 de l'eAIP de France d'un cycle (« 2026-10-29 ») : le disque du SIA, le dossier AIRAC du cycle, jamais une adresse prise d'une page (même règle que proc_sia.eaip_url)."""
+def enr51_url(cycle, page='5.1'):
+    """L'adresse d'une page ENR de l'eAIP de France d'un cycle (« 2026-10-29 ») : l'ENR 5.1 par défaut (SOG-0462), l'ENR 1.7 pour SOG-0530 : le disque du SIA, le dossier AIRAC du cycle, jamais une adresse prise d'une page (même règle que proc_sia.eaip_url) ; `page` est « 5.1 » ou « 1.7 » et rien d'autre."""
+    if page not in ('5.1', '1.7'):
+        raise ValueError(f'page ENR non prévue : {page!r}')
     m = re.fullmatch(r'(\d{4})-(\d{2})-(\d{2})', str(cycle), re.A)      # chiffres ASCII seulement
     if not m or not 1 <= int(m[2]) <= 12:
         raise ValueError(f'cycle AIRAC « AAAA-MM-JJ » attendu, reçu : {cycle!r}')
     mon = ('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC')[int(m[2]) - 1]
-    return f'{ENR51_HOST}media/dvd/eAIP_{m[3]}_{mon}_{m[1]}/FRANCE/AIRAC-{m[1]}-{m[2]}-{m[3]}/html/eAIP/FR-ENR-5.1-fr-FR.html'
+    return f'{ENR51_HOST}media/dvd/eAIP_{m[3]}_{mon}_{m[1]}/FRANCE/AIRAC-{m[1]}-{m[2]}-{m[3]}/html/eAIP/FR-ENR-{page}-fr-FR.html'
 
 
 def enr51(data, today=None):
@@ -494,6 +497,31 @@ def enr51(data, today=None):
     except OSError:
         pass
     return [{'name': name, 'bytes': len(body), 'unchanged': False, 'zones': len(zones)}], []
+
+
+def enr17(data, today=None):
+    """L'ENR 1.7.5 de l'AIP de France (le tableau des niveaux de croisière : IFR et VFR sous le FL195, IFR dans l'UTA), UNE page de l'eAIP du SIA par cycle (SOG-0530 ; Q-0130 : l'utilisateur a désigné l'ENR 1.7 comme la source, « à récupérer pendant une mise à jour » ; même hôte que l'ENR 5.1) :
+    lue par tools/sia_enr17.py et rangée en route/levels_fr.json (le moteur de route la lit ; JAMAIS en zones/fr : la base des zones y lit tout fichier enr51_*) ; un seul fichier, qui porte son cycle : le fichier du cycle en vigueur déjà là, rien n'est demandé ;
+    une page qui ne se lit pas exactement (la mise en page a changé) n'écrit RIEN et le dit : le moteur n'a alors pas de tableau et le dit à son tour (jamais une table devinée)."""
+    import aero_cycles
+    import sia_enr17
+    cycle = aero_cycles.airac_start(today)
+    name = 'levels_fr.json'
+    path = os.path.join(data, 'route', name)
+    try:
+        with open(path, encoding='utf-8') as f:
+            if json.loads(f.read(65536)).get('cycle') == cycle:      # le fichier vient du dépôt de données (non fiable) : 64 Ko lus au plus, et une imbrication folle (RecursionError) est une relecture, pas une exception (revue de Sécurisation)
+                return [{'name': name, 'folder': 'route', 'bytes': os.path.getsize(path), 'unchanged': True}], []
+    except (OSError, ValueError, AttributeError, RecursionError):
+        pass
+    try:
+        levels = sia_enr17.parse(get(enr51_url(cycle, '1.7'), limit=ENR17_PAGE_BYTES))
+    except (OSError, ValueError) as e:
+        return [], [f'ENR 1.7 : {e}']
+    doc = {'schema': 1, 'zone': 'fr', 'cycle': cycle, 'source': 'SIA — AIP de France, ENR 1.7.5', 'tracks': {'lower': ['000-179', '180-359'], 'upper': ['090-269', '270-089']}, **levels}
+    body = json.dumps(doc, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    changed = write(path, body)
+    return [{'name': name, 'folder': 'route', 'bytes': len(body), 'unchanged': not changed}], []
 
 
 def airnav(data):
@@ -991,6 +1019,8 @@ def fetch(data, provider, args=()):
         files, errors = dfs(data)
     elif provider == 'enr51':
         files, errors = enr51(data)
+        more, more_errors = enr17(data)      # SOG-0530 : la même source (l'eAIP du SIA, le même hôte), la page ENR 1.7 : le tableau des niveaux de croisière
+        files, errors = files + more, errors + more_errors
     elif provider == 'nat':
         files, errors = nat(data)
     else:

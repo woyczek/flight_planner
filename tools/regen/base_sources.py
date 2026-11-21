@@ -514,7 +514,7 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
         entry['deposited'] = dep      # lu dans un fichier choisi à la main faute de réseau, DATÉ : « déposé le … » (jamais pris pour une lecture du jour)
     if isinstance(entry.get('stopped'), str):      # le refus de l'hôte est une phrase d'un tiers : nettoyée comme `message`
         entry['stopped'] = said(entry['stopped'])
-    mods = [f"{FOLDERS[p]}/{f['name']}" for f in files if not f.get('unchanged')] + removed
+    mods = [f"{f.get('folder') or FOLDERS[p]}/{f['name']}" for f in files if not f.get('unchanged')] + removed      # SOG-0530 : `folder` quand le fichier n'est pas dans le dossier de la source (route/levels_fr.json, lu par le moteur de route)
     return entry, files, errors, mods, cancelled
 
 

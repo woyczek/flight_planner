@@ -19438,3 +19438,119 @@ def k493(c):
     c.eq((RF.clock_ok('1. H24 2. 04:00-22:00'), RF.clock_ok('1. H24 2. MON-FRI'), RF.clock_ok('1. 1. H24 2. H24')), (True, False, False), 'every item must be readable; an empty item is not', what='clock_ok')
     long_cell = ' '.join(f'{n}. H24' for n in range(1, 59)) + ' ' + 'x' * 5000
     c.eq((RF.clock_ok(long_cell), RF.clock_active(long_cell, start, end)), (False, None), 'a cell longer than MAX_CONDITION is not read (the workbook comes from an untrusted file)', what='long cell')
+
+
+@case('K494', 'AIP of France ENR 1.7.5 (SOG-0530, lot A): `sia_enr17.parse` reads the TABLE OF CRUISING LEVELS of the SIA eAIP — below FL195 the IFR and VFR levels of the tracks 000-179 and 180-359, in the UTA the IFR levels of the tracks 090-269 and 270-089 — as the AIP writes them, each level CHECKED against its column of feet and its series; a page that is not exactly so is NOT read (never a guessed table); the launcher reads the page once per cycle (same host as the ENR 5.1, address computed from the cycle) into route/levels_fr.json, never in zones/fr',
+      'K', static=True,
+      rule='SOG-0530 (Q-0130: the user named the ENR 1.7 and ENR 1.3 of the SIA eAIP as the source of the table of levels, « à récupérer pendant une mise à jour »; the relay: read at the current AIRAC cycle, address computed per cycle like the ENR 5.1, same host, nothing else on the site, no PDF) and the ergonomist (« rien d\'inventé »). Measured on the real page of the cycle of 29 Oct 2026 (178 KB): the two tables read at once, IFR 000-179 = 10, 30 … 190, IFR 180-359 = 20 … 180, VFR 35, 55 … 195 / 45, 65 … 185, UTA 090-269 = 210, 230 … 390, 410, 450, 490, UTA 270-089 = 200, 220 … 400, 430, 470, 510; the page ends with « etc. » and nothing above is extended. The fixture below is invented (same layout, same series), not a copy of the page; the file goes in route/ because shared/sia_base.js reads every enr51_* file of zones/fr as a zone document',
+      )
+def k494(c):
+    import datetime
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import aero_fetch as AF
+    import sia_enr17 as E
+    row = lambda *cells: '<tr>' + ''.join(f'<td>{x}</td>' for x in cells) + '</tr>'
+    trip = lambda fl: ('%d' % fl, '1 000', '{:,}'.format(fl * 100).replace(',', ' '))
+    empty = ('—', '—', '—')
+
+    def page(lower_rows=None, upper_rows=None, marks=True, foot=None):
+        out = ['<html><body><table>', row('ROUTE MAGNETIQUE'), row('De 000° à 179° / From 000° to 179°' if marks else 'x', 'De 180° à 359°'), row('Vols IFR', 'Vols VFR', 'Vols IFR', 'Vols VFR')]
+        if lower_rows is None:
+            lower_rows = []
+            for k in range(10):
+                ia = trip(10 + 20 * k)
+                ib = trip(20 + 20 * k) if k < 9 else ('', '', '')
+                va = trip(35 + 20 * (k - 1)) if 1 <= k <= 9 else empty
+                vb = trip(45 + 20 * (k - 1)) if 1 <= k <= 8 else (empty if k == 0 else ('', '', ''))
+                lower_rows.append(ia + va + ib + vb)
+        for r in lower_rows:
+            out.append(row(*r))
+        out += ['</table><table>', row('ROUTE MAGNETIQUE'), row('De 090° à 269° / From 090° to 269°', 'De 270° à 089°'), row('Vols IFR', 'Vols IFR'), row('m', 'ft', 'm', 'ft')]
+        if upper_rows is None:
+            upper_rows = [('', '', '', '', *trip(200), '')]
+            for k in range(10):
+                upper_rows.append((*trip(210 + 20 * k), '', *trip(220 + 20 * k), ''))
+            upper_rows += [(*trip(410), '', '', '', *trip(430), '', '', ''), (*trip(450), '', '', '', *trip(470), '', '', ''), (*trip(490), '', '', '', *trip(510), '', '', '')]
+            upper_rows.append(('etc.', '', '', '', 'etc.', '', '', ''))
+        for r in upper_rows:
+            out.append(row(*r))
+        out.append('</table></body></html>')
+        return ''.join(out).encode('utf-8')
+    good = page()
+    r = E.parse(good)
+    c.eq(r['lower']['ifr'], [list(range(10, 191, 20)), list(range(20, 181, 20))], 'IFR below FL195: the tracks 000-179 take the ODD levels 10, 30 … 190, the tracks 180-359 the EVEN levels 20 … 180', what='IFR')
+    c.eq(r['lower']['vfr'], [list(range(35, 196, 20)), list(range(45, 186, 20))], 'VFR below FL195: 35, 55 … 195 for 000-179 and 45, 65 … 185 for 180-359 (the half levels)', what='VFR')
+    c.eq(r['upper'], [list(range(210, 391, 20)) + [410, 450, 490], list(range(200, 401, 20)) + [430, 470, 510]], 'in the UTA: 090-269 = 210, 230 … 390 then 410, 450, 490; 270-089 = 200, 220 … 400 then 430, 470, 510; what the page does not write (« etc. ») is NOT extended', what='UTA')
+
+    def refused(data):
+        try:
+            E.parse(data)
+            return None
+        except ValueError as e:
+            return str(e)
+    bad_feet = page(lower_rows=[('10', '300', '1 100') + empty + ('20', '600', '2 000') + empty] + [(*trip(10 + 20 * k), *empty, *trip(20 + 20 * k), *empty) for k in range(1, 9)])
+    wrong_series = page(lower_rows=[(*trip(10 + 20 * k), *empty, *trip(30 + 20 * k), *empty) for k in range(10)])
+    short_upper = page(upper_rows=[(*trip(210), '', *trip(200), '')])
+    no_marks = page(marks=False)
+    c.eq([('ne concordent pas' in (refused(bad_feet) or '')), ('pas de la série' in (refused(wrong_series) or '')), bool(refused(short_upper)), ('introuvables' in (refused(no_marks) or '')), bool(refused(b'<html>nothing</html>')), bool(refused(b'x' * (E.MAX_PAGE + 1))), bool(refused('str'))],
+         [True, True, True, True, True, True, True], 'a level that does not match its feet, a level out of its series, a table too short, a page without the two tables, a page that is not the AIP, a page over MAX_PAGE, a non-bytes page: NOT read, with the reason (never a guessed table)', what='refused')
+    # the launcher: one address per cycle, one file in route/, nothing asked when it is there, nothing written when the layout changed
+    asked = []
+    real_get = AF.get
+    AF.get = lambda url, **kw: (asked.append(url), good)[1]
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            day = datetime.date(2026, 11, 18)
+            f1, e1 = AF.enr17(td, today=day)
+            f2, e2 = AF.enr17(td, today=day)
+            doc = json.loads(open(os.path.join(td, 'route', 'levels_fr.json'), encoding='utf-8').read())
+            listing = sorted(os.listdir(td))
+            f3, e3 = AF.enr17(td, today=datetime.date(2026, 12, 30))
+            doc3 = json.loads(open(os.path.join(td, 'route', 'levels_fr.json'), encoding='utf-8').read())
+    finally:
+        AF.get = real_get
+    c.eq((e1, e2, f1[0]['unchanged'], f2[0]['unchanged'], len(asked), listing, f3[0]['unchanged'], doc3['cycle']), ([], [], False, True, 2, ['route'], False, '2026-12-24'),
+         'the first call asks ONE page and writes route/levels_fr.json (nothing in zones/fr); the second asks nothing; the next cycle (24 Dec) is read again and the file is replaced', what='fetch')
+    # the review of Sécurisation: the tail above FL400 is bounded and ordered like the series; the file of the data repository is read bounded
+    tail = lambda *pairs: page(upper_rows=[('', '', '', '', *trip(200), '')] + [(*trip(210 + 20 * k), '', *trip(220 + 20 * k), '') for k in range(10)] + [(*trip(a1), '', '', '', *trip(b1), '', '', '') for a1, b1 in pairs] + [('etc.', '', '', '', 'etc.', '', '', '')])
+    c.eq([bool(refused(tail((970, 430)))), bool(refused(tail((410, 430), (410, 470)))), bool(refused(tail((450, 470), (410, 430)))), refused(tail((410, 430), (450, 470), (490, 510)))], [True, True, True, None], 'a level above FL400 out of the bounds (FL970), a duplicate, a disorder: NOT read; the real tail is', what='tail')
+    AF.get = lambda url, **kw: (asked.append(url), good)[1]
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td6:
+            os.makedirs(os.path.join(td6, 'route'))
+            open(os.path.join(td6, 'route', 'levels_fr.json'), 'w').write('[' * 100000)
+            f6, e6 = AF.enr17(td6, today=day)
+            rewritten = json.loads(open(os.path.join(td6, 'route', 'levels_fr.json'), encoding='utf-8').read())['cycle']
+    finally:
+        AF.get = real_get
+    c.eq((e6, f6[0]['unchanged'], rewritten), ([], False, '2026-10-29'), 'a file of the data repository that is 100 KB of « [ » (a RecursionError for json.load) is not an exception: the page is read again and the file rewritten', what='hostile file')
+    c.eq(f1[0].get('folder'), 'route', 'the file says its folder (route), so that the launcher reports the right path of what it wrote', what='folder')
+    c.eq((asked[0], doc['cycle'], doc['zone'], doc['tracks'], doc['lower']['ifr'][0][:3], doc['upper'][1][-3:]), ('https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-ENR-1.7-fr-FR.html', '2026-10-29', 'fr', {'lower': ['000-179', '180-359'], 'upper': ['090-269', '270-089']}, [10, 30, 50], [430, 470, 510]),
+         'the address is computed from the cycle on the fixed SIA host (the ENR 5.1 builder with the page 1.7); the file says its cycle, its source and the tracks of each half', what='address')
+    # the provider « enr51 » reads both pages of the same eAIP (one source, one host)
+    page51 = ('<html><table>' + row('Identification', 'v', 'h', 'n', 'a') + row('LF R 77', 'TEST BAY') + row('ring', 'v', 'H24', 'Site', 'NIL') + '</table></html>').encode('utf-8')
+    seen = []
+    AF.get = lambda url, **kw: (seen.append(url[-20:]), page51 if 'ENR-5.1' in url else good)[1]
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td4:
+            res = AF.fetch(td4, 'enr51')
+            names = sorted(f['name'] for f in res['files'])
+    finally:
+        AF.get = real_get
+    c.eq((res['ok'], len(seen), sorted('levels_fr.json' if n == 'levels_fr.json' else n[:8] for n in names)), (True, 2, ['enr51_fr', 'levels_fr.json']), 'the provider « enr51 » reads the two pages of the eAIP (5.1, then 1.7) and reports both files', what='provider')
+    AF.get = lambda url, **kw: b'<html>nothing</html>'
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td5:
+            f5, e5 = AF.enr17(td5, today=day)
+            written = os.path.exists(os.path.join(td5, 'route', 'levels_fr.json'))
+    finally:
+        AF.get = real_get
+    try:
+        AF.enr51_url('2026-10-29', '9.9')
+        odd = False
+    except ValueError:
+        odd = True
+    c.eq((f5, bool(e5) and 'ENR 1.7' in e5[0], written, odd), ([], True, False, True), 'a page that does not read writes NOTHING and says so (layout changed?); an address for another page than 5.1 or 1.7 is refused', what='failures')
