@@ -520,6 +520,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atseekout>button{min-height:44px}
 [data-module="missions"] .ms-atmapview{margin:8px 0 0}
 [data-module="missions"] .ms-atmapview select{width:100%;min-height:44px}
+[data-module="missions"] .ms-atmaphintrow[hidden]{display:none} /* sans phrase ni bouton montré : pas de blanc */
 [data-module="missions"] .ms-atmaphintrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-height:44px}
 [data-module="missions"] .ms-atmaphint{margin:0;flex:1 1 auto}
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
@@ -544,12 +545,10 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
    jusqu'à 760 px ; la liste défile dans la fenêtre, le titre et la recherche restent à la vue ; toutes les touches à 44 px */
 .f-modal.ms-brickdlg>div{width:min(760px,100%);max-height:min(90vh,calc(100dvh - 32px));overflow:hidden;gap:8px}
 .f-modal.ms-brickdlg>div>.ms-kwpool{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
-.f-modal.ms-brickdlg>div>.ms-kwmeta{flex:none;overflow:visible}
 .ms-brickdlg .ms-kwhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ms-brickdlg .ms-kwhead h3{margin:0;min-width:0;overflow-wrap:anywhere}
 .ms-brickdlg .ms-kwhead button{flex:none;min-height:var(--sog-touch,44px)}
 .ms-brickdlg input[data-kwq]{width:100%;min-height:var(--sog-touch,44px);box-sizing:border-box}
-.ms-brickdlg .ms-kwmeta{margin:0}
 .ms-brickdlg .ms-kwpool summary{display:flex;align-items:center;gap:6px;min-height:var(--sog-touch,44px);cursor:pointer;font-weight:600}
 .ms-brickdlg .ms-kwgrp{border-bottom:1px solid var(--sog-border,#ddd)}
 .ms-brickdlg .ms-kwfam{margin-left:12px}
@@ -1520,20 +1519,11 @@ function kwPoolHtml(s, o) {
 }
 
 /** Le contenu de la fenêtre des briques (la maquette : « Choisir une brique de tiroir ») : son titre et « Fermer », le champ « Rechercher une
- *  brique… », la ligne de compte (les familles et les briques proposées, l'appareil de la mission — sa première équipe — et sa famille),
- *  la liste (kwPoolHtml). */
+ *  brique… », la liste (kwPoolHtml) — plus de ligne de comptes (conforts 1-3 : elle ne servait pas le choix). */
 function kwHtml(s, o) {
-  const team = ED.teamsOf(edDoc(o.e))[0],
-    unset = s.tt(EDTX.dwWinUnset),
-    meta = s.tt(EDTX.dwWinMeta, {
-      f: new Set(o.bricks.filter(b => b.family !== 'common').map(b => b.family)).size,
-      b: o.bricks.length,
-      a: team?.type || team?.name || unset,
-      m: o.fam ? o.labels.get(o.fam) || o.fam : unset
-    });
   return `<div role="dialog" aria-modal="true" aria-labelledby="ms-kw-title"><div class="ms-kwhead"><h3 id="ms-kw-title">${esc(s.tt(EDTX.dwWinTitle))}</h3><button type="button" data-do="edkindoff">${esc(s.tt(EDTX.dwWinClose))}</button></div>
     <input type="search" data-kwq value="${esc(o.e.kq || '')}" placeholder="${esc(s.tt(EDTX.dwWinSearch))}" aria-label="${esc(s.tt(EDTX.dwWinSearchLabel))}" maxlength="60" autocomplete="off" spellcheck="false">
-    <p class="f-muted ms-kwmeta" data-kwmeta>${esc(meta)}</p><div class="ms-kwpool" data-kwpool>${KW.pool = kwPoolHtml(s, o)}</div></div>`;
+    <div class="ms-kwpool" data-kwpool>${KW.pool = kwPoolHtml(s, o)}</div></div>`;
 }
 
 /** La fenêtre suit l'état de l'atelier, après chaque dessin (edAfter) : ouverte tant que s.ed.kinds vaut 'new' (« ＋ Tiroir ») ou
@@ -1888,7 +1878,7 @@ function edMapHint(s) {
     r = (e.places || [])[edMapSel(e)];
   if (!EM.stateOf(e)) return s.tt(EDTX.atHint_none);
   if (tool === 'put') return s.tt(EDTX.atHint_put, {
-    m: trMin(e.trial.min)
+    m: dec(s, trMin(e.trial.min)) // « H + 7,25 min » en français (SOG-0482, conforts 3)
   });
   if (tool === 'view' && !e.trial?.on) return s.tt(EDTX.atHint_pilot);
   if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
@@ -1903,7 +1893,8 @@ function edMapHint(s) {
     id: edMapRef(e).id
   });
   if (!r && e.mapFeats?.wide) return s.tt(EDTX.atHint_empty); // aucun lieu situé : l'état vide dit quoi faire (SOG-0469)
-  if (!r) return s.tt(EDTX.atHint_select);
+  if (!r)
+    return ''; // conforts 1-3 : rien n'est choisi, la carte a des lieux — pas de phrase permanente (les consignes d'un geste en cours restent)
   if (r.kind === 'zone' && r.ring) return edMapVertex(e) >= 0 ? s.tt(EDTX.atHint_vertex, {
     k: edMapVertex(e) + 1,
     name: edPlaceName(r)
@@ -1949,6 +1940,11 @@ const edIconOf = (icon, name) => edIcons() ? IC.svg(icon) : esc(name);
 /** « ↶ » et « ↷ » (SOG-0542 : sur la ligne du fil, visibles sans la carte) sont éteints quand il n'y a rien à rendre ou à rejouer, ou pendant l'essai des clés. */
 const edHistOff = (e, what) => !!e.trial?.on || !(what === 'undo' ? e.mapUndo : e.mapRedo)?.size();
 
+/** Vrai quand la rangée de la phrase d'aide de la carte n'a rien à montrer : pas de phrase (edMapHint) et aucun de ses trois boutons
+ *  (« Retirer ce sommet », « Ajouter comme point », « Placer l'avion ») n'est montré — les mêmes conditions que leurs `hidden`. */
+const edHintRowOff = (s, e, tool, live) => !edMapHint(s) && !(edMapVertex(e) >= 0 && tool === 'select') && !edMapRef(e) && !(live && e.trial
+  ?.on);
+
 /** Un bouton de la carte (SOG-0471) : son icône ou son nom (edIconOf), son nom lu (aria-label) et en infobulle (title) ; `attrs` : ses
  *  attributs (data-do, aria-pressed, disabled…), `cls` : sa classe en plus. */
 function edIconBtn(icon, name, attrs, cls = '') {
@@ -1984,7 +1980,7 @@ function edMapHtml(s, doc, run = null) {
     tool = edMapTool(e),
     off = !live || edMapTrial(tool);
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`, 'ms-atmapend')}</div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`, 'ms-atmapend')}</div><div class="ms-atmaphintrow"${edHintRowOff(s, e, tool, live) ? ' hidden' : ''}><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Le fond et la couche de la carte de la mission en cours (SOG-0456) : le choix de la séance, sinon ce que le fichier dit. */
@@ -2074,6 +2070,7 @@ function edMapShow(s) {
       for (const b of s.el.querySelectorAll('[data-athist] button')) putProp(b, 'disabled', edHistOff(e, b.dataset.do === 'edmapundo' ?
         'undo' : 'redo'));
       put(hint, text);
+      putProp(q('.ms-atmaphintrow'), 'hidden', edHintRowOff(s, e, tool, live));
       const del = q('[data-vertexdel]'),
         add = q('[data-refadd]');
       putProp(del, 'hidden', !(edMapVertex(e) >= 0 && tool === 'select'));

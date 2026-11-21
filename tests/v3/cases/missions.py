@@ -3242,6 +3242,77 @@ def n203(c):
         c.js(_REG_CLEAR)
 
 
+@case('N209', 'Missions › the workshop, comforts 1-3: (a) the window of the bricks has no line of counts (« Familles : 16 · briques : 55 · appareil… »); (b) the permanent help sentence under the map '
+      '(« Touchez un lieu pour le choisir… ») is not said with places on the map, and its row leaves no blank, while the sentence of a place chosen and the one of the EMPTY map stay; (c) the sentences of the '
+      'workshop say the decimal comma in French, German and Spanish (« portée 0,3 NM », « cercle 2,5 km », « objet à 12,5 ft », « à H + 7,25 min ») and the point in English', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='conforts 1-3 of the workshop (RELECTURE_RELAIS_2026-11-19.md lines 56-58, rule 19 of PROMPT_MISSION_EDITOR_V2.md): modules/missions/editor_view.js `kwHtml`, `edMapHint`, `edHintRowOff`, `dec`')
+def n209(c):
+    L = c.lang
+    # (a) the window of the bricks: no line of counts, the search and the bricks stay
+    _kw_open(c)
+    win = c.js(f"[!!document.querySelector('{_KW} [data-kwmeta]'), /Familles|Families|Familien|Familias/.test(document.querySelector('{_KW}').innerText), !!document.querySelector('{_KW} input[data-kwq]'), document.querySelectorAll('{_KW} [data-do=edbrick]').length > 0]")
+    c.eq(win, [False, False, True, True], 'the window of the bricks: no line of counts (no « Familles : … · briques : … » in its text), the search field and the bricks stay', what='the window')
+    c.tap(f'{_KW} [data-do=edkindoff]')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    # (b) the sentence under the map
+    mission = _ITIN_MISSION.replace('radius_km: 5', 'radius_km: 2.5').replace('detection_range_nm: 1, altitude_ft: 0', 'detection_range_nm: 0.3, altitude_ft: 12.5')
+    assert mission != _ITIN_MISSION
+    row_js = f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmaphintrow'); return r ? [r.hidden, Math.round(r.getBoundingClientRect().height)] : null }})()"
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, mission)
+        ed_reveal(c)
+        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+        if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+            c.tap(f'{E} [data-do="edmap"]')
+        c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map)", timeout=15000, what='the map')
+        c.wait(800)
+        c.eq([hint(), c.js(row_js)], ['', [True, 0]], f'{width}: places on the map, nothing chosen: no sentence, and its row is hidden — no blank', what='no sentence')
+        c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
+        c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.trim() !== ''", what='the sentence of the place chosen')
+        c.eq([hint(), c.js(row_js)[0]], [{'fr': 'PT1 · Point un : faites-le glisser pour le déplacer.', 'en': 'PT1 · Point un: drag it to move it.', 'de': 'PT1 · Point un: ziehen, um zu verschieben.',
+                                          'es': 'PT1 · Point un: arrástrelo para moverlo.'}[L], False],
+             f'{width}: a place chosen: its sentence is back, the row is shown', what='place chosen')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+    # the EMPTY map keeps its sentence
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    _ed_open(c, 'mission: { id: X-001A, type: REG }\ntitle: Vide\norigin: { name: Zzzz }\ndestination: { name: Yyyy }\n')
+    ed_reveal(c)
+    c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map)", timeout=15000, what='the map')
+    c.wait(800)
+    c.eq([hint(), c.js(row_js)[0]], [{'fr': 'Aucun lieu : choisissez Point, puis touchez la carte.', 'en': 'No place: choose Point, then touch the map.', 'de': 'Kein Ort: wählen Sie Punkt und berühren Sie dann die Karte.',
+                                      'es': 'Ningún lugar: elija Punto y toque el mapa.'}[L], False], 'the empty map keeps its sentence, its row is shown', what='empty map')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    # (c) the decimal comma in the sentences (the point in English), expectations written in clear
+    _ed_open(c, mission)
+    ed_reveal(c)
+    c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+    lines = norm(' | '.join(c.js(f"[...document.querySelectorAll('{E} [data-atflow] .ms-plrow')].map(x => x.textContent)")))
+    circle = {'fr': 'cercle 2,5 km', 'en': 'circle 2.5 km', 'de': 'Kreis 2,5 km', 'es': 'círculo 2,5 km'}[L]
+    rng = {'fr': 'portée 0,3 NM', 'en': 'range 0.3 NM', 'de': 'Reichweite 0,3 NM', 'es': 'alcance 0,3 NM'}[L]
+    c.ok(circle in lines and rng in lines, lines, f'the lines of the itinerary say « {circle} » and « {rng} »')
+    c.tap(f'{E} [data-at="{c.js(_AT_OF, "OBJ-1")}"] [data-do=edplace]')
+    c.until(f"!!document.querySelector('{E} [data-plform] .ms-plfold summary')", what='the sheet of OBJ-1')
+    alt = {'fr': 'objet à 12,5 ft', 'en': 'object at 12.5 ft', 'de': 'Objekt auf 12,5 ft', 'es': 'objeto a 12,5 ft'}[L]
+    summ = norm(c.text(f'{E} [data-plform] .ms-plfold summary'))
+    c.ok(alt in summ, summ, f'the fold of the heights says « {alt} »')
+    # the sentence of the tool « Placer l'avion » (a quarter of a minute of the slider)
+    c.tap(f'{E} [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR} [data-f=min]')", what='the trial')
+    c.js(_TR_SET, 7.25)
+    c.tap(f'{E} [data-trput]')
+    c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.trim() !== ''", what='the sentence of the tool')
+    put = {'fr': 'à H + 7,25 min', 'en': 'at H + 7.25 min', 'de': 'bei H + 7,25 min', 'es': 'a H + 7,25 min'}[L]
+    c.ok(put in hint(), hint(), f'the sentence of « Placer l\'avion » says « {put} »')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
 _RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
 
 
@@ -6285,7 +6356,7 @@ def n95(c):
     c.eq([c.js(_EDTOOL_STATE), norm(c.text(f'{_EDMAP} [data-maphint]'))],
          [[['select', 'true', False], ['point', 'false', False], ['route', 'false', False], ['zone', 'false', False], ['object', 'false', False], ['edmapundo', None, True],
            ['edmapredo', None, True], ['edmapfit', None, False]],
-          T('atHint_select')], 'the tools above the map: Sélection in hand, nothing to undo; the line says what the tool does', what='the tools')
+          ''], 'the tools above the map: Sélection in hand, nothing to undo; the line says nothing (conforts 1-3: no permanent help sentence)', what='the tools')
     # Sélection: a place touched is chosen — its name on the map, its row open
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"{_EDSEL} === 'PT2 · Point deux'", what='PT2 chosen, its name on the map')
@@ -6353,7 +6424,7 @@ def n95(c):
     c.wait(600)
     text = c.js(_TEXT_OF, path) or ''
     c.ok(all(k in text for k in ('PT3', 'ZONE-2', 'OBJ-2', 'Balise')) and text.count('ZONE-1') >= 1, text[:400], 'the file saved carries the point, the zone and the object posed on the map')
-    c.eq([c.js(_EDSEL), c.js(_EDTOOL_STATE)[5][2], norm(c.text(f'{_EDMAP} [data-maphint]'))], [None, True, T('atHint_select')],
+    c.eq([c.js(_EDSEL), c.js(_EDTOOL_STATE)[5][2], norm(c.text(f'{_EDMAP} [data-maphint]'))], [None, True, ''],
          'saved: the file is the new base — no place chosen on the map any more, nothing to undo', what='after the save')
     # on a phone the tools wrap above the map
     c.page.set_viewport_size({'width': 390, 'height': c.height})
@@ -6769,11 +6840,11 @@ def n100(c):
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
-    c.eq(hint(), T('atHint_select'), 'the landmarks are shown; nothing is chosen', what='the line')
+    c.eq(hint(), '', 'the landmarks are shown; nothing is chosen', what='the line')
     # a landmark with a local mark is neither drawn nor addable (the base seeded carries two: one from X-Plane, one said local)
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.1]))
     c.wait(400)
-    c.ok(c.js(_EDREFS) == ['LFZZ', 'NEPIX', 'TSV'] and add() is True and hint() == T('atHint_select'), [c.js(_EDREFS), hint()],
+    c.ok(c.js(_EDREFS) == ['LFZZ', 'NEPIX', 'TSV'] and add() is True and hint() == '', [c.js(_EDREFS), hint()],
          'the two landmarks that carry a local mark are not drawn; a touch where one of them is says nothing and offers nothing')
     # a landmark touched says what it is; the touch creates nothing (the Lieux are unfolded, to count their rows)
     ed_places(c)
@@ -6791,7 +6862,7 @@ def n100(c):
     c.eq(hint(), T('atRef_aerodrome', id='LFZZ'), 'an aerodrome of the base says it is one', what='an aerodrome touched')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.15, 1.15]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === true", timeout=8000, what='the landmark forgotten')
-    c.eq([hint(), len(c.js(_EDPLACE_IDS))], [T('atHint_select'), n], 'a touch on the bare map forgets the landmark; still nothing created', what='the bare map')
+    c.eq([hint(), len(c.js(_EDPLACE_IDS))], ['', n], 'a touch on the bare map forgets the landmark; still nothing created', what='the bare map')
     # « Ajouter comme point »: a turning point at its position, under its name; a gesture of the map
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched again')
@@ -7146,7 +7217,7 @@ def n104(c):
     # back to everything: the tools come back
     c.page.select_option(_EDVIEW, '-1')
     c.until(f"({_EDTOOL_STATE})[0][2] === false", timeout=8000, what='the tools back')
-    c.eq([c.js(_EDMAP_IDS, None), hint(), c.js(_EDTOOL_STATE)[0]], [every, T('atHint_select'), ['select', 'true', False]], '« Tout »: everything is drawn, the tools come back',
+    c.eq([c.js(_EDMAP_IDS, None), hint(), c.js(_EDTOOL_STATE)[0]], [every, '', ['select', 'true', False]], '« Tout »: everything is drawn, the tools come back',
          what='the author again')
     # during a trial of the keys the list is not shown (the trial shows everything)
     c.tap(f'{E} [data-atflow] [data-trbtn]')
@@ -8712,7 +8783,7 @@ def n118(c):
     modify('X-001A')
     c.until(f"({labels}).length === 2", timeout=10000, what='the two aerodromes drawn')
     c.eq([c.js(labels), c.js(_LC_FOUND), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), norm(c.text(f'{_EDMAP} [data-maphint]'))],
-         [['XTST', 'XTSU'], True, True, T('atHint_select')],
+         [['XTST', 'XTSU'], True, True, ''],
          'no place carries a position, yet the map is alive, framed on XTST and XTSU found in the base (their labels in capitals); the usual instruction is given', what='the map')
     if not c.count(f'{E} input[data-k=eddep]'):  # the Cadre is open at the opening
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
@@ -12321,9 +12392,9 @@ def n172(c):
         c.eq(tile, [norm(row(c, 'dwAdd', EDTX_FILE)), norm(row(c, 'dwAddSub', EDTX_FILE))], f'{width}: the tile says « ＋ Tiroir » and « Choisir une brique »', what='the tile')
         head = c.js(f"[document.querySelector('{_KW} [role=dialog]')?.getAttribute('aria-modal'), document.querySelector('{_KW} [role=dialog] h3')?.textContent.trim(), "
                     f"document.querySelector('{_KW} [data-do=edkindoff]')?.textContent.trim(), document.querySelector('{_KW} input[data-kwq]')?.placeholder, "
-                    f"!!document.querySelector('{_KW} [data-kwmeta]')?.textContent.trim(), document.activeElement?.matches('{_KW} input[data-kwq]')]")
-        c.eq(head, ['true', row(c, 'dwWinTitle', EDTX_FILE), row(c, 'dwWinClose', EDTX_FILE), row(c, 'dwWinSearch', EDTX_FILE), True, True],
-             f'{width}: a modal window, its title, « Fermer », the search field (in hand), the line of counts', what='the window')
+                    f"!!document.querySelector('{_KW} [data-kwmeta]'), document.activeElement?.matches('{_KW} input[data-kwq]')]")
+        c.eq(head, ['true', row(c, 'dwWinTitle', EDTX_FILE), row(c, 'dwWinClose', EDTX_FILE), row(c, 'dwWinSearch', EDTX_FILE), False, True],
+             f'{width}: a modal window, its title, « Fermer », the search field (in hand), NO line of counts (conforts 1-3)', what='the window')
         geo = c.js(f"""(() => {{ const d = document.querySelector('{_KW} [role=dialog]').getBoundingClientRect();
           const low = [...document.querySelectorAll('{_KW} button, {_KW} summary, {_KW} input')].filter(x => x.checkVisibility()).filter(x => x.getBoundingClientRect().height < 43.5).length;
           return [Math.round(d.left), Math.round(d.top), Math.round(d.width), Math.round(d.height), innerWidth, innerHeight, low] }})()""")

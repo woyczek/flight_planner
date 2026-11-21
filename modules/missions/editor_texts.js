@@ -165,11 +165,6 @@ export const EDTX = {
   dwWinClose: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
   dwWinSearch: ['Rechercher une brique…', 'Search for a brick…', 'Baustein suchen…', 'Buscar un ladrillo…'],
   dwWinSearchLabel: ['Rechercher une brique', 'Search for a brick', 'Baustein suchen', 'Buscar un ladrillo'],
-  dwWinMeta: ['Familles : {f} · briques : {b} · appareil : {a} · famille : {m}',
-    'Families: {f} · bricks: {b} · aircraft: {a} · family: {m}',
-    'Familien: {f} · Bausteine: {b} · Luftfahrzeug: {a} · Familie: {m}', 'Familias: {f} · ladrillos: {b} · aeronave: {a} · familia: {m}'
-  ],
-  dwWinUnset: ['à définir', 'to be set', 'festzulegen', 'por definir'],
   dwWinNone: ['Aucune brique correspondante.', 'No matching brick.', 'Kein passender Baustein.', 'Ningún ladrillo coincide.'],
   dwWinCommon: ['Actions transverses', 'Cross-cutting actions', 'Übergreifende Aktionen', 'Acciones transversales'],
   dwWinKeys: ['Une clé seule', 'A key alone', 'Nur ein Schlüssel', 'Solo una llave'],
@@ -722,11 +717,6 @@ export const EDTX = {
   ],
   atHint_empty: ['Aucun lieu : choisissez Point, puis touchez la carte.', 'No place: choose Point, then touch the map.',
     'Kein Ort: wählen Sie Punkt und berühren Sie dann die Karte.', 'Ningún lugar: elija Punto y toque el mapa.'
-  ],
-  atHint_select: ['Touchez un lieu pour le choisir, faites-le glisser pour le déplacer.',
-    'Touch a place to choose it, drag it to move it.',
-    'Berühren Sie einen Ort, um ihn zu wählen; ziehen Sie ihn, um ihn zu verschieben.',
-    'Toque un lugar para elegirlo, arrástrelo para moverlo.'
   ],
   atHint_chosen: ['{name} : faites-le glisser pour le déplacer.', '{name}: drag it to move it.', '{name}: ziehen, um zu verschieben.',
     '{name}: arrástrelo para moverlo.'
