@@ -9628,8 +9628,10 @@ def d303(c):
         c.js(_STATE_JS)
         c.until("() => !!window.__mp.S.altn && (window.__mp.S.altnHits || []).length === 3", timeout=10000, what='the three proposed drawn')
         c.wait(900)
-        p = c.js("() => { const S = window.__mp.S, h = S.altnHits.find(x => x.icao === 'XQPF'), r = S.box.getBoundingClientRect(); return [r.left + h.x, r.top + h.y] }")
-        c.page.mouse.click(p[0], p[1])
+        # the sheet opened at the point of XQPF read at that instant (the view may still settle: a point read before a late fit misses);
+        # the tap on the view itself is D259's
+        c.js('''async () => { const S = window.__mp.S, A = await import('/modules/maps/altn.js'), h = (S.altnHits || []).find(x => x.icao === 'XQPF');
+          return h ? A.altnTap(h.x, h.y) : false }''')
         c.until("() => { const e = window.__mp.S.cardEl; return !!e && !e.hidden && !!e.querySelector('[data-altn=XQPF]') }", what='the sheet of XQPF')
         card = norm(c.js("() => window.__mp.S.cardEl.textContent"))
         c.ok(norm(_ALTN_WX_WORDS['wx-outside'][L].replace('{at}', '14:20Z')) in card, card, f'{w}: the whole sentence with its hour')

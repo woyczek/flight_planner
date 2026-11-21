@@ -5755,13 +5755,15 @@ async function altnPropWx(ids) {
     P = S.altnProp,
     W = S.ctx.weather;
   if (!P || !ids.length || !W?.taf) return;
-  const cacheOnly = S.ctx.net?.online?.() === false;
-  let failed = false;
-  const t = await Promise.resolve(W.taf(ids, {
-    cacheOnly
-  })).catch(() => {
-    failed = true;
-    return null;
+  const cacheOnly = S.ctx.net?.online?.() === false,
+    ask = o => Promise.resolve(W.taf(ids, o)).catch(() => null);
+  let t = await ask({
+      cacheOnly
+    }),
+    failed = !t;
+  // la couche en échec rend tout ou rien : la réserve de l'appareil relue (aucun appel réseau), un TAF gardé reste lu
+  if (failed && !cacheOnly) t = await ask({
+    cacheOnly: true
   });
   if (gone(s) || S.altnProp !== P) return;
   const items = t?.items && typeof t.items === 'object' ? t.items : {},
