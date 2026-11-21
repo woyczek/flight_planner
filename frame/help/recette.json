@@ -5559,21 +5559,6 @@
    "since": "2026-11-20",
    "state": "todo",
    "recommended": 0
-  },
-  {
-   "id": "Q-0134",
-   "fiche": "SOG-0530",
-   "app": "pilote",
-   "question": "Niveaux de croisière en vol à vue : AeroDB peut-il lire aussi la page ENR 1.1 de l'eAIP du SIA pour trouver la hauteur au-dessus de laquelle la règle joue ?",
-   "context": "Tu as donné ENR 1.7 et ENR 1.3. Elles donnent le tableau des niveaux (IFR et VFR), mais pas la hauteur au-dessus du sol à partir de laquelle un vol à vue doit suivre ce tableau. Sans elle, Carburant n'avertit que les vols aux instruments et dit « hauteur VFR non lue » pour un vol à vue. ENR 1.1 est une page de plus, sur le même site, lue de la même façon (pendant la mise à jour des données).",
-   "options": [
-    "Oui : ENR 1.1 lue comme ENR 1.7 et ENR 1.3, pendant la mise à jour",
-    "Non : pas d'avertissement pour les vols à vue, l'écran le dit",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-21",
-   "state": "todo",
-   "recommended": 0
   }
  ]
 }
