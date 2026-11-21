@@ -1679,14 +1679,17 @@ export function itinRows(rows, route, drawers, o = {}) {
     arr = list.findIndex(r => r && r.kind === 'arr'),
     free = routeFree(tok),
     onRoute = new Set();
+  // SOG-0543 : le lecteur ne résout pas un objet comme étape d'une route, et saute ORIGIN et DESTINATION dans la suite d'un tiroir : ces jetons, gardés
+  // dans le fichier, n'ont pas de ligne (un objet que rien d'autre ne cite reste « hors itinéraire »)
+  const stop = i => !!list[i] && list[i].kind !== 'object';
   tok.forEach(t => {
     const i = by.get(up(t));
-    if (i !== undefined) onRoute.add(i);
+    if (i !== undefined && stop(i)) onRoute.add(i);
   });
   if (ok(dep)) place('dep', dep);
   for (let n = free.lo; n <= free.hi && n < tok.length; n++) {
     const i = by.get(up(tok[n]));
-    if (i !== undefined && ok(i)) place('start', i, n);
+    if (i !== undefined && ok(i) && stop(i)) place('start', i, n);
   }
   for (const d of Array.isArray(drawers) ? drawers : []) {
     if (!d || typeof d !== 'object' || typeof d.id !== 'string' || !d.id) continue;
@@ -1705,7 +1708,7 @@ export function itinRows(rows, route, drawers, o = {}) {
     if (ki >= 0 && ok(ki) && !onRoute.has(ki)) place('key', ki, -1, d.id, true);
     (Array.isArray(d.route) ? d.route : []).forEach((w, n) => {
       const i = by.get(up(now(w)));
-      if (i !== undefined && ok(i)) place('drawer', i, n, d.id, true);
+      if (i !== undefined && ok(i) && stop(i) && list[i].kind !== 'dep' && list[i].kind !== 'arr') place('drawer', i, n, d.id, true);
     });
   }
   if (ok(arr)) place('arr', arr);

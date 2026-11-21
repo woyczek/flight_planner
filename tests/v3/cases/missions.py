@@ -3015,6 +3015,52 @@ def n202(c):
         ed_leave(c)
         c.js(_REG_CLEAR)
 
+@case('N203', 'Missions › the workshop, the menu of the route offers only what the reader resolves (SOG-0543): « Ajouter un lieu… » of the route of the departure and of the onward route of a drawer '
+      'offer no object and no Arrival (nor Departure); a file that ALREADY cites an object and DESTINATION in an onward route opens, is saved without touching anything byte for byte, and a change of '
+      'the title keeps those tokens (read as data); the itinerary shows no line for them and does not fail', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0543 (frame/lib/mission.js skips ORIGIN and DESTINATION in the onward route of a drawer and resolves no object as a stop): modules/missions/editor_view.js `edItinHtml`, `edDrawerHtml`; the data kept as they are (contract of FORMAT_MISSION § 2)')
+def n203(c):
+    import yaml
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    # drawer C (the object to find) already cites an object and the arrival in its onward route
+    mission = _ITIN_MISSION.replace('route_order: [PT2] }', 'route_order: [PT2, OBJ-1, DESTINATION] }')
+    assert mission != _ITIN_MISSION
+    seq = lambda: c.js(_ITIN_SEQ)  # noqa: E731
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, mission)
+        ed_reveal(c)
+        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+        # the two menus: what they offer, read in the page
+        start = c.js(f"[...document.querySelectorAll('{E} [data-edroute] select[data-k=edroute] option')].map(o => o.value).filter(Boolean)")
+        c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] select[data-f=routeadd]')", what='the sheet of drawer 2')
+        onward = c.js(f"[...document.querySelectorAll('{E} [data-drawer=\"C\"] select[data-f=routeadd] option')].map(o => o.value).filter(Boolean)")
+        bad = lambda xs: [x for x in xs if x in ('ORIGIN', 'DESTINATION') or x.startswith('OBJ')]  # noqa: E731
+        c.ok(start and onward and not bad(start) and not bad(onward) and 'PT3' in onward, [start, onward],
+             f'{width}: « Ajouter un lieu… » of the route of the departure and of the onward route offer places, no object, no Arrival, no Departure')
+        # the itinerary: no line for DESTINATION or for OBJ-1 as a stop of the onward route of drawer 2 (the object stays shown as the KEY of the drawer)
+        s = seq()
+        i = s.index('T2')
+        c.eq(s[i:i + 4], ['T2', 'key:C=OBJ-1+', 'drawer:C:0=PT2+', 'T3'], f'{width}: drawer 2 shows the object of its key and PT2 of its onward route — no line for the object cited in the route, none for DESTINATION', what='the lines')
+        # saved without touching anything: byte for byte
+        c.tap(f'{E} [data-do="edsave"]')
+        c.wait(500)
+        c.eq(c.js(_TEXT_OF, path), mission, f'{width}: saved without touching anything, the file is identical byte for byte', what='file')
+        # a change of the title keeps the tokens (as data)
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        if not c.count(f'{E} input[data-k=edtitle]'):  # the Cadre may already be unfolded: touching it again would fold it
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+        d = yaml.safe_load(c.js(_TEXT_OF, path))
+        old = yaml.safe_load(mission)
+        c.eq(d, dict(old, title='Titre retouché'), f'{width}: a change of the title keeps every token of the onward routes (OBJ-1 and DESTINATION included) and every other key', what='data')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
 
 _RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
 
@@ -5393,7 +5439,7 @@ def n78(c):
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"{every}.map(b => !!b.__kept)")
-    c.ok(len(kept) == 25 and all(kept), len(kept), 'the 25 elements of the new screen — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
+    c.ok(len(kept) == 24 and all(kept), len(kept), 'the 24 elements of the new screen (25 before SOG-0543: a DESTINATION cited in an onward route has no line any more) — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -5413,12 +5459,12 @@ def n78(c):
     c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=route] .ms-dbody')).display !== 'none'", what='« La suite de route » unfolded')
     c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT2')
     c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 1", what='one chip')
-    c.page.select_option(f'{_DW} [data-f=routeadd]', 'DESTINATION')
+    c.page.select_option(f'{_DW} [data-f=routeadd]', 'TARGET')
     c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 2", what='two chips')
     c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT1')
     c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 3", what='three chips')
     c.tap(f'{_DW} [data-chip="PT1"] [data-do="eddrchipdel"]')
-    c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-chip]')].map(x => x.dataset.chip)"), ['PT2', 'DESTINATION'], 'a chip removed; the others in order', what='the route')
+    c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-chip]')].map(x => x.dataset.chip)"), ['PT2', 'TARGET'], 'a chip removed; the others in order', what='the route')
     # the arrival drawer: its fields; a key kept as it is would say so (N75) — here the hour
     c.page.click(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
@@ -5475,7 +5521,7 @@ def n78(c):
       return { parts: d.phases, read: MS.readMission(d).drawers.map(x => [x.rank, x.id, x.key.kind, x.keyWhy]), zones: d.zones.map(z => z.id), objects: d.objects.map(o => o.id) } }""" % _TEXT_OF, path)
     c.eq(got['parts'], [
         {'id': 'C', 'title': 'Entrée nord', 'fallback_delay_min': 60, 'trigger': norm(row(c, 'dwSaid_object', EDTX_FILE)), 'message': 'Écho radar au nord.\nDescendez voir.',
-         'brief': 'Nouvelle tâche : reconnaissance du secteur.', 'trigger_object': 'OBJ-1', 'route_order': ['PT2', 'DESTINATION']},
+         'brief': 'Nouvelle tâche : reconnaissance du secteur.', 'trigger_object': 'OBJ-1', 'route_order': ['PT2', 'TARGET']},
         {'id': 'D', 'title': 'Retour', 'trigger_condition': {'kind': 'arrival', 'point': 'DESTINATION', 'radius_nm': 1, 'speed_max_kt': 30, 'require_on_ground': True}},
         {'id': 'E', 'title': 'Naufragé', 'trigger_object': 'OBJ-1', 'fallback_delay_min': 90},
         {'id': 'F', 'title': 'Retour anticipé', 'trigger': norm(T('dwSaid_time', n=20, p=T('dwAtTakeoff'))), 'trigger_point': 'ORIGIN', 'trigger_delay_min': 20}],
@@ -7228,21 +7274,21 @@ def n106(c):
     c.eq([c.js(_DWCHIPS), c.count(_DWMOVE)], [['PT2'], 0], 'a route of one place has no arrows', what='one place')
     c.page.select_option(f'{_DW} [data-k=eddr][data-f=routeadd]', 'PT1')
     c.until(f"({_DWCHIPS}).length === 2", what='PT1 added to the onward route')
-    c.page.select_option(f'{_DW} [data-k=eddr][data-f=routeadd]', 'DESTINATION')
-    c.until(f"({_DWCHIPS}).length === 3", what='the arrival added to the onward route')
-    c.eq([c.js(_DWCHIPS), c.js(_CHIPMOVE_STATE, _DWMOVE), c.count(f'{_DW} [data-dwroute] [data-chipfixed]')], [['PT2', 'PT1', 'DESTINATION'], [False, True, True], 0],
+    c.page.select_option(f'{_DW} [data-k=eddr][data-f=routeadd]', 'TARGET')
+    c.until(f"({_DWCHIPS}).length === 3", what='TARGET added to the onward route')
+    c.eq([c.js(_DWCHIPS), c.js(_CHIPMOVE_STATE, _DWMOVE), c.count(f'{_DW} [data-dwroute] [data-chipfixed]')], [['PT2', 'PT1', 'TARGET'], [False, True, True], 0],
          'three places: the arrows are there, not given yet; no chip is anchored in the onward route of a drawer', what='the onward route')
     c.tap(f'{_DW} [data-dwroute] [data-chip="PT1"] .ms-chipname')
     c.tap(f'{_DWMOVE} button >> nth=0')
     c.until(f"({_DWCHIPS})[0] === 'PT1'", timeout=8000, what='PT1 first in the onward route')
     line = norm(c.text(f'{_DW} [data-dline="route"]'))
-    c.ok(c.js(_DWCHIPS) == ['PT1', 'PT2', 'DESTINATION'] and c.js(_DWPRESSED) == ['PT1'] and c.js(_CHIPMOVE_STATE, _DWMOVE) == [True, True, False] and line.index('PT1') < line.index('PT2')
+    c.ok(c.js(_DWCHIPS) == ['PT1', 'PT2', 'TARGET'] and c.js(_DWPRESSED) == ['PT1'] and c.js(_CHIPMOVE_STATE, _DWMOVE) == [True, True, False] and line.index('PT1') < line.index('PT2')
          and c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'C', [c.js(_DWCHIPS), c.js(_DWPRESSED), c.js(_CHIPMOVE_STATE, _DWMOVE), line],
          'the chip chosen of the onward route moved one rank earlier: it is first; the line of the group follows in place; the sheet of the drawer stays')
-    c.tap(f'{_DW} [data-dwroute] [data-chip="DESTINATION"] .ms-chipname')
+    c.tap(f'{_DW} [data-dwroute] [data-chip="TARGET"] .ms-chipname')
     c.tap(f'{_DWMOVE} button >> nth=0')
-    c.until(f"({_DWCHIPS})[1] === 'DESTINATION'", timeout=8000, what='the arrival second in the onward route')
-    c.eq([c.js(_DWCHIPS), c.js(_DWPRESSED)], [['PT1', 'DESTINATION', 'PT2'], ['DESTINATION']], 'in the onward route of a drawer the arrival is a place like another: it moves', what='free')
+    c.until(f"({_DWCHIPS})[1] === 'TARGET'", timeout=8000, what='TARGET second in the onward route')
+    c.eq([c.js(_DWCHIPS), c.js(_DWPRESSED)], [['PT1', 'TARGET', 'PT2'], ['TARGET']], 'in the onward route of a drawer every place moves (SOG-0543: the Arrival is no longer offered in the menu, a file that cites it keeps it: N203)', what='free')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_DW} [data-dgrp=route]').scrollIntoView({{block: 'center'}})")
     c.shot('N106_1280_drawer.png')
@@ -7250,8 +7296,8 @@ def n106(c):
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
     flat = re.sub(r'\s+', ' ', c.js(_TEXT_OF, path) or '')
-    c.ok(re.search(r'route_order: ?\[? ?-? ?ORIGIN,? ?-? ?PT1,? ?-? ?DESTINATION ?\]?', flat) is not None and re.search(r'PT1,? ?-? ?DESTINATION,? ?-? ?PT2', flat) is not None, flat[:700],
-         'the file saved carries the route of the departure (ORIGIN, PT1, DESTINATION) and the onward route of drawer 2 reordered (PT1, DESTINATION, PT2)')
+    c.ok(re.search(r'route_order: ?\[? ?-? ?ORIGIN,? ?-? ?PT1,? ?-? ?DESTINATION ?\]?', flat) is not None and re.search(r'PT1,? ?-? ?TARGET,? ?-? ?PT2', flat) is not None, flat[:700],
+         'the file saved carries the route of the departure (ORIGIN, PT1, DESTINATION) and the onward route of drawer 2 reordered (PT1, TARGET, PT2)')
     # on a phone
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()

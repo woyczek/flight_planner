@@ -1338,7 +1338,8 @@ function edItinHtml(s, doc, run = null) {
   const mapOn = placeOn < 0 ? edMapSel(e) : -1,
     mapAt = mapOn < 0 ? -1 : lines.findIndex(l => l.kind === 'place' && l.i === mapOn),
     firstOf = new Set(),
-    options = [...new Map(rows.map((r, i) => [i, r]).filter(([i, r]) => shown[i] && r && ED.routeToken(r)).map(([, r]) => [ED.routeToken(r),
+    options = [...new Map(rows.map((r, i) => [i, r]).filter(([i, r]) => shown[i] && r && ED.routeToken(r) && !['dep', 'arr', 'object']
+      .includes(r.kind)).map(([, r]) => [ED.routeToken(r),
       r
     ]))]
     .map(([t, r]) => [t, [r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id, r.kind === 'dep' || r.kind ===
@@ -3359,7 +3360,7 @@ function edDrawerHtml(s, doc) {
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
     ${group('route', EDTX.dwGrpRoute, `${route.length ? '' : `<p class="f-muted">${esc(s.tt(EDTX.dwRouteNone))}</p>`}
       <div class="ms-chips" data-dwroute>${edChipsHtml(s, r.id, edDrawerChips(e, r))}</div>${edChipMoveHtml(s, r.id, edDrawerChips(e, r))}
-      ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
+      ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
     ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p data-pvnothing>${esc(s.tt(EDTX.dwPilotNothing))}</p></div>
       <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
