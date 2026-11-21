@@ -504,6 +504,9 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atmaptools button{min-height:44px;padding-left:10px;padding-right:10px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
+[data-module="missions"] .ms-crumbrow{display:flex;align-items:center;justify-content:space-between;gap:8px} /* SOG-0542 : « ↶ ↷ » à droite de la ligne du fil */
+[data-module="missions"] .ms-crumbrow>.ms-crumb{margin:0;min-width:0}
+[data-module="missions"] .ms-hist{display:flex;gap:8px;flex:0 0 auto}
 [data-module="missions"] .ms-atico{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 [data-module="missions"] .ms-atico[data-icon]{min-width:44px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center}
 [data-module="missions"] .ms-atico>svg{pointer-events:none}
@@ -1942,6 +1945,9 @@ const edIcons = () => Object.values(ED_ICONS).every(n => IC.has(n));
 /** Ce qu'un bouton de la carte montre : son icône (edIcons), sinon son nom écrit. */
 const edIconOf = (icon, name) => edIcons() ? IC.svg(icon) : esc(name);
 
+/** « ↶ » et « ↷ » (SOG-0542 : sur la ligne du fil, visibles sans la carte) sont éteints quand il n'y a rien à rendre ou à rejouer, ou pendant l'essai des clés. */
+const edHistOff = (e, what) => !!e.trial?.on || !(what === 'undo' ? e.mapUndo : e.mapRedo)?.size();
+
 /** Un bouton de la carte (SOG-0471) : son icône ou son nom (edIconOf), son nom lu (aria-label) et en infobulle (title) ; `attrs` : ses
  *  attributs (data-do, aria-pressed, disabled…), `cls` : sa classe en plus. */
 function edIconBtn(icon, name, attrs, cls = '') {
@@ -1977,7 +1983,7 @@ function edMapHtml(s, doc, run = null) {
     tool = edMapTool(e),
     off = !live || edMapTrial(tool);
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}`, 'ms-atmapend')}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${off || !e.mapRedo?.size() ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`)}</div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`, 'ms-atmapend')}</div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Le fond et la couche de la carte de la mission en cours (SOG-0456) : le choix de la séance, sinon ce que le fichier dit. */
@@ -2064,6 +2070,8 @@ function edMapShow(s) {
         if (t) putAttr(b, 'aria-pressed', tool === t);
         if (t === 'zone') edZoneShow(s, b);
       }
+      for (const b of s.el.querySelectorAll('[data-athist] button')) putProp(b, 'disabled', edHistOff(e, b.dataset.do === 'edmapundo' ?
+        'undo' : 'redo'));
       put(hint, text);
       const del = q('[data-vertexdel]'),
         add = q('[data-refadd]');
@@ -2249,6 +2257,7 @@ function edMapBack(s, e, snap) {
   if (!same || e.placeEdit !== e.mapSel) e.placeEdit = -1;
   e.mapVertex = -1;
   e.placeAsk = -1;
+  if (!same) e.itAt = ''; // la ligne choisie de l'itinéraire ne désigne plus le même lieu
   return draw(s);
 }
 
@@ -3366,7 +3375,10 @@ function edDrawerInput(s, ev) {
   if (list && ev.type !== 'change') return;
   const r = edDrawerRow(e);
   if (!r) return;
-  edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
+  // une saisie vide l'historique ; « Ajouter un lieu… » de la suite de route est un geste de la liste (SOG-0542) : il se garde, il s'annule
+  if (f === 'routeadd' && list) {
+    if (t.value) edMapRemember(e);
+  } else edUndoClear(e);
   // SOG-0500 : un champ d'une règle (la condition du tiroir)
   const rf = /^rule\.([a-zA-Z]+)$/.exec(f || '');
   if (rf) return edRuleInput(s, r.rule, rf[1], t, list);
@@ -3531,7 +3543,7 @@ export function edHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
-  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
+  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p><span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}${edModelHtml(s)}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
@@ -3579,7 +3591,7 @@ export function edInput(s, ev) {
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || ED.placesOf(edDoc(e))).some(r => r && ED
         .routeToken(r) ===
         token)) return;
-    edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
+    edMapRemember(e); // SOG-0542 : « Ajouter un lieu… » de la route du départ s'annule
     edRouteAdd(s, e, token);
     return draw(s);
   }
@@ -4224,9 +4236,9 @@ export function edClick(s, b) {
         // la route du départ garde son départ premier et son arrivée dernière ; la suite d'un tiroir est libre
         made = start ? ED.routeMoveStart(list, n, step) : ED.routeMove(list, n, step, w => !!ED.refNow(w, e.base, e.places));
       if (made.route === list) return it ? undefined : edChipsShow(s, where, false);
+      edMapRemember(e); // SOG-0542 : un geste de la liste s'annule (« ↑ Plus tôt » / « ↓ Plus tard »)
       if (start) e.route = made.route;
       else r.route = made.route;
-      edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       if (it) { // la ligne déplacée RESTE choisie, sa fiche ouverte ; le bouton pressé garde le focus
         e.itAt = start ? `start:${made.at}` : `drawer:${r.id}:${made.at}`;
         return edItinRepaint(s, `[data-do="edchipmove"][data-step="${step}"]`);
@@ -4245,8 +4257,10 @@ export function edClick(s, b) {
       s.ed.itAt = ''; // la fiche reste ouverte sous la première ligne du lieu (il peut être passé « hors itinéraire »)
       // le départ en tête et l'arrivée en queue ne se retirent pas (une route sans départ n'a pas de sens) : leur croix n'est pas
       // donnée, et une page forgée ne les retire pas non plus
-      if (Number.isInteger(n) && n >= ED.routeFree(route).lo && n <= ED.routeFree(route).hi) s.ed.route = route.filter((_, k) => k !== n);
-      edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      if (Number.isInteger(n) && n >= ED.routeFree(route).lo && n <= ED.routeFree(route).hi) {
+        edMapRemember(s.ed); // SOG-0542 : « Retirer de l'itinéraire » s'annule
+        s.ed.route = route.filter((_, k) => k !== n);
+      }
       return draw(s);
     }
     case 'eddrchipdel': { // un lieu retiré de la suite de route (sa pastille, ou la ligne choisie de l'itinéraire)
@@ -4254,8 +4268,10 @@ export function edClick(s, b) {
         n = +b.dataset.n;
       s.ed.chipSel = null;
       s.ed.itAt = '';
-      if (r && Number.isInteger(n) && n >= 0) r.route = r.route.filter((_, i) => i !== n);
-      edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      if (r && Number.isInteger(n) && n >= 0) {
+        edMapRemember(s.ed); // SOG-0542 : « Retirer de l'itinéraire » s'annule
+        r.route = r.route.filter((_, i) => i !== n);
+      }
       return draw(s);
     }
     case 'edtodo':
@@ -4443,22 +4459,13 @@ export function edClick(s, b) {
         },
         r = ED.removePlace(s.ed.places, i, edCiteDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
       if (r.wait) return;
-      // SOG-0482 : TOUTE suppression d'un lieu se fait en deux temps, cité ou non (l'annulation de la carte ne la couvre pas) : le premier toucher change le
-      // libellé en « Supprimer quand même » (sans phrase quand rien ne cite le lieu), le second supprime — inerte pendant la première seconde
-      if (row && !r.cited.length) {
-        if (s.ed.placeAsk !== i) {
-          s.ed.placeAsk = i;
-          s.ed.placeAskAt = Date.now();
-          return draw(s);
-        }
-        if (Date.now() - (s.ed.placeAskAt || 0) < ED.REMOVE_ARM_MS) return;
-      }
       if (r.ask >= 0) {
         s.ed.placeAskAt = Date.now();
         s.ctx.notify(citedText(s.tt, row, r.cited), 'warn', note);
       } else {
         s.ed.placeEdit = -1;
-        edUndoClear(s.ed); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
+        edMapRemember(s
+          .ed); // SOG-0542 : la suppression d'un lieu s'annule (↶ le rend, avec toutes ses citations : elles se déduisent des lignes)
         s.ed.mapSel = -1;
         if (r.cited.length) s.ctx.notify(removedText(s.tt, row), 'ok', {
           key: note.key
@@ -4486,7 +4493,7 @@ export function edClick(s, b) {
       }
       const made = ED.newPlace(edPlaces(s.ed), b.dataset.kind, s.ed.base);
       if (!made) return;
-      edUndoClear(s.ed); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
+      edMapRemember(s.ed); // SOG-0542 : « + Zone / Point tournant… » s'annule
       s.ed.mapSel = -1;
       s.ed.places = made.rows;
       s.ed.placeEdit = made.at;
