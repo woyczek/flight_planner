@@ -2533,6 +2533,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   fuel models would contradict each other). The figures are kept per signature of the flight's quote (`S.figMemo`). The mentions
   (`figMarks`): the best time and the least trip fuel among the routes that break nothing known, when at least two are priced and the
   figures shown differ. Order of the list: the chosen route, then « conforme », « non vérifiable », « enfreint », then by fuel (a range
-  by its high end, then its low end). « conforme » is one word on the route (`rConformShort`) and explained once under « Calculé à »
+  by its high end, then its low end) — except that the route the engine computed (the head) stays first when its verdict is the best of
+  the list: the variants are added under it and the list does not jump (SOG-0296; F109, F117, F218 unchanged). « conforme » is one word on the route (`rConformShort`) and explained once under « Calculé à »
   (`rConformLine`, with « Seul Eurocontrol valide un plan. »). « pris » becomes « choisie » / « Itinéraire choisi », the word of
   « Choisir ». A point placed from X-Plane serves the computation only. F305 red before; F297 changed on purpose.

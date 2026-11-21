@@ -2865,6 +2865,9 @@ const STYLE = `
 [data-module="fuel"] .fu-rcols{padding:0 13px;margin:.4em 0 -.1em;font-size:.85em}
 [data-module="fuel"] .fu-rconform{margin:.1em 0 .4em;font-size:.85em}
 [data-module="fuel"] .fu-ralts .fu-raltroute{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+/* une proposition de repli garde sa mise en page (SOG-0161) : texte sur toute la largeur, son bouton dessous au téléphone */
+[data-module="fuel"] [data-proposals]>.f-item.fu-ralt>.fu-ract{grid-column:1 / -1;grid-row:auto;justify-self:start}
+[data-module="fuel"] [data-proposals] .fu-raltroute{white-space:normal;word-break:break-word}
 [data-module="fuel"] .fu-rhead [data-verdict]{white-space:nowrap} /* un verdict long passe à la ligne entier */
 @container (min-width: 440px){
   [data-module="fuel"] .fu-ralt>.fu-rfigs{grid-column:1}
@@ -2881,7 +2884,8 @@ const STYLE = `
 /* SOG-0161 : « Prendre cette proposition » sous le texte d'une proposition sur un module étroit (le texte jamais écrasé, comme SOG-0344) */
 [data-module="fuel"] [data-proposals]>.f-item{grid-template-columns:minmax(0,1fr)}
 [data-module="fuel"] [data-proposals]>.f-item>button{justify-self:start}
-@container (min-width: 600px){[data-module="fuel"] [data-proposals]>.f-item{grid-template-columns:minmax(0,1fr) auto}}
+@container (min-width: 600px){[data-module="fuel"] [data-proposals]>.f-item{grid-template-columns:minmax(0,1fr) auto}
+  [data-module="fuel"] [data-proposals]>.f-item.fu-ralt>.fu-ract{grid-column:2;grid-row:1 / span 2;justify-self:end}}
 [data-module="fuel"] .fu-rshare{display:block}
 /* la légende commune des itinéraires (SOG-0134, frame/lib/route_legend.js) : un trait à son motif puis son mot */
 [data-module="fuel"] .rl-legend{display:flex;flex-wrap:wrap;gap:.25em 1em;align-items:center}
@@ -6191,9 +6195,11 @@ function routeAltsDraw() {
   fig = new Map(routes.map(([a, i]) => [i, altFigures(a, i)]));
   marks = figMarks(routes.filter(([a]) => !a.faulty && a.verdict !== 'violates').map(([, i]) => [i, fig.get(i)]));
   const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
-    shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || tier(a) - tier(b) || figCmp(fig.get(i)?.trip, fig
-      .get(j)
-      ?.trip) || i - j),
+    // la route calculée par le moteur (la tête) reste en tête quand son verdict est le meilleur de la liste (SOG-0296 : les variantes
+    // s'ajoutent sous elle, la liste ne saute pas) ; sinon l'ordre de l'ergonome : la choisie, puis par verdict, puis par carburant
+    lead = routes.length && routes.every(([b]) => tier(routes[0][0]) <= tier(b)) ? routes[0][1] : -1,
+    shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || (j === lead) - (i === lead) || tier(a) - tier(b) ||
+      figCmp(fig.get(i)?.trip, fig.get(j)?.trip) || i - j),
     cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
     conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(TX.rConformLine))}</p>` : '';
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
