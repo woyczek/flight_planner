@@ -5559,23 +5559,20 @@
  ],
  "decisions": [
   {
-   "id": "Q-0132",
+   "id": "Q-0136",
    "fiche": "SOG-0532",
    "app": "pilote",
-   "question": "Les voies aériennes de la Belgique : d'où les lire ?",
-   "context": "Mesuré par AeroDB : aucune source de voies belges n'est lue ; les 145 tronçons belges de la base viennent d'un ancien cycle (01/10). Depuis SOG-0532, une route qui traverse la Belgique est dite « non vérifiable » pour la Belgique, nommée, au lieu d'être comptée conforme. Ajouter une source officielle (l'AIP belge) qui serait lue depuis un nouvel hôte est ta décision ; rien n'est ajouté sans ton mot.",
+   "question": "Tu as donné l'adresse de l'eAIP belge : le lanceur peut-il le lire lui-même pendant la mise à jour des données (hôte nouveau ops.skeyes.be, relu par Sécurisation avant) ?",
+   "context": "Ta réponse à Q-0132 donne les pages d'index de l'eAIP de skeyes (AD 0.6, AD 1.1), pas les pages ENR 3 des voies. Un site que le lanceur n'a jamais lu demande ton oui explicite : personne ne lit ce site d'ici là. Avec ton oui, Sécurisation relit l'accès avant tout code, et seules les pages ENR 3 sont lues, une fois par cycle.",
    "options": [
-    "Je colle les pages de voies de l'AIP belge (ENR 3) dans un signalement depuis l'application ; AeroDB les lit",
-    "Le lanceur lit l'eAIP belge (un hôte de plus, relu par Sécurisation avant)",
-    "Plus tard : la Belgique reste « non vérifiable », dite à l'écran",
+    "Oui : le lanceur lit l'eAIP belge (ENR 3) pendant la mise à jour, après la relecture de Sécurisation",
+    "Non : je colle les pages ENR 3",
+    "Plus tard",
     "Autre (dans le texte)"
    ],
-   "since": "2026-11-20",
-   "state": "answered",
-   "recommended": 0,
-   "choice": 0,
-   "text": "https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/eAIP/EB-AD-0.6-en-GB.html#AD0807111358412 https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/eAIP/EB-AD-1.1-en-GB.html#AD0807111358413 depuis https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html",
-   "at": "2026-11-21T13:58:16Z"
+   "since": "2026-11-21",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }

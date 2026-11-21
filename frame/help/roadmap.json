@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7ef01f0",
-  "fiches": 533,
+  "organisation": "ac1198b",
+  "fiches": 539,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1379,6 +1379,24 @@
      "en": "Fuel: “Compute” imposes the points of an existing route as waypoints, and the flight plan loses the level changes written by the engine",
      "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
      "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
+    },
+    {
+     "id": "SOG-0538",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : la note sous « Non vérifiable » sur les règles du RAD d'espaces seuls perd son nombre",
+     "en": "Fuel: the note under “Not verifiable” on airspace-only RAD rules loses its number",
+     "de": "Kraftstoff: Der Hinweis unter „Nicht prüfbar“ zu den RAD-Regeln nur für Lufträume verliert seine Zahl",
+     "es": "Combustible: la nota bajo «No verificable» sobre las reglas del RAD solo de espacios pierde su número"
+    },
+    {
+     "id": "SOG-0540",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : « Auto » peut garder un niveau dont la route est « non vérifiable » avant un niveau dont la route est conforme",
+     "en": "Fuel: “Auto” can keep a level whose route is “not verifiable” before a level whose route conforms",
+     "de": "Kraftstoff: „Auto“ kann eine Flugfläche mit „nicht prüfbarer“ Route vor einer Flugfläche mit konformer Route behalten",
+     "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme"
     }
    ]
   },
@@ -3295,6 +3313,15 @@
      "de": "Routen: die Antwort hängt von der Last des Rechners ab — ESSA → LEMG „unmöglich (Suchbudget)“ unter Last; nach Zuständen begrenzen, nicht nach Zeit",
      "es": "Rutas: la respuesta depende de la carga del equipo — ESSA → LEMG «imposible (presupuesto de búsqueda)» con carga; acotar por estados, no por tiempo",
      "test": true
+    },
+    {
+     "id": "SOG-0539",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : quatre règles refusées par Eurocontrol (EG2720, ED2173, LD3003, LD2098) ne sont nommées nulle part — elles citent le terrain de départ ou d'arrivée et portent sur un espace inconnu",
+     "en": "Routes: four rules refused by Eurocontrol (EG2720, ED2173, LD3003, LD2098) are named nowhere — they cite the departure or arrival aerodrome and concern an unknown airspace",
+     "de": "Routen: vier von Eurocontrol abgelehnte Regeln (EG2720, ED2173, LD3003, LD2098) werden nirgends genannt — sie nennen den Start- oder Zielflugplatz und betreffen einen unbekannten Luftraum",
+     "es": "Rutas: cuatro reglas rechazadas por Eurocontrol (EG2720, ED2173, LD3003, LD2098) no se nombran en ningún sitio — citan el aeródromo de salida o de llegada y tratan de un espacio desconocido"
     }
    ]
   },
@@ -3372,6 +3399,24 @@
      "de": "Kraftstoff: warnen, wenn die Reiseflughöhe der Halbkreisregel nicht folgt (ohne zu sperren)",
      "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)",
      "test": true
+    },
+    {
+     "id": "SOG-0535",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : un direct de route libre dont la bande de niveaux exclut le niveau demandé est pris quand même ; le profil y descend sans que la route écrite le dise",
+     "en": "Routes: a free-route direct whose level band excludes the requested level is used anyway; the profile descends there without the written route saying so",
+     "de": "Routen: Eine Free-Route-Direktverbindung, deren Flugflächenband die angeforderte Flugfläche ausschließt, wird trotzdem genommen; das Profil sinkt dort, ohne dass die geschriebene Route es sagt",
+     "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga"
+    },
+    {
+     "id": "SOG-0537",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : trois défauts de contrat du moteur — no_conforming_route sans valeurs et au mauvais compte, partage « en infraction 0 % » malgré un raccord fautif, rad_unread pour des États non traversés",
+     "en": "Routes: three contract defects of the engine — no_conforming_route without values and miscounted, “in breach 0 %” share despite a faulty connector, rad_unread for States not crossed",
+     "de": "Routen: drei Vertragsfehler der Engine — no_conforming_route ohne Werte und falsch gezählt, Anteil „regelwidrig 0 %“ trotz fehlerhafter Anbindung, rad_unread für nicht überflogene Staaten",
+     "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados"
     }
    ]
   },
@@ -7872,6 +7917,27 @@
      "de": "Abnahmeseite: ein bestätigtes Urteil wird nicht gespeichert, eine Geste bestätigt zwei, Antworten kehren beim Neuladen zurück",
      "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-routes-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Routes ; données",
+    "en": "Routes ; données",
+    "de": "Routes ; données",
+    "es": "Routes ; données"
+   },
+   "items": [
+    {
+     "id": "SOG-0536",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : la route n'arrive pas au terrain — au sud de LATLO la base n'a aucun réseau et le moteur tire un direct de 327 NM jusqu'à LQSA",
+     "en": "Routes: the route does not reach the aerodrome — south of LATLO the base has no network and the engine draws a 327 NM direct to LQSA",
+     "de": "Routen: Die Route erreicht den Flugplatz nicht — südlich von LATLO hat die Datenbank kein Netz und die Engine zieht eine Direktverbindung von 327 NM bis LQSA",
+     "es": "Rutas: la ruta no llega al aeródromo — al sur de LATLO la base no tiene red y el motor traza un directo de 327 NM hasta LQSA"
     }
    ]
   },
