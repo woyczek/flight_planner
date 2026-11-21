@@ -656,11 +656,16 @@ class Nav:
         detour=lambda k:nm(self.nodes[airport],self.nodes[k])+nm(self.nodes[k],other)
         out,unreachable=[],set()
         network={x for e in self.edges for x in (e['a'],e['b'])}
+        limit=None if isdep else getattr(self,'arrival_limit_nm',None)      # SOG-0546 : ARRIVÉE d'un terrain dont le RAD donne une limite de raccord CONNUE et NON NULLE : un point d'arrivée publié pour ce terrain, à une distance au plus égale à cette limite, est un raccord (la règle de la distance de descente, copie en miroir de celle du départ, n'y est plus appliquée) ; limite nulle, inconnue ou complexe, et tous les DÉPARTS : la règle d'avant
         for k in set(g)|set(incoming):
             if '|' in k or k not in self.nodes:continue
             records=[r for r in fra.by_key.get(k,[]) if role in r['terminal'] and fra.airport_match(r[col],ad) and isinstance(r['lower'],(int,float))]
             if not records:continue
-            d=nm(self.nodes[airport],self.nodes[k]);need=max(0,(min(r['lower'] for r in records)-elev))/rate*speed/60
+            d=nm(self.nodes[airport],self.nodes[k])
+            if limit:
+                if d<=limit and k not in have:out.append((detour(k),d,k))
+                continue
+            need=max(0,(min(r['lower'] for r in records)-elev))/rate*speed/60
             if d<need-.1:
                 if k not in network:unreachable.add(k)      # une porte FRA plus proche que la distance de montée, qui n'est sur aucun airway : pas un raccord (le profil vertical la refuserait)
             elif k not in have and d<=max(radius,need+120):out.append((detour(k),d,k))

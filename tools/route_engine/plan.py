@@ -16,7 +16,7 @@ import time
 import json
 import threading
 
-from . import engine, fra, fra_floor, layered, nat_layer, planning, recovery, view
+from . import dct_limits, engine, fra, fra_floor, layered, nat_layer, planning, recovery, view
 
 FIELDS = {
     'proposals': bool, 'sections': bool, 'fl_basis': str, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -313,6 +313,7 @@ def plan(request, root):
     nav.nat_rejected = frozenset((getattr(nav, 'nat', None) or {}).get('kept') or ())      # SOG-0394 : une route GARDÉE d'un message précédent est fermée à toute recherche tant que `sections.solve` ne l'a pas jugée valable à l'heure de son passage
     nav.fl_basis = request.get('fl_basis', 'request')      # SOG-0389 : d'où vient le niveau : `request` (la demande le donne) ou `default` (le défaut du moteur, FL180 : sans niveau) ; dit dans `sections.fl_basis`
     nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
+    nav.arrival_limit_nm = arrival_limit(rad, request)      # SOG-0546 : la limite de raccord d'ARRIVÉE du terrain d'arrivée, quand elle est connue et non nulle (sinon None : l'ancienne règle des portes)
     nav._graph_cost = 0.0      # SOG-0475 : le coût du plus lent des graphes de CE calcul (engine.routing_graph)
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
     context_s = round(time.perf_counter() - context_began, 3)
@@ -627,6 +628,19 @@ def semicircular(p):
     if not isinstance(rule, dict):
         return None
     return 'warning' if rule.get('warnings') else 'undecided' if rule.get('undecided') else 'ok' if rule.get('checked') else 'no_table'
+
+
+MAX_ARRIVAL_LIMIT_NM = 2000      # SOG-0546 : au-delà, la limite lue n'est pas une limite de raccord : l'ancienne règle
+
+
+def arrival_limit(rad, request):
+    """SOG-0546 : la limite du direct au raccord d'ARRIVÉE du terrain d'arrivée de la demande, en NM, quand le RAD la donne CONNUE et NON NULLE (`dct_limits.limit_of`) ; None sinon (limite nulle, inconnue ou complexe, pas de RAD, pas d'arrivée) : les portes FRA restent jugées comme avant (`engine.terminal_gates`)."""
+    arr = str(request.get('arr') or '').upper()
+    if not arr or not getattr(rad, 'book', None):
+        return None
+    limit = dct_limits.limit_of(rad, arr, 'arr')
+    nm = limit['nm']      # relu par `int()` d'un classeur du dépôt de l'utilisateur : un entier, mais sans borne (revue de Sécurisation) : bornée AVANT tout `float()` (10**400 lève OverflowError), et une limite énorme n'ouvrirait pas toutes les portes
+    return float(nm) if limit['state'] == 'known' and isinstance(nm, int) and not isinstance(nm, bool) and 0 < nm <= MAX_ARRIVAL_LIMIT_NM else None
 
 
 def level_summary(level, res):

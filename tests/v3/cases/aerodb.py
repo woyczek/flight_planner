@@ -19948,3 +19948,63 @@ def k502(c):
     rows = {r['fl']: r.get('reason_code') for r in levels['levels']}
     c.eq(rows, {150: None, 250: 'no_route_at_level'}, 'route/levels: the row of the level with no route carries `reason_code`, the row of a level with a route None', what='levels')
     c.eq((P.level_matters({'ok': False, 'error': 'x', 'error_code': 'no_route_at_level', 'issues': []}, None)[0], P.level_matters({'ok': False, 'error': 'x', 'issues': []}, None)[0]), (True, False), '`level_matters` reads the code first: a failure with the code is a matter of level whatever its text; without the code or a word of level, it is not', what='level matters')
+
+
+@case('K503', 'Route engine, SOG-0546: at ARRIVAL, a published arrival point of the FRA book for the terrain, at a distance not above the terrain\'s KNOWN, NON-ZERO connector limit of the RAD, is a connector — the rule of the descent distance (a mirror copy of the departure\'s climb) no longer refuses it; a zero, unknown or complex limit keeps the old rule, and so does every departure',
+      'K', static=True,
+      rule='SOG-0546 (the ergonomist, 21 Nov: « la règle d\'arrivée du 10/11 (e75664efe, SOG-0161) était une copie en miroir, sans fait : un point d\'arrivée publié pour ce terrain, dans la limite de raccord du terrain, ARRIVÉES seulement, limite connue et non nulle ; limite nulle, inconnue ou complexe : l\'ancienne règle »). Measured on the real base (EDDF → LQSA, FL330): the gate KEB, 8.3 NM from the field, was refused (the descent from FL205 needs 71 NM) and the route ended with a direct of 327 NM over the limit of 45 NM; with the rule it ends by KEB. Invented bench: a terrain XEND with an arrival gate 10 NM away, a FRA book of two points (band FL095-FL660) and a rule XE_LIM_AD',
+      )
+def k503(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    fir = lambda ident, lat, lon, role, term, arr, dep, band: ['', '', ident, lat, lon, 'TESTFRA', role, term, arr, dep, '-', band, 'H24', 'XXXX', '']
+
+    def fly(limit, dep_gate_near=False):
+        rows = [fir('GATED', 'N570000', 'E0170000', 'I', 'D', '', 'XSTA', 'FL095 / FL660'), fir('GATEA', 'N501000', 'E0100000', 'I', 'A', 'XEND', '', 'FL095 / FL660')]
+        book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': i + 2, 'v': v} for i, v in enumerate(rows)]}
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+                ai = json.load(f)
+            ai['data']['rows'] += [['XSTA', 'DEPART', 59.0, 18.0, 20, 0, 0], ['XEND', 'ARRIVE', 50.0, 10.0, 300, 0, 0]]
+            with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+                json.dump(ai, f)
+            sheets = RF.rad_sheets()
+            if limit is not None:
+                for name, rows3 in sheets:
+                    if name == 'Annex 3A Conditions':
+                        rows3.append(['', '29 OCT 2026 [2611]', 'UFN', 'XE_LIM_AD', 'Limits', f'1. XE** ARR/DEP DCT = {limit}NM'] + [''] * 11)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, sheets)
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([book], f)
+            request = V.to_request({'action': 'compute', 'adep': 'XSTA', 'adest': 'XEND', 'fl': 330, 'date': '2026-11-10T12:00', 'enable_fra': True, 'alternatives': False, 'proposals': False})
+            p = P.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+            return p.get('ok'), (p.get('route') or '').split()[-3:], p.get('error_code')
+
+    c.eq(fly(50), (True, ['GATEA', 'DCT', 'XEND'], None), 'with a KNOWN, NON-ZERO limit of 50 NM (XE_LIM_AD) the arrival gate GATEA, 10 NM from XEND, is a connector: the route ends GATEA DCT XEND (red before: the gate was refused, the descent from its floor FL095 needing about 35 NM, and the flight had no route)', what='limit 50')
+    import types
+    real, rad = P.dct_limits.limit_of, types.SimpleNamespace(book=True)
+    try:
+        said = {}
+        for label, nm, state in (('huge', 10 ** 400, 'known'), ('above', 2001, 'known'), ('top', 2000, 'known'), ('bool', True, 'known'), ('float', 45.0, 'known'), ('zero', 0, 'known'), ('complex', None, 'complex'), ('ok', 45, 'known')):
+            P.dct_limits.limit_of = lambda *a, _nm=nm, _st=state: {'state': _st, 'nm': _nm, 'rule': 'XE_LIM_AD', 'struck': False}
+            said[label] = P.arrival_limit(rad, {'arr': 'XEND'})
+        P.dct_limits.limit_of = lambda *a: {'state': 'known', 'nm': 45, 'rule': 'XE_LIM_AD', 'struck': False}
+        said['no arrival'] = P.arrival_limit(rad, {'arr': ''})
+        said['no book'] = P.arrival_limit(types.SimpleNamespace(book=None), {'arr': 'XEND'})
+    finally:
+        P.dct_limits.limit_of = real
+    c.eq(said, {'huge': None, 'above': None, 'top': 2000.0, 'bool': None, 'float': None, 'zero': None, 'complex': None, 'ok': 45.0, 'no arrival': None, 'no book': None}, 'the limit read from the RAD (a book of the user\'s repository) is bounded BEFORE any `float()`: an integer from 1 to 2000 NM is used; 10**400 (OverflowError before the bound, which failed the whole plan), 2001, a boolean, a float, zero, a complex limit, no arrival, no book: None, the old rule (red without the bound: the exception)', what='bound')
+    c.eq((fly(0)[0], fly(None)[0]), (False, False), 'a ZERO limit (0 NM) and an UNKNOWN one (no rule for the terrain) keep the old rule: the gate 10 NM away is refused, as before (no route here: nothing else reaches the terrain)', what='zero and unknown')
