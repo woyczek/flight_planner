@@ -4,7 +4,7 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "82bb892",
+  "organisation": "0f96264",
   "fiches": 542,
   "untranslated": 0,
   "priorities": 481,
@@ -2302,11 +2302,12 @@
     {
      "id": "SOG-0502",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte et atelier : une croisière qui passe sous le relief n'est pas signalée dans la coupe",
      "en": "Map and workshop: a cruise below terrain is not flagged on the vertical profile",
      "de": "Karte und Werkstatt: Ein Reiseflug unter dem Gelände wird im Vertikalprofil nicht gemeldet",
-     "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical"
+     "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical",
+     "test": true
     }
    ]
   },

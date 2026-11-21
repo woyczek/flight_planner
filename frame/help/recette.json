@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-21",
-  "tests": 374,
+  "tests": 375,
   "verdicts": 232
  },
  "apps": [
@@ -5154,6 +5154,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T18:54:07Z"
+  },
+  {
+   "id": "SOG-0502",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte et atelier : une croisière qui passe sous le relief n'est pas signalée dans la coupe",
+    "en": "Map and workshop: a cruise below terrain is not flagged on the vertical profile",
+    "de": "Karte und Werkstatt: Ein Reiseflug unter dem Gelände wird im Vertikalprofil nicht gemeldet",
+    "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical"
+   },
+   "test": "Recharge la page. Carte : une route dont la croisière passe sous le relief, puis une autre où elle passe à moins de 500 ft au-dessus. Sur la coupe, la partie fautive du trait de croisière est rouge (sous le relief) ou orange (moins de 500 ft), avec une marque au point le plus bas qui porte le nombre ; sous la coupe, une phrase : « Croisière sous le relief : … ft trop bas, à … NM après {point} » ou « Croisière à … ft seulement au-dessus du relief, à … NM après {point} ». Au-dessus de 500 ft : rien. La même chose dans le profil de l'atelier de missions. Dis si la distance « après {point} » te paraît fausse.",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T16:56:44Z"
   },
   {
    "id": "SOG-0503",
