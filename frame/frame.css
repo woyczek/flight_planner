@@ -1627,6 +1627,48 @@ p.f-back {
 .f-rc-item[data-state="known"] {
   border-left-color: var(--sog-warn)
 }
+/* les chemins de test de la recette (recette.js, frame/lib/recette_paths.js) : un chemin se replie, ses pas sont des cartes à trois états (bon, mauvais, pas joué), ses tests couverts sont repliés dessous */
+.f-rc-path {
+  border-left: 4px solid var(--sog-border);
+  padding-left: 10px
+}
+.f-rc-path>summary {
+  flex-wrap: wrap;
+  gap: 4px 8px
+}
+.f-rc-path>summary [data-summary-note] {
+  flex-basis: 100%
+}
+.f-rc-path[open]>summary [data-summary-note] {
+  display: none
+}
+.f-rc-covered>summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center
+}
+.f-rc-rest {
+  font-size: 1.1rem;
+  margin: 16px 0 6px
+}
+.f-rc-step[data-state="todo"] {
+  border-left-color: var(--sog-border)
+}
+.f-rc-step .f-row button[aria-pressed="true"] {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px var(--sog-muted)
+}
+.f-rc-step .f-row button[data-sbtn="skip"][aria-pressed="true"] {
+  font-weight: 400;
+  box-shadow: inset 0 0 0 1px var(--sog-border)
+}
+.f-rc-step[data-state="ok"] .f-row button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--sog-ok)
+}
+.f-rc-step[data-state="ko"] .f-row button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--sog-err, var(--sog-warn))
+}
 .f-rc-item p {
   margin: 4px 0
 }

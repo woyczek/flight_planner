@@ -3695,6 +3695,71 @@ def k269(c):
         c.ok("_write_json(LNMPERF_STATE, {'folder': folder})\n            except OSError" in src and "'error': 'ecriture'" in src and '_replace_retry(tmp, path)' in src, '', 'the folder route and the file route catch the write error and answer a readable 503')
 
 
+@case('K513', 'The test paths of the recette in tools/recette_build.py (RECETTE_CHEMINS.json): read as an UNTRUSTED input (only the fields of the schema are copied, every text and number bounded, the ids matched), a path waiting for its fiche stays out until the fiche is delivered, an unreadable file gives no `paths` and the list of before, the bounds are the ones of frame/lib/recette_paths.js', 'K',
+      static=True, rule="the ergonomist's Q4 of 21 Nov 2026 (the user has 99 essays without a verdict): the relay writes organisation/RECETTE_CHEMINS.json (a few paths of use, the majors, the essays without test); tools/recette_build.py embeds it in frame/help/recette.json under `paths`; the page reads it again with frame/lib/recette_paths.js (A361). Nothing is read from the file but the fields of the schema; an unreadable file changes nothing of today's list")
+def k513(c):
+    import importlib
+    import json
+    import re
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    RB = importlib.import_module('recette_build')
+    backlog = '\n'.join(f'### {i} — Titre {i}\n- **Thème :** Pilote\n- **État :** {s}\n' for i, s in (('SOG-0001', 'Livré, à valider'), ('SOG-0002', 'Livré, à valider'), ('SOG-0003', 'Planifié'), ('SOG-0004', 'Livré, à valider')))
+    step = lambda g, f, **kw: {'gesture': g, 'expect': 'e', 'fiches': f, **kw}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        org = Path(td)
+        (org / 'BACKLOG.md').write_text(backlog, encoding='utf-8')
+        (org / 'RECETTE_TESTS.json').write_text(json.dumps({'tests': {f'SOG-000{n}': {'test': 'x', 'since': '2026-11-01'} for n in (1, 2, 4)}}), encoding='utf-8')
+        out = lambda: RB.build(str(org))
+        write = lambda d: (org / 'RECETTE_CHEMINS.json').write_text(d if isinstance(d, str) else json.dumps(d), encoding='utf-8')
+        today = out()
+        c.eq('paths' in today, False, 'no file: no `paths`, the list of today', what='absent')
+        good = {'schema': 1, 'preamble': 'Relance.', 'order': ['C1', 'C2'], 'majors_first': ['SOG-0001'], 'no_test': {'SOG-0004': 'rien de visible', 'SOG-9999': 'inconnue'},
+                'paths': [{'id': 'C1', 'title': 'Un', 'where': 'ordinateur', 'note': 'n', 'steps': [step('a', ['SOG-0001', 'SOG-0002']), step('b', ['SOG-0002'], optional=True)]},
+                          {'id': 'C2', 'title': 'Deux', 'show_when_delivered': 'SOG-0003', 'steps': [step('c', ['SOG-0003'])]},
+                          {'id': 'C7', 'title': 'Atelier', 'folded': True, 'ref': 'SOG-0004', 'covers': ['SOG-0001'], 'steps': []}]}
+        write(good)
+        d = out()
+        P = d.get('paths') or {}
+        c.eq(([p['id'] for p in P.get('paths', [])], P.get('order'), P.get('majors_first'), P.get('preamble')), (['C1', 'C7'], ['C1', 'C2'], ['SOG-0001'], 'Relance.'),
+             'the paths in the file: the one that waits for SOG-0003 (planned) stays out, its order and the majors are kept', what='built')
+        c.eq(([k for k in P['paths'][0]], P['paths'][0]['steps'][1].get('optional'), P['paths'][1].get('folded'), P['paths'][1].get('ref'), P['paths'][1].get('covers')),
+             (['id', 'title', 'where', 'steps', 'note'], True, True, 'SOG-0004', ['SOG-0001']), 'the fields of a path: only the ones of the schema; optional, folded, ref and covers kept', what='fields')
+        c.eq([(n['id'], n['title']['fr'], n['reason']) for n in P['no_test']], [('SOG-0004', 'Titre SOG-0004', 'rien de visible')], 'an essay without test: its title read in the backlog, its reason; an unknown fiche is dropped', what='no test')
+        c.eq({k: v for k, v in d.items() if k != 'paths'} == {k: v for k, v in today.items()}, True, 'the paths change nothing else of the document (tests, decisions, apps)', what='rest')
+        # the fiche is delivered: its path appears
+        (org / 'BACKLOG.md').write_text(backlog.replace('Planifié', 'Livré, à valider'), encoding='utf-8')
+        c.eq([p['id'] for p in out()['paths']['paths']], ['C1', 'C2', 'C7'], 'once SOG-0003 is delivered the path C2 is shown', what='delivered')
+        (org / 'BACKLOG.md').write_text(backlog, encoding='utf-8')
+        # an unreadable file, a file of another schema, a file with nothing to show: no `paths`
+        for name, raw in (('invalid JSON', '{"paths": ['), ('a list', '[1, 2]'), ('another schema', json.dumps({**good, 'schema': 2})), ('nothing to show', json.dumps({'schema': 1, 'paths': [{'id': 'x'}], 'majors_first': ['no']}))):
+            write(raw)
+            c.eq('paths' in out(), False, f'{name}: no `paths`, the list of today', what=name)
+        # the hostile file: nothing is read but the fields; texts and numbers bounded; ids matched
+        L = RB.PATH_LIMITS
+        hostile_steps = [step('g\x01' * 800, ['SOG-0001', 'SOG-1', 'sog-0002', 5, None, 'SOG-0001'] + [f'SOG-{1000 + i}' for i in range(40)], optional='yes', extra=1), step('', ['SOG-0002']), 'x', None] + [step(f's{i}', []) for i in range(60)]
+        hostile_paths = [{'id': 'C1', 'title': 't\x00' * 400, 'where': 'w' * 400, 'note': 'n' * 900, 'ref': 'nope', 'folded': 'yes', '__proto__': {'y': 1}, 'constructor': 'x',
+                          'steps': hostile_steps, 'covers': ['SOG-0001'] * 3 + [f'SOG-{2000 + i}' for i in range(200)]},
+                         {'id': 'C1', 'title': 'dup', 'steps': [step('z', [])]}, {'id': 'C1000', 'title': 'long', 'steps': [step('z', [])]}, 'x'] + [{'id': f'C{i + 10}', 'steps': [step('z', [])]} for i in range(60)]
+        write({'schema': 1, 'preamble': 'p' * 900, 'order': ['C1', 7, 'x', 'C1000'], 'majors_first': ['SOG-0001', 'SOG-12', 3, 'SOG-0001'], '__proto__': {'x': 1}, 'extra': 1, 'paths': hostile_paths,
+               'no_test': {**{f'SOG-{i:04d}': 'r' * 900 for i in (1, 2, 3, 4)}, 'nope': 'x', 'SOG-0001 ': 'x'}})
+        H = out()['paths']
+        p0 = H['paths'][0]
+        c.eq((len(H['preamble']), H['order'], H['majors_first'], len(H['paths'])), (L['preamble'], ['C1'], ['SOG-0001'], L['paths'] - 3), 'a hostile file: the preamble bounded, the order and the majors matched and without doubles, thirty paths read at most (the duplicate, the badly formed id and the string are among them: twenty-seven kept)', what='hostile top')
+        c.eq((len(p0['title']), len(p0['where']), len(p0['note']), 'ref' in p0, 'folded' in p0, sorted(p0), len(p0['steps']), len(p0['covers'])),
+             (L['title'], L['where'], L['note'], False, False, ['covers', 'id', 'note', 'steps', 'title', 'where'], L['steps'] - 3, L['covers']), 'a hostile path: texts and counts bounded, a wrong `ref` or `folded` dropped, no key copied from the file', what='hostile path')
+        s0 = p0['steps'][0]
+        c.eq((len(s0['gesture']), bool(re.search(r'[\x00-\x1f]', s0['gesture'] + p0['title'])), s0['fiches'][:2], len(s0['fiches']), 'optional' in s0, sorted(s0)), (L['gesture'], False, ['SOG-0001', 'SOG-1000'], L['fiches'], False, ['expect', 'fiches', 'gesture']),
+             'a hostile step: no control character, only SOG-nnnn ids without doubles, twelve at most, `optional` only when true, no extra key', what='hostile step')
+        c.eq(all(len(n['reason']) == L['reason'] for n in H['no_test']) and [n['id'] for n in H['no_test']] == ['SOG-0001', 'SOG-0002', 'SOG-0003', 'SOG-0004'], True, 'the reasons of the essays without test are bounded, a badly formed id is dropped', what='hostile no test')
+        # the bounds are the ones of the page
+        js = (c.root / 'frame' / 'lib' / 'recette_paths.js').read_text(encoding='utf-8')
+        lim = {k: int(v) for k, v in re.findall(r'^  (\w+): (\d+),?$', js[js.index('export const LIMITS'):js.index('/** Un texte')], re.M)}
+        c.eq({k: lim.get('noTest' if k == 'no_test' else k) for k in L}, L, 'the bounds of tools/recette_build.py are the ones of frame/lib/recette_paths.js (what the builder lets through, the page lets through)', what='limits')
+
+
 @case('K270', "recette/verdict keeps the history of a fiche (SOG-0351): an entry put back to test is its history alone, twenty verdicts at most, a hostile history refused, a verdict is never erased by a write that does not carry it, the generator carries the history", 'K',
       static=True, rule="SOG-0351 (the user lost a comment by putting a test back): RECETTE.json items may carry `history` (twenty { verdict, comment?, at? } at most, a failure or reservations with their comment); an entry without verdict is valid only with a non-empty history (a fiche put back to test); a `set` that replaces a verdict or sends the entry without its history keeps the old history and adds the replaced verdict (once); a file read from elsewhere is cleaned; tools/recette_build.py bounds and carries `history`")
 def k270(c):

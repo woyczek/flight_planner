@@ -13,7 +13,7 @@ Inputs, all in the organisation folder (the single source, like the roadmap of t
   · roadmap_i18n.json   the translated titles (en, de, es), shared with the roadmap.
 
 Output: { schema: 'sog-recette/1', generated: { tool, at, tests, verdicts }, apps, tests: [{ id, app, title: {fr, en, de, es},
-test (French: the user's language of work), since, state: 'todo' | 'known' | 'ok' | 'ko', comment?, at?, delivered?, previous? }] }.
+test (French: the user's language of work), since, state: 'todo' | 'known' | 'ok' | 'ko', comment?, at?, delivered?, previous? }], paths? }.
   · 'todo'  the fiche is delivered and waits for the user's verdict;
   · 'known' the fiche is open again or in progress: said on its test (« en cours, ne pas retester »), so that a known defect
             is not reported twice;
@@ -32,7 +32,17 @@ The points to decide (SOG-0241; the user, 11 Nov 2026: « comme pour la recette,
                               screen: an untrusted input like the verdicts; optional.
 Output `decisions`: [{ id, fiche, app, question, context, options, recommended?, since, state: 'todo' | 'answered', choice?,
 text?, at? }]; a closed question (its fiche is dispatched) leaves the list; an answer with neither a valid choice nor a text
-does not count."""
+does not count.
+
+The test paths (the user, 21 Nov 2026: « quelques chemins d'usage valident beaucoup de fiches d'un coup »; the ergonomist's Q4):
+  · RECETTE_CHEMINS.json  { schema: 1, preamble, order: ['C1', …], paths: [{ id: 'C1', title, where, note?, folded?, show_when_delivered?,
+                          ref?, covers?: [SOG-…], steps: [{ gesture, expect, fiches: [SOG-…], optional? }] }], majors_first: [SOG-…],
+                          no_test: { 'SOG-…': reason } }, written by the relay alone; optional — an unreadable or empty file gives no `paths`
+                          and the list is the one of before. An UNTRUSTED input like the verdicts: only the fields above are copied (never
+                          a key read from the file), every text and number is bounded (the same limits as frame/lib/recette_paths.js, which reads
+                          the result again), the ids are matched.
+Output `paths`: { preamble, order, paths: [ … as above, minus show_when_delivered ], majors_first, no_test: [{ id, title: {fr, en, de, es}, reason }] };
+a path with `show_when_delivered` stays out until that fiche is delivered (its fiches are then listed one by one, as before)."""
 import argparse
 import datetime
 import io
@@ -54,6 +64,10 @@ _COMMITS = None
 
 
 QID = re.compile(r'^Q-\d{4}$')
+PID = re.compile(r'^C\d{1,3}$')
+# the bounds of the test paths: the same as LIMITS of frame/lib/recette_paths.js (the case K513 compares them)
+PATH_LIMITS = {'paths': 30, 'steps': 40, 'fiches': 12, 'covers': 80, 'majors': 40, 'no_test': 200, 'id': 20, 'title': 120, 'where': 30,
+               'note': 300, 'preamble': 300, 'gesture': 600, 'expect': 600, 'reason': 200}
 STAMP = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
 
@@ -182,6 +196,70 @@ def decisions(org, fs):
     return sorted(out, key=lambda r: (r['state'] != 'todo', r['id']))
 
 
+def fiche_ids(value, n):
+    """The distinct SOG-nnnn ids of a list read from the paths file, n at most."""
+    out = []
+    for x in value if isinstance(value, list) else []:
+        if isinstance(x, str) and ID.match(x) and x not in out:
+            out.append(x)
+    return out[:n]
+
+
+def text_of(value, n):
+    """A text of the paths file: no control character, bounded; '' when it is not a text."""
+    return clean(value, n) if isinstance(value, str) else ''
+
+
+def chemins(org, fs):
+    """The test paths of RECETTE_CHEMINS.json (see the header), or {} when the file is absent, unreadable or holds nothing to show."""
+    raw = read_json(os.path.join(org, 'RECETTE_CHEMINS.json'))
+    if not raw or raw.get('schema') != 1:
+        return {}
+    L = PATH_LIMITS
+    paths = []
+    for p in (raw.get('paths') if isinstance(raw.get('paths'), list) else [])[:L['paths']]:
+        if not isinstance(p, dict) or not isinstance(p.get('id'), str) or not PID.match(p['id']) or any(q['id'] == p['id'] for q in paths):
+            continue
+        when = p.get('show_when_delivered')
+        if isinstance(when, str) and ID.match(when) and not (when in fs and RB.state_of(fs[when]['etat']) == 'done'):
+            continue                         # waits for its fiche: not shown yet, its fiches stay in the list one by one
+        steps = []
+        for s in (p.get('steps') if isinstance(p.get('steps'), list) else [])[:L['steps']]:
+            if isinstance(s, dict) and text_of(s.get('gesture'), L['gesture']):
+                step = {'gesture': text_of(s['gesture'], L['gesture']), 'expect': text_of(s.get('expect'), L['expect']),
+                        'fiches': fiche_ids(s.get('fiches'), L['fiches'])}
+                if s.get('optional') is True:
+                    step['optional'] = True
+                steps.append(step)
+        covers = fiche_ids(p.get('covers'), L['covers'])
+        if not steps and not covers:
+            continue
+        row = {'id': p['id'], 'title': text_of(p.get('title'), L['title']) or p['id'], 'where': text_of(p.get('where'), L['where']),
+               'steps': steps}
+        if text_of(p.get('note'), L['note']):
+            row['note'] = text_of(p['note'], L['note'])
+        if p.get('folded') is True:
+            row['folded'] = True
+        if isinstance(p.get('ref'), str) and ID.match(p['ref']):
+            row['ref'] = p['ref']
+        if covers:
+            row['covers'] = covers
+        paths.append(row)
+    i18n = read_json(os.path.join(org, 'roadmap_i18n.json'))
+    no_test = []
+    for fid, why in list((raw.get('no_test') if isinstance(raw.get('no_test'), dict) else {}).items())[:L['no_test']]:
+        if isinstance(fid, str) and ID.match(fid) and fid in fs and isinstance(why, str):
+            tr = i18n.get(fid) if isinstance(i18n.get(fid), dict) else {}
+            no_test.append({'id': fid, 'title': {'fr': fs[fid]['title'], **{k: str(tr[k])[:200] for k in ('en', 'de', 'es') if isinstance(tr.get(k), str)}},
+                            'reason': clean(why, L['reason'])})
+    majors = fiche_ids(raw.get('majors_first'), L['majors'])
+    if not paths and not majors and not no_test:
+        return {}
+    order = [x for x in (raw.get('order') if isinstance(raw.get('order'), list) else []) if isinstance(x, str) and PID.match(x)][:L['paths']]
+    return {'preamble': text_of(raw.get('preamble'), L['preamble']), 'order': order, 'paths': paths, 'majors_first': majors,
+            'no_test': sorted(no_test, key=lambda r: r['id'])}
+
+
 def build(org):
     """The acceptance document."""
     fs = fiches(org)
@@ -214,11 +292,15 @@ def build(org):
         if hs.get(fid):
             row['history'] = hs[fid]
         tests.append(row)
-    return {'schema': 'sog-recette/1',
-            'generated': {'tool': 'tools/recette_build.py', 'at': datetime.date.today().isoformat(), 'tests': len(tests),
+    doc = {'schema': 'sog-recette/1',
+           'generated': {'tool': 'tools/recette_build.py', 'at': datetime.date.today().isoformat(), 'tests': len(tests),
                           'verdicts': sum(1 for t in tests if t['state'] in ('ok', 'ko', 'reserve'))},
-            'apps': [a for a, _, _ in RB.APPS] if hasattr(RB, 'APPS') else ['pilote', 'compagnie', 'maintenance', 'stats'],
-            'tests': tests, 'decisions': decisions(org, fs)}
+           'apps': [a for a, _, _ in RB.APPS] if hasattr(RB, 'APPS') else ['pilote', 'compagnie', 'maintenance', 'stats'],
+           'tests': tests, 'decisions': decisions(org, fs)}
+    paths = chemins(org, fs)
+    if paths:
+        doc['paths'] = paths
+    return doc
 
 
 def main():

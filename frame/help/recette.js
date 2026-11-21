@@ -239,6 +239,44 @@
     'Der Launcher konnte die Antworten nicht schreiben: Sie bleiben auf diesem Gerät.',
     'El lanzador no pudo escribir las respuestas: se quedan en este dispositivo.'
   ];
+  // ---- les chemins de test (frame/lib/recette_paths.js ; décision de l'ergonome, Q4 du 21 nov. 2026) : quelques parcours qui valident beaucoup de fiches d'un coup, avant les essais isolés
+  T.pathsTitle = ['Chemins de test', 'Test paths', 'Testpfade', 'Rutas de prueba'];
+  T.majorsTitle = ['À voir en premier', 'To see first', 'Zuerst ansehen', 'Para ver primero'];
+  T.restTitle = ['Les tests qu’aucun chemin ne couvre', 'The tests no path covers', 'Die Tests, die kein Pfad abdeckt',
+    'Las pruebas que ninguna ruta cubre'
+  ];
+  T.noTestTitle = ['Sans test', 'No test', 'Ohne Test', 'Sin prueba'];
+  T.covered = [
+    ['{n} test couvert', '{n} tests couverts'],
+    ['{n} test covered', '{n} tests covered'],
+    ['{n} Test abgedeckt', '{n} Tests abgedeckt'],
+    ['{n} prueba cubierta', '{n} pruebas cubiertas']
+  ];
+  T.stepsDone = ['{k} étape(s) jouée(s) sur {n}', '{k} of {n} step(s) played', '{k} von {n} Schritt(e) gespielt',
+    '{k} de {n} paso(s) probado(s)'
+  ]; // « 3 étapes jouées sur 4 » : les marques (s) sont accordées par le cadre (plural.js)
+  T.stepOk = ['Bon', 'Good', 'Gut', 'Bien'];
+  T.stepKo = ['Mauvais', 'Bad', 'Schlecht', 'Mal'];
+  T.stepSkip = ['Non jouée', 'Not played', 'Nicht gespielt', 'No probado'];
+  T.stepNeed = ['Dites ce qui ne va pas.', 'Say what is wrong.', 'Sagen Sie, was nicht stimmt.',
+    'Diga qué falla.'
+  ]; // sous un « Mauvais » sans mots : il n'y a pas de refus ici
+  T.optional = ['si l’occasion se présente', 'if the opportunity arises', 'wenn sich die Gelegenheit bietet',
+    'si se presenta la ocasión'
+  ];
+  T.pathAll = ['Tout le chemin est bon', 'The whole path is good', 'Der ganze Pfad ist gut', 'Todo el recorrido está bien'];
+  T.stepResult = ['Résultat de l’étape {n}', 'Result of step {n}', 'Ergebnis von Schritt {n}', 'Resultado del paso {n}'];
+  T.stepCommentFor = ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt',
+    '{p}, paso {n}: qué falla'
+  ];
+  T.pathNoted = {
+    ok: ['Chemin {p} : {n} fiche(s) validée(s)', 'Path {p}: {n} card(s) passed', 'Pfad {p}: {n} Karte(n) bestanden',
+      'Ruta {p}: {n} ficha(s) válida(s)'
+    ],
+    ko: ['Chemin {p} : {n} fiche(s) refusée(s)', 'Path {p}: {n} card(s) failed', 'Pfad {p}: {n} Karte(n) abgelehnt',
+      'Ruta {p}: {n} ficha(s) rechazada(s)'
+    ]
+  };
   /** Ligne [fr, en, de, es] d'un texte du fichier ({ fr, en, de, es }) ; une langue absente reprend l'anglais, puis le français. */
   const row = o => {
     if (typeof o === 'string') return o;
@@ -251,7 +289,8 @@
   // les règles d'une entrée (un verdict, son historique, une fiche remise à tester) sont celles de frame/lib/recette_verdicts.js — les mêmes que celles de l'adaptateur qui écrit le fichier du dépôt (SOG-0357) ;
   // la bibliothèque est chargée au début de l'écran
   let R = null,
-    TM = null;
+    TM = null,
+    PA = null;
   const histItem = v => R.histItem(v);
   const histOf = h => R.histOf(h);
   const entryOf = v => R.entryOf(v);
@@ -287,7 +326,10 @@
     return {
       pending,
       unsent: (Array.isArray(s?.unsent) ? s.unsent : []).filter(k => typeof k === 'string' && Object.hasOwn(pending, k)),
-      open: Object.fromEntries(SECTIONS.map(k => [k, s?.open?.[k] === true]))
+      open: Object.fromEntries(SECTIONS.map(k => [k, s?.open?.[k] === true])),
+      popen: s?.popen && typeof s.popen === 'object' && !Array.isArray(s.popen) ? s.popen :
+      {}, // les chemins dépliés ou repliés (recette_paths.js)
+      steps: s?.steps ?? null // les états de pas de l'appareil, relus par PA.stepsOf
     };
   };
   const saveStore = async (c, part) => {
@@ -405,11 +447,15 @@
     } = c;
     R ||= await import(new URL('frame/lib/recette_verdicts.js', c.root).href);
     TM ||= await import(new URL('frame/lib/time.js', c.root).href).catch(() => null);
+    PA ||= await import(new URL('frame/lib/recette_paths.js', c.root).href).catch(() =>
+      null); // sans elle : pas de chemins, la liste d'avant
     const d = await load(c);
     if (!d || !Array.isArray(d.tests)) {
       view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-card">${esc(t(T.missing))}</p>`;
       return;
     }
+    const P = PA ? PA.pathsOf(d.paths) : null; // les chemins de test : une entrée non fiable, relue ici
+    const noTestIds = new Set(P?.noTest.map(n => n.id) || []); // sortis de la liste, avec leur raison
     const tests = d.tests.filter(x => x && typeof x === 'object' && ID.test(x.id)).slice(0, MAX_ITEMS).map(x => ({
       id: x.id,
       app: typeof x.app === 'string' ? x.app.slice(0, 20) : '',
@@ -427,7 +473,7 @@
         at: x.at,
         history: x.history
       }) : null
-    }));
+    })).filter(x => !noTestIds.has(x.id));
     const apps = (Array.isArray(d.apps) ? d.apps : []).filter(a => typeof a === 'string' && tests.some(x => x.app === a));
     const saved = await readStore(c);
     const savedD = await readStoreD(c);
@@ -456,7 +502,15 @@
       dedit: new Set(),
       ddraft: {},
       dneed: '',
-      dwhy: '' // pourquoi la dernière réponse n'est pas partie : unknown (le lanceur n'a pas ce verbe), offline, failed
+      dwhy: '', // pourquoi la dernière réponse n'est pas partie : unknown (le lanceur n'a pas ce verbe), offline, failed
+      // les chemins de test : les états de pas (clé « C1:3 »), le pas dont on écrit les mots, les chemins repliés ou dépliés, les replis ouverts (le temps de l'écran)
+      steps: PA && P ? PA.stepsOf(saved.steps, P.paths) : {},
+      sdraft: {},
+      sko: '',
+      sneed: '',
+      popen: Object.fromEntries(Object.entries(saved.popen).filter(([k, v]) => PA?.PID.test(k) && typeof v === 'boolean').slice(0,
+        30)),
+      copen: {}
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
     /** L'entrée en vigueur d'une fiche dans les FICHIERS : la plus récente, par son heure, de celle du lanceur (organisation/RECETTE.json) et de celle du dépôt (le téléphone) — SOG-0357. */
@@ -514,7 +568,8 @@
       const h = `${Math.round(Math.min(Math.max(ta.scrollHeight + edge, ta.offsetHeight), cap))}px`;
       if (ta.style.height !== h) ta.style.height = h;
     };
-    const fitAll = root => root.querySelectorAll('textarea[data-comment], textarea[data-dtext]').forEach(fit);
+    const fitAll = root => root.querySelectorAll('textarea[data-comment], textarea[data-dtext], textarea[data-step-comment]').forEach(
+      fit);
     /** Le compteur du champ : écrit seulement si sa valeur change. */
     const count = ta => {
       const el = ta.parentElement?.querySelector('[data-count]');
@@ -548,6 +603,189 @@
         <label class="f-field"><span data-comment-for>${esc(who)}</span><textarea data-comment="${esc(x.id)}" aria-label="${esc(who)}" placeholder="${esc(x.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea>${counter(ui.draft[x.id])}</label>
         ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(ui.needKind === 'reserve' ? T.needReserve : T.need))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-reserve="${esc(x.id)}">${esc(t(T.reserveBtn))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
+    };
+    // ---- les chemins de test (frame/lib/recette_paths.js) : les pas, leurs trois états (bon, mauvais, non jouée) et le verdict de leurs fiches (la règle : derive)
+    const cites = P ? PA.citesOf(P.paths) : new Map();
+    const cover = P ? PA.coverage(P.paths, tests.filter(x => !known(x)).map(x => x.id)) :
+      new Map(); // essai → le premier chemin qui le couvre : jamais listé deux fois
+    const stepAt = new Map();
+    for (const p of P?.paths || []) p.steps.forEach((s, i) => stepAt.set(PA.stepKey(p.id, i), {
+      p,
+      s,
+      i
+    }));
+    const stepState = k => ui.steps[k]?.s || null;
+    const usePaths = () => !!P && !ui.app; // filtré par application, la liste est celle d'avant : tous les essais de l'application
+    const pathOpen = p => Object.hasOwn(ui.popen, p.id) ? ui.popen[p.id] : !p.folded;
+    const cnt = (forms, n) => t(forms.map(f => f[n === 1 ? 0 : 1])).replace('{n}', n);
+    const stepHtml = (p, s, i) => {
+      const k = PA.stepKey(p.id, i),
+        st = stepState(k),
+        e = ui.steps[k],
+        asking = ui.sko === k,
+        who = t(T.stepCommentFor, {
+          p: p.id,
+          n: i + 1
+        }),
+        btn = (kind, label) => `<button type="button" data-sbtn="${kind}" data-skey="${esc(k)}" aria-pressed="${st === kind || (kind === 'skip' && !st)}">${esc(label)}</button>`;
+      return `<li class="f-rc-item f-rc-step" data-step="${esc(k)}" data-state="${st || 'todo'}"${s.optional ? ' data-optional' : ''}>
+        <p class="f-rc-gesture"><b class="f-rm-id">${i + 1}.</b> <span lang="fr" data-gesture>${esc(s.gesture)}</span>${s.optional ? ` <small class="f-muted" data-optional-tag>${esc(t(T.optional))}</small>` : ''}</p>
+        ${s.expect ? `<p class="f-rc-test" lang="fr" data-expect>${esc(s.expect)}</p>` : ''}
+        ${st === 'ko' && e.c && !asking ? `<p data-step-note>${esc(e.c)}</p>` : ''}
+        ${asking ? `<label class="f-field"><span data-comment-for>${esc(who)}</span><textarea data-step-comment="${esc(k)}" aria-label="${esc(who)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.sdraft[k] ?? e?.c ?? '')}</textarea>${counter(ui.sdraft[k] ?? e?.c)}</label>${ui.sneed === k ? `<p class="f-warn" data-need>${esc(t(T.stepNeed))}</p>` : ''}` : ''}
+        <div class="f-row" role="group" aria-label="${esc(t(T.stepResult, { n: i + 1 }))}">${btn('ok', t(T.stepOk))}${btn('ko', t(T.stepKo))}${btn('skip', t(T.stepSkip))}</div></li>`;
+    };
+    const pathHtml = p => {
+      const played = p.steps.filter((s, i) => stepState(PA.stepKey(p.id, i))).length,
+        mineT = tests.filter(x => cover.get(x.id) === p.id).sort((a, b) => a.id.localeCompare(b.id)),
+        todoN = mineT.filter(x => !verdictOf(x)).length,
+        allGood = p.steps.every((s, i) => s.optional || stepState(PA.stepKey(p.id, i)) === 'ok');
+      return `<details class="f-rc-sec f-rc-path" data-path="${esc(p.id)}"${pathOpen(p) ? ' open' : ''}><summary><b><span class="f-rm-id">${esc(p.id)}</span> <span lang="fr">${esc(p.title)}</span></b>${p.where ? ` <small class="f-muted" lang="fr" data-where>${esc(p.where)}</small>` : ''}${p.steps.length ? ` <small class="f-muted" data-progress>${esc(t(T.stepsDone, { k: played, n: p.steps.length }))}</small>` : ''}${p.note ? ` <small class="f-muted" lang="fr" data-summary-note>${esc(p.note)}</small>` : ''}</summary>
+        ${p.note || p.ref ? `<p class="f-muted" data-path-note>${p.note ? `<span lang="fr">${esc(p.note)}</span>` : ''}${p.ref ? ` <span class="f-rm-id">${esc(p.ref)}</span>` : ''}</p>` : ''}
+        ${p.steps.length ? `<ol class="f-rc-list" data-steps>${p.steps.map((s, i) => stepHtml(p, s, i)).join('')}</ol>` : ''}
+        ${p.steps.length && !allGood ? `<div class="f-row"><button type="button" class="primary" data-path-all="${esc(p.id)}">${esc(t(T.pathAll))}</button></div>` : ''}
+        ${mineT.length ? `<details class="f-rc-covered" data-covered="${esc(p.id)}"${ui.copen[p.id] ? ' open' : ''}><summary>${esc(cnt(T.covered, mineT.length))}${todoN ? ` · ${esc(sumPart(t, 'todo', todoN))}` : ''}</summary><ul class="f-rc-list">${mineT.map(x => item(x)).join('')}</ul></details>` : ''}</details>`;
+    };
+    /** Change l'état de pas ([{ key, state: 'ok' | 'ko' | null, comment? }]) et écrit le verdict de leurs fiches d'après tous les pas qui les citent (derive) : UN enregistrement, UNE note, UN « Annuler ». */
+    const applySteps = async (changes, focus) => {
+      const before = {
+          steps: {},
+          fich: {}
+        },
+        stamp = now();
+      for (const ch of changes) {
+        before.steps[ch.key] = ui.steps[ch.key] ?? null;
+        if (ch.state) ui.steps[ch.key] = {
+          s: ch.state,
+          g: PA.gist(stepAt.get(ch.key).s.gesture),
+          ...(ch.comment ? {
+            c: ch.comment
+          } : {}),
+          at: stamp
+        };
+        else delete ui.steps[ch.key];
+        delete ui.sdraft[ch.key];
+      }
+      ui.sko = '';
+      ui.sneed = '';
+      let n = 0,
+        bad = false;
+      for (const f of new Set(changes.filter(ch => ch.state).flatMap(ch => stepAt.get(ch.key).s.fiches))) {
+        const x = tests.find(y => y.id === f),
+          e = x && !known(x) ? PA.derive(cites.get(f), ui.steps) : null,
+          cur = x ? verdictOf(x) : null;
+        if (!e || (cur && cur.verdict === e.verdict && (e.verdict === 'ok' || cur.comment === e.comment))) continue;
+        const prev = snapshot(f),
+          hist = keepHistory(prev);
+        before.fich[f] = prev;
+        ui.local[f] = {
+          ...e,
+          at: stamp,
+          ...(hist.length ? {
+            history: hist
+          } : {})
+        };
+        ui.unsent.add(f);
+        delete ui.draft[f];
+        n++;
+        bad ||= e.verdict === 'ko';
+      }
+      await saveStore(c, {
+        pending: ui.local,
+        unsent: [...ui.unsent],
+        steps: ui.steps
+      });
+      draw(focus);
+      if (!n) return; // aucun verdict n'est écrit (« Non jouée », ou des pas encore à jouer) : l'état du pas est gardé, sans note
+      const sent = await send(true);
+      draw(focus);
+      const note = t(T.pathNoted[bad ? 'ko' : 'ok'], {
+        p: stepAt.get(changes[0].key).p.id,
+        n
+      });
+      c.notify?.(sent ? note : t(T.unrecorded, {
+        note,
+        why: whyText()
+      }), bad || !sent ? 'warn' : 'ok', {
+        key: 'recette-undo',
+        ms: 15000,
+        action: {
+          label: t(T.undo),
+          run: async () => {
+            for (const [k, v] of Object.entries(before.steps)) {
+              if (v) ui.steps[k] = v;
+              else delete ui.steps[k];
+            }
+            for (const [f, v] of Object.entries(before.fich)) {
+              ui.local[f] = v; // l'état d'avant (null : la fiche n'avait aucune entrée)
+              ui.unsent.add(f);
+            }
+            await saveStore(c, {
+              pending: ui.local,
+              unsent: [...ui.unsent],
+              steps: ui.steps
+            });
+            draw();
+            if (await send(false)) draw();
+          }
+        }
+      });
+    };
+    /** Un toucher sur « Bon », « Mauvais » ou « Non jouée » d'un pas : « Mauvais » ouvre le champ des mots (obligatoires) puis enregistre ; « Non jouée » n'écrit rien. */
+    const stepGesture = async (key, kind) => {
+      if (!stepAt.has(key)) return;
+      const sel = `[data-skey="${CSS.escape(key)}"][data-sbtn="${kind}"]`;
+      if (kind === 'ko') {
+        const ta = `[data-step-comment="${CSS.escape(key)}"]`;
+        if (ui.sko !==
+          key
+        ) { // premier toucher : le champ s'ouvre, et dit qu'il faut des mots (un pas déjà mauvais s'ouvre rempli, sans reproche)
+          ui.sko = key;
+          ui.sneed = ui.steps[key]?.s === 'ko' ? '' : key;
+          return draw(ta);
+        }
+        const comment = text(ui.sdraft[key] ?? view.querySelector(ta)?.value ?? ui.steps[key]?.c, MAX_COMMENT);
+        if (!comment) {
+          ui.sneed = key;
+          return draw(ta);
+        }
+        return applySteps([{
+          key,
+          state: 'ko',
+          comment
+        }], sel);
+      }
+      if (kind === 'skip') {
+        ui.sko = '';
+        ui.sneed = '';
+        delete ui.steps[key];
+        delete ui.sdraft[key];
+        await saveStore(c, {
+          steps: ui.steps
+        });
+        return draw(sel);
+      }
+      return applySteps([{
+        key,
+        state: 'ok'
+      }], sel);
+    };
+    const pathAll = pid => {
+      const p = P?.paths.find(q => q.id === pid);
+      if (!p) return;
+      const changes = p.steps.map((s, i) => ({
+        key: PA.stepKey(p.id, i),
+        s
+      })).filter(({
+        key,
+        s
+      }) => !s.optional && !stepState(key)).map(({
+        key
+      }) => ({
+        key,
+        state: 'ok'
+      }));
+      if (changes.length) applySteps(changes, `[data-path="${CSS.escape(pid)}"] summary`);
     };
     /** Une section : ses tests par application, sept visibles puis « Voir les n autres » ; hors « Tests du jour » elle est repliée jusqu'à un toucher sur son titre. */
     const sectionHtml = (k, list) => {
@@ -615,8 +853,9 @@
       // un redessin (réponse du lanceur, retour du lanceur…) ne coupe pas la frappe : le champ où l'on écrit reprend le focus et la position du curseur (SOG-0241)
       const ae = document.activeElement,
         typing = ae && view.contains(ae) && ae.tagName === 'TEXTAREA' ? {
-          sel: ae.hasAttribute('data-dtext') ? 'data-dtext' : ae.hasAttribute('data-comment') ? 'data-comment' : '',
-          id: ae.getAttribute('data-dtext') ?? ae.getAttribute('data-comment'),
+          sel: ae.hasAttribute('data-dtext') ? 'data-dtext' : ae.hasAttribute('data-comment') ? 'data-comment' : ae.hasAttribute(
+            'data-step-comment') ? 'data-step-comment' : '',
+          id: ae.getAttribute('data-dtext') ?? ae.getAttribute('data-comment') ?? ae.getAttribute('data-step-comment'),
           from: ae.selectionStart,
           to: ae.selectionEnd
         } : null;
@@ -624,11 +863,20 @@
       const by = Object.fromEntries(SECTIONS.map(k => [k, mine.filter(x => sectionOf(x) === k)]));
       const n = k => by[k].length,
         verdictN = v => mine.filter(x => !known(x) && verdictOf(x)?.verdict === v).length;
+      // les chemins d'abord, puis « À voir en premier » (les essais majeurs qu'aucun chemin ne couvre), puis les autres essais ; un essai couvert est sous son chemin, jamais deux fois
+      const withPaths = usePaths();
+      const majors = withPaths ? mine.filter(x => P.majors.includes(x.id) && !cover.has(x.id) && !known(x) && ['today', 'older']
+        .includes(sectionOf(x))) : [];
+      const shown = Object.fromEntries(SECTIONS.map(k => [k, withPaths ? by[k].filter(x => !cover.has(x.id) && !majors.includes(x)) :
+        by[k]
+      ]));
+      const pathsPart = !withPaths ? '' : `${P.paths.length ? `<section class="f-rc-paths" data-paths><h2>${esc(t(T.pathsTitle))}</h2>${P.preamble ? `<p class="f-muted" lang="fr" data-preamble>${esc(P.preamble)}</p>` : ''}${P.paths.map(pathHtml).join('')}</section>` : ''}${majors.length || SECTIONS.some(k => shown[k].length) ? `<h2 class="f-rc-rest" data-rest>${esc(t(T.restTitle))}</h2>` : ''}${majors.length ? `<section class="f-rc-sec" data-majors><h3>${esc(t(T.majorsTitle))} <span class="f-muted" data-count>(${majors.length})</span></h3><ul class="f-rc-list">${majors.map(x => item(x)).join('')}</ul></section>` : ''}`;
+      const noTestPart = withPaths && P.noTest.length ? `<details class="f-rc-sec f-rc-covered" data-covered="notest"${ui.copen.notest ? ' open' : ''}><summary><b>${esc(t(T.noTestTitle))} <span class="f-muted" data-count>(${P.noTest.length})</span></b></summary><ul class="f-rc-list">${P.noTest.map(n => `<li class="f-rc-item" data-id="${esc(n.id)}" data-state="notest"><p><span class="f-rm-id">${esc(n.id)}</span> <b>${esc(t(row(n.title)))}</b></p><p class="f-muted" lang="fr">${esc(n.reason)}</p></li>`).join('')}</ul></details>` : '';
       const tabs = questions.length ? `<div class="f-rm-bar" role="tablist" data-tabs>${['tests', 'decisions'].map(k => `<button type="button" class="f-rm-btn" data-tab="${k}" aria-pressed="${ui.tab === k}">${esc(k === 'tests' ? t(T.tabTests) : t(T.tabDecide, { n: undecided() }))}</button>`).join('')}</div>` : '';
       view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
         <p data-summary>${esc([sumPart(t, 'todo', n('today') + n('older')), sumPart(t, 'ok', verdictN('ok') + verdictN('reserve')) + (verdictN('reserve') ? ` (${t(T.withReserves, { r: verdictN('reserve') })})` : ''), sumPart(t, 'ko', verdictN('ko')), sumPart(t, 'known', n('known'))].join(' · '))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
-        ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
+        ${pathsPart}${mine.length ? SECTIONS.map(k => sectionHtml(k, shown[k])).join('') : !pathsPart ? `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>` : ''}${noTestPart}`}`;
       fitAll(view);
       if (focus) view.querySelector(focus)?.focus();
       else if (typing?.sel) {
@@ -1101,6 +1349,8 @@
         ui.lastGesture = id;
         return commitDec(id, a);
       }
+      if (b.dataset.sbtn && b.dataset.skey) return void stepGesture(b.dataset.skey, b.dataset.sbtn);
+      if (b.dataset.pathAll) return void pathAll(b.dataset.pathAll);
       if (b.dataset.app !== undefined) {
         ui.app = b.dataset.app;
         return draw(`[data-app="${CSS.escape(ui.app)}"]`);
@@ -1155,6 +1405,17 @@
         }
         return;
       }
+      const st = e.target.closest?.('textarea[data-step-comment]');
+      if (st && stepAt.has(st.dataset.stepComment)) {
+        ui.sdraft[st.dataset.stepComment] = st.value;
+        fit(st);
+        count(st);
+        if (ui.sneed === st.dataset.stepComment && st.value.trim()) {
+          ui.sneed = '';
+          st.closest('li')?.querySelector('[data-need]')?.remove();
+        }
+        return;
+      }
       const ta = e.target.closest?.('textarea[data-comment]');
       if (!ta || !ID.test(ta.dataset.comment)) return;
       ui.draft[ta.dataset.comment] = ta.value;
@@ -1166,6 +1427,20 @@
       }
     };
     view.addEventListener('toggle', e => {
+      const pd = e.target.matches?.('details[data-path]') ? e.target :
+        null, // la cible elle-même : un repli couvert est DANS un chemin
+        cd = e.target.matches?.('details[data-covered]') ? e.target : null;
+      if (pd || cd) { // un chemin (retenu sur l'appareil) ou un repli de ses tests couverts (le temps de l'écran)
+        const p = pd && P?.paths.find(q => q.id === pd.dataset.path);
+        if (p && pathOpen(p) !== pd.open) {
+          ui.popen[p.id] = pd.open;
+          saveStore(c, {
+            popen: ui.popen
+          });
+        } else if (cd) ui.copen[cd.dataset.covered] = cd.open;
+        if ((pd || cd).open) fitAll(pd || cd);
+        return;
+      }
       const sec = e.target.closest?.('details[data-section]');
       if (!sec || !SECTIONS.includes(sec.dataset.section) || ui.open[sec.dataset.section] === sec.open) return;
       ui.open[sec.dataset.section] = sec.open;

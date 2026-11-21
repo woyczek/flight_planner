@@ -303,3 +303,16 @@ The mock-up `frame/help/maquette/signalements.html` and its contract `signalemen
 - **The frame passes the address query** to the Signaler and Roadmap screens (`showDoc`), as it did for the Help: `#signaler?sig=`, `#roadmap?fiche=`.
 - **Third-party text** is escaped and isolated in `<bdi>` (a right-to-left override in a title does not turn the row around it).
 - **Comments** carry no author in the contract: the screen writes « Vous » for every comment (the mock-up's « Ergonome » author is not in the reply shape).
+
+## 21 November 2026 — Recette: the test paths (the ergonomist's Q4)
+
+The user had 99 tests without a verdict and would not sort them one by one. A few **paths of use** now come first and validate many fiches at once (`organisation/RECETTE_CHEMINS.json`, written by the relay alone; `tools/recette_build.py` embeds it in `recette.json` under `paths`; the page reads it again with `frame/lib/recette_paths.js`, pure, with its bench A361).
+
+- **The file is an untrusted input**, read twice (the builder, then the page): only the fields of the schema are copied, never a key read from the file; texts and counts are bounded (the same limits in both, K513 compares them); an unreadable or empty file gives no `paths` and the list is the one of before (A363).
+- **The rule of the verdicts lives in one place** (`derive`): a bad step gives « ko » with its words to ITS fiches only; a fiche is « ok » when every non-optional step that cites it is good and one at least is; « Non jouée » writes nothing; an optional step not played blocks nothing. A step touch is ONE record, ONE note, ONE « Annuler » (the steps and the fiches it wrote go back together).
+- **« Mauvais » asks for words** the way « Refusé » does, but says « Dites ce qui ne va pas. » (there is no refusal here): the first touch opens the field and says so, the second records. The words are the user's: nothing is added to them.
+- **A fiche is listed once**: folded under the first path (in the order of the file) that cites it, with the count; `covers` is for a path with no steps (the atelier, folded, « Pas avant le jalon de l'atelier. »). Filtered by application the paths are hidden and the list is the one of before: the filter must keep its meaning.
+- **A path with `show_when_delivered` stays out until that fiche is delivered** (decided by the builder, from the backlog): its fiches are then listed one by one, so none is lost meanwhile.
+- **On screen a step is an « étape »** (the user reads « non joués » next to a button that says the opposite): « 3 étapes jouées sur 4 », « Non jouée », « C1, étape 4 : ce qui ne va pas ». The note of a path left shut (« À jouer après le jalon de l'atelier. ») is read on its line.
+- **What stays on the device**: the step states (`steps`, with the start of the gesture, so that a step the relay rewrote is not taken for the old one) and the paths left shut (`popen`). Not sent anywhere: the verdicts are what the launcher or the repository keep.
+- Left open: « Non jouée » on a step already bad does not take the « ko » back (it writes nothing); the user takes it back with « Remettre à tester » on the fiche.

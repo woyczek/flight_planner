@@ -1,0 +1,293 @@
+<!doctype html>
+<!-- Banc des chemins de test (frame/lib/recette_paths.js) : la lecture d'un fichier NON FIABLE (aucune clé quelconque recopiée, textes et nombres bornés, un fichier illisible : null), l'ordre, la couverture
+     (un essai n'est couvert que par le premier chemin qui le cite) et la règle des verdicts (un pas mauvais : « ko » à SES fiches ; « ok » quand tous les pas non facultatifs qui la citent sont bons). Page nue ;
+     window.__recPathsBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>recette_paths — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    LIMITS,
+    citesOf,
+    coverage,
+    derive,
+    gist,
+    pathsOf,
+    stepKey,
+    stepsOf
+  } from '../recette_paths.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__recPathsBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__recPathsBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const eq = (name, a, b) => ck(name, JSON.stringify(a) === JSON.stringify(b), JSON.stringify([a, b]));
+  const step = (g, fiches, extra = {}) => ({
+    gesture: g,
+    expect: 'e',
+    fiches,
+    ...extra
+  });
+  const doc = {
+    preamble: 'Relance.',
+    order: ['C2', 'C1', 'C9', 'C7'],
+    paths: [{
+      id: 'C1',
+      title: 'Un',
+      where: 'ordinateur',
+      steps: [step('a', ['SOG-0001', 'SOG-0002']), step('b', ['SOG-0002'], {
+        optional: true
+      })]
+    }, {
+      id: 'C2',
+      title: 'Deux',
+      steps: [step('c', ['SOG-0002', 'SOG-0003'])]
+    }, {
+      id: 'C7',
+      title: 'Atelier',
+      folded: true,
+      note: 'Pas avant.',
+      ref: 'SOG-0526',
+      covers: ['SOG-0009', 'SOG-0001'],
+      steps: []
+    }, {
+      id: 'C5',
+      title: 'Hors ordre',
+      steps: [step('d', ['SOG-0005'])]
+    }],
+    majors_first: ['SOG-0430', 'SOG-0520', 'SOG-0430'],
+    no_test: [{
+      id: 'SOG-0504',
+      title: {
+        fr: 'Titre',
+        en: 'Title'
+      },
+      reason: 'rien de visible'
+    }]
+  };
+  const P = pathsOf(doc);
+  eq('l\'ordre du fichier : les chemins nommés d\'abord, ceux qu\'il ne nomme pas à la suite, un id inconnu est ignoré', P.paths.map(p => p
+    .id), ['C2', 'C1', 'C7', 'C5']);
+  eq('un chemin replié, sa note, sa référence, ses fiches couvertes ; sans pas, il reste', [P.paths[2].folded, P.paths[2].note, P.paths[2]
+    .ref, P.paths[2].covers, P.paths[2].steps.length
+  ], [true, 'Pas avant.', 'SOG-0526', ['SOG-0009', 'SOG-0001'], 0]);
+  eq('les essais majeurs sans doublon ; le préambule', [P.majors, P.preamble], [
+    ['SOG-0430', 'SOG-0520'], 'Relance.'
+  ]);
+  eq('un essai sans test : son titre est gardé tel quel, avec sa raison', P.noTest, [{
+    id: 'SOG-0504',
+    title: {
+      fr: 'Titre',
+      en: 'Title'
+    },
+    reason: 'rien de visible'
+  }]);
+  // l'entrée non fiable
+  ck('un fichier illisible ou vide : null (pas de chemins)', [null, undefined, 5, 'x', [], {}, {
+    paths: 'x'
+  }, {
+    paths: [{
+      id: 'x'
+    }]
+  }].every(v => pathsOf(v) === null));
+  const hostile = pathsOf({
+    paths: [{
+        id: 'C1',
+        title: 'T\u0000\u0007<b>x</b>'.padEnd(500, 'z'),
+        where: 'w'.repeat(500),
+        note: 'n'.repeat(900),
+        ref: 'pas un id',
+        __proto__: {
+          polluted: 1
+        },
+        constructor: 'x',
+        steps: [{
+            gesture: 'g\u0001'.repeat(900),
+            expect: 5,
+            fiches: ['SOG-0001', 'SOG-12', 'sog-0002', '../etc', 7, null, 'SOG-0001', ...Array.from({
+              length: 40
+            }, (_, i) => `SOG-${String(1000 + i)}`)],
+            optional: 'oui'
+          }, {
+            gesture: '',
+            fiches: ['SOG-0003']
+          },
+          'une chaîne',
+          null
+        ]
+      }, {
+        id: 'C1',
+        title: 'doublon',
+        steps: [step('z', [])]
+      }, {
+        id: 'C1000',
+        title: 'trop long',
+        steps: [step('z', [])]
+      },
+      ...Array.from({
+        length: 60
+      }, (_, i) => ({
+        id: `C${i + 10}`,
+        title: 't',
+        steps: [step('z', [])]
+      }))
+    ],
+    no_test: [{
+      id: 'SOG-1'
+    }, {
+      id: 'SOG-0004',
+      reason: 'r'.repeat(900)
+    }, 'x']
+  });
+  const h = hostile.paths[0];
+  ck('les textes sont bornés et sans caractère de commande', h.title.length === LIMITS.title && !/[\u0000-\u001f]/.test(h.title + h.steps[0]
+      .gesture) && h.where.length === LIMITS.where && h.note.length === LIMITS.note && h.steps[0].gesture.length === LIMITS.gesture, JSON
+    .stringify([h.title.length, h.where.length, h.note.length, h.steps[0].gesture.length]));
+  ck('un texte absent ou d\'un autre type est vide ; un pas sans geste, une chaîne, un nul sont écartés', h.steps.length === 1 && h.steps[0]
+    .expect === '' && h.ref === '', JSON.stringify([h.steps.length, h.steps[0].expect, h.ref]));
+  ck('les fiches d\'un pas : seulement SOG-nnnn, sans doublon, douze au plus ; « optional » est un vrai booléen seulement', h.steps[0]
+    .fiches.length === LIMITS.fiches && h.steps[0].fiches[0] === 'SOG-0001' && h.steps[0].fiches.every(f => /^SOG-\d{4}$/.test(f)) && h
+    .steps[0].optional === false, JSON.stringify(h.steps[0].fiches));
+  ck('une clé recopiée du fichier n\'existe pas : ni __proto__, ni constructor, ni polluted', !('polluted' in {}) && !Object.hasOwn(h,
+    'constructor') && Object.keys(h).sort().join() === 'covers,folded,id,note,ref,steps,title,where');
+  ck('un identifiant en double ou mal formé est écarté ; trente chemins au plus', hostile.paths.filter(p => p.id === 'C1').length === 1 && !
+    hostile.paths.some(p => p.id === 'C1000') && pathsOf({
+      paths: Array.from({
+        length: 60
+      }, (_, i) => ({
+        id: `C${i + 10}`,
+        steps: [step('z', [])]
+      }))
+    }).paths.length === LIMITS.paths, String(hostile.paths.length));
+  ck('un essai sans test mal formé est écarté, sa raison bornée', hostile.noTest.length === 1 && hostile.noTest[0].id === 'SOG-0004' &&
+    hostile.noTest[0].reason.length === LIMITS.reason);
+  // la couverture
+  const cov = coverage(P.paths, ['SOG-0001', 'SOG-0002', 'SOG-0003', 'SOG-0005', 'SOG-0009', 'SOG-0777']);
+  eq('un essai couvert l\'est par le PREMIER chemin qui le cite (jamais deux fois) ; un essai que personne ne cite n\'est pas couvert',
+    Object.fromEntries(cov), {
+      'SOG-0002': 'C2',
+      'SOG-0003': 'C2',
+      'SOG-0001': 'C1',
+      'SOG-0009': 'C7',
+      'SOG-0005': 'C5'
+    });
+  // la clé, le début de geste, les états gardés
+  eq('la clé d\'un pas', stepKey('C1', 3), 'C1:3');
+  const ok = {
+    [stepKey('C1', 0)]: {
+      s: 'ok',
+      g: gist('a'),
+      at: '2026-11-21T10:00:00Z'
+    },
+    [stepKey('C2', 0)]: {
+      s: 'ko',
+      g: gist('c'),
+      c: 'ne marche pas\u0000'
+    },
+    [stepKey('C1', 1)]: {
+      s: 'ok',
+      g: 'un autre geste'
+    }, // le geste a changé depuis : n'est plus le pas
+    [stepKey('C5', 0)]: {
+      s: 'ko',
+      g: gist('d')
+    }, // un pas mauvais sans mots n'en est pas un
+    'C9:0': {
+      s: 'ok',
+      g: 'x'
+    },
+    __proto__: {
+      s: 'ok'
+    }
+  };
+  const st = stepsOf(ok, P.paths);
+  eq("les états gardés (dans l'ordre des chemins) : ceux qui visent encore le même pas ; un mauvais sans mots, un geste changé, un chemin inconnu : écartés ; les mots sont nettoyés",
+    st, {
+      'C2:0': {
+        s: 'ko',
+        g: 'c',
+        c: 'ne marche pas'
+      },
+      'C1:0': {
+        s: 'ok',
+        g: 'a',
+        at: '2026-11-21T10:00:00Z'
+      }
+    });
+  eq('un état illisible : rien', [stepsOf(null, P.paths), stepsOf([], P.paths), stepsOf('x', P.paths)], [{}, {}, {}]);
+  // la règle des verdicts
+  const cites = citesOf(P.paths);
+  eq('les pas qui citent une fiche (et lesquels sont facultatifs)', cites.get('SOG-0002'), [{
+    key: 'C2:0',
+    optional: false
+  }, {
+    key: 'C1:0',
+    optional: false
+  }, {
+    key: 'C1:1',
+    optional: true
+  }]);
+  const S = o => Object.fromEntries(Object.entries(o).map(([k, s]) => [k, {
+    s,
+    ...(s === 'ko' ? {
+      c: 'mots ' + k
+    } : {})
+  }]));
+  eq('rien de joué : rien à écrire', derive(cites.get('SOG-0002'), {}), null);
+  eq('« pas joué » n\'écrit rien : un pas bon sur trois, les autres à jouer', derive(cites.get('SOG-0002'), S({
+    'C1:0': 'ok'
+  })), null);
+  eq('tous les pas non facultatifs bons : « ok » (le facultatif non joué ne bloque pas)', derive(cites.get('SOG-0002'), S({
+    'C1:0': 'ok',
+    'C2:0': 'ok'
+  })), {
+    verdict: 'ok'
+  });
+  eq('un pas facultatif bon ne suffit pas à lui seul : les autres pas de la fiche comptent', derive(cites.get('SOG-0002'), S({
+    'C1:1': 'ok'
+  })), null);
+  eq('une fiche que cite seulement un pas facultatif : bon, « ok » ; non joué, rien', [derive([{
+    key: 'x:0',
+    optional: true
+  }], S({
+    'x:0': 'ok'
+  })), derive([{
+    key: 'x:0',
+    optional: true
+  }], {})], [{
+    verdict: 'ok'
+  }, null]);
+  eq('un pas mauvais donne « ko » avec ses mots, même quand les autres pas sont bons', derive(cites.get('SOG-0002'), S({
+    'C1:0': 'ok',
+    'C2:0': 'ko'
+  })), {
+    verdict: 'ko',
+    comment: 'mots C2:0'
+  });
+  eq('deux pas mauvais : les mots des deux, sans doublon', derive(cites.get('SOG-0002'), S({
+    'C1:0': 'ko',
+    'C2:0': 'ko'
+  })), {
+    verdict: 'ko',
+    comment: 'mots C2:0 / mots C1:0'
+  });
+  eq('un pas mauvais ne touche que SES fiches : la fiche qu\'il ne cite pas reste sans verdict', derive(cites.get('SOG-0001'), S({
+    'C2:0': 'ko'
+  })), null);
+  eq('une fiche citée par personne : rien', [derive(undefined, S({})), derive([], S({}))], [null, null]);
+  window.__recPathsBench.done = true;
+</script>
+</body>
+</html>

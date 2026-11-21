@@ -4793,6 +4793,160 @@ def _rc_fixture():
     return {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-10', 'tests': len(tests), 'verdicts': 2}, 'apps': ['pilote', 'compagnie', 'maintenance', 'stats'], 'tests': tests}
 
 
+def _paths_fixture(garbage=None):
+    """_rc_fixture() with `paths` (tools/recette_build.py, RECETTE_CHEMINS.json): C1 (four steps, the third optional; the fiches 301 to 305), C3 (a hostile title; 303 again, 306), C7 folded (covers 307), 308 a major, 309 without test."""
+    fx = _rc_fixture()
+    st = lambda g, f, **kw: {'gesture': g, 'expect': 'Ce qu\'on doit voir : ' + g, 'fiches': [f'SOG-{n:04d}' for n in f], **kw}
+    fx['paths'] = garbage if garbage is not None else {
+        'preamble': 'Relance le lanceur, puis recharge la page.', 'order': ['C1', 'C3', 'C2', 'C7'], 'majors_first': ['SOG-0308'],
+        'paths': [{'id': 'C1', 'title': 'Préparer un vol', 'where': 'ordinateur', 'steps': [st('Premier geste', (301, 302)), st('Deuxième geste', (302, 303)), st('Troisième geste', (304,), optional=True), st('Quatrième geste', (305,))]},
+                  {'id': 'C3', 'title': '<img src=x onerror=window.__pwn=1>', 'where': 'téléphone', 'steps': [st('Cinquième geste', (303, 306))]},
+                  {'id': 'C7', 'title': 'Parcours de l\'atelier', 'where': 'ordinateur', 'folded': True, 'note': 'À jouer après le jalon de l\'atelier.', 'ref': 'SOG-0526', 'covers': ['SOG-0307'], 'steps': []}],
+        'no_test': [{'id': 'SOG-0309', 'title': {'fr': 'Titre 309', 'en': 'Title 309'}, 'reason': 'sans essai : rien de visible'}]}
+    return fx
+
+
+@case('A362', 'The test paths of the recette (the ergonomist\'s Q4 of 21 Nov 2026): the paths come BEFORE the isolated essays, « À voir en premier » and the rest follow, an essay covered is folded under its first path and never listed twice, a step has three states (good, bad with its words, not played) and writes the verdict of ITS fiches only, « Tout le chemin est bon » plays what is left, the steps and the folds are kept on the device', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="the user has 99 essays without a verdict and will not sort them one by one: a few paths of use validate many fiches at once; frame/help/recette.json carries `paths` (tools/recette_build.py, A361/K499); a bad step marks only its own fiches ko with its words; a fiche is ok when every non-optional step that cites it is good; « not played » writes nothing; an optional step not played blocks nothing; the fiches of a step are data, never shown in the step")
+def a362(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    W = {k: v[i] for k, v in {
+        'paths': ['Chemins de test', 'Test paths', 'Testpfade', 'Rutas de prueba'],
+        'majors': ['À voir en premier', 'To see first', 'Zuerst ansehen', 'Para ver primero'],
+        'rest': ['Les tests qu’aucun chemin ne couvre', 'The tests no path covers', 'Die Tests, die kein Pfad abdeckt', 'Las pruebas que ninguna ruta cubre'],
+        'notest': ['Sans test (1)', 'No test (1)', 'Ohne Test (1)', 'Sin prueba (1)'],
+        'covered5': ['5 tests couverts · 5 à valider', '5 tests covered · 5 to check', '5 Tests abgedeckt · 5 zu prüfen', '5 pruebas cubiertas · 5 por comprobar'],
+        'covered1': ['1 test couvert · 1 à valider', '1 test covered · 1 to check', '1 Test abgedeckt · 1 zu prüfen', '1 prueba cubierta · 1 por comprobar'],
+        'ok': ['Bon', 'Good', 'Gut', 'Bien'], 'ko': ['Mauvais', 'Bad', 'Schlecht', 'Mal'], 'skip': ['Non jouée', 'Not played', 'Nicht gespielt', 'No probado'],
+        'optional': ['si l’occasion se présente', 'if the opportunity arises', 'wenn sich die Gelegenheit bietet', 'si se presenta la ocasión'],
+        'all': ['Tout le chemin est bon', 'The whole path is good', 'Der ganze Pfad ist gut', 'Todo el recorrido está bien'],
+        'noted': ['Chemin C1 : 1 fiche validée', 'Path C1: 1 card passed', 'Pfad C1: 1 Karte bestanden', 'Ruta C1: 1 ficha válida'],
+        'comment': ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt', '{p}, paso {n}: qué falla'],
+    }.items()}
+    need = ['Dites ce qui ne va pas.', 'Say what is wrong.', 'Sagen Sie, was nicht stimmt.', 'Diga qué falla.'][i]   # under a « Mauvais » without words: there is no refusal here
+    # « 3 étapes jouées sur 4 »: the plural marks follow the frame's rule (fr: 0 and 1 singular, on the number played; en, de, es: on the number of steps)
+    steps = lambda k, n: [f"{k} étape{'s' if k >= 2 else ''} jouée{'s' if k >= 2 else ''} sur {n}", f"{k} of {n} step{'s' if n != 1 else ''} played", f"{k} von {n} Schritt{'e' if n != 1 else ''} gespielt", f"{k} de {n} paso{'s' if n != 1 else ''} probado{'s' if n != 1 else ''}"][i]
+    fx = _paths_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': {}}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else {}
+
+        def until_written(pred, what):
+            got = None
+            for _ in range(40):
+                got = written()
+                if pred(got):
+                    return got
+                c.wait(250)
+            raise Fail(f'never written: {what} (the file holds {sorted(got)})', what, 'the launcher wrote the verdicts')
+        _prio_launcher(c, root, verb=('recette', 'verdict'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-paths]')", timeout=15000, what='the paths')
+        c.shot(f'A362_recette_{c.width}_{lang}.png')
+        full = lambda name: c.page.screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / name), full_page=True)   # the whole page, for the reading of the ergonomist
+        full(f'A362_page_debut_{c.width}_{lang}.png')
+        # ---- the order of the page: the paths, « À voir en premier », the rest, the essays without test last; the fold of the atelier shut, the others open
+        c.eq(c.js("""[...document.querySelectorAll('[data-paths], [data-majors], [data-rest], [data-section], [data-covered="notest"]')].map(e => e.matches('[data-paths]') ? 'paths' : e.matches('[data-majors]') ? 'majors' : e.matches('[data-rest]') ? 'rest' : e.dataset.section || 'notest')"""),
+             ['paths', 'rest', 'majors', 'older', 'known', 'seen', 'notest'], 'the paths first, then « the tests no path covers » whose first group is « To see first », the essays without test last (nothing of the day is left: all are covered)', what='order')
+        c.eq([norm(c.text('[data-paths] > h2')), norm(c.text('[data-majors] > h3')), norm(c.text('[data-rest]')), norm(c.text('[data-covered=notest] > summary'))], [norm(W['paths']), norm(W['majors'] + ' (1)'), norm(W['rest']), norm(W['notest'])], 'the four titles, in the language of the run', what='titles')
+        c.eq(c.js("[...document.querySelectorAll('details[data-path]')].map(d => [d.dataset.path, d.open])"), [['C1', True], ['C3', True], ['C7', False]], 'the paths are open, the one marked folded is shut', what='open')
+        c.eq([c.count('[data-preamble]'), norm(c.text('[data-path=C7] [data-path-note]')), c.js("[...document.querySelectorAll('[data-where]')].map(e => e.textContent)")], [1, 'À jouer après le jalon de l\'atelier. SOG-0526', ['ordinateur', 'téléphone', 'ordinateur']], 'the preamble, the folded path\'s note and reference, where each path is done (the content stays French)', what='content')
+        # the note of a path left shut is read on its line (hidden once the path is open: the body says it then)
+        c.eq([norm(c.text('[data-path=C7] > summary [data-summary-note]')), c.js("getComputedStyle(document.querySelector('[data-path=C7] > summary [data-summary-note]')).display !== 'none'"),
+              c.js("getComputedStyle(document.querySelector('[data-path=C1] > summary [data-progress]')).display !== 'none' && !document.querySelector('[data-path=C1] > summary [data-summary-note]')")],
+             ["À jouer après le jalon de l'atelier.", True, True], 'a folded path says why on its line (C7); a path with no note has none; the progress stays', what='shut note')
+        c.js("document.querySelector('[data-path=C7] > summary').click()")
+        c.until("document.querySelector('[data-path=C7]').open", what='C7 opens')
+        c.eq(c.js("getComputedStyle(document.querySelector('[data-path=C7] > summary [data-summary-note]')).display"), 'none', 'once open the line does not say it twice (the body does)', what='open note')
+        c.js("document.querySelector('[data-path=C7] > summary').click()")
+        c.until("!document.querySelector('[data-path=C7]').open", what='C7 shut again')
+        # ---- an essay covered is folded under its FIRST path and never listed twice: every id of the fixture is on the page once
+        ids = c.js("(() => { const m = {}; document.querySelectorAll('li[data-id]').forEach(l => m[l.dataset.id] = (m[l.dataset.id] || 0) + 1); return m })()")
+        c.eq(ids, {f'SOG-{n:04d}': 1 for n in range(301, 314)}, 'each of the thirteen essays is listed once (303 is cited by C1 and C3: under C1)', what='never twice')
+        c.eq([c.count('[data-path=C1] [data-covered] li[data-id]'), c.count('[data-path=C3] [data-covered] li[data-id]'), c.count('[data-path=C7] [data-covered] li[data-id]'), c.count('[data-majors] li[data-id=SOG-0308]'), c.count('[data-covered=notest] li[data-id=SOG-0309]')], [5, 1, 1, 1, 1], 'C1 folds five, C3 one (306), C7 one (its `covers`), the major 308 is shown first, 309 is without test', what='folds')
+        c.eq([norm(c.text('[data-path=C1] > details[data-covered] > summary')), norm(c.text('[data-path=C3] > details[data-covered] > summary')), c.js("document.querySelector('[data-path=C1] details[data-covered]').open")], [norm(W['covered5']), norm(W['covered1']), False], 'the folded tests say their count and how many wait for a verdict; the fold is shut', what='covered count')
+        c.eq(norm(c.text('[data-covered=notest] li p.f-muted')), 'sans essai : rien de visible', 'the reason of an essay without test, as written', what='reason')
+        c.ok(c.count('[data-paths] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile path title is text')
+        # ---- a step: its gesture and what to see; its fiches are data, never shown in it; the optional one says so; three states, « not played » first
+        steps = c.js("[...document.querySelectorAll('[data-path=C1] [data-step]')].map(l => [l.dataset.step, l.dataset.state, !!l.querySelector('[data-optional-tag]'), /SOG-/.test(l.textContent), [...l.querySelectorAll('[data-sbtn]')].map(b => b.textContent.trim() + ':' + b.getAttribute('aria-pressed')).join(' ')])")
+        sb = lambda p: ' '.join([W['ok'] + ':false', W['ko'] + ':false', W['skip'] + ':true']) if p else ''
+        c.eq(steps, [['C1:0', 'todo', False, False, sb(1)], ['C1:1', 'todo', False, False, sb(1)], ['C1:2', 'todo', True, False, sb(1)], ['C1:3', 'todo', False, False, sb(1)]], 'four steps: none played, no fiche id in them, the third optional, three buttons', what='steps')
+        c.eq(norm(c.text('[data-step="C1:2"] [data-optional-tag]')), norm(W['optional']), 'the optional step says « if the opportunity arises »', what='optional')
+        c.eq([norm(c.text('[data-step="C1:0"] [data-gesture]')), norm(c.text('[data-step="C1:0"] [data-expect]')), norm(c.text('[data-path=C1] [data-progress]'))], ['Premier geste', 'Ce qu\'on doit voir : Premier geste', norm(steps(0, 4))], 'the gesture, what to see (French content), the progress', what='step text')
+        # ---- « good » on the first step: 301 (cited only by it) is ok, 302 waits for its second step; one note, with the path and the count
+        c.tap('[data-skey="C1:0"][data-sbtn="ok"]')
+        got = until_written(lambda g: 'SOG-0301' in g, '301 ok')
+        c.eq([got['SOG-0301']['verdict'], 'SOG-0302' in got], ['ok', False], 'a good step validates the fiches it alone cites; the fiche another step still cites waits', what='step 1')
+        c.until("(w) => [...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(W['noted']), what="the note names the path and the count (« (s) » is the frame's plural: one card)")
+        c.eq([c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state"), c.js("document.querySelector('[data-skey=\"C1:0\"][data-sbtn=\"ok\"]').getAttribute('aria-pressed')"), norm(c.text('[data-path=C1] [data-progress]'))], ['ok', 'true', norm(steps(1, 4))], 'the step is good, its button pressed, the progress counts it', what='state')
+        # ---- the second step: 302 is now ok (every step that cites it is good); 303 still waits for C3
+        c.tap('[data-skey="C1:1"][data-sbtn="ok"]')
+        got = until_written(lambda g: 'SOG-0302' in g, '302 ok')
+        c.eq([got['SOG-0302']['verdict'], 'SOG-0303' in got], ['ok', False], 'the fiche is ok when every step that cites it is good (303 waits for the step of C3)', what='step 2')
+        # ---- a bad step needs its words: the first touch opens the field and says so, nothing is written
+        c.tap('[data-skey="C1:3"][data-sbtn="ko"]')
+        c.until("!!document.querySelector('[data-step=\"C1:3\"] [data-step-comment]')", what='the field of the words')
+        c.eq([norm(c.text('[data-step="C1:3"] [data-need]')), norm(c.text('[data-step="C1:3"] [data-comment-for]')), 'SOG-0305' in written()], [need, norm(W['comment'].replace('{p}', 'C1').replace('{n}', '4')), False], 'the field says what it is for and asks for words; nothing is written', what='need')
+        c.shot(f'A362_recette_mauvais_{c.width}_{lang}.png')
+        c.page.fill('[data-step="C1:3"] [data-step-comment]', 'Le bouton reste gris')
+        c.tap('[data-skey="C1:3"][data-sbtn="ko"]')
+        got = until_written(lambda g: 'SOG-0305' in g, '305 ko')
+        c.eq([got['SOG-0305']['verdict'], got['SOG-0305'].get('comment'), got['SOG-0301']['verdict'], got['SOG-0302']['verdict'], 'SOG-0304' in got], ['ko', 'Le bouton reste gris', 'ok', 'ok', False], 'a bad step writes ko with its words on ITS fiche only; the fiches of the other steps keep their verdict', what='ko')
+        c.until("!!document.querySelector('[data-step=\"C1:3\"] [data-step-note]')", what='the words are kept under the step')
+        c.eq([norm(c.text('[data-step="C1:3"] [data-step-note]')), c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state")], ['Le bouton reste gris', 'ko'], 'the step shows its words and is bad', what='ko state')
+        # ---- « not played » writes nothing: the verdict of 301 stays, the step goes back to waiting
+        before = written()
+        c.tap('[data-skey="C1:0"][data-sbtn="skip"]')
+        c.until("document.querySelector('[data-step=\"C1:0\"]').dataset.state === 'todo'", what='the step goes back to waiting')
+        c.wait(800)
+        c.eq([written() == before, norm(c.text('[data-path=C1] [data-progress]'))], [True, norm(steps(2, 4))], '« not played » writes nothing (the file is as it was) and the progress goes down', what='not played')
+        # ---- « the whole path is good » plays what is left: the step to play (not the bad one, not the optional one)
+        c.tap('[data-path-all=C1]')
+        c.until("document.querySelector('[data-step=\"C1:0\"]').dataset.state === 'ok'", what='the first step is played again')
+        c.eq([c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), c.js("document.querySelector('[data-step=\"C1:2\"]').dataset.state"), 'SOG-0304' in written(), written()['SOG-0305']['verdict']], ['ko', 'todo', False, 'ko'], 'the whole path leaves the bad step bad and the optional step waiting; the optional one\'s fiche stays without a verdict', what='all C1')
+        c.tap('[data-path-all=C3]')
+        got = until_written(lambda g: 'SOG-0303' in g and 'SOG-0306' in g, '303 and 306 ok')
+        c.eq([got['SOG-0303']['verdict'], got['SOG-0306']['verdict'], c.count('[data-path-all=C3]'), norm(c.text('[data-path=C3] [data-progress]'))], ['ok', 'ok', 0, norm(steps(1, 1))], 'the path of one step: its two fiches are ok (303 now that both steps that cite it are good), the button is gone once the path is good', what='all C3')
+        # ---- what the device keeps: the steps, and a path shut
+        c.js("document.querySelector('[data-path=C3] > summary').click()")
+        c.until("document.querySelector('[data-path=C3]').open === false", what='C3 is shut')
+        c.until_doc('device/recette.json', lambda d: d and d.get('popen', {}).get('C3') is False and (d.get('steps') or {}).get('C1:3', {}).get('s') == 'ko', what='the steps and the fold kept on the device')
+        c.page.reload()
+        c.until("!!document.querySelector('[data-paths]')", timeout=15000, what='the page again')
+        c.eq([c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), norm(c.text('[data-step="C1:3"] [data-step-note]')), c.js("[...document.querySelectorAll('details[data-path]')].map(d => d.open)"), norm(c.text('[data-path=C1] [data-progress]'))],
+             ['ko', 'Le bouton reste gris', [True, False, False], norm(steps(3, 4))], 'after a reload: the steps, their words and the shut path are as left', what='reload')
+        c.shot(f'A362_recette_apres_{c.width}_{lang}.png')
+        full(f'A362_page_apres_{c.width}_{lang}.png')
+        # ---- filtered by application the list is the one of before: no path, every essay of the application listed (the one without test stays out)
+        c.tap('[data-app=pilote]')
+        c.until("!document.querySelector('[data-paths]')", what='no path when filtered')
+        ids = c.js("(() => { const m = {}; document.querySelectorAll('li[data-id]').forEach(l => m[l.dataset.id] = (m[l.dataset.id] || 0) + 1); return m })()")
+        c.eq([c.count('[data-majors]'), c.count('[data-rest]'), ids.get('SOG-0302'), ids.get('SOG-0307'), 'SOG-0309' in ids], [0, 0, 1, 1, False], 'filtered: no path, no « To see first », the covered essays listed as before, the essay without test out', what='filtered')
+    c.check_errors()
+
+
+@case('A363', 'An unreadable `paths` in frame/help/recette.json changes nothing of the Recette screen: no path, no « À voir en premier », the list of today, no error (the file is read as untrusted)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule="the ergonomist's Q4: « un fichier illisible = pas de chemins, et la recette d'aujourd'hui inchangée »; frame/lib/recette_paths.js gives null for anything that is not a list of well-formed paths")
+def a363(c):
+    for garbage in ('x', 5, [], {'paths': 'x'}, {'paths': [{'id': 'bad'}, None, 7], 'order': 'C1', 'majors_first': 'x'}, {'paths': [{'id': 'C1', 'steps': 'x', 'covers': {}}]}):
+        fx = _paths_fixture(garbage)
+        body = json.dumps(fx)
+        c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=body))   # the last route registered answers first
+        c.open('recette', docs=LEVEL3, wait=False)
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests of today')
+        c.eq([c.count('[data-paths]'), c.count('[data-majors]'), c.count('[data-rest]'), c.count('[data-path]'), c.count('[data-section=today] li[data-id]')], [0, 0, 0, 0, 7], f'{json.dumps(garbage)[:40]}: the list of today, seven tests visible', what='unchanged')
+    c.check_errors()
+
+
 @case('A115', 'The Recette screen (SOG-0167): the functional tests of the delivered cards, the day\u2019s first, seven visible; « Validé » / « Refusé » with a comment (required for a refusal), written by the launcher in RECETTE.json, kept on the device « not sent » otherwise; a known defect says « do not retest »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0167: the user needs a list of daily manual tests with his comments and a passed / failed status; the launcher verb recette/verdict (same path and bounds as roadmap/priorities) writes organisation/RECETTE.json; a refusal without comment is not sent; a defect already known is said on its test so that it is not reported twice')
@@ -5473,6 +5627,13 @@ def a352(c):
     sw = (ROOT / 'frame' / 'sw.js').read_text(encoding='utf-8')
     c.eq("'lib/text.js'" in sw, True, 'the service worker keeps frame/lib/text.js (Settings draws offline)', what='sw shell')
     c.check_errors()
+
+
+@case('A361', 'The test paths of the recette (frame/lib/recette_paths.js): a file read as UNTRUSTED (no key copied from it, every text and number bounded, an unreadable file gives null), the order of the paths, an essay covered by the FIRST path that cites it only, and the rule of the verdicts (a bad step: « ko » on ITS fiches only; « ok » when every non-optional step citing the fiche is good; « not played » writes nothing)', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule="the ergonomist's Q4 of 21 Nov 2026 (the user has 99 essays without a verdict and will not sort them one by one): a few paths of use validate many fiches at once, shown BEFORE the isolated essays; organisation/RECETTE_CHEMINS.json is written by the relay alone, read here as an untrusted input; a bad step marks only its own fiches; an optional step not played blocks nothing and leaves its fiches waiting")
+def a361(c):
+    _bench(c, 'frame/lib/test/recette_paths.html', '__recPathsBench')
 
 
 @case('A351', 'The fold of the frame (SOG-0468 (3), frame/lib/fold.js): fold() gives EXACTLY the text of the <details> builders it replaces (Data cycle, packs, recette, tokens), wireFolds() reports an opened or closed fold once and writes nothing for an unchanged value, openFold() opens by key', 'A',
