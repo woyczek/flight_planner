@@ -516,12 +516,11 @@ function valuesOf(v) {
  *  'other'), le texte français à 300 signes. */
 function reasonsOf(list) {
   return (Array.isArray(list) ? list : []).slice(0, 40).filter(x => x && typeof x === 'object').map(x => {
-    const own = k => Object.hasOwn(x, k) ? x[k] : undefined,
-      code = text(own('code'), 40);
+    const code = text(own(x, 'code'), 40); // la clé PROPRE (frame/lib/untrusted.js, K479 : pas de nouvelle copie du garde)
     return {
       code: /^[a-z][a-z_]{0,39}$/.test(code) ? code : 'other',
-      values: valuesOf(own('values')),
-      text: text(own('text'), 300)
+      values: valuesOf(own(x, 'values')),
+      text: text(own(x, 'text'), 300)
     };
   });
 }
@@ -531,18 +530,21 @@ function reasonsOf(list) {
 function notVerifiedOf(list) {
   const int = v => Number.isInteger(v) && v >= 0 && v <= 99999 ? v : 0;
   return (Array.isArray(list) ? list : []).slice(0, 40).filter(x => x && typeof x === 'object').map(x => {
-    const own = k => Object.hasOwn(x, k) ? x[k] : undefined,
-      state = text(own('state'), 4).toUpperCase();
+    const state = text(own(x, 'state'), 4).toUpperCase(), // la clé PROPRE (frame/lib/untrusted.js, K479)
+      items = own(x, 'items');
     return {
       state,
-      flown: int(own('flown')),
-      spaces_only: int(own('spaces_only')),
-      items: (Array.isArray(own('items')) ? own('items') : []).slice(0, 40).filter(i => i && typeof i === 'object').map(i => ({
-        id: text(Object.hasOwn(i, 'id') ? i.id : '', 32),
-        // l'endroit de la route (lot 2 bis d'AeroDB, 6c0987086 : un tronçon « UL607 KOK–BUPAL », 62 signes au plus) ; '' sans lui
-        target: text(Object.hasOwn(i, 'target') ? i.target : '', 80),
-        reason: /^[a-z][a-z_]{0,31}$/.test(Object.hasOwn(i, 'reason') ? i.reason : '') ? i.reason : 'unread'
-      })).filter(i => i.id)
+      flown: int(own(x, 'flown')),
+      spaces_only: int(own(x, 'spaces_only')),
+      items: (Array.isArray(items) ? items : []).slice(0, 40).filter(i => i && typeof i === 'object').map(i => {
+        const reason = own(i, 'reason');
+        return {
+          id: text(own(i, 'id') ?? '', 32),
+          // l'endroit de la route (lot 2 bis d'AeroDB, 6c0987086 : un tronçon « UL607 KOK–BUPAL », 62 signes au plus) ; '' sans lui
+          target: text(own(i, 'target') ?? '', 80),
+          reason: typeof reason === 'string' && /^[a-z][a-z_]{0,31}$/.test(reason) ? reason : 'unread'
+        };
+      }).filter(i => i.id)
     };
   }).filter(x => /^[A-Z]{2}$/.test(x.state));
 }
