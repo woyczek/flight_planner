@@ -669,7 +669,7 @@
       keptOk: ['Quitter', 'Leave', 'Verlassen', 'Salir']
     },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
-    jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste porte déjà.',
+    jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste contient déjà.',
       'Sending your data is slow: the job starts with what this workstation already holds.',
       'Das Senden Ihrer Daten dauert lange: die Aufgabe startet mit dem, was dieser Rechner schon hat.',
       'El envío de sus datos tarda: el trabajo empieza con lo que este equipo ya tiene.'
@@ -723,7 +723,7 @@
         'Der Starter des Arbeitsplatzes antwortet nicht: Starten Sie ihn neu und versuchen Sie es erneut.',
         'El lanzador del puesto no responde: vuelva a iniciarlo y reintente.'
       ],
-      lan: ['Cette fonction n’est offerte que sur l’ordinateur qui porte le lanceur, pas sur un appareil appairé.',
+      lan: ['Cette fonction n’est offerte que sur l’ordinateur où tourne le lanceur, pas sur un appareil appairé.',
         'This function is offered only on the computer that runs the launcher, not on a paired device.',
         'Diese Funktion gibt es nur auf dem Rechner, auf dem der Starter läuft, nicht auf einem gekoppelten Gerät.',
         'Esta función solo se ofrece en el ordenador que ejecuta el lanzador, no en un dispositivo emparejado.'

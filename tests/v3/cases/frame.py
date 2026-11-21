@@ -6881,7 +6881,7 @@ LAUNCHER_TEXTS = {
              'es': 'Esta función pasa por el lanzador del puesto y ningún lanzador sirve esta página: abra la suite desde el lanzador de su ordenador.'},
     'down': {'fr': 'Le lanceur du poste ne répond pas : relancez-le, puis réessayez.', 'en': 'The workstation’s launcher is not answering: start it again, then retry.',
              'de': 'Der Starter des Arbeitsplatzes antwortet nicht: Starten Sie ihn neu und versuchen Sie es erneut.', 'es': 'El lanzador del puesto no responde: vuelva a iniciarlo y reintente.'},
-    'lan': {'fr': 'Cette fonction n’est offerte que sur l’ordinateur qui porte le lanceur, pas sur un appareil appairé.',
+    'lan': {'fr': 'Cette fonction n’est offerte que sur l’ordinateur où tourne le lanceur, pas sur un appareil appairé.',
             'en': 'This function is offered only on the computer that runs the launcher, not on a paired device.',
             'de': 'Diese Funktion gibt es nur auf dem Rechner, auf dem der Starter läuft, nicht auf einem gekoppelten Gerät.',
             'es': 'Esta función solo se ofrece en el ordenador que ejecuta el lanzador, no en un dispositivo emparejado.'},
