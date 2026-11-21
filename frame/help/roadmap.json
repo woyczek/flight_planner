@@ -4,7 +4,7 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "867d628",
+  "organisation": "7ef01f0",
   "fiches": 533,
   "untranslated": 0,
   "priorities": 481,
@@ -3366,11 +3366,12 @@
     {
      "id": "SOG-0530",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : avertir quand le niveau de croisière ne suit pas la règle semi-circulaire (sans bloquer)",
      "en": "Fuel: warn when the cruising level does not follow the semicircular rule (without blocking)",
      "de": "Kraftstoff: warnen, wenn die Reiseflughöhe der Halbkreisregel nicht folgt (ohne zu sperren)",
-     "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)"
+     "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)",
+     "test": true
     }
    ]
   },
