@@ -4,7 +4,7 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f20a3ee",
+  "organisation": "f66df3d",
   "fiches": 539,
   "untranslated": 0,
   "priorities": 481,
@@ -1383,20 +1383,22 @@
     {
      "id": "SOG-0538",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : la note sous « Non vérifiable » sur les règles du RAD d'espaces seuls perd son nombre",
      "en": "Fuel: the note under “Not verifiable” on airspace-only RAD rules loses its number",
      "de": "Kraftstoff: Der Hinweis unter „Nicht prüfbar“ zu den RAD-Regeln nur für Lufträume verliert seine Zahl",
-     "es": "Combustible: la nota bajo «No verificable» sobre las reglas del RAD solo de espacios pierde su número"
+     "es": "Combustible: la nota bajo «No verificable» sobre las reglas del RAD solo de espacios pierde su número",
+     "test": true
     },
     {
      "id": "SOG-0540",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : « Auto » peut garder un niveau dont la route est « non vérifiable » avant un niveau dont la route est conforme",
      "en": "Fuel: “Auto” can keep a level whose route is “not verifiable” before a level whose route conforms",
      "de": "Kraftstoff: „Auto“ kann eine Flugfläche mit „nicht prüfbarer“ Route vor einer Flugfläche mit konformer Route behalten",
-     "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme"
+     "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme",
+     "test": true
     }
    ]
   },
