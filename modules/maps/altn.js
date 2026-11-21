@@ -335,7 +335,7 @@ function cardHtml(t) {
       m: t.fuel.min != null ? t.fuel.min : '—'
     }) : '';
   return `<div><b>${esc(t.icao)}</b>${t.name ? ` · ${esc(t.name)}` : ''}</div><div class="f-muted">${esc([state, t.nm != null ? tt(TX.altnDist, {
-    n: t.nm
+    n: t.nm.toLocaleString(S.ctx.lang?.() || 'fr', { maximumFractionDigits: 1 }) // la distance à la façon de la langue (« 83,2 »), une décimale au plus : Carburant l'a arrondie au dixième
   }) : ''].filter(Boolean).join(' · '))}</div>${why.length ? `<div class="f-muted">${esc(why.join(' ; '))}</div>` : ''}${fuel ? `<div class="f-muted">${esc(fuel)}</div>` : ''}<button type="button" class="f-btn mp-altn-pick" data-altn="${esc(t.icao)}">${esc(tt(TX.altnPick))}</button>`;
 }
 /** Un appui sur la carte en (x, y) : sur un terrain mis en avant, sa fiche s'ouvre (vrai) ; sinon rien (faux). */

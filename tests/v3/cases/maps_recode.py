@@ -10231,3 +10231,41 @@ def _no_duplicate_names():
 
 
 _no_duplicate_names()
+
+
+@case('D310', 'The sheet of a proposed alternate (SOG-0549): it never passes under the column of the Map buttons (at 390 as at 1280: the whole text is read), and its distance is written as the language writes it (« 83,2 NM » in French, never « 83.2 NM »)', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False,
+      rule='SOG-0549 (the relay, 21 Nov, seen on D303_390_fr_wx.png): the sheet opened under the tool buttons (pencil, target, wand, move, magnifier) and hid the end of its lines; the distance of the aerodrome was written with the point; showTip keeps the sheet clear of the buttons of the overlay, altn.js writes the distance with nmTxt')
+def d_altncard(c):
+    f = flight()
+    doc = _ALTN_DOC('LFML', 8)
+    for t in doc['list']:
+        if t.get('icao', '').startswith('LF') and t.get('nm') is not None:
+            t['nm'] += .2                                            # a decimal: 83,2 in French
+            t['why'] = ['wx-ifr']                                    # a line more, the sheet is long
+            t['name'] = f"Terrain d'essai {t['icao'][2]}"                # a plain name (the capture is read by people)
+            t['fuel'] = {'amount': 2600, 'unit': 'kg', 'min': 35}    # the four lines of the sheet
+    c.page.add_init_script(_ALTN_SPY_JS)
+    c.open('maps', docs=fdocs(f) + [['cache/fuel/altn_candidates.json', doc, 'cache'], ['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.wait(2000)
+    c.js("async () => { const m = await import('/modules/maps/draw.js'); m.settle(); await new Promise(r => setTimeout(r, 900)); return true }")
+    c.until("() => (window.__mp.S.altnHits || []).length >= 7", what='the seven aerodromes are drawn')
+    n = c.js("() => window.__mp.S.altn.list.length")
+    worst = []
+    for i in range(n):
+        # the card is opened as a touch on the ring does (the rings of the seven aerodromes may lie close together: the exact place of the ring of the aerodrome i, so that it is its card)
+        g = c.js("""async (i) => { const S = window.__mp.S, A = await import('/modules/maps/altn.js'), t = S.altn.list[i], h = S.altnHits.find(x => x.icao === t.icao);
+              S.cardEl.hidden = true; A.altnTap(h.x, h.y);
+              const e = S.cardEl, r = e.getBoundingClientRect(), b = S.box.getBoundingClientRect(),
+              under = [...document.querySelectorAll('.f-overlay .f-ov-btn')].filter(x => { const q = x.getBoundingClientRect(); return q.width > 0 && getComputedStyle(x).visibility !== 'hidden' && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top }).map(x => x.getAttribute('aria-label') || x.title || x.className),
+              cut = [...e.querySelectorAll('div')].filter(d => d.scrollWidth > d.clientWidth + 1).length;
+          return { icao: t.icao, nm: t.nm, rect: [r.left, r.top, r.right, r.bottom].map(Math.round), under, inside: r.left >= b.left - .5 && r.right <= b.right + .5 && r.top >= b.top - .5 && r.bottom <= b.bottom + .5, cut, text: e.textContent } }""", i)
+        if g['under'] or not g['inside'] or g['cut']:
+            worst.append([g['icao'], g['under'], g['rect'], g['inside'], g['cut']])
+        if i == 0:
+            c.shot(f'D310_{c.lang}_{c.width}.png')
+        nm = c.js("([n, l]) => n.toLocaleString(l, { maximumFractionDigits: 1 })", [g['nm'], c.lang])
+        c.ok(g['icao'] in g['text'] and f'{nm} NM' in g['text'], g['text'], f'the sheet of {g["icao"]} writes the distance « {nm} NM » as the language does')
+    c.eq(worst, [], 'no sheet passes under a Map button, none leaves the map, no line of a sheet is cut', what='sheets')

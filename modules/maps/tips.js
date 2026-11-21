@@ -90,17 +90,50 @@ export function followTip(tip, box, x, y, html) {
   if (tip.style.left !== left) tip.style.left = left;
   if (tip.style.top !== top) tip.style.top = top;
 }
-/** Carte posée dans un cadre à (x, y), au-dessus du doigt sinon dessous (la carte d'un point de la route) ; reste jusqu'au
- *  toucher suivant ; écrite seulement si elle change. */
+/** La bande libre de la carte, de gauche à droite, à la hauteur [top, top + h] (px dans le cadre) : les boutons de la carte (les deux colonnes du cadre, .f-ov-btn) ne sont jamais recouverts ;
+ *  un bouton de la moitié droite ferme la bande à sa gauche, un de la moitié gauche l'ouvre à sa droite. */
+function freeBand(box, top, h) {
+  const r = box.getBoundingClientRect();
+  let lo = 4,
+    hi = r.width - 4;
+  for (const b of document.querySelectorAll('.f-overlay .f-ov-btn')) {
+    const q = b.getBoundingClientRect(),
+      t = q.top - r.top;
+    if (!q.width || t >= top + h || t + q.height <= top) continue;
+    if ((q.left + q.right) / 2 - r.left > r.width / 2) hi = Math.min(hi, q.left - r.left - 6);
+    else lo = Math.max(lo, q.right - r.left + 6);
+  }
+  return {
+    lo,
+    hi
+  };
+}
+/** Carte posée dans un cadre à (x, y), au-dessus du doigt sinon dessous (la carte d'un point de la route), jamais sous les boutons de la carte (elle se range à côté, plus étroite au besoin : son texte entier se lit) ;
+ *  reste jusqu'au toucher suivant ; écrite seulement si elle change. */
 export function showTip(tip, box, x, y, html) {
   if (tip.classList.contains('mp-hover')) tip.classList.remove('mp-hover');
   if (tip.innerHTML !== html) tip.innerHTML = html;
   tip.hidden = false;
   const r = box.getBoundingClientRect(),
-    w = tip.offsetWidth,
+    put = (k, v) => {
+      if (tip.style[k] !== v) tip.style[k] = v;
+    },
+    topOf = h => Math.max(4, Math.min(r.height - h - 4, y - h - 10 < 4 ? y + 14 : y - h - 10));
+  put('maxWidth', '');
+  put('left',
+    '0px'
+  ); // sa largeur naturelle d'abord : posée en absolu, elle s'ajuste à la place qui reste à droite de son bord gauche, donc mesurée au bord gauche de la carte
+  let w = tip.offsetWidth,
+    h = tip.offsetHeight,
+    band = freeBand(box, topOf(h), h);
+  if (w > band.hi - band.lo) { // trop large pour la bande libre : plus étroite, donc plus haute ; la bande est relue à la nouvelle hauteur
+    put('maxWidth', `${Math.max(120, Math.floor(band.hi - band.lo))}px`);
+    w = tip.offsetWidth;
     h = tip.offsetHeight;
-  tip.style.left = `${Math.max(4, Math.min(r.width - w - 4, x + 10))}px`;
-  tip.style.top = `${Math.max(4, Math.min(r.height - h - 4, y - h - 10 < 4 ? y + 14 : y - h - 10))}px`;
+    band = freeBand(box, topOf(h), h);
+  }
+  put('left', `${Math.round(Math.max(band.lo, Math.min(band.hi - w, x + 10)))}px`);
+  put('top', `${Math.round(topOf(h))}px`);
 }
 /** Infobulle quittée (k : 'map' ou 'prof') : elle reste 5 s à sa place, puis part ; un nouveau survol la remplace. */
 export function linger(k) {
