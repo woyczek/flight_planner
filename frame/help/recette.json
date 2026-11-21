@@ -5523,10 +5523,10 @@
     "de": "Routen: Die Routenberechnung liefert eine Route, von der sie weiß, dass sie Regeln verletzt (Höhen-Jojo, Strecke außerhalb ihrer vertikalen Ausdehnung, RAD), unter der Bezeichnung „teilweise geprüft“",
     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»"
    },
-   "test": "RELANCE le lanceur (sur 52d1111fd ou plus récent), puis recharge la page. Carburant : EGGW → LQSA au FL330, « Calculer A → B ». (1) La route ne passe plus par L9 ni L607 en croisière et ne descend jamais pour remonter ; le niveau du plan est celui du calcul. (2) Chaque route dit UN verdict : « conforme à ce que nous savons lire » (avec « Seul Eurocontrol valide un plan. »), « Non vérifiable : N points » ou « enfreint N règles connues » ; les groupes « Règles connues enfreintes » et « Non vérifiable » s'ouvrent, chaque ligne commence par l'endroit de la route ; une ligne par État traversé (« {État} : N règles du RAD portent sur cette route ») ouvre sa liste. (3) Si la route enfreint des règle",
+   "test": "RELANCE le lanceur (sur ecaad3a50 ou plus récent), puis recharge la page. Carburant : EGGW → LQSA au FL330, « Calculer A → B ». (1) La route ne passe plus par L9 ni L607 en croisière et ne descend jamais pour remonter ; le niveau du plan est celui du calcul. (2) Chaque route dit UN verdict : « conforme à ce que nous savons lire » (avec « Seul Eurocontrol valide un plan. »), « Non vérifiable : N points » ou « enfreint N règles connues » ; les groupes « Règles connues enfreintes » et « Non vérifiable » s'ouvrent, chaque ligne commence par l'endroit de la route ; une ligne par État traversé (« {État} : N règles du RAD portent sur cette route ») ouvre sa liste. (3) Si la route enfreint des règle",
    "since": "2026-11-20",
    "state": "todo",
-   "delivered": "2026-11-20T18:40:11Z"
+   "delivered": "2026-11-21T13:24:13Z"
   },
   {
    "id": "SOG-0533",
@@ -5557,6 +5557,21 @@
     "Autre (dans le texte)"
    ],
    "since": "2026-11-20",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0134",
+   "fiche": "SOG-0530",
+   "app": "pilote",
+   "question": "Niveaux de croisière en vol à vue : AeroDB peut-il lire aussi la page ENR 1.1 de l'eAIP du SIA pour trouver la hauteur au-dessus de laquelle la règle joue ?",
+   "context": "Tu as donné ENR 1.7 et ENR 1.3. Elles donnent le tableau des niveaux (IFR et VFR), mais pas la hauteur au-dessus du sol à partir de laquelle un vol à vue doit suivre ce tableau. Sans elle, Carburant n'avertit que les vols aux instruments et dit « hauteur VFR non lue » pour un vol à vue. ENR 1.1 est une page de plus, sur le même site, lue de la même façon (pendant la mise à jour des données).",
+   "options": [
+    "Oui : ENR 1.1 lue comme ENR 1.7 et ENR 1.3, pendant la mise à jour",
+    "Non : pas d'avertissement pour les vols à vue, l'écran le dit",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-21",
    "state": "todo",
    "recommended": 0
   }
