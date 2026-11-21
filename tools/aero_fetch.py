@@ -508,12 +508,10 @@ def enr17(data, today=None):
     cycle = aero_cycles.airac_start(today)
     name = 'levels_fr.json'
     path = os.path.join(data, 'route', name)
-    try:
-        with open(path, encoding='utf-8') as f:
-            if json.loads(f.read(65536)).get('cycle') == cycle:      # le fichier vient du dépôt de données (non fiable) : 64 Ko lus au plus, et une imbrication folle (RecursionError) est une relecture, pas une exception (revue de Sécurisation)
-                return [{'name': name, 'folder': 'route', 'bytes': os.path.getsize(path), 'unchanged': True}], []
-    except (OSError, ValueError, AttributeError, RecursionError):
-        pass
+    import safe_json      # SOG-0468 (a) : l'UNE lecture bornée des fichiers JSON du dépôt de données (K469 interdit une garde propre) ; le fichier du cycle déjà là : rien n'est demandé
+    held, why = safe_json.read(path, 65536)      # le fichier vient du dépôt de données (non fiable) : borné, jamais d'exception ; une raison (absent, trop gros, illisible) est une relecture de la page
+    if not why and isinstance(held, dict) and held.get('cycle') == cycle:
+        return [{'name': name, 'folder': 'route', 'bytes': os.path.getsize(path), 'unchanged': True}], []
     try:
         levels = sia_enr17.parse(get(enr51_url(cycle, '1.7'), limit=ENR17_PAGE_BYTES))
     except (OSError, ValueError) as e:

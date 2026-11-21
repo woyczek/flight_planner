@@ -607,6 +607,14 @@ def check_levels(levels):
     return out
 
 
+def semicircular(p):
+    """SOG-0530 lot B : le contrôle du niveau de croisière d'un niveau, en un mot : 'warning' (un niveau qui ne suit pas la règle semi-circulaire de l'AIP de France), 'undecided' (une route trop près d'une coupure, ou sans variation magnétique), 'ok' (des tronçons de France jugés, aucun avertissement), 'no_table' (aucun tronçon de France jugé : un autre État, ou le tableau n'est pas lu) ; None sans contrôle. Jamais un blocage : `valid` ne la lit pas."""
+    rule = p.get('level_rule')
+    if not isinstance(rule, dict):
+        return None
+    return 'warning' if rule.get('warnings') else 'undecided' if rule.get('undecided') else 'ok' if rule.get('checked') else 'no_table'
+
+
 def level_summary(level, res):
     """Une ligne par niveau, pour l'appelant (SOG-0529) : { fl, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }.
     `valid` : une route trouvée, un contrôle SANS erreur et aucune limite de raccord du RAD dépassée (un raccord direct que l'IFPS refusera n'est JAMAIS une route valide : `reason` le dit) ;
@@ -633,7 +641,7 @@ def level_summary(level, res):
     else:
         reason = 'route valide'
     return {'fl': level, 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
-            'errors': [e[:160] for e in errors[:3]], 'verdict': p.get('verdict'), 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}      # SOG-0532 (3) : `verdict` (violates | unverifiable | conform) : le même mot que la réponse de route/compute
+            'errors': [e[:160] for e in errors[:3]], 'verdict': p.get('verdict'), 'warnings': len(p.get('warnings') or []), 'semicircular': semicircular(p), 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}      # SOG-0532 (3) : `verdict` (violates | unverifiable | conform) : le même mot que la réponse de route/compute
 
 
 LEVELS_BUDGET_S = 300      # SOG-0529 (relecture de Sécurisation) : le temps de l'appel ENTIER (douze niveaux de 120 s au pire tiendraient le verrou des calculs pendant 24 minutes) ; testé AVANT chaque niveau

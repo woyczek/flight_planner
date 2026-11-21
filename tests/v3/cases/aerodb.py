@@ -18974,7 +18974,7 @@ def k406(c):
          (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')
 
 
-def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_cycle='2026-10-29', points=None):      # SOG-0532 lot 3a : `points` = d'autres points { nom: (lat, lon) } pour les voies (un point nommé comme P2 se lit comme une voie : les suites « (A UH1 B) » du RAD veulent des noms de points)
+def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_cycle='2026-10-29', points=None, zone='xx', levels=None):      # SOG-0532 lot 3a : `points` = d'autres points { nom: (lat, lon) } pour les voies (un point nommé comme P2 se lit comme une voie : les suites « (A UH1 B) » du RAD veulent des noms de points)
     """SOG-0532 : une base INVENTÉE pour les cas du moteur de route (deux terrains ZZAA et ZZBB, des points A0 P1 P2 P3 P4 B0 sur une ligne, des voies `lanes` = [(nom, [points], plancher_ft, plafond_ft)], une STAR de ZZBB si `star_min`, le RAD de test + `rad_rows` en annexe 3A Conditions) ; rend (data, rad). Aucune donnée de l'utilisateur."""
     import json
     import os
@@ -18992,11 +18992,11 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_
     files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
              'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
     data = os.path.join(td, 'data')
-    folder = os.path.join(data, 'sia', 'base', 'xx', base_cycle)
+    folder = os.path.join(data, 'sia', 'base', zone, base_cycle)
     os.makedirs(folder)
     for k, v in files.items():
         with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
-            json.dump({'schema': 2, 'zone': 'xx', 'cycle': base_cycle, 'kind': k, 'data': v}, f)
+            json.dump({'schema': 2, 'zone': zone, 'cycle': base_cycle, 'kind': k, 'data': v}, f)
     if star_min:
         os.makedirs(os.path.join(data, 'proc', 'manual'))
         star = {'icao': 'ZZBB', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR', 'name': 'IAF1A', 'id': 'ZZBB.STAR.IAF1A', 'runways': ['09'], 'points': [
@@ -19004,6 +19004,9 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_
         with open(os.path.join(data, 'proc', 'manual', 'ZZBB.json'), 'w', encoding='utf-8') as f:
             json.dump(star, f)
     os.makedirs(os.path.join(data, 'route'))
+    if levels is not None:      # SOG-0530 lot B : le fichier du tableau des niveaux (route/levels_fr.json), tel qu'il est (une chaîne : un fichier hostile aussi)
+        with open(os.path.join(data, 'route', 'levels_fr.json'), 'w', encoding='utf-8') as f:
+            f.write(levels if isinstance(levels, str) else json.dumps(levels))
     sheets = RF.rad_sheets()
     for name, rows in sheets:
         if name == 'Annex 3A Conditions':
@@ -19554,3 +19557,131 @@ def k494(c):
     except ValueError:
         odd = True
     c.eq((f5, bool(e5) and 'ENR 1.7' in e5[0], written, odd), ([], True, False, True), 'a page that does not read writes NOTHING and says so (layout changed?); an address for another page than 5.1 or 1.7 is refused', what='failures')
+
+
+@case('K495', 'Route engine, SOG-0530 lot B: the cruising level is checked against the semicircular rule of the AIP of France (the table read by the launcher, ENR 1.7.5) — an AVERTISSEMENT with a code and its values, NEVER an error: the route stays valid and the verdict does not change; the MAGNETIC track is estimated from the variation of the nearby aerodromes with a margin, and a track within the margin of a cut is « not verifiable », never a false warning; a State without a table, a table that cannot be read, a hostile file: said, never guessed',
+      'K', static=True,
+      rule='SOG-0530 (the ergonomist, 19 Nov, « version de l\'ergonome »: (1) one check « cruising level » on each cruise leg, the flight rule, the MAGNETIC track and the table of the State overflown read in an official source; (3) a WARNING that says what to do, never a block; (5) nothing invented: a State with no known table gives no warning and says so) and the relay (21 Nov: the declination estimated from nearby aerodromes with a margin, a route close to a cut is « non vérifiable »; the screen words go through the ergonomist before Features codes them). Measured on the 24 invented flights: 18 cruise legs of France, variation 0.2 to 2.2 degrees east, margin 2.1 to 3.0 degrees, no route near a cut; one warning (a level 245, which is no cruising level). Sécurisation: the file comes from the data repository, so it is read bounded and every number checked',
+      )
+def k495(c):
+    import json
+    import math
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, level_rule as L
+    lower = {'ifr': [list(range(10, 191, 20)), list(range(20, 181, 20))], 'vfr': [list(range(35, 196, 20)), list(range(45, 186, 20))]}
+    table_doc = {'schema': 1, 'zone': 'fr', 'cycle': '2026-10-29', 'source': 'invented', 'tracks': {'lower': ['000-179', '180-359'], 'upper': ['090-269', '270-089']}, 'lower': lower,
+                 'upper': [list(range(210, 391, 20)) + [410, 450, 490], list(range(200, 401, 20)) + [430, 470, 510]]}
+    points = {'LUMAT': (50.0, 1.0), 'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}
+    lanes = [('UH1', ['A0', 'LUMAT', 'PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)]
+
+    def flight(fl, zone='fr', levels=table_doc):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, points=points, lanes=lanes, zone=zone, levels=levels)
+            request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'route': 'A0 UH1 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+            res = P.compute(request, data, rad, None)
+            return res, V.to_view(res, request)
+    ok_res, ok_view = flight(170)
+    warn_res, warn_view = flight(180)
+    p170, p180 = ok_res['primary'], warn_res['primary']
+    c.eq((p170.get('warnings'), (p170.get('level_rule') or {}).get('warnings')), ([], 0), 'FL170 flown east (track 000-179): an ODD level is expected and FL170 is one: no warning (red before: no `level_rule`)', what='conform')
+    w = p180.get('warnings') or []
+    c.eq([(x['code'], x['values']['fl'], x['values']['range'], x['values']['expected'], x['values']['suggested'], x['values']['regime'], x['values']['state'], x['values']['source'], x['values']['cycle']) for x in w],
+         [('level_semicircular', 180, '000-179', 'odd', [170, 190], 'IFR', 'fr', 'ENR 1.7.5', '2026-10-29')], 'FL180 flown east: ONE warning `level_semicircular` with its values — the level, the half of the magnetic track, the parity expected, the two levels to take, the flight rule, the State, the source and the cycle of the table', what='warning')
+    x = w[0]['values'] if w else {}
+    c.eq((x.get('from_point') in ('A0', 'LUMAT', 'PIKAD', 'RENTO'), x.get('to_point') in ('SOLVA', 'P4', 'B0'), x.get('legs', 0) >= 2, 85 <= x.get('track_deg', 0) <= 95), (True, True, True, True), 'the warning names the run of legs at that level (from its first point to its last: one line, not one per leg) and the magnetic track (about 090)', what='run')
+    c.eq((p180['verdict'], p170['verdict'], p180['violations'], p180['status'] == p170['status'], any(i['level'] == 'ERREUR' for i in p180['issues'])), (p170['verdict'], p170['verdict'], [], True, False), 'a WARNING, never an error: the verdict, the status and the violations are those of the FL170 flight; the issue is a review with its code and values', what='not an error')
+    summary = P.level_summary(180, warn_res)
+    c.eq((P.level_summary(170, ok_res)['semicircular'], summary['semicircular'], summary['warnings'], summary['valid'] == P.level_summary(170, ok_res)['valid']), ('ok', 'warning', 1, True), 'the per-level line says `semicircular` (ok / warning / undecided / no_table) and the number of warnings; `valid` does NOT read it (a level that does not follow the rule stays a valid route)', what='level_summary')
+    # the ergonomist (21 Nov): a DOUBT about the level (a track near a cut, no variation) is a line of the warning group, NEVER an unverifiable: no verdict reads it
+    near_res, _v = flight(250)
+    pn = near_res['primary']
+    c.eq(([x['code'] for x in pn['warnings']], [x['code'] for x in pn['unverifiable'] if x['code'].startswith('level_rule')], pn['verdict'] == p170['verdict'], P.level_summary(250, near_res)['semicircular']), (['level_rule_near_limit'], [], True, 'undecided'),
+         'a route whose only doubt is a leg near a cut (FL250 flown east: the cut of 090 in the UTA) keeps its verdict: the doubt is in `warnings` (code level_rule_near_limit), NOT in `unverifiable` (red before: it was unverifiable and turned the verdict into « unverifiable »)', what='near is a warning')
+    # a State without a table, a table that is not read, a hostile file: said, never guessed
+    foreign, _v = flight(180, zone='xx')
+    missing, _v = flight(180, levels=None)
+    hostile, _v = flight(180, levels='[' * 100000)
+    long_list = dict(table_doc, lower={'ifr': [list(range(10, 191, 20)) + list(range(200, 660, 5)), lower['ifr'][1]]})
+    toolong, _v = flight(180, levels=long_list)
+    notes = lambda res: [(i['code'], i['values'].get('zones'), i['values'].get('table_missing'), i.get('unverifiable', False)) for i in res['primary']['issues'] if i.get('code') == 'level_rule_no_table']
+    c.eq(notes(foreign), [('level_rule_no_table', ['xx'], None, False)], 'a leg of a State whose zone is not France: NO warning and a NOTE `level_rule_no_table` with the zone (only the table of France is read); the note does not change the verdict', what='foreign')
+    c.eq([(notes(r), r['primary']['warnings']) for r in (missing, hostile, toolong)], [([('level_rule_no_table', ['fr'], True, False)], [])] * 3, 'no file, a 100 KB file of « [ » (a RecursionError for a plain json.load), a table of 60+ levels: the table is NOT read, no warning, the note says `table_missing` (never a guessed table, never an exception)', what='no table')
+    c.eq((foreign['primary']['verdict'], missing['primary']['verdict'], foreign['primary']['warnings']), (p170['verdict'],) * 2 + ([],), 'and the verdict is unchanged by a missing table', what='verdict')
+    lr = V.alternative(0, pn, 250)['levelRule']
+    lrf = V.alternative(0, foreign['primary'], 180)['levelRule']
+    lrm = V.alternative(0, missing['primary'], 180)['levelRule']
+    c.eq(((lr['undecided'], lr['warnings'], lr['zones'], lr['unlocated'], lr['table_missing']), (lrf['zones'], lrf['legs'] > 0, lrf['table_missing']), (lrm['table_missing'], lrm['zones'], lrm['checked'])), ((1, 0, [], 0, False), (['xx'], True, False), (True, [], 0)),
+         'each alternative of the view carries `levelRule` { cycle, checked, warnings, undecided, zones, unlocated, legs, table_missing }: « the route leaves France » = `zones` not empty or `unlocated` > 0 (the screen says « vérifiée en France seulement »); `table_missing` = the table of France is not read', what='levelRule')
+    # the reading of the legs and of the magnetic track
+    start = lambda lat, lon, ident='P0': {'id': ident, 'lat': lat, 'lon': lon}
+
+    def leg(a, track, nm=30.0, via='UH1', zone='fr', alt=25000, kind='AIRWAY', ident='P1', **more):
+        lat = a['lat'] + nm * math.cos(math.radians(track)) / 60
+        lon = a['lon'] + nm * math.sin(math.radians(track)) / (60 * math.cos(math.radians(a['lat'])))
+        b = {'id': ident, 'lat': lat, 'lon': lon}
+        return dict(start=a, end=b, via=via, kind=kind, source_zone=zone, altitude_start_ft=alt, altitude_end_ft=alt, **more)
+    ads = {'AAAA': {'lat': 48.0, 'lon': 2.0, 'magVar': 0.0}, 'BBBB': {'lat': 48.5, 'lon': 2.5, 'magVar': 0.0}, 'CCCC': {'lat': 47.5, 'lon': 1.5, 'magVar': 0.0}}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        path = os.path.join(td, 'levels_fr.json')
+        open(path, 'w', encoding='utf-8').write(json.dumps(table_doc))
+        table = L.load(path)
+    one = lambda track, fl, **k: L.check([leg(start(48.0, 2.0), track, alt=fl * 100, **k)], ads, table)
+    got = lambda out: [(x['code'], x['values'].get('fl'), x['values'].get('range'), x['values'].get('expected'), x['values'].get('suggested')) for x in out[0]]
+    c.eq((got(one(150, 250)), got(one(150, 240)), got(one(300, 250))), ([], [('level_semicircular', 240, '090-269', 'odd', [230, 250])], [('level_semicircular', 250, '270-089', 'even', [240, 260])]), 'in the UTA: track 150 (090-269) wants the odd levels (250 is one, 240 is not); track 300 (270-089) wants the even ones (250 is not: 240 or 260)', what='upper')
+    c.eq((got(one(100, 150)), got(one(100, 160)), got(one(250, 170)), got(one(250, 160))), ([], [('level_semicircular', 160, '000-179', 'odd', [150, 170])], [('level_semicircular', 170, '180-359', 'even', [160, 180])], []), 'below FL195: track 100 wants the odd levels, track 250 the even ones', what='lower')
+    near91, near85 = one(91, 250), one(85, 250)
+    c.eq(([x['code'] for x in near91[1]], near91[0], near91[1][0]['values']['limit_deg'], near91[1][0]['values']['margin_deg'], got(near85)), (['level_rule_near_limit'], [], 90, 2.0, [('level_semicircular', 250, '270-089', 'even', [240, 260])]), 'a track at 91 degrees with a margin of 2: too close to the cut of 090 to say: « not verifiable » (an UNVERIFIABLE item, no warning); at 85 (5 degrees from the cut) it is decided', what='near the cut')
+    spread = dict(ads, BBBB={'lat': 48.5, 'lon': 2.5, 'magVar': 8.0})
+    wide = L.check([leg(start(48.0, 2.0), 85, alt=25000)], spread, table)
+    c.eq(([x['code'] for x in wide[1]], wide[0], wide[1][0]['values']['margin_deg'] if wide[1] else None), (['level_rule_near_limit'], [], 10.0), 'the margin is 2 degrees plus the SPREAD of the three variations: nearby aerodromes that disagree by 8 degrees give 10, and a track at 85 is then not decided', what='spread')
+    c.eq([x['code'] for x in L.check([leg(start(48.0, 2.0), 150, alt=25000)], {}, table)[1]] + [x['code'] for x in L.check([leg(start(48.0, 2.0), 150, alt=25000)], {'FAR': {'lat': 10.0, 'lon': 100.0, 'magVar': 0.0}}, table)[1]], ['level_rule_no_variation'] * 2, 'no aerodrome with a variation within 600 NM: « not verifiable », never a track guessed', what='no variation')
+    # the runs, the States of the legs
+    a0 = start(48.0, 2.0)
+    l1 = leg(a0, 150, alt=24000, ident='P1')
+    l2 = leg(l1['end'], 150, alt=24000, ident='P2')
+    l3 = leg(l2['end'], 150, alt=25000, ident='P3')
+    l4 = leg(l3['end'], 150, alt=24000, ident='P4')
+    runs = L.check([l1, l2, l3, l4], ads, table)[0]
+    c.eq([(x['values']['from_point'], x['values']['to_point'], x['values']['legs']) for x in runs], [('P0', 'P2', 2), ('P3', 'P4', 1)], 'consecutive legs at the same level are ONE line (from the first point to the last); a leg that follows the rule between two breaks the run', what='runs')
+    d1 = leg(a0, 150, alt=24000, ident='P1')
+    dct = leg(d1['end'], 150, via='DCT', zone=None, kind='DCT', alt=24000, ident='P2')
+    d3 = leg(dct['end'], 150, alt=24000, ident='P3')
+    gb = leg(dct['end'], 150, zone='gb', alt=24000, ident='P3')
+    fra = leg(a0, 150, via='DCT', zone=None, kind='FRA', alt=24000, ident='P1', fra_area='LFFRASW')
+    fra_de = leg(a0, 150, via='DCT', zone=None, kind='FRA', alt=24000, ident='P1', fra_area='EDFRA')
+    out_between, out_edge, out_fra, out_fra_de = L.check([d1, dct, d3], ads, table), L.check([d1, dct, gb], ads, table), L.check([fra], ads, table), L.check([fra_de], ads, table)
+    c.eq((out_between[0][0]['values']['legs'], [(n['values']['zones'], n['values']['unlocated']) for n in out_edge[2]], len(out_edge[0]), len(out_fra[0]), [(n['values']['zones'], n['values']['unlocated']) for n in out_fra_de[2]]), (3, [(['gb'], 1)], 1, 1, [([], 1)]), 'a direct between two legs of France is in France (3 legs in one line); a direct between France and another State is of unknown State (counted, never checked); a leg of a French FRA cell (« LF… ») is in France, a German one is not', what='States')
+    edge = L.check([dct, d3], ads, table)
+    c.eq((len(edge[0]), edge[0][0]['values']['legs'] if edge[0] else 0, edge[3]['unlocated'], edge[3]['zones']), (1, 2, 0, []), 'a direct at the EDGE of the route (nothing before it: the SID, the aerodrome) takes the zone of the airway on the other side: here two legs of France in one line, none unlocated', what='edge direct')
+    skip = [leg(a0, 150, alt=24000, kind='SID'), dict(leg(a0, 150), altitude_end_ft=26000), dict(leg(a0, 150, alt=24000), data_gap='x'), leg(a0, 150, alt=24550), leg(a0, 150, alt=19500), leg(a0, 150, alt=60000)]
+    c.eq((L.check(skip, ads, table)[0], L.check(skip, ads, table)[3]['checked']), ([], 0), 'not a cruise leg (a SID, a climb, a gap of data, a level that is not a round FL), FL195 (in neither table) and a level above what the table writes (« etc. »): not judged, nothing guessed', what='skipped')
+    many = []
+    cur = a0
+    for n in range(60):
+        lg = leg(cur, 150, nm=5.0, alt=24000 if n % 2 == 0 else 25000, ident=f'Q{n}')
+        many.append(lg)
+        cur = lg['end']
+    bounded = L.check(many, ads, table)
+    c.eq((len(bounded[0]) <= L.MAX_RUNS, len(bounded[0])), (True, L.MAX_RUNS), 'the warnings are bounded (at most MAX_RUNS lines) whatever the route', what='bounded')
+    # the review of Sécurisation: the index and the zones come from the base (untrusted): finite numbers only, a zone is 2 to 4 lower-case letters
+    inf = float('inf')
+    bad_ads = dict(ads, XXXX={'lat': inf, 'lon': 2.0, 'magVar': 30.0}, YYYY={'lat': True, 'lon': 2.0, 'magVar': 30.0}, ZZZZ={'lat': 95.0, 'lon': 2.0, 'magVar': 30.0}, NNNN={'lat': float('nan'), 'lon': 2.0, 'magVar': 30.0}, MMMM={'lat': 48.1, 'lon': 2.1, 'magVar': float('nan')})
+    c.eq(got(L.check([leg(start(48.0, 2.0), 150, alt=24000)], bad_ads, table)), got(one(150, 240)), 'an aerodrome of the index with a latitude of infinity, a boolean, a latitude out of 90 degrees, a NaN: ignored (math.sin(inf) would raise inside assess), the others give the same answer', what='bad index')
+    odd_zones = [leg(a0, 150, alt=24000, zone=['fr']), leg(a0, 150, alt=24000, zone='x' * 1000), leg(a0, 150, alt=24000, zone='FR'), leg(a0, 150, alt=24000, zone={'a': 1}), leg(a0, 150, alt=24000, zone=7)]
+    bad_legs = [dict(leg(a0, 150, alt=24000), start={'id': 'P0', 'lat': inf, 'lon': 2.0}), dict(leg(a0, 150, alt=24000), end={'id': 'P1', 'lat': 48.0, 'lon': float('nan')})]
+    c.eq([[(n['values']['zones'], n['values']['legs'], n['values']['unlocated']) for n in L.check([lg], ads, table)[2]] for lg in odd_zones], [[([], 0, 1)]] * 5, 'a zone that is a list, a 1000-sign string, upper case, a dict or a number is NOT a State (unknown: counted as unlocated, never a TypeError, never copied to the answer)', what='odd zones')
+    c.eq([L.check([lg], ads, table)[:3] for lg in bad_legs], [([], [], [])] * 2, 'a leg with a coordinate of infinity or NaN is not judged and raises nothing', what='bad legs')
+    # the file of the data repository: read bounded, every number checked
+    def loaded(text):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
+            pth = os.path.join(td2, 'levels_fr.json')
+            open(pth, 'w', encoding='utf-8').write(text if isinstance(text, str) else json.dumps(text))
+            return L.load(pth)
+    hostile_docs = [dict(table_doc, schema=2), dict(table_doc, zone='de'), dict(table_doc, cycle='x'), dict(table_doc, tracks={'lower': ['a', 'b'], 'upper': ['c', 'd']}),
+                    dict(table_doc, upper=[table_doc['upper'][0] + [970], table_doc['upper'][1]]), dict(table_doc, upper=[[210, 210, 230, 250, 270], table_doc['upper'][1]]), dict(table_doc, lower={'ifr': [[10, 'x', 50, 70, 90], lower['ifr'][1]]}),
+                    dict(table_doc, lower={'ifr': [True] * 6}), [], 'x', '[' * 100000, '{"a":' * 50000, '{}']
+    c.eq([loaded(x) is None for x in hostile_docs], [True] * len(hostile_docs), 'a file of the data repository that is not exactly the table (another schema or zone, a bad cycle or tracks, a level out of 10-660, a duplicate, a non-number, a boolean, a 100 KB of « [ », a deeply nested object) is NOT a table', what='hostile files')
+    c.eq((loaded(table_doc) or {}).get('cycle'), '2026-10-29', 'the real table reads', what='good file')

@@ -10,6 +10,7 @@ from . import rad_flight
 from . import nav_data
 from . import nat_layer     # SOG-0263
 from . import geo     # SOG-0468 (3) : la formule du grand cercle, une fois
+from . import level_rule      # SOG-0530 lot B : le contrôle du niveau de croisière contre la règle semi-circulaire (un avertissement)
 from . import fra_floor      # SOG-0401 (lot 3) : les voies volées au-dessus du plancher de route libre (RAD, annexe 3B « FRA LIM »)
 from . import dct_limits    # SOG-0401 (lot 3) : la limite des directs au raccord d'un terrain (RAD, annexe 3A « Conditions »)
 from . import space_dct      # SOG-0513 lot C : la limite d'un direct dans un espace (RAD, annexe 3B FRA LIM : EGTTNFRA)
@@ -89,6 +90,7 @@ def today():
     """SOG-0532 (7) : la date du jour (UTC, « AAAA-MM-JJ », sans heure : on ne suppose pas d'heure de départ) quand la demande n'en donne pas. Jamais une date figée dans le code : le cycle AIRAC de la base et les règles du RAD en dépendent."""
     return dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d')
 
+WARNING_CODES={'level_semicircular','level_rule_near_limit','level_rule_no_variation'}      # SOG-0530 : les raisons qui sont des AVERTISSEMENTS (la route reste valide, le verdict ne change pas) : rendues à part dans `warnings`
 MAX_VERDICT_ITEMS=100      # SOG-0532 : au plus cent raisons dans `violations` et dans `unverifiable` (la réponse reste bornée)
 
 def yoyo(levels):
@@ -1117,6 +1119,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
         if l.get('data_gap'):l['compatible']=None
         for text in l['vertical_errors']:
             issue('ERREUR',f'{l["via"]} {l["start"]["id"]}–{l["end"]["id"]} : {text}')
+    if legs:      # SOG-0530 lot B : le niveau de croisière contre la règle semi-circulaire de l'AIP de France (tableau lu par le lanceur) : un AVERTISSEMENT, jamais une erreur ; le doute (route proche d'une coupure, État sans tableau) est DIT
+        level_warnings,level_open,level_notes,level_stats=level_rule.check(legs,nav.ads,level_rule.load(nav.data_dir/'route'/'levels_fr.json'))
+        for x in level_warnings+level_open+level_notes:issue('REVUE',x['text'],x['code'],False,**x['values'])      # l'ergonome : un doute sur le niveau (route proche d'une coupure, variation inconnue) est une ligne du groupe d'AVERTISSEMENT, jamais un non-vérifiable : aucune de ces raisons ne change le verdict
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
     # SOG-0401 (4) : le profil adapté ramène en silence au plafond d'une voie un tronçon de croisière dont la bande est sous le niveau déposé : c'est DIT. Une route SAISIE (ni générée, ni relue d'un chemin de la recherche) : ERREUR par suite de tronçons (au plus MAX_BAND_ISSUES,
@@ -1279,9 +1284,10 @@ def assess(request,_nav=None,_rad=None,_path=None):
     errors=[x for x in issues if x['level']=='ERREUR']
     violations=[dict(code=x.get('code') or 'other',values=x.get('values') or {},text=x['text'][:300]) for x in errors[:MAX_VERDICT_ITEMS]]      # SOG-0532 (3) : les règles CONNUES enfreintes (jamais confondues avec ce qui n'a pas pu être vérifié)
     unverifiable=[dict(code=x['code'],values=x.get('values') or {},text=x['text'][:300]) for x in issues if x['level']=='REVUE' and x.get('unverifiable')][:MAX_VERDICT_ITEMS]      # ce que le contrôle n'a pas pu vérifier, nommé
+    warnings=[dict(code=x['code'],values=x.get('values') or {},text=x['text'][:300]) for x in issues if x['level']=='REVUE' and x.get('code') in WARNING_CODES][:MAX_VERDICT_ITEMS]      # SOG-0530 : les avertissements, à part : ni une violation ni un non-vérifiable
     data_gaps=[dict(start=l['start']['id'],end=l['end']['id'],via=l['via'],reason=l['data_gap']) for l in legs if l.get('data_gap')]
     status='ERREURS DÉTECTÉES' if errors else 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if data_gaps else 'CONTRÔLE PARTIEL — À VÉRIFIER'
-    result=dict(ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
+    result=dict(ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,warnings=warnings,level_rule=dict(level_stats,warnings=len(level_warnings),undecided=len(level_open)) if legs else None,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
         coverage=nav.coverage,rad_summary=rad_summary,not_verified=not_verified,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,

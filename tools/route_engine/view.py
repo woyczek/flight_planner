@@ -137,10 +137,18 @@ def points_of(r):
     return out[:MAX_POINTS]
 
 
+def level_rule_of(r):
+    """SOG-0530 : `level_rule` de la réponse, borné : { cycle, checked, warnings, undecided, zones (au plus 10, des États en minuscules), unlocated, legs, table_missing } ; None sans contrôle. « La route sort de France » = `zones` non vide ou `unlocated` > 0."""
+    x = r.get('level_rule')
+    if not isinstance(x, dict):
+        return None
+    return {'cycle': x.get('cycle'), 'checked': x.get('checked') or 0, 'warnings': x.get('warnings') or 0, 'undecided': x.get('undecided') or 0, 'zones': [z for z in (x.get('zones') or [])[:10] if isinstance(z, str)], 'unlocated': x.get('unlocated') or 0, 'legs': x.get('legs') or 0, 'table_missing': bool(x.get('table_missing'))}
+
+
 def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
-    return {'id': f'alt{i}', 'verdict': r.get('verdict'), 'violations': r.get('violations') or [], 'unverifiable': r.get('unverifiable') or [], 'notVerified': r.get('not_verified') or [], 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
+    return {'id': f'alt{i}', 'verdict': r.get('verdict'), 'violations': r.get('violations') or [], 'unverifiable': r.get('unverifiable') or [], 'warnings': r.get('warnings') or [], 'levelRule': level_rule_of(r), 'notVerified': r.get('not_verified') or [], 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
             'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
             **({'nat': nat_of(segs)} if nat_of(segs) else {}),       # SOG-0263
             **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],
