@@ -2525,3 +2525,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « Carburant », else the sheet's) through `fuelTxt`. Now the document gives the amount converted with `FuelModel.convertFuel` and
   rounded like `fuelTxt`, with that unit; a change of the setting writes the document again. F262 changed on purpose (kg by default);
   F304 red before.
+- **21 Nov 2026 — each proposed route is priced by Fuel's own quote** (SOG-0545 (c); the user: « avec durée / conso affichée clairement »;
+  the ergonomist's criteria a, b, c, e and the mock-up v2). `routeFigures(points, nm, fl)` applies `FuelModel.quote` with the inputs of
+  the flight's quote (`S.C.qIn`) to the points of the route (legs by rhumb line, as `quoteLegs`), its distance and its level, with the
+  forecast wind at that level (`aloftMeanAt`), else the flight's wind; without a known wind, two quotes (wind on the nose and on the tail
+  of the quote's band) give the range of the time AND of the fuel. The engine's `estimate`, `fastest` and `economical` are NOT read (two
+  fuel models would contradict each other). The figures are kept per signature of the flight's quote (`S.figMemo`). The mentions
+  (`figMarks`): the best time and the least trip fuel among the routes that break nothing known, when at least two are priced and the
+  figures shown differ. Order of the list: the chosen route, then « conforme », « non vérifiable », « enfreint », then by fuel (a range
+  by its high end, then its low end). « conforme » is one word on the route (`rConformShort`) and explained once under « Calculé à »
+  (`rConformLine`, with « Seul Eurocontrol valide un plan. »). « pris » becomes « choisie » / « Itinéraire choisi », the word of
+  « Choisir ». A point placed from X-Plane serves the computation only. F305 red before; F297 changed on purpose.

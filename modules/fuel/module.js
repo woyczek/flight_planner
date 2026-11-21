@@ -456,11 +456,12 @@ const TX = {
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
   // SOG-0224 : après « Choisir », les autres itinéraires disparaissent ; cette ligne dit celui qui a été pris
-  rTakenLine: ['Itinéraire pris : {name}. La route est modifiée.', 'Route taken: {name}. The route is changed.',
-    'Route übernommen: {name}. Die Route ist geändert.', 'Itinerario elegido: {name}. La ruta se ha cambiado.'
+  // SOG-0545 (l'ergonome) : « choisi », le mot du bouton « Choisir » (plus « pris »)
+  rTakenLine: ['Itinéraire choisi : {name}. La route est modifiée.', 'Route chosen: {name}. The route is changed.',
+    'Route gewählt: {name}. Die Route ist geändert.', 'Itinerario elegido: {name}. La ruta se ha cambiado.'
   ],
-  rTakenLine0: ['Itinéraire pris. La route est modifiée.', 'Route taken. The route is changed.',
-    'Route übernommen. Die Route ist geändert.',
+  rTakenLine0: ['Itinéraire choisi. La route est modifiée.', 'Route chosen. The route is changed.',
+    'Route gewählt. Die Route ist geändert.',
     'Itinerario elegido. La ruta se ha cambiado.'
   ],
   // le bloc « Aides radio » de l'étape Départ (SOG-0200)
@@ -525,7 +526,18 @@ const TX = {
   theme: ['Famille', 'Family', 'Familie', 'Familia'],
   series: ['Série', 'Series', 'Serie', 'Serie'],
   themeNone: ['— aucune —', '— none —', '— keine —', '— ninguna —'],
-  rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
+  // SOG-0545 (l'ergonome, maquette v2) : « choisie », puisque le bouton dit « Choisir »
+  rTaken: ['choisie', 'chosen', 'gewählt', 'elegida'],
+  // SOG-0545 : les deux mentions (au meilleur temps, au moindre carburant d'étape) et le verdict « conforme » en un mot, expliqué une fois
+  // au-dessus de la liste (rConformLine)
+  rFastest: ['la plus rapide', 'fastest', 'die schnellste', 'la más rápida'],
+  rCheapest: ['la plus économe', 'most economical', 'die sparsamste', 'la más económica'],
+  rConformShort: ['conforme', 'conforms', 'konform', 'conforme'],
+  rConformLine: ['« conforme » : conforme à ce que nous savons lire. Seul Eurocontrol valide un plan.',
+    '“conforms”: conforms to what we can read. Only Eurocontrol validates a plan.',
+    '„konform“: entspricht dem, was wir lesen können. Nur Eurocontrol validiert einen Plan.',
+    '«conforme»: conforme a lo que sabemos leer. Solo Eurocontrol valida un plan.'
+  ],
   // insécable : jamais « 0 » en fin de ligne et « écart » sur la suivante (capture F241 à 390 px)
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -2717,7 +2729,8 @@ function compute() {
     G,
     goal,
     levelFt,
-    nm: distanceNm // la distance du devis (quote.distanceNm)
+    nm: distanceNm, // la distance du devis (quote.distanceNm)
+    qIn // SOG-0545 : les entrées du devis, la base du chiffrage de chaque route proposée (routeFigures)
   };
   S.computeMemo = {
     sig,
@@ -2837,6 +2850,28 @@ const STYLE = `
 [data-module="fuel"] .fu-ralts .f-item.fu-raltshown{box-shadow:inset 0 0 0 2px var(--sog-accent);cursor:default} /* la ligne montrée (SOG-0134) */
 [data-module="fuel"] .fu-ralts .f-item[data-alt]{cursor:pointer}
 [data-module="fuel"] .fu-ralts .fu-raltroute,[data-module="fuel"] .fu-ralts .fu-rproof{display:block;word-break:break-word}
+/* SOG-0545 (maquette v2) : la carte d'une route — mentions et tête en colonne 1, le geste en colonne 2 ; les trois nombres et le reste sur
+   toute la largeur au téléphone ; à partir de 440 px (la colonne de Carburant à côté de la Carte) le geste tient sur la hauteur de la tête
+   et des nombres (pas de vide sous le titre) */
+[data-module="fuel"] .fu-ralts .f-item.fu-ralt{align-items:start}
+[data-module="fuel"] .fu-ralt>.fu-rmarks,[data-module="fuel"] .fu-ralt>.fu-rhead{grid-column:1}
+[data-module="fuel"] .fu-ralt>.fu-ract{grid-column:2;grid-row:1;align-self:center}
+[data-module="fuel"] .fu-ralt.fu-raltmark>.fu-ract{grid-row:1 / span 2}
+[data-module="fuel"] .fu-ralt>.fu-rfigs,[data-module="fuel"] .fu-ralt>.fu-rrest{grid-column:1 / -1;min-width:0}
+[data-module="fuel"] .fu-rmarks{display:flex;flex-wrap:wrap;gap:6px}
+[data-module="fuel"] .fu-rfigs{display:grid;grid-template-columns:68px 112px minmax(0,1fr);gap:0 10px;font-variant-numeric:tabular-nums}
+[data-module="fuel"] .fu-rfigs>span{white-space:nowrap}
+[data-module="fuel"] .fu-rfigs .fu-rhi{font-weight:700}
+[data-module="fuel"] .fu-rcols{padding:0 13px;margin:.4em 0 -.1em;font-size:.85em}
+[data-module="fuel"] .fu-rconform{margin:.1em 0 .4em;font-size:.85em}
+[data-module="fuel"] .fu-ralts .fu-raltroute{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+[data-module="fuel"] .fu-rhead [data-verdict]{white-space:nowrap} /* un verdict long passe à la ligne entier */
+@container (min-width: 440px){
+  [data-module="fuel"] .fu-ralt>.fu-rfigs{grid-column:1}
+  [data-module="fuel"] .fu-ralt>.fu-ract{grid-row:1 / span 2}
+  [data-module="fuel"] .fu-ralt.fu-raltmark>.fu-ract{grid-row:1 / span 3}
+  [data-module="fuel"] .fu-ralts .fu-raltroute{white-space:normal;word-break:break-word}
+}
 [data-module="fuel"] .fu-pt.fu-pterr{border-color:var(--sog-err);flex-wrap:wrap}
 [data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
@@ -6128,7 +6163,24 @@ function routeAltsDraw() {
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections|verdicts)"/g,
       '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b>${(a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''} <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.verdict || a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  // SOG-0545 (maquette v2) : une carte par route — en tête les mentions, puis FL, nom et verdict, le geste à droite ; dessous, sur toute
+  // la largeur, distance, temps et carburant d'étape en colonnes alignées d'une route à l'autre (le nombre de la mention en gras) ; puis la
+  // route écrite et ses plis. Une proposition de repli (plan impossible) n'est pas chiffrée : ni nombres ni mention.
+  // les nombres et les mentions, posés plus bas quand la liste des routes est connue (fig, marks)
+  let fig = new Map(),
+    marks = new Map();
+  const unit = S.C?.sheet?.unit || 'kg',
+    row = (a, i) => {
+      const g = a.proposal ? null : fig.get(i),
+        m = marks.get(i) || {},
+        fl = flOf(a),
+        chips = (m.fast ? `<span class="f-badge" data-kind="accent" data-fastest>${esc(tt(TX.rFastest))}</span>` : '') + (m.eco ?
+          `<span class="f-badge" data-kind="ok" data-cheapest>${esc(tt(TX.rCheapest))}</span>` : ''),
+        muted = [g || a.distanceNm === null ? '' : distTxt(a.distanceNm), a.verdict || a.faulty || RE.faultLines(a).length || a
+          .incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''
+        ].filter(Boolean).join(' · ');
+      return `<div class="f-item fu-ralt${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}${chips ? ' fu-raltmark' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}>${chips ? `<span class="fu-rmarks" data-marks>${chips}</span>` : ''}<span class="fu-rhead">${fl ? `<b data-altfl>${esc(fl)}</b> · ` : ''}<b data-altname>${esc(name(a, i))}</b>${(a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''}${muted ? ` <span class="f-muted">${esc(muted)}</span>` : ''}${a.faulty ? ` <b class="f-err" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${i === A.chosen ? `<span class="f-badge fu-ract" data-kind="ok" data-chosen>${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" class="fu-ract" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}${g ? `<span class="fu-rfigs" data-figs><span data-fignm>${esc(distTxt(g.nm))}</span><span${m.fast ? ' class="fu-rhi"' : ''} data-figmin>${esc(spanTxt(g.min, durTxt))}</span><span${m.eco ? ' class="fu-rhi"' : ''} data-figtrip>${esc(spanTxt(g.trip, v => fuelTxt(v, unit).replace(/ (kg|lb)$/, '')) + ' ' + fuelUnitOf(unit))}</span></span>` : ''}<span class="fu-rrest">${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span></div>`;
+    };
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -6136,7 +6188,15 @@ function routeAltsDraw() {
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
   // SOG-0532 (l'ergonome, 20/11) : la ligne « Contrôle de simulation : … » est retirée — ses comptes, ceux de tout le calcul, doublaient
   // et contredisaient les groupes des verdicts ; « Seul Eurocontrol valide un plan. » se dit sous « conforme » (verdictWord)
-  box.innerHTML = head + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  fig = new Map(routes.map(([a, i]) => [i, altFigures(a, i)]));
+  marks = figMarks(routes.filter(([a]) => !a.faulty && a.verdict !== 'violates').map(([, i]) => [i, fig.get(i)]));
+  const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
+    shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || tier(a) - tier(b) || figCmp(fig.get(i)?.trip, fig
+      .get(j)
+      ?.trip) || i - j),
+    cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
+    conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(TX.rConformLine))}</p>` : '';
+  box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -6613,7 +6673,9 @@ function routeStale(C = S.C) {
  *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
 function verdictWord(a) {
   // SOG-0532 (l'ergonome) : sous le SEUL verdict « conforme », une ligne courte et visible — jamais dans un pli
-  if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(RR.ROWS.conform))}</span><small class="f-muted fu-rshare" data-onlyeuro>${esc(tt(RR.ROWS.onlyEurocontrol))}</small>`;
+  // SOG-0545 (l'ergonome, maquette v2) : « conforme » en un mot sur la route ; son sens et « Seul Eurocontrol valide un plan. » une fois,
+  // sous « Calculé à … » (rConformLine)
+  if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(TX.rConformShort))}</span>`;
   if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable))}</b>`;
   return '';
 }
@@ -7422,6 +7484,123 @@ function quoteLegs(D) {
       speedKt: W[i].kt
     } : null
   }));
+}
+// ---------------------------------------------------------------- SOG-0545 : le temps et le carburant de chaque route proposée
+/** La durée « 1 h 28 » (l'ergonome : sans étiquette, « 1:28 » se lit comme une heure). */
+const durTxt = m => {
+  const t = Math.max(0, Math.round(+m || 0));
+  return `${Math.floor(t / 60)} h ${String(t % 60).padStart(2, '0')}`;
+};
+/** Un nombre, ou une fourchette [bas, haut] écrite « bas–haut » ; f écrit chaque nombre. */
+const spanTxt = (v, f) => Array.isArray(v) ? `${f(v[0])}–${f(v[1])}` : f(v);
+/** Comparer deux nombres ou fourchettes : par le haut, puis par le bas ; un absent passe après. */
+function figCmp(x, y) {
+  const hi = v => Array.isArray(v) ? v[1] : v,
+    lo = v => Array.isArray(v) ? v[0] : v;
+  if (x == null || y == null) return (x == null) - (y == null);
+  return hi(x) - hi(y) || lo(x) - lo(y);
+}
+/** Les mentions (l'ergonome) : au meilleur temps et au moindre carburant d'étape parmi les routes chiffrées données (jamais une route qui
+ *  enfreint : l'appelant les écarte), s'il y en a deux au moins et que les nombres montrés diffèrent ; une route peut avoir les deux.
+ *  list : [[clé, { min, trip }]] → Map clé → { fast, eco }. */
+function figMarks(list) {
+  const ok = list.filter(([, g]) => g),
+    out = new Map();
+  if (ok.length < 2) return out;
+  for (const [k, w] of [
+      ['min', 'fast'],
+      ['trip', 'eco']
+    ]) {
+    const best = [...ok].sort(([, a], [, b]) => figCmp(a[k], b[k]))[0];
+    if (ok.some(([, g]) => figCmp(g[k], best[1][k]))) out.set(best[0], {
+      ...out.get(best[0]),
+      [w]: true
+    });
+  }
+  return out;
+}
+/** Les tronçons d'une route donnée par ses points, ramenés à la distance D (comme quoteLegs) ; le vent par tronçon laissé au devis. */
+function legsFromPoints(P, D) {
+  const raw = [0];
+  for (let i = 1; i < P.length; i++) raw.push(raw[i - 1] + rhumbNm(P[i - 1], P[i]));
+  const k = raw.at(-1) > 0 ? D / raw.at(-1) : 0;
+  return k ? P.slice(1).map((p, i) => ({
+    nm0: raw[i] * k,
+    nm1: raw[i + 1] * k,
+    course: rhumbCourse(P[i], p),
+    wind: null
+  })) : null;
+}
+/** SOG-0545 (l'ergonome, critère a) : le temps et le carburant d'étape d'une route à son niveau — le devis de Carburant (les entrées du
+ *  devis du vol, S.C.qIn) appliqué à SES points et à SA distance, au vent du vol à ce niveau (la prévision en altitude, sinon le vent du
+ *  vol) ; sans vent connu, deux devis, vent de face et vent arrière de la fourchette du devis : { nm, min, trip }, chacun un nombre ou
+ *  [bas, haut] ; carburant dans l'unité de la fiche. null sans devis possible. Les positions d'un point venu d'X-Plane servent au calcul
+ *  seulement, jamais écrites. Gardé par la signature du devis (S.figMemo). */
+function routeFigures(points, nm, fl) {
+  const qIn = S.C?.qIn,
+    M = window.FuelModel;
+  if (!qIn || !M?.quote || !(nm > 0) || !(fl > 0)) return null;
+  const P = (Array.isArray(points) ? points : []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    key = JSON.stringify([S.computeMemo?.sig || '', nm, fl, P.map(p => [p.id || '', +p.lat, +p.lon])]);
+  S.figMemo ||= new Map();
+  if (S.figMemo.has(key)) return S.figMemo.get(key);
+  const ft = fl * 100,
+    course = P.length >= 2 ? rhumbCourse(P[0], P.at(-1)) : +qIn.trackDeg || 0,
+    base = {
+      ...qIn,
+      distanceNm: nm,
+      levelFt: ft,
+      trackDeg: course,
+      steps: null,
+      legs: P.length >= 2 ? legsFromPoints(P, nm) : null
+    },
+    wind = aloftMeanAt(ft) || qIn.wind,
+    q = M.quote({
+      ...base,
+      wind
+    });
+  let out = null;
+  if (q?.hasFuel) {
+    if (q.windKnown) out = {
+      nm,
+      min: q.minutes,
+      trip: q.trip
+    };
+    else {
+      const band = Number.isFinite(+wind?.speedKt) ? Math.abs(+wind.speedKt) : +(qIn.sheet?.typicalWindKt ?? 25),
+        at = dir => M.quote({
+          ...base,
+          wind: {
+            dirDeg: dir,
+            speedKt: band
+          }
+        }),
+        head = at(course),
+        tail = at((course + 180) % 360);
+      out = head?.hasFuel && tail?.hasFuel ? {
+        nm,
+        min: [Math.min(tail.minutes, head.minutes), Math.max(tail.minutes, head.minutes)],
+        trip: [Math.min(tail.trip, head.trip), Math.max(tail.trip, head.trip)]
+      } : {
+        nm,
+        min: q.minutes,
+        trip: q.trip
+      };
+    }
+  }
+  if (S.figMemo.size > 200) S.figMemo.clear();
+  S.figMemo.set(key, out);
+  return out;
+}
+/** Les nombres d'un itinéraire de la liste : ses points (ceux du moteur, sinon ceux lus pour la Carte), sa distance, son niveau (le sien,
+ *  sinon celui du calcul). */
+function altFigures(a, i) {
+  const pts = a.points?.length ? a.points : (S.alts?.list || []).find(x => x.index === i)?.points?.map(([lat, lon]) => ({
+      lat,
+      lon
+    })) || [],
+    fl = [a.fl, S.ralts?.fl, S.ralts?.n?.level?.fl].find(flOk) ?? null;
+  return routeFigures(pts, a.distanceNm, fl);
 }
 /** current_flight.progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta: [{ id, at }], fuelRemainingKg,
  *  remainingNm, phase } ; null sans vol démarré. Écrit quand il change (chaque minute pendant le vol). force : écrit
