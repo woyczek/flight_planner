@@ -21,6 +21,11 @@ SEARCH_CAP_S = 120.0   # SOG-0524 : le GARDE-FOU d'UNE recherche (A*), en second
 STATE_CEIL = None   # SOG-0524 : le plafond ABSOLU du compteur d'états du Nav (`states_total`) de la phase en cours (route de tête, alternatives, propositions), posé par plan.plan() ; None : seule la borne propre de chaque recherche (100 000 états). Déterministe : la même demande rend la même réponse quelle que soit la charge du poste
 
 
+class NoRouteAtLevel(ValueError):
+    """Lot « no-route-at-level » du relais (21 nov.) : aucune route à ce niveau ; porte le CODE de la raison (`code`), que les écrans disent dans leur langue ; le texte français n'est que le repli d'un écran qui ne connaît pas le code."""
+    code = 'no_route_at_level'
+
+
 class Interrupted(Exception):
     """SOG-0524 : le garde-fou de TEMPS a joué (le poste est trop lent) : le calcul n'a pas été mené à son terme — ce n'est PAS une absence de route (jamais un ValueError : aucun `except ValueError` ne le prend pour une route introuvable)."""
 
@@ -835,7 +840,7 @@ class Nav:
             del g
             self.release_graph_caches()
             return self.generate(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal or {},search_density='wide'))
-        if path is None: raise ValueError('Aucun chemin avec un tronçon FRA accessible aux conditions demandées.' if (terminal or {}).get('require_fra') else 'Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.')
+        if path is None: raise (ValueError('Aucun chemin avec un tronçon FRA accessible aux conditions demandées.') if (terminal or {}).get('require_fra') else NoRouteAtLevel('Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.'))
         return self.format_path(dep,path,via),path
 
     def format_path(self,dep,path,via=()):

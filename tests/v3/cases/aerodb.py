@@ -19871,7 +19871,7 @@ def k499(c):
     c.eq((rows[150]['ok'], [p['id'] for p in rows[150]['points']]), (True, ['ZZAA', 'A0', 'P1', 'P2', 'P3', 'P4', 'ZZBB']), 'FL150: the points of the route, in order, aerodromes included (red before: the row had no `points`)', what='points')
     c.eq(rows[150]['points'], main, 'the points of the level are EXACTLY those of the main route of route/compute at the same level: same source (view.points_of), same form { id, lat, lon }', what='same as compute')
     c.eq((rows[250]['ok'], rows[250]['points']), (False, []), 'FL250 is above the ceiling of the lane: no route, an empty list (never absent)', what='no route')
-    c.eq(sorted(rows[150]), sorted(['fl', 'points', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the only field added to a row is `points`', what='no other field')
+    c.eq(sorted(rows[150]), sorted(['fl', 'points', 'reason_code', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the fields of a row: `points` (SOG-0545) and `reason_code` (the code of the reason of a level with no route)', what='no other field')
 
 
 @case('K500', 'Route engine, SOG-0539: the RAD rules that name the departure or the arrival aerodrome of the flight AND aim at a space the base does not read are given BY TERRAIN (departure, then arrival), sorted, as `rad.terrain_rules` of the screen answer ({ role, ad, rules, total, cut }; at most 100 references per terrain, the screen shows 40) — the verdict and the counts do not change: they stay « non vérifiables »',
@@ -19925,3 +19925,26 @@ def k501(c):
     c.eq(said, f'APT_BASE.csv : le zip des jeux CSV contient trop de fichiers (annuaire de 100 octets, {faa_nasr.MAX_INNER_ENTRIES + 1} entrées annoncées)', 'a zip that announces more entries than the limit is refused with « le zip des jeux CSV contient trop de fichiers » (red before: « porte »)', what='faa')
     upload = (ROOT / 'tools' / 'base_upload.py').read_text(encoding='utf-8')
     c.eq(('une archive en contient un par cycle : le cycle en vigueur et le suivant, deux au plus' in upload, 'une archive en porte un par cycle' in upload), (True, False), 'the refusal of an archive with too many FRA books says « une archive en contient un par cycle : le cycle en vigueur et le suivant, deux au plus » (red before: « porte »)', what='upload')
+
+
+@case('K502', 'Route engine, « no route at this level » as a CODE: the failure of a search without a route at the filed level carries `error_code: no_route_at_level` (screen answer: `issues[0].code`, `values: {}`; `route/levels`: `reason_code` on the row of that level, None on the others) — the screens say it in their language; the French text stays as the fallback of a screen that does not know the code, and `level_matters` reads the code first',
+      'K', static=True,
+      rule='the « no-route-at-level » lot of the relay, 21 Nov (the relay, the ergonomist\'s sentence: « Aucune route trouvée à ce niveau. Choisissez un autre niveau. » is written by Fuel in four languages; the engine gives a reason CODE of the same form as the other reasons: `code`, `values`). Readers of the French sentence listed: plan.level_matters (« à ce niveau »), plan.level_summary (`reason`, first sentence), view.to_view (error issue), cases K497 / K103 / K106 / the 12955-12957 series. Invented bench of SOG-0532, lane UH1 with a ceiling of 22 000 ft: FL150 has a route, FL250 has none',
+      )
+def k502(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, lanes=[('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 22000)])
+        template = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False})
+        res = P.compute(template, data, rad, None)
+        screen = V.to_view(res, template)
+        levels = P.levels(template, [150, 250], data, rad, None)
+    primary = res['primary']
+    c.eq((primary['ok'], primary.get('error_code'), primary['error'].startswith('Aucune route trouvée sur le réseau disponible à ce niveau')), (False, 'no_route_at_level', True), 'FL250 above the ceiling of the lane: no route, with the CODE no_route_at_level (red before: no `error_code`), and the French sentence kept as the fallback', what='primary')
+    c.eq((screen['ok'], screen['issues'][0]['level'], screen['issues'][0].get('code'), screen['issues'][0].get('values')), (True, 'error', 'no_route_at_level', {}), 'the screen answer (the call is ok, the issue is an error) says it as the other reasons: `code` and `values`', what='screen')
+    rows = {r['fl']: r.get('reason_code') for r in levels['levels']}
+    c.eq(rows, {150: None, 250: 'no_route_at_level'}, 'route/levels: the row of the level with no route carries `reason_code`, the row of a level with a route None', what='levels')
+    c.eq((P.level_matters({'ok': False, 'error': 'x', 'error_code': 'no_route_at_level', 'issues': []}, None)[0], P.level_matters({'ok': False, 'error': 'x', 'issues': []}, None)[0]), (True, False), '`level_matters` reads the code first: a failure with the code is a matter of level whatever its text; without the code or a word of level, it is not', what='level matters')

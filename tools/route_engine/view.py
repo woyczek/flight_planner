@@ -191,7 +191,7 @@ def to_view(plan_result, request, include_raw=False):
     p = plan_result['primary']
     fl = request.get('fl')
     if not p.get('ok'):
-        issues = [{'level': 'error', 'text': p.get('error') or p.get('status') or 'Calcul impossible'}]
+        issues = [dict({'level': 'error', 'text': p.get('error') or p.get('status') or 'Calcul impossible'}, **({'code': p['error_code'], 'values': {}} if isinstance(p.get('error_code'), str) else {}))]      # le code de la raison, comme les autres (`code`, `values`)
         alts = []
     else:
         issues = [dict({'level': level_of(x['level']), 'text': x['text']}, **({'kind': issue_kind(x['text'])} if issue_kind(x['text']) else {}), **({'code': x['code'], 'values': x.get('values') or {}} if x.get('code') else {})) for x in p.get('issues') or []]      # SOG-0532 / SOG-0531 : le code et les valeurs d'une raison (l'écran compose la phrase dans la langue)

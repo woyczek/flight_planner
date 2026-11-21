@@ -221,7 +221,7 @@ def level_matters(primary, info):
             return True, 'une route NAT écartée pour le niveau est valable à un autre niveau : ' + ', '.join(info.get('level_tracks') or [])
         return False, 'aucune route NAT écartée pour le seul niveau : un autre niveau ne change pas la réponse'
     text = str(primary.get('error') or '')
-    if 'à ce niveau' in text or LEVEL_WORDS.search(text):
+    if primary.get('error_code') == 'no_route_at_level' or 'à ce niveau' in text or LEVEL_WORDS.search(text):
         return True, 'le réseau est coupé à ce niveau'
     return False, 'la raison du premier échec n\'est pas une affaire de niveau : ' + text[:120]
 
@@ -337,7 +337,7 @@ def plan(request, root):
         primary = dict(ok=False, status='CALCUL INTERROMPU', error=str(e), route=request.get('route', ''), legs=[], issues=[])
     except ValueError as e:
         hint = nat_layer.hint(nav, str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper()) if request.get('mode', 'calculate') == 'calculate' else ''      # SOG-0263 : traversée sans track dans le sens du vol
-        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[])
+        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[], **({'error_code': e.code} if isinstance(getattr(e, 'code', None), str) else {}))      # le CODE de la raison d'un échec qui en a un (« no_route_at_level ») : l'écran le dit dans sa langue
     rad_retries = []
     avoids = []
     head_nm = primary.get('distance_nm')
@@ -655,7 +655,7 @@ def level_summary(level, res):
         reason = errors[0][:200]
     else:
         reason = 'route valide'
-    return {'fl': level, 'points': view.points_of(p), 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
+    return {'fl': level, 'points': view.points_of(p), 'reason_code': p.get('error_code'), 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
             'errors': [e[:160] for e in errors[:3]], 'verdict': p.get('verdict'), 'warnings': len(p.get('warnings') or []), 'semicircular': semicircular(p), 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}      # SOG-0532 (3) : `verdict` (violates | unverifiable | conform) : le même mot que la réponse de route/compute
 
 
