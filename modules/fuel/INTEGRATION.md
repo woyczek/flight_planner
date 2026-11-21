@@ -366,8 +366,21 @@ seven to the Map. Contract agreed with BUGS SOG (the Map's layer) on 17/11:
 
 ```
 { schema: 1, updated_at: ISO, arr: 'LFML', key: '<dep>><arr>><aircraft key>',
-  list: [ { icao, name, lat, lon, nm, state: 'ok' | 'warn', why: ['aids-visual' | 'wx-ifr' | 'wx-unread'], fuel: { amount, unit: 'kg' | 'lb', min } | null } ] }
+  list: [ { icao, name, lat, lon, nm, state: 'ok' | 'warn',
+            why: ['rwy-unread' | 'aids-unread' | 'aids-visual' | 'wx-ifr' | 'wx-unread' | 'wx-notaf' | 'wx-notime' | 'wx-outside' | 'wx-nocat'],
+            wxv?: { at: 'HH:MMZ' } | { a: 'HH:MMZ', b: 'HH:MMZ' },
+            fuel: { amount, unit: 'kg' | 'lb', min } | null } ] }
 ```
+
+- the weather (SOG-0544, 21 Nov 2026; agreed with BUGS SOG): Fuel reads the TAF of the seven aerodromes in one call of the frame's
+  weather layer. A weather that is not known is never `ok`: the aerodrome is `warn` (« À vérifier » on the Map) and comes after those
+  whose weather is read and good. Its last code says why, with the whole existing sentence of Fuel (`TX.altnWhy`): `wx-unread`, the read
+  did not take place (offline, or the weather layer failed: its reason follows, « source météo injoignable », or the device has no
+  weather key); `wx-notaf`, read, no TAF for this aerodrome; `wx-notime`, no date or duration of the flight; `wx-outside`, the arrival at
+  the alternate (`wxv.at`) is outside the TAF's validity; `wx-nocat`, the TAF gives neither ceiling nor visibility between `wxv.a` and
+  `wxv.b`. `wxv` holds hours `HH:MMZ` only; the Map reads them as an untrusted input (own keys, the strict pattern `^\d{2}:\d{2}Z$`): a
+  missing hour or one out of the pattern drops that reason, the aerodrome stays « À vérifier », no string is shown as it is. The Map
+  also takes `warn` for any of these five codes, whatever the state written.
 
 - `list`: seven at most, in priority order (`ok` before `warn`, then by distance); an aerodrome whose TAF is LIFR around its arrival is
   not offered; `name` is a cleaned text (no control nor format character, 60 signs), shown as text; `nm` the rhumb-line distance from

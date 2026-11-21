@@ -5708,7 +5708,7 @@ async function altnArrPos(r) {
   } : null;
 }
 /** Les critères et l'état d'un terrain proposé : piste et moyens de la recherche, météo du TAF lu (une heure autour de son arrivée :
- *  départ du vol + durée de l'étape + son dégagement), « météo non lue » sinon. */
+ *  départ du vol + durée de l'étape + son dégagement), sinon le mot de la météo inconnue (SOG-0544 : « météo non lue » pour une lecture qui n'a pas eu lieu). */
 function altnPropCrits(x) {
   const P = S.altnProp,
     dep = Date.parse(S.flight.planned_at || ''),
@@ -5722,29 +5722,64 @@ function altnPropCrits(x) {
     crits = [x.rwy, x.aids, wx];
   return {
     crits,
+    // SOG-0544 : la lecture de ce terrain n'a pas eu lieu (hors ligne, ou la couche météo en échec)
+    miss: !!P?.wxMiss?.has(x.icao),
     ...AC.proposalOf(crits)
   };
 }
-/** La météo (TAF) des terrains `ids`, par la couche météo du cadre (une lecture de plus que Météo, pour ces terrains seulement : les trois
- *  plus proches, puis celui qu'on touche sur la Carte). */
+/** SOG-0544 : les mots d'une réserve d'un terrain proposé — la phrase existante d'une météo inconnue (TX.altnWhy, ses heures), « météo
+ *  non lue » suivi de sa raison (« source météo injoignable », ou la clé météo absente), sinon le mot court ; [[texte, court]]. */
+const ALTN_WX_TX = {
+  'wx-notaf': 'wxNoTaf',
+  'wx-notime': 'wxNoTime',
+  'wx-outside': 'wxOutside',
+  'wx-nocat': 'wxNoCat'
+};
+
+function altnWhyBits(w, p) {
+  if (Object.hasOwn(ALTN_WX_TX, w)) return [
+    [tt(TX.altnWhy[ALTN_WX_TX[w]], p.wxv || {}), false]
+  ];
+  const head = [tt(TX.altnPropWhy[w]), true];
+  if (w !== 'wx-unread') return [head];
+  return p.miss ? [head, [tt(TX.altnWhy.wxUnreachable), true]] : p.crits[2]?.code === 'wxNoKey' ? [head, [tt(TX.altnWhy.wxNoKey),
+    false
+  ]] : [head];
+}
+/** La météo (TAF) des terrains `ids`, par la couche météo du cadre (une lecture de plus que Météo, pour ces terrains seulement : les sept
+ *  de la proposition en UN appel — SOG-0544 —, puis celui qu'on touche sur la Carte). Un terrain est lu quand la couche a répondu pour
+ *  lui (son TAF, ou aucun) ; hors ligne, ou la couche en échec, sa lecture n'a pas eu lieu (wxMiss : « météo non lue », sa raison),
+ *  jamais « aucun TAF ». */
 async function altnPropWx(ids) {
   const s = S,
     P = S.altnProp,
     W = S.ctx.weather;
   if (!P || !ids.length || !W?.taf) return;
+  const cacheOnly = S.ctx.net?.online?.() === false;
+  let failed = false;
   const t = await Promise.resolve(W.taf(ids, {
-    cacheOnly: S.ctx.net?.online?.() === false
-  })).catch(() => null);
+    cacheOnly
+  })).catch(() => {
+    failed = true;
+    return null;
+  });
   if (gone(s) || S.altnProp !== P) return;
+  const items = t?.items && typeof t.items === 'object' ? t.items : {},
+    missed = failed || cacheOnly || !!t?.offline;
   P.taf = {
     ...(P.taf || {}),
-    ...(t?.items || {})
+    ...items
   };
   P.noTaf = !!t?.noTaf;
-  for (const id of ids) P.wxRead.add(id);
+  for (const id of ids) {
+    if (Object.hasOwn(items, id) || !missed) {
+      P.wxRead.add(id);
+      P.wxMiss.delete(id);
+    } else P.wxMiss.add(id);
+  }
 }
 /** « Proposer un dégagement » : les terrains de 30 à 300 NM de l'arrivée (aerodb, enregistrements complets), retenus sur la PISTE et les
- *  MOYENS (altn_check.js), les sept plus proches chiffrés (altnCost) ; la météo des trois premiers ; le document de la Carte écrit. Le
+ *  MOYENS (altn_check.js), les sept plus proches chiffrés (altnCost) ; la météo des sept (SOG-0544) ; le document de la Carte écrit. Le
  *  champ Dégagement n'est jamais écrit ici. */
 async function altnProposeRun() {
   const s = S,
@@ -5761,6 +5796,7 @@ async function altnProposeRun() {
       list: [],
       taf: {},
       wxRead: new Set(),
+      wxMiss: new Set(),
       noTaf: false,
       touched: null
     },
@@ -5827,7 +5863,7 @@ async function altnProposeRun() {
     });
   }
   if (!P.list.length) return done('none');
-  await altnPropWx(P.list.slice(0, AC.CAND_LIST).map(x => x.icao));
+  await altnPropWx(P.list.map(x => x.icao)); // SOG-0544 : les sept, un appel (la liste n'en tient pas plus : CAND_DOC)
   done(null);
 }
 /** Le document de la Carte : les terrains de la proposition ('ok' avant 'warn', puis par distance ; un terrain à écarter, météo LIFR, n'y
@@ -5850,6 +5886,10 @@ function altnDocWrite() {
       nm: x.nm,
       state: p.state,
       why: p.why,
+      // SOG-0544 : les heures de la phrase de la météo inconnue (HH:MMZ), pour que la Carte dise la même
+      ...(p.wxv ? {
+        wxv: p.wxv
+      } : {}),
       fuel: x.cost ? {
         amount: Math.round(x.cost.fuel),
         unit,
@@ -5889,14 +5929,17 @@ function altnPropHtml() {
   if (P.msg) return `<p class="fu-altnprop f-muted" data-altnprop data-msg="${esc(P.msg)}">${esc(tt(TX.altnPropMsg[P.msg]))}</p><p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
   const unit = S.C?.sheet?.unit || 'kg',
     row = (x, proposed) => {
+      // SOG-0544 : chaque réserve dite par son vrai mot, la météo inconnue comprise (plus de « météo non lue » caché)
       const p = altnPropCrits(x),
-        why = [...p.why.filter(w => w !== 'wx-unread' || proposed), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].map(w =>
-          `<span class="fu-nowrap">${esc(tt(TX.altnPropWhy[w]))}</span>`),
+        why = [...p.why, ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].flatMap(w => altnWhyBits(w, p)).map(([s, short]) =>
+          short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
       return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}</li>`;
     },
-    near = P.list.slice(0, AC.CAND_LIST),
+    // SOG-0544 (le critère de l'ergonome) : un terrain dont la météo n'est pas connue passe après ceux dont elle est lue
+    unk = x => altnPropCrits(x).crits[2]?.state === 'grey' ? 1 : 0,
+    near = P.list.map((x, i) => [x, i]).sort((a, b) => unk(a[0]) - unk(b[0]) || a[1] - b[1]).slice(0, AC.CAND_LIST).map(([x]) => x),
     touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
     more = Math.max(0, P.list.length - near.length),
     // l'ergonome : un repli à chevron, le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête (la proposition
@@ -5948,6 +5991,7 @@ async function altnFromAddress(icao) {
     msg: null,
     taf: {},
     wxRead: new Set(),
+    wxMiss: new Set(),
     noTaf: false,
     touched: null,
     list: list.map(x => ({

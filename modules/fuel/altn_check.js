@@ -26,9 +26,11 @@
 //     tient pas ses procédures ; SOG-0494, l'utilisateur : aucun dégagement autour de LQSA, faute de procédures dans la base).
 //   unverified(rwy, aids) → le nombre de critères non vérifiés parmi la piste et les moyens (0, 1 ou 2) : les terrains vérifiés d'abord.
 //   CAND_SCAN : les candidats examinés au plus (une couverture demandée à aerodb pour chacun), les plus proches.
-//   proposalOf(crits) → { sign, state, why } : sign, l'état des trois critères (judge) pour la liste de Carburant ; state, celui du
-//     document de la Carte ('ok' | 'warn', null pour un terrain à écarter : météo LIFR) ; why, ses codes en liste fermée ('rwy-unread',
-//     'aids-unread', 'aids-visual', 'wx-ifr', 'wx-unread').
+//   proposalOf(crits) → { sign, state, why, wxv } : sign, l'état des trois critères (judge) pour la liste de Carburant ; state, celui du
+//     document de la Carte ('ok' | 'warn', null pour un terrain à écarter : météo LIFR ; SOG-0544 : une météo inconnue est 'warn', jamais
+//     'ok') ; why, ses codes en liste fermée ('rwy-unread', 'aids-unread', 'aids-visual', 'wx-ifr', puis le mot de la météo inconnue :
+//     'wx-unread' pour une lecture qui n'a pas eu lieu, 'wx-notaf', 'wx-notime', 'wx-outside', 'wx-nocat' sinon) ; wxv, les heures de
+//     sa phrase ({ at } pour wx-outside, { a, b } pour wx-nocat, HH:MMZ) ou null.
 // Chaque critère : { k: 'rwy' | 'aids' | 'wx', state, code, v } — code : la phrase à dire (textes du module), v : ses valeurs (nombres,
 // catégories et heures seulement : aucun texte tiers).
 
@@ -206,6 +208,15 @@ export const aidsKept = aids => ['ok', 'warn', 'grey'].includes(aids?.state);
 /** Le nombre de critères non vérifiés parmi la piste et les moyens (voir l'en-tête). */
 export const unverified = (rwy, aids) => (rwy?.state === 'grey' ? 1 : 0) + (aids?.state === 'grey' ? 1 : 0);
 
+/** SOG-0544 : le mot d'une météo inconnue dont la lecture a eu lieu (ou n'a pas pu servir) ; tout autre critère gris (wxNotRead,
+ *  wxNoKey) : 'wx-unread', la lecture n'a pas eu lieu. */
+const WX_WHY = {
+  wxNoTaf: 'wx-notaf',
+  wxNoTime: 'wx-notime',
+  wxOutside: 'wx-outside',
+  wxNoCat: 'wx-nocat'
+};
+
 /** L'état d'un terrain proposé, pour la liste et pour la Carte (voir l'en-tête). crits : [rwy, aids, wx]. */
 export function proposalOf(crits) {
   const [rwy, aids, wx] = crits || [],
@@ -214,11 +225,18 @@ export function proposalOf(crits) {
   if (aids?.state === 'grey') why.push('aids-unread');
   if (aids?.state === 'warn') why.push('aids-visual');
   if (wx?.state === 'warn') why.push('wx-ifr');
-  if (!wx || wx.state === 'grey') why.push('wx-unread');
+  if (!wx || wx.state === 'grey') why.push(Object.hasOwn(WX_WHY, wx?.code ?? '') ? WX_WHY[wx.code] : 'wx-unread');
   return {
     sign: judge(crits).state,
-    state: wx?.state === 'err' ? null : why.some(w => w !== 'wx-unread') ? 'warn' : 'ok',
-    why
+    // SOG-0544 : toute réserve, une météo inconnue comprise, fait 'warn' — la Carte ne dessine jamais en bon terrain ce qui n'est pas lu
+    state: wx?.state === 'err' ? null : why.length ? 'warn' : 'ok',
+    why,
+    wxv: wx?.code === 'wxOutside' ? {
+      at: wx.v.at
+    } : wx?.code === 'wxNoCat' ? {
+      a: wx.v.a,
+      b: wx.v.b
+    } : null
   };
 }
 

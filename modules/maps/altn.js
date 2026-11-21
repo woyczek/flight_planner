@@ -16,6 +16,10 @@ import {
   inRange
 } from './lib/safe_text.js';
 import {
+  own,
+  plain
+} from '../../frame/lib/untrusted.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -35,8 +39,16 @@ const DOC = 'cache/fuel/altn_candidates.json',
   MAX = 7,
   HIT_PX = 20,
   WHY = ['rwy-unread', 'aids-unread', 'aids-visual', 'wx-ifr',
-    'wx-unread'
-  ]; // la liste fermée de Carburant (TX.altnPropWhy), dans son ordre (SOG-0494 : piste et moyens non vérifiés)
+    'wx-unread', 'wx-notaf', 'wx-notime', 'wx-outside', 'wx-nocat'
+  ], // la liste fermée de Carburant (TX.altnPropWhy), dans son ordre (SOG-0494 : piste et moyens non vérifiés ; SOG-0544 : le mot de la météo inconnue)
+  // SOG-0544 : les mots d'une météo INCONNUE — le terrain est « à vérifier », jamais « adapté », quoi que dise le document ; l'heure d'une phrase : HH:MMZ, rien d'autre
+  WX_UNKNOWN = ['wx-unread', 'wx-notaf', 'wx-notime', 'wx-outside', 'wx-nocat'],
+  HHMM = /^\d{2}:\d{2}Z$/;
+/** SOG-0544 : une heure de wxv, clé PROPRE et motif strict (une entrée non fiable : jamais un texte montré tel quel), ou null. */
+const hourOf = (o, k) => {
+  const v = own(o, k);
+  return typeof v === 'string' && HHMM.test(v) ? v : null;
+};
 // un NOMBRE JSON dans ses bornes (jamais une conversion : null, '' et true feraient 0 ou 1, un terrain sans position serait dessiné au large du Gabon, Sécurisation) et un texte sans
 // signes de contrôle, sans < > ni marques de format, borné : les gardes du socle (lib/safe_text.js, bâti sur frame/lib/untrusted.js)
 const num = inRange,
@@ -52,7 +64,7 @@ export const ALTN_TINT = {
     warn: '#ffb74d'
   }
 };
-/** Le document ou l'événement de Carburant, nettoyé : { arr, list: [{ icao, name, lat, lon, nm, state, why, fuel }] } (sept au plus, dans l'ordre du document : la priorité de
+/** Le document ou l'événement de Carburant, nettoyé : { arr, list: [{ icao, name, lat, lon, nm, state, why, wxv, fuel }] } (sept au plus, dans l'ordre du document : la priorité de
  *  Carburant) ou null. Un terrain mal formé est écarté ; un état autre que ok / warn aussi (le document ne porte ni rouge ni gris). */
 export function altnSanitize(raw) {
   if (!raw || typeof raw !== 'object' || raw.schema !== 1 || !Array.isArray(raw.list)) return null;
@@ -64,6 +76,22 @@ export function altnSanitize(raw) {
     if (!/^[A-Z0-9]{4}$/.test(icao) || seen.has(icao) || !num(t.lat, -90, 90) || !num(t.lon, -180, 180) || (t.state !== 'ok' && t.state !==
         'warn')) continue;
     seen.add(icao);
+    // SOG-0544 : les heures de la phrase (wx-outside : at ; wx-nocat : a et b) ; une heure absente ou hors motif écarte CETTE raison, le terrain reste « à vérifier »
+    const codes = Array.isArray(t.why) ? [...new Set(t.why.filter(c => WHY.includes(c)))] : [],
+      wv = plain(own(t, 'wxv')),
+      at = hourOf(wv, 'at'),
+      a = hourOf(wv, 'a'),
+      b = hourOf(wv, 'b'),
+      why = codes.filter(c => c === 'wx-outside' ? !!at : c === 'wx-nocat' ? !!(a && b) : true),
+      wxv = {
+        ...(why.includes('wx-outside') ? {
+          at
+        } : {}),
+        ...(why.includes('wx-nocat') ? {
+          a,
+          b
+        } : {})
+      };
     const f = t.fuel && typeof t.fuel === 'object' && num(t.fuel.amount, 0, 1e7) && (t.fuel.unit === 'kg' || t.fuel.unit === 'lb') ? {
       amount: Math.round(+t.fuel.amount),
       unit: t.fuel.unit,
@@ -75,8 +103,9 @@ export function altnSanitize(raw) {
       lat: +t.lat,
       lon: +t.lon,
       nm: num(t.nm, 0, 3000) ? Math.round(+t.nm * 10) / 10 : null,
-      state: t.state,
-      why: Array.isArray(t.why) ? [...new Set(t.why.filter(c => WHY.includes(c)))] : [],
+      state: codes.some(c => WX_UNKNOWN.includes(c)) ? 'warn' : t.state,
+      why,
+      wxv,
       fuel: f
     });
   }
@@ -298,7 +327,7 @@ function altnAt(x, y) {
 }
 /** La fiche d'un terrain : indicatif et nom (un texte), son état, la distance de l'arrivée, les motifs, le carburant de dégagement, puis « Proposer à Carburant ». */
 function cardHtml(t) {
-  const why = t.why.map(c => tt(TX.altnWhy[c])),
+  const why = t.why.map(c => tt(TX.altnWhy[c], t.wxv || {})), // SOG-0544 : les phrases de la météo inconnue portent leurs heures
     state = tt(t.state === 'ok' ? TX.altnOk : TX.altnWarn),
     fuel = t.fuel ? tt(TX.altnFuel, {
       a: t.fuel.amount.toLocaleString(S.ctx.lang?.() || 'fr'),

@@ -202,7 +202,27 @@ export const TX = {
     'wx-ifr': ['TAF en IFR autour de l’arrivée', 'TAF in IFR around the arrival', 'TAF in IFR um die Ankunft',
       'TAF en IFR en torno a la llegada'
     ],
-    'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída']
+    'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída'],
+    // SOG-0544 : les phrases entières de Carburant (TX.altnWhy), mot pour mot ; leurs heures viennent de wxv (HH:MMZ)
+    'wx-notaf': ['Météo : non vérifiée — aucun TAF lu pour ce terrain.', 'Weather: not checked — no TAF read for this aerodrome.',
+      'Wetter: nicht geprüft — kein TAF für diesen Flugplatz gelesen.',
+      'Meteorología: no comprobada — ningún TAF leído para este aeródromo.'
+    ],
+    'wx-notime': ['Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue).',
+      'Weather: not checked — the flight’s date or duration is missing (the time of arrival at the alternate is unknown).',
+      'Wetter: nicht geprüft — Datum oder Dauer des Flugs fehlt (Ankunftszeit am Ausweichflugplatz unbekannt).',
+      'Meteorología: no comprobada — falta la fecha o la duración del vuelo (hora de llegada al alternativo desconocida).'
+    ],
+    'wx-outside': ['Météo : non vérifiée — l’arrivée au dégagement ({at}) sort de la validité du TAF.',
+      'Weather: not checked — the arrival at the alternate ({at}) is outside the TAF’s validity.',
+      'Wetter: nicht geprüft — die Ankunft am Ausweichflugplatz ({at}) liegt außerhalb der Gültigkeit des TAF.',
+      'Meteorología: no comprobada — la llegada al alternativo ({at}) queda fuera de la validez del TAF.'
+    ],
+    'wx-nocat': ['Météo : non vérifiée — le TAF ne donne ni plafond ni visibilité entre {a} et {b}.',
+      'Weather: not checked — the TAF gives neither ceiling nor visibility between {a} and {b}.',
+      'Wetter: nicht geprüft — das TAF nennt weder Wolkenuntergrenze noch Sicht zwischen {a} und {b}.',
+      'Meteorología: no comprobada — el TAF no da techo ni visibilidad entre {a} y {b}.'
+    ]
   },
   altnFuel: ['Carburant de dégagement : {a} {u} · {m} min', 'Alternate fuel: {a} {u} · {m} min', 'Ausweichkraftstoff: {a} {u} · {m} min',
     'Combustible de alternativa: {a} {u} · {m} min'

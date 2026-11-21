@@ -7845,7 +7845,7 @@ def f262(c):
     c.ok(re.search(r'\b\d+ NM\b', row0) is not None and re.search(r'\d (lb|kg)', row0) is not None, row0,
          'its distance and its alternate fuel')
     more = norm(c.text(f'{B} [data-altnmore]') or '')
-    c.ok(more.startswith('3 '), more, 'the three others (XQPF weather not read, LFMT and XQPH not checked) said on the Map')
+    c.ok(more.startswith('3 '), more, 'the three others (XQPF, LFMT and XQPH not checked) said on the Map')
     # the ergonomist: a fold with a chevron (the component of « Critères du dégagement »), closed by its heading; no « Fermer »
     c.eq(c.js(f"[document.querySelector('{B} details[data-altnprop]')?.open, !!document.querySelector('{B} details[data-altnprop] > summary'), "
               f"document.querySelectorAll('{B} [data-do=altnpropclose]').length]"), [True, True, 0], 'a fold, open, no « Fermer »', what='fold')
@@ -7855,9 +7855,10 @@ def f262(c):
     d = c.until_doc('cache/fuel/altn_candidates.json', lambda d: bool(d) and len(d.get('list') or []) > 0, 'the document of the Map',
                     timeout=10000)
     c.eq([(x['icao'], x['state'], x['why']) for x in d['list']],
-         [('XQPB', 'ok', []), ('XQPF', 'ok', ['wx-unread']), ('XQPC', 'warn', ['aids-visual']),
+         [('XQPB', 'ok', []), ('XQPF', 'ok', []), ('XQPC', 'warn', ['aids-visual']),
           ('LFMT', 'warn', ['rwy-unread', 'aids-unread', 'wx-unread']), ('XQPH', 'warn', ['aids-unread', 'wx-unread'])],
-         'ok before warn, then by distance; XQPE (LIFR) not offered to the Map; what is not checked said (SOG-0494)', what='document')
+         'ok before warn, then by distance; XQPE (LIFR) not offered to the Map; what is not checked said (SOG-0494); SOG-0544 (the relay, '
+         '21 Nov): the weather of the seven read, XQPF read and good — expectation changed on purpose', what='document')
     c.eq([d['schema'], d['arr']], [1, 'LFML'], 'schema 1, the arrival', what='head')
     c.ok(all(x['fuel'] and x['fuel']['unit'] == 'lb' and x['fuel']['amount'] > 0 for x in d['list']), d['list'], 'the alternate fuel of each')
     c.ok(c.js('window.__altnDocs.length') >= 1, 'event', 'the event fuel-altn-candidates sent')
