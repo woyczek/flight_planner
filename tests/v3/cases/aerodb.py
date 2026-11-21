@@ -19871,7 +19871,7 @@ def k499(c):
     c.eq((rows[150]['ok'], [p['id'] for p in rows[150]['points']]), (True, ['ZZAA', 'A0', 'P1', 'P2', 'P3', 'P4', 'ZZBB']), 'FL150: the points of the route, in order, aerodromes included (red before: the row had no `points`)', what='points')
     c.eq(rows[150]['points'], main, 'the points of the level are EXACTLY those of the main route of route/compute at the same level: same source (view.points_of), same form { id, lat, lon }', what='same as compute')
     c.eq((rows[250]['ok'], rows[250]['points']), (False, []), 'FL250 is above the ceiling of the lane: no route, an empty list (never absent)', what='no route')
-    c.eq(sorted(rows[150]), sorted(['fl', 'points', 'reason_code', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the fields of a row: `points` (SOG-0545) and `reason_code` (the code of the reason of a level with no route)', what='no other field')
+    c.eq(sorted(rows[150]), sorted(['fl', 'points', 'reason_code', 'unverifiable_count', 'violations_count', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the fields of a row: `points` (SOG-0545), `reason_code` (the code of the reason of a level with no route) and the two counts `unverifiable_count`, `violations_count`', what='no other field')
 
 
 @case('K500', 'Route engine, SOG-0539: the RAD rules that name the departure or the arrival aerodrome of the flight AND aim at a space the base does not read are given BY TERRAIN (departure, then arrival), sorted, as `rad.terrain_rules` of the screen answer ({ role, ad, rules, total, cut }; at most 100 references per terrain, the screen shows 40) — the verdict and the counts do not change: they stay « non vérifiables »',
@@ -20008,3 +20008,29 @@ def k503(c):
         P.dct_limits.limit_of = real
     c.eq(said, {'huge': None, 'above': None, 'top': 2000.0, 'bool': None, 'float': None, 'zero': None, 'complex': None, 'ok': 45.0, 'no arrival': None, 'no book': None}, 'the limit read from the RAD (a book of the user\'s repository) is bounded BEFORE any `float()`: an integer from 1 to 2000 NM is used; 10**400 (OverflowError before the bound, which failed the whole plan), 2001, a boolean, a float, zero, a complex limit, no arrival, no book: None, the old rule (red without the bound: the exception)', what='bound')
     c.eq((fly(0)[0], fly(None)[0]), (False, False), 'a ZERO limit (0 NM) and an UNKNOWN one (no rule for the terrain) keep the old rule: the gate 10 NM away is refused, as before (no route here: nothing else reaches the terrain)', what='zero and unknown')
+
+
+@case('K504', 'Route engine and launcher: each row of `route/levels` carries `unverifiable_count` and `violations_count` — the number of items of `unverifiable[]` and of `violations[]` of the route of that level, the SAME lists as `route/compute` gives for that route (Fuel says « Non vérifiable : 2 points » per level); 0 and 0 on a level with no route',
+      'K', static=True,
+      rule='Relay, 21 Nov (the ergonomist, Fuel SOG-0545): « chaque ligne de route/levels gagne unverifiable_count (le même compte que la longueur de unverifiable[] de route/compute pour cette route) et violations_count : une donnée que le moteur a déjà ». Invented bench: five rules aimed at unknown spaces (K500), FL250 above the lane ceiling gives no route. No coordinate from X-Plane, no callsign',
+      )
+def k504(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    row = lambda rid, target, cond, state='ZZ': ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, cond, 'H24', 'S', 'invented', '', 'ACC', state]
+    rules = [row('ZZ3103', 'ZZFIRBB', 'NOT AVBL FOR TFC ZZAA ZZBB'), row('ZZ3101', 'ZZFIRAA', 'NOT AVBL FOR TFC DEP ZZAA'), row('ZZ3102', 'ZZFIRAA', 'NOT AVBL FOR TFC ARR ZZBB')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, lanes=[('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 22000)], rules_2b=rules)
+        template = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 150, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False})
+        levels = P.levels(template, [150, 250], data, rad, None)
+        primary = P.compute(dict(template, fl=150), data, rad, None)['primary']
+    rows = {r['fl']: r for r in levels['levels']}
+    c.eq((rows[150]['unverifiable_count'], rows[150]['violations_count']), (len(primary['unverifiable']), len(primary['violations'])), 'a level with a route: the counts are the lengths of `unverifiable[]` and `violations[]` that route/compute gives for that route at the same level (red before: no such field)', what='same as compute')
+    c.ok(rows[150]['unverifiable_count'] > 0, rows[150]['unverifiable_count'], '> 0', 'the unknown spaces of the bench make that level « non vérifiable »: the count is not an empty one')
+    c.eq((rows[250]['ok'], rows[250]['unverifiable_count'], rows[250]['violations_count']), (False, 0, 0), 'a level with no route: 0 and 0', what='no route')
+    synthetic = P.level_summary(330, {'primary': {'ok': True, 'issues': [], 'legs': [], 'unverifiable': [{}, {}], 'violations': [{}]}, 'states': 1})
+    c.eq((synthetic['unverifiable_count'], synthetic['violations_count']), (2, 1), 'the counts are the lengths of the two lists of the route', what='lengths')
+    empty = P.level_summary(330, {'primary': {'ok': False, 'error': 'x', 'issues': [], 'legs': []}, 'states': 0})
+    c.eq((empty['unverifiable_count'], empty['violations_count']), (0, 0), 'lists absent: 0 and 0, never an exception', what='absent')
