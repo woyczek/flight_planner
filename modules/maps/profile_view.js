@@ -22,11 +22,17 @@ import {
   onMission,
   level,
   altTxt,
+  nmTxt,
   tileLoader
 } from './state.js';
 import {
   createAxisWindow
 } from './lib/axis_window.js';
+import {
+  clearance,
+  paintClear,
+  clearLine
+} from './lib/profile_embed.js';
 import {
   TX
 } from './texts.js';
@@ -217,7 +223,10 @@ export function drawProfile() {
   if (S.gapEl && S.gapEl.textContent !== gap) S.gapEl.textContent = gap;
   if (S.gapEl && S.gapEl.hidden === !!gap) S.gapEl.hidden = !gap;
   dataHead();
-  if (!S.prof || S.dpanel) return; // un contenu ouvert : le profil est redessiné à sa fermeture
+  if (!S.prof || S.dpanel) { // un contenu ouvert : le profil est redessiné à sa fermeture
+    clearLine(S.pc, null); // la ligne de la marge sur le relief (posée par le bloc du profil) ne reste pas sans lui
+    return;
+  }
   const {
     W,
     H,
@@ -227,6 +236,12 @@ export function drawProfile() {
   // une seule passe de collision, celle de la Carte (SiaAero.pass), avec la liste fermée de la coupe (PROFILE_RANK)
   const g = S.geo = window.SiaAero.pass(ctx, (c, pl) => paintProfile(c, pl, W, H), r => PROFILE_RANK.get(r));
   S.lgCons = g.cons > 0;
+  setData(S.pc, 'clear', S.clear?.level ||
+    ''); // la croisière sous le relief ou à moins de 500 ft : peinte par paintProfile, dite sous la coupe (SOG-0502)
+  clearLine(S.pc, S.clear, tt, {
+    nm: nmTxt,
+    ft: n => n.toLocaleString(S.ctx.lang())
+  });
   S.lgFixes = g.fixes > 0; // la légende ne dit que ce qui est dessiné
   setData(S.pc, 'axis', g.axisOk ? '1' : '0');
   setData(S.pc, 'marks', String(g.marks));
@@ -284,6 +299,10 @@ function paintProfile(ctx, pl, W, H) {
     window: windowNm(),
     select: S.selSpace,
     placer: pl
+  });
+  // la marge de la croisière sur le relief lu (SOG-0502) : la part fautive de la ligne et son chiffre, peints par le bloc du profil
+  paintClear(ctx, g, S.prof, S.clear = clearance(S.prof), {
+    scale: W < 500 ? .78 : 1
   });
   // paliers de contraintes des procédures choisies, sur la trajectoire prévue
   g.cons = onMission() ? 0 : drawProfileCons(ctx, g);

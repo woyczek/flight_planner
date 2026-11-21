@@ -23,7 +23,12 @@ window.SogFrame = { text: Object.freeze({ ...T }) };
 <script type="module">
 import {
   loadProfile,
-  drawProfile
+  drawProfile,
+  clearance,
+  clearSay,
+  clearLine,
+  paintClear,
+  CLEAR_ORANGE_FT
 } from '../profile_embed.js?v=0';
 // une tuile Terrarium synthétique : l'altitude vaut 800 m + 100 m par colonne de tuile (z9) ; la tuile 9/255/... n'est pas utilisée
 const loaded = [];
@@ -41,6 +46,11 @@ const load = async url => {
 window.__pe = {
   loadProfile,
   drawProfile,
+  clearance,
+  clearSay,
+  clearLine,
+  paintClear,
+  CLEAR_ORANGE_FT,
   load,
   loaded,
   canvas: document.getElementById('cv'),

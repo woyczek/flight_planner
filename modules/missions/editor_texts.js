@@ -638,13 +638,6 @@ export const EDTX = {
   atProfEmpty: ['Placez deux lieux pour voir le profil.', 'Place two places to see the profile.',
     'Platzieren Sie zwei Orte, um das Profil zu sehen.', 'Coloque dos lugares para ver el perfil.'
   ],
-  // SOG-0464 (retouche) : la croisière contre le relief lu (clear de drawProfile) : sous le relief, ou marge faible
-  atProfBelow: ['La croisière passe sous le relief à {nm} NM ({ft} ft).', 'The cruise goes below the terrain at {nm} NM ({ft} ft).',
-    'Die Reiseflughöhe liegt bei {nm} NM unter dem Gelände ({ft} ft).', 'El crucero pasa bajo el relieve a {nm} NM ({ft} ft).'
-  ],
-  atProfLow: ['Marge faible au-dessus du relief : {ft} ft à {nm} NM.', 'Low margin above the terrain: {ft} ft at {nm} NM.',
-    'Geringer Abstand zum Gelände: {ft} ft bei {nm} NM.', 'Margen escaso sobre el relieve: {ft} ft a {nm} NM.'
-  ],
   atProfNm: ['Route : {nm} NM', 'Route: {nm} NM', 'Route: {nm} NM', 'Ruta: {nm} NM'],
   // la carte sur son fond uni (hors ligne, ou le fond de la suite n'est pas venu) : dit une fois par séance, en notification
   mmNone: ['Carte indisponible sur cet appareil.', 'Map unavailable on this device.', 'Karte auf diesem Gerät nicht verfügbar.',

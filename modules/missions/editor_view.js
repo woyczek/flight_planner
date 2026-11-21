@@ -482,8 +482,6 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atprof[data-open="1"] .ms-atprofbody{display:block}
 [data-module="missions"] .ms-atprofcv{display:block;width:100%;height:160px;box-sizing:border-box;border:1px solid var(--sog-line,#ddd);background:#fff}
 [data-module="missions"] .ms-atprofcv[data-empty="1"]{visibility:hidden}
-[data-module="missions"] .ms-atprofwarn{margin:4px 0 0;font-weight:600;color:var(--sog-warn,#a15c00)}
-  [data-module="missions"] .ms-atprofwarn:empty{display:none}
   [data-module="missions"] .ms-atprofsay{margin:4px 0 0;min-height:1.5em} /* la ligne a sa place avant sa phrase : rien ne bouge quand le relief arrive */
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
 [data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden;box-sizing:border-box;border:1px solid var(--sog-line,#ddd)}
@@ -1668,7 +1666,7 @@ function edRefSeek(s) {
  *  affichée. Au téléphone il est replié (le bouton le déplie) ; sur un module large il est ouvert, sans bouton. Le canvas est peint par edProfile. */
 function edProfHtml(s) {
   const open = !!s.ed.profOpen;
-  return `<section class="ms-atprof" data-atprof data-open="${open ? '1' : ''}"><button type="button" class="ms-atprofbtn" data-do="edprof" aria-expanded="${open}">${esc(s.tt(EDTX.atProf))}</button><div class="ms-atprofbody f-card" data-atprofbody><canvas class="ms-atprofcv" data-atprofcv role="img" aria-label="${esc(s.tt(EDTX.atProfAlt))}"></canvas><p class="f-muted ms-atprofsay" data-atprofsay></p><p class="ms-atprofwarn" data-atprofwarn role="status"></p></div></section>`;
+  return `<section class="ms-atprof" data-atprof data-open="${open ? '1' : ''}"><button type="button" class="ms-atprofbtn" data-do="edprof" aria-expanded="${open}">${esc(s.tt(EDTX.atProf))}</button><div class="ms-atprofbody f-card" data-atprofbody><canvas class="ms-atprofcv" data-atprofcv role="img" aria-label="${esc(s.tt(EDTX.atProfAlt))}"></canvas><p class="f-muted ms-atprofsay" data-atprofsay></p></div></section>`;
 }
 
 /** Le chargeur de tuiles de relief du profil : celui de la Carte (tileLoader de maps/state.js), par ctx.net.fetch ; refusé, il lève (le profil le dit). Un seul par
@@ -1701,38 +1699,37 @@ function edProfile(s, doc = null) {
     lv = edMission(doc || edDoc(e))?.cruiseLevelFt,
     levelFt = Number.isFinite(lv) && lv > 0 ? Math.min(lv, 60000) : 0,
     key = JSON.stringify([pts, levelFt, W]),
-    warn = s.el.querySelector('[data-atprofwarn]'),
-    paint = (text, empty, alert = '') => {
+    paint = (text, empty) => {
       put(say, text);
-      put(warn, alert);
       if (empty || cv.dataset.empty) putData(cv, 'empty', empty ? '1' : ''); // absent = vide : l'attribut n'est pas créé pour rien
     };
   if (cv.__profKey === key) return;
   cv.__profKey = key;
   if (pts.length < 2) {
     cv.__profRun = (cv.__profRun || 0) + 1; // un dessin encore en route ne peint plus
+    import('../maps/lib/profile_embed.js').then(m => m.clearLine(cv,
+      null)); // et la ligne de la marge sur le relief (écrite par le bloc du profil) s'efface
     return paint(s.tt(EDTX.atProfEmpty), true);
   }
   import('../maps/lib/profile_embed.js').then(m => m.drawProfile(cv, pts, {
     load: edTileLoad(s),
-    levelFt
+    levelFt,
+    t: (row, v) => s.tt(row,
+      v
+    ), // la ligne de la marge de la croisière sur le relief est écrite sous la coupe par le bloc du profil (SOG-0502), dans notre langue
+    fmt: {
+      nm: n => dec(s, n),
+      ft: n => n.toLocaleString(s.ctx.lang?.() || 'fr')
+    }
   })).then(r => {
     if (state() !== s || s.ed !== e || cv.__profKey !== key || r?.stale) return;
     if (!r) {
       cv.__profKey = ''; // les bibliothèques du profil ne sont pas venues : le prochain redessin réessaie
       return paint(s.tt(EDTX.atProfNoRelief), true);
     }
-    const k = r.terrain ? r.clear :
-      null, // clear : la marge de la croisière sur le relief lu ; absent (Carte plus ancienne) ou nul : rien à dire
-      ok = k && Number.isFinite(k.minFt) && Number.isFinite(k.atNm),
-      vars = ok ? {
-        nm: dec(s, Math.round(k.atNm * 10) / 10),
-        ft: Math.abs(Math.round(k.minFt))
-      } : null;
     paint(r.terrain ? s.tt(EDTX.atProfNm, {
       nm: dec(s, Math.round(r.nm * 10) / 10)
-    }) : s.tt(EDTX.atProfNoRelief), false, !ok ? '' : k.below ? s.tt(EDTX.atProfBelow, vars) : k.minFt < 500 ? s.tt(EDTX.atProfLow,
-      vars) : '');
+    }) : s.tt(EDTX.atProfNoRelief), false);
   }).catch(() => {
     if (cv.__profKey === key) paint(s.tt(EDTX.atProfNoRelief), true);
   });

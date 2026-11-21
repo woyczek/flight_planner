@@ -10034,6 +10034,122 @@ def d297(c):
         c.shot(f'D297_egll_z{z}_{c.width}.png')
 
 
+_CLEAR_BENCH = """async () => { const P = window.__pe;
+  const mk = (margin, names = ['A', 'B', 'C']) => ({ terrainOk: true, total: 100 * 1852,
+    samples: Array.from({ length: 51 }, (_, i) => ({ s: i * 2 * 1852, terrain: i === 25 ? 5000 - margin : 0 })),
+    plan: { alt: Array.from({ length: 51 }, () => 5000), toc: { s: 10 * 1852 }, tod: { s: 90 * 1852 } },
+    marks: [{ name: names[0], s: 0 }, { name: names[1], s: 40 * 1852 }, { name: names[2], s: 100 * 1852 }] });
+  return { P, mk } }"""
+
+
+@case('D298', 'Cruise below the terrain, the measure and the sentence (SOG-0502): profile_embed gives `clear` { minFt, atNm, below, level, after } and ONE sentence in four languages — under 0 ft red « sous le relief », 0 to 499 ft orange « seulement au-dessus du relief », from 500 ft nothing', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0502 (the ergonomist decided the form; the relay: « {nm} must be the distance AFTER {point} », not from the start): the margin of the cruise over the relief < 0 is RED « Croisière sous le relief : {ft} ft trop bas, à {nm} NM après {point} », 0 to 499 ft is ORANGE « Croisière à {ft} ft seulement au-dessus du relief, à {nm} NM après {point} », above nothing (one threshold of 500 ft, CLEAR_ORANGE_FT, until SOG-0534; a path that never levels off, the level being out of reach, says only the red: a thin margin on the climb is normal); `after` is the last NAMED point of the route before the lowest point (none named: no « après »); the sentence is written ONCE, in profile_embed (clearSay(clear, t, fmt)), four languages, and the Map and the workshop receive it. Red before: no `level`, no `after`, no sentence.')
+def d298(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/profile_embed.html', wait_until='load')
+    c.until("() => window.__pe && window.__pe.ready", timeout=30000, what='the profile bench')
+    r = c.js(_CLEAR_BENCH.replace('return { P, mk } }', """const say = (lang, m, names) => { const k = P.clearance(mk(m, names)); return k && { k, text: P.clearSay(k, (row, v) => row[lang].replace(/\\{(\\w+)\\}/g, (x, n) => v[n])) } };
+      const out = {};
+      for (const m of [-120, -1, 0, 380, 499, 500, 900]) { const k = P.clearance(mk(m)); out['m' + m] = k && { minFt: k.minFt, atNm: k.atNm, afterNm: k.afterNm, below: k.below, level: k.level, after: k.after } }
+      out.fr = say(0, -120); out.en = say(1, -120); out.de = say(2, -120); out.es = say(3, -120);
+      out.orFr = say(0, 380); out.orEn = say(1, 380); out.orDe = say(2, 380); out.orEs = say(3, 380);
+      out.none = say(0, 900); out.noName = say(0, -120, ['', '', '']); out.backName = say(0, -120, ['A', '', 'C']);
+      const nr = mk(-50); nr.terrainOk = false; out.noRelief = P.clearance(nr);
+      const np = mk(-50); np.plan = null; out.noPlan = P.clearance(np);
+      const nc = mk(300); nc.plan.toc = { s: 0 }; nc.plan.tod = { s: 0 }; out.noCruiseThin = P.clearance(nc).level;
+      const nb = mk(-50); nb.plan.toc = { s: 0 }; nb.plan.tod = { s: 0 }; out.noCruiseBelow = P.clearance(nb).level;
+      out.bound = P.CLEAR_ORANGE_FT; return out }"""))
+    for m, lv in ((-120, 'red'), (-1, 'red'), (0, 'orange'), (380, 'orange'), (499, 'orange'), (500, ''), (900, '')):
+        k = r[f'm{m}']
+        c.ok(k and k['minFt'] == m and k['level'] == lv and k['below'] is (m < 0), str(k), f'a margin of {m} ft is « {lv or "nothing"} »')
+    c.eq(r['m-120']['atNm'], 50, 'the lowest point is at 50 NM from the start', what='atNm')
+    c.eq(r['m-120']['after'], 'B', 'after the last named point before it (B, at 40 NM)', what='after')
+    c.eq(r['m-120']['afterNm'], 10, 'and the distance counted from that point (50 NM from the start, B at 40 NM: 10 NM after B)', what='afterNm')
+    c.eq(r['backName']['text'], 'Croisière sous le relief : 120 ft trop bas, à 50 NM après A', 'an unnamed point is skipped: the NM are counted from the named one (A, at the start)', what='backName text')
+    c.eq(r['bound'], 500, 'one threshold of 500 ft', what='threshold')
+    c.eq(r['fr']['text'], 'Croisière sous le relief : 120 ft trop bas, à 10 NM après B', 'red, French: the decided sentence, the NM are counted AFTER the point (B at 40 NM, the lowest point at 50 NM)', what='fr')
+    c.eq(r['en']['text'], 'Cruise below the terrain: 120 ft too low, at 10 NM after B', 'red, English', what='en')
+    c.eq(r['de']['text'], 'Reiseflug unter dem Gelände: 120 ft zu niedrig, bei 10 NM nach B', 'red, German', what='de')
+    c.eq(r['es']['text'], 'Crucero bajo el relieve: 120 ft demasiado bajo, a 10 NM después de B', 'red, Spanish', what='es')
+    c.eq(r['orFr']['text'], 'Croisière à 380 ft seulement au-dessus du relief, à 10 NM après B', 'orange, French: the decided sentence', what='orFr')
+    c.eq(r['orEn']['text'], 'Cruise only 380 ft above the terrain, at 10 NM after B', 'orange, English', what='orEn')
+    c.ok('380' in r['orDe']['text'] and 'Gelände' in r['orDe']['text'] and '{' not in r['orDe']['text'], r['orDe']['text'], 'orange, German')
+    c.ok('380' in r['orEs']['text'] and 'relieve' in r['orEs']['text'] and '{' not in r['orEs']['text'], r['orEs']['text'], 'orange, Spanish')
+    c.eq(r['none']['text'], '', 'a wide margin says nothing', what='none')
+    c.eq(r['noName']['text'], 'Croisière sous le relief : 120 ft trop bas, à 50 NM', 'no named point before it: the sentence has no « après »', what='noName')
+    c.eq(r['backName']['k']['after'], 'A', 'an unnamed point is skipped: the last NAMED point before the lowest one', what='backName')
+    c.eq((r['noRelief'], r['noPlan']), (None, None), 'no relief read or no planned path: no measure', what='nothing')
+    c.eq((r['noCruiseThin'], r['noCruiseBelow']), ('', 'red'), 'a path that never levels off (the level is out of reach on a short route): a thin margin on the climb is normal and says nothing (D277: an absurd level draws no mark), but under the relief is still red', what='noCruise')
+    # the real drawing of the bench (relief 2 600 ft and more): a level well under it is red, with the point it comes after; FL200 says nothing
+    d = c.js("""async () => { const P = window.__pe, cv = P.canvas, pts = [{ lat: 45.0, lon: 1.0, id: 'A' }, { lat: 45.2, lon: 1.6, id: 'B' }, { lat: 45.1, lon: 2.4, id: 'C' }];
+      const low = await P.drawProfile(cv, pts, { load: P.load, levelFt: 2000 }), high = await P.drawProfile(cv, pts, { load: P.load, levelFt: 20000 });
+      let L = 2000, mid = null; for (let i = 0; i < 6; i++) { mid = await P.drawProfile(cv, pts, { load: P.load, levelFt: L }); if (mid.clear.level === 'orange') break; L += Math.max(-mid.clear.minFt + 250, 100) }
+      return { low: low.clear, high: high.clear, mid: mid.clear } }""")
+    c.ok(d['low']['level'] == 'red' and d['low']['after'] in ('A', 'B'), str(d['low']), 'drawProfile: a level under the relief says red and the point it comes after')
+    c.eq(d['mid']['level'], 'orange', 'drawProfile: a level a few hundred feet above the relief says orange', what=str(d['mid']))
+    c.eq(d['high']['level'], '', 'drawProfile: FL200 says nothing', what=str(d['high']))
+
+
+@case('D299', 'Cruise below the terrain, the drawing (SOG-0502): the faulty part of the cruise line is drawn in the alert colour — the frame\'s tokens err (red) and warn (orange) — and the lowest point carries a mark WITH its number (never the colour alone); nothing is drawn for a wide margin', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0502: profile_embed.paintClear(ctx, geo, data, clear, tokens) paints over the plan line only the samples of the cruise under 500 ft of margin (red under 0, orange from 0 to 499), a mark (a disc with a white ring) at the lowest point and its number beside it (« −120 ft » below the relief, « 380 ft » above); the Map\'s profile and the workshop call it after MapsProfile.draw. Red before: the function does not exist.')
+def d299(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/profile_embed.html', wait_until='load')
+    c.until("() => window.__pe && window.__pe.ready", timeout=30000, what='the profile bench')
+    r = c.js("""async () => { const P = window.__pe, geo = { W: 600, H: 240, padL: 40, padR: 10, padT: 10, padB: 40, top: 8000, bottom: 0, total: 100 * 1852, w0: 0, w1: 100 * 1852 };
+      const mk = margin => ({ terrainOk: true, total: 100 * 1852,
+        samples: Array.from({ length: 51 }, (_, i) => ({ s: i * 2 * 1852, terrain: i >= 22 && i <= 28 ? 5000 - margin - Math.abs(i - 25) * 300 : 0 })),
+        plan: { alt: Array.from({ length: 51 }, () => 5000), toc: { s: 10 * 1852 }, tod: { s: 90 * 1852 } }, marks: [{ name: 'A', s: 0 }, { name: 'B', s: 40 * 1852 }] });
+      const run = margin => { const calls = [], ctx = new Proxy({}, { get: (t, k) => k === 'measureText' ? s => ({ width: 6 * String(s).length }) : (...a) => { calls.push([k, a]) }, set: (t, k, v) => { calls.push(['set:' + k, [v]]); return true } });
+        const d = mk(margin), k = P.clearance(d); P.paintClear(ctx, geo, d, k, { err: '#b3261e', warn: '#9a5b00' }); return calls };
+      const sum = calls => { const col = []; let cur = null, minX = 1e9, maxX = -1e9, texts = [], inPath = false;
+        for (const [n, a] of calls) { if (n === 'set:strokeStyle') cur = a[0]; if (n === 'beginPath') inPath = true;
+          if ((n === 'moveTo' || n === 'lineTo') && inPath && (cur === '#b3261e' || cur === '#9a5b00')) { minX = Math.min(minX, a[0]); maxX = Math.max(maxX, a[0]) }
+          if (n === 'stroke' && inPath && (cur === '#b3261e' || cur === '#9a5b00')) col.push(cur); if (n === 'stroke') inPath = false; if (n === 'fillText') texts.push(a[0]) }
+        return { col: [...new Set(col)], minX, maxX, texts } };
+      return { red: sum(run(-120)), orange: sum(run(380)), none: sum(run(900)) } }""")
+    c.ok('#b3261e' in r['red']['col'] and any('120' in t and ('-' in t or '−' in t) for t in r['red']['texts']), str(r['red']), 'red: the faulty part is in the err colour and the lowest point says « −120 ft »')
+    c.ok(r['orange']['col'] == ['#9a5b00'] and any(t.strip() == '380 ft' for t in r['orange']['texts']), str(r['orange']), 'orange: the warn colour only, and the lowest point says « 380 ft »')
+    c.ok(r['none']['col'] == [] and r['none']['texts'] == [], str(r['none']), 'a wide margin: nothing is drawn')
+    c.ok(0 < r['red']['maxX'] - r['red']['minX'] < 0.5 * (600 - 50), str(r['red']), 'only the faulty part is drawn over the line, not the whole cruise')
+
+
+def _clear_open(c, relief_m):
+    """The Map's profile of an invented route (P1 → P4 along 45°N, cruise at 8 000 ft) over a flat relief of `relief_m` metres."""
+    png = _terrarium_png(relief_m)
+    c.page.route(re.compile(r'.*elevation-tiles.*'), lambda r: r.fulfill(status=200, content_type='image/png', body=png))
+    c.open('maps', docs=fdocs(_awy_flight()), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.terrainOk && !window.__mp.S.terrainPending && window.__mp.S.geo && window.__mp.S.geo.drawn.terrain)", timeout=20000, what='the profile DRAWN with the relief (the drawing of the profile without it is still the last one while the tiles arrive: a capture taken then shows no alert, SOG-0502, Essais)')
+    c.wait(300)
+
+
+@case('D300', 'The Map\'s profile paints the cruise under the relief (SOG-0502): the canvas says data-clear red (relief over the cruise), orange (a few hundred feet under it) or nothing, and the faulty part is in the alert colour', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='SOG-0502: the Map\'s profile (profile_view.js) calls the profile block\'s clearance and paintClear after MapsProfile.draw, and says what it painted in data-clear of its canvas (red | orange | absent), like its other data-* ; invented route P1 → P4 at 8 000 ft over a flat relief of 3 000 m (red), 2 347 m (orange: 300 ft of margin) and 300 m (nothing). Red before: no data-clear.')
+def d300(c):
+    got = {}
+    for name, m in (('red', 3000), ('orange', 2347), ('none', 300)):
+        _clear_open(c, m)
+        got[name] = c.js("() => { const S = window.__mp.S, p = S.pc.closest('.mp-dprof').querySelector('[data-clear-line]'); return [S.pc.dataset.clear || '', p && !p.hidden ? p.dataset.clear + ' | ' + p.textContent : ''] }")
+    c.eq([got[k][0] for k in got], ['red', 'orange', ''], "the canvas of the Map's profile says what is painted", what=str(got))
+    c.ok(got['red'][1].startswith('red | ') and 'ft' in got['red'][1] and ' NM' in got['red'][1], got['red'], 'red: the line under the profile is written by the block, with the colour in data-clear')
+    c.ok(got['orange'][1].startswith('orange | ') and 'seulement' in got['orange'][1], got['orange'], 'orange: « seulement au-dessus du relief »')
+    c.eq(got['none'][1], '', 'a wide margin: no line under the profile', what=str(got['none']))
+
+
+@case('D301', 'SOG-0502 (captures): the Map\'s profile with the cruise below the relief (red), a thin margin (orange) and a wide one (nothing) — the delivered state at 390 and 1280', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False,
+      rule='SOG-0502: the delivered state, to be read by the ergonomist before the push: the faulty part of the cruise line in the alert colour and a mark with its number at the lowest point; invented route P1 → P4 at 8 000 ft over a flat invented relief (3 000 m, 2 347 m, 300 m).')
+def d301(c):
+    for name, m in (('rouge', 3000), ('orange', 2347), ('rien', 300)):
+        _clear_open(c, m)
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.shot(f'D301_profil_{name}_{c.width}.png')
+        c.check_errors()
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
