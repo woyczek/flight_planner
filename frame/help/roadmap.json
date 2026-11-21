@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f66df3d",
-  "fiches": 539,
+  "organisation": "ce24efc",
+  "fiches": 540,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -7940,6 +7940,15 @@
      "en": "Routes: the route does not reach the aerodrome — south of LATLO the base has no network and the engine draws a 327 NM direct to LQSA",
      "de": "Routen: Die Route erreicht den Flugplatz nicht — südlich von LATLO hat die Datenbank kein Netz und die Engine zieht eine Direktverbindung von 327 NM bis LQSA",
      "es": "Rutas: la ruta no llega al aeródromo — al sur de LATLO la base no tiene red y el motor traza un directo de 327 NM hasta LQSA"
+    },
+    {
+     "id": "SOG-0541",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : lire les voies de la Belgique (ENR 3) dans l'eAIP de skeyes pendant la mise à jour des données",
+     "en": "Routes: read the airways of Belgium (ENR 3) from the skeyes eAIP during the data update",
+     "de": "Routen: die Luftstraßen Belgiens (ENR 3) während der Datenaktualisierung aus dem eAIP von skeyes lesen",
+     "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos"
     }
    ]
   },

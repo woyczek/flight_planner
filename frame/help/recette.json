@@ -5591,7 +5591,7 @@
    "fiche": "SOG-0532",
    "app": "pilote",
    "question": "Tu as donné l'adresse de l'eAIP belge : le lanceur peut-il le lire lui-même pendant la mise à jour des données (hôte nouveau ops.skeyes.be, relu par Sécurisation avant) ?",
-   "context": "Ta réponse à Q-0132 donne les pages d'index de l'eAIP de skeyes (AD 0.6, AD 1.1), pas les pages ENR 3 des voies. Un site que le lanceur n'a jamais lu demande ton oui explicite : personne ne lit ce site d'ici là. Avec ton oui, Sécurisation relit l'accès avant tout code, et seules les pages ENR 3 sont lues, une fois par cycle.",
+   "context": "Ta réponse à Q-0132 donne les pages d'index de l'eAIP de skeyes (AD 0.6, AD 1.1), pas les pages ENR 3 des voies. Un site que le lanceur n'a jamais lu demande ton oui explicite : personne ne lit ce site d'ici là. Avec ton oui, Sécurisation relit l'accès avant tout code, et seules les pages ENR 3 sont lues, une fois par cycle. — Le 21/11, tu as écrit à l'ergonome « oui pour l’eaip belge. » : réponds ici aussi (choix « Oui »), c'est ta réponse dans l'appli qui ouvre un site nouveau au lanceur ; la fiche SOG-0541 est prête et attend ce clic.",
    "options": [
     "Oui : le lanceur lit l'eAIP belge (ENR 3) pendant la mise à jour, après la relecture de Sécurisation",
     "Non : je colle les pages ENR 3",
