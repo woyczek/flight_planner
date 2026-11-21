@@ -3107,7 +3107,9 @@ def f109(c):
     c.eq([sorted(comp), comp['via'], comp['proposals'], comps[1]], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'proposals']), [], True, dict(comp, alternatives=True)],
          'a route already in the field imposes no passage (SOG-0517) and the proposals of an impossible plan asked (AeroDB 9a7f1dde3); the alternatives in a second request (SOG-0296)', what='compute args')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
-    c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
+    # SOG-0545 (mock-up v2): the level is said once, at the head of the line (« FL250 · Direct ») — the name loses its repeated level,
+    # expectation changed on purpose
+    c.eq(names, ['Via UN10', 'Direct', 'Direct'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
     c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
     d = cf_doc(c, lambda d: 'LUGEN' not in [p.get('id') for p in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID
@@ -5748,7 +5750,8 @@ def f218(c):
     c.until(f"{rows} === 3 && !document.querySelector('{FUEL} [data-rmore=busy]')", timeout=12000, what='(b) the variants added')
     c.eq(comps()[1], dict(comps()[0], alternatives=True), '(b) the second request: the same fields plus alternatives', what='second request')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
-    c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'the first kept at the head, the variants added under it', what='names')
+    # SOG-0545 (mock-up v2): the level said once, at the head of the line — the names lose their repeated level, changed on purpose
+    c.eq(names, ['Via UN10', 'Direct', 'Direct'], 'the first kept at the head, the variants added under it', what='names')
     c.until_doc('cache/fuel/route_alts.json', lambda d: bool(d) and len(d.get('alternatives') or []) == 3 and len((d.get('answer') or {}).get('alternatives') or []) == 3,
                 'route_alts.json follows the second time (schema 2: alternatives and answer)')
     # a failure of the second keeps the first and says so
@@ -9682,6 +9685,10 @@ def f297(c):
     # SOG-0545 (the ergonomist, mock-up v2) — expectation changed on purpose: « Seul Eurocontrol valide un plan. » once, under « Calculé à »,
     # with the meaning of « conforme »; no more under each route
     c.eq(c.count(f'{A} [data-onlyeuro]'), 0, 'no more under a route', what='only')
+    # SOG-0545 (the relay, capture of F297 at 390): the level said ONCE, at the head — never « FL250 · Direct · FL250 »
+    heads = [norm(x) for x in c.js(f"""[0, 1, 2].map(i => {{ const e = document.querySelector('{A} [data-alt="' + i + '"]');
+        return (e.querySelector('[data-altfl]')?.textContent || '') + ' · ' + (e.querySelector('[data-altname]')?.textContent || '') }})""")]
+    c.eq(heads, ['FL270 · Via UN10', 'FL250 · Direct', 'FL190 · Direct'], 'the level once, at the head of the line', what='heads')
     c.ok(norm(want) in norm(c.text(f'{FUEL} [data-conformline]') or ''), c.text(f'{FUEL} [data-conformline]'), 'once, above the list')
     c.ok(c.js(f"""(() => {{ const e = document.querySelector('{FUEL} [data-conformline]');
         return !!e && !e.closest('details') && e.getBoundingClientRect().height > 0 }})()"""), 'folded', 'visible, never in a fold')
