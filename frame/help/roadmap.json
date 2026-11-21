@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7c36a6b",
-  "fiches": 542,
+  "organisation": "d44927a",
+  "fiches": 544,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1055,8 +1055,28 @@
      "fr": "Carburant : changer l'arrivée garde le terrain de dégagement sans le revérifier ni le marquer",
      "en": "Fuel: changing the destination keeps the alternate without re-checking or flagging it",
      "de": "Kraftstoff: Beim Ändern des Zielflughafens bleibt der Ausweichflughafen ungeprüft und unmarkiert",
-     "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo",
-     "test": true
+     "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-degagements-meteo",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; dégagements ; météo",
+    "en": "Carburant ; dégagements ; météo",
+    "de": "Carburant ; dégagements ; météo",
+    "es": "Carburant ; dégagements ; météo"
+   },
+   "items": [
+    {
+     "id": "SOG-0544",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : « Proposer un dégagement » ne lit la météo que de trois terrains sur sept, et « météo non lue » couvre des cas où elle a été lue",
+     "en": "Fuel: “Suggest an alternate” reads the weather of only three airfields out of seven, and “weather not read” covers cases where it was read",
+     "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
+     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
     }
    ]
   },
@@ -1397,6 +1417,15 @@
      "en": "Fuel: “Auto” can keep a level whose route is “not verifiable” before a level whose route conforms",
      "de": "Kraftstoff: „Auto“ kann eine Flugfläche mit „nicht prüfbarer“ Route vor einer Flugfläche mit konformer Route behalten",
      "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme"
+    },
+    {
+     "id": "SOG-0545",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : durée et carburant sur chaque route proposée, « la plus rapide », « la plus économe », cinq au plus",
+     "en": "Routes: time and fuel on each proposed route, “the fastest”, “the most economical”, five at most",
+     "de": "Routen: Dauer und Kraftstoff für jede vorgeschlagene Route, „die schnellste“, „die sparsamste“, höchstens fünf",
+     "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo"
     }
    ]
   },
@@ -3375,8 +3404,7 @@
      "en": "NAT tracks: two defects found by the security review (an error on a malformed NAT file; reloads with no spacing)",
      "de": "NAT-Routen: zwei Fehler aus der Sicherheitsprüfung (Absturz bei fehlerhafter NAT-Datei; Neuladen ohne Abstand)",
      "es": "Rutas NAT: dos defectos hallados en la revisión de seguridad (un error con un archivo NAT mal formado; recargas sin espaciar)",
-     "rank": 424,
-     "test": true
+     "rank": 424
     }
    ]
   },
@@ -3501,8 +3529,7 @@
      "en": "Routes: London → Iceland (EGLL → BIKF) gives “computation impossible”",
      "de": "Routen: London → Island (EGLL → BIKF) ergibt „Berechnung unmöglich“",
      "es": "Rutas: Londres → Islandia (EGLL → BIKF) da «cálculo imposible»",
-     "rank": 427,
-     "test": true
+     "rank": 427
     },
     {
      "id": "SOG-0501",
@@ -3532,8 +3559,7 @@
      "fr": "Routes : LFBY → LFST au FL090, le calcul ne rend qu'un direct (ou rien) ; le plan de vol part avec un champ de route vide (Eurocontrol : EFPM214 MISSING ROUTE DATA) et « Copier pour Eurocontrol » refuse sans dire quoi faire",
      "en": "Routes: LFBY → LFST at FL090, the engine returns only a direct (or nothing); the flight plan leaves with an empty route field (Eurocontrol EFPM214 MISSING ROUTE DATA) and “Copy for Eurocontrol” refuses without saying what to do",
      "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
-     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer",
-     "test": true
+     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
     }
    ]
   },
@@ -4792,8 +4818,7 @@
      "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
      "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
      "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
-     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea",
-     "test": true
+     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
     }
    ]
   },
@@ -5804,8 +5829,7 @@
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 198,
-     "test": true
+     "rank": 198
     },
     {
      "id": "SOG-0216",

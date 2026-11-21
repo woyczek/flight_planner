@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-21",
   "tests": 375,
-  "verdicts": 236
+  "verdicts": 242
  },
  "apps": [
   "pilote",
@@ -1584,13 +1584,16 @@
    },
    "test": "Recharge la page. Carburant, un vol vers KTPA (ou KDEN), bloc Procédures, AVANT de choisir une piste : la ligne Piste dit le vent du METAR et propose une piste ; les lignes Arrivée, Départ et Approche disent « Little Navmap, lue sur ce poste » sans attendre un choix.",
    "since": "2026-11-11",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-14T11:33:36Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "je vole vers KTPA. je veux choisir la piste. j’ai star/sid, mais pas de meteo sur la piste… pourtant, des fois, on l’a. screenshot. rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. rien sur la zone de choix. screenshot. Une fois qu’on a choisi la piste conseillée, la météo apparaît … bizarre comme bug (screenshot)",
-    "at": "2026-11-13T15:53:35Z"
-   }
+   "at": "2026-11-21T18:30:16Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "je vole vers KTPA. je veux choisir la piste. j’ai star/sid, mais pas de meteo sur la piste… pourtant, des fois, on l’a. screenshot. rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. rien sur la zone de choix. screenshot. Une fois qu’on a choisi la piste conseillée, la météo apparaît … bizarre comme bug (screenshot)",
+     "at": "2026-11-13T15:53:35Z"
+    }
+   ]
   },
   {
    "id": "SOG-0211",
@@ -4799,8 +4802,9 @@
    },
    "test": "Rien de nouveau à l'écran : ce sont des durcissements. Carburant, un vol transatlantique (par exemple EGLL → KJFK) avec les routes NAT du jour : la route se calcule comme avant, la Carte montre les routes NAT, et aucun message d'erreur ne paraît. La source NAT est relue au plus une fois toutes les cinq minutes.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T14:06:30Z"
+   "state": "ok",
+   "delivered": "2026-11-18T14:06:30Z",
+   "at": "2026-11-21T18:30:33Z"
   },
   {
    "id": "SOG-0471",
@@ -4885,8 +4889,10 @@
    },
    "test": "Après la relance du lanceur : Carburant, vol EGLL → BIKF (Keflavik) au FL350, calcul de route. Attendu : une route en quelques secondes (et non « calcul impossible » après 15 s), environ 1 060 NM, avec dans la revue une ligne qui dit en clair qu'un direct d'environ 270 NM relie deux points sans liaison dans la base, au statut « contrôle partiel ».",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T20:15:10Z"
+   "state": "ko",
+   "delivered": "2026-11-18T20:15:10Z",
+   "comment": "« 1 écart aux règles » et « aucune variante connue. sanction immédiate. PROF204: RS: TRAFFIC VIA EGGXOCA IS ON FORBIDDEN ROUTE REF:[EUROEGGX1A] HF RADIO MANDATORY    PROF205: RS: TRAFFIC VIA BIRDFIR IS OFF MANDATORY ROUTE REF:[BI2022A] BIRDFIR NOT AVAILABLE    PROF204: RS: TRAFFIC VIA BIRDFIR IS ON FORBIDDEN ROUTE REF:[BI2023A] ANX2B BIRDFIR    ROUTE135: THE SID LIMIT IS EXCEEDED FOR AERODROME EGLL [EGLL5D] CONNECTING TO BIKF.    ROUTE165: THE DCT SEGMENT EGLL..BIKF (1022 NM) IS TOO LONG FOR EGTTNFRA:000:105. MAXIMUM IS 100 NM [EG1A]    ROUTE165: THE DCT SEGMENT EGLL..BIKF (1022 NM) IS TOO LONG FOR EGTTNFRA:105:245. MAXIMUM IS 0 NM [EG2A]    ROUTE165: THE DCT SEGMENT EGLL..BIKF (1022 NM) IS TOO LONG FOR EGTTNFRA:245:999. MAXIMUM IS 0 NM [EG3A]    ROUTE52: THE DCT SEGMENT EGLL (NOT AN ALLOWED FRA POINT BORDER BETWEEN EGTTNFRA:255:999 AND EGPXFRA RESTRICTION:EGEGPX500A)..BIKF (NOT AN ALLOWED FRA POINT BORDER BETWEEN EGPXFRA AND EGGXOCA:255:999 RESTRICTION:EGPXGX500A) IS FORBIDDEN. RESTRICTION: EGPX100A   ---- (FPL-CHECK01-IG -BE9L/L-SDGRWY/S -EGLL1835 -N0215F270 DCT -BIKF0442 BIBD -PBN/B2D2 DOF/261121 REG/FGLRZ)",
+   "at": "2026-11-21T18:34:29Z"
   },
   {
    "id": "SOG-0477",
@@ -5224,13 +5230,16 @@
    },
    "test": "Recharge la page. Ouvre la mission où tu avais vu « à placer » (ta réserve du 19/11). Attendu : un départ ou une arrivée que la base place sur la carte affiche sa position dans la liste des Lieux, et « À compléter » ne demande plus sa position ; un lieu qui n'a ni position ni code reste « à placer ». Question de Création : le lieu que tu avais vu était-il un départ ou une arrivée, ou un point tournant dont tu tapais le code (« à placer » jusqu'à la sortie du champ) ? Ce dernier cas n'est pas traité dans ce lot : dis-le s'il se montre encore.",
    "since": "2026-11-19",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-19T18:42:49Z",
-   "previous": {
-    "verdict": "reserve",
-    "comment": "oui. mais il est encore noté « à placer ». attention, collision à prévoir avec le refacto.",
-    "at": "2026-11-19T16:53:59Z"
-   }
+   "at": "2026-11-21T18:30:12Z",
+   "history": [
+    {
+     "verdict": "reserve",
+     "comment": "oui. mais il est encore noté « à placer ». attention, collision à prévoir avec le refacto.",
+     "at": "2026-11-19T16:53:59Z"
+    }
+   ]
   },
   {
    "id": "SOG-0507",
@@ -5512,8 +5521,9 @@
    },
    "test": "Recharge la page (pas de relance du lanceur). Carburant : LFMT → LFRN, dégagement LFFI (valable). Change l'arrivée pour LFQQ. Attendu : LFFI n'est pas retiré ; il est marqué « ne convient pas » avec sa raison (distance, moyens ou météo), et le choix te reste. Remets LFRN : LFFI redevient bon.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T21:17:27Z"
+   "state": "ok",
+   "delivered": "2026-11-19T21:17:27Z",
+   "at": "2026-11-21T18:30:20Z"
   },
   {
    "id": "SOG-0529",
@@ -5526,8 +5536,9 @@
    },
    "test": "Le lanceur doit tourner sur a357bed08 ou plus récent (déjà demandé), puis recharge la page. Carburant : BE9L, LFBY → LFST. (1) Niveau forcé FL090, calcule : plus de « calcul impossible » ; la route est bonne, ou « à examiner » avec chaque règle nommée ; la case 15 n'est jamais vide. (2) Touche « Auto » : pendant la recherche la ligne le dit ; ensuite elle dit le niveau choisi et pourquoi (« FLxxx (auto) · durée — le moins gourmand avec une route valide ; FLyyy écarté »), la raison du moteur dans le pli « Raison du moteur de route » ; si aucun niveau n'a de route valide, le niveau n'est PAS changé et la ligne le dit. (3) Passe à l'IFPS le plan « Auto » et le plan FL090 forcé, et colle les deu",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T23:43:16Z"
+   "state": "ok",
+   "delivered": "2026-11-19T23:43:16Z",
+   "at": "2026-11-21T18:30:29Z"
   },
   {
    "id": "SOG-0530",
