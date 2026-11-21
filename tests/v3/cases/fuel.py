@@ -7860,7 +7860,8 @@ def f262(c):
          'ok before warn, then by distance; XQPE (LIFR) not offered to the Map; what is not checked said (SOG-0494); SOG-0544 (the relay, '
          '21 Nov): the weather of the seven read, XQPF read and good — expectation changed on purpose', what='document')
     c.eq([d['schema'], d['arr']], [1, 'LFML'], 'schema 1, the arrival', what='head')
-    c.ok(all(x['fuel'] and x['fuel']['unit'] == 'lb' and x['fuel']['amount'] > 0 for x in d['list']), d['list'], 'the alternate fuel of each')
+    # SOG-0549: in the unit Fuel shows (the display in kg by default, the sheet in lb) — expectation changed on purpose
+    c.ok(all(x['fuel'] and x['fuel']['unit'] == 'kg' and x['fuel']['amount'] > 0 for x in d['list']), d['list'], 'the alternate fuel of each')
     c.ok(c.js('window.__altnDocs.length') >= 1, 'event', 'the event fuel-altn-candidates sent')
     c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'nothing taken: the field unchanged', what='field')
     c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
@@ -10155,4 +10156,45 @@ def f303(c):
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     row = norm(c.text(f'{B} [data-altnprop] li[data-cand]') or '')
     c.ok(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in row, row, 'the existing sentence of a missing date')
+    c.check_errors()
+
+
+def _altn_fuel_shown(c, icao):
+    """The alternate fuel Fuel shows on the line of `icao` in the list of the proposal: (digits, unit), whatever the language's
+    grouping (« 1 490 », « 1,490 », « 1.490 »)."""
+    t = c.js(f"[...document.querySelectorAll('{FUEL} [data-altnchk] li[data-cand={icao}] .fu-nowrap')].map(s => s.textContent)"
+             ".find(t => / (kg|lb)$/.test(t)) || ''")
+    m = re.match(r'^([\d\s.,\u00a0\u202f]+) (kg|lb)$', t.strip())
+    return (int(re.sub(r'\D', '', m.group(1))), m.group(2)) if m else (None, t)
+
+
+@case('F304', '« Proposer un dégagement »: the alternate fuel of the document of the Map is in the unit Fuel SHOWS (the setting, else the '
+      'sheet\'s), already converted and rounded as on Fuel\'s line — the Map converts nothing; changing the setting writes the document '
+      'again', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0549 (BUGS SOG, fiche of the relay, 21 Nov: the Map said « 2 600 lb » where Fuel said kg; contract: fuel.amount in the '
+      'displayed unit, as fuelTxt rounds it, unit = that unit); invented aerodromes, a sheet in lb, the display in kg (the default)')
+def f304(c):
+    B = f'{FUEL} [data-altnchk]'
+    D = 'cache/fuel/altn_candidates.json'
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c)
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three listed')
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) == 5, 'the document of the Map', timeout=10000)
+    shown = _altn_fuel_shown(c, 'XQPB')
+    f = {x['icao']: x for x in d['list']}['XQPB']['fuel']
+    c.eq((f['amount'], f['unit']), shown, 'the document says what Fuel shows: kg, converted (red before: lb, the sheet\'s amount)',
+         what='kg')
+    # the setting changed to lb: the document follows, the line of Fuel too
+    to_step(c, 3)
+    c.js("""() => { const s = document.querySelector('[data-module=fuel] select[data-k="unit"]'); s.value = 'lb';
+      s.dispatchEvent(new Event('change', { bubbles: true })); return true }""")
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) == 5 and d['list'][0]['fuel']['unit'] == 'lb',
+                    'the document written again in lb', timeout=10000)
+    to_step(c, 0)
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=10000, what='the list again')
+    shown = _altn_fuel_shown(c, 'XQPB')
+    f = {x['icao']: x for x in d['list']}['XQPB']['fuel']
+    c.eq((f['amount'], f['unit']), shown, 'in lb, the same number as Fuel\'s line', what='lb')
     c.check_errors()
