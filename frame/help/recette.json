@@ -5545,22 +5545,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0130",
-   "fiche": "SOG-0530",
-   "app": "pilote",
-   "question": "Avertir d'un niveau de croisière qui ne suit pas la règle semi-circulaire : d'où prendre la table des niveaux ?",
-   "context": "Pour avertir sans bloquer (SOG-0530), AeroDB a besoin de la table des niveaux de croisière de la France (AIP ENR 1.7 : niveaux pairs / impairs selon la route magnétique, IFR et VFR, et la hauteur au-dessus de laquelle la règle joue en VFR). Elle n'est pas dans l'eAIP déjà présent sur le poste, et la règle est : pas de lecture web sans ton accord. Rien n'est inventé : sans table, pas d'avertissement, et l'écran le dit.",
-   "options": [
-    "Je colle la page ENR 1.7 (texte) dans un signalement depuis l'application ; AeroDB la lit, la France d'abord",
-    "Le tableau standard OACI (Annexe 2, appendice 3) en attendant, dit comme tel à l'écran ; la France remplacera quand je collerai ENR 1.7",
-    "Plus tard : pas d'avertissement pour l'instant",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0132",
    "fiche": "SOG-0532",
    "app": "pilote",
