@@ -19367,3 +19367,74 @@ def k491(c):
     c.eq(RF.clock_active('01:30-05:00 (00:30-04:00)', m(2027, 3, 28, 0, 40), m(2027, 3, 28, 1, 20)), None, 'a passage that crosses the change of time: not decided', what='crossing')
     c.eq(RF.clock_active('13:30-20:00 (12:00-19:00)', m(2026, 7, 15, 12, 40), m(2026, 7, 15, 12, 55)), None, 'a window in brackets that is not the other one an hour earlier: not decided in July either', what='not shifted')
     c.eq(RF.clock_active('10:00-14:00 (09:00-13:00)', m(2026, 7, 15, 12, 40), m(2026, 7, 15, 12, 55)), True, 'both windows say the same for the passage: decided whatever the season', what='same answer')
+
+
+@case('K492', 'Route engine, SOG-0532 lot 3b (form H2): a schedule with a PERIOD in AIRAC cycles — « AIRAC OCT - AIRAC MAR 05:00-17:00 » — is decided only for the months that are inside (or outside) the period WHATEVER « AIRAC OCT » means (the cycle that starts in October, the one in force…, a period that ends at the start or at the end of the last cycle); the month of the start, the month of the end and their two neighbours stay « non vérifiable »',
+      'K', static=True,
+      rule='SOG-0532 lot 3b (the ergonomics session, 20 Nov, § 3 bis: « H2 + H6 », same conditions as lot 3a: « au moindre doute de lecture d\'une cellule, la règle reste « non vérifiable », jamais « conforme » », one case per form with an invented ambiguous cell); the workbook does not say what « AIRAC NOV » designates nor where the period stops, so the reading keeps only the months that are on one side whatever the answer: a cycle lasts 28 days, so a month that is neither the month of the start or of the end nor next to them is certain',
+      )
+def k492(c):
+    import datetime as dt
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, rad_flight as RF
+    row = lambda rid, clock: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', 'RENTO', 'NOT AVBL FOR TFC', clock, 'S', 'invented test rule', '', 'ACC', 'ZZ']
+    rules = [row('ZZ4201', 'AIRAC OCT - AIRAC MAR H24'),                    # November is strictly between October and March: inside, whatever the reading
+             row('ZZ4202', 'AIRAC MAR - AIRAC SEP H24'),                    # November is far after September: outside
+             row('ZZ4203', 'AIRAC NOV - FIRST AIRAC MAR H24'),              # November is the month of the START: does the period begin before the ninth? not decided
+             row('ZZ4204', 'AIRAC OCT - AIRAC MAR 13:30-20:00'),            # inside the period, but the window is not active at the passage (about 12:40 UTC)
+             row('ZZ4205', 'AIRAC OCT - AIRAC MAR MON-FRI 04:00-22:00'),    # days of the week: not read
+             row('ZZ4206', 'AIRAC SEP - AIRAC OCT H24')]                    # November is the month AFTER the end: the period may stop at the end of the last cycle: not decided
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules, points={'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}, lanes=[('UH1', ['A0', 'PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)])
+        request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'route': 'A0 UH1 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        p = P.compute(request, data, rad, None)['primary']
+    summary = p['rad_summary']
+    c.eq(sorted(f['id'] for f in summary['findings']), ['ZZ4201'], 'November is inside « OCT - MAR »: ZZ4201 is the only error; ZZ4202 (outside) and ZZ4204 (the window is not active) are not (red before: nothing was decided)', what='findings')
+    c.eq(summary['evaluated_conditions'], 3, 'THREE rules decided (ZZ4201, ZZ4202, ZZ4204); the three others are NOT (red before: 0)', what='decided')
+    states = {x['state']: x for x in p.get('not_verified') or []}
+    c.eq(sorted(i['id'] for i in states['ZZ']['items']), ['ZZ4203', 'ZZ4205', 'ZZ4206'], 'the month of the start, the month after the end and the days of the week stay « non vérifiable », named (never « conforming »)', what='unverifiable')
+    m = dt.datetime
+    c.eq([RF.airac_state('NOV', 'MAR', m(2026, x, 15)) for x in range(1, 13)], [True, True, None, None, False, False, False, False, False, None, None, True], 'the months of « NOV - MAR »: inside only strictly between (December to February), outside from two months after the end to two months before the start (May to September), the other months are not decided', what='months')
+    c.eq([RF.airac_state('MAR', 'NOV', m(2026, x, 15)) for x in range(1, 13)], [False, None, None, True, True, True, True, True, True, True, None, None], 'the same for a period inside the year (« MAR - NOV »)', what='same year')
+    c.eq(RF.airac_state('MAR', 'MAR', m(2026, 7, 1)), None, 'a period of one month alone: not decided', what='one month')
+    clock = 'AIRAC OCT - AIRAC MAR 05:00-17:00'
+    c.eq([RF.clock_active(clock, m(2026, 11, 9, 12), m(2026, 11, 9, 13)), RF.clock_active(clock, m(2026, 11, 9, 18), m(2026, 11, 9, 19)), RF.clock_active(clock, m(2026, 7, 9, 12), m(2026, 7, 9, 13)), RF.clock_active(clock, m(2026, 10, 31, 23, 50), m(2026, 11, 1, 0, 10))], [True, False, False, False], 'the period AND the window: in November at noon (active), in November in the evening (the window says no), in July (the period says no), and a passage across the end of October: the window is not active at that hour, so no whatever the month', what='period and window')
+    c.eq(RF.clock_active('AIRAC OCT - AIRAC MAR H24', m(2026, 10, 31, 23, 50), m(2026, 11, 1, 0, 10)), None, 'a passage that crosses from a month that is not decided to one that is: not decided', what='crossing')
+    c.eq((RF.clock_ok('AIRAC XXX - AIRAC MAR H24'), RF.clock_ok('AIRAC OCT - AIRAC MAR'), RF.clock_ok('AIRAC OCT - AIRAC MAR 05:00-17:00 (04:00-16:00)')), (False, False, True), 'an unknown month, a period with no schedule: not read; a period with a summer time in brackets: read', what='clock_ok')
+
+
+@case('K493', 'Route engine, SOG-0532 lot 3b (form H6): a NUMBERED list of schedules — « 1. H24 / 2. 04:00-22:00 », « 1. A. … / 1. B. … » — one per alternative of the condition, is decided ONLY when every schedule of the list says the same thing for the passage (the answer then depends on no pairing between the schedules and the alternatives); a list that says « yes » for one and « no » for another, or that has one schedule the control cannot read, stays « non vérifiable »',
+      'K', static=True,
+      rule='SOG-0532 lot 3b (the ergonomics session, 20 Nov, § 3 bis: « H2 + H6 » ; « au moindre doute de lecture d\'une cellule, la règle reste « non vérifiable », jamais « conforme » ») ; the workbook says which schedule goes with which alternative only by position, and the groups « 1. A. » / « 1. B. » and the exceptions do not line up one to one with the lines of the condition: no pairing is guessed',
+      )
+def k493(c):
+    import datetime as dt
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, rad_flight as RF
+    nl = chr(10)
+    row = lambda rid, clock: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', 'RENTO', 'NOT AVBL FOR TFC', clock, 'S', 'invented test rule', '', 'ACC', 'ZZ']
+    rules = [row('ZZ4301', '1. H24' + nl + '2. 04:00-22:00'),                            # both active at the passage (about 12:40 UTC): active, whatever the pairing
+             row('ZZ4302', '1. 13:30-20:00' + nl + '2. 14:00-22:00'),                    # both inactive: not active, whatever the pairing
+             row('ZZ4303', '1. H24' + nl + '2. 14:00-22:00'),                            # one yes, one no: the pairing would decide
+             row('ZZ4304', '1. A. H24' + nl + '1. B. 04:00-22:00 (03:00-21:00)'),        # the sub-list form, a summer time in brackets: both active
+             row('ZZ4305', '1. MON...FRI' + nl + '2. SAT...SUN')]                        # a schedule that is not read
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules, points={'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}, lanes=[('UH1', ['A0', 'PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)])
+        request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'route': 'A0 UH1 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        p = P.compute(request, data, rad, None)['primary']
+    summary = p['rad_summary']
+    c.eq(sorted(f['id'] for f in summary['findings']), ['ZZ4301', 'ZZ4304'], 'the two lists whose schedules are all active are errors (the two forms of the list); the list that is all inactive is not (red before: none was decided)', what='findings')
+    c.eq(summary['evaluated_conditions'], 3, 'THREE rules decided (ZZ4301, ZZ4302, ZZ4304); ZZ4303 and ZZ4305 are NOT (red before: 0)', what='decided')
+    states = {x['state']: x for x in p.get('not_verified') or []}
+    c.eq([(i['id'], i['reason']) for i in states['ZZ']['items']], [('ZZ4303', 'schedule_list'), ('ZZ4305', 'schedule_days')], 'the list that says yes and no, and the list with a schedule that is not read, stay « non vérifiable », named, with their reason (never « conforming »)', what='unverifiable')
+    m = dt.datetime
+    start, end = m(2026, 11, 9, 12, 40), m(2026, 11, 9, 12, 55)
+    c.eq([RF.clock_active('1. H24 2. 04:00-22:00', start, end), RF.clock_active('1. 13:30-20:00 2. 14:00-22:00', start, end), RF.clock_active('1. H24 2. 14:00-22:00', start, end), RF.clock_active('1. H24 2. MON-FRI', start, end), RF.clock_active('1. H24', start, end)], [True, False, None, None, None], 'a list is decided only when all its schedules agree; a single numbered item is not a list and is not read', what='clock_active')
+    c.eq((RF.numbered_items('1. A. H24 1. B. 04:00-22:00'), RF.numbered_items('H24'), RF.numbered_items('04:00-22:00 1. H24 2. H24'), RF.numbered_items(' '.join(f'{n}. H24' for n in range(1, 80)))), (['H24', '04:00-22:00'], None, None, None), 'the items of a list; not a list: None; a list that does not begin with its first mark: None; more than 60 items: None (the cell comes from an untrusted file)', what='items')
+    c.eq((RF.clock_ok('1. H24 2. 04:00-22:00'), RF.clock_ok('1. H24 2. MON-FRI'), RF.clock_ok('1. 1. H24 2. H24')), (True, False, False), 'every item must be readable; an empty item is not', what='clock_ok')
+    long_cell = ' '.join(f'{n}. H24' for n in range(1, 59)) + ' ' + 'x' * 5000
+    c.eq((RF.clock_ok(long_cell), RF.clock_active(long_cell, start, end)), (False, None), 'a cell longer than MAX_CONDITION is not read (the workbook comes from an untrusted file)', what='long cell')

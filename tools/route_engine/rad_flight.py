@@ -81,9 +81,34 @@ MAX_CONDITION=4000      # SOG-0401 (Sécurisation) : au-delà de ce nombre de si
 PAIR=r'\d\d:\d\d\s*-\s*\d\d:\d\d'
 PAIR_GROUPS=r'(\d\d):(\d\d)\s*-\s*(\d\d):(\d\d)'
 
-def clock_ok(clock):
+MONTHS=('JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC')
+AIRAC_PERIOD=re.compile(r'(?:FIRST\s+|LAST\s+)?AIRAC\s+([A-Z]{3})\s*-\s*(?:FIRST\s+|LAST\s+)?AIRAC\s+([A-Z]{3})\s+(.+)')      # SOG-0532 lot 3b (forme H2) : « AIRAC NOV - FIRST AIRAC MAR 05:00-17:00 », « LAST AIRAC MAR - AIRAC OCT H24 » : une PÉRIODE en cycles d'AIRAC, puis l'horaire
+MAX_ITEMS=60      # SOG-0532 lot 3b : au plus ce nombre d'éléments dans une liste numérotée d'horaires
+
+def numbered_items(clock):
+    """SOG-0532 lot 3b (forme H6) : les éléments d'une liste NUMÉROTÉE d'horaires (« 1. H24 2. 04:00-22:00 », « 1. A. H24 1. B. 04:00-22:00 »), ou None quand l'horaire n'est pas une telle liste (ou qu'elle ne commence pas par un repère, ou compte plus de MAX_ITEMS éléments)."""
+    text=' '.join(str(clock).split())
+    marks=list(re.finditer(r'(?:^|\s)\d{1,2}\.\s+(?:[A-Z]\.\s+)?',text))
+    if len(marks)<2 or marks[0].start()!=0 or len(marks)>MAX_ITEMS:return None
+    ends=[m.start() for m in marks[1:]]+[len(text)]
+    return [text[m.end():e].strip() for m,e in zip(marks,ends)]
+
+def simple_ok(clock):
     """SOG-0401 (forme A) : un horaire que le contrôle sait lire : H24, « HH:MM-HH:MM » (UTC), ou « HH:MM-HH:MM (HH:MM-HH:MM) » (l'heure d'hiver, puis celle d'été entre parenthèses)."""
     return clock=='H24' or bool(re.fullmatch(PAIR,clock)) or bool(re.fullmatch(PAIR+r'\s*\('+PAIR+r'\)',clock))
+
+def one_ok(clock):
+    clock=' '.join(str(clock).split())
+    period=AIRAC_PERIOD.fullmatch(clock)
+    if period and period[1] in MONTHS and period[2] in MONTHS:return simple_ok(period[3].strip())      # SOG-0532 lot 3b (forme H2)
+    return simple_ok(clock)
+
+def clock_ok(clock):
+    """Un horaire que le contrôle sait lire : un horaire simple (H24, une fenêtre UTC, une fenêtre d'hiver et d'été), précédé d'une période en cycles d'AIRAC (SOG-0532 lot 3b, H2), ou une liste NUMÉROTÉE de tels horaires (lot 3b, H6) dont CHAQUE élément se lit."""
+    if len(str(clock))>MAX_CONDITION:return False      # SOG-0532 lot 3b : une cellule plus longue n'est pas lue (le classeur vient d'un fichier non fiable)
+    items=numbered_items(clock)
+    if items is not None:return all(x and numbered_items(x) is None and one_ok(x) for x in items)
+    return one_ok(clock)
 
 def summer_time(moment):
     """SOG-0532 lot 3a (forme H3) : True (heure d'été de l'Union européenne : du dernier dimanche de mars 01:00 UTC au dernier dimanche d'octobre 01:00 UTC), False (heure d'hiver) ou None (à moins de 24 h d'un changement d'heure, ou une date illisible : la saison n'est pas décidée)."""
@@ -105,7 +130,18 @@ def one_hour_earlier(winter,summer):
     w=[int(a[1])*60+int(a[2]),int(a[3])*60+int(a[4])];s=[int(b[1])*60+int(b[2]),int(b[3])*60+int(b[4])]
     return all((s[i]-w[i])%1440==1380 for i in (0,1))
 
-def clock_active(clock,start,end):
+def airac_state(first,second,moment):
+    """SOG-0532 lot 3b (forme H2) : le mois de `moment` est-il DANS la période « AIRAC `first` - AIRAC `second` » (vrai), HORS d'elle (faux), ou à une frontière (None) ? Le classeur ne dit pas ce que « AIRAC NOV » désigne (le cycle qui commence en novembre, celui qui y est en vigueur…) ni si la période finit au début ou à la fin du dernier cycle : seuls sont décidés les mois qui sont dans la période QUELLE QUE SOIT la lecture (strictement entre les deux mois), et ceux qui en sont hors QUELLE QUE SOIT la lecture (à plus d'un mois après le mois de fin, à plus d'un mois avant le mois de début : un cycle dure 28 jours). Les mois de début, de fin, et les deux voisins : None."""
+    import datetime as dt
+    if not isinstance(moment,dt.datetime):return None
+    a,b=MONTHS.index(first),MONTHS.index(second)
+    span=(b-a)%12;pos=(moment.month-1-a)%12
+    if span==0:return None
+    if 1<=pos<=span-1:return True
+    if span+2<=pos<=10:return False
+    return None
+
+def window_active(clock,start,end):
     """Vrai / faux si la règle est active pendant [start, end] ; None si l'horaire n'est pas lisible. Un horaire « hiver (été) » : si les deux écritures disent la même chose pour ce passage, c'est cela ; sinon (SOG-0532 lot 3a) la fenêtre d'ÉTÉ n'est lue que si elle est exactement la fenêtre d'hiver une heure plus tôt (UTC) ET que tout le passage est de la même saison, à plus de 24 h d'un changement d'heure ; dans tous les autres cas, None (la règle reste à examiner)."""
     m=re.fullmatch('('+PAIR+r')\s*\(('+PAIR+r')\)',clock)
     if m:
@@ -115,7 +151,26 @@ def clock_active(clock,start,end):
         first,last=summer_time(start),summer_time(end)
         if first is None or first!=last:return None
         return b if first else a
-    return active_during(clock.replace(' ',''),start,end) if clock_ok(clock) else None
+    return active_during(clock.replace(' ',''),start,end) if simple_ok(clock) else None
+
+def one_active(clock,start,end):
+    clock=' '.join(str(clock).split())
+    period=AIRAC_PERIOD.fullmatch(clock)
+    if not (period and period[1] in MONTHS and period[2] in MONTHS):return window_active(clock,start,end)
+    window=window_active(period[3].strip(),start,end)      # SOG-0532 lot 3b (forme H2) : la période ET l'horaire : faux si l'un des deux est faux, vrai si les deux sont vrais, sinon non décidé
+    first,last=airac_state(period[1],period[2],start),airac_state(period[1],period[2],end)
+    state=first if first==last else None      # un passage qui change de mois : non décidé (sauf si l'horaire dit faux)
+    if window is False or state is False:return False
+    return True if window is True and state is True else None
+
+def clock_active(clock,start,end):
+    """Vrai / faux si la règle est active pendant [start, end] ; None si l'horaire n'est pas lisible ou pas décidé. SOG-0532 lot 3b (forme H6) : une liste NUMÉROTÉE d'horaires (un par alternative de la condition ; le classeur ne dit pas lequel va avec quelle alternative) : décidée SEULEMENT si tous les éléments disent la même chose pour ce passage (le résultat ne dépend alors d'aucun appariement) ; sinon None."""
+    if len(str(clock))>MAX_CONDITION:return None
+    items=numbered_items(clock)
+    if items is None:return one_active(clock,start,end)
+    if any(not x or numbered_items(x) is not None for x in items):return None
+    seen=[one_active(x,start,end) for x in items]
+    return seen[0] if seen[0] is not None and all(x==seen[0] for x in seen) else None
 
 def names(text):
     return set(re.findall(r'[A-Z][A-Z0-9_*]{1,30}',text.upper()))
