@@ -18974,7 +18974,7 @@ def k406(c):
          (True,) * 10, 'the request is closed: 1 to 12 integer levels from 10 to 660, no `fl`, `first_valid` a boolean, no unknown field (13 levels, an empty list, FL009, a boolean, a text are refused)', what='check')
 
 
-def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_cycle='2026-10-29'):
+def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_cycle='2026-10-29', points=None):      # SOG-0532 lot 3a : `points` = d'autres points { nom: (lat, lon) } pour les voies (un point nommé comme P2 se lit comme une voie : les suites « (A UH1 B) » du RAD veulent des noms de points)
     """SOG-0532 : une base INVENTÉE pour les cas du moteur de route (deux terrains ZZAA et ZZBB, des points A0 P1 P2 P3 P4 B0 sur une ligne, des voies `lanes` = [(nom, [points], plancher_ft, plafond_ft)], une STAR de ZZBB si `star_min`, le RAD de test + `rad_rows` en annexe 3A Conditions) ; rend (data, rad). Aucune donnée de l'utilisateur."""
     import json
     import os
@@ -18983,6 +18983,7 @@ def _sog532_bench(td, star_min=None, rad_rows=(), lanes=None, rules_2b=(), base_
     import route_fixture as RF
     from route_engine import import_books as I
     pts = {'A0': (50.0, 0.6), 'N1': (50.0, 1.4), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'B0': (50.0, 11.6)}
+    pts.update(points or {})
     airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
     lanes = lanes or [('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 46000)]
     ways = []
@@ -19275,3 +19276,94 @@ def k489(c):
     c.eq((E.yoyo([(None, 330), ('B', 350), ('C', 370)]), E.yoyo([(None, 330), ('B', 240)])), (None, None), 'a climb alone and a descent alone are not a yoyo', what='none')
     c.eq([len(E.yoyo([(None, 330), ('P' * 100, 240), ('Q' * 100, 350)])[k]) for k in ('down_point', 'up_point')], [40, 40], 'the points of a typed route are cut at 40 signs', what='bounded')
     c.eq(E.rad_flight.leg_label({'via': 'UL607', 'start': {'id': 'KOK'}, 'end': {'id': 'BUPAL'}}), 'UL607 KOK–BUPAL', 'the label of a leg: the airway and its two points; a direct has only the points', what='label')
+
+
+@case('K490', 'Route engine, SOG-0532 lot 3a (form L1): a level along a RUN of points — « ABV FL245 AT (A UH1 B) » — is read against the profile of the flight at EVERY point of the run, and decided only when the profile is on ONE side of the level along the whole run; a point on the limit, a level that crosses the limit along the run, a run flown in the other direction, a point the base does not know: the rule stays « non vérifiable », never « conforme »',
+      'K', static=True,
+      rule='SOG-0532 lot 3a (the ergonomics session, 20 Nov, § 3 bis: « lire les formes L1 puis H3 » ; « une forme lue de travers est pire qu\'une forme non lue : au moindre doute de lecture d\'une cellule, la règle reste « non vérifiable », jamais « conforme » » ; « un cas par forme qui prouve, avec une cellule ambiguë inventée, qu\'elle rend « non vérifiable » ») ; measured on 24 invented flights: 39 rules of this form decided before, 203 after; the refused plan\'s ED2041 and ED2257 are the rules of this form',)
+def k490(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, rad_flight as RF, rad_via
+    nl = chr(10)
+    row = lambda rid, util: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', 'RENTO', 'NOT AVBL FOR TFC' + nl + util, 'H24', 'S', 'invented test rule', '', 'ACC', 'ZZ']
+    rules = [row('ZZ4001', 'ABV FL245 AT (RENTO UH1 SOLVA)'),          # the cruise is FL250 along the run: above
+             row('ZZ4002', 'ABV FL260 AT (RENTO UH1 SOLVA)'),          # above FL260: no
+             row('ZZ4003', 'ABV FL250 AT (RENTO UH1 SOLVA)'),          # EXACTLY on the limit: the source does not say if « ABV » includes it
+             row('ZZ4004', 'ABV FL245 AT (LUMAT UH1 RENTO)'),             # the profile CROSSES FL245 along the run (the climb): which point is read?
+             row('ZZ4005', 'BLW FL260 AT (RENTO UH1 SOLVA)'),          # below FL260 along the whole run
+             row('ZZ4006', 'ABV FL245 AT (SOLVA UH1 RENTO)'),          # the flight goes the OTHER way: all the parts are there but not in this order
+             row('ZZ4007', 'ABV FL245 AT (ZZXX UH1 SOLVA)'),           # a point the base does not know
+             row('ZZ4008', 'ABV FL245 AT (PIKAD L9 RENTO)'),           # the airway is not flown at all: the run is not flown
+             row('ZZ4009', 'RFL ABV FL245 AT (RENTO UH1 SOLVA) & DEP ZZAA')]      # the same form behind « RFL », in a conjunction
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules, points={'LUMAT': (50.0, 1.0), 'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}, lanes=[('UH1', ['A0', 'LUMAT', 'PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)])
+        request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'route': 'A0 UH1 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        p = P.compute(request, data, rad, None)['primary']
+    summary = p['rad_summary']
+    c.eq(sorted(f['id'] for f in summary['findings']), ['ZZ4001', 'ZZ4005', 'ZZ4009'], 'FL250 along the whole run: « ABV FL245 » is true (ZZ4001, and behind « RFL » in a conjunction ZZ4009), « BLW FL260 » is true (ZZ4005): three errors; « ABV FL260 » is false (ZZ4002) and the run of an airway that is not flown is false (ZZ4008): no error (red before: none of the nine rules was decided)', what='findings')
+    c.eq(summary['evaluated_conditions'], 5, 'FIVE rules decided (the three above and the two that are false), the four ambiguous ones are NOT (red before: 0)', what='decided')
+    states = {x['state']: x for x in p.get('not_verified') or []}
+    c.eq(sorted(i['id'] for i in states['ZZ']['items']), ['ZZ4003', 'ZZ4004', 'ZZ4006', 'ZZ4007'], 'the four ambiguous cells stay « non vérifiable » and are NAMED: the level exactly on the limit, the level that crosses the limit along the run, the run in the other direction, the point the base does not know', what='unverifiable')
+    c.eq({i['reason'] for i in states['ZZ']['items']}, {'level_along_points'}, 'with the reason « level along a run of points »', what='reason')
+    c.ok(p.get('verdict') == 'violates' and not any(f['id'] in ('ZZ4003', 'ZZ4004', 'ZZ4006', 'ZZ4007') for f in summary['findings']), str(p.get('verdict')), 'the verdict is « violates » for the three, and none of the four ambiguous rules is counted « conforming » nor an error')
+    # the reading of a run: where it is flown, and the limits of the reading
+    legs = [{'start': {'id': 'LUMAT'}, 'end': {'id': 'PIKAD'}, 'via': 'UH1', 'kind': 'ENROUTE', 'altitude_start_ft': 25000, 'altitude_end_ft': 25000},
+            {'start': {'id': 'PIKAD'}, 'end': {'id': 'RENTO'}, 'via': 'UH1', 'kind': 'ENROUTE', 'altitude_start_ft': 25000, 'altitude_end_ft': 25000},
+            {'start': {'id': 'RENTO'}, 'end': {'id': 'SOLVA'}, 'via': 'DCT', 'kind': 'ENROUTE', 'altitude_start_ft': 25000, 'altitude_end_ft': 25000}]
+    known = {'LUMAT', 'PIKAD', 'RENTO', 'SOLVA', 'UH1'}
+    c.eq((rad_via.runs('(LUMAT UH1 RENTO)', legs, RF.aliases, known), rad_via.runs('(RENTO DCT SOLVA)', legs, RF.aliases, known), rad_via.runs('(PIKAD UH1 LUMAT)', legs, RF.aliases, known), rad_via.runs('(LUMAT L9 RENTO)', legs, RF.aliases, known), rad_via.runs('(LUMAT UH1 ZZXX)', legs, RF.aliases, known)),
+         ([(0, 2)], [(2, 3)], None, [], None), '`rad_via.runs`: the first and the last point of each passage; [] when what the group needs is not on the flight; None when everything is there but not in the order, or a point is unknown', what='runs')
+    ctx = RF.context(legs, 'ZZAA', 'ZZBB')
+    ctx['known'] = known
+    c.eq((RF.run_test('ABV', '245', '(LUMAT UH1 RENTO)', ctx), RF.run_test('BLW', '245', '(LUMAT UH1 RENTO)', ctx), RF.run_test('ABV', '250', '(LUMAT UH1 RENTO)', ctx), RF.run_test('ABV', '245', '(LUMAT L9 RENTO)', ctx)), (True, False, None, False), 'the level is read at EVERY point of the run: all above (true), none above for « BLW » (false), a point on the limit (None), a run not flown (false)', what='run_test')
+    ctx['alt_nodes'][1] = None
+    c.eq(RF.run_test('ABV', '245', '(LUMAT UH1 RENTO)', ctx), None, 'an altitude of the profile that is not known at one point of the run: not decided', what='unknown altitude')
+    ctx['alt_nodes'][1] = 21000
+    c.eq(RF.run_test('ABV', '245', '(LUMAT UH1 RENTO)', ctx), None, 'the profile crosses the limit along the run (FL210 at one point, FL250 at the others): not decided', what='crossing')
+    c.eq(RF.run_test('ABV', '245', '(LUMAT UH1 RENTO)', {'dep': 'ZZAA', 'arr': 'ZZBB', 'all': set()}), None, 'a context without a route (the static blocks of the airports): not decided', what='static')
+    import time
+    t = time.perf_counter()
+    big = '(' + ' DCT '.join(['*'] * 20) + ')'
+    r_big = rad_via.runs(big, legs, RF.aliases, known)
+    c.ok(r_big is None and time.perf_counter() - t < 5, f'{r_big} {time.perf_counter() - t:.1f}s', 'a hostile group (20 « * » in a row) gives the hand back at once and is NOT decided (the RAD comes from an untrusted file)')
+    c.eq(RF.condition('ABV FL245 AT (' + ' '.join(['PIKAD UH1'] * 3000) + ' RENTO)', ctx, None), None, 'a cell longer than MAX_CONDITION is not decided', what='bounded')
+    t = time.perf_counter()
+    r_open = RF.condition(('ABV FL245 AT (' * 280)[:3990], ctx, None)
+    c.ok(r_open is None and time.perf_counter() - t < 5, f'{r_open} {time.perf_counter() - t:.1f}s', 'a cell of 280 openings of a run that never closes, under MAX_CONDITION, is not decided and costs a moment')
+
+
+@case('K491', 'Route engine, SOG-0532 lot 3a (form H3): a schedule with the summer time in brackets — « 13:30-20:00 (12:30-19:00) » — is read by the SEASON of the flight when the two windows give a different answer: the window in brackets only if it is exactly the other one an hour earlier in UTC, and the whole passage is of one season, more than 24 hours from a change of time; any other cell (a window that is not shifted by an hour, a date near the change) stays « non vérifiable »',
+      'K', static=True,
+      rule='SOG-0532 lot 3a (the ergonomics session, 20 Nov, § 3 bis: « H3 : un horaire avec heure d\'été entre parenthèses » ; « au moindre doute de lecture d\'une cellule, la règle reste « non vérifiable », jamais « conforme » ») ; the RAD gives no legend of the brackets: the reading « winter (summer) » is the one of SOG-0401, and it is checked on the data — 342 of the 574 simple cells of the two cycles are exactly the winter window one hour earlier (the local hour of a rule, in UTC), the others are not read; measured on 24 invented flights: 107 rules of this form decided before, 134 after',
+      )
+def k491(c):
+    import datetime as dt
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, rad_flight as RF
+    row = lambda rid, clock: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', 'RENTO', 'NOT AVBL FOR TFC', clock, 'S', 'invented test rule', '', 'ACC', 'ZZ']
+    rules = [row('ZZ4101', '13:30-20:00 (12:30-19:00)'),      # the flight passes at about 12:40 UTC in NOVEMBER (winter time): the winter window is not active, the summer one would be
+             row('ZZ4102', '12:00-12:50 (11:00-11:50)'),       # the winter window is active, the summer one is not
+             row('ZZ4103', '13:30-20:00 (12:00-19:00)'),       # the window in brackets is NOT the winter one an hour earlier: not read
+             row('ZZ4104', '10:00-14:00 (09:00-13:00)')]       # both windows are active at the passage: decided whatever the season (that was already so)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules, points={'LUMAT': (50.0, 1.0), 'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}, lanes=[('UH1', ['A0', 'LUMAT', 'PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)])
+        request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'route': 'A0 UH1 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        p = P.compute(request, data, rad, None)['primary']
+    summary = p['rad_summary']
+    c.eq(sorted(f['id'] for f in summary['findings']), ['ZZ4102', 'ZZ4104'], 'in November the winter window is the one that counts: ZZ4102 is active (an error), ZZ4104 is active (an error), ZZ4101 is NOT active at the passage (no error) (red before: ZZ4101 and ZZ4102 were not decided)', what='findings')
+    c.eq(summary['evaluated_conditions'], 3, 'THREE rules decided (ZZ4101 out of schedule, ZZ4102, ZZ4104); ZZ4103 is not (red before: 1)', what='decided')
+    states = {x['state']: x for x in p.get('not_verified') or []}
+    c.eq([(i['id'], i['reason']) for i in states['ZZ']['items']], [('ZZ4103', 'schedule_dst')], 'the cell that is not the winter window an hour earlier stays « non vérifiable », named, with the reason « summer time in brackets » (never « conforming »)', what='ambiguous cell')
+    m = dt.datetime
+    c.eq([RF.summer_time(x) for x in (m(2026, 7, 15, 12), m(2026, 11, 9, 12), m(2027, 3, 29, 12), m(2027, 3, 27, 0, 59))], [True, False, True, False], 'the summer time of the European Union: from the last Sunday of March 01:00 UTC to the last Sunday of October 01:00 UTC', what='season')
+    c.eq([RF.summer_time(x) for x in (m(2026, 10, 25, 6), m(2026, 10, 25, 0, 30), m(2027, 3, 28, 12), m(2027, 3, 28, 0, 30))], [None, None, None, None], 'within 24 hours of a change of time the season is NOT decided', what='near the change')
+    clock = '13:30-20:00 (12:30-19:00)'
+    c.eq([RF.clock_active(clock, m(2026, 7, 15, 12, 40), m(2026, 7, 15, 12, 55)), RF.clock_active(clock, m(2026, 11, 9, 12, 40), m(2026, 11, 9, 12, 55))], [True, False], 'the same flight at the same hour: active in July (the window in brackets), not active in November (the first window)', what='by season')
+    c.eq(RF.clock_active(clock, m(2026, 10, 25, 12, 40), m(2026, 10, 25, 12, 55)), None, 'on the day of the change of time: not decided', what='day of change')
+    c.eq(RF.clock_active('01:30-05:00 (00:30-04:00)', m(2027, 3, 28, 0, 40), m(2027, 3, 28, 1, 20)), None, 'a passage that crosses the change of time: not decided', what='crossing')
+    c.eq(RF.clock_active('13:30-20:00 (12:00-19:00)', m(2026, 7, 15, 12, 40), m(2026, 7, 15, 12, 55)), None, 'a window in brackets that is not the other one an hour earlier: not decided in July either', what='not shifted')
+    c.eq(RF.clock_active('10:00-14:00 (09:00-13:00)', m(2026, 7, 15, 12, 40), m(2026, 7, 15, 12, 55)), True, 'both windows say the same for the passage: decided whatever the season', what='same answer')

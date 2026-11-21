@@ -139,3 +139,63 @@ def match(spec, legs, aliases, known=None):
     except TooLong:
         return None
     return None
+
+MAX_RUNS = 20      # SOG-0532 lot 3a : au plus ce nombre de passages d'une même suite sur le vol ; au-delà, le doute (None)
+
+
+def runs(spec, legs, aliases, known=None):
+    """SOG-0532 lot 3a (forme L1, « ABV FL245 AT (A UL607 B) ») : OÙ la suite `spec` est volée : [(i0, i1), …], les indices du PREMIER et du DERNIER point de chaque passage sur les points du vol (les points entre eux sont ceux du passage) ; [] quand la suite est ABSENTE du vol (ce qu'elle exige n'y est pas : la même règle que `match` pour False) ; None quand le sens n'est pas décidé (texte non lu, point inconnu de la base, tronçons qui ne s'enchaînent pas, tous les éléments présents mais pas dans l'ordre, trop de passages, trop long)."""
+    seq = read(spec)
+    if seq is None:
+        return None
+    if known is not None and any(w != '*' and w not in known for kind, words in seq if kind == 'node' for w in words):
+        return None
+    flight = _flight(legs)
+    if flight is None:
+        return None
+    nodes, edges = flight
+    names = [aliases(e) if e != 'DCT' else set() for e in edges]
+    on_route = set(nodes)
+    for kind, words in seq:
+        if kind == 'node' and '*' not in words and not (words & on_route):
+            return []
+        if kind == 'conn':
+            if not any((w == 'DCT' and 'DCT' in edges) or (w != 'DCT' and any(w in n for n in names)) for w in words):
+                return []
+    memo = {}      # (nœud du groupe, nœud du vol) -> les nœuds du vol où le groupe peut FINIR : le coût reste borné par (nœuds du groupe) x (nœuds du vol)^2
+    steps = [0]
+
+    class TooLong(Exception):
+        pass
+
+    def ends(n, i):
+        if (n, i) in memo:
+            return memo[(n, i)]
+        steps[0] += 1
+        if steps[0] > MAX_STEPS:
+            raise TooLong
+        kind, words = seq[n]
+        if '*' not in words and nodes[i] not in words:
+            memo[(n, i)] = frozenset()
+            return memo[(n, i)]
+        if n == len(seq) - 1:
+            memo[(n, i)] = frozenset([i])
+            return memo[(n, i)]
+        cwords = seq[n + 1][1]
+        wanted = cwords - {'DCT'}
+        along = bool(wanted)
+        out = set()
+        for j in range(i + 1, len(nodes)):
+            along = along and any(w in names[j - 1] for w in wanted)
+            direct = 'DCT' in cwords and j == i + 1 and edges[i] == 'DCT'
+            if direct or along:
+                out |= ends(n + 2, j)
+            if not along and j > i:
+                break
+        memo[(n, i)] = frozenset(out)
+        return memo[(n, i)]
+    try:
+        found = sorted((i, j) for i in range(len(nodes)) for j in ends(0, i))
+    except TooLong:
+        return None
+    return found if 0 < len(found) <= MAX_RUNS else None

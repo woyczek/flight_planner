@@ -25,6 +25,10 @@ AT_ATOM=re.compile(r'\b(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+([A-Z][A-Z0-
 
 AT_LIST=re.compile(r'\b(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+\(\s*([A-Z][A-Z0-9]{1,6}(?:\s*,\s*[A-Z][A-Z0-9]{1,6})+)\s*\)')      # SOG-0501 (e) : « ABV FL245 AT (VTB, MORAL) » : le niveau du profil à L'UN des points de la liste
 
+AT_RUN=re.compile(r'(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+(\(.*\))')      # SOG-0532 lot 3a (forme L1) : « ABV FL245 AT (A UL607 B) », « BLW FL105 AT (A DCT B DCT C) » : le niveau du profil LE LONG d'une SUITE de points (la même suite qu'un groupe VIA) ; les listes de points « (A, B) » sont lues ci-dessus (AT_LIST)
+
+AT_RUN_SEARCH=re.compile(r'\b(?:RFL\s+)?(?:ABV|BLW)\s+FL\s*\d{2,3}\s+AT\s+\((?:[^()]|\([^()]*\))*\)')      # la même chose, cherchée dans un texte (un niveau d'imbrication de parenthèses) : sert à retirer l'atome avant de contrôler qu'il ne reste aucun autre niveau non lu
+
 BTN_ATOM=re.compile(r'\bBTN\s+FL\s*(\d{2,3})\s*-\s*FL\s*(\d{2,3})\s+AT\s+([A-Z][A-Z0-9]{1,6})\b')      # SOG-0501 (e) : « BTN FL245-FL660 AT BADRU » : le niveau du PROFIL au point est ENTRE les deux niveaux
 
 def between_test(lo,hi,point,ctx):
@@ -46,6 +50,22 @@ def at_test(kind,level,point,ctx):
     x=int(level)*100
     return None if abs(alt-x)<1 else (alt>x if kind=='ABV' else alt<x)
 
+def run_test(kind,level,group,ctx):
+    """SOG-0532 lot 3a (forme L1, « ABV FL245 AT (A UL607 B) ») : vrai / faux / None. Faux quand la suite n'est pas volée (rad_via.runs : []). Sinon on regarde le niveau du PROFIL à CHAQUE point du passage : tous au-dessus de FL`level` (ABV) ou tous au-dessous (BLW) : vrai ; tous du côté contraire : faux ; un point sur la limite, une altitude inconnue ou le niveau qui traverse la limite le long du passage : None (la source ne dit pas si le niveau se lit au premier point, à l'un d'eux ou à tous : la conclusion n'est donnée que quand elle est la MÊME dans les trois lectures) ; plusieurs passages qui ne concluent pas pareil : None."""
+    if 'points' not in ctx or 'legs' not in ctx:return None      # le contexte statique n'a pas de route
+    found=rad_via.runs(group,ctx['legs'],aliases,ctx.get('known'))
+    if found is None:return None
+    if not found:return False
+    alts=ctx.get('alt_nodes') or [];x=int(level)*100;out=[]
+    for first,last in found:
+        along=alts[first:last+1]
+        if len(along)!=last-first+1 or any(not isinstance(a,(int,float)) or not math.isfinite(a) or abs(a-x)<1 for a in along):return None
+        above=[a>x for a in along]
+        if all(above):out.append(kind=='ABV')
+        elif not any(above):out.append(kind=='BLW')
+        else:return None
+    return out[0] if all(o==out[0] for o in out) else None
+
 def rfl_test(spec,fl):
     """Vrai / faux si le niveau demandé `fl` (un entier, FL) satisfait `spec` (le texte d'un atome RFL, sans « RFL ») ; None s'il n'est pas décidable : niveau inconnu, texte non lu, ou niveau EXACTEMENT sur une limite (la source ne dit pas si « ABV FL105 » inclut FL105 : jamais deviné)."""
     m=RFL_ATOM.fullmatch('RFL '+spec.strip())
@@ -59,17 +79,42 @@ def rfl_test(spec,fl):
 MAX_THEN=8      # revue de Sécurisation : les termes d'un « AND-THEN » lus au plus
 MAX_CONDITION=4000      # SOG-0401 (Sécurisation) : au-delà de ce nombre de signes une condition n'est pas décidée
 PAIR=r'\d\d:\d\d\s*-\s*\d\d:\d\d'
+PAIR_GROUPS=r'(\d\d):(\d\d)\s*-\s*(\d\d):(\d\d)'
 
 def clock_ok(clock):
     """SOG-0401 (forme A) : un horaire que le contrôle sait lire : H24, « HH:MM-HH:MM » (UTC), ou « HH:MM-HH:MM (HH:MM-HH:MM) » (l'heure d'hiver, puis celle d'été entre parenthèses)."""
     return clock=='H24' or bool(re.fullmatch(PAIR,clock)) or bool(re.fullmatch(PAIR+r'\s*\('+PAIR+r'\)',clock))
 
+def summer_time(moment):
+    """SOG-0532 lot 3a (forme H3) : True (heure d'été de l'Union européenne : du dernier dimanche de mars 01:00 UTC au dernier dimanche d'octobre 01:00 UTC), False (heure d'hiver) ou None (à moins de 24 h d'un changement d'heure, ou une date illisible : la saison n'est pas décidée)."""
+    import datetime as dt
+    if not isinstance(moment,dt.datetime):return None
+    if moment.tzinfo is not None:moment=moment.astimezone(dt.timezone.utc).replace(tzinfo=None)
+    def last_sunday(month):
+        d=dt.date(moment.year,month,31)
+        return dt.datetime.combine(d-dt.timedelta(days=(d.weekday()+1)%7),dt.time(1,0))
+    begin,end=last_sunday(3),last_sunday(10)
+    day=dt.timedelta(hours=24)
+    if abs(moment-begin)<day or abs(moment-end)<day:return None
+    return begin<moment<end
+
+def one_hour_earlier(winter,summer):
+    """SOG-0532 lot 3a (forme H3) : la fenêtre d'été entre parenthèses est-elle EXACTEMENT celle d'hiver avancée d'une heure UTC (le début ET la fin, minuit franchi compris) ? Seule cette forme (une règle écrite en heure locale : une heure plus tôt en UTC l'été) est lue : toute autre est un doute."""
+    a=re.fullmatch(PAIR_GROUPS,winter);b=re.fullmatch(PAIR_GROUPS,summer)
+    if not a or not b:return False
+    w=[int(a[1])*60+int(a[2]),int(a[3])*60+int(a[4])];s=[int(b[1])*60+int(b[2]),int(b[3])*60+int(b[4])]
+    return all((s[i]-w[i])%1440==1380 for i in (0,1))
+
 def clock_active(clock,start,end):
-    """Vrai / faux si la règle est active pendant [start, end] ; None si l'horaire n'est pas lisible OU si les deux écritures d'un horaire « hiver (été) » ne disent pas la même chose (la saison n'est pas décidée ici : la règle reste à examiner)."""
+    """Vrai / faux si la règle est active pendant [start, end] ; None si l'horaire n'est pas lisible. Un horaire « hiver (été) » : si les deux écritures disent la même chose pour ce passage, c'est cela ; sinon (SOG-0532 lot 3a) la fenêtre d'ÉTÉ n'est lue que si elle est exactement la fenêtre d'hiver une heure plus tôt (UTC) ET que tout le passage est de la même saison, à plus de 24 h d'un changement d'heure ; dans tous les autres cas, None (la règle reste à examiner)."""
     m=re.fullmatch('('+PAIR+r')\s*\(('+PAIR+r')\)',clock)
     if m:
         a,b=active_during(m[1].replace(' ',''),start,end),active_during(m[2].replace(' ',''),start,end)
-        return a if a==b else None
+        if a==b:return a
+        if not one_hour_earlier(m[1],m[2]):return None
+        first,last=summer_time(start),summer_time(end)
+        if first is None or first!=last:return None
+        return b if first else a
     return active_during(clock.replace(' ',''),start,end) if clock_ok(clock) else None
 
 def names(text):
@@ -187,12 +232,14 @@ def context(legs,dep,arr,natural=False):
     sids=[l for l in legs if l['kind']=='SID'];stars=[l for l in legs if l['kind'] in ['STAR','APPROACH_LINK']]
     if sids:sid.add(sids[-1]['end']['id'])
     if stars:star.add(stars[0]['start']['id'])
-    alt={}      # SOG-0401 : l'altitude que le PROFIL donne à chaque point de la route : le bout de chaque tronçon (le point où l'avion passe), le début du premier pour le départ
+    alt={};alt_nodes=[]      # SOG-0401 : l'altitude que le PROFIL donne à chaque point de la route : le bout de chaque tronçon (le point où l'avion passe), le début du premier pour le départ ; SOG-0532 lot 3a : `alt_nodes`, la même chose DANS L'ORDRE du vol (un nœud par point, None si inconnue), pour lire un niveau le long d'une suite
     for n,l in enumerate(legs):
         start_ft,end_ft=(l.get('natural_start_ft'),l.get('natural_end_ft')) if natural and isinstance(l.get('natural_end_ft'),(int,float)) else (l.get('altitude_start_ft'),l.get('altitude_end_ft'))      # SOG-0513 (A) : `natural` : le profil du niveau DÉPOSÉ (celui que l'IFPS juge : une voie hors bande n'est pas « ramenée » à son plafond) quand la route ne porte aucun changement de niveau ; sinon le profil de la stratégie
+        if n==0:alt_nodes.append(start_ft if isinstance(start_ft,(int,float)) else None)
+        alt_nodes.append(end_ft if isinstance(end_ft,(int,float)) else None)
         if n==0 and isinstance(start_ft,(int,float)):alt[l['start']['id']]=start_ft
         if isinstance(end_ft,(int,float)):alt[l['end']['id']]=end_ft
-    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt,legs=legs)      # `legs` : la suite des tronçons, pour les groupes VIA qui se lisent dans l'ordre (rad_via)
+    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt,alt_nodes=alt_nodes,legs=legs)      # `legs` : la suite des tronçons, pour les groupes VIA qui se lisent dans l'ordre (rad_via)
 
 def alternatives(text):
     """SOG-0401 (forme A) : les alternatives NUMÉROTÉES « 1. … 2. … » d'une condition (le RAD les lit comme un OU), ou None quand le texte n'est pas une liste numérotée simple : une seule alternative, ou une sous-liste « a. », « i) », une exception, un point-virgule : non décidé ici."""
@@ -218,7 +265,7 @@ def condition(text,ctx,rad):
     if len(text)>MAX_CONDITION:return None      # SOG-0401 (Sécurisation) : un texte de cellule plus long est illisible, il n'est pas décidé (le coût de la lecture reste borné)
     text=' '.join(text.upper().split())
     if not text:return True
-    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',BTN_ATOM.sub(' ',AT_LIST.sub(' ',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text))))):return None      # les atomes de niveau lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
+    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',BTN_ATOM.sub(' ',AT_RUN_SEARCH.sub(' ',AT_LIST.sub(' ',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text)))))):return None      # les atomes de niveau lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
     numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées
     if numbered:
         results=[condition(a,ctx,rad) for a in numbered]
@@ -307,10 +354,15 @@ def conjunction(value,ctx,rad):
         if m[1] in ('ABV','BLW') or (m[1]=='RFL' and re.search(r'\bAT\b',spec)):      # SOG-0401 : « ABV FLnnn AT point » : le niveau du PROFIL au point
             a=AT_ATOM.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip()) if m[1]!='RFL' else AT_ATOM.fullmatch('RFL '+spec.strip())
             if not a:
-                lst=AT_LIST.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip())      # SOG-0501 (e) : une LISTE de points : vrai à l'un d'eux, faux à aucun, sinon non décidé
-                if not lst:return None
-                each=[at_test(lst[1],lst[2],x.strip(),ctx) for x in lst[3].split(',')]
-                t=True if any(r is True for r in each) else False if all(r is False for r in each) else None
+                text=((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip()
+                lst=AT_LIST.fullmatch(text)      # SOG-0501 (e) : une LISTE de points : vrai à l'un d'eux, faux à aucun, sinon non décidé
+                if lst:
+                    each=[at_test(lst[1],lst[2],x.strip(),ctx) for x in lst[3].split(',')]
+                    t=True if any(r is True for r in each) else False if all(r is False for r in each) else None
+                else:
+                    run=AT_RUN.fullmatch(text)      # SOG-0532 lot 3a (forme L1) : le niveau LE LONG d'une suite « (A UL607 B) »
+                    if not run:return None
+                    t=run_test(run[1],run[2],run[3],ctx)
             else:t=at_test(a[1],a[2],a[3],ctx)
             if t is None:return None
             tests.append(t);continue
