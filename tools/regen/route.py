@@ -158,7 +158,7 @@ def check_levels(a):
 
 
 def levels(job, args, ctx):
-    """route/levels : le calcul de tête à chaque niveau demandé, en un appel (voir route_engine/plan.py levels) : { ok: True, levels: [{ fl, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }], first_valid, stopped, asked }
+    """route/levels : le calcul de tête à chaque niveau demandé, en un appel (voir route_engine/plan.py levels) : { ok: True, levels: [{ fl, points: [{ id, lat, lon }] (celui de route/compute), ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }], first_valid, stopped, asked }
     ou { ok: False, reason: 'no-rad' | 'invalid' | 'failed', message } ; `levels` : de 1 à 12 entiers, dans l'ordre des préférences de l'appelant ; `first_valid` : on s'arrête au premier niveau valide (une route trouvée, un contrôle sans erreur, aucune limite de raccord dépassée)."""
     from route_engine import plan, view
     data = ctx['data']

@@ -16,7 +16,7 @@ import time
 import json
 import threading
 
-from . import engine, fra, fra_floor, layered, nat_layer, planning, recovery
+from . import engine, fra, fra_floor, layered, nat_layer, planning, recovery, view
 
 FIELDS = {
     'proposals': bool, 'sections': bool, 'fl_basis': str, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -630,7 +630,8 @@ def semicircular(p):
 
 
 def level_summary(level, res):
-    """Une ligne par niveau, pour l'appelant (SOG-0529) : { fl, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }.
+    """Une ligne par niveau, pour l'appelant (SOG-0529) : { fl, points, ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }.
+    `points` (SOG-0545) : les POSITIONS des points de la route de ce niveau, { id, lat, lon }, de la MÊME source et de la MÊME forme que `points` de la route principale de route/compute (`view.points_of` : dans l'ordre, sans doublon, au plus MAX_POINTS) ; [] quand aucune route n'est trouvée ;
     `valid` : une route trouvée, un contrôle SANS erreur et aucune limite de raccord du RAD dépassée (un raccord direct que l'IFPS refusera n'est JAMAIS une route valide : `reason` le dit) ;
     `connector` : 'procedure' (chaque extrémité qui a des procédures publiées en utilise une), 'direct' (une extrémité a des procédures publiées mais est volée par un raccord DCT : aucune n'est volable à ce niveau) ou 'none' (aucune extrémité n'a de procédure publiée : le raccord direct est le seul)."""
     p = res['primary']
@@ -654,7 +655,7 @@ def level_summary(level, res):
         reason = errors[0][:200]
     else:
         reason = 'route valide'
-    return {'fl': level, 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
+    return {'fl': level, 'points': view.points_of(p), 'ok': ok, 'valid': valid, 'status': p.get('status'), 'distance_nm': p.get('distance_nm'), 'route': p.get('route') or '', 'connector': connector, 'reason': reason,
             'errors': [e[:160] for e in errors[:3]], 'verdict': p.get('verdict'), 'warnings': len(p.get('warnings') or []), 'semicircular': semicircular(p), 'states': res.get('states'), 'interrupted': bool(res.get('interrupted'))}      # SOG-0532 (3) : `verdict` (violates | unverifiable | conform) : le même mot que la réponse de route/compute
 
 

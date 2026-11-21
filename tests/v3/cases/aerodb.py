@@ -19850,3 +19850,25 @@ def k498(c):
         request = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
         p = P.compute(request, data, rad, None)['primary']
     c.eq(([x['state'] for x in p.get('not_verified') or []], sorted(x['values']['state'] for x in p.get('unverifiable') or [] if x['code'] == 'rad_unread')), (['ZZ'], ['ZZ']), 'a rule aimed at a space of a State that the route does NOT cross (ZY: no leg, no aerodrome, no FRA cell, no zone) is not counted: only ZZ (the aerodromes of the flight) remains (red before: ZY also)', what='integration')
+
+
+@case('K499', 'Route engine and launcher, SOG-0545: `route/levels` gives, for each level, the POINTS of its route ({ id, lat, lon }, in order, without duplicate) from the same source and in the same form as `points` of the main route of `route/compute` (`view.points_of`) — Fuel will price the route leg by leg; a level with no route gives an empty list; no other field of the row changes',
+      'K', static=True,
+      rule='SOG-0545 (the ergonomist, 21 Nov: « route/levels rend, par niveau, les points de la route, sous la MÊME forme et de la même source que compute pour la route principale ; aucun champ inventé ; Carburant les chiffrera avec son devis, tronçon par tronçon »). Measured on the invented bench of SOG-0532 (two aerodromes ZZAA and ZZBB, a lane UH1 whose ceiling is 22 000 ft): FL150 has the points A0 P1 P2 P3 P4 between the two aerodromes, the same as the alternative of route/compute at FL150; FL250 (above the ceiling) has no route and an empty list. No coordinate from X-Plane, no callsign, no registration',
+      )
+def k499(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, lanes=[('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 22000)])
+        template = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 150, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False})
+        res = P.levels(template, [150, 250], data, rad, None)
+        rows = {r['fl']: r for r in res['levels']}
+        screen = V.to_view(P.compute(dict(template, fl=150), data, rad, None), dict(template, fl=150))
+        main = screen['alternatives'][0]['points']
+    c.eq((rows[150]['ok'], [p['id'] for p in rows[150]['points']]), (True, ['ZZAA', 'A0', 'P1', 'P2', 'P3', 'P4', 'ZZBB']), 'FL150: the points of the route, in order, aerodromes included (red before: the row had no `points`)', what='points')
+    c.eq(rows[150]['points'], main, 'the points of the level are EXACTLY those of the main route of route/compute at the same level: same source (view.points_of), same form { id, lat, lon }', what='same as compute')
+    c.eq((rows[250]['ok'], rows[250]['points']), (False, []), 'FL250 is above the ceiling of the lane: no route, an empty list (never absent)', what='no route')
+    c.eq(sorted(rows[150]), sorted(['fl', 'points', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the only field added to a row is `points`', what='no other field')
