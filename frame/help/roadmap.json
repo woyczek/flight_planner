@@ -4,7 +4,7 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "45e690e",
+  "organisation": "7c36a6b",
   "fiches": 542,
   "untranslated": 0,
   "priorities": 481,
@@ -1387,8 +1387,7 @@
      "fr": "Carburant : la note sous « Non vérifiable » sur les règles du RAD d'espaces seuls perd son nombre",
      "en": "Fuel: the note under “Not verifiable” on airspace-only RAD rules loses its number",
      "de": "Kraftstoff: Der Hinweis unter „Nicht prüfbar“ zu den RAD-Regeln nur für Lufträume verliert seine Zahl",
-     "es": "Combustible: la nota bajo «No verificable» sobre las reglas del RAD solo de espacios pierde su número",
-     "test": true
+     "es": "Combustible: la nota bajo «No verificable» sobre las reglas del RAD solo de espacios pierde su número"
     },
     {
      "id": "SOG-0540",
@@ -1397,8 +1396,7 @@
      "fr": "Carburant : « Auto » peut garder un niveau dont la route est « non vérifiable » avant un niveau dont la route est conforme",
      "en": "Fuel: “Auto” can keep a level whose route is “not verifiable” before a level whose route conforms",
      "de": "Kraftstoff: „Auto“ kann eine Flugfläche mit „nicht prüfbarer“ Route vor einer Flugfläche mit konformer Route behalten",
-     "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme",
-     "test": true
+     "es": "Combustible: «Auto» puede quedarse con un nivel cuya ruta es «no verificable» antes que con un nivel cuya ruta es conforme"
     }
    ]
   },
@@ -2306,8 +2304,7 @@
      "fr": "Carte et atelier : une croisière qui passe sous le relief n'est pas signalée dans la coupe",
      "en": "Map and workshop: a cruise below terrain is not flagged on the vertical profile",
      "de": "Karte und Werkstatt: Ein Reiseflug unter dem Gelände wird im Vertikalprofil nicht gemeldet",
-     "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical",
-     "test": true
+     "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical"
     }
    ]
   },
@@ -3400,8 +3397,7 @@
      "fr": "Carburant : avertir quand le niveau de croisière ne suit pas la règle semi-circulaire (sans bloquer)",
      "en": "Fuel: warn when the cruising level does not follow the semicircular rule (without blocking)",
      "de": "Kraftstoff: warnen, wenn die Reiseflughöhe der Halbkreisregel nicht folgt (ohne zu sperren)",
-     "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)",
-     "test": true
+     "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)"
     },
     {
      "id": "SOG-0535",

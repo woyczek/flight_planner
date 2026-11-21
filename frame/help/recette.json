@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-21",
   "tests": 375,
-  "verdicts": 232
+  "verdicts": 236
  },
  "apps": [
   "pilote",
@@ -5166,8 +5166,9 @@
    },
    "test": "Recharge la page. Carte : une route dont la croisière passe sous le relief, puis une autre où elle passe à moins de 500 ft au-dessus. Sur la coupe, la partie fautive du trait de croisière est rouge (sous le relief) ou orange (moins de 500 ft), avec une marque au point le plus bas qui porte le nombre ; sous la coupe, une phrase : « Croisière sous le relief : … ft trop bas, à … NM après {point} » ou « Croisière à … ft seulement au-dessus du relief, à … NM après {point} ». Au-dessus de 500 ft : rien. La même chose dans le profil de l'atelier de missions. Dis si la distance « après {point} » te paraît fausse.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T16:56:44Z"
+   "state": "ok",
+   "delivered": "2026-11-21T16:56:44Z",
+   "at": "2026-11-21T18:27:09Z"
   },
   {
    "id": "SOG-0503",
@@ -5539,8 +5540,9 @@
    },
    "test": "RELANCE le lanceur (sur 49e689e2c ou plus récent), puis lance la mise à jour des données de la source ENR 5.1 (elle lit aussi ENR 1.7) et recharge la page. Carburant, une route en France au-dessus du FL195 : (1) choisis un niveau qui ne suit pas la règle (par exemple un niveau pair vers le sud-est) et « Calculer A → B » : la route porte « hors règle semi-circulaire » sur sa ligne et le groupe « Niveau de croisière : 1 avertissement » dit le tronçon, sa route en degrés et les deux niveaux attendus ; le verdict de la route ne change pas. (2) Une route qui sort de France porte la note « Règle semi-circulaire : vérifiée en France seulement. ». (3) « Auto » garde un niveau conforme quand il en ex",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T14:41:45Z"
+   "state": "ok",
+   "delivered": "2026-11-21T14:41:45Z",
+   "at": "2026-11-21T18:27:12Z"
   },
   {
    "id": "SOG-0532",
@@ -5581,8 +5583,9 @@
    },
    "test": "Recharge la page. Carburant, « Calculer A → B » sur une route qui traverse des États : sous « Non vérifiable » (ou sous « conforme »), la note dit « Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées. », sans nombre.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T15:38:58Z"
+   "state": "ok",
+   "delivered": "2026-11-21T15:38:58Z",
+   "at": "2026-11-21T18:27:24Z"
   },
   {
    "id": "SOG-0540",
@@ -5595,26 +5598,10 @@
    },
    "test": "Recharge la page. Carburant, niveau « Auto » : quand un niveau a une route « conforme » et un autre une route « non vérifiable », « Auto » garde le premier ; une route en infraction n'est jamais gardée ; puis la règle semi-circulaire, puis le raccord publié.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T15:38:58Z"
+   "state": "ok",
+   "delivered": "2026-11-21T15:38:58Z",
+   "at": "2026-11-21T18:27:28Z"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0136",
-   "fiche": "SOG-0532",
-   "app": "pilote",
-   "question": "Tu as donné l'adresse de l'eAIP belge : le lanceur peut-il le lire lui-même pendant la mise à jour des données (hôte nouveau ops.skeyes.be, relu par Sécurisation avant) ?",
-   "context": "Ta réponse à Q-0132 donne les pages d'index de l'eAIP de skeyes (AD 0.6, AD 1.1), pas les pages ENR 3 des voies. Un site que le lanceur n'a jamais lu demande ton oui explicite : personne ne lit ce site d'ici là. Avec ton oui, Sécurisation relit l'accès avant tout code, et seules les pages ENR 3 sont lues, une fois par cycle. — Le 21/11, tu as écrit à l'ergonome « oui pour l’eaip belge. » : réponds ici aussi (choix « Oui »), c'est ta réponse dans l'appli qui ouvre un site nouveau au lanceur ; la fiche SOG-0541 est prête et attend ce clic.",
-   "options": [
-    "Oui : le lanceur lit l'eAIP belge (ENR 3) pendant la mise à jour, après la relecture de Sécurisation",
-    "Non : je colle les pages ENR 3",
-    "Plus tard",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-21",
-   "state": "todo",
-   "recommended": 0
-  }
- ]
+ "decisions": []
 }
