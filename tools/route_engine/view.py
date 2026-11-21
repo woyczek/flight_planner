@@ -118,6 +118,7 @@ def name_of(r, requested_fl):
 MAX_POINTS = 600
 MAX_UNKNOWN_SPACES = 100      # revue de Sécurisation (18 nov.) : les espaces inconnus de la RAD et leurs règles sont bornés (items l'est à 1500)
 MAX_UNKNOWN_RULES = 50
+MAX_TERRAIN_RULES = 100      # SOG-0539 : les références rangées par terrain (l'écran en montre 40 au plus : `total` dit le reste)
 MAX_CHANGES = 60
 
 
@@ -164,6 +165,16 @@ def bounded_request(request):
     return out
 
 
+def terrain_rules_of(summary):
+    """SOG-0539 : [{ role: 'dep' | 'arr', ad, rules: [références triées, au plus MAX_TERRAIN_RULES, chacune coupée à 20 signes], total, cut }] : les règles du RAD qui nomment le terrain du vol ET visent un espace que la base ne lit pas, par terrain ; elles restent « non vérifiables » (le verdict et les comptes ne changent pas)."""
+    out = []
+    for x in (summary or {}).get('terrain_rules') or []:
+        if isinstance(x, dict) and x.get('role') in ('dep', 'arr') and isinstance(x.get('rules'), list):
+            ids = [str(r)[:20] for r in x['rules'] if isinstance(r, str)]
+            out.append({'role': x['role'], 'ad': str(x.get('ad'))[:8], 'rules': ids[:MAX_TERRAIN_RULES], 'total': len(ids), 'cut': len(ids) > MAX_TERRAIN_RULES})
+    return out
+
+
 def rad_view(p):
     """SOG-0401 : la RAD de la réponse : { title, start, decided (conditions décidées), review (à examiner), findings (constats), total (mentions), listed, cut (la borne a coupé : dit), unknown_spaces, items } ; la liste ENTIÈRE jusqu'à plan.MAX_RAD, chaque mention sans ses en-têtes NI ses valeurs (feuille, ligne, identifiant, raison, évaluation, validité) ; None sans RAD."""
     if not p.get('rad_source'):
@@ -172,7 +183,7 @@ def rad_view(p):
     items = [{k: m.get(k) for k in ('sheet', 'row', 'id', 'reason', 'assessment', 'validity')} for m in p.get('rad') or []]      # sans `values` (578 Ko → la liste entière reste légère : le texte de la règle se lit au classeur, par sa feuille et sa ligne)
     total = p.get('rad_count') or len(items)
     return {'title': p['rad_source'].get('title'), 'start': p['rad_source'].get('start'), 'decided': summary.get('evaluated_conditions'), 'review': summary.get('review_conditions'), 'findings': len(summary.get('findings') or []),
-            'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': [dict(u, rules=(u.get('rules') or [])[:MAX_UNKNOWN_RULES]) for u in (summary.get('unknown_spaces') or [])[:MAX_UNKNOWN_SPACES] if isinstance(u, dict)], 'items': items}
+            'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': [dict(u, rules=(u.get('rules') or [])[:MAX_UNKNOWN_RULES]) for u in (summary.get('unknown_spaces') or [])[:MAX_UNKNOWN_SPACES] if isinstance(u, dict)], 'terrain_rules': terrain_rules_of(summary), 'items': items}
 
 
 def to_view(plan_result, request, include_raw=False):

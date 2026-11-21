@@ -743,7 +743,7 @@
         home: 'https://ais.nav.pt/'
       },
       files: [{
-        name: 'AIP Portugal (eAIP hors ligne : un zip qui porte une ISO, l’ISO ou son dossier extrait)',
+        name: 'AIP Portugal (eAIP hors ligne : un zip qui contient une ISO, l’ISO ou son dossier extrait)',
         url: 'https://ais.nav.pt/wp-content/uploads/AIS_Files/eAIP_Current/EAIP%20ISO.zip',
         file: 'EAIP ISO.zip',
         what: ['l\'eAIP du Portugal hors ligne : le disque ISO complet',

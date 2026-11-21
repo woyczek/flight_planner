@@ -478,7 +478,9 @@ def target(rule,ctx,legs,rad):
         if ctx.get('known') is not None and v[7] not in ctx['known']:
             # SOG-0401 : la cible n'est pas un POINT de la base : c'est un ESPACE (une FRA, une UTA, un ACC : LSASFRA, EDUUUTA…) ; la base n'en a pas le polygone sous ce nom (aucun des 25 307 espaces de la base de ce poste ne porte ces noms) : la règle n'est pas appliquée, elle est « à examiner », DITE avec l'espace
             ctx.setdefault('unknown_spaces',{}).setdefault(v[7],[]).append(rule['id'])
-            if any(re.search(r'\b'+re.escape(str(code))+r'\b',' '.join(str(x) for x in v)) for code in (ctx.get('dep'),ctx.get('arr')) if code):ctx.setdefault('unknown_ad',set()).add(rule['id'])      # SOG-0501 (c) : la règle NOMME le terrain de départ ou d'arrivée du vol : dite en premier
+            cited=[(role,code) for role,code in (('dep',ctx.get('dep')),('arr',ctx.get('arr'))) if code and re.search(r'\b'+re.escape(str(code))+r'\b',' '.join(str(x) for x in v))]
+            if cited:ctx.setdefault('unknown_ad',set()).add(rule['id'])      # SOG-0501 (c) : la règle NOMME le terrain de départ ou d'arrivée du vol : dite en premier
+            for role,code in cited:ctx.setdefault('unknown_by_terrain',{}).setdefault((role,str(code)),set()).add(rule['id'])      # SOG-0539 : et PAR TERRAIN (départ, arrivée)
             rule['assessment']='À interpréter : la cible est un ESPACE ('+v[7]+') inconnu de la base (aucun polygone) : règle non appliquée'
             return None,[]
         if v[7] not in ctx['points']:return False,[]
@@ -569,6 +571,7 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None
             else:avoids.append(dict(kind='segment',via=l['via'],start=l['start']['id'],end=l['end']['id']))
     return dict(scope='Vol entier : départ, tous les points SID, route, tous les points STAR et arrivée',segments=len(legs),phases=ctx['phases'],
         evaluated_conditions=decided,review_conditions=sum('interpréter' in c['assessment'] for c in candidates),findings=findings,search_exclusions=avoids,
+        terrain_rules=[dict(role=role,ad=code,rules=sorted(ids)) for (role,code),ids in sorted((ctx.get('unknown_by_terrain') or {}).items(),key=lambda x:(x[0][0]!='dep',x[0][1]))],      # SOG-0539 : les règles dont la cible est un espace inconnu ET qui nomment le terrain du vol, rangées PAR TERRAIN (départ puis arrivée), triées ; ni verdict ni compte ne changent
         unknown_spaces=[dict(space=s,rules=sorted(set(r)),**({'ad':sorted(set(r)&ctx['unknown_ad'])} if ctx.get('unknown_ad') and set(r)&ctx['unknown_ad'] else {})) for s,r in sorted(ctx.get('unknown_spaces',{}).items())])      # SOG-0401 : les règles dont la cible est un espace inconnu de la base, par espace
 
 def static_blocks(rad,dep,arr):

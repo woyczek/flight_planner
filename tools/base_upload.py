@@ -151,7 +151,7 @@ def recognise(path, hint='', today=None):
                 ids = _airac_ids(today)
                 take = [(n, base) for n, base, cid in fra if cid in ids]
                 if len(take) > FRA_TAKE_MAX:          # Sécurisation (12/11) : une vraie archive en porte UN par cycle ; plus de deux = refusé, en le disant
-                    raise Refused('unrecognised', f'trop de classeurs FRA du cycle dans cette archive ({len(take)} : une archive en porte un par cycle : le cycle en vigueur et le suivant, deux au plus)', EXPECTED)
+                    raise Refused('unrecognised', f'trop de classeurs FRA du cycle dans cette archive ({len(take)} : une archive en contient un par cycle : le cycle en vigueur et le suivant, deux au plus)', EXPECTED)
                 if not take:
                     raise Refused('unrecognised', f'aucun classeur FRA du cycle en vigueur ({ids[0]}) ni du suivant ({ids[1]}) dans cette archive', EXPECTED)
                 return {'source': 'eurocontrol_rad', 'kind': 'fra', 'zone': '', 'name': take[0][1], 'cycle': None, 'take': take}

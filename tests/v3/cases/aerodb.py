@@ -19872,3 +19872,56 @@ def k499(c):
     c.eq(rows[150]['points'], main, 'the points of the level are EXACTLY those of the main route of route/compute at the same level: same source (view.points_of), same form { id, lat, lon }', what='same as compute')
     c.eq((rows[250]['ok'], rows[250]['points']), (False, []), 'FL250 is above the ceiling of the lane: no route, an empty list (never absent)', what='no route')
     c.eq(sorted(rows[150]), sorted(['fl', 'points', 'ok', 'valid', 'status', 'distance_nm', 'route', 'connector', 'reason', 'errors', 'verdict', 'warnings', 'semicircular', 'states', 'interrupted']), 'the only field added to a row is `points`', what='no other field')
+
+
+@case('K500', 'Route engine, SOG-0539: the RAD rules that name the departure or the arrival aerodrome of the flight AND aim at a space the base does not read are given BY TERRAIN (departure, then arrival), sorted, as `rad.terrain_rules` of the screen answer ({ role, ad, rules, total, cut }; at most 100 references per terrain, the screen shows 40) — the verdict and the counts do not change: they stay « non vérifiables »',
+      'K', static=True,
+      rule='SOG-0539 (the ergonomist, 21 Nov: « les règles du RAD qui citent le terrain du vol ET un espace que nous ne lisons pas se rangent PAR TERRAIN (départ, arrivée) ; le moteur rend ces références groupées par terrain, triées, et l\'écran en montre 40 au plus ; verdict et comptes inchangés »; the four rules refused by Eurocontrol (EG2720, ED2173, LD3003, LD2098) were in `unknown_spaces` but named nowhere by terrain). Measured before the lot on the 24 invented flights of SOG-0532: a median of 10 such rules per flight, 35 at most. Invented bench: five rules aimed at two spaces unknown to the base, one naming the departure, one the arrival, one both, one none and one another aerodrome',
+      )
+def k500(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    row = lambda rid, target, cond, state='ZZ': ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, cond, 'H24', 'S', 'invented', '', 'ACC', state]
+    rules = [row('ZZ3103', 'ZZFIRBB', 'NOT AVBL FOR TFC ZZAA ZZBB'), row('ZZ3101', 'ZZFIRAA', 'NOT AVBL FOR TFC DEP ZZAA'), row('ZZ3102', 'ZZFIRAA', 'NOT AVBL FOR TFC ARR ZZBB'), row('ZZ3104', 'ZZFIRBB', 'NOT AVBL FOR TFC'), row('ZZ3105', 'ZZFIRBB', 'NOT AVBL FOR TFC DEP ZZCC')]
+
+    def fly(rules_2b):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, rules_2b=rules_2b)
+            request = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+            res = P.compute(request, data, rad, None)
+            return res['primary'], V.to_view(res, request)['rad']
+
+    p, view = fly(rules)
+    c.eq(p['rad_summary']['terrain_rules'], [{'role': 'dep', 'ad': 'ZZAA', 'rules': ['ZZ3101', 'ZZ3103']}, {'role': 'arr', 'ad': 'ZZBB', 'rules': ['ZZ3102', 'ZZ3103']}], 'by terrain, departure first, sorted: ZZ3101 and ZZ3103 name ZZAA, ZZ3102 and ZZ3103 name ZZBB; the rules that name neither aerodrome are not there (red before: no `terrain_rules`)', what='engine')
+    c.eq(view['terrain_rules'], [{'role': 'dep', 'ad': 'ZZAA', 'rules': ['ZZ3101', 'ZZ3103'], 'total': 2, 'cut': False}, {'role': 'arr', 'ad': 'ZZBB', 'rules': ['ZZ3102', 'ZZ3103'], 'total': 2, 'cut': False}], 'the screen answer carries them with their total', what='view')
+    unknown = {s['space']: s['rules'] for s in p['rad_summary']['unknown_spaces']}
+    c.eq((unknown, p['verdict'], p['rad_summary']['review_conditions'], p['rad_summary']['findings']), ({'ZZFIRAA': ['ZZ3101', 'ZZ3102'], 'ZZFIRBB': ['ZZ3103']}, 'unverifiable', 3, []), 'nothing else changes: the three rules the flight touches stay in their spaces, all « à examiner », no finding, the verdict stays « unverifiable »', what='unchanged')
+    p0, view0 = fly([row('ZZ3104', 'ZZFIRBB', 'NOT AVBL FOR TFC')])
+    c.eq((p0['rad_summary']['terrain_rules'], view0['terrain_rules']), ([], []), 'no rule names the terrain: empty lists, never absent', what='none')
+    many = [row(f'ZZ{3200 + n}', 'ZZFIRAA', 'NOT AVBL FOR TFC DEP ZZAA') for n in range(130)]
+    p2, view2 = fly(many)
+    top = view2['terrain_rules'][0]
+    c.eq((top['role'], len(top['rules']), top['total'], top['cut'], top['rules'][:2] == sorted(top['rules'])[:2]), ('dep', 100, 130, True, True), 'bounded at 100 references per terrain; `total` says 130 and `cut` says it is cut', what='bound')
+
+
+@case('K501', 'Wording, French calques of « porter » replaced by « contenir » where a container holds things — the Portugal source name in the Data screen (« un zip qui contient une ISO »), the refusal of an FAA zip with too many files (« le zip des jeux CSV contient trop de fichiers ») and the refusal of an archive with too many FRA books (« une archive en contient un par cycle »)',
+      'K', static=True,
+      rule='SOG-0539 package of 21 Nov (the ergonomist, textes_CALQUES_porter, section A: « un zip porte une ISO » is an English calque of « carries »; in French a zip CONTAINS). Expected written in plain: the three texts below, and no « porte » left in them. The messages of the launcher are shown in the Data screen',
+      )
+def k501(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import faa_nasr
+    catalogue = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    c.eq(("name: 'AIP Portugal (eAIP hors ligne : un zip qui contient une ISO, l’ISO ou son dossier extrait)'," in catalogue, 'un zip qui porte une ISO, l’ISO ou son dossier extrait)' in catalogue), (True, False), 'the Portugal source reads « un zip qui contient une ISO, l’ISO ou son dossier extrait » (red before: « porte »)', what='catalogue')
+    too_many = b'PK\x05\x06' + bytes(4) + (faa_nasr.MAX_INNER_ENTRIES + 1).to_bytes(2, 'little') * 2 + (100).to_bytes(4, 'little') + (0).to_bytes(4, 'little') + bytes(2)
+    try:
+        list(faa_nasr.rows(too_many, 'APT_BASE.csv'))
+        said = None
+    except ValueError as e:
+        said = str(e)
+    c.eq(said, f'APT_BASE.csv : le zip des jeux CSV contient trop de fichiers (annuaire de 100 octets, {faa_nasr.MAX_INNER_ENTRIES + 1} entrées annoncées)', 'a zip that announces more entries than the limit is refused with « le zip des jeux CSV contient trop de fichiers » (red before: « porte »)', what='faa')
+    upload = (ROOT / 'tools' / 'base_upload.py').read_text(encoding='utf-8')
+    c.eq(('une archive en contient un par cycle : le cycle en vigueur et le suivant, deux au plus' in upload, 'une archive en porte un par cycle' in upload), (True, False), 'the refusal of an archive with too many FRA books says « une archive en contient un par cycle : le cycle en vigueur et le suivant, deux au plus » (red before: « porte »)', what='upload')

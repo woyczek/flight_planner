@@ -162,7 +162,7 @@ def rows(blob, member):
     """Les lignes (dictionnaires) d'un CSV d'un zip donné en octets ; ValueError si le fichier manque ou est trop gros, ou si l'annuaire annonce plus de MAX_INNER_ENTRIES entrées."""
     found = _end_record(blob)
     if found is not None and (found[0] > MAX_INNER_ENTRIES or found[1] > MAX_INNER_DIRECTORY or found[2]):
-        raise ValueError(f'{member} : le zip des jeux CSV porte trop de fichiers (annuaire de {found[1]} octets, {found[0]} entrées annoncées)' if not found[2] else f'{member} : le zip des jeux CSV est un zip64, que ce relevé ne lit pas')
+        raise ValueError(f'{member} : le zip des jeux CSV contient trop de fichiers (annuaire de {found[1]} octets, {found[0]} entrées annoncées)' if not found[2] else f'{member} : le zip des jeux CSV est un zip64, que ce relevé ne lit pas')
     with zipfile.ZipFile(io.BytesIO(blob)) as z:
         try:
             info = z.getinfo(member)
