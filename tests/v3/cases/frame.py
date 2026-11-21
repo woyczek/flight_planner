@@ -11035,14 +11035,23 @@ def _rc_busy_launcher(c, root, hold_ms=800):
     return st
 
 
+def _rc_days():
+    """(today, yesterday, eight days ago) as the page reads them: UTC dates « AAAA-MM-JJ ». The screen computes « the last recette » (the day of the last verdict BEFORE today) from the day it is opened, so a fixture dated
+    by hand (the 18th of November) went red the day after: its dates are relative to the day of the run."""
+    import datetime
+    d = datetime.datetime.now(datetime.timezone.utc).date()
+    return d.isoformat(), (d - datetime.timedelta(days=1)).isoformat(), (d - datetime.timedelta(days=8)).isoformat()
+
+
 def _rc0497_fixture():
     """frame/help/recette.json for SOG-0497: SOG-0474 and SOG-0475 delivered the same day, side by side (same application, same height), two older tests, SOG-0476 passed in the
     compiled list (10:00) while the launcher's file still holds an older refusal of it; two « points à trancher » still open in the compiled list (Q-0111, Q-0112)."""
     lab = lambda n: {'fr': f'Routes : test {n}', 'en': f'Routes: test {n}', 'de': f'Routen: Test {n}', 'es': f'Rutas: prueba {n}'}
-    test = lambda n, since='2026-11-18', state='todo', **kw: {'id': f'SOG-{n:04d}', 'app': 'pilote', 'title': lab(n), 'test': f'Aller au test {n}, faire, voir.', 'since': since, 'state': state, **kw}
-    tests = [test(474), test(475), test(470, '2026-11-10'), test(471, '2026-11-10'), test(476, '2026-11-17', 'ok', at='2026-11-18T10:00:00Z')]
-    q = lambda n: {'id': f'Q-{n:04d}', 'fiche': f'SOG-{n + 300:04d}', 'app': 'pilote', 'question': f'Question {n} ?', 'context': 'Contexte.', 'options': ['Oui', 'Non'], 'recommended': 0, 'since': '2026-11-18', 'state': 'todo'}
-    return {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-18', 'tests': len(tests), 'verdicts': 1}, 'apps': ['pilote', 'compagnie', 'maintenance', 'stats'],
+    today, yesterday, old = _rc_days()
+    test = lambda n, since=today, state='todo', **kw: {'id': f'SOG-{n:04d}', 'app': 'pilote', 'title': lab(n), 'test': f'Aller au test {n}, faire, voir.', 'since': since, 'state': state, **kw}
+    tests = [test(474), test(475), test(470, old), test(471, old), test(476, yesterday, 'ok', at=f'{today}T10:00:00Z')]
+    q = lambda n: {'id': f'Q-{n:04d}', 'fiche': f'SOG-{n + 300:04d}', 'app': 'pilote', 'question': f'Question {n} ?', 'context': 'Contexte.', 'options': ['Oui', 'Non'], 'recommended': 0, 'since': today, 'state': 'todo'}
+    return {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': today, 'tests': len(tests), 'verdicts': 1}, 'apps': ['pilote', 'compagnie', 'maintenance', 'stats'],
             'tests': tests, 'decisions': [q(111), q(112)]}
 
 
@@ -11054,7 +11063,7 @@ def _rc0497_root(td, verdicts=None):
     f = root / 'organisation' / 'RECETTE.json'
     d = root / 'organisation' / 'DECISIONS_REPONSES.json'
     if verdicts is not None:
-        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-17T09:00:00Z', 'items': verdicts}), encoding='utf-8')
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': f'{_rc_days()[1]}T09:00:00Z', 'items': verdicts}), encoding='utf-8')
     return root, (lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else {}), (lambda: json.loads(d.read_text(encoding='utf-8'))['items'] if d.exists() else {})
 
 
@@ -11077,8 +11086,8 @@ def a290(c):
     fx = _rc0497_fixture()
     c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
-        # the launcher's file holds an OLDER verdict of SOG-0476 (a refusal of the 17th) than the compiled list (passed on the 18th, 10:00)
-        root, verdicts, answers = _rc0497_root(td, {'SOG-0476': {'verdict': 'ko', 'comment': 'ancien refus', 'at': '2026-11-17T09:00:00Z'}})
+        # the launcher's file holds an OLDER verdict of SOG-0476 (a refusal of yesterday) than the compiled list (passed today, 10:00)
+        root, verdicts, answers = _rc0497_root(td, {'SOG-0476': {'verdict': 'ko', 'comment': 'ancien refus', 'at': f'{_rc_days()[1]}T09:00:00Z'}})
         st = _rc_busy_launcher(c, root)
         c.open('recette', docs=LEVEL3)
         c.until("!!document.querySelector('[data-section=today] [data-ok=\"SOG-0474\"]')", timeout=15000, what='the tests')
