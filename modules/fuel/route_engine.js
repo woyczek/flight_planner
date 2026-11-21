@@ -23,7 +23,8 @@
 
 import {
   own,
-  own as ownOf
+  own as ownOf,
+  plain
 } from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : la clé PROPRE d'un objet simple, définie une fois par le cadre
 
 export const VERB = 'route/compute';
@@ -232,7 +233,8 @@ export async function levels(launcher, args, {
     };
   }
 }
-/** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason }], stopped,
+/** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason,
+ *  semicircular }], stopped,
  *  asked } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
 export function levelsRead(res) {
   if (!res || typeof res !== 'object') return null;
@@ -245,7 +247,9 @@ export function levelsRead(res) {
     ok: x?.ok === true,
     valid: x?.valid === true,
     connector: CONNECTORS.includes(x?.connector) ? x.connector : 'none',
-    reason: text(x?.reason, 200)
+    reason: text(x?.reason, 200),
+    // SOG-0530 (lot B) : warning | undecided | ok | no_table, null sans contrôle ; jamais un blocage (valid ne le lit pas)
+    semicircular: SEMICIRCULAR.includes(x?.semicircular) ? x.semicircular : null
   })).filter(x => x.fl !== null);
   return {
     ok: true,
@@ -496,9 +500,28 @@ function pointsOf(list) {
 }
 /** SOG-0532 (3), SOG-0531 : les verdicts du moteur, jamais confondus. */
 const VERDICTS = ['conform', 'unverifiable', 'violates'];
+/** SOG-0530 (lot B d'AeroDB) : les avertissements du niveau de croisière (la règle semi-circulaire de l'AIP de France) — un niveau hors
+ *  règle, une route trop près d'une coupure, une déclinaison inconnue : le groupe « Niveau de croisière », jamais le verdict. */
+const LEVEL_CODES = ['level_semicircular', 'level_rule_near_limit', 'level_rule_no_variation'],
+  SEMICIRCULAR = ['warning', 'undecided', 'ok', 'no_table'];
+/** SOG-0530 : le contrôle semi-circulaire d'un itinéraire, de `levelRule` (une entrée non sûre ; AeroDB b083e967a) — { note, warnings } :
+ *  note 'table_missing' (le tableau de la France n'est pas lu), 'abroad' (des tronçons de croisière hors de France ou d'un État inconnu :
+ *  zones non vide ou unlocated > 0 ; vérifiée en France seulement) ou null ; warnings : le nombre des niveaux hors règle (le {n} du
+ *  groupe), entier borné, null sans lui. */
+function levelRuleOf(a) {
+  const v = plain(own(a, 'levelRule')),
+    zones = own(v, 'zones'),
+    unlocated = own(v, 'unlocated'),
+    n = own(v, 'warnings');
+  return {
+    note: own(v, 'table_missing') === true ? 'table_missing' : Array.isArray(zones) && zones.length || Number.isInteger(unlocated) &&
+      unlocated > 0 ? 'abroad' : null,
+    warnings: Number.isInteger(n) && n >= 0 && n <= 999 ? n : null
+  };
+}
 /** SOG-0532 (3) : les valeurs d'une raison (une entrée non sûre) : seize clés au plus, nommées en minuscules (jamais __proto__) ; un
- *  nombre fini, un booléen, une chaîne (80 signes) ou une liste de chaînes (douze, 24 signes) ; le reste écarté. Jamais du HTML : l'écran
- *  les pose par textContent ou esc. */
+ *  nombre fini, un booléen, une chaîne (80 signes) ou une liste (douze) de chaînes (24 signes) ou de nombres finis (SOG-0530 : les
+ *  niveaux proposés, `suggested`) ; le reste écarté. Jamais du HTML : l'écran les pose par textContent ou esc. */
 function valuesOf(v) {
   const out = {};
   if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
@@ -508,7 +531,8 @@ function valuesOf(v) {
     if (typeof x === 'number' && Number.isFinite(x)) out[k] = x;
     else if (typeof x === 'boolean') out[k] = x;
     else if (typeof x === 'string') out[k] = text(x, 80);
-    else if (Array.isArray(x)) out[k] = x.slice(0, 12).filter(s => typeof s === 'string').map(s => text(s, 24)).filter(Boolean);
+    else if (Array.isArray(x)) out[k] = x.slice(0, 12).filter(s => typeof s === 'string' || typeof s === 'number' && Number.isFinite(s))
+      .map(s => typeof s === 'string' ? text(s, 24) : s).filter(s => s !== '');
   }
   return out;
 }
@@ -583,6 +607,9 @@ function altOf(a, role, errors, reviews = []) {
       .spaces_only >
       0 ? Math.min(r.values.spaces_only, 99999) : 0), 0),
     notVerified: notVerifiedOf(a?.notVerified), // SOG-0532 lot 2 : les règles du RAD non vérifiées, par État
+    // SOG-0530 : les avertissements du niveau de croisière (à part des deux groupes du verdict) et la note hors compte
+    levelWarn: reasonsOf(a?.warnings).filter(r => LEVEL_CODES.includes(r.code)),
+    levelRule: levelRuleOf(a),
     errors,
     reviews: a?.incomplete === true ? reviews : [],
     faults,

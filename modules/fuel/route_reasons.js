@@ -24,6 +24,42 @@ export const ROWS = {
     'Solo Eurocontrol valida un plan.'
   ],
   groupViolates: ['Règles connues enfreintes', 'Known rules broken', 'Verletzte bekannte Regeln', 'Reglas conocidas infringidas'],
+  // SOG-0530 (l'ergonome, 21/11) : le groupe du niveau de croisière, après « Non vérifiable », jamais le verdict ; {n} ne compte que
+  // les niveaux hors règle ; sans eux, le titre sans compte (jamais « 0 avertissement »)
+  groupLevel: ['Niveau de croisière : {n} avertissement(s)', 'Cruising level: {n} warning(s)', 'Reiseflugfläche: {n} Warnung(en)',
+    'Nivel de crucero: {n} aviso(s)'
+  ],
+  groupLevel0: ['Niveau de croisière', 'Cruising level', 'Reiseflugfläche', 'Nivel de crucero'],
+  // l'endroit d'abord, pas de mot de verdict, toujours les degrés (un seul modèle sous et au-dessus du FL195), zéros de tête gardés
+  level_semicircular: ['{from} → {to}, route au {track}° : un niveau {parity} est attendu — {fls}',
+    '{from} → {to}, track {track}°: an {parity} level is expected — {fls}',
+    '{from} → {to}, Kurs {track}°: eine {parity} Flugfläche wird erwartet — {fls}',
+    '{from} → {to}, rumbo {track}°: se espera un nivel {parity} — {fls}'
+  ],
+  levelOdd: ['impair', 'odd', 'ungerade', 'impar'],
+  levelEven: ['pair', 'even', 'gerade', 'par'],
+  levelOr: ['{a} ou {b}', '{a} or {b}', '{a} oder {b}', '{a} o {b}'],
+  level_rule_near_limit: ['{from} → {to}, route au {track}° : trop près de {limit}° pour dire si le FL{fl} convient',
+    '{from} → {to}, track {track}°: too close to {limit}° to tell whether FL{fl} fits',
+    '{from} → {to}, Kurs {track}°: zu nah an {limit}°, um zu sagen, ob FL{fl} passt',
+    '{from} → {to}, rumbo {track}°: demasiado cerca de {limit}° para saber si el FL{fl} conviene'
+  ],
+  level_rule_no_variation: ['{from} → {to} : déclinaison magnétique inconnue', '{from} → {to}: magnetic declination unknown',
+    '{from} → {to}: Ortsmissweisung unbekannt', '{from} → {to}: declinación magnética desconocida'
+  ],
+  // la note hors compte, sous le groupe ou seule : la route sort de France, ou le tableau n'est pas lu
+  levelAbroad: ['Règle semi-circulaire : vérifiée en France seulement.', 'Semicircular rule: checked in France only.',
+    'Halbkreisregel: nur in Frankreich geprüft.', 'Regla semicircular: verificada solo en Francia.'
+  ],
+  levelTableMissing: ['Règle semi-circulaire : tableau de la France non lu — mettre les données à jour.',
+    'Semicircular rule: table of France not read — update the data.',
+    'Halbkreisregel: Tabelle Frankreichs nicht gelesen — Daten aktualisieren.',
+    'Regla semicircular: tabla de Francia no leída — actualizar los datos.'
+  ],
+  // la marque courte d'un niveau hors règle (la ligne de la route, la phrase d'« Auto »)
+  levelOutside: ['hors règle semi-circulaire', 'outside the semicircular rule', 'außerhalb der Halbkreisregel',
+    'fuera de la regla semicircular'
+  ],
   groupUnverifiable: ['Non vérifiable : {n} point(s)', 'Cannot be verified: {n} point(s)', 'Nicht prüfbar: {n} Punkt(e)',
     'No verificable: {n} punto(s)'
   ],
@@ -180,6 +216,9 @@ function nmOf(v, lang) {
 }
 /** Un niveau en centaines de pieds, sur trois chiffres. */
 const flOf = v => String(Math.round(+v)).padStart(3, '0');
+/** SOG-0530 : un angle en degrés entiers de 0 à 359 (sinon faux) ; écrit sur trois chiffres (« 085 », l'ergonome : zéros de tête gardés). */
+const degOk = v => Number.isInteger(v) && v >= 0 && v <= 359,
+  degOf = v => String(v).padStart(3, '0');
 /** Le nom d'un État dans la langue de l'écran (« be » → « Belgique ») ; un préfixe qui n'en est pas un : son code en capitales. */
 function zoneName(z, lang) {
   const code = String(z).toUpperCase();
@@ -285,6 +324,37 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
         downAt: v.down_point,
         up: flOf(v.up_fl),
         upAt: v.up_point
+      }) : fallback;
+      // SOG-0530 : le niveau de croisière contre la règle semi-circulaire (lot B d'AeroDB)
+    case 'level_semicircular': {
+      const fls = (Array.isArray(v.suggested) ? v.suggested : []).filter(x => Number.isInteger(x) && x >= 10 && x <= 660).slice(0, 2)
+        .map(x => `FL${flOf(x)}`);
+      if (!has(v.from_point) || !has(v.to_point) || !degOk(v.track_deg) || !['odd', 'even'].includes(v.expected) || !fls.length)
+        return fallback;
+      return t(ROWS.level_semicircular, {
+        from: v.from_point,
+        to: v.to_point,
+        track: degOf(v.track_deg),
+        parity: t(v.expected === 'odd' ? ROWS.levelOdd : ROWS.levelEven),
+        fls: fls.length === 2 ? t(ROWS.levelOr, {
+          a: fls[0],
+          b: fls[1]
+        }) : fls[0]
+      });
+    }
+    case 'level_rule_near_limit':
+      return has(v.from_point) && has(v.to_point) && degOk(v.track_deg) && degOk(v.limit_deg) && Number.isInteger(v.fl) ? t(ROWS
+        .level_rule_near_limit, {
+          from: v.from_point,
+          to: v.to_point,
+          track: degOf(v.track_deg),
+          limit: degOf(v.limit_deg),
+          fl: flOf(v.fl)
+        }) : fallback;
+    case 'level_rule_no_variation':
+      return has(v.from_point) && has(v.to_point) ? t(ROWS.level_rule_no_variation, {
+        from: v.from_point,
+        to: v.to_point
       }) : fallback;
     case 'no_conforming_route': {
       if (!has(v.violations)) return fallback;

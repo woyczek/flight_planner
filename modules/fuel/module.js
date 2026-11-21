@@ -1383,6 +1383,11 @@ const TX = {
     '; Direktanschluss (kein Verfahren auf dieser Fläche fliegbar)', '; enlace directo (ningún procedimiento volable a este nivel)'
   ],
   levelAutoSkip: [' ; {fl} écarté', '; {fl} set aside', '; {fl} verworfen', '; {fl} descartado'],
+  // SOG-0530 (l'ergonome, 21/11) : le niveau retenu est hors de la règle semi-circulaire (le moteur le dit : route/levels) — jusqu'au
+  // lot C d'AeroDB, ce suffixe ; le choix ne change pas
+  levelAutoSemi: [' — hors règle semi-circulaire', ' — outside the semicircular rule', ' — außerhalb der Halbkreisregel',
+    ' — fuera de la regla semicircular'
+  ],
   // le pli de la raison du moteur (le bloc des critères du dégagement) : la phrase reste courte, la raison se déplie au toucher
   levelAutoWhyFold: ['Raison du moteur de route', 'Route engine’s reason', 'Begründung der Routenberechnung',
     'Motivo del motor de rutas'
@@ -6065,7 +6070,7 @@ function routeAltsDraw() {
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections|verdicts)"/g,
       '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.verdict || a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b>${(a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''} <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), a.verdict || a.faulty || RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.faulty ? ` <b class="f-warn" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -6583,9 +6588,18 @@ function verdictsHtml(a, open = false) {
       unverifiable: []
     };
   // la note des règles qui ne portent que sur des espaces : hors compte, sous tout verdict (jamais « non vérifiable » à elle seule)
-  const note = a.spacesOnly > 0 ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly, { n: a.spacesOnly }))}</p>` : '';
+  const note = a.spacesOnly > 0 ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly, { n: a.spacesOnly }))}</p>` : '',
+    // SOG-0530 (l'ergonome, 21/11) : le niveau de croisière, le moins grave en dernier, ton d'avertissement — il ne change JAMAIS le
+    // verdict ; {n} ne compte que les niveaux hors règle (sans eux, le titre sans compte) ; sa note hors compte dessous, ou seule
+    lw = a.levelWarn || [],
+    lr = a.levelRule || {},
+    n = lr.warnings ?? lw.filter(r => r.code === 'level_semicircular').length, // levelRule.warnings (AeroDB b083e967a)
+    level = group(lw, 'level', n ? tt(RR.ROWS.groupLevel, {
+      n
+    }) : tt(RR.ROWS.groupLevel0), 'f-warn'),
+    levelNote = lr.note ? `<p class="f-muted" data-levelnote="${esc(lr.note)}">${esc(tt(lr.note === 'table_missing' ? RR.ROWS.levelTableMissing : RR.ROWS.levelAbroad))}</p>` : '';
   return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', unverifTitle(R
-    .unverifiable), 'f-warn') + note;
+    .unverifiable), 'f-warn') + level + levelNote + note;
 }
 /** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
  *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */
@@ -6783,7 +6797,8 @@ function autoJudge(cands) {
       main: tt(TX.levelAutoValid, {
         fl,
         t
-      }) + (by.get(flOf(pick)).connector === 'direct' ? tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX.levelAutoSkip, {
+      }) + (by.get(flOf(pick)).semicircular === 'warning' ? tt(TX.levelAutoSemi) : '') + (by.get(flOf(pick)).connector === 'direct' ?
+        tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX.levelAutoSkip, {
         fl: flTxt(skipped.fl * 100)
       }) : '') + partial,
       reason: skipped?.reason || '' // la raison du moteur, telle quelle, dans le pli

@@ -9692,3 +9692,200 @@ def f297(c):
         c.shot(f'F297_{c.design}_{w}_{c.lang}_faulty.png')
     c.check_errors()
 
+
+# SOG-0530: the warnings of the cruising level (AeroDB lot B, e45662187: (a), (b), (c) in `warnings`, never the verdict; the note and
+# {n} from `levelRule`). Invented points (XQNOR, XQSUD) placed so that the tracks said are those of the drawn legs (the relay, 21 Nov):
+# LUGEN → NEPIX runs 124° true (about 123° magnetic, the half 090–269 of the UTA: ODD levels — FL260 is the warned one); NEPIX → XQNOR
+# runs due east (088° magnetic: next to the cut at 090°)
+_LVL_PTS = {'LFRS': (47.1569, -1.6078), 'LUGEN': (46.5833, -1.2), 'NEPIX': (44.9, 2.4), 'XQNOR': (44.9, 3.6), 'XQSUD': (44.1, 4.4),
+            'LFML': (43.4367, 5.215)}
+_LVL_A = {'code': 'level_semicircular', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'legs': 1, 'fl': 260, 'regime': 'IFR',
+                                                   'state': 'fr', 'source': 'ENR 1.7.5', 'cycle': '2026-11-26', 'track_deg': 123,
+                                                   'range': '090-269', 'expected': 'odd', 'suggested': [250, 270]}, 'text': 'a'}
+_LVL_B = {'code': 'level_rule_near_limit', 'values': {'from_point': 'NEPIX', 'to_point': 'XQNOR', 'legs': 1, 'fl': 260, 'track_deg': 88,
+                                                      'margin_deg': 3, 'limit_deg': 90}, 'text': 'b'}
+_LVL_C = {'code': 'level_rule_no_variation', 'values': {'from_point': 'XQNOR', 'to_point': 'XQSUD', 'legs': 1, 'fl': 250}, 'text': 'c'}
+
+
+def _lvl_alt(i, name, ids, fl, **more):
+    """An alternative of F298 whose segments and points are the invented geometry above."""
+    segs = [_seg(a, b) for a, b in zip(ids, ids[1:])]
+    a = _alt(i, name, ' '.join(ids), 370, fl, segs, sid=False)
+    a['points'] = [{'id': p, 'lat': _LVL_PTS[p][0], 'lon': _LVL_PTS[p][1]} for p in ids]
+    return dict(a, violations=[], **more)
+
+
+def _lvl_rule(warnings=0, undecided=0, zones=(), table_missing=False):
+    return {'cycle': '2026-11-26', 'checked': 0 if table_missing else 3, 'warnings': warnings, 'undecided': undecided, 'zones': list(zones),
+            'unlocated': 0, 'legs': 3, 'table_missing': table_missing}
+
+
+@case('F298', 'Route step: the group « Niveau de croisière : {n} avertissement(s) » AFTER « Non vérifiable », in the warning tone, never '
+      'changing the verdict — its lines (a) a level outside the semicircular rule, (b) a track too near a cut, (c) a declination unknown; '
+      '{n} = levelRule.warnings, the title without a count when there is none; the note « Règle semi-circulaire : vérifiée en France '
+      'seulement. » out of the count, under the group or alone, and « … tableau de la France non lu … » in a computation of its own; the '
+      'mark « hors règle semi-circulaire » on the row of the warned route only',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0530 (the ergonomist, 21 Nov, ergonome_MOTS_SOG-0530_DECIDES.md: the place, the sentences (a) to (d), no count when n = 0, '
+      'the mark on the row of the route; the relay\'s reading of the captures: the tracks of the drawn legs, the parity of the table, the '
+      'table not read never next to checked routes); AeroDB lot B e45662187; a fake launcher, an invented route, points and values')
+def f298(c):
+    st = _route_launcher(c, ['route/compute'])
+    st['alts'] = [
+        _lvl_alt(1, 'Via UN10', ['LFRS', 'LUGEN', 'NEPIX', 'XQNOR', 'LFML'], 260, verdict='conform', unverifiable=[],
+                 warnings=[_LVL_A, _LVL_B], levelRule=_lvl_rule(1, 1, ['be'])),
+        _lvl_alt(2, 'Direct · FL250', ['LFRS', 'NEPIX', 'XQNOR', 'XQSUD', 'LFML'], 250, verdict='unverifiable',
+                 unverifiable=[{'code': 'network_gap', 'values': {'from_point': 'LFRS', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}],
+                 warnings=[_LVL_C], levelRule=_lvl_rule(0, 1)),
+        _lvl_alt(3, 'Direct · FL190', ['LFRS', 'LUGEN', 'LFML'], 190, verdict='conform', unverifiable=[], warnings=[], levelRule=_lvl_rule())]
+    want = {'fr': {'title': ['Niveau de croisière : 1 avertissement', 'Niveau de croisière'],
+                   'a': 'LUGEN → NEPIX, route au 123° : un niveau impair est attendu — FL250 ou FL270',
+                   'b': 'NEPIX → XQNOR, route au 088° : trop près de 090° pour dire si le FL260 convient',
+                   'c': 'XQNOR → XQSUD : déclinaison magnétique inconnue',
+                   'abroad': 'Règle semi-circulaire : vérifiée en France seulement.',
+                   'missing': 'Règle semi-circulaire : tableau de la France non lu — mettre les données à jour.',
+                   'mark': 'hors règle semi-circulaire'},
+            'en': {'title': ['Cruising level: 1 warning', 'Cruising level'],
+                   'a': 'LUGEN → NEPIX, track 123°: an odd level is expected — FL250 or FL270',
+                   'b': 'NEPIX → XQNOR, track 088°: too close to 090° to tell whether FL260 fits',
+                   'c': 'XQNOR → XQSUD: magnetic declination unknown',
+                   'abroad': 'Semicircular rule: checked in France only.',
+                   'missing': 'Semicircular rule: table of France not read — update the data.',
+                   'mark': 'outside the semicircular rule'},
+            # « Reiseflugfläche »: the word of Fuel's German for the cruise level (TX.level), not « Reiseflughöhe » (the relay)
+            'de': {'title': ['Reiseflugfläche: 1 Warnung', 'Reiseflugfläche'],
+                   'a': 'LUGEN → NEPIX, Kurs 123°: eine ungerade Flugfläche wird erwartet — FL250 oder FL270',
+                   'b': 'NEPIX → XQNOR, Kurs 088°: zu nah an 090°, um zu sagen, ob FL260 passt',
+                   'c': 'XQNOR → XQSUD: Ortsmissweisung unbekannt',
+                   'abroad': 'Halbkreisregel: nur in Frankreich geprüft.',
+                   'missing': 'Halbkreisregel: Tabelle Frankreichs nicht gelesen — Daten aktualisieren.',
+                   'mark': 'außerhalb der Halbkreisregel'},
+            'es': {'title': ['Nivel de crucero: 1 aviso', 'Nivel de crucero'],
+                   'a': 'LUGEN → NEPIX, rumbo 123°: se espera un nivel impar — FL250 o FL270',
+                   'b': 'NEPIX → XQNOR, rumbo 088°: demasiado cerca de 090° para saber si el FL260 conviene',
+                   'c': 'XQNOR → XQSUD: declinación magnética desconocida',
+                   'abroad': 'Regla semicircular: verificada solo en Francia.',
+                   'missing': 'Regla semicircular: tabla de Francia no leída — actualizar los datos.',
+                   'mark': 'fuera de la regla semicircular'}}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+            d[1]['level'] = {'ft': 26000}  # the level of the warned route
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 3", timeout=10000, what='the three verdicts')
+    G = lambda i: f'{A} [data-alt="{i}"] details[data-reasons=level]'
+    c.eq([norm(c.text(f'{G(i)} > summary') or '') for i in range(3)], [norm(want['title'][0]), norm(want['title'][1]), ''],
+         '{n} = levelRule.warnings; without one, the title has no count; no line, no group', what='titles')
+    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{G(0)} li, {G(1)} li')].map(e => e.textContent)")],
+         [norm(want['a']), norm(want['b']), norm(want['c'])], 'the lines (a), (b), (c): the place first, the degrees on three figures',
+         what='lines')
+    # never the verdict: the engine's word stays, (b) and (c) are never « Non vérifiable »
+    c.eq([c.js(f"document.querySelector('{A} [data-alt=\"{i}\"] [data-verdict]')?.dataset.verdict") for i in range(3)],
+         ['conform', 'unverifiable', 'conform'], 'the verdicts of the engine unchanged by the group', what='verdict')
+    c.eq(c.count(f'{A} [data-alt="1"] details[data-reasons=unverifiable] li'), 1, '(c) is not a line of « Non vérifiable »', what='apart')
+    c.eq(c.js(f"[...document.querySelectorAll('{A} [data-alt=\"1\"] details[data-reasons]')].map(d => d.dataset.reasons)"),
+         ['unverifiable', 'level'], 'the group after « Non vérifiable » (the least serious last)', what='order')
+    c.ok(c.js(f"document.querySelector('{G(0)} > summary').classList.contains('f-warn')"), 'tone', 'the warning tone of the suite')
+    c.eq([norm(c.text(f'{A} [data-alt="{i}"] [data-levelnote]') or '') for i in range(3)], [norm(want['abroad']), '', ''],
+         'the note « France only » under the group of the route that leaves France, nothing otherwise', what='note')
+    c.eq(c.count(f'{G(2)}'), 0, 'no group without a line (a), (b) or (c)', what='no group')
+    c.eq([norm(c.text(f'{A} [data-alt="{i}"] [data-semicirc]') or '') for i in range(3)], [norm(want['mark']), '', ''],
+         'the mark on the row of the route whose level is outside the rule, nothing on the others', what='mark')
+    # the captures: the row of the route with its mark at the top, its group open under it (the relay: the mark was scrolled off)
+    top = lambda i: c.js(f"""(() => {{ const e = document.querySelector('{A} [data-alt="{i}"]'); e.style.scrollMarginTop = '96px';
+        e.scrollIntoView({{block: 'start'}}) }})()""")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelectorAll('{A} details[data-reasons=level]').forEach(d => d.open = true)")
+        top(0)
+        c.ok(c.js(f"""(() => {{ const r = document.querySelector('{A} [data-alt="0"] [data-semicirc]').getBoundingClientRect();
+            return r.top >= 0 && r.bottom <= innerHeight && r.height > 0 }})()"""), 'off', 'the mark in the capture')
+        c.shot(f'F298_{c.design}_{w}_{c.lang}_warned.png')
+        top(1)
+        c.shot(f'F298_{c.design}_{w}_{c.lang}_nocount.png')
+    # the table of France not read: a computation of its own (the table is the same for every route), the note alone under each
+    st['alts'] = [_lvl_alt(1, 'Via UN10', ['LFRS', 'LUGEN', 'NEPIX', 'XQNOR', 'LFML'], 260, verdict='conform', unverifiable=[], warnings=[],
+                           levelRule=_lvl_rule(table_missing=True)),
+                  _lvl_alt(2, 'Direct · FL190', ['LFRS', 'LUGEN', 'LFML'], 190, verdict='conform', unverifiable=[], warnings=[],
+                           levelRule=_lvl_rule(table_missing=True))]
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    _compute_now(c, st)
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 2", timeout=10000, what='the new computation')
+    c.eq([norm(c.text(f'{A} [data-alt="{i}"] [data-levelnote]') or '') for i in range(2)], [norm(want['missing'])] * 2,
+         'the table not read: the note alone under every route, no group', what='table not read')
+    c.eq(c.count(f'{A} details[data-reasons=level]'), 0, 'no group without a line', what='no group (table)')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        top(0)
+        c.shot(f'F298_{c.design}_{w}_{c.lang}_notable.png')
+    c.check_errors()
+
+
+@case('F299', '« Auto » level: when the level kept is outside the semicircular rule (route/levels: semicircular « warning »), its sentence '
+      'ends with « — hors règle semi-circulaire »; the choice does not change; nothing for a level that follows the rule',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0530 (the ergonomist, 21 Nov: the suffix until AeroDB lot C; the relay\'s reading of the captures: a level the table really '
+      'refuses); AeroDB lot B e45662187 (semicircular per level); a fake launcher, an invented sheet and an invented arrival XQNE to the '
+      'north-east (053° true: « Auto » takes an ODD level, the UTA half 270–089 of the table expects an EVEN one)')
+def f299(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    mark = {'fr': '— hors règle semi-circulaire', 'en': '— outside the semicircular rule', 'de': '— außerhalb der Halbkreisregel',
+            'es': '— fuera de la regla semicircular'}[c.lang]
+    fl = f'{FUEL} input[data-k="fl"]'
+    L = f'{FUEL} [data-lvlwhy]'
+    ne = {'id': 'XQNE', 'lat': 50.5, 'lon': 5.0}
+
+    def auto_with(semi):
+        # the table's answer for the levels asked: in the UTA (above FL195) on 053°, an odd level is outside the rule
+        st['levels_rule'] = lambda lv: {'ok': True, 'levels': [dict(_lv(x, True), semicircular=semi if x > 195 and x // 10 % 2 else 'ok',
+                                                                    warnings=int(semi == 'warning' and x > 195 and x // 10 % 2 == 1))
+                                                               for x in lv], 'first_valid': lv[0], 'stopped': 'end', 'asked': len(lv)}
+        docs = flight_docs()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft']['sheetId'] = 'C30J'
+                r = d[1]['route']
+                r.update(arr='XQNE', text='LFRS XQNE', points=[r['points'][0], ne], distanceNm=330, trackDeg=53)
+        c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']], airfields=True,
+               aero_extra={'aerodromes': [{'icao': 'XQNE', 'name': 'XQNE TEST', 'lat': ne['lat'], 'lon': ne['lon'], 'elev': 100}]})
+        wait_quote(c)
+        to_step(c, 0)
+        n0 = len(st['posts'])
+        c.tap(f'{FUEL} [data-do="levelauto"]')
+        for _ in range(60):
+            got = [p.get('args') or {} for p in st['posts'][n0:] if 'levels' in (p.get('args') or {})]
+            if got:
+                return got[0]
+            c.wait(200)
+        raise Fail('no route/levels request', 'a request', 'none')
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    a = auto_with('warning')
+    lv = a.get('levels') or []
+    c.ok(lv and lv[0] > 195 and lv[0] // 10 % 2 == 1, lv, 'the first candidate of « Auto » on 053°: an odd level of the UTA (the table expects even)')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(lv[0]), what='the first candidate taken (the choice unchanged)')
+    c.until(f"(document.querySelector('{L} [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
+    c.ok(norm(mark) in norm(c.text(f'{L} [data-lvlmain]') or ''), c.text(f'{L} [data-lvlmain]'), 'the suffix at the end of the sentence')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F299_{c.design}_{w}_{c.lang}_outside.png')
+    auto_with('ok')
+    c.until(f"(document.querySelector('{L} [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
+    c.ok(norm(mark) not in norm(c.text(f'{L} [data-lvlmain]') or ''), c.text(f'{L} [data-lvlmain]'), 'nothing for a level that follows the rule')
+    c.check_errors()
