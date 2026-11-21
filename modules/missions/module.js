@@ -48,7 +48,8 @@ export const meta = {
     'draft.js',
     'editor_drawers.js', 'catalog.js', 'catalog.yaml', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
-    'reader.js', 'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
+    'reader.js',
+    'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
@@ -337,7 +338,7 @@ const TX = {
   // « Ajouter des missions » (SOG-0212 b) : choisir ou coller du YAML, voir ce qui est lu, puis écrire
   add: ['Ajouter des missions', 'Add missions', 'Missionen hinzufügen', 'Añadir misiones'],
   addHint: [
-    'Un ou plusieurs fichiers YAML de missions (un fichier peut en porter plusieurs), ou un YAML collé. Rien n’est écrit avant « Ajouter ».',
+    'Un ou plusieurs fichiers YAML de missions (un fichier peut en contenir plusieurs), ou un YAML collé. Rien n’est écrit avant « Ajouter ».',
     'One or more YAML mission files (a file may hold several), or a pasted YAML. Nothing is written before « Add ».',
     'Eine oder mehrere YAML-Missionsdateien (eine Datei kann mehrere enthalten) oder eingefügtes YAML. Vor „Hinzufügen“ wird nichts geschrieben.',
     'Uno o varios archivos YAML de misiones (un archivo puede contener varias), o un YAML pegado. Nada se escribe antes de «Añadir».'

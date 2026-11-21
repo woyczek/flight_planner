@@ -3157,6 +3157,44 @@ def n207(c):
         c.js(_REG_CLEAR)
 
 
+@case('N208', 'Missions › the screen texts say « compter », « avoir », « contenir », never « porter » in the sense of carry (the user, 21 Nov: correct French; '
+      'textes_CALQUES_porter_2026-11-21.md, section A): the four texts of the limits and of the import, written in clear in four languages', 'N', tags=('missions',),
+      static=True, rule='the user, 21 Nov 2026: « porter » in the sense of carry / bear is banned from the screen texts')
+def n208(c):
+    from lib import tx_row
+    expected = {
+        (EDTX_FILE, 'rtFull'): ('Une route compte soixante lieux au plus.', 'A route has sixty places at most.', 'Eine Route hat höchstens sechzig Orte.',
+                                'Una ruta tiene sesenta lugares como máximo.'),
+        (EDTX_FILE, 'atPutFull'): ('Un essai compte vingt placements au plus : « Recommencer » les oublie.', 'A trial has twenty placements at most: « Start again » forgets them.',
+                                   'Ein Versuch hat höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
+                                   'Una prueba tiene veinte colocaciones como máximo: «Volver a empezar» las olvida.'),
+        (EDTX_FILE, 'atPoseFull'): ('La mission a déjà le nombre maximal de lieux de cette sorte.', 'The mission already has the maximum number of places of this kind.',
+                                    'Die Mission hat bereits die Höchstzahl an Orten dieser Art.', 'La misión ya tiene el número máximo de lugares de este tipo.'),
+    }
+    for (path, key), want in expected.items():
+        c.eq(tuple(norm(x) for x in tx_row(path, key)), tuple(norm(x) for x in want), f'{key}: the text of the limit in four languages, without « porter » / carries / trägt / lleva',
+             what=key)
+    hint = norm(tx_row(MS, 'addHint')[0])
+    c.ok('(un fichier peut en contenir plusieurs)' in hint, hint, 'addHint (French): « un fichier peut en contenir plusieurs »')
+    # no French screen text of the two files uses the verb (« portée », the range of an object, is a noun and stays)
+    verb = re.compile(r"\b(?:port(?:e|es|ent|er|ons|ez|ait|aient)|portés?)\b")
+    hits = []
+    for path in (EDTX_FILE, MS):
+        for key in re.findall(r"^  (\w+): \[", io_text(c, path), flags=re.M):
+            try:
+                fr = tx_row(path, key)[0]
+            except Exception:  # noqa: BLE001 — a row that is not a table of four texts
+                continue
+            if verb.search(fr):
+                hits.append(f'{key}: {fr[:80]}')
+    c.ok(not hits, hits, 'no French screen text of editor_texts.js or module.js says « porter » (carry)')
+
+
+def io_text(c, path):
+    """The text of a file of the repository (read as it is, never run)."""
+    return (c.root / path).read_text(encoding='utf-8')
+
+
 @case('N203', 'Missions › the workshop, the menu of the route offers only what the reader resolves (SOG-0543): « Ajouter un lieu… » of the route of the departure and of the onward route of a drawer '
       'offer no object and no Arrival (nor Departure); a file that ALREADY cites an object and DESTINATION in an onward route opens, is saved without touching anything byte for byte, and a change of '
       'the title keeps those tokens (read as data); the itinerary shows no line for them and does not fail', 'N',

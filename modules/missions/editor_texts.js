@@ -705,8 +705,8 @@ export const EDTX = {
     'This place has no identifier: it does not enter a route.',
     'Dieser Ort hat keine Kennung: er kommt nicht in eine Route.', 'Este lugar no tiene identificador: no entra en una ruta.'
   ],
-  rtFull: ['Une route porte soixante lieux au plus.', 'A route carries sixty places at most.', 'Eine Route trägt höchstens sechzig Orte.',
-    'Una ruta lleva sesenta lugares como máximo.'
+  rtFull: ['Une route compte soixante lieux au plus.', 'A route has sixty places at most.', 'Eine Route hat höchstens sechzig Orte.',
+    'Una ruta tiene sesenta lugares como máximo.'
   ],
   atTool_zone: ['Zone', 'Zone', 'Zone', 'Zona'],
   atTool_object: ['Objet', 'Object', 'Objekt', 'Objeto'],
@@ -802,10 +802,10 @@ export const EDTX = {
     'Toque el mapa: la aeronave de la prueba se pone ahí, a H + {m} min.'
   ],
   atPut: ['Placer l\'avion ici', 'Place the aircraft here', 'Luftfahrzeug hier setzen', 'Poner la aeronave aquí'],
-  atPutFull: ['Un essai porte vingt placements au plus : « Recommencer » les oublie.',
-    'A trial carries twenty placements at most: « Start again » forgets them.',
-    'Ein Versuch trägt höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
-    'Una prueba lleva veinte colocaciones como máximo: «Volver a empezar» las olvida.'
+  atPutFull: ['Un essai compte vingt placements au plus : « Recommencer » les oublie.',
+    'A trial has twenty placements at most: « Start again » forgets them.',
+    'Ein Versuch hat höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
+    'Una prueba tiene veinte colocaciones como máximo: «Volver a empezar» las olvida.'
   ],
   // « Chercher un repère » par son nom : un champ sous la carte ; la vue se centre sur le repère trouvé, dit et cerclé comme un repère touché
   atSeek: ['Chercher un repère', 'Find a landmark', 'Orientierungspunkt suchen', 'Buscar una referencia'],
@@ -843,10 +843,10 @@ export const EDTX = {
   atHint_none: ['Sans carte, les lieux se placent par leurs champs.', 'Without a map, the places are set by their fields.',
     'Ohne Karte werden die Orte über ihre Felder gesetzt.', 'Sin mapa, los lugares se sitúan por sus campos.'
   ],
-  atPoseFull: ['La mission porte déjà autant de lieux de cette sorte qu\'elle le peut.',
-    'The mission already carries as many places of this kind as it can.',
-    'Die Mission trägt bereits so viele Orte dieser Art wie möglich.',
-    'La misión ya lleva tantos lugares de este tipo como puede.'
+  atPoseFull: ['La mission a déjà le nombre maximal de lieux de cette sorte.',
+    'The mission already has the maximum number of places of this kind.',
+    'Die Mission hat bereits die Höchstzahl an Orten dieser Art.',
+    'La misión ya tiene el número máximo de lugares de este tipo.'
   ],
   // SOG-0459, l'atelier voilé : « Dévoiler la mission complète » est sur TOUTE mission ouverte voilée (le bouton de l'itinéraire)
   veilBtn: ['Dévoiler la mission complète', 'Reveal the whole mission', 'Die ganze Mission aufdecken', 'Desvelar la misión completa'],
