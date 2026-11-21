@@ -47,6 +47,25 @@ def _layer(leg):
     return 'LOW' if isinstance(upper, (int, float)) and upper <= LOW_CEILING_FT else 'HIGH'
 
 
+def _broken(result, legs):
+    """{ indice du tronçon : phrase } des tronçons qui enfreignent une règle CONNUE du RAD : les constats de l'annexe 2B (leurs tronçons), le raccord de départ ou d'arrivée au-delà de sa limite, un direct trop long dans un espace (ses deux points)."""
+    out = {}
+    for f in (result.get('rad_summary') or {}).get('findings') or []:
+        for i in f.get('segments') or []:
+            if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(legs):
+                out.setdefault(i, f"règle RAD {str(f.get('id'))[:20]} enfreinte")
+    for x in ((result.get('dct_limits') or {}).get('checked') or []):
+        if x.get('state') == 'exceeded':
+            out.setdefault(len(legs) - 1 if x.get('end') == 'arr' else 0, f"raccord de {x.get('leg_nm')} NM au-delà de la limite du RAD ({str(x.get('rule'))[:20]})")
+    for i in result.get('issues') or []:
+        v = i.get('values') or {}
+        if i.get('level') == 'ERREUR' and i.get('code') == 'space_dct_limit':
+            for n, l in enumerate(legs):
+                if str(l['start']['id']) == str(v.get('from_point')) and str(l['end']['id']) == str(v.get('to_point')):
+                    out.setdefault(n, 'direct trop long dans un espace (RAD)')
+    return out
+
+
 def annotate(result, rad):
     """Classe les tronçons de `result` (un résultat d'engine.assess) et pose `control` ; rend ce dictionnaire, ou None sans tronçon. Ne lève jamais : un résultat qu'on ne sait pas lire reste tel quel."""
     try:
@@ -80,6 +99,8 @@ def annotate(result, rad):
             if l.get('compatible') is False or l.get('vertical_errors') or l.get('alerts') and control == 'controlled':
                 control, why = 'error', (str((l.get('alerts') or l.get('vertical_errors') or ['erreur de contrôle'])[0])[:160])
             l['control'], l['layer'], l['control_reason'] = control, layer, why
+        for index, why in _broken(result, legs).items():      # SOG-0537 (b) : le PLUS GRAVE l'emporte : un tronçon qui enfreint une règle CONNUE du RAD (un raccord au-delà de sa limite, une règle de l'annexe 2B, un direct trop long dans un espace) est « en infraction », avant « sans réseau » ou « DCT non contrôlé »
+            legs[index]['control'], legs[index]['control_reason'] = 'error', why
         sections = []
         for i, l in enumerate(legs):
             nm = float(l.get('nm') or 0)

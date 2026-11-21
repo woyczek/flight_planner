@@ -260,9 +260,26 @@ def not_verified(rad, legs, dep, arr, candidates, known_ids=None, airway=None):
             if len(entry['items']) < MAX_NV_ITEMS:
                 found = reasons_of(values)
                 entry['items'].append(dict(id=rule.get('id'), sheet=rule.get('sheet'), row=rule.get('row'), reason=found[0], reasons=found, **({'target': leg_label(legs[flown_legs[0]])} if flown_legs else {})))      # SOG-0532 lot 2 bis : `target`, l'élément de la ROUTE visé par la règle (le premier tronçon touché ; absent si la règle n'a pas de tronçon)
-    out = [s for s in states.values() if s['flown'] or s['spaces_only']]
+    crossed = crossed_states(legs, dep, arr)
+    out = [s for s in states.values() if s['flown'] or (s['spaces_only'] and s['state'] in crossed)]      # SOG-0537 (c) : seuls les États TRAVERSÉS (une règle dont la cible est volée en est la preuve ; sinon : le terrain de départ ou d'arrivée, une cellule FRA, la zone d'une voie) : plus de « LC, RE, LS, LF… » pour une route qui ne les traverse pas
     out.sort(key=lambda s: (-s['flown'], -s['spaces_only'], s['state']))
     return out[:MAX_NV_STATES]
+
+
+ZONE_PREFIXES = {'de': ('ED', 'ET'), 'fr': ('LF',), 'gb': ('EG',), 'es': ('LE', 'GC'), 'pt': ('LP',), 'it': ('LI',), 'be': ('EB',), 'nl': ('EH',), 'lu': ('EL',), 'ch': ('LS',), 'at': ('LO',), 'cz': ('LK',), 'pl': ('EP',), 'sk': ('LZ',), 'hu': ('LH',), 'ro': ('LR',), 'bg': ('LB',), 'gr': ('LG',), 'tr': ('LT',), 'hr': ('LD',), 'si': ('LJ',), 'rs': ('LY',), 'me': ('LY',), 'ba': ('LQ',), 'mk': ('LW',), 'al': ('LA',), 'ie': ('EI',), 'dk': ('EK',), 'no': ('EN',), 'se': ('ES',), 'fi': ('EF',), 'is': ('BI',), 'ee': ('EE',), 'lv': ('EV',), 'lt': ('EY',), 'ua': ('UK',), 'by': ('UM',), 'md': ('LU',), 'mt': ('LM',), 'cy': ('LC',)}      # SOG-0537 : la zone de la base (le pays) -> les préfixes ICAO des États du RAD
+
+
+def crossed_states(legs, dep, arr):
+    """SOG-0537 (c) : les États (préfixes de deux lettres des références du RAD) que la route traverse, tels que la route les dit : le terrain de départ et celui d'arrivée, la cellule FRA d'un tronçon de route libre (« LFFRASW » : LF), la zone de la base d'où vient la voie d'un tronçon. Un ensemble ; jamais d'exception."""
+    out = {str(x)[:2].upper() for x in (dep, arr) if x}
+    for leg in legs or []:
+        area = str(leg.get('fra_area') or '')
+        if len(area) >= 2 and area[:2].isalpha():
+            out.add(area[:2].upper())
+        zone = leg.get('source_zone')
+        if isinstance(zone, str):
+            out.update(ZONE_PREFIXES.get(zone, ()))
+    return out
 
 
 def leg_label(leg):

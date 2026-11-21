@@ -362,9 +362,9 @@ def plan(request, root):
             pass
     if request.get('mode', 'calculate') == 'calculate' and primary.get('ok'):
         # SOG-0532 (3) (l'ergonome, 20 nov.) : plus de rétrogradation. Une règle CONNUE enfreinte est une ERREUR, pour une route calculée comme pour une route tapée ; si les reprises RAD n'ont rien trouvé de conforme, le moteur le DIT (une revue avec le nombre de règles) et rend la meilleure route, marquée fautive (`verdict: violates`) : elle n'est jamais « valide » et « Auto » ne la retient pas
-        broken = [i for i in primary.get('issues', []) if i['level'] == 'ERREUR' and i.get('code') in ('rad_block', 'rad_rule')]
-        if broken and not any(i.get('code') == 'no_conforming_route' for i in primary['issues']):
-            primary['issues'].insert(0, {'level': 'REVUE', 'code': 'no_conforming_route', 'values': {'violations': len(broken)}, 'text': f'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue, elle enfreint {len(broken)} règle(s) connue(s) (listées dans les erreurs) : Eurocontrol refusera ce plan.'})
+        issue = no_conforming_issue(primary.get('issues', []))
+        if issue and not any(i.get('code') == 'no_conforming_route' for i in primary['issues']):
+            primary['issues'].insert(0, issue)
     for x in avoids if request.get('mode', 'calculate') == 'calculate' else []:      # SOG-0354 L5 (4) défaut 4 : un point écarté est un DÉTOUR : la réponse le dit, avec les deux distances
         if x.get('fallback') and primary.get('distance_nm') and head_nm:
             primary.setdefault('issues', []).append({'level': 'REVUE', 'text': f"Point {x['point']} écarté (règle RAD {x['id']} : passer par le point obligatoire n'a pas abouti) : détour de {primary['distance_nm'] - head_nm:+.0f} NM ({head_nm:.0f} → {primary['distance_nm']:.0f} NM)."})
@@ -589,6 +589,20 @@ def compute(request, data, rad_file, fra_file):
     finally:
         engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.STATE_CEIL = None
         engine.SEARCH_CAP_S = 120.0
+
+
+BROKEN_RAD_CODES = ('rad_block', 'rad_rule', 'connector_limit', 'space_dct_limit')      # SOG-0537 : les règles du RAD CONNUES et enfreintes (l'annexe 2B, la limite de raccord, la limite d'un direct dans un espace)
+
+
+def no_conforming_issue(issues):
+    """SOG-0537 (a) : la revue « aucune route sans infraction » : { level, code: no_conforming_route, values: { violations, rad_rules, connectors, space_dct, ids }, text } ; None quand aucune règle connue n'est enfreinte. `violations` compte TOUTES les règles du RAD enfreintes (la règle de l'annexe 2B, la limite d'un raccord, la limite d'un direct dans un espace) : le compte de la phrase est celui des erreurs listées (avant : seules les règles de l'annexe 2B, « 1 règle » pour une route qui en enfreint 2 ; les valeurs ne sont plus vides) ; `ids` : les références des règles de l'annexe 2B (au plus 10)."""
+    broken = [i for i in issues if i.get('level') == 'ERREUR' and i.get('code') in BROKEN_RAD_CODES]
+    if not broken:
+        return None
+    count = lambda *codes: sum(1 for i in broken if i['code'] in codes)
+    ids = [str((i.get('values') or {}).get('id')) for i in broken if i['code'] in ('rad_block', 'rad_rule') and (i.get('values') or {}).get('id')][:10]
+    return {'level': 'REVUE', 'code': 'no_conforming_route', 'values': {'violations': len(broken), 'rad_rules': count('rad_block', 'rad_rule'), 'connectors': count('connector_limit'), 'space_dct': count('space_dct_limit'), 'ids': ids},
+            'text': f'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue, elle enfreint {len(broken)} règle(s) connue(s) (listées dans les erreurs) : Eurocontrol refusera ce plan.'}
 
 
 MAX_LEVELS = 12      # SOG-0529 (le niveau « Auto » de Carburant) : au plus douze niveaux par appel

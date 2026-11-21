@@ -19762,3 +19762,91 @@ def k496(c):
     allok = run([(350, True, 'ok'), (330, True, 'warning')])
     c.eq([(x['no_conforming_valid'], x['conforming_tried'], x['first_valid_conforming'], x['first_valid']) for x in (both, one, none, allok)], [(True, [340, 350], None, 330), (False, [350], 350, 330), (False, [], None, 330), (False, [350], 350, 350)],
          '`no_conforming_valid` is true only when conforming levels were TRIED, none has a valid route, and a valid level outside the rule exists: that is why « Auto » keeps FL330; `conforming_tried` lists the levels tried that follow the rule; `first_valid_conforming` is the first valid level that follows it (the screen reads them, it does not deduce)', what='no conforming valid')
+
+
+@case('K497', 'Route engine, SOG-0535: a leg of FREE ROUTE (a direct of the FRA book) whose band does not reach the filed level is EXCLUDED at the constant level, like an airway — no level-off the user did not ask for (before: the engine took a direct of band FL245-FL315 in a cruise at FL330, levelled off at FL315 for its whole length and said it only in a review « profil adapté aux plafonds »); inside the band the direct is taken as before',
+      'K', static=True,
+      rule='SOG-0535 (the ergonomist, 21 Nov, replay of EGGW → LQSA at FL330: the direct REDFA–NOMKA of 300 NM, band FL245-FL315, taken in a cruise at FL330; the profile dropped to FL315 for 300 NM and the written route said nothing; against decision 1 of 20 Nov, « le niveau écrit est le niveau demandé »: « un tronçon de croisière dont la bande exclut le niveau demandé est EXCLU, direct de route libre compris ; FL315 n\'est pas un niveau »). Measured on the real base (EGGW → LQSA FL330, no network): before, REDFA–NOMKA taken with a plateau of 300 NM at 31 500 ft; after, the route goes round it by REDFA–VALKO–SUSET–RKN–AMSAN–POVEL (bands from FL245 or FL285 to FL660, the legs at FL330) and the review « profil adapté aux plafonds » is gone',
+      )
+def k497(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    fir = lambda ident, lat, lon, role, term, arr, dep, band: ['', '', ident, lat, lon, 'TESTFRA', role, term, arr, dep, '-', band, 'H24', 'XXXX', '']
+
+    def fly(band, fl):
+        rows = [fir('GATED', 'N570000', 'E0170000', 'I', 'D', '', 'XSTA', band), fir('GATEA', 'N520000', 'E0100000', 'I', 'A', 'XEND', '', band)]
+        book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': i + 2, 'v': v} for i, v in enumerate(rows)]}
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+                ai = json.load(f)
+            ai['data']['rows'] += [['XSTA', 'DEPART', 59.0, 18.0, 20, 0, 0], ['XEND', 'ARRIVE', 50.0, 10.0, 300, 0, 0]]
+            with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+                json.dump(ai, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([book], f)
+            request = V.to_request({'action': 'compute', 'adep': 'XSTA', 'adest': 'XEND', 'fl': fl, 'date': '2026-11-10T12:00', 'enable_fra': True, 'alternatives': False, 'proposals': False})
+            return P.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+    low = 'FL245 / FL315'
+    inside, above = fly(low, 300), fly(low, 330)
+    fra = [l for l in inside.get('legs') or [] if l.get('kind') == 'FRA']
+    c.eq((inside.get('ok'), [round(l['altitude_start_ft']) for l in fra], any('plafond' in i['text'] for i in inside.get('issues') or [])), (True, [30000], False), 'FL300 is inside the band FL245-FL315: the direct is taken, at FL300, with no review of ceiling', what='inside the band')
+    c.eq((above.get('ok'), (above.get('error') or '')[:40]), (False, 'Aucune route trouvée sur le réseau dispo'), 'FL330 is above the band FL245-FL315: the direct is EXCLUDED (no route at that level), not taken with a level-off at FL315 (red before: ok, a plateau at 31 500 ft and a review « profil adapté aux plafonds »)', what='above the band')
+    high = fly('FL285 / FL660', 330)
+    c.eq((high.get('ok'), [round(l['altitude_start_ft']) for l in high.get('legs') or [] if l.get('kind') == 'FRA']), (True, [33000]), 'a direct whose band reaches the level (FL285-FL660) is taken at FL330 as before', what='band reaches the level')
+
+
+@case('K498', 'Route engine, SOG-0537: three contract defects mended — (a) `no_conforming_route` counts EVERY known broken rule of the RAD (the rule of the annex 2B, a connector over its limit, a direct too long in a space) and carries its values (before: it counted only the rules of the annex 2B, « 1 règle » for a route that breaks 2); (b) in the share of the check the WORST wins: a leg that breaks a known rule is « in breach » before « no network » (before: « en infraction 0 % » with a connector of 327 NM over its limit of 45); (c) `rad_unread` is given only for the States the route CROSSES (before: LC, RE, LS, LF… for a route that does not cross them)',
+      'K', static=True,
+      rule='SOG-0537 (the ergonomist, 21 Nov, replay of EGGW → LQSA at FL330 on cbe2c160b: « no_conforming_route arrive avec values vides et son texte dit « 1 règle » quand il y en a 2 ; le partage rend « en infraction 0 % » alors que le raccord de 327 NM est une infraction ; rad_unread est rendu pour des États que la route ne traverse pas (LC, RE, LS, LF…) » ; « le plus grave l\'emporte dans le partage : en infraction avant sans réseau ; rad_unread : seulement les États traversés »). Measured on the real flight after the lot: no_conforming_route says 3 rules (2 of the annex 2B and the connector) with its values; the STAR section of 327 NM is « error » (30.8 % of the route in breach, the fallback share 2 %); the States of `rad_unread` go from nine to six (ED EG EH LO LQ YX: LC, RE, LS, LF, LD are gone)',
+      )
+def k498(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, layered as LY, rad_flight as RF
+    err = lambda code, **v: {'level': 'ERREUR', 'code': code, 'values': v, 'text': 'x'}
+    issues = [err('rad_rule', id='ED3167'), err('rad_rule', id='LO2196'), err('connector_limit', ad='LQSA', nm=327.3), err('space_dct_limit', from_point='A', to_point='B'), err('level_yoyo'), {'level': 'REVUE', 'code': 'rad_rule', 'values': {'id': 'X'}, 'text': 'x'}, err('rad_block', id='EB1')]
+    out = P.no_conforming_issue(issues)
+    c.eq((out['code'], out['level'], out['values'], '5 règle(s)' in out['text']), ('no_conforming_route', 'REVUE', {'violations': 5, 'rad_rules': 3, 'connectors': 1, 'space_dct': 1, 'ids': ['ED3167', 'LO2196', 'EB1']}, True), '(a) every known broken rule of the RAD is counted (the annex 2B, the connector, the direct in a space; not a yoyo, not a review), the sentence says the same number, and the values carry the counts and the references (red before: « 3 règle(s) » for these 5 and only `violations`)', what='counts')
+    c.eq((P.no_conforming_issue([]), P.no_conforming_issue([err('level_yoyo')]), len(P.no_conforming_issue([err('rad_rule', id=f'R{n}') for n in range(50)])['values']['ids'])), (None, None, 10), 'nothing broken: no review; the references are bounded at 10', what='none and bound')
+
+    def leg(a, b, nm, via='DCT', **more):
+        return dict(start={'id': a}, end={'id': b}, via=via, kind='AIRWAY' if via != 'DCT' else 'DCT', nm=nm, **more)
+    legs = lambda: [leg('DEP', 'A', 20), leg('A', 'B', 100, via='UL1', upper=66000), leg('B', 'C', 100, via='UL1', upper=66000), leg('C', 'ARR', 300)]
+    shares = lambda r: {k: r['control'][k] for k in ('controlled_pct', 'fallback_pct', 'error_pct')}
+    base = {'legs': legs(), 'issues': []}
+    LY.annotate(base, None)
+    c.eq([l['control'] for l in base['legs']], ['fallback', 'controlled', 'controlled', 'fallback'], 'without a broken rule the connectors are « fallback » (no network, no SID): the classes of before', what='no breach')
+    worse = {'legs': legs(), 'issues': [], 'dct_limits': {'checked': [{'state': 'exceeded', 'end': 'arr', 'leg_nm': 300, 'rule': 'LQ_LIM_AD'}, {'state': 'within', 'end': 'dep'}]}}
+    LY.annotate(worse, None)
+    c.eq(([l['control'] for l in worse['legs']], round(shares(worse)['error_pct']), round(shares(worse)['fallback_pct'])), (['fallback', 'controlled', 'controlled', 'error'], 58, 4), '(b) the arrival connector over its limit is « error », whatever its class before (« no network »): 300 of 520 NM in breach (58 %), the fallback share is the departure connector only (red before: error 0 %)', what='connector')
+    rule = {'legs': legs(), 'issues': [], 'rad_summary': {'findings': [{'id': 'LO2196', 'segments': [1, 2]}, {'id': 'BAD', 'segments': [True, -1, 99, 'x', None, 1.5]}]}}
+    LY.annotate(rule, None)
+    c.eq([l['control'] for l in rule['legs']], ['fallback', 'error', 'error', 'fallback'], 'a finding of the annex 2B puts its legs « in breach »; a hostile index (a boolean, negative, out of range, a string, None, a float) is ignored and raises nothing', what='finding')
+    space = {'legs': legs(), 'issues': [{'level': 'ERREUR', 'code': 'space_dct_limit', 'values': {'from_point': 'C', 'to_point': 'ARR'}, 'text': 'x'}]}
+    LY.annotate(space, None)
+    c.eq([l['control'] for l in space['legs']][3], 'error', 'a direct too long in a space puts its leg « in breach »', what='space')
+    # (c) the States crossed
+    zlegs = [dict(source_zone='de'), dict(source_zone='gb'), dict(kind='FRA', fra_area='LFFRASW'), dict(source_zone='xx'), dict(source_zone=['de'], fra_area=7), dict(fra_area='E')]
+    c.eq((sorted(RF.crossed_states(zlegs, 'EGGW', 'LQSA')), RF.crossed_states([], '', None), RF.crossed_states(None, 'LFPG', 'LFMN')), (['ED', 'EG', 'ET', 'LF', 'LQ'], set(), {'LF'}), '(c) the States crossed: the departure and the arrival aerodromes, a French FRA cell (LF), the zone of an airway (de: ED and ET); an unknown zone, a list, a number, a one-letter area: nothing and no exception', what='crossed')
+    row = lambda rid, target, state, clock='H24': ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, '', '', '', target, 'NOT AVBL FOR TFC', clock, 'S', 'invented', '', 'ACC', state]
+    rules = [row('ZZ3006', 'ZZFIRAA', 'ZZ'), row('ZY3006', 'ZYFIRAA', 'ZY'), row('ZZ3002', 'P2', 'ZZ', 'ZZD999D NOT ACT')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules)
+        request = V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+        p = P.compute(request, data, rad, None)['primary']
+    c.eq(([x['state'] for x in p.get('not_verified') or []], sorted(x['values']['state'] for x in p.get('unverifiable') or [] if x['code'] == 'rad_unread')), (['ZZ'], ['ZZ']), 'a rule aimed at a space of a State that the route does NOT cross (ZY: no leg, no aerodrome, no FRA cell, no zone) is not counted: only ZZ (the aerodromes of the flight) remains (red before: ZY also)', what='integration')

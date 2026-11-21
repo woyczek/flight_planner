@@ -453,7 +453,10 @@ class Nav:
             return False
         def low_factor(u,v,e):
             """SOG-0161 (LFOE → KTPA : de JFK à Tampa, 700 NM en V et T à 17 500 ft pour un vol au FL370) : une voie BASSE (plafond sous le niveau demandé) ne se prend pas hors de la montée du départ et de la descente vers l'arrivée : son coût est multiplié (jamais interdite : un maillon bas peut être la seule liaison)."""
-            if not flight or e.get('kind') not in (None,'AIRWAY') or e.get('route')=='DCT' or e.get('connector'):return 1
+            if not flight or e.get('connector'):return 1
+            if e.get('kind')=='FRA':      # SOG-0535 : un direct de route libre a une BANDE (le classeur FRA) comme une voie : au niveau CONSTANT il est exclu quand la bande n'atteint pas le niveau (jamais un palier que l'utilisateur n'a pas demandé : FL315 sous un vol au FL330) ; hors du niveau constant (paliers demandés) il garde son coût d'avant
+                if not strict:return 1
+            elif e.get('kind') not in (None,'AIRWAY') or e.get('route')=='DCT':return 1
             top=max(self.edge_band(e,'start')[1],self.edge_band(e,'end')[1])
             if top>=cruise-self.LOW_MARGIN_FT:return 1
             ds=from_start.get(u)
