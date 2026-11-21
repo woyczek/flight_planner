@@ -9573,6 +9573,70 @@ def d275(c):
     c.eq(r['why'], [['rwy-unread', 'aids-unread', 'wx-unread'], ['rwy-unread'], ['aids-unread'], ['aids-visual', 'wx-ifr']], 'the closed list, in Fuel’s order: the two new reasons are kept, each alone too; an unknown one is dropped', what=str(r['why']))
     c.eq(r['words'], {'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'], 'aids-unread': ['moyens non vérifiés', 'aids not checked', 'Navigationshilfen nicht geprüft', 'medios no comprobados']}, 'their words, as Fuel writes them, in the four languages', what=str(r['words']))
 
+# SOG-0544: the whole sentences of Fuel (TX.altnWhy), written here in clear (never read from the texts of a module)
+_ALTN_WX_WORDS = {
+    'wx-notaf': ['Météo : non vérifiée — aucun TAF lu pour ce terrain.', 'Weather: not checked — no TAF read for this aerodrome.',
+                 'Wetter: nicht geprüft — kein TAF für diesen Flugplatz gelesen.', 'Meteorología: no comprobada — ningún TAF leído para este aeródromo.'],
+    'wx-notime': ['Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue).',
+                  'Weather: not checked — the flight’s date or duration is missing (the time of arrival at the alternate is unknown).',
+                  'Wetter: nicht geprüft — Datum oder Dauer des Flugs fehlt (Ankunftszeit am Ausweichflugplatz unbekannt).',
+                  'Meteorología: no comprobada — falta la fecha o la duración del vuelo (hora de llegada al alternativo desconocida).'],
+    'wx-outside': ['Météo : non vérifiée — l’arrivée au dégagement ({at}) sort de la validité du TAF.',
+                   'Weather: not checked — the arrival at the alternate ({at}) is outside the TAF’s validity.',
+                   'Wetter: nicht geprüft — die Ankunft am Ausweichflugplatz ({at}) liegt außerhalb der Gültigkeit des TAF.',
+                   'Meteorología: no comprobada — la llegada al alternativo ({at}) queda fuera de la validez del TAF.'],
+    'wx-nocat': ['Météo : non vérifiée — le TAF ne donne ni plafond ni visibilité entre {a} et {b}.',
+                 'Weather: not checked — the TAF gives neither ceiling nor visibility between {a} and {b}.',
+                 'Wetter: nicht geprüft — das TAF nennt weder Wolkenuntergrenze noch Sicht zwischen {a} und {b}.',
+                 'Meteorología: no comprobada — el TAF no da techo ni visibilidad entre {a} y {b}.'],
+}
+
+
+@case('D302', 'The alternates Fuel proposes (SOG-0544): the four weather reasons wx-notaf, wx-notime, wx-outside, wx-nocat are known to the Map, in Fuel’s order, with Fuel’s whole sentences in the four languages; their hours (wxv { at } | { a, b }) are read by a strict pattern HH:MMZ and own keys only: an hour out of the pattern drops the reason of that terrain, which stays « to check »; a weather that is not known is « warn », never « ok »', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0544 (the relay, 21 Nov: option (a), the existing sentences, wxv HH:MMZ only, read as an untrusted input — ^\\d{2}:\\d{2}Z$ and own(); BUGS SOG\'s conditions: red cases first, rwy-unread, aids-unread and D259 unchanged); Features SOG writes the closed list of the Map in this lot')
+def d302(c):
+    _me_open(c)
+    r = c.js("""async () => { const A = await import('/modules/maps/altn.js'), T = (await import('/modules/maps/texts.js')).TX.altnWhy,
+        t = (icao, why, state, wxv) => ({ icao, name: icao, lat: 43.5, lon: 5.2, state, nm: 10, why, ...(wxv === undefined ? {} : { wxv }) });
+      const d = A.altnSanitize({ schema: 1, arr: 'LFML', list: [
+        t('XQAA', ['wx-notaf'], 'ok'), t('XQAB', ['wx-notime'], 'warn'), t('XQAC', ['aids-unread', 'wx-outside'], 'warn', { at: '14:20Z' }),
+        t('XQAD', ['wx-nocat'], 'warn', { a: '13:00Z', b: '15:00Z' }), t('XQAE', ['wx-outside'], 'warn', { at: '<b>14:20Z</b>' }),
+        t('XQAF', ['wx-nocat'], 'ok', Object.create({ a: '13:00Z', b: '15:00Z' })), t('XQAG', ['wx-unread'], 'ok', { at: 1420 })] });
+      return { rows: d.list.map(x => [x.icao, x.state, x.why, x.wxv || {}]), words: Object.fromEntries(['wx-notaf', 'wx-notime', 'wx-outside', 'wx-nocat'].map(k => [k, T[k]])) } }""")
+    c.eq(r['rows'], [['XQAA', 'warn', ['wx-notaf'], {}], ['XQAB', 'warn', ['wx-notime'], {}], ['XQAC', 'warn', ['aids-unread', 'wx-outside'], {'at': '14:20Z'}],
+                     ['XQAD', 'warn', ['wx-nocat'], {'a': '13:00Z', 'b': '15:00Z'}], ['XQAE', 'warn', [], {}], ['XQAF', 'warn', [], {}], ['XQAG', 'warn', ['wx-unread'], {}]],
+         'the four codes kept (red before: dropped as unknown); a weather not known is « warn » even when the document says « ok »; an hour out of the pattern (a tag) or inherited (not an own key) drops the reason, the terrain stays « to check »', what=str(r['rows']))
+    c.eq(r['words'], _ALTN_WX_WORDS, 'Fuel’s whole sentences, in the four languages', what=str(r['words']))
+
+
+@case('D303', 'The sheet of a proposed alternate says the weather reason with Fuel’s whole sentence and its hour (SOG-0544): « to check », never « suitable »', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False, langs4=True,
+      rule='SOG-0544 (the relay, 21 Nov: captures of the Map at 390 and 1280; the sentence of the reason with its hour wxv.at, HH:MMZ)')
+def d303(c):
+    L = ['fr', 'en', 'de', 'es'].index(c.lang)
+    doc = {'schema': 1, 'updated_at': iso(now()), 'arr': 'LFML', 'key': 'LFRS>LFML>C30J', 'list': [
+        {'icao': 'XQPB', 'name': 'XQPB TEST', 'lat': 44.10, 'lon': 5.10, 'nm': 40.1, 'state': 'ok', 'why': [], 'fuel': {'amount': 2100, 'unit': 'lb', 'min': 28}},
+        {'icao': 'XQPF', 'name': 'XQPF TEST', 'lat': 44.80, 'lon': 5.50, 'nm': 83.2, 'state': 'warn', 'why': ['wx-outside'], 'wxv': {'at': '14:20Z'},
+         'fuel': {'amount': 2600, 'unit': 'lb', 'min': 35}},
+        {'icao': 'XQPH', 'name': 'XQPH TEST', 'lat': 45.00, 'lon': 6.00, 'nm': 100.4, 'state': 'warn', 'why': ['aids-unread', 'wx-notaf'], 'fuel': None}]}
+    for w in (1280, 390):
+        c.page.set_viewport_size({'width': w, 'height': 800})
+        c.open('maps', docs=fdocs(flight()) + [['cache/fuel/altn_candidates.json', doc, 'cache'], ['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']],
+               flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!window.__mp.S.altn && (window.__mp.S.altnHits || []).length === 3", timeout=10000, what='the three proposed drawn')
+        c.wait(900)
+        p = c.js("() => { const S = window.__mp.S, h = S.altnHits.find(x => x.icao === 'XQPF'), r = S.box.getBoundingClientRect(); return [r.left + h.x, r.top + h.y] }")
+        c.page.mouse.click(p[0], p[1])
+        c.until("() => { const e = window.__mp.S.cardEl; return !!e && !e.hidden && !!e.querySelector('[data-altn=XQPF]') }", what='the sheet of XQPF')
+        card = norm(c.js("() => window.__mp.S.cardEl.textContent"))
+        c.ok(norm(_ALTN_WX_WORDS['wx-outside'][L].replace('{at}', '14:20Z')) in card, card, f'{w}: the whole sentence with its hour')
+        c.ok(norm(tx(M, 'altnWarn', c.lang)) in card and norm(tx(M, 'altnOk', c.lang)) not in card, card, f'{w}: « to check », never « suitable »')
+        c.shot(f'D303_{w}_{c.lang}_wx.png')
+
+
 @case('D276', 'The loupe of the Map (SOG-0491): a field that proposes aerodromes, navaids, points and towns from the base; a choice centres the Map, puts a mark, and offers the sheet of the aerodrome and « Add to the route »; Escape closes', 'D',
       tags=('maps',), designs=('standard',), night=False, screens=True, langs4=True,
       rule='SOG-0491 (the user validated the mock-up, 18 Nov): a loupe among the tools of the Map opens a field (aerodb.find and suggest, the list of the frame: arrows, Enter, Escape, touch); the choice centres the Map on the place and marks it; « Fiche du terrain » (an aerodrome) opens its sheet, « Ajouter à la route » (with a flight) inserts it where it lengthens the route least; nothing is written but by the last button; spaces are not searched yet')

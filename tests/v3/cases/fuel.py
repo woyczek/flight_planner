@@ -7786,10 +7786,12 @@ _PROP_HELD = {'XQPB': {'SID': 1, 'STAR': 1, 'APP': 2}, 'XQPC': {'SID': 1, 'STAR'
               'XQPF': {'SID': 1, 'APP': 1}}
 
 
-def _prop_open(c, target='fuel', more=(), held=None):
+def _prop_open(c, target='fuel', more=(), held=None, tafs=None, planned=True):
     """The seeded flight (alternate LFMT) with a C30J sheet asking 5000 ft, the aerodromes above, their coverage (`held`, _PROP_HELD by
-    default), TAFs kept fresh (XQPE LIFR)."""
+    default), TAFs kept fresh (`tafs` {ICAO: category}; by default XQPB, XQPC, XQPF VFR and XQPE LIFR); `planned=False` (SOG-0544): the
+    flight without its date."""
     held = _PROP_HELD if held is None else held
+    tafs = {'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'} if tafs is None else tafs
     import time as _t
     now = int(_t.time())
     sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
@@ -7799,10 +7801,12 @@ def _prop_open(c, target='fuel', more=(), held=None):
         if d[0].endswith('current_flight.json'):
             d[1]['aircraft']['sheetId'] = 'C30J'
             d[1]['planned_at'] = _t.strftime('%Y-%m-%dT%H:00:00Z', _t.gmtime(now + 2 * 3600))
+            if not planned:
+                d[1].pop('planned_at', None)
     docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
              ['proc/manual/index.json', {'schema': 1, 'aerodromes': {k: {**v, 'cycle': '2026-10-01', 'updated_at': '2026-11-01T09:00:00Z'}
                                                                        for k, v in held.items()}}, 'reference']]
-    for icao, cat in (('XQPB', 'VFR'), ('XQPC', 'VFR'), ('XQPE', 'LIFR'), ('XQPF', 'VFR')):
+    for icao, cat in tafs.items():
         t = _altn_taf(cat, now)
         t['icaoId'] = icao
         docs.append([f'cache/weather/taf/{icao}.json', {'at': 4102444800000, 'source': 'launcher', 'data': t}, 'cache'])
@@ -10008,4 +10012,146 @@ def f301(c):
     # a level that breaks a known rule is never kept, even « valid » in an answer that says so (a defensive reading)
     lv = _auto_ne(c, st, lambda lv: answer(lv, lambda x: 'violates' if x == lv[0] else 'unverifiable'), 20000)
     c.until(f"(v) => document.querySelector('{fl}').value === v", str(ev(lv[1:])[0]), what='a level in breach never kept')
+    c.check_errors()
+
+
+def _prop_net(c, tafs=None, fail=False):
+    """SOG-0544: a FAKE launcher (never a real one, no real network): /__setup/status says a launcher is here, and its relay /__setup/net
+    answers the TAFs of aviationweather with `tafs` {ICAO: TAF} (an aerodrome left out: no TAF, the read took place) or, `fail`, a 500
+    (the read failed: W.taf rejects); everything else falls back to the fake launcher of the route. Returns the ids of each TAF call."""
+    import urllib.parse
+    _route_launcher(c, [])
+    calls = []
+
+    def net(route):
+        try:
+            url = json.loads(route.request.post_data or '{}').get('url') or ''
+        except ValueError:
+            url = ''
+        u = urllib.parse.urlparse(url)
+        if u.hostname != 'aviationweather.gov' or not u.path.endswith('/taf'):
+            return route.fallback()
+        ids = [x for x in (urllib.parse.parse_qs(u.query).get('ids', [''])[0]).split(',') if x]
+        calls.append(ids)
+        if fail:
+            return route.fulfill(status=500, headers={'x-sog-reason': 'http-500'}, content_type='application/json', body='{}')
+        route.fulfill(status=200, content_type='application/json', body=json.dumps([dict(tafs[i], icaoId=i) for i in ids if i in (tafs or {})]))
+    c.context.route(re.compile(r'/__setup/net'), net)
+    return calls
+
+
+_HHMM = re.compile(r'^\d{2}:\d{2}Z$')
+
+
+@case('F302', '« Proposer un dégagement »: the weather of the SEVEN aerodromes proposed is read in one call of the weather layer; a terrain '
+      'whose weather is not known is never « ok » (the Map would draw it green) and comes after those whose weather is read and good; '
+      '« météo non lue » only for a read that did not take place (a failed read: with its reason, never « aucun TAF »); the other cases '
+      'say their own word (wx-notaf, wx-notime, wx-outside, wx-nocat, with the existing sentences), in Fuel and in the document of the Map '
+      '(wxv: the hours HH:MMZ)', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0544 (the user: « « météo non lue » pour les terrains de dégagement, à traiter en priorité. c\'est idiot. »; the ergonomist\'s '
+      'criterion: a terrain whose weather is not known is never drawn as a good one and comes after those whose weather is read and good; '
+      'the relay, 21 Nov: option (a), the whole existing sentences, wxv { at } | { a, b }); a fake launcher, invented aerodromes and TAFs')
+def f302(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    B = f'{FUEL} [data-altnchk]'
+    D = 'cache/fuel/altn_candidates.json'
+    now = int(time.time())
+    vfr = _altn_taf('VFR', now)
+    # 1. the launcher answers: XQPF (4th, never read before) without a TAF, XQPH with a TAF that gives neither ceiling nor visibility,
+    #    LFMT with a TAF that ends before the arrival
+    calls = _prop_net(c, {'XQPH': dict(vfr, fcsts=[dict(vfr['fcsts'][0], visib=None, clouds=[])]),
+                          'LFMT': dict(vfr, validTimeFrom=now - 3600, validTimeTo=now + 1800)})
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c, tafs={'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR'})
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) == 5, 'the document of the Map', timeout=10000)
+    xq = [ids for ids in calls if any(i.startswith('XQ') for i in ids)]
+    c.eq(len(xq), 1, 'ONE call of the weather layer for the terrains proposed (red before: none, the fourth and later never read)',
+         what=str(calls))
+    c.ok({'XQPF', 'XQPH', 'LFMT'} <= set(xq[0]), xq[0], 'the terrains without a kept TAF asked together, the seventh as the first')
+    by = {x['icao']: x for x in d['list']}
+    c.eq((by['XQPF']['state'], by['XQPF']['why']), ('warn', ['wx-notaf']),
+         'read, no TAF: « wx-notaf », and « warn », never « ok » (red before: ok, « wx-unread »)', what='XQPF')
+    c.eq((by['XQPH']['state'], by['XQPH']['why']), ('warn', ['aids-unread', 'wx-nocat']), 'a TAF without ceiling nor visibility: wx-nocat',
+         what='XQPH')
+    c.ok(bool(_HHMM.match(str((by['XQPH'].get('wxv') or {}).get('a'))) and _HHMM.match(str((by['XQPH'].get('wxv') or {}).get('b')))),
+         by['XQPH'], 'its hours in the document: wxv { a, b }, HH:MMZ')
+    c.eq(by['LFMT']['why'][-1], 'wx-outside', 'the arrival outside the validity of the TAF: wx-outside', what=str(by['LFMT']))
+    c.ok(bool(_HHMM.match(str((by['LFMT'].get('wxv') or {}).get('at')))), by['LFMT'], 'its hour in the document: wxv { at }, HH:MMZ')
+    st = [x['state'] for x in d['list']]
+    c.eq(st, sorted(st, key=lambda s: s != 'ok'), 'the good ones first', what=str(st))
+    c.eq([x['icao'] for x in d['list'] if x['state'] == 'ok'], ['XQPB'], 'only the terrain whose weather is read and good is « ok »',
+         what=str(d['list']))
+    # the sentence of each code, said in Fuel: XQPF touched on the Map (proposed)
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
+    row = norm(c.text(f'{B} li[data-proposed]') or '')
+    c.ok(norm(tx(T, 'wxNoTaf', L, after='altnWhy')) in row and norm(tx(T, "'wx-unread'", L, after='altnPropWhy')) not in row, row,
+         'XQPF says « no TAF read for this aerodrome », the existing sentence, not « météo non lue »')
+    c.eq(c.js(f"document.querySelector('{B} li[data-proposed]').dataset.state"), 'grey', 'its sign: not checked (?), never ✓', what='sign')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F302_{c.design}_{w}_{L}_codes.png')
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'LFMT' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=LFMT]')", timeout=8000, what='« Proposé : LFMT »')
+    at = by['LFMT']['wxv']['at']
+    row = norm(c.text(f'{B} li[data-proposed]') or '')
+    c.ok(norm(tx(T, 'wxOutside', L, after='altnWhy').replace('{at}', at)) in row, row, 'LFMT says the arrival outside the validity, its hour')
+    c.check_errors()
+
+
+@case('F303', '« Proposer un dégagement »: a FAILED read of the weather says « météo non lue » with its reason (« source météo injoignable »), '
+      'never « aucun TAF lu »; the terrain is « warn » in the document of the Map and comes after the terrains whose weather is read; a '
+      'flight without its date: « wx-notime », the existing sentence', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True,
+      langs4=True,
+      rule='SOG-0544 (the relay, 21 Nov: « je vérifierai au go qu\'un W.taf en échec dit la lecture manquée (« météo non lue » avec sa '
+      'raison), jamais « aucun TAF » »); a fake launcher whose relay answers 500, invented aerodromes and TAFs')
+def f303(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    B = f'{FUEL} [data-altnchk]'
+    D = 'cache/fuel/altn_candidates.json'
+    calls = _prop_net(c, fail=True)
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    # XQPB (the closest, checked) without a kept TAF: its read fails
+    _prop_open(c, tafs={'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'})
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) == 5, 'the document of the Map', timeout=10000)
+    c.ok(any('XQPB' in ids for ids in calls), str(calls), 'XQPB asked (the fake relay answers 500)')
+    by = {x['icao']: x for x in d['list']}
+    c.eq((by['XQPB']['state'], by['XQPB']['why']), ('warn', ['wx-unread']),
+         'a failed read: « wx-unread », « warn » (red before: « ok », the Map drew it green)', what='XQPB')
+    near = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => li.dataset.cand)")
+    c.eq(near, ['XQPC', 'XQPE', 'XQPF'], 'the terrains whose weather is read first: XQPB, unknown, after them (red before: XQPB first)',
+         what='list')
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPB' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPB]')", timeout=8000, what='« Proposé : XQPB »')
+    c.wait(600)   # the second read of the touched terrain fails too
+    row = norm(c.text(f'{B} li[data-proposed]') or '')
+    c.ok(norm(tx(T, "'wx-unread'", L, after='altnPropWhy')) in row and norm(tx(T, 'wxUnreachable', L, after='altnWhy')) in row, row,
+         '« météo non lue » and its reason, « source météo injoignable »')
+    c.ok(norm(tx(T, 'wxNoTaf', L, after='altnWhy')) not in row, row, 'never « aucun TAF lu pour ce terrain » (red before)')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F303_{c.design}_{w}_{L}_failed.png')
+    # a flight without its date: no hour of arrival at the alternate, « wx-notime » for every terrain
+    _prop_open(c, tafs={'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'}, planned=False)
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) > 0 and d.get('key') and all(x['why'] for x in d['list']),
+                    'the document of the Map', timeout=20000)
+    c.ok(all(x['state'] == 'warn' and x['why'][-1] == 'wx-notime' for x in d['list']), d['list'],
+         'no date: every terrain « warn » with « wx-notime » (red before: « ok », « wx-unread »)')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    row = norm(c.text(f'{B} [data-altnprop] li[data-cand]') or '')
+    c.ok(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in row, row, 'the existing sentence of a missing date')
     c.check_errors()
