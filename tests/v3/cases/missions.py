@@ -2605,7 +2605,7 @@ def n52(c):
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.7')
     c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
     c.tap(f'{E} [data-place="8"] [data-do="edplace"]')
-    c.tap(f'{E} [data-plform="8"] [data-do="edplacedel"]')
+    _del_place(c, f'{E} [data-plform="8"] [data-do="edplacedel"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N52_390_places.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
@@ -2680,6 +2680,13 @@ _MESSY = ('mission: { id: X-001A, type: REG, subtype: ESSAI }\n'
           'objectives: [Premier objectif inventé., Second objectif inventé.]\n'
           'payload: { mass_kg: "120", constraints: [Une contrainte inventée.] }\n')
 _ALIAS = 'mission: { id: X-001A, type: REG }\ntitle: Alias\nbase: &b { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\norigin: *b\ndestination: *b\n'
+
+
+def _del_place(c, sel):
+    """SOG-0482: ANY deletion of a place takes two touches, cited or not — the first changes the label to « Supprimer quand même », the second (inert for a second) deletes."""
+    c.tap(sel)
+    c.wait(1100)
+    c.tap(sel)
 
 
 def _ed_open(c, text):
@@ -2874,6 +2881,28 @@ def n201(c):
             c.ok(lat == 44.9 and isinstance(lat, float), [lat, type(lat).__name__], f'{width}: « {typed} » typed: 44.9 is written in the file, a number')
             ed_leave(c)
             c.js(_REG_CLEAR)
+        # SOG-0482: a place nothing cites (ZONE-2, off the itinerary) is deleted in TWO touches too — the first changes the label, nothing is deleted; the second deletes
+        _ed_open(c, _ITIN_MISSION)
+        ed_reveal(c)
+        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+        lines = f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow')].map(x => x.querySelector('b').textContent.split(' · ')[0])"
+        before = c.js(lines)
+        at = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow')].find(x => x.querySelector('b').textContent.startsWith('ZONE-2')).dataset.at")
+        c.js(f"document.querySelector('{E} [data-at=\"{at}\"]').scrollIntoView({{block: 'center'}})")
+        c.tap(f'{E} [data-at="{at}"] [data-do=edplace]')
+        dele = f'{E} [data-plform] [data-do=edplacedel]'
+        c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
+        c.eq(norm(c.text(dele)), 'Supprimer la zone', f'{width}: the foot of the sheet of a zone says « Supprimer la zone »', what='label')
+        c.tap(dele)
+        c.wait(300)
+        c.eq([c.js(lines) == before, norm(c.text(dele)), c.js("document.querySelectorAll('#fNotes .f-note').length")], [True, 'Supprimer quand même', 0],
+             f'{width}: a place nothing cites, ONE touch: nothing is deleted, the label says « Supprimer quand même », no sentence', what='first touch')
+        c.wait(1100)
+        c.tap(dele)
+        c.until(f"!({lines}).includes('ZONE-2')", what='ZONE-2 deleted')
+        c.eq(c.js(lines), [x for x in before if x != 'ZONE-2'], f'{width}: the second touch deletes the place', what='second touch')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
 
 
 _RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
@@ -7969,10 +7998,10 @@ def n114(c):
     c.wait(200)
     renamed = c.js(f"document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]').value")
     clear()
-    c.tap(f'{E} [data-plform="6"] [data-do="edplacedel"]')
+    _del_place(c, f'{E} [data-plform="6"] [data-do="edplacedel"]')
     c.wait(300)
     c.eq([new_id, renamed, c.count(f'{E} [data-edplaces] [data-place]'), heard('veilLocked')], ['PT3', 'PT7', 4, False],
-         'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed at once — no sentence', what='a place added')
+         'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed by two touches — no sentence', what='a place added')
     # the title, then « Enregistrer »: the drawers and the hidden places are written back INTACT
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
@@ -8197,11 +8226,11 @@ def n117(c):
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="zone"]')
     c.until(f"!!document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]')", what='the form of the new zone')
     c.page.fill(f'{E} [data-plform="4"] input[data-f=id]', 'ZONE-9')
-    c.tap(f'{E} [data-plform="4"] [data-do="edplacedel"]')
+    _del_place(c, f'{E} [data-plform="4"] [data-do="edplacedel"]')
     c.wait(400)
     c.eq([c.js(_VEIL_PROBE_SAID), c.count(f'{E} [data-edplaces] [data-place]'), c.count(f'{E} [data-plform]')],
          [{'notes': [False, False], 'page': [False, False, False]}, 4, 0],
-         'the new zone named ZONE-9 is removed by one press: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
+         'the new zone named ZONE-9 is removed by two presses: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
          what='the probe')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
@@ -9069,7 +9098,7 @@ def n125(c):
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
     c.until(f"({_EDPLACE_IDS}).length === 7", what='a turning point added')
     c.eq([val(5, 'name'), val(5, 'lat'), val(5, 'lon')], ['', '', ''], 'no landmark chosen: « + Point tournant » makes a new place to be placed, as before', what='no landmark')
-    c.tap(f'{E} [data-plform="5"] [data-do="edplacedel"]')
+    _del_place(c, f'{E} [data-plform="5"] [data-do="edplacedel"]')
     c.until(f"({_EDPLACE_IDS}).length === 6", what='the empty point removed')
     # a beacon chosen on the map, then « + Point tournant »
     _pb_click(c, [44.3, 1.3])

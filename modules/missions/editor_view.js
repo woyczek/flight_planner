@@ -460,7 +460,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atprof{order:1}
-[data-module="missions"] .ms-atitin{order:3}
+[data-module="missions"] .ms-atitin{order:3;padding-left:8px;padding-right:8px} /* moins de retrait autour de la liste, comme la maquette : les libellés de la fiche tiennent à leur taille, sans rien rapetisser */
 [data-module="missions"] .ms-atsheet{order:4}
 [data-module="missions"] .ms-atsheet[data-trial]{order:2}
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
@@ -479,7 +479,6 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
 [data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0}
 [data-module="missions"] .ms-itin-list .ms-plform .f-row:not(.ms-ll)>.f-field{flex:1 1 100%} /* Nom, Identifiant, Rôle… : toute la largeur */
-[data-module="missions"] .ms-itin-list .ms-plform .f-field>span{font-size:var(--sog-size-s,13px);color:var(--sog-muted,#555)} /* « Longitude (°, décimale) » tient sur une ligne à 390 */
 [data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
@@ -4444,6 +4443,16 @@ export function edClick(s, b) {
         },
         r = ED.removePlace(s.ed.places, i, edCiteDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
       if (r.wait) return;
+      // SOG-0482 : TOUTE suppression d'un lieu se fait en deux temps, cité ou non (l'annulation de la carte ne la couvre pas) : le premier toucher change le
+      // libellé en « Supprimer quand même » (sans phrase quand rien ne cite le lieu), le second supprime — inerte pendant la première seconde
+      if (row && !r.cited.length) {
+        if (s.ed.placeAsk !== i) {
+          s.ed.placeAsk = i;
+          s.ed.placeAskAt = Date.now();
+          return draw(s);
+        }
+        if (Date.now() - (s.ed.placeAskAt || 0) < ED.REMOVE_ARM_MS) return;
+      }
       if (r.ask >= 0) {
         s.ed.placeAskAt = Date.now();
         s.ctx.notify(citedText(s.tt, row, r.cited), 'warn', note);
