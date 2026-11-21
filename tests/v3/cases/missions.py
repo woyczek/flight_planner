@@ -2737,6 +2737,101 @@ def n54(c):
     c.js(_REG_CLEAR)
 
 
+# Q-0125: a mission file of BEFORE the version 1.1 (invented): three drawers with the keys of 1.0 (a round zone with `zone_shown`, an object to find, a fallback hour),
+# a drawer with an onward route, zones written the two ways of FORMAT_MISSION § 3 (by identifier at the top, and in the part), a target, turning points, a rendezvous,
+# `route_order`, and keys the workshop does not know — at the root and in a phase
+_V10_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission ancienne d'essai
+summary: Une recherche inventée, écrite avant la version 1.1.
+cruise_speed_kt: 120
+cruise_level: 2000 ft
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+target: { id: TARGET, name: Cible d'essai, lat: 44.6, lon: 1.4 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+  - { id: PT2, name: Point deux, lat: 44.4, lon: 1.6 }
+rendezvous: { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, participants: [ALPHA1, BRAVO2], role: ralliement }
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.8, lon: 1.2 }, radius_km: 5, ceiling_ft: 3000 }
+  - { id: ZONE-2, name: Secteur sud, kind: exclusion, points: [{ lat: 44.2, lon: 1.8 }, { lat: 44.3, lon: 1.9 }, { lat: 44.1, lon: 1.95 }] }
+objects:
+  - { id: OBJ-1, kind: person, name: Naufragé, lat: 44.6, lon: 1.42, detection_range_nm: 1, altitude_ft: 0, detection_height_ft: 2500, require_confirmation: true }
+route_order: [ORIGIN, PT1, TARGET, DESTINATION]
+phases:
+  - { id: B, title: Zone, trigger_zone: ZONE-1, zone_shown: true, fallback_delay_min: 60, x_ancien: { garde: oui } }
+  - { id: C, title: Objet, trigger_object: OBJ-1, fallback_delay_min: 90, route_order: [PT2] }
+  - { id: D, title: Heure, trigger: 10 min après PT1, trigger_point: PT1, trigger_delay_min: 10 }
+  - { id: E, title: Dans la partie, trigger_zone: { centre: { lat: 44.7, lon: 1.3 }, radius_km: 3, ceiling_ft: 2000 }, fallback_delay_min: 120 }
+  - { id: F, title: Objet dans la partie, trigger_object: { kind: wreck, lat: 44.5, lon: 1.35, detection_range_nm: 0.5 }, fallback_delay_min: 45 }
+teams:
+  - { name: ALPHA1, service: Service d'essai, type: H135, role: recherche }
+x_inconnu_racine: { garde: oui, liste: [1, 2, 3] }
+x_mission_editor: { version: '1.0' }
+"""
+
+
+@case('N200', 'Missions › the workshop, backward compatibility (Q-0125): a mission file of BEFORE the version 1.1 (`x_mission_editor: { version: 1.0 }`, drawers with the '
+      'keys of 1.0, zones written both ways, keys the workshop does not know) (a) opened, unveiled, every group of the sheet and every drawer and place of the itinerary opened '
+      'without typing, « Enregistrer »: the file is IDENTICAL, byte for byte; (b) one change (the title): only that key differs (the file is rewritten in the style of the workshop, read as data); (c) opened VEILED, never unveiled, the same '
+      'change of title: the drawers (`phases`) and every place are identical', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='Q-0125 (the user asks backward compatibility): docs/technique/FORMAT_MISSION.md § 3 (the two ways of writing a zone) and § 2 (a private block and unknown keys are kept as they are); case N54 for the method')
+def n200(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    import yaml
+    # a change saved rewrites the file in the workshop's own style (block style, a header comment, `45` for `45.0`): the text is read as DATA — what must not be lost is every key and value
+    data = lambda t: yaml.safe_load(t)  # noqa: E731
+    old = data(_V10_MISSION)
+    retitled = dict(old, title='Titre retouché')
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        # (a) unveiled, everything opened, nothing typed
+        _ed_open(c, _V10_MISSION)
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the file of 1.0 in the workshop')
+        ed_places(c)
+        for step in c.js(f"[...document.querySelectorAll('{E} [data-steps] [data-do=edstep]')].map(b => b.dataset.step)"):
+            c.tap(f'{E} [data-steps] [data-step="{step}"]')
+            c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
+        lines = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow, {E} [data-atflow] [data-edplaces] > [data-do=edsel]')].map(x => x.matches('.ms-plrow') ? ['place', x.dataset.at] : ['drawer', x.dataset.part])")
+        c.ok(sum(1 for k, _ in lines if k == 'drawer') == 5 and sum(1 for k, _ in lines if k == 'place') >= 8, lines, f'{width}: five drawers and the places of the itinerary are listed')
+        for kind, ref in lines:
+            sel = f'{E} [data-atflow] [data-at="{ref}"] [data-do=edplace]' if kind == 'place' else f'{E} [data-atflow] [data-do=edsel][data-part="{ref}"]'
+            c.js(f"document.querySelector('{sel}').scrollIntoView({{block: 'center'}})")
+            c.tap(sel)
+            c.wait(150)
+        c.tap(f'{E} [data-do="edsave"]')
+        c.wait(600)
+        c.eq(c.js(_TEXT_OF, path), _V10_MISSION, f'{width} (a): everything opened, nothing typed, « Enregistrer »: the file of 1.0 is identical, byte for byte', what='file')
+        # (b) one change: the title
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+        t = c.js(_TEXT_OF, path)
+        c.eq(data(t), retitled,
+             f'{width} (b): one change, the title: only that key differs, every other key and value is the file of 1.0 (the unknown keys, `zone_shown`, both writings of a zone, the onward route, `x_mission_editor`)', what='data')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        # (c) veiled, never unveiled, the same change
+        _ed_open(c, _V10_MISSION)
+        c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+        if not c.count(f'{E} input[data-k=edtitle]'):  # the Cadre may already be unfolded: touching it again would fold it
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the title of the veiled workshop')
+        c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved, veiled')
+        t = c.js(_TEXT_OF, path)
+        d = data(t)
+        keys = ('target', 'turning_points', 'rendezvous', 'zones', 'objects', 'route_order', 'phases', 'x_inconnu_racine', 'x_mission_editor')
+        c.eq([d.get('title'), {k: d.get(k) for k in keys}], ['Titre retouché', {k: old[k] for k in keys}],
+             f'{width} (c): veiled, never unveiled, the same change of title: the target, the points, the rendezvous, the zones, the objects, the route and the drawers (`phases`) are identical', what='data')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
 
 _RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
 
