@@ -466,24 +466,25 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
 [data-module="missions"] .ms-atplhead>h3{margin:0}
 [data-module="missions"] .ms-itinhead{grid-template-columns:auto auto minmax(0,1fr) auto}
-[data-module="missions"] .ms-itin-list{position:relative;margin:0;border:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-list{position:relative;margin:0;gap:0;border:1px solid var(--sog-line,#ddd)} /* gap:0 — les lignes se touchent, la bande et la fiche forment un seul bloc */
 [data-module="missions"] .ms-itin-list>.ms-plrow{display:block;padding:0;border-bottom:1px solid var(--sog-line,#ddd);scroll-margin-top:calc(var(--f-head-h,57px) + 8px);scroll-margin-bottom:6rem}
 [data-module="missions"] .ms-itin-list>.ms-plrow.ms-itin-in{margin-left:1.25rem;border-left:2px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-list>.ms-atpart{display:block;width:100%;margin:0;border-radius:0;border-top:0;border-right:0;border-bottom:1px solid var(--sog-line,#ddd);text-align:left}
 [data-module="missions"] .ms-itin-out{margin:0;padding:10px 8px 4px;background:var(--sog-surface-2,#eef)}
 [data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 8px 0;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);margin:0} /* la bande et la fiche : UN bloc, une seule barre */
 [data-module="missions"] .ms-itin-mv>button{min-height:44px}
 [data-module="missions"] .ms-itin-arrows{display:flex;gap:8px;align-self:stretch} /* deux boutons côte à côte, à eux deux toute la largeur */
 [data-module="missions"] .ms-itin-arrows>button{flex:1 1 0;min-width:0;min-height:44px}
 [data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
-[data-module="missions"] .ms-itin-list .f-row.ms-ll{align-items:stretch}
-[data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:flex-end} /* les deux champs sur la même ligne de base, même quand un libellé passe sur deux lignes */
+[data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0}
+[data-module="missions"] .ms-itin-list .ms-plform .f-row:not(.ms-ll)>.f-field{flex:1 1 100%} /* Nom, Identifiant, Rôle… : toute la largeur */
+[data-module="missions"] .ms-itin-list .ms-plform .f-field>span{font-size:var(--sog-size-s,13px);color:var(--sog-muted,#555)} /* « Longitude (°, décimale) » tient sur une ligne à 390 */
 [data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
 [data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
-[data-module="missions"] .ms-itin-list>.ms-plform{padding:8px 8px 8px 12px;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-list>.ms-plform{padding:8px 8px 8px 8px;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmap{margin:0 0 12px}
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
@@ -987,6 +988,9 @@ function dms(s, lat, lon) {
 
 /** Un nombre écrit dans une phrase (« portée 0,3 NM ») : la virgule décimale, sauf en anglais ; le champ, lui, garde sa saisie. */
 const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : String(v ?? '').replace('.', ',');
+/** Ce que dit un champ de la fiche d'un lieu (SOG-0482) : les champs numériques — position, rayon, portée, hauteurs — prennent la virgule décimale en français ;
+ *  la saisie accepte la virgule ET le point (ED.coord, edNum), le fichier garde un nombre. */
+const edNumShown = (s, f, v) => ['lat', 'lon', 'radius', 'range', 'height', 'alt'].includes(f) ? dec(s, v) : String(v ?? '');
 
 /** Ce que dit une ligne des Lieux, en texte (SOG-0468) : { title(r), detail(r, i), zk, ok } — UNE source pour la liste (edItinHtml) et pour
  *  la mise à jour sur place d'edRefresh, qui ne fabrique plus la liste en HTML pour n'en relire que ces deux textes. `rows` : les lignes de
@@ -1033,7 +1037,7 @@ function edPlaceFormHtml(s, r, i, {
   ok
 }) {
   const e = s.ed,
-    field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`;
+    field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(edNumShown(s, f, v))}" autocomplete="off"${extra}></label>`;
   const fixed = r.kind === 'dep' || r.kind === 'arr',
     num = ' inputmode="decimal" maxlength="12"';
   // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
@@ -1056,7 +1060,7 @@ function edPlaceFormHtml(s, r, i, {
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
         <p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
-        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" class="f-linkbtn" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.itDelAnyway : EDTX.itDelObject))}</button></div></div>`;
   }
   // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
   // sa liste est posée dans la rangée (data-adsug) ; les autres champs du lieu gardent data-k="edplace"
@@ -1072,7 +1076,7 @@ function edPlaceFormHtml(s, r, i, {
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
         ${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}</div>`}
-        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" class="f-linkbtn" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.itDelAnyway : r.kind === 'zone' ? EDTX.itDelZone : EDTX.itDelPlace))}</button>`}</div></div>`;
 }
 
 /** La route du départ de la séance : ses identifiants (s.ed.route quand elle a été retouchée, sinon ceux du fichier). */
@@ -1284,13 +1288,12 @@ function edItinMoveHtml(s, l, rows) {
     r = start ? null : edDrawers(e).find(x => x.id === l.drawer),
     row = rows[l.i];
   if (!start && !r || !row) return '';
-  const text = (row.kind === 'dep' || row.kind === 'arr' ? String(row.name || '').split(' · ')[0] : row.id) || row.id,
-    chips = start ? edRouteChips(e, rows) : edDrawerChips(e, r),
+  const chips = start ? edRouteChips(e, rows) : edDrawerChips(e, r),
     ends = edChipEnds(chips, l.n),
     w = start ? 'start' : 'drawer',
     attrs = `data-where="${w}" data-it="1"${start ? '' : ` data-dr="${esc(l.drawer)}"`}`,
     btn = (step, label, off) => `<button type="button" data-do="edchipmove" ${attrs} data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
-  return `<div class="ms-itin-mv" data-chipmove="${w}">${chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-itin-arrows">${btn(-1, EDTX.itEarlier, ends.first)}${btn(1, EDTX.itLater, ends.last)}</div>`}<button type="button" class="f-linkbtn" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: text }))}</button></div>`;
+  return `<div class="ms-itin-mv" data-chipmove="${w}">${chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-itin-arrows">${btn(-1, EDTX.itEarlier, ends.first)}${btn(1, EDTX.itLater, ends.last)}</div>`}<button type="button" class="f-linkbtn" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(EDTX.itRemove))}</button></div>`;
 }
 
 /** L'itinéraire (SOG-0482, lot 1 ; la maquette : modules/missions/maquette/atelier_itineraire.html) : UNE liste ordonnée — le départ, les lieux de la
@@ -2669,7 +2672,7 @@ function edPlaceFromBase(s, e, {
   // les champs de la fiche ouverte disent ce que le lieu retient (un champ n'est réécrit que si sa valeur change)
   for (const f of ['name', 'lat', 'lon']) {
     const input = s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`);
-    putProp(input, 'value', row[f]);
+    putProp(input, 'value', edNumShown(s, f, row[f]));
   }
   // SOG-0506 : la base vient de donner cette position à ce code — le lieu est verrouillé sans attendre de la redemander
   if (from) edPtSrcKnow(s, clean, edPos(row), from);
@@ -2796,7 +2799,7 @@ function edEndFill(s, e, key) {
   if (!p) return false;
   r.lat = String(+(+p.lat).toFixed(5));
   r.lon = String(+(+p.lon).toFixed(5));
-  for (const f of ['lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${at}"] input[data-f="${f}"]`), 'value', r[f]);
+  for (const f of ['lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${at}"] input[data-f="${f}"]`), 'value', edNumShown(s, f, r[f]));
   return true;
 }
 
@@ -2883,7 +2886,7 @@ function edNameUndo(s, e, row, before, to) {
     lat: before.lat,
     lon: before.lon
   });
-  for (const f of ['name', 'lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`), 'value', row[f]);
+  for (const f of ['name', 'lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`), 'value', edNumShown(s, f, row[f]));
   edRefresh(s);
 }
 
@@ -3623,7 +3626,7 @@ export function edInput(s, ev) {
       });
     }
     // SOG-0506 : la position d'un lieu verrouillé par la base ne se saisit pas (le champ est en lecture seule ; une page forgée non plus)
-    if (row && (f === 'lat' || f === 'lon') && edSrcOf(s, row)) return putProp(ev.target, 'value', row[f]);
+    if (row && (f === 'lat' || f === 'lon') && edSrcOf(s, row)) return putProp(ev.target, 'value', edNumShown(s, f, row[f]));
     edUndoClear(e); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
     // SOG-0506 : le nom d'avant la frappe, gardé à sa première touche — « Annuler » d'un déplacement par un code le rend
     if (row && f === 'name' && e.nameWas?.row !== row) e.nameWas = {

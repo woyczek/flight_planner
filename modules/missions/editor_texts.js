@@ -7,16 +7,22 @@
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
-//   removedText(tt, row) → « RDV-1 retiré, avec ses citations. »
+//   removedText(tt, row) → « RDV-1 supprimé, avec ses citations. »
 //   citedText(tt, row, cited) → la phrase dite avant de retirer un lieu encore cité (editor.js removePlace) : « PT1 est encore cité
-//     par : la route de la mission · le tiroir B (…). « Retirer quand même » le retire avec ces citations. »
+//     par : la route de la mission · le tiroir B (…). « Supprimer quand même » le supprime avec ces citations. »
 
 export const EDTX = {
   plRemoveAnyway: ['Retirer quand même', 'Remove anyway', 'Trotzdem entfernen', 'Quitar de todos modos'],
-  plCited: ['{id} est encore cité par : {who}. « Retirer quand même » le retire avec ces citations.',
-    '{id} is still cited by: {who}. “Remove anyway” removes it with these citations.',
-    '{id} wird noch genannt von: {who}. „Trotzdem entfernen“ entfernt den Ort mit diesen Nennungen.',
-    '{id} sigue citado por: {who}. «Quitar de todos modos» lo quita con estas citas.'
+  // SOG-0482 : le bas de la fiche d'un lieu (supprime le lieu et ses citations) et la bande sous la ligne choisie (sort la ligne de sa route)
+  itRemove: ["Retirer de l'itinéraire", 'Remove from the itinerary', 'Aus der Reiseroute entfernen', 'Quitar del itinerario'],
+  itDelPlace: ['Supprimer le lieu', 'Delete the place', 'Ort löschen', 'Eliminar el lugar'],
+  itDelZone: ['Supprimer la zone', 'Delete the zone', 'Zone löschen', 'Eliminar la zona'],
+  itDelObject: ["Supprimer l'objet", 'Delete the object', 'Objekt löschen', 'Eliminar el objeto'],
+  itDelAnyway: ['Supprimer quand même', 'Delete anyway', 'Trotzdem löschen', 'Eliminar de todos modos'],
+  plCited: ['{id} est encore cité par : {who}. « Supprimer quand même » le supprime avec ces citations.',
+    '{id} is still cited by: {who}. “Delete anyway” deletes it with these citations.',
+    '{id} wird noch genannt von: {who}. „Trotzdem löschen“ löscht den Ort mit diesen Nennungen.',
+    '{id} sigue citado por: {who}. «Eliminar de todos modos» lo elimina con estas citas.'
   ],
   plNoName: ['Ce lieu', 'This place', 'Dieser Ort', 'Este lugar'],
   ref_route: ['la route de la mission', 'the mission route', 'die Route der Mission', 'la ruta de la misión'],
@@ -52,8 +58,8 @@ export const EDTX = {
   ],
   ref_profile: ['le profil vertical', 'the vertical profile', 'das Höhenprofil', 'el perfil vertical'],
   ref_alert: ['la route de l\'alerte {name}', 'the route of alert {name}', 'die Route des Alarms {name}', 'la ruta de la alerta {name}'],
-  plRemoved: ['{id} retiré, avec ses citations.', '{id} removed, with its citations.', '{id} entfernt, mit seinen Nennungen.',
-    '{id} quitado, con sus citas.'
+  plRemoved: ['{id} supprimé, avec ses citations.', '{id} deleted, with its citations.', '{id} gelöscht, mit seinen Nennungen.',
+    '{id} eliminado, con sus citas.'
   ],
   // « À compléter » nomme (l'ergonome, 17 nov.) : le champ qui cite et l'identifiant absent, le tiroir, la carte
   todo_deadRef: ['{who} cite {id}, un lieu qui n\'existe pas', '{who} cites {id}, a place that does not exist',

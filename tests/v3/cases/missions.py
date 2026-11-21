@@ -2832,6 +2832,49 @@ def n200(c):
         ed_leave(c)
         c.js(_REG_CLEAR)
 
+# SOG-0482 lot 1, the sheet of a place under its line as the mock-up: the strip and the sheet are ONE block, the labels hold on one line at 390, the French screen says « 44,8 »
+_N201_GEO = f"""(() => {{ const f = document.querySelector('{E} [data-plform]'), mv = document.querySelector('{E} [data-chipmove=start]'), span = f.querySelector('input[data-f=lon]').closest('label').querySelector('span'),
+  rg = document.createRange(), a = mv.getBoundingClientRect(), b = f.getBoundingClientRect(), nm = f.querySelector('input[data-f=name]').getBoundingClientRect(), id = f.querySelector('input[data-f=id]').getBoundingClientRect(),
+  role = f.querySelector('input[data-f=role]').getBoundingClientRect(), la = f.querySelector('input[data-f=lat]').getBoundingClientRect(), lo = f.querySelector('input[data-f=lon]').getBoundingClientRect();
+  rg.selectNodeContents(span);
+  return {{ lonLines: rg.getClientRects().length, gap: Math.round(b.top - a.bottom), leftA: Math.round(a.left), leftB: Math.round(b.left), barA: getComputedStyle(mv).borderLeftWidth, barB: getComputedStyle(f).borderLeftWidth,
+    fullName: Math.abs(nm.width - role.width) <= 1, fullId: Math.abs(id.width - role.width) <= 1, oneRow: Math.abs(la.top - lo.top) <= 1 && lo.left > la.right - 1 }} }})()"""
+
+
+@case('N201', 'Missions › the workshop, the sheet of a place under its line as the mock-up (SOG-0482, lot 1): the strip of the line and its sheet are ONE block (no white between, one blue bar); '
+      'at 390 « Longitude (°, décimale) » holds on ONE line; Nom, Identifiant and Rôle take the whole width, Latitude and Longitude share ONE row; the French screen says « 44,8 »; '
+      '« 44,9 » typed, then « 44.9 » typed: 44.9 is written, a number both times; the strip says « Retirer de l\'itinéraire » and the foot of the sheet « Supprimer le lieu »', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 1 (the ergonomist read the sheet against modules/missions/maquette/itin_lieu_390.png on 21 Nov): modules/missions/editor_view.js `edItinMoveHtml`, `edPlaceFormHtml`, `edNumShown`; editor.js `coord` already takes the comma')
+def n201(c):
+    import yaml
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        for typed in ('44,9', '44.9'):
+            _ed_open(c, _ITIN_MISSION)
+            ed_reveal(c)
+            c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+            c.js(f"document.querySelector('{E} [data-at=\"start:1\"]').scrollIntoView({{block: 'center'}})")
+            c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
+            c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what='the sheet of PT1')
+            if typed == '44,9':
+                g = c.js(_N201_GEO)
+                c.ok(g['lonLines'] == 1 and g['gap'] in (0, 1) and g['leftA'] == g['leftB'] and g['barA'] == g['barB'] == '3px' and g['fullName'] and g['fullId'] and g['oneRow'], g,
+                     f'{width}: « Longitude (°, décimale) » on one line, the strip and the sheet one block (no gap, the same bar), Nom and Identifiant as wide as Rôle, Latitude and Longitude on one row')
+                c.eq([c.js(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value"), c.js(f"document.querySelector('{E} [data-plform] input[data-f=lon]').value")], ['44,8', '1,2'],
+                     f'{width}: the French screen says the decimal comma', what='shown')
+                c.eq([norm(c.text(f'{E} [data-chipmove=start] [data-do=edroutedel]')), norm(c.text(f'{E} [data-plform] [data-do=edplacedel]'))], ["Retirer de l'itinéraire", 'Supprimer le lieu'],
+                     f'{width}: the strip takes the place out of the route, the foot of the sheet deletes it', what='links')
+            c.page.fill(f'{E} [data-plform] input[data-f=lat]', typed)
+            c.tap(f'{E} [data-do="edsave"]')
+            c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+            d = yaml.safe_load(c.js(_TEXT_OF, path))
+            lat = next(p['lat'] for p in d['turning_points'] if p['id'] == 'PT1')
+            c.ok(lat == 44.9 and isinstance(lat, float), [lat, type(lat).__name__], f'{width}: « {typed} » typed: 44.9 is written in the file, a number')
+            ed_leave(c)
+            c.js(_REG_CLEAR)
+
 
 _RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
 
@@ -5210,7 +5253,7 @@ def n78(c):
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"{every}.map(b => !!b.__kept)")
-    c.ok(len(kept) >= 8 and all(kept), kept, 'every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
+    c.ok(len(kept) == 25 and all(kept), len(kept), 'the 25 elements of the new screen — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -5825,7 +5868,13 @@ def n94(c):
 
 _EDTOOLS = f'{_EDMAP} [data-atmaptools]'
 _EDTOOL_STATE = f"[...document.querySelectorAll('{_EDTOOLS} button')].map(b => [b.dataset.tool || b.dataset.do, b.getAttribute('aria-pressed'), b.disabled])"
-_EDPLACE_VAL = f"""([i, f]) => document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null"""
+# SOG-0482: the French screen says the decimal comma (« 44,8 »); this helper reads the NUMBER the field holds, with the point, as the cases always compared it
+_EDPLACE_VAL = f"""([i, f]) => {{ const v = document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null; return /^-?[0-9]+,[0-9]+$/.test(v || '') ? v.replace(',', '.') : v }}"""
+def _dotted(v):
+    """SOG-0482: a decimal comma said by the French screen (« 44,8 ») read back as the number the field holds (« 44.8 »)."""
+    return v.replace(',', '.') if isinstance(v, str) and re.fullmatch(r'-?[0-9]+,[0-9]+', v) else v
+
+
 # the kinds of the places BY RANK (`data-place`): the lines of the itinerary are in another order and a place cited twice has two (SOG-0482)
 _EDPLACE_IDS = f"(() => {{ const a = []; document.querySelectorAll('{E} [data-edplaces] [data-place]').forEach(x => {{ a[+x.dataset.place] = x.dataset.kind }}); return Array.from(a) }})()"
 _EDSEL = f"document.querySelector('{_EDMAP} [data-mapsel]')?.textContent ?? null"
@@ -8979,7 +9028,7 @@ def n124(c):
     c.shot('P8a_1280_points.png')
     c.key('ArrowDown')
     c.key('Enter')
-    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value")  # noqa: E731
+    val = lambda f: _dotted(c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value"))  # noqa: E731
     c.until(f"document.querySelector('{E} [data-plform] input[data-f=name]').value === 'XPT01'", timeout=5000, what='XPT01 chosen by the keyboard')
     # SOG-0506: the base confirms the point chosen is publishable before its position is written (one answer of the base later)
     c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value !== ''", timeout=5000, what='the position of XPT01 written')
@@ -9093,7 +9142,7 @@ def n126(c):
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.1')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'xpt01')
     c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
-    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"8\"][data-f=lat]')?.value === '44.9'", timeout=8000, what='the placed point moved')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"8\"][data-f=lat]')?.value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved')
     c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['XPT01', '44.9', '1.45'],
          'a place that already has a position, named by a known code, is moved to the position of the base (SOG-0506, the user\'s decision)', what='already placed')
     c.tap(f'{E} [data-do="edsave"]')
@@ -11499,7 +11548,7 @@ def n163(c):
 def n164(c):
     w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
     path = 'missions/X_REG/X-007/missionX-007.yaml'
-    near = lambda v, x: v not in (None, '') and abs(float(v) - x) < 0.001  # noqa: E731
+    near = lambda v, x: v not in (None, '') and abs(float(str(v).replace(',', '.')) - x) < 0.001  # noqa: E731
     starts = lambda at: (lambda r: bool(r) and abs(r[0][0] - at[0]) < 0.001 and abs(r[0][1] - at[1]) < 0.001)(c.js(_LK_ROUTE) or [])  # noqa: E731
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
@@ -11812,7 +11861,7 @@ _MOVED_NOTE = """(t) => [...document.querySelectorAll('#fNotes .f-note')].map(n 
       '`edNameBase`, `edNameUndo`, `edPlName`; EDITOR.md § 7 tresquinquagies')
 def n169(c):
     w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
-    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null")  # noqa: E731
+    val = lambda f: _dotted(c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null"))  # noqa: E731
     name = f'{E} [data-plform] input[data-k=edplname]'
     moved = norm(row(c, 'plMoved', EDTX_FILE).replace('{name}', 'PT3 · XPT01'))
     undo = norm(row(c, 'plMovedUndo', EDTX_FILE))
@@ -11840,7 +11889,7 @@ def n169(c):
     c.wait(600)
     # 2. a known code typed on the placed point: moved to the position of the base, locked, said, with « Annuler »
     typed('xpt01')
-    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved to XPT01')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved to XPT01')
     c.until(f"({_LK_STATE})()[0].every(x => x)", timeout=5000, what='the moved point locked')
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0]], ['XPT01', '44.9', '1.45', [True, True]],
          '« xpt01 » typed on a placed point: its code, the position of the base, locked', what='moved')
@@ -11850,7 +11899,7 @@ def n169(c):
     c.shot(f'P14c_{w}_deplace.png')
     # 3. « Annuler »: the former position AND the former name, free again
     c.tap('#fNotes .f-note [data-act]')
-    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.5'", timeout=5000, what='the former position back')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.5'", timeout=5000, what='the former position back')
     c.until(f"({_LK_STATE})()[0].every(x => !x)", timeout=5000, what='the point free again')
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)], ['Pont nord', '44.5', '1.1', [[False, False], '']],
          '« Annuler »: the former position and the former name, the point free again', what='undone')
@@ -11861,7 +11910,7 @@ def n169(c):
     for _ in range(next(k for k, x in enumerate(c.quiet(_AD_SUG)) if x.startswith('XPT01@')) + 1):
         c.key('ArrowDown')
     c.key('Enter')
-    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved by the choice in the list')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved by the choice in the list')
     c.eq([val('name'), val('lat'), val('lon'), c.js(_MOVED_NOTE, moved)[:1]], ['XPT01', '44.9', '1.45', [[moved, undo]]],
          'XPT01 chosen in the list on a placed point: moved, said, with « Annuler »', what='chosen')
     c.tap(f'{E} [data-do="edsave"]')
@@ -12072,7 +12121,7 @@ _HOM_BASE = dict(_PB_BASE, vrp=_PB_BASE['vrp'] + [{'id': 'XHOM', 'name': 'HOMONY
       'the CHOICE in the list decides among homonyms): modules/missions/editor_view.js `edNameBase`; EDITOR.md § 7 tresquinquagies')
 def n171(c):
     w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
-    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null")  # noqa: E731
+    val = lambda f: _dotted(c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null"))  # noqa: E731
     name = f'{E} [data-plform] input[data-k=edplname]'
     note = lambda t: c.js(_MOVED_NOTE, norm(row(c, 'plMoved', EDTX_FILE).replace('{name}', t)))  # noqa: E731
 
@@ -12113,7 +12162,7 @@ def n171(c):
     for _ in range(south + 1):
         c.key('ArrowDown')
     c.key('Enter')
-    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.2'", timeout=8000, what='the point moved to the XHOM chosen in the list')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.2'", timeout=8000, what='the point moved to the XHOM chosen in the list')
     c.until(f"({_LK_STATE})()[0].every(x => x)", timeout=5000, what='the chosen point locked')
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0], len(note('PT3 · XHOM'))], ['XHOM', '44.2', '1.9', [True, True], 1],
          'one of the XHOM chosen in the list: its position, locked, said', what='chosen')
@@ -12125,7 +12174,7 @@ def n171(c):
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
     typed('xpt01')
-    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved to the single XPT01')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved to the single XPT01')
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0]], ['XPT01', '44.9', '1.45', [True, True]], 'a code with a single point typed still moves the place', what='single')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     ed_leave(c)
