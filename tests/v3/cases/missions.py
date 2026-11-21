@@ -2683,7 +2683,9 @@ _ALIAS = 'mission: { id: X-001A, type: REG }\ntitle: Alias\nbase: &b { name: Bas
 
 
 def _del_place(c, sel):
-    """SOG-0542: a place NOTHING cites is deleted by ONE touch (« Annuler le geste » gives it back); a cited one keeps its second touch « Supprimer quand même » (taken by the cases themselves)."""
+    """SOG-0482: ANY deletion of a place takes two touches, cited or not — the first changes the label to « Supprimer quand même », the second (inert for a second) deletes (SOG-0542: « Annuler le geste » gives it back)."""
+    c.tap(sel)
+    c.wait(1100)
     c.tap(sel)
 
 
@@ -2848,7 +2850,7 @@ _N201_GEO = f"""(() => {{ const f = document.querySelector('{E} [data-plform]'),
 
 @case('N201', 'Missions › the workshop, the sheet of a place under its line as the mock-up (SOG-0482, lot 1): the strip of the line and its sheet are ONE block (no white between, one blue bar); '
       'at 390 « Longitude (°, décimale) » holds on ONE line; Nom, Identifiant and Rôle take the whole width, Latitude and Longitude share ONE row; the French screen says « 44,8 »; '
-      '« 44,9 » typed, then « 44.9 » typed: 44.9 is written, a number both times; the strip says « Retirer de l\'itinéraire » and the foot of the sheet « Supprimer le lieu »; a place nothing cites is deleted by ONE touch, « Annuler le geste » gives it back, « Rétablir » deletes it again (SOG-0542)', 'N',
+      '« 44,9 » typed, then « 44.9 » typed: 44.9 is written, a number both times; the strip says « Retirer de l\'itinéraire » and the foot of the sheet « Supprimer le lieu »; a place nothing cites is deleted in TWO touches (nothing at the first), « Annuler le geste » then gives it back, « Rétablir » deletes it again (SOG-0482, SOG-0542)', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0482 lot 1 (the ergonomist read the sheet against modules/missions/maquette/itin_lieu_390.png on 21 Nov): modules/missions/editor_view.js `edItinMoveHtml`, `edPlaceFormHtml`, `edNumShown`; editor.js `coord` already takes the comma')
 def n201(c):
@@ -2879,7 +2881,8 @@ def n201(c):
             c.ok(lat == 44.9 and isinstance(lat, float), [lat, type(lat).__name__], f'{width}: « {typed} » typed: 44.9 is written in the file, a number')
             ed_leave(c)
             c.js(_REG_CLEAR)
-        # SOG-0542: a place nothing cites (ZONE-2, off the itinerary) is deleted by ONE touch, « Annuler le geste » gives it back, « Rétablir » deletes it again
+        # SOG-0482: a place nothing cites (ZONE-2, off the itinerary) is deleted in TWO touches too — the first changes the label, nothing is deleted; the second deletes;
+        # SOG-0542: « Annuler le geste » then gives it back (rank, identifier, fields), « Rétablir » deletes it again
         _ed_open(c, _ITIN_MISSION)
         ed_reveal(c)
         c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
@@ -2891,13 +2894,21 @@ def n201(c):
         dele = f'{E} [data-plform] [data-do=edplacedel]'
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
         c.eq(norm(c.text(dele)), 'Supprimer la zone', f'{width}: the foot of the sheet of a zone says « Supprimer la zone »', what='label')
+        fields = c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)")
+        c.tap(dele)
+        c.wait(300)
+        c.eq([c.js(lines) == before, norm(c.text(dele)), c.js("document.querySelectorAll('#fNotes .f-note').length")], [True, 'Supprimer quand même', 0],
+             f'{width}: a place nothing cites, ONE touch: nothing is deleted, the label says « Supprimer quand même », no sentence', what='first touch')
+        c.wait(1100)
         c.tap(dele)
         c.until(f"!({lines}).includes('ZONE-2')", what='ZONE-2 deleted')
-        c.eq([c.js(lines), c.js("document.querySelectorAll('#fNotes .f-note').length")], [[x for x in before if x != 'ZONE-2'], 0],
-             f'{width}: a place nothing cites, ONE touch: it is deleted, no sentence', what='one touch')
+        c.eq(c.js(lines), [x for x in before if x != 'ZONE-2'], f'{width}: the second touch deletes the place', what='second touch')
         c.tap(f'{_EDHIST} [data-do=edmapundo]')
         c.until(f"({lines}).includes('ZONE-2')", what='ZONE-2 given back')
         c.eq(c.js(lines), before, f'{width}: « Annuler le geste » gives the place back at its rank', what='undone')
+        c.tap(f'{E} [data-at="{at}"] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2 again')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)"), fields, f'{width}: the place is back with its identifier and its fields', what='fields')
         c.tap(f'{_EDHIST} [data-do=edmapredo]')
         c.until(f"!({lines}).includes('ZONE-2')", what='ZONE-2 deleted again')
         c.eq(c.js(lines), [x for x in before if x != 'ZONE-2'], f'{width}: « Rétablir » deletes it again', what='redone')
@@ -2908,112 +2919,243 @@ def n201(c):
 _N202_SNAP = f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow, {E} [data-atflow] [data-edplaces] > [data-do=edsel]')].map(x => (x.dataset.at || 'T' + x.dataset.part) + '|' + x.textContent.replace(/\\s+/g, ' ').trim())"
 
 
-@case('N202', 'Missions › the workshop, « Annuler le geste » and « Rétablir » cover the gestures of the list (SOG-0542): « ↑ Plus tôt » / « ↓ Plus tard » (the route of the departure and the onward route '
-      'of a drawer), « Retirer de l\'itinéraire », « Ajouter un lieu… » (both lists), « + Zone », the deletion of a place nothing cites and of a place cited by a route AND by the key of a drawer: '
-      'after ↶ the itinerary is the one of before the gesture, after ↷ the one of after; the deleted place comes back with ALL its citations (a save writes nothing); a typing empties the '
-      'history, a deletion does not; ↶ ↷ are on the line of the crumb (at 390 too), no longer in the bar of the map', 'N',
+def _n20_hist():
+    """Where « ↶ » and « ↷ » are read: on the line of the crumb (SOG-0542)."""
+    return _EDHIST  # LOT1-HIST
+
+
+def _n20_mission():
+    """_ITIN_MISSION with an onward route of two places for drawer 2 (C): PT2 and PT3."""
+    m = _ITIN_MISSION.replace('route_order: [PT2] }', 'route_order: [PT2, PT3] }')
+    assert m != _ITIN_MISSION
+    return m
+
+
+def _n20_open(c, width, mission=None):
+    """Opens the workshop (unveiled) on `mission` at `width`."""
+    c.page.set_viewport_size({'width': width, 'height': c.height})
+    _ed_open(c, mission or _n20_mission())
+    ed_reveal(c)
+    c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+    pass  # LOT1-OPEN-MAP
+
+
+def _n20_pick(c, ref):
+    """Opens the sheet of the line `ref` — a touch on a line whose sheet is already open would close it."""
+    sel = f'{E} [data-at="{ref}"] [data-do=edplace]'
+    if c.js(f"document.querySelector('{sel}')?.getAttribute('aria-current')") != 'true':
+        c.tap(sel)
+
+
+def _n20_lines(c):
+    """The lines of the itinerary as the session says them."""
+    return c.js(_N202_SNAP)
+
+
+def _n20_flags(c):
+    """[↶ disabled, ↷ disabled]."""
+    return c.js(f"[...document.querySelectorAll('{_n20_hist()} [data-do=edmapundo], {_n20_hist()} [data-do=edmapredo]')].map(b => b.disabled)")
+
+
+def _n20_gesture(c, width, name, do):
+    """Plays `do` (a gesture of the list), then ↶ (the list of before comes back), ↷ (the list of after comes back). Returns the list of after."""
+    import json
+    lit = lambda x: json.dumps(json.dumps(x, separators=(',', ':'), ensure_ascii=False))  # noqa: E731
+    becomes = lambda x, what: c.until(f"JSON.stringify({_N202_SNAP}) === {lit(x)}", timeout=8000, what=what)  # noqa: E731
+    before = _n20_lines(c)
+    do()
+    c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(before)}", timeout=8000, what=f'{name}: the gesture changed the list')
+    after = _n20_lines(c)
+    c.eq(_n20_flags(c)[0], False, f'{width} {name}: ↶ is usable after the gesture', what=name)
+    c.tap(f'{_n20_hist()} [data-do=edmapundo]')
+    becomes(before, f'{name}: ↶ gives the list of before')
+    c.eq([_n20_lines(c) == before, _n20_flags(c)[1]], [True, False], f'{width} {name}: after ↶ the list is the one of before the gesture, ↷ is usable', what=name)
+    c.tap(f'{_n20_hist()} [data-do=edmapredo]')
+    becomes(after, f'{name}: ↷ gives the list of after')
+    return after
+
+
+@case('N202', 'Missions › the workshop, « Annuler le geste » covers « ↑ Plus tôt » / « ↓ Plus tard » (SOG-0542): the route of the departure and the onward route of a drawer — after ↶ the itinerary is the '
+      'one of before the gesture, after ↷ the one of after; ↶ ↷ are on the line of the crumb (at 390 too), in view, and no longer in the bar of the map', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0542 (the ergonomist, § 1.4 and § 2.5 of the review of the mock-up, 21 Nov): modules/missions/editor_view.js `edMapRemember` before each gesture of the list, `edHistOff`, `edHtml` (the crumb)')
 def n202(c):
-    import json
-    # drawer C (the object to find) also cites OBJ-1 in its onward route — OBJ-1 is cited by a key AND by a route
-    _N202_MISSION = _ITIN_MISSION.replace('route_order: [PT2] }', 'route_order: [PT2, OBJ-1] }')
-    assert _N202_MISSION != _ITIN_MISSION
-    snap = lambda: c.js(_N202_SNAP)  # noqa: E731
-    lit = lambda x: json.dumps(json.dumps(x, separators=(',', ':'), ensure_ascii=False))  # noqa: E731
-    becomes = lambda x, what: c.until(f"JSON.stringify({_N202_SNAP}) === {lit(x)}", timeout=8000, what=what)  # noqa: E731
-    state = lambda: c.js(_EDTOOL_STATE)  # noqa: E731
-    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     for width in (390, 1280):
-        c.page.set_viewport_size({'width': width, 'height': c.height})
-        _ed_open(c, _ITIN_MISSION)
-        ed_reveal(c)
-        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
+        _n20_open(c, width)
         # ↶ ↷ on the line of the crumb, in view with the map folded, and not in the bar of the map
-        geo = c.js(f"""(() => {{ const row = document.querySelector('{E} .ms-crumbrow'), h = document.querySelector('{E} .ms-crumbrow [data-athist]'), r = h.getBoundingClientRect(), t = row.querySelector('.ms-crumb').getBoundingClientRect();
+        geo = c.js(f"""(() => {{ const row = document.querySelector('{E} .ms-crumbrow'), h = row && row.querySelector('[data-athist]'); if (!h) return null; const r = h.getBoundingClientRect(), t = row.querySelector('.ms-crumb').getBoundingClientRect();
           return [[...h.querySelectorAll('button')].map(b => b.dataset.do), r.right <= innerWidth + 1 && r.left >= 0, Math.abs((r.top + r.bottom) / 2 - (t.top + t.bottom) / 2) < 30,
-            document.querySelectorAll('{_EDTOOLS} [data-do=edmapundo], {_EDTOOLS} [data-do=edmapredo]').length] }})()""")
-        c.eq(geo, [['edmapundo', 'edmapredo'], True, True, 0], f'{width}: ↶ ↷ are on the line of the crumb, in view, and no longer in the bar of the map', what='the crumb')
-        c.eq(state()[5:7], [['edmapundo', None, True], ['edmapredo', None, True]], f'{width}: nothing to undo or redo at the opening', what='fresh')
+            document.querySelectorAll('{_EDTOOLS} [data-do=edmapundo], {_EDTOOLS} [data-do=edmapredo]').length] }})()""")  # LOT1-GEO
+        c.eq(geo, [['edmapundo', 'edmapredo'], True, True, 0], f'{width}: ↶ ↷ are on the line of the crumb, in view, and no longer in the bar of the map', what='the crumb')  # LOT1-GEO
+        c.eq(_n20_flags(c), [True, True], f'{width}: nothing to undo or redo at the opening', what='fresh')
         at = lambda title: c.js(_AT_OF, title)  # noqa: E731
-        pick = lambda ref: c.tap(f'{E} [data-at="{ref}"] [data-do=edplace]')  # noqa: E731
-
-        def gesture(name, do):
-            """Plays `do`, then ↶ (the list of before), ↷ (the list of after)."""
-            before = snap()
-            do()
-            c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(before)}", timeout=8000, what=f'{name}: the gesture changed the list')
-            after = snap()
-            c.eq(state()[5][2], False, f'{width} {name}: the gesture can be undone', what=name)
-            c.tap(f'{_EDHIST} [data-do=edmapundo]')
-            becomes(before, f'{name}: ↶ gives the list of before')
-            c.eq(state()[6][2], False, f'{width} {name}: ↷ is offered after ↶', what=name)
-            c.tap(f'{_EDHIST} [data-do=edmapredo]')
-            becomes(after, f'{name}: ↷ gives the list of after')
-            return after
-
-        later = f'{E} [data-atflow] [data-chipmove=start] [data-do=edchipmove][data-step="1"]'
-        # the route of the departure: « ↓ Plus tard », « Retirer de l'itinéraire », « Ajouter un lieu… »
+        pick = lambda ref: _n20_pick(c, ref)  # noqa: E731
+        later, earlier = (f'{E} [data-atflow] [data-chipmove={w}] [data-do=edchipmove][data-step="{s}"]' for w, s in (('start', 1), ('start', -1)))
+        # the route of the departure: PT1 is the first free place
         pick(at('PT1'))
         c.until(f"!!document.querySelector('{later}')", what='the strip under PT1')
-        gesture('later', lambda: c.tap(later))
-        gesture('out of the itinerary', lambda: c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]'))
+        _n20_gesture(c, width, 'later', lambda: c.tap(later))
+        pick('start:2')
+        c.until(f"!!document.querySelector('{earlier}') && !document.querySelector('{earlier}').disabled", what='« ↑ Plus tôt » on PT1 moved')
+        _n20_gesture(c, width, 'earlier', lambda: c.tap(earlier))
+        # the onward route of drawer 2 (PT2, PT3)
+        pick('drawer:C:0')
+        down = f'{E} [data-chipmove=drawer] [data-do=edchipmove][data-step="1"]'
+        c.until(f"!!document.querySelector('{down}')", what='the strip under the first place of the onward route')
+        _n20_gesture(c, width, 'onward later', lambda: c.tap(down))
+        pick('drawer:C:1')
+        up = f'{E} [data-chipmove=drawer] [data-do=edchipmove][data-step="-1"]'
+        c.until(f"!!document.querySelector('{up}') && !document.querySelector('{up}').disabled", what='« ↑ Plus tôt » in the onward route')
+        _n20_gesture(c, width, 'onward earlier', lambda: c.tap(up))
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N204', 'Missions › the workshop, « Annuler le geste » covers « Retirer de l\'itinéraire » (SOG-0542): a place taken out of the route of the departure and out of the onward route of a drawer — '
+      'after ↶ the itinerary is the one of before, after ↷ the one of after', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0542: modules/missions/editor_view.js `edroutedel`, `eddrchipdel` (edMapRemember before the removal)')
+def n204(c):
+    for width in (390, 1280):
+        _n20_open(c, width)
+        at = lambda title: c.js(_AT_OF, title)  # noqa: E731
+        pick = lambda ref: _n20_pick(c, ref)  # noqa: E731
+        pick(at('PT1'))
+        out = f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]'
+        c.until(f"!!document.querySelector('{out}')", what='the strip under PT1')
+        _n20_gesture(c, width, 'out of the route', lambda: c.tap(out))
+        pick('drawer:C:0')
+        outd = f'{E} [data-atflow] [data-chipmove=drawer] [data-do=eddrchipdel]'
+        c.until(f"!!document.querySelector('{outd}')", what='the strip under the first place of the onward route')
+        _n20_gesture(c, width, 'out of the onward route', lambda: c.tap(outd))
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N205', 'Missions › the workshop, « Annuler le geste » covers « Ajouter un lieu… » (the route of the departure and the onward route of a drawer) and « + Point tournant » (SOG-0542): '
+      'after ↶ the itinerary is the one of before, after ↷ the one of after', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0542: modules/missions/editor_view.js `edroute` (the route of the departure), `edDrawerInput` (`routeadd`), `edplaceadd`')
+def n205(c):
+    for width in (390, 1280):
+        _n20_open(c, width)
         c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
-        gesture('add to the route', lambda: c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', 'PT2'))
-        # the onward route of drawer 2 (C): « Ajouter un lieu… » in its sheet, then its arrows and « Retirer de l'itinéraire »
+        _n20_gesture(c, width, 'add to the route', lambda: c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', 'PT2'))
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] select[data-f=routeadd]')", what='the sheet of drawer 2')
         c.js(f"document.querySelector('{E} [data-drawer=\"C\"] [data-dgrp=route]').scrollIntoView({{block: 'center'}})")
-        c.js(f"document.querySelector('{E} [data-drawer=\"C\"] [data-do=eddrgrp][data-grp=route]').click()")  # « La suite de route » is folded (a touch under the sticky foot is covered, the click is the same gesture)
+        c.js(f"document.querySelector('{E} [data-drawer=\"C\"] [data-do=eddrgrp][data-grp=route]').click()")  # « La suite de route » is folded (a touch under the sticky foot is covered)
         c.until(f"getComputedStyle(document.querySelector('{E} [data-drawer=\"C\"] [data-dgrp=route] .ms-dbody')).display !== 'none'", what='« La suite de route » unfolded')
-        gesture('add to the onward route', lambda: c.page.select_option(f'{E} [data-drawer="C"] select[data-f=routeadd]', 'PT3'))
-        c.until(f"!!document.querySelector('{E} [data-at=\"drawer:C:0\"]')", what='the first line of the onward route')
-        pick('drawer:C:0')
-        c.until(f"!!document.querySelector('{E} [data-chipmove=drawer] [data-do=edchipmove][data-step=\"1\"]')", what='the strip under the first line of the onward route')
-        gesture('onward later', lambda: c.tap(f'{E} [data-chipmove=drawer] [data-do=edchipmove][data-step="1"]'))
-        gesture('out of the onward route', lambda: c.tap(f'{E} [data-chipmove=drawer] [data-do=eddrchipdel]'))
-        # a place added by « + Zone »
-        c.js(f"document.querySelector('{E} [data-do=\"edplaceadd\"][data-kind=\"zone\"]').scrollIntoView({{block: 'center'}})")
-        gesture('add a zone', lambda: c.tap(f'{E} [data-do="edplaceadd"][data-kind="zone"]'))
-        # the deletion of a place nothing cites (ZONE-2): ONE touch, and the history is NOT emptied
-        pick(at('ZONE-2'))
-        c.until(f"!!document.querySelector('{E} [data-plform] [data-do=edplacedel]')", what='the sheet of ZONE-2')
-        gesture('delete a place nothing cites', lambda: c.tap(f'{E} [data-plform] [data-do=edplacedel]'))
-        c.eq(state()[5][2], False, f'{width}: a deletion does not empty the history', what='history kept')
-        # a typing empties the history
-        pick(at('PT3'))
-        c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=name]')", what='the sheet of PT3')
-        c.page.fill(f'{E} [data-plform] input[data-f=name]', 'Point trois bis')
-        c.eq([state()[5][2], state()[6][2]], [True, True], f'{width}: a typing empties the history (↶ and ↷ off)', what='typing')
+        _n20_gesture(c, width, 'add to the onward route', lambda: c.page.select_option(f'{E} [data-drawer="C"] select[data-f=routeadd]', 'PT1'))
+        c.js(f"document.querySelector('{E} [data-do=\"edplaceadd\"][data-kind=\"pt\"]').scrollIntoView({{block: 'center'}})")
+        _n20_gesture(c, width, 'add a turning point', lambda: c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]'))
         ed_leave(c)
         c.js(_REG_CLEAR)
-        # a place cited by a route AND by the key of a drawer: OBJ-1 (key of drawer 2, onward route of drawer 2) — the second touch deletes, ↶ gives it back with ALL its citations
-        _ed_open(c, _N202_MISSION)
-        ed_reveal(c)
-        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
-        before = snap()
-        pick(at('OBJ-1'))
+
+
+@case('N206', 'Missions › the workshop, the deletion of a place takes two touches, cited or not, and « Annuler le geste » gives it back after the second (SOG-0482, SOG-0542): ZONE-2 (nothing cites it) '
+      'comes back at its rank with its identifier and its fields; OBJ-1, cited by the key of a drawer AND by the onward route of another, comes back with ALL its citations (a save writes nothing); '
+      '« Rétablir » deletes it again', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0542: modules/missions/editor_view.js `edplacedel` (edMapRemember at the second touch), `edMapSnap`; the citations follow from the rows (editor.js `withRefs`)')
+def n206(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    # drawer C (the object to find) also cites OBJ-1 in its onward route — OBJ-1 is cited by a key AND by a route
+    cited = _n20_mission().replace('route_order: [PT2, PT3] }', 'route_order: [PT2, OBJ-1] }')
+    for width in (390, 1280):
+        at = lambda title: c.js(_AT_OF, title)  # noqa: E731
         dele = f'{E} [data-plform] [data-do=edplacedel]'
+        _n20_open(c, width)
+        before = _n20_lines(c)
+        c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
+        fields = c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)")
+        c.eq(norm(c.text(dele)), 'Supprimer la zone', f'{width}: the foot of the sheet of a zone says « Supprimer la zone »', what='label')
+
+        def two_touches():
+            c.tap(dele)
+            c.wait(300)
+            c.eq([_n20_lines(c) == before, norm(c.text(dele))], [True, 'Supprimer quand même'], f'{width}: a place nothing cites, ONE touch: nothing is deleted, the label says « Supprimer quand même »', what='first touch')
+            c.wait(1100)
+            c.tap(dele)
+        after = _n20_gesture(c, width, 'delete a place nothing cites', two_touches)
+        c.ok(not any(x.startswith('out:') and 'ZONE-2' in x for x in after), after, f'{width}: ZONE-2 is gone after the second touch')
+        c.tap(f'{_n20_hist()} [data-do=edmapundo]')
+        c.until(f"JSON.stringify({_N202_SNAP}) === {__import__('json').dumps(__import__('json').dumps(before, separators=(',', ':'), ensure_ascii=False))}", what='ZONE-2 given back')
+        c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2 again')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)"), fields, f'{width}: the place is back with its identifier and its fields', what='fields')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        # a place cited by a key AND by a route: OBJ-1 — the second touch deletes, ↶ gives it back with ALL its citations
+        _n20_open(c, width, cited)
+        before = _n20_lines(c)
+        c.tap(f'{E} [data-at="{at("OBJ-1")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of OBJ-1')
         c.eq(norm(c.text(dele)), "Supprimer l'objet", f'{width}: the foot of the sheet of an object', what='label')
         c.tap(dele)
         c.wait(300)
-        c.eq([snap() == before, norm(c.text(dele))], [True, 'Supprimer quand même'], f'{width}: a place CITED: the first touch deletes nothing and says « Supprimer quand même »', what='first touch')
+        c.eq([_n20_lines(c) == before, norm(c.text(dele))], [True, 'Supprimer quand même'], f'{width}: a place CITED: the first touch deletes nothing and says « Supprimer quand même »', what='first touch')
         c.wait(1100)
         c.tap(dele)
-        c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(before)}", timeout=8000, what='OBJ-1 deleted')
-        after = snap()
+        c.until(f"JSON.stringify({_N202_SNAP}) !== {__import__('json').dumps(__import__('json').dumps(before, separators=(',', ':'), ensure_ascii=False))}", timeout=8000, what='OBJ-1 deleted')
+        after = _n20_lines(c)
         c.ok(not any('OBJ-1' in x for x in after), after, f'{width}: OBJ-1 is gone from the lines, with its citations (the key of the drawer, the onward route)')
-        c.eq(state()[5][2], False, f'{width}: the deletion of a cited place can be undone', what='undoable')
-        c.tap(f'{_EDHIST} [data-do=edmapundo]')
-        becomes(before, 'OBJ-1 given back with its citations')
+        c.eq(_n20_flags(c)[0], False, f'{width}: the deletion of a cited place can be undone', what='undoable')
+        c.tap(f'{_n20_hist()} [data-do=edmapundo]')
+        c.until(f"JSON.stringify({_N202_SNAP}) === {__import__('json').dumps(__import__('json').dumps(before, separators=(',', ':'), ensure_ascii=False))}", timeout=8000, what='OBJ-1 given back with its citations')
         c.tap(f'{E} [data-do="edsave"]')
         c.wait(500)
-        c.eq(c.js(_TEXT_OF, path), _N202_MISSION, f'{width}: after ↶ the session is the file as opened: nothing to write, every citation is back', what='file')
-        c.tap(f'{_EDHIST} [data-do=edmapredo]')
-        becomes(after, 'OBJ-1 deleted again')
+        c.eq(c.js(_TEXT_OF, path), cited, f'{width}: after ↶ the session is the file as opened: nothing to write, every citation is back', what='file')
+        c.tap(f'{_n20_hist()} [data-do=edmapredo]')
+        c.until(f"JSON.stringify({_N202_SNAP}) === {__import__('json').dumps(__import__('json').dumps(after, separators=(',', ':'), ensure_ascii=False))}", timeout=8000, what='OBJ-1 deleted again')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+@case('N207', 'Missions › the workshop, a deletion no longer empties the history (SOG-0542): a gesture, a deletion, then two ↶ give back both (and two ↷ play them again); a typing still empties it', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0542: « Annuler le geste » never undoes a typing (edUndoClear on an input), but a gesture of the list and a deletion are kept (edMapRemember)')
+def n207(c):
+    import json
+    lit = lambda x: json.dumps(json.dumps(x, separators=(',', ':'), ensure_ascii=False))  # noqa: E731
+    becomes = lambda x, what: c.until(f"JSON.stringify({_N202_SNAP}) === {lit(x)}", timeout=8000, what=what)  # noqa: E731
+    for width in (390, 1280):
+        _n20_open(c, width)
+        at = lambda title: c.js(_AT_OF, title)  # noqa: E731
+        hist = _n20_hist()
+        s0 = _n20_lines(c)
+        c.tap(f'{E} [data-at="{at("PT1")}"] [data-do=edplace]')
+        later = f'{E} [data-atflow] [data-chipmove=start] [data-do=edchipmove][data-step="1"]'
+        c.until(f"!!document.querySelector('{later}')", what='the strip under PT1')
+        c.tap(later)
+        c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(s0)}", timeout=8000, what='the gesture')
+        s1 = _n20_lines(c)
+        dele = f'{E} [data-plform] [data-do=edplacedel]'
+        c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
+        c.tap(dele)
+        c.wait(1100)
+        c.tap(dele)
+        c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(s1)}", timeout=8000, what='ZONE-2 deleted')
+        s2 = _n20_lines(c)
+        c.eq(_n20_flags(c)[0], False, f'{width}: a deletion does not empty the history', what='history kept')
+        c.tap(f'{hist} [data-do=edmapundo]')
+        becomes(s1, 'the first ↶ gives ZONE-2 back')
+        c.tap(f'{hist} [data-do=edmapundo]')
+        becomes(s0, 'the second ↶ gives the gesture back')
+        c.eq(_n20_flags(c), [True, False], f'{width}: two ↶ gave both back: nothing more to undo, ↷ is usable', what='after two ↶')
+        c.tap(f'{hist} [data-do=edmapredo]')
+        c.tap(f'{hist} [data-do=edmapredo]')
+        becomes(s2, 'two ↷ play them again')
+        # a typing empties the history
+        c.tap(f'{E} [data-at="{at("PT3")}"] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=name]')", what='the sheet of PT3')
+        c.page.fill(f'{E} [data-plform] input[data-f=name]', 'Point trois bis')
+        c.eq(_n20_flags(c), [True, True], f'{width}: a typing empties the history (↶ and ↷ off)', what='typing')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
 
 @case('N203', 'Missions › the workshop, the menu of the route offers only what the reader resolves (SOG-0543): « Ajouter un lieu… » of the route of the departure and of the onward route of a drawer '
       'offer no object and no Arrival (nor Departure); a file that ALREADY cites an object and DESTINATION in an onward route opens, is saved without touching anything byte for byte, and a change of '
@@ -8160,7 +8302,7 @@ def n114(c):
     _del_place(c, f'{E} [data-plform="6"] [data-do="edplacedel"]')
     c.wait(300)
     c.eq([new_id, renamed, c.count(f'{E} [data-edplaces] [data-place]'), heard('veilLocked')], ['PT3', 'PT7', 4, False],
-         'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed by one touch — no sentence', what='a place added')
+         'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed by two touches — no sentence', what='a place added')
     # the title, then « Enregistrer »: the drawers and the hidden places are written back INTACT
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
@@ -8389,7 +8531,7 @@ def n117(c):
     c.wait(400)
     c.eq([c.js(_VEIL_PROBE_SAID), c.count(f'{E} [data-edplaces] [data-place]'), c.count(f'{E} [data-plform]')],
          [{'notes': [False, False], 'page': [False, False, False]}, 4, 0],
-         'the new zone named ZONE-9 is removed by one press: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
+         'the new zone named ZONE-9 is removed by two presses: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
          what='the probe')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')

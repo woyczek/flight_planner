@@ -4460,6 +4460,17 @@ export function edClick(s, b) {
         },
         r = ED.removePlace(s.ed.places, i, edCiteDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
       if (r.wait) return;
+      // SOG-0482 : TOUTE suppression d'un lieu se fait en deux temps, cité ou non (décision de l'ergonome : une saisie vide l'historique, et ↶ peut défiler hors
+      // de vue : l'annulation est un confort, pas un filet) : le premier toucher change le libellé en « Supprimer quand même » (sans phrase quand rien ne cite
+      // le lieu), le second supprime — inerte pendant la première seconde ; SOG-0542 : cette suppression s'annule ensuite (edMapRemember plus bas)
+      if (row && !r.cited.length) {
+        if (s.ed.placeAsk !== i) {
+          s.ed.placeAsk = i;
+          s.ed.placeAskAt = Date.now();
+          return draw(s);
+        }
+        if (Date.now() - (s.ed.placeAskAt || 0) < ED.REMOVE_ARM_MS) return;
+      }
       if (r.ask >= 0) {
         s.ed.placeAskAt = Date.now();
         s.ctx.notify(citedText(s.tt, row, r.cited), 'warn', note);
