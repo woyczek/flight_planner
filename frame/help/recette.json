@@ -2,7 +2,7 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-20",
+  "at": "2026-11-21",
   "tests": 371,
   "verdicts": 232
  },
@@ -5561,21 +5561,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0131",
-   "fiche": "SOG-0532",
-   "app": "pilote",
-   "question": "Une case « Coller la réponse d'Eurocontrol » dans Carburant : la veux-tu, et quand ?",
-   "context": "Tu y collerais les erreurs rendues par la validation d'Eurocontrol ; le moteur retrouverait chaque référence dans le RAD compilé, exclurait ce qui est refusé et recalculerait. C'est un écran neuf, donc ton mot. Avant cela, le moteur doit cesser de rendre des routes qu'il sait fausses (SOG-0532, points 1 à 7) : sinon la case ne ferait que masquer le défaut.",
-   "options": [
-    "Oui, après les points 1 à 7 de SOG-0532 et après le jalon « atelier figé »",
-    "Non, je continue de te coller les réponses",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-20",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0132",
    "fiche": "SOG-0532",
    "app": "pilote",
@@ -5585,21 +5570,6 @@
     "Je colle les pages de voies de l'AIP belge (ENR 3) dans un signalement depuis l'application ; AeroDB les lit",
     "Le lanceur lit l'eAIP belge (un hôte de plus, relu par Sécurisation avant)",
     "Plus tard : la Belgique reste « non vérifiable », dite à l'écran",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-20",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0133",
-   "fiche": "SOG-0532",
-   "app": "pilote",
-   "question": "Routes : faut-il aller chercher les contours des espaces (FIR, UTA, CTA) pour vérifier plus de règles du RAD ?",
-   "context": "L'annexe 2B du cycle compte 8 194 règles. Apprendre à mieux lire leur texte en débloque environ 900 (décidé, en cours). Environ 3 000 autres (37 %) ne se vérifient que si l'on sait où passent les limites des espaces et à quelle FIR appartient chaque terrain : une donnée que la base n'a pas, hors de France. Il faudrait choisir une source (officielle d'abord), peut-être un hôte de plus pour le lanceur.",
-   "options": [
-    "Pas maintenant : ces règles restent dites « non vérifiable », on y revient après le jalon de l'atelier",
-    "Oui : AeroDB cherche les sources officielles et me rend leurs conditions d'usage avant tout import",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-20",

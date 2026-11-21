@@ -1,10 +1,10 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-20",
+ "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "96bfce5",
+  "organisation": "90a9691",
   "fiches": 532,
   "untranslated": 0,
   "priorities": 481,
