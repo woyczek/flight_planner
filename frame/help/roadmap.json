@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ce24efc",
-  "fiches": 540,
+  "organisation": "82bb892",
+  "fiches": 542,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4647,6 +4647,24 @@
      "de": "Nutzungsprobe der Werkstatt — eine Viertelstunde, fünf Schritte (vor dem Meilenstein „Werkstatt eingefroren“)",
      "es": "Prueba de uso del taller — un cuarto de hora, cinco gestos (antes del hito «taller congelado»)",
      "test": true
+    },
+    {
+     "id": "SOG-0542",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « Annuler » ne couvre pas les gestes de la liste, et supprimer un lieu vide l'historique d'annulation",
+     "en": "Mission workshop: “Undo” does not cover the gestures of the list, and deleting a place clears the undo history",
+     "de": "Missionswerkstatt: „Rückgängig“ deckt die Gesten der Liste nicht ab, und das Löschen eines Ortes leert den Verlauf",
+     "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial"
+    },
+    {
+     "id": "SOG-0543",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : le menu « ajouter à la route » propose des objets, que le lecteur ne résout pas dans une route",
+     "en": "Mission workshop: the “add to route” menu offers objects, which the reader does not resolve in a route",
+     "de": "Missionswerkstatt: Das Menü „zur Route hinzufügen“ bietet Objekte an, die der Leser in einer Route nicht auflöst",
+     "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta"
     }
    ]
   },
