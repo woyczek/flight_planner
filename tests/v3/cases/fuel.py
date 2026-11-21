@@ -9677,9 +9677,11 @@ def f297(c):
     _compute_now(c, st)
     A = f'{FUEL} [data-altlist]'
     c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 3", timeout=10000, what='the three verdicts')
-    under = [norm(c.text(f'{A} [data-alt="{i}"] [data-onlyeuro]') or '') for i in range(3)]
-    c.eq(under, ['', '', norm(want)], 'the line under « conforme » only, nothing under the two others', what='only')
-    c.ok(c.js(f"""(() => {{ const e = document.querySelector('{A} [data-alt="2"] [data-onlyeuro]');
+    # SOG-0545 (the ergonomist, mock-up v2) — expectation changed on purpose: « Seul Eurocontrol valide un plan. » once, under « Calculé à »,
+    # with the meaning of « conforme »; no more under each route
+    c.eq(c.count(f'{A} [data-onlyeuro]'), 0, 'no more under a route', what='only')
+    c.ok(norm(want) in norm(c.text(f'{FUEL} [data-conformline]') or ''), c.text(f'{FUEL} [data-conformline]'), 'once, above the list')
+    c.ok(c.js(f"""(() => {{ const e = document.querySelector('{FUEL} [data-conformline]');
         return !!e && !e.closest('details') && e.getBoundingClientRect().height > 0 }})()"""), 'folded', 'visible, never in a fold')
     c.eq(c.count(f'{FUEL} [data-radline]'), 0, 'no line « Contrôle de simulation » any more', what='removed')
     # the full sentences now that the engine gives their values (AeroDB 6c0987086): never the fallback
@@ -10197,4 +10199,105 @@ def f304(c):
     shown = _altn_fuel_shown(c, 'XQPB')
     f = {x['icao']: x for x in d['list']}['XQPB']['fuel']
     c.eq((f['amount'], f['unit']), shown, 'in lb, the same number as Fuel\'s line', what='lb')
+    c.check_errors()
+
+
+# SOG-0545: the words of the list of routes, written in clear (never read from the texts of the module)
+_RT_WORDS = {
+    'fr': {'cols': ['Distance', 'Temps', 'Étape'], 'line': '« conforme » : conforme à ce que nous savons lire. Seul Eurocontrol valide un plan.',
+           'conform': 'conforme', 'fast': 'la plus rapide', 'eco': 'la plus économe', 'chosen': 'choisie', 'take': 'Choisir'},
+    'en': {'cols': ['Distance', 'Time', 'Trip'], 'line': '“conforms”: conforms to what we can read. Only Eurocontrol validates a plan.',
+           'conform': 'conforms', 'fast': 'fastest', 'eco': 'most economical', 'chosen': 'chosen', 'take': 'Choose'},
+    'de': {'cols': ['Entfernung', 'Zeit', 'Reise'], 'line': '„konform“: entspricht dem, was wir lesen können. Nur Eurocontrol validiert einen Plan.',
+           'conform': 'konform', 'fast': 'die schnellste', 'eco': 'die sparsamste', 'chosen': 'gewählt', 'take': 'Auswählen'},
+    'es': {'cols': ['Distancia', 'Tiempo', 'Etapa'], 'line': '«conforme»: conforme a lo que sabemos leer. Solo Eurocontrol valida un plan.',
+           'conform': 'conforme', 'fast': 'la más rápida', 'eco': 'la más económica', 'chosen': 'elegida', 'take': 'Elegir'},
+}
+# invented positions of the points of the three routes (the engine's `points`, view.points_of)
+_RT_PTS = {'LFRS': (47.15, -1.61), 'LUGEN': (46.6, -0.9), 'NEPIX': (45.0, 2.5), 'BOSUP': (45.9, 1.2), 'LFML': (43.44, 5.22)}
+
+
+def _rt_pts(*ids):
+    return [{'id': i, 'lat': _RT_PTS[i][0], 'lon': _RT_PTS[i][1]} for i in ids]
+
+
+def _rt_mins(t):
+    """« 1 h 28 » or « 1 h 24–1 h 33 » → the highest number of minutes (the order of the ranges: the high end first)."""
+    m = [int(h) * 60 + int(mm) for h, mm in re.findall(r'(\d+) h (\d{2})', t)]
+    return max(m) if m else None
+
+
+def _rt_fuel(t):
+    """« 3 255 kg », « 3,255 kg », « 3 150–3 380 kg » → the highest amount (digits of the grouping removed)."""
+    parts = [int(re.sub(r'\D', '', x)) for x in re.split(r'[–-]', re.sub(r'\s*(kg|lb)\s*$', '', t)) if re.sub(r'\D', '', x)]
+    return max(parts) if parts else None
+
+
+@case('F305', 'Route step, level fixed: each route of the list says its DISTANCE, TIME and TRIP FUEL (the quote of Fuel applied to its '
+      'points at its level), in columns named once above the list; « la plus rapide » and « la plus économe » on the best figures, never '
+      'on a route that breaks a known rule; the order: the chosen route, then « conforme », « non vérifiable », « enfreint », then by '
+      'fuel; « conforme » in one word, explained once under « Calculé à »; the chosen route marked « choisie », without « Choisir »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0545 (c) (the mock-up v2 approved by the ergonomist, 21 Nov: modules/fuel/maquette/routes.html, #fixed; criteria a, b, c '
+      'and e of the fiche; « choisie » instead of « pris »); a fake launcher, invented routes, positions and rules')
+def f305(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _RT_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [
+        dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True, verdict='violates',
+             violations=[{'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'}], unverifiable=[],
+             points=_rt_pts('LFRS', 'LUGEN', 'NEPIX', 'LFML')),
+        dict(_alt(2, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=[{'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}],
+             points=_rt_pts('LFRS', 'NEPIX', 'LFML')),
+        dict(_alt(3, 'Via UM728', 'LFRS NTS1A LUGEN UM728 BOSUP MEN1A LFML', 382, 270, segs), verdict='conform', violations=[], unverifiable=[],
+             points=_rt_pts('LFRS', 'LUGEN', 'BOSUP', 'LFML'))]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-figs]').length === 3", timeout=10000,
+            what='the three routes with their figures (red before: no figures)')
+    rows = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ i: +e.dataset.alt, name: e.querySelector('[data-altname]').textContent,
+        nm: e.querySelector('[data-fignm]')?.textContent || '', min: e.querySelector('[data-figmin]')?.textContent || '',
+        trip: e.querySelector('[data-figtrip]')?.textContent || '', fast: !!e.querySelector('[data-fastest]'), eco: !!e.querySelector('[data-cheapest]'),
+        verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '', conform: e.querySelector('[data-verdict=conform]')?.textContent || '' }}))""")
+    c.eq([r['name'] for r in rows], ['Via UM728', 'Direct', 'Via UN10'], 'the order: « conforme », « non vérifiable », « enfreint »', what='order')
+    c.eq([norm(r['nm']) for r in rows], ['382 NM', '365 NM', '370 NM'], 'the distance of each route', what='distance')
+    c.ok(all(re.fullmatch(r'\d+ h \d{2}(–\d+ h \d{2})?', norm(r['min'])) for r in rows), [r['min'] for r in rows], 'the time « 1 h 28 »')
+    c.ok(all(_rt_fuel(r['trip']) and norm(r['trip']).endswith((' kg', ' lb')) for r in rows), [r['trip'] for r in rows], 'the trip fuel')
+    c.eq(norm(rows[0]['conform']), norm(W['conform']), '« conforme » in one word on the route', what='conform word')
+    c.eq(c.count(f'{FUEL} [data-onlyeuro]'), 0, 'never under a route any more', what='under')
+    c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(W['line']), '« conforme » explained once, under « Calculé à »', what='line')
+    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{FUEL} [data-figcols] span')].map(e => e.textContent)")],
+         [norm(x) for x in W['cols']], 'the three figures named once, above the list', what='columns')
+    ok = [r for r in rows if r['verdict'] != 'violates']
+    best_t = min(_rt_mins(r['min']) for r in ok)
+    best_f = min(_rt_fuel(r['trip']) for r in ok)
+    c.eq([r['name'] for r in rows if r['fast']], [r['name'] for r in ok if _rt_mins(r['min']) == best_t][:1],
+         '« la plus rapide » on the best time of the routes that break nothing', what='fastest')
+    c.eq([r['name'] for r in rows if r['eco']], [r['name'] for r in ok if _rt_fuel(r['trip']) == best_f][:1],
+         '« la plus économe » on the least trip fuel', what='cheapest')
+    c.ok(not rows[2]['fast'] and not rows[2]['eco'], rows[2], 'never a mention on « enfreint »')
+    marks = [norm(x) for x in c.js(f"[...document.querySelectorAll('{A} [data-fastest], {A} [data-cheapest]')].map(e => e.textContent)")]
+    c.ok(set(marks) <= {norm(W['fast']), norm(W['eco'])} and marks, marks, 'the words of the mentions')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F305_{c.design}_{w}_{c.lang}_fixed.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # « Choisir » on « Direct »: the list gives way to one line (SOG-0224), with « choisi »
+    c.tap(f'{A} [data-alt="1"] [data-do=rtake]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rtaken]')", timeout=8000, what='the route taken')
+    taken = {'fr': 'Itinéraire choisi : Direct. La route est modifiée.', 'en': 'Route chosen: Direct. The route is changed.',
+             'de': 'Route gewählt: Direct. Die Route ist geändert.', 'es': 'Itinerario elegido: Direct. La ruta se ha cambiado.'}[c.lang]
+    c.eq(norm(c.text(f'{FUEL} [data-rtaken]') or ''), norm(taken), '« choisi », the word of « Choisir » (no more « pris »)', what='taken')
     c.check_errors()
