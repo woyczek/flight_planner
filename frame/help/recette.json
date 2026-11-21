@@ -4236,7 +4236,7 @@
    "id": "SOG-0413",
    "app": "pilote",
    "title": {
-    "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message porte",
+    "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message mentionne",
     "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
     "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
     "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje"
@@ -5573,7 +5573,7 @@
    "id": "SOG-0533",
    "app": "pilote",
    "title": {
-    "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte porte « F330 » en tête et « /F350 » plus loin",
+    "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte affiche « F330 » en tête et « /F350 » plus loin",
     "en": "Fuel: the route is computed at FL350 and the flight plan filed at FL330; the text carries “F330” at the start and “/F350” further on",
     "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
     "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante"
@@ -5657,6 +5657,22 @@
    "since": "2026-11-21",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0138",
+   "fiche": "SOG-0541",
+   "app": "maintenance",
+   "question": "Le site de l'eAIP belge refuse le lanceur. Comment avoir les voies de la Belgique ?",
+   "context": "Tu avais dit oui pour que le lanceur lise l'eAIP belge (Q-0136). À la première demande, une seule, le site ops.skeyes.be a répondu « 403 Forbidden » : il refuse les lectures automatiques (c'était déjà le cas le 11/11). Le lanceur ne contourne pas ce refus (ni faux navigateur, ni autre astuce). Aujourd'hui la base n'a aucune voie pour la Belgique et le Luxembourg : les routes qui les traversent y sont « non vérifiables », et l'écran le dit en les nommant. On vérifie encore si l'AIP belge se lit par la voie déjà en place (EAD, sans site nouveau) ; si oui, cette réponse sera ajoutée en tête. En attendant, l'ergonome recommande de laisser la Belgique « non vérifiable » (l'écran le dit) plutôt qu'un dépôt à la main à chaque cycle de 28 jours ; demander l'accès à skeyes reste ton choix. La lecture de l'AIP belge par l'EAD reste possible plus tard, par un lot (elle demande ta connexion).",
+   "options": [
+    "Je dépose moi-même les pages ENR 3 enregistrées depuis mon navigateur, à chaque cycle ; le lanceur lit le fichier déposé",
+    "Je demande à skeyes l'autorisation d'un accès automatique (je m'en occupe)",
+    "On laisse la Belgique « non vérifiable », nommée à l'écran, pour le moment",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-21",
+   "state": "todo",
+   "recommended": 2
   }
  ]
 }

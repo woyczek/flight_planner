@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d9bf3d6",
-  "fiches": 544,
+  "organisation": "525b563",
+  "fiches": 547,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -581,7 +581,7 @@
      "id": "SOG-0419",
      "kind": "feature",
      "state": "later",
-     "fr": "Route libre de l'Atlantique : la bonne paire de portes est essayée presque en dernier — la marge de temps est trop mince",
+     "fr": "Route libre de l'Atlantique : la bonne paire de points d'entrée et de sortie est essayée presque en dernier — la marge de temps est trop mince",
      "en": "Atlantic free route: the right pair of gates is tried almost last — the time margin is too thin",
      "de": "Freie Route über den Atlantik: das richtige Torpaar wird fast zuletzt versucht — die Zeitreserve ist zu knapp",
      "es": "Ruta libre del Atlántico: el buen par de puertas se prueba casi al final — el margen de tiempo es demasiado estrecho",
@@ -762,7 +762,7 @@
      "id": "SOG-0129",
      "kind": "feature",
      "state": "planned",
-     "fr": "Moteur de route dans la page (téléphone) : porter le moteur en JS, données RAD / FRA publiées",
+     "fr": "Moteur de route dans la page (téléphone) : réécrire le moteur en JS, données RAD / FRA publiées",
      "en": "Route engine in the page (phone): port the engine to JS, RAD / FRA data published",
      "de": "Routen-Engine in der Seite (Telefon): Engine nach JS portieren, RAD/FRA-Daten veröffentlicht",
      "es": "Motor de rutas en la página (teléfono): portar el motor a JS, datos RAD / FRA publicados",
@@ -1171,7 +1171,7 @@
      "id": "SOG-0533",
      "kind": "feature",
      "state": "done",
-     "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte porte « F330 » en tête et « /F350 » plus loin",
+     "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte affiche « F330 » en tête et « /F350 » plus loin",
      "en": "Fuel: the route is computed at FL350 and the flight plan filed at FL330; the text carries “F330” at the start and “/F350” further on",
      "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
      "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante",
@@ -1430,6 +1430,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-routes-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; routes ; procédures",
+    "en": "Carburant ; routes ; procédures",
+    "de": "Carburant ; routes ; procédures",
+    "es": "Carburant ; routes ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0548",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : un raccord au-delà de sa limite faute de procédure lue — la ligne dit ce qui manque et propose le geste de lecture",
+     "en": "Fuel: a connector beyond its limit for lack of a read procedure — the line says what is missing and offers the reading gesture",
+     "de": "Kraftstoff: eine Verbindung über ihrer Grenze mangels gelesenem Verfahren — die Zeile sagt, was fehlt, und bietet die Lesegeste an",
+     "es": "Combustible: un enlace más allá de su límite por falta de procedimiento leído — la línea dice qué falta y ofrece el gesto de lectura"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-routes-nat",
    "app": "pilote",
    "label": {
@@ -1644,7 +1665,7 @@
      "id": "SOG-0413",
      "kind": "feature",
      "state": "done",
-     "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message porte",
+     "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message mentionne",
      "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
      "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
      "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje",
@@ -3347,7 +3368,7 @@
      "id": "SOG-0539",
      "kind": "feature",
      "state": "planned",
-     "fr": "Routes : quatre règles refusées par Eurocontrol (EG2720, ED2173, LD3003, LD2098) ne sont nommées nulle part — elles citent le terrain de départ ou d'arrivée et portent sur un espace inconnu",
+     "fr": "Routes : quatre règles refusées par Eurocontrol (EG2720, ED2173, LD3003, LD2098) ne sont nommées nulle part — elles citent le terrain de départ ou d'arrivée et concernent un espace inconnu",
      "en": "Routes: four rules refused by Eurocontrol (EG2720, ED2173, LD3003, LD2098) are named nowhere — they cite the departure or arrival aerodrome and concern an unknown airspace",
      "de": "Routen: vier von Eurocontrol abgelehnte Regeln (EG2720, ED2173, LD3003, LD2098) werden nirgends genannt — sie nennen den Start- oder Zielflugplatz und betreffen einen unbekannten Luftraum",
      "es": "Rutas: cuatro reglas rechazadas por Eurocontrol (EG2720, ED2173, LD3003, LD2098) no se nombran en ningún sitio — citan el aeródromo de salida o de llegada y tratan de un espacio desconocido"
@@ -3541,6 +3562,48 @@
      "en": "Routes: the engine's EGGW → LQSA route is rejected by Eurocontrol's IFPS (24 errors: FRA, RAD, mandatory routes, STAR)",
      "de": "Routen: Die Route EGGW → LQSA des Rechners wird vom IFPS von Eurocontrol abgelehnt (24 Fehler: FRA, RAD, Pflichtrouten, STAR)",
      "es": "Rutas: la ruta EGGW → LQSA del motor es rechazada por el IFPS de Eurocontrol (24 errores: FRA, RAD, rutas obligatorias, STAR)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-moteur-departs",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; moteur ; départs",
+    "en": "Routes ; moteur ; départs",
+    "de": "Routes ; moteur ; départs",
+    "es": "Routes ; moteur ; départs"
+   },
+   "items": [
+    {
+     "id": "SOG-0547",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : au départ, la recherche part d'un point qui n'est la fin d'aucune SID (EGLL → MATCH, 32 NM pour une limite de 0) alors que des SID lues en partie existent",
+     "en": "Routes: on departure, the search starts from a point that ends no SID (EGLL → MATCH, 32 NM for a limit of 0) although partly read SIDs exist",
+     "de": "Routen: beim Abflug beginnt die Suche an einem Punkt, an dem keine SID endet (EGLL → MATCH, 32 NM bei Grenze 0), obwohl teilweise gelesene SIDs vorhanden sind",
+     "es": "Rutas: en la salida, la búsqueda parte de un punto que no es el final de ninguna SID (EGLL → MATCH, 32 NM para un límite de 0) aunque existen SID leídas en parte"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-moteur-route-libre",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; moteur ; route libre",
+    "en": "Routes ; moteur ; route libre",
+    "de": "Routes ; moteur ; route libre",
+    "es": "Routes ; moteur ; route libre"
+   },
+   "items": [
+    {
+     "id": "SOG-0546",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : terminal_gates refuse les points d'arrivée publiés de la route libre quand ils sont plus près que la distance de descente",
+     "en": "Routes: terminal_gates refuses published free-route arrival points when they are closer than the descent distance",
+     "de": "Routen: terminal_gates lehnt veröffentlichte Ankunftspunkte der freien Streckenführung ab, wenn sie näher als die Sinkflugstrecke liegen",
+     "es": "Rutas: terminal_gates rechaza los puntos de llegada publicados de la ruta libre cuando están más cerca que la distancia de descenso"
     }
    ]
   },
