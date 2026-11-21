@@ -234,7 +234,7 @@ export async function levels(launcher, args, {
   }
 }
 /** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason,
- *  semicircular }], stopped,
+ *  semicircular }], conformingTried, firstValidConforming, noConformingValid, stopped,
  *  asked } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
 export function levelsRead(res) {
   if (!res || typeof res !== 'object') return null;
@@ -251,9 +251,15 @@ export function levelsRead(res) {
     // SOG-0530 (lot B) : warning | undecided | ok | no_table, null sans contrôle ; jamais un blocage (valid ne le lit pas)
     semicircular: SEMICIRCULAR.includes(x?.semicircular) ? x.semicircular : null
   })).filter(x => x.fl !== null);
+  const flIn = v => Number.isInteger(v) && v >= 10 && v <= 660;
   return {
     ok: true,
     levels: list,
+    // SOG-0530 lot C (AeroDB e3f5f476f) : les niveaux essayés qui suivent la règle semi-circulaire, le premier valide d'entre eux, et
+    // « aucun niveau conforme n'a de route valide » — dits par le moteur, jamais déduits par l'écran
+    conformingTried: (Array.isArray(res.conforming_tried) ? res.conforming_tried : []).slice(0, LEVELS_MAX).filter(flIn),
+    firstValidConforming: flIn(res.first_valid_conforming) ? res.first_valid_conforming : null,
+    noConformingValid: res.no_conforming_valid === true,
     stopped: STOPS.includes(res.stopped) ? res.stopped : 'end',
     asked: Number.isInteger(res.asked) && res.asked >= 0 && res.asked <= LEVELS_MAX ? res.asked : list.length
   };

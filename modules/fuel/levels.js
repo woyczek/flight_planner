@@ -372,31 +372,28 @@
     };
   }
 
-  /** SOG-0529 : les niveaux candidats de « Auto », dans l'ordre des préférences — les mêmes que autoLevel (tenables, de la règle
-   *  semi-circulaire, entre minFt et maxFt), celui d'autoLevel d'abord (à 2 % près, le plus bas), puis les autres du moins au plus
-   *  gourmand ; `max` au plus (le contrat de route/levels : 12). Une place pour un filtre de plus sur la liste avant le choix (SOG-0530,
-   *  table des niveaux en attente de Q-0130). [{ h, fuel, minutes }]. */
-  function autoCandidates(D, trackDeg, {
+  /** SOG-0529, SOG-0530 (lot C d'AeroDB ; l'ergonome : l'écran ne déduit pas la règle semi-circulaire, le moteur la juge) : les
+   *  niveaux candidats de « Auto » jugés par route/levels, dans l'ordre des préférences — les niveaux tenables en milliers ronds, des
+   *  DEUX parités, entre minFt et maxFt : le moins gourmand d'abord (à 2 % près, le plus bas), puis les autres du moins au plus
+   *  gourmand ; `max` au plus (le contrat de route/levels : 12). Le cap n'est plus lu ici (il n'est que vrai : la règle est magnétique,
+   *  et sa coupure est 090°/270° au-dessus du FL195) ; autoLevel le garde pour le choix sans moteur. [{ h, fuel, minutes }]. */
+  function autoCandidates(D, _trackDeg, {
     minFt = 3000,
     maxFt = 20000,
     tie = 0.02,
     max = 12
   } = {}) {
-    const first = autoLevel(D, trackDeg, {
-      minFt,
-      maxFt,
-      tie
-    });
-    if (!first) return [];
-    const east = ((+trackDeg || 0) % 360 + 360) % 360 < 180,
-      top = Math.min(Number.isFinite(+maxFt) && +maxFt > 0 ? +maxFt : 20000, D.hi ?? Infinity),
-      rest = D.real.filter(r => r && Number.isFinite(r.fuel) && r.h !== first.h && r.h >= minFt && r.h <= top && r.h % 1000 === 0 && (r
-        .h /
-        1000 % 2 === 1) === east).sort((a, b) => a.fuel - b.fuel || a.h - b.h).map(r => ({
+    if (!D?.real?.length) return [];
+    const top = Math.min(Number.isFinite(+maxFt) && +maxFt > 0 ? +maxFt : 20000, D.hi ?? Infinity),
+      cand = D.real.filter(r => r && Number.isFinite(r.fuel) && r.h >= minFt && r.h <= top && r.h % 1000 === 0).map(r => ({
         h: r.h,
         fuel: r.fuel,
         minutes: r.minutes
       }));
+    if (!cand.length) return [];
+    const min = Math.min(...cand.map(r => r.fuel)),
+      first = cand.filter(r => r.fuel <= min * (1 + tie)).sort((a, b) => a.h - b.h)[0],
+      rest = cand.filter(r => r.h !== first.h).sort((a, b) => a.fuel - b.fuel || a.h - b.h);
     return [first, ...rest].slice(0, Math.max(1, max));
   }
 

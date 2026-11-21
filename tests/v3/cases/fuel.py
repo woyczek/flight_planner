@@ -9832,51 +9832,70 @@ def f298(c):
     c.check_errors()
 
 
-@case('F299', '« Auto » level: when the level kept is outside the semicircular rule (route/levels: semicircular « warning »), its sentence '
-      'ends with « — hors règle semi-circulaire »; the choice does not change; nothing for a level that follows the rule',
+_XQNE = {'id': 'XQNE', 'lat': 50.5, 'lon': 5.0}  # an invented arrival to the north-east of LFRS: 053° true, 330 NM
+_C30J_HI = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+            'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+
+
+def _auto_ne(c, st, rule, min_ft):
+    """« Auto » on the flight LFRS → XQNE (053°), the levels from `min_ft` to the ceiling of the sheet (FL250; a constraint of the
+    route gives the floor); `rule(levels)` answers route/levels. Returns the levels asked."""
+    st['levels_rule'] = rule
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+            r = d[1]['route']
+            r.update(arr='XQNE', text='LFRS XQNE', points=[r['points'][0], _XQNE], distanceNm=330, trackDeg=53,
+                     constraints={'XQNE': min_ft})
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', _C30J_HI, 'document']], airfields=True,
+           aero_extra={'aerodromes': [{'icao': 'XQNE', 'name': 'XQNE TEST', 'lat': _XQNE['lat'], 'lon': _XQNE['lon'], 'elev': 100}]})
+    wait_quote(c)
+    to_step(c, 0)
+    n0 = len(st['posts'])
+    c.tap(f'{FUEL} [data-do="levelauto"]')
+    for _ in range(60):
+        got = [p.get('args') or {} for p in st['posts'][n0:] if 'levels' in (p.get('args') or {})]
+        if got:
+            return got[0].get('levels') or []
+        c.wait(200)
+    raise Fail('no route/levels request', 'a request', 'none')
+
+
+def _ne_semi(x):
+    """The table of France on 053° (about 052° magnetic): below FL195 the half 000–179 (odd), above it the half 270–089 (even)."""
+    return 'ok' if (x // 10 % 2 == 1) == (x < 195) else 'warning'
+
+
+def _ne_answer(lv, valid=lambda x: True, connector=lambda x: 'procedure'):
+    """route/levels after AeroDB lot C: each level judged, conforming_tried, first_valid_conforming, no_conforming_valid."""
+    levels = [dict(_lv(x, valid(x), connector(x) if valid(x) else 'none', '' if valid(x) else _LV_NONE), semicircular=_ne_semi(x),
+                   warnings=int(_ne_semi(x) == 'warning')) for x in lv]
+    tried = [x['fl'] for x in levels if x['semicircular'] == 'ok']
+    ok = [x['fl'] for x in levels if x['valid']]
+    fvc = next((x for x in tried if x in ok), None)
+    return {'ok': True, 'levels': levels, 'first_valid': ok[0] if ok else None, 'conforming_tried': tried, 'first_valid_conforming': fvc,
+            'no_conforming_valid': bool(tried) and fvc is None and bool(ok), 'stopped': 'end', 'asked': len(lv)}
+
+
+@case('F299', '« Auto » level: when the level kept is outside the semicircular rule and no conforming level was tried (route/levels: '
+      'semicircular « warning », conforming_tried empty), its sentence ends with « — hors règle semi-circulaire »; the choice does not '
+      'change; nothing for a level that follows the rule',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
-      rule='SOG-0530 (the ergonomist, 21 Nov: the suffix until AeroDB lot C; the relay\'s reading of the captures: a level the table really '
-      'refuses); AeroDB lot B e45662187 (semicircular per level); a fake launcher, an invented sheet and an invented arrival XQNE to the '
-      'north-east (053° true: « Auto » takes an ODD level, the UTA half 270–089 of the table expects an EVEN one)')
+      rule='SOG-0530 (the ergonomist, 21 Nov: the suffix when no level conforms; the relay\'s reading of the captures: a level the table '
+      'really refuses); AeroDB lots B and C; a fake launcher, an invented sheet and an invented arrival XQNE to the north-east (053° true); '
+      'lot C (the candidates of both parities, the relay, 21 Nov): the floor of the route at FL250, the ceiling of the sheet, so FL250 '
+      '(odd, the UTA half 270–089 expects even) is the only level tried — fixture changed on purpose')
 def f299(c):
     st = _route_launcher(c, ['route/compute', 'route/levels'])
-    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
-          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
     mark = {'fr': '— hors règle semi-circulaire', 'en': '— outside the semicircular rule', 'de': '— außerhalb der Halbkreisregel',
             'es': '— fuera de la regla semicircular'}[c.lang]
     fl = f'{FUEL} input[data-k="fl"]'
     L = f'{FUEL} [data-lvlwhy]'
-    ne = {'id': 'XQNE', 'lat': 50.5, 'lon': 5.0}
-
-    def auto_with(semi):
-        # the table's answer for the levels asked: in the UTA (above FL195) on 053°, an odd level is outside the rule
-        st['levels_rule'] = lambda lv: {'ok': True, 'levels': [dict(_lv(x, True), semicircular=semi if x > 195 and x // 10 % 2 else 'ok',
-                                                                    warnings=int(semi == 'warning' and x > 195 and x // 10 % 2 == 1))
-                                                               for x in lv], 'first_valid': lv[0], 'stopped': 'end', 'asked': len(lv)}
-        docs = flight_docs()
-        for d in docs:
-            if d[0].endswith('current_flight.json'):
-                d[1]['aircraft']['sheetId'] = 'C30J'
-                r = d[1]['route']
-                r.update(arr='XQNE', text='LFRS XQNE', points=[r['points'][0], ne], distanceNm=330, trackDeg=53)
-        c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']], airfields=True,
-               aero_extra={'aerodromes': [{'icao': 'XQNE', 'name': 'XQNE TEST', 'lat': ne['lat'], 'lon': ne['lon'], 'elev': 100}]})
-        wait_quote(c)
-        to_step(c, 0)
-        n0 = len(st['posts'])
-        c.tap(f'{FUEL} [data-do="levelauto"]')
-        for _ in range(60):
-            got = [p.get('args') or {} for p in st['posts'][n0:] if 'levels' in (p.get('args') or {})]
-            if got:
-                return got[0]
-            c.wait(200)
-        raise Fail('no route/levels request', 'a request', 'none')
-
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    a = auto_with('warning')
-    lv = a.get('levels') or []
-    c.ok(lv and lv[0] > 195 and lv[0] // 10 % 2 == 1, lv, 'the first candidate of « Auto » on 053°: an odd level of the UTA (the table expects even)')
-    c.until(f"(v) => document.querySelector('{fl}').value === v", str(lv[0]), what='the first candidate taken (the choice unchanged)')
+    lv = _auto_ne(c, st, _ne_answer, 25000)
+    c.eq(lv, [250], 'the only level between the floor of the route and the ceiling of the sheet', what='levels')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", '250', what='FL250 taken (the choice unchanged)')
     c.until(f"(document.querySelector('{L} [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
     c.ok(norm(mark) in norm(c.text(f'{L} [data-lvlmain]') or ''), c.text(f'{L} [data-lvlmain]'), 'the suffix at the end of the sentence')
     for w in (390, 1280):
@@ -9885,7 +9904,65 @@ def f299(c):
         c.js(_F281_NOTES_OFF)
         c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F299_{c.design}_{w}_{c.lang}_outside.png')
-    auto_with('ok')
+    _auto_ne(c, st, lambda lv: dict(_ne_answer(lv), levels=[dict(x, semicircular='ok', warnings=0) for x in _ne_answer(lv)['levels']],
+                                    conforming_tried=list(lv), first_valid_conforming=lv[0]), 25000)
     c.until(f"(document.querySelector('{L} [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
     c.ok(norm(mark) not in norm(c.text(f'{L} [data-lvlmain]') or ''), c.text(f'{L} [data-lvlmain]'), 'nothing for a level that follows the rule')
+    c.check_errors()
+
+
+@case('F300', '« Auto » level after AeroDB lot C: Fuel sends the levels of BOTH parities (it no longer deduces the semicircular rule from '
+      'the true track) and keeps the first valid level the engine says conforms — on 053° above FL195, an EVEN level; a conforming level '
+      'reached by a direct connector before a level outside the rule with a procedure (the connector said); when only levels outside the '
+      'rule are valid (no_conforming_valid), the first valid one and « — aucun niveau conforme à la règle semi-circulaire n\'a de route '
+      'valide »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0530 lot C (the ergonomist, point 4 of the fiche: « le moteur ne propose pas de lui-même un niveau qui enfreint la règle '
+      'quand un niveau conforme valide aussi »; the relay, 21 Nov: both parities, conformity first, then the procedure); AeroDB e3f5f476f; '
+      'a fake launcher, an invented sheet and an invented arrival XQNE to the north-east (053° true)')
+def f300(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    none = {'fr': '— aucun niveau conforme à la règle semi-circulaire n’a de route valide',
+            'en': '— no level that follows the semicircular rule has a valid route',
+            'de': '— keine Flugfläche nach der Halbkreisregel hat eine gültige Route',
+            'es': '— ningún nivel conforme a la regla semicircular tiene ruta válida'}[c.lang]
+    mark = {'fr': 'hors règle semi-circulaire', 'en': 'outside the semicircular rule', 'de': 'außerhalb der Halbkreisregel',
+            'es': 'fuera de la regla semicircular'}[c.lang]
+    direct = {'fr': 'raccord direct', 'en': 'direct connector', 'de': 'Direktanschluss', 'es': 'enlace directo'}[c.lang]
+    fl = f'{FUEL} input[data-k="fl"]'
+    M = f'{FUEL} [data-lvlwhy] [data-lvlmain]'
+    said = lambda: norm(c.text(M) or '')
+
+    def shots(tag):
+        for w in (390, 1280):
+            c.page.set_viewport_size({'width': w, 'height': c.height})
+            c.settle()
+            c.js(_F281_NOTES_OFF)
+            c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
+            c.shot(f'F300_{c.design}_{w}_{c.lang}_{tag}.png')
+        c.page.set_viewport_size({'width': 390, 'height': c.height})
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 1. every level valid: the first conforming one, EVEN above FL195 on 053° (red before: only odd levels were sent)
+    lv = _auto_ne(c, st, _ne_answer, 20000)
+    c.ok({x // 10 % 2 for x in lv} == {0, 1} and all(200 <= x <= 250 for x in lv), lv, 'the levels of both parities, from the floor to the ceiling')
+    even = [x for x in lv if x // 10 % 2 == 0]
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(even[0]), what='the first conforming level taken: an even one')
+    c.until(f"(document.querySelector('{M}')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
+    c.ok(norm(mark) not in said() and norm(none) not in said(), said(), 'a conforming level: neither the mark nor the sentence')
+    shots('conform')
+    # 2. conformity first, then the procedure: a conforming level reached by a direct connector beats a level outside the rule with one
+    lv = _auto_ne(c, st, lambda lv: _ne_answer(lv, connector=lambda x: 'direct' if x // 10 % 2 == 0 else 'procedure'), 20000)
+    even = [x for x in lv if x // 10 % 2 == 0]
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(even[0]), what='the conforming level, by a direct connector')
+    c.until(f"(w) => (document.querySelector('{M}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", norm(direct),
+            timeout=8000, what='the direct connector said')
+    # 3. only the levels outside the rule are valid: the engine says so (no_conforming_valid), the first valid level is kept, in plain words
+    lv = _auto_ne(c, st, lambda lv: _ne_answer(lv, valid=lambda x: x // 10 % 2 == 1), 20000)
+    odd = [x for x in lv if x // 10 % 2 == 1]
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(odd[0]), what='the first valid level, outside the rule')
+    c.until(f"(w) => (document.querySelector('{M}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", norm(none),
+            timeout=8000, what='« aucun niveau conforme … » said')
+    c.ok(norm(mark) not in said(), said(), 'the plain sentence instead of the suffix')
+    shots('noconform')
     c.check_errors()

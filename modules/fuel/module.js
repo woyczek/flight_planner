@@ -1388,6 +1388,13 @@ const TX = {
   levelAutoSemi: [' — hors règle semi-circulaire', ' — outside the semicircular rule', ' — außerhalb der Halbkreisregel',
     ' — fuera de la regla semicircular'
   ],
+  // SOG-0530 lot C (l'ergonome) : le moteur dit qu'aucun niveau conforme essayé n'a de route valide (no_conforming_valid) : la phrase
+  // claire, au lieu du suffixe
+  levelAutoNoConform: [' — aucun niveau conforme à la règle semi-circulaire n’a de route valide',
+    ' — no level that follows the semicircular rule has a valid route',
+    ' — keine Flugfläche nach der Halbkreisregel hat eine gültige Route',
+    ' — ningún nivel conforme a la regla semicircular tiene ruta válida'
+  ],
   // le pli de la raison du moteur (le bloc des critères du dégagement) : la phrase reste courte, la raison se déplie au toucher
   levelAutoWhyFold: ['Raison du moteur de route', 'Route engine’s reason', 'Begründung der Routenberechnung',
     'Motivo del motor de rutas'
@@ -6647,13 +6654,18 @@ function levelAuto(C) {
     b.setAttribute('aria-pressed', String(!!f.level?.auto));
   }
   const cons = Object.values(f.route?.constraints || {}).map(Number).filter(v => v > 0),
-    cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
+    lim = {
       minFt: Math.max(3000, ...cons),
-      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000,
+      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000
+    },
+    cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
+      ...lim,
       max: RE.LEVELS_MAX
-    }) : [];
+    }) : [],
+    // SOG-0530 lot C : sans moteur, le choix d'avant — le moins gourmand de la parité du cap (« route non vérifiée », dit)
+    blind = cands.length ? window.FuelLevels.autoLevel?.(C.D, +f.route?.trackDeg || 0, lim) || cands[0] : null;
   // SOG-0529 : le moteur de route juge les candidats (route/levels, une demande par clé du vol) ; le choix se fait ici
-  const J = cands.length ? autoJudge(cands) : null;
+  const J = cands.length ? autoJudge(cands, blind) : null;
   if (J?.busy) {
     lvlLines(line, '', {
       main: tt(TX.levelAutoBusy)
@@ -6716,11 +6728,11 @@ function autoStop() {
  *  et l'ensemble des candidats), gardé (S.autoLv) ; le choix refait ici à chaque dessin. Rend { busy } pendant l'appel ; { none } (la
  *  phrase) quand aucun n'est valide ; sinon { pick, say(fl, t) } — pick : le premier VALIDE dont le raccord est une procédure (ou 'none'),
  *  sinon le premier valide en raccord direct (dit) ; sans lanceur ou sur un échec, le moins gourmand, « route non vérifiée (cause) ». */
-function autoJudge(cands) {
+function autoJudge(cands, blind = cands[0]) {
   const launcher = S.ctx.launcher,
     flOf = c => Math.round(c.h / 100),
     unchecked = cause => ({
-      pick: cands[0],
+      pick: blind,
       say: (fl, t) => ({
         main: tt(TX.levelAutoUnchecked, {
           fl,
@@ -6769,9 +6781,15 @@ function autoJudge(cands) {
     busy: true
   };
   if (!L.res?.ok) return unchecked(L.res?.reason || 'failed');
+  // SOG-0530 lot C (l'ergonome, point 4) : la conformité d'abord (les niveaux que le moteur dit conformes, conforming_tried), puis la
+  // procédure (un raccord direct conforme passe avant une procédure hors règle ; le raccord direct reste dit) ; sans niveau conforme
+  // valide, le choix de SOG-0529 sur tous les valides
   const by = new Map(L.res.levels.map(x => [x.fl, x])),
     valid = cands.filter(c => by.get(flOf(c))?.valid),
-    pick = valid.find(c => by.get(flOf(c)).connector !== 'direct') || valid[0] || null,
+    conf = new Set(L.res.conformingTried || []),
+    good = valid.filter(c => conf.has(flOf(c))),
+    pref = list => list.find(c => by.get(flOf(c)).connector !== 'direct') || list[0] || null,
+    pick = pref(good) || valid.find(c => flOf(c) === L.res.firstValidConforming) || pref(valid),
     partial = L.res.stopped === 'time' || L.res.stopped === 'cancelled' ? tt(TX.levelAutoPartial, {
       n: L.res.levels.length,
       m: cands.length
@@ -6797,10 +6815,11 @@ function autoJudge(cands) {
       main: tt(TX.levelAutoValid, {
         fl,
         t
-      }) + (by.get(flOf(pick)).semicircular === 'warning' ? tt(TX.levelAutoSemi) : '') + (by.get(flOf(pick)).connector === 'direct' ?
-        tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX.levelAutoSkip, {
-        fl: flTxt(skipped.fl * 100)
-      }) : '') + partial,
+      }) + (by.get(flOf(pick)).semicircular !== 'warning' ? '' : L.res.noConformingValid ? tt(TX.levelAutoNoConform) : tt(TX
+        .levelAutoSemi)) + (by.get(flOf(pick)).connector === 'direct' ? tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX
+        .levelAutoSkip, {
+          fl: flTxt(skipped.fl * 100)
+        }) : '') + partial,
       reason: skipped?.reason || '' // la raison du moteur, telle quelle, dans le pli
     })
   };
