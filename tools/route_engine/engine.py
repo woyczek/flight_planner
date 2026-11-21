@@ -1114,13 +1114,16 @@ def assess(request,_nav=None,_rad=None,_path=None):
     # un aérodrome qui a des procédures lues garde la rigueur du contrôle (une route saisie « LFPG DCT … » doit prendre sa SID)
     no_proc=lambda ad,kind:not nav.procedures.stats.get(ad,{}).get(kind+'_usable',0)
     free=dict(free_departure=bool(legs) and legs[0]['via']=='DCT' and legs[0].get('kind')!='SID' and (generated or no_proc(dep,'SID')),free_arrival=bool(legs) and legs[-1]['via']=='DCT' and legs[-1].get('kind') not in ['STAR','APPROACH_LINK'] and (generated or no_proc(arr,'STAR')))   # SOG-0161 : le même raccord libre que la recherche
+    level_table=level_rule.load(nav.data_dir/'route'/'levels_fr.json')      # SOG-0530 lot B : le tableau des niveaux de la France (lu par le lanceur), une fois pour la route
+    for l,cap_ft in zip(legs,level_rule.caps(legs,nav.ads,level_table,fl*100)):      # SOG-0530 lot C : le palier au plafond d'une voie de France prend le plus haut niveau conforme sous ce plafond
+        if cap_ft is not None:l['semicircular_cap_ft']=cap_ft
     profile=flight_profile.build(legs,dep_elev or 0,arr_elev or 0,fl,**options,strategy=strategy,**free)
     for l in legs:
         if l.get('data_gap'):l['compatible']=None
         for text in l['vertical_errors']:
             issue('ERREUR',f'{l["via"]} {l["start"]["id"]}–{l["end"]["id"]} : {text}')
     if legs:      # SOG-0530 lot B : le niveau de croisière contre la règle semi-circulaire de l'AIP de France (tableau lu par le lanceur) : un AVERTISSEMENT, jamais une erreur ; le doute (route proche d'une coupure, État sans tableau) est DIT
-        level_warnings,level_open,level_notes,level_stats=level_rule.check(legs,nav.ads,level_rule.load(nav.data_dir/'route'/'levels_fr.json'))
+        level_warnings,level_open,level_notes,level_stats=level_rule.check(legs,nav.ads,level_table)
         for x in level_warnings+level_open+level_notes:issue('REVUE',x['text'],x['code'],False,**x['values'])      # l'ergonome : un doute sur le niveau (route proche d'une coupure, variation inconnue) est une ligne du groupe d'AVERTISSEMENT, jamais un non-vérifiable : aucune de ces raisons ne change le verdict
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')

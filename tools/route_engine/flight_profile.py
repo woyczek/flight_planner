@@ -152,6 +152,8 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         # Preserve the published boundary exactly: 19,500 ft may be the only
         # common altitude between two adjacent bands. Never round it to 19,000.
         cap=min(cruise,high)
+        sc=leg.get('semicircular_cap_ft')      # SOG-0530 lot C : le palier au plafond de la voie prend le plus haut niveau CONFORME à la règle semi-circulaire (en France) au lieu du plafond lui-même (FL245 -> FL230)
+        if isinstance(sc,(int,float)) and not isinstance(sc,bool) and math.isfinite(sc) and low<=sc<cap:cap=sc
         lowers[-1]=max(lowers[-1],low); uppers[-1]=min(uppers[-1],cap)
         constraint=leg.get('node_constraints') or {}
         if constraint.get('start_min') is not None:lowers[-1]=max(lowers[-1],constraint['start_min'])

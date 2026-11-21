@@ -19685,3 +19685,80 @@ def k495(c):
                     dict(table_doc, lower={'ifr': [True] * 6}), [], 'x', '[' * 100000, '{"a":' * 50000, '{}']
     c.eq([loaded(x) is None for x in hostile_docs], [True] * len(hostile_docs), 'a file of the data repository that is not exactly the table (another schema or zone, a bad cycle or tracks, a level out of 10-660, a duplicate, a non-number, a boolean, a 100 KB of « [ », a deeply nested object) is NOT a table', what='hostile files')
     c.eq((loaded(table_doc) or {}).get('cycle'), '2026-10-29', 'the real table reads', what='good file')
+
+
+@case('K496', 'Route engine, SOG-0530 lot C: the engine does not PROPOSE a level that breaks the semicircular rule when a conforming one is also valid — in France the level-off at the CEILING of an airway takes the highest level of the table that is at or under that ceiling (FL175 → FL170), never the filed level (the user\'s choice, the warning says it) and never without a table or in another State; `route/levels` SAYS itself when it keeps a level outside the rule because no conforming level has a valid route (`no_conforming_valid`, `conforming_tried`, `first_valid_conforming`)',
+      'K', static=True,
+      rule='SOG-0530 lot C (the ergonomist, point 4 of the fiche: « le moteur ne PROPOSE pas de lui-même un niveau qui enfreint la règle quand un niveau conforme valide aussi ; dire pourquoi il en propose aujourd\'hui » ; in France the adapted profile\'s level-off takes the highest conforming level under the airway ceiling; « Auto » prefers `semicircular: ok`; and, from the ergonomist through the relay: « si Auto garde un niveau hors règle, c\'est qu\'aucun niveau conforme n\'a de route valide : route/levels doit le DIRE (no_conforming_valid), l\'écran ne le déduit pas »). The adapted profile levels off, silently, AT the ceiling of an airway whose ceiling is under the filed level (SOG-0401 (4)); a ceiling written as a half level (FL245, FL175) is no cruising level of the table. Measured on the 24 invented flights, computed routes: see DECISIONS',
+      )
+def k496(c):
+    import json
+    import math
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V, level_rule as L, flight_profile as FP
+    lower = {'ifr': [list(range(10, 191, 20)), list(range(20, 181, 20))], 'vfr': [list(range(35, 196, 20)), list(range(45, 186, 20))]}
+    table_doc = {'schema': 1, 'zone': 'fr', 'cycle': '2026-10-29', 'source': 'invented', 'tracks': {'lower': ['000-179', '180-359'], 'upper': ['090-269', '270-089']}, 'lower': lower,
+                 'upper': [list(range(210, 391, 20)) + [410, 450, 490], list(range(200, 401, 20)) + [430, 470, 510]]}
+    points = {'LUMAT': (50.0, 1.0), 'PIKAD': (50.0, 3.0), 'RENTO': (50.0, 6.0), 'SOLVA': (50.0, 9.0)}
+    lanes = [('UH1', ['A0', 'LUMAT', 'PIKAD'], 5000, 17500), ('UH2', ['PIKAD', 'RENTO', 'SOLVA', 'P4', 'B0'], 5000, 46000)]
+
+    def fly(zone='fr', levels=table_doc, fl=350):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, points=points, lanes=lanes, zone=zone, levels=levels)
+            request = V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'route': 'A0 UH1 PIKAD UH2 B0', 'date': '2026-11-09T12:00', 'alternatives': False, 'proposals': False})
+            return P.compute(request, data, rad, None)['primary']
+    first = lambda p: [round(l['altitude_start_ft']) for l in p['legs'] if l['via'] == 'UH1']
+    semi = lambda p: [(w['values']['fl'], w['values']['suggested']) for w in p.get('warnings') or [] if w['code'] == 'level_semicircular']
+    with_table, no_table, foreign = fly(), fly(levels=None), fly(zone='xx')
+    c.eq((first(with_table), semi(with_table)), ([17000, 17000], []), 'the lane UH1 has a ceiling of FL175 (a half level, no level of the table) and the flight is east (000-179: odd levels): the level-off is at FL170, the highest level of the table at or under the ceiling, and there is NO warning (red before: it levelled off at 17 500 ft and `level_semicircular` said FL175)', what='level-off')
+    c.eq((first(no_table), first(foreign), semi(no_table), semi(foreign)), ([17500, 17500], [17500, 17500], [], []), 'without the table of France, or in another State, nothing changes: the level-off stays at the ceiling', what='unchanged')
+    # the unit: which legs, which levels
+    ads = {'AAAA': {'lat': 48.0, 'lon': 2.0, 'magVar': 0.0}, 'BBBB': {'lat': 48.5, 'lon': 2.5, 'magVar': 0.0}, 'CCCC': {'lat': 47.5, 'lon': 1.5, 'magVar': 0.0}}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
+        path = os.path.join(td2, 'levels_fr.json')
+        open(path, 'w', encoding='utf-8').write(json.dumps(table_doc))
+        table = L.load(path)
+
+    def leg(track, upper, lower_ft=5000, zone='fr', kind='AIRWAY', **more):
+        a = {'id': 'P0', 'lat': 48.0, 'lon': 2.0}
+        b = {'id': 'P1', 'lat': 48.0 + 30 * math.cos(math.radians(track)) / 60, 'lon': 2.0 + 30 * math.sin(math.radians(track)) / (60 * math.cos(math.radians(48.0)))}
+        return dict(start=a, end=b, via='UH1', kind=kind, source_zone=zone, upper=upper, lower=lower_ft, **more)
+    cap = lambda *legs, tab=table, cruise=35000: L.caps(list(legs), ads, tab, cruise)
+    c.eq((cap(leg(150, 24500)), cap(leg(300, 24500)), cap(leg(100, 17500)), cap(leg(250, 17500))), ([23000], [24000], [17000], [16000]), 'the level-off takes the highest level of the table at or under the ceiling: track 150 (090-269, odd) FL245 → FL230; track 300 (270-089, even) FL245 → FL240; below FL195 track 100 FL175 → FL170, track 250 (even) FL175 → FL160', what='caps')
+    c.eq((cap(leg(300, 24000)), cap(leg(150, 35000)), cap(leg(150, 40000)), cap(leg(91, 24500)), cap(leg(150, 24500), tab=None), cap(leg(150, 24500, zone='gb')), cap(leg(150, 24500, kind='SID')), cap(leg(150, 24500, node_constraints={'start_min': 1})), cap(leg(150, 19500)), cap(leg(150, 24500, lower_ft=24000)), cap(leg(150, 24500), cruise=24500)),
+         tuple([[None]] * 11), 'nothing to change when the ceiling already is a level of the table, when the ceiling is not under the filed level (the filed level is the user\'s choice: it is never moved, the warning says it), near a cut (91 degrees: not decided), without the table, in another State, on a SID, with a constraint of the node, at FL195, when the highest conforming level would be under the floor of the airway', what='no change')
+    c.eq((cap(dict(leg(150, 24500), start={'id': 'P0', 'lat': float('inf'), 'lon': 2.0})), cap(dict(leg(150, 24500), upper=float('nan'))), cap(dict(leg(150, 24500), upper=True)), cap(dict(leg(150, 24500), upper='x'))), ([None], [None], [None], [None]), 'a coordinate of infinity, a ceiling that is NaN, a boolean or a string: nothing changes and nothing raises', what='hostile')
+    # the profile uses it, and ignores what is not a number below the ceiling
+    base = dict(start={'id': 'A', 'lat': 50.0, 'lon': 0.0}, end={'id': 'B', 'lat': 50.0, 'lon': 3.0}, via='UH1', kind='AIRWAY', nm=120.0, lower=5000, upper=24500)
+    tail = dict(start={'id': 'B', 'lat': 50.0, 'lon': 3.0}, end={'id': 'C', 'lat': 50.0, 'lon': 12.0}, via='UH2', kind='AIRWAY', nm=360.0, lower=5000, upper=46000)
+
+    def level_off(sc):
+        legs = [dict(base, semicircular_cap_ft=sc), dict(tail)]
+        FP.build(legs, 100, 100, 350, strategy='adapt')
+        return round(legs[0]['altitude_end_ft'])
+    c.eq([level_off(None), level_off(23000), level_off(25000), level_off(float('nan')), level_off(True), level_off('x'), level_off(1000)], [24500, 23000, 24500, 24500, 24500, 24500, 24500], 'the profile levels off at the cap of the airway; a cap above the ceiling, NaN, a boolean, a string or one under the floor of the airway is ignored', what='profile')
+    # route/levels says it itself
+    def row(fl, valid, sem):
+        return {'fl': fl, 'valid': valid, 'semicircular': sem}
+
+    def run(rows):
+        real, built = P.compute, iter(rows)
+
+        def fake(request, *a, **k):
+            r = next(built)
+            issues = [] if r[1] else [{'level': 'ERREUR', 'text': 'x'}]
+            return {'primary': {'ok': True, 'status': 'S', 'issues': issues, 'legs': [], 'verdict': 'conform', 'route': 'R', 'level_rule': {'checked': 1, 'warnings': 1 if r[2] == 'warning' else 0, 'undecided': 0}, 'warnings': []}, 'interrupted': False, 'states': 1}
+        P.compute = fake
+        try:
+            return P.levels({'adep': 'ZZAA', 'adest': 'ZZBB'}, [x[0] for x in rows], '', '', '')
+        finally:
+            P.compute = real
+    both = run([(330, True, 'warning'), (340, False, 'ok'), (350, False, 'ok')])
+    one = run([(330, True, 'warning'), (350, True, 'ok')])
+    none = run([(330, True, 'warning'), (320, True, 'warning')])
+    allok = run([(350, True, 'ok'), (330, True, 'warning')])
+    c.eq([(x['no_conforming_valid'], x['conforming_tried'], x['first_valid_conforming'], x['first_valid']) for x in (both, one, none, allok)], [(True, [340, 350], None, 330), (False, [350], 350, 330), (False, [], None, 330), (False, [350], 350, 350)],
+         '`no_conforming_valid` is true only when conforming levels were TRIED, none has a valid route, and a valid level outside the rule exists: that is why « Auto » keeps FL330; `conforming_tried` lists the levels tried that follow the rule; `first_valid_conforming` is the first valid level that follows it (the screen reads them, it does not deduce)', what='no conforming valid')

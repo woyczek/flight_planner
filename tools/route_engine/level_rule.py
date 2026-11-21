@@ -113,6 +113,51 @@ def _label(leg):
     return f"{leg.get('via') or 'DCT'} {leg['start']['id']}–{leg['end']['id']}" if leg.get('via') not in (None, 'DCT') else f"{leg['start']['id']}–{leg['end']['id']}"
 
 
+def _track(leg, ads, cells):
+    """(route magnétique estimée du tronçon en degrés, marge en degrés) ; None quand aucune variation n'est connue près de lui. `cells` : les variations déjà estimées, par carré de 0,5° (la même mémoire que `check`)."""
+    mid = dict(lat=(leg['start']['lat'] + leg['end']['lat']) / 2, lon=(leg['start']['lon'] + leg['end']['lon']) / 2)
+    cell = (round(mid['lat'] * 2), round(mid['lon'] * 2))      # la variation change de moins d'un degré sur 100 NM : une estimation par carré de 0,5° (au centre du carré), et non un parcours de l'index entier par tronçon
+    if cell not in cells:
+        cells[cell] = variation(dict(lat=cell[0] / 2, lon=cell[1] / 2), ads)
+    var = cells[cell]
+    return None if var is None else ((geo.bearing(leg['start'], leg['end']) - var[0]) % 360, var[1])
+
+
+def caps(legs, ads, table, cruise_ft):
+    """SOG-0530 lot C : pour chaque tronçon, l'altitude (ft) à laquelle le palier au PLAFOND de sa voie doit se faire pour suivre la règle semi-circulaire, ou None (rien à changer). Le profil adapté ramène en silence au plafond d'une voie un tronçon dont le plafond est sous le niveau déposé : si ce plafond (FL245) n'est pas un niveau du tableau de la France pour la route du tronçon, le palier prend le PLUS HAUT niveau du tableau qui est au plus au plafond (FL230). Seulement : un tronçon de France (tableau lu), de croisière possible (ni SID ni STAR), dont le plafond est SOUS le niveau déposé (le niveau déposé lui-même n'est jamais changé : c'est le choix de l'utilisateur, l'avertissement le dit) ; une route trop près d'une coupure (marge) ou sans variation : None ; le niveau retenu doit rester dans la bande de la voie (au moins son plancher) et dans la même table que le plafond (au-dessous / au-dessus du FL195)."""
+    out = [None] * len(legs)
+    if table is None:
+        return out
+    zones = _zones(legs)
+    cells = {}
+    for i, leg in enumerate(legs):
+        high, low = leg.get('upper'), leg.get('lower')
+        if (zones[i] != 'fr' or leg.get('kind') in CRUISE_SKIP or leg.get('data_gap') or leg.get('node_constraints') or not isinstance(leg.get('start'), dict) or not isinstance(leg.get('end'), dict)
+                or not all(_number(leg[k].get(c), 180) for k in ('start', 'end') for c in ('lat', 'lon')) or not _number(high, 1000000) or not _number(low if low is not None else 0, 1000000) or high >= cruise_ft):
+            continue
+        level = int(high // 100)      # le niveau de vol entier au plus égal au plafond
+        if not 10 <= level <= 660 or level == 195:
+            continue
+        found = _track(leg, ads, cells)
+        if found is None:
+            continue
+        track, margin = found
+        upper = level > 195
+        limits = (90, 270) if upper else (0, 180)
+        if min(abs((track - x + 180) % 360 - 180) for x in limits) < margin:
+            continue
+        half = (0 if 90 <= track < 270 else 1) if upper else (0 if track < 180 else 1)
+        listed = (table['upper'] if upper else table['lower'])[half]
+        if upper and level > max(max(x) for x in table['upper']):
+            continue
+        if level in listed:
+            continue
+        better = max((x for x in listed if x <= level), default=None)
+        if better is not None and better * 100 >= (low or 0) and better * 100 < high:
+            out[i] = better * 100
+    return out
+
+
 def check(legs, ads, table):
     """Les avertissements, les non-vérifiables et les notes du contrôle du niveau de croisière de la route `legs` : trois listes de { code, values, text } et les chiffres { cycle, checked } ; voir l'en-tête du module pour les codes et leurs valeurs."""
     zones = _zones(legs)
@@ -138,20 +183,16 @@ def check(legs, ads, table):
             continue
         if level == 195:
             continue      # ni dans « en dessous du FL195 » ni dans « 195 < FL < 660 » : pas dans le tableau
-        mid = dict(lat=(leg['start']['lat'] + leg['end']['lat']) / 2, lon=(leg['start']['lon'] + leg['end']['lon']) / 2)
-        cell = (round(mid['lat'] * 2), round(mid['lon'] * 2))      # la variation change de moins d'un degré sur 100 NM : une estimation par carré de 0,5° (au centre du carré), et non un parcours de l'index entier par tronçon
-        if cell not in cells:
-            cells[cell] = variation(dict(lat=cell[0] / 2, lon=cell[1] / 2), ads)
-        var = cells[cell]
-        if var is None:
+        found = _track(leg, ads, cells)
+        if found is None:
             runs.append((('unknown', level), i, i, 1, {}))
             continue
-        track = (geo.bearing(leg['start'], leg['end']) - var[0]) % 360
+        track, margin = found
         upper = level > 195
         limits = (90, 270) if upper else (0, 180)
         gap = min(abs((track - x + 180) % 360 - 180) for x in limits)
-        if gap < var[1]:
-            runs.append((('near', level, upper), i, i, 1, dict(track_deg=round(track), margin_deg=round(var[1], 1), limit_deg=min(limits, key=lambda x: abs((track - x + 180) % 360 - 180)))))
+        if gap < margin:
+            runs.append((('near', level, upper), i, i, 1, dict(track_deg=round(track), margin_deg=round(margin, 1), limit_deg=min(limits, key=lambda x: abs((track - x + 180) % 360 - 180)))))
             continue
         half = (0 if 90 <= track < 270 else 1) if upper else (0 if track < 180 else 1)
         listed = (table['upper'] if upper else table['lower'])[half]

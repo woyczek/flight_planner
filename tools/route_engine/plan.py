@@ -669,4 +669,8 @@ def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=N
             if first_valid:
                 why = 'first-valid'
                 break
-    return {'levels': out, 'first_valid': first, 'stopped': why, 'asked': len(wanted)}
+    conforming = [r['fl'] for r in out if r.get('semicircular') == 'ok']      # SOG-0530 lot C : les niveaux ESSAYÉS qui suivent la règle semi-circulaire de la France
+    first_ok = next((r['fl'] for r in out if r['valid'] and r.get('semicircular') == 'ok'), None)      # le premier niveau VALIDE qui la suit
+    off_rule = next((r['fl'] for r in out if r['valid'] and r.get('semicircular') == 'warning'), None)      # un niveau valide qui ne la suit pas
+    return {'levels': out, 'first_valid': first, 'stopped': why, 'asked': len(wanted), 'conforming_tried': conforming[:MAX_LEVELS], 'first_valid_conforming': first_ok,      # SOG-0530 lot C : `no_conforming_valid` : des niveaux conformes ont été essayés, AUCUN n'a de route valide, et un niveau valide hors règle existe : c'est la raison pour laquelle « Auto » garde un niveau hors de la règle (l'écran ne le déduit pas)
+            'no_conforming_valid': bool(conforming) and first_ok is None and off_rule is not None}
