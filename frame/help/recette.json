@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-21",
-  "tests": 375,
+  "tests": 377,
   "verdicts": 242
  },
  "apps": [
@@ -3765,7 +3765,7 @@
     "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
     "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado"
    },
-   "test": "Après la relance du lanceur : Carburant, départ EGLL. « Source et cartes » › « Lire les départs dans le paquet du Royaume-Uni » : la ligne dit ce qui est lu, en français. Sous la liste des SID : « Cartes SID de l'AIP : AD 2.EGLL-6-3 », un lien qui ouvre la carte chez NATS ; « Carte » sur la ligne de la piste et sur celle de la SID choisie. À l'arrivée EGLL (dépliée) : « Cartes STAR de l'AIP : AD 2.EGLL-7-1 · AD 2.EGLL-7-2 », en liens.",
+   "test": "Le lanceur doit tourner sur un code du 20/11 ou plus récent (relancé depuis). Carburant › Procédures, EGLL : touche « Relire » (la lecture affichée date du 16/11, avant les trois corrections du lecteur). Puis signale ce que la nouvelle lecture dit : combien de cartes lues sur 15, et si les cartes 7-13 à 7-19 disent encore « disposition non reconnue ». Les « tronçons CA sans point » sont normaux (montée à un cap jusqu'à une altitude).",
    "since": "2026-11-16",
    "state": "known",
    "history": [
@@ -5584,6 +5584,34 @@
    "delivered": "2026-11-20T17:27:52Z"
   },
   {
+   "id": "SOG-0535",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : un direct de route libre dont la bande de niveaux exclut le niveau demandé est pris quand même ; le profil y descend sans que la route écrite le dise",
+    "en": "Routes: a free-route direct whose level band excludes the requested level is used anyway; the profile descends there without the written route saying so",
+    "de": "Routen: Eine Free-Route-Direktverbindung, deren Flugflächenband die angeforderte Flugfläche ausschließt, wird trotzdem genommen; das Profil sinkt dort, ohne dass die geschriebene Route es sagt",
+    "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Carburant, EGGW → LQSA au FL330, « Calculer A → B » : la route ne prend plus le direct REDFA–NOMKA (limité au FL315) ; toute la croisière reste au FL330 sur le profil, et la revue « profil adapté aux plafonds » n'apparaît plus. Dis si une route qui marchait hier ne se calcule plus.",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T18:41:58Z"
+  },
+  {
+   "id": "SOG-0537",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : trois défauts de contrat du moteur — no_conforming_route sans valeurs et au mauvais compte, partage « en infraction 0 % » malgré un raccord fautif, rad_unread pour des États non traversés",
+    "en": "Routes: three contract defects of the engine — no_conforming_route without values and miscounted, “in breach 0 %” share despite a faulty connector, rad_unread for States not crossed",
+    "de": "Routen: drei Vertragsfehler der Engine — no_conforming_route ohne Werte und falsch gezählt, Anteil „regelwidrig 0 %“ trotz fehlerhafter Anbindung, rad_unread für nicht überflogene Staaten",
+    "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Carburant, une route en infraction avec une règle du RAD et un raccord trop long : le message « aucune route conforme » compte les deux (« 2 règles », plus « 1 » seulement) ; la part « en infraction » n'est plus à 0 % quand le raccord est fautif ; la liste des États dont le RAD n'est pas lu ne cite que les États que la route traverse.",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T18:41:58Z"
+  },
+  {
    "id": "SOG-0538",
    "app": "pilote",
    "title": {
@@ -5614,5 +5642,21 @@
    "at": "2026-11-21T18:27:28Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0137",
+   "fiche": "",
+   "app": "",
+   "question": "Un site nouveau que le lanceur lit (comme l'eAIP belge) : l'ergonome peut-il le décider seul désormais ?",
+   "context": "Tu as écrit à l'ergonome « les hôtes, go. ». Jusqu'ici, chaque site nouveau attendait ta réponse ici, dans l'appli : un mot rapporté par une session ne suffit pas pour ouvrir un accès. Si tu dis oui, l'ergonome décide par écrit, site par site, avec ces règles : source officielle seulement, lecture seule, site déclaré exactement dans la liste du lanceur et dans la politique de sécurité de la page, relecture de Sécurisation avant l'envoi, et une ligne close ici (« décidé par l'ergonome le … ») pour que tu la voies. Restent à toi dans tous les cas : ouvrir le lanceur sur Internet, les jetons, un site qui refuse l'accès automatique, les essais sur le réseau réel.",
+   "options": [
+    "Oui : l'ergonome décide seul, avec ces règles",
+    "Non : chaque site nouveau reste à ma réponse ici",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-21",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }

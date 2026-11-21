@@ -4,7 +4,7 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d44927a",
+  "organisation": "d9bf3d6",
   "fiches": 544,
   "untranslated": 0,
   "priorities": 481,
@@ -3430,20 +3430,22 @@
     {
      "id": "SOG-0535",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : un direct de route libre dont la bande de niveaux exclut le niveau demandé est pris quand même ; le profil y descend sans que la route écrite le dise",
      "en": "Routes: a free-route direct whose level band excludes the requested level is used anyway; the profile descends there without the written route saying so",
      "de": "Routen: Eine Free-Route-Direktverbindung, deren Flugflächenband die angeforderte Flugfläche ausschließt, wird trotzdem genommen; das Profil sinkt dort, ohne dass die geschriebene Route es sagt",
-     "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga"
+     "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga",
+     "test": true
     },
     {
      "id": "SOG-0537",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : trois défauts de contrat du moteur — no_conforming_route sans valeurs et au mauvais compte, partage « en infraction 0 % » malgré un raccord fautif, rad_unread pour des États non traversés",
      "en": "Routes: three contract defects of the engine — no_conforming_route without values and miscounted, “in breach 0 %” share despite a faulty connector, rad_unread for States not crossed",
      "de": "Routen: drei Vertragsfehler der Engine — no_conforming_route ohne Werte und falsch gezählt, Anteil „regelwidrig 0 %“ trotz fehlerhafter Anbindung, rad_unread für nicht überflogene Staaten",
-     "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados"
+     "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados",
+     "test": true
     }
    ]
   },
