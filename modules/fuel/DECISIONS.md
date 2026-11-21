@@ -2520,3 +2520,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   Map, whose hours travel in `wxv` (HH:MMZ). Any reservation makes `warn`; the three lines of Fuel put an aerodrome with an unknown
   weather after those whose weather is read (stable order otherwise). The Map's closed list was written in this lot with the yes of
   BUGS SOG, its writer (INTEGRATION § 3 ter). F262 changed on purpose (XQPF read and good); F302, F303, D302, D303 red before.
+- **21 Nov 2026 — the alternate fuel of the Map's document is in the unit Fuel shows** (SOG-0549; BUGS SOG saw « 2 600 lb » on the
+  Map where Fuel said kg). `altnDocWrite` wrote the sheet's unit and the sheet's amount; Fuel's lines show the display unit (setting
+  « Carburant », else the sheet's) through `fuelTxt`. Now the document gives the amount converted with `FuelModel.convertFuel` and
+  rounded like `fuelTxt`, with that unit; a change of the setting writes the document again. F262 changed on purpose (kg by default);
+  F304 red before.

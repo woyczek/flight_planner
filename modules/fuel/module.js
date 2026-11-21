@@ -3384,6 +3384,7 @@ function onPlanInput(e) {
     case 'unit':
       S.settings.displayUnit = v;
       saveSettings();
+      if (S.altnProp && !S.altnProp.pending) altnDocWrite(); // SOG-0549 : la Carte dit la même unité que Carburant
       return refresh();
     case 'unitSpeed':
     case 'unitAlt':
@@ -5871,8 +5872,12 @@ async function altnProposeRun() {
 /** Le document de la Carte : les terrains de la proposition ('ok' avant 'warn', puis par distance ; un terrain à écarter, météo LIFR, n'y
  *  est pas), sept au plus ; une liste vide quand il n'y a pas de proposition (la Carte efface sa couche). */
 function altnDocWrite() {
+  // SOG-0549 : le carburant dans l'unité AFFICHÉE (le réglage, à défaut celle de la fiche), converti et arrondi comme fuelTxt : la Carte
+  // n'a rien à convertir
   const P = S.altnProp,
-    unit = S.C?.sheet?.unit === 'lb' ? 'lb' : 'kg',
+    from = S.C?.sheet?.unit === 'lb' ? 'lb' : 'kg',
+    unit = fuelUnitOf(from) === 'lb' ? 'lb' : 'kg',
+    inUnit = v => unit !== from ? window.FuelModel.convertFuel(v, from, unit) : v,
     list = P && !P.pending ? P.list.map(x => ({
       x,
       p: altnPropCrits(x)
@@ -5893,7 +5898,7 @@ function altnDocWrite() {
         wxv: p.wxv
       } : {}),
       fuel: x.cost ? {
-        amount: Math.round(x.cost.fuel),
+        amount: Math.round(inUnit(x.cost.fuel)),
         unit,
         min: Math.round(x.cost.min)
       } : null

@@ -384,8 +384,9 @@ seven to the Map. Contract agreed with BUGS SOG (the Map's layer) on 17/11:
 
 - `list`: seven at most, in priority order (`ok` before `warn`, then by distance); an aerodrome whose TAF is LIFR around its arrival is
   not offered; `name` is a cleaned text (no control nor format character, 60 signs), shown as text; `nm` the rhumb-line distance from
-  the arrival; `fuel` the alternate fuel (go-around, leg and approach) in the sheet's unit; `why` codes from a closed list the Map
-  translates.
+  the arrival; `fuel` the alternate fuel (go-around, leg and approach) in the unit Fuel SHOWS (its setting, else the sheet's; SOG-0549),
+  the amount already converted and rounded as on Fuel's line — the Map converts nothing; a change of the setting writes the document
+  again; `why` codes from a closed list the Map translates.
 - staleness: the Map draws the list only while `arr` is the flight's arrival; Fuel writes `list: []` when an aerodrome is taken or the
   arrival changes (folding the list in Fuel keeps the proposal and the Map's layer).
 - the return: `maps-altn-pick` `{ icao }` beside Fuel, `#fuel?altn=<ICAO>` otherwise (read back only for the same `arr` and `key`); Fuel
