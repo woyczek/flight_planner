@@ -68,11 +68,12 @@ export const ROWS = {
   rad_unread: ['{zone} : {n} règle(s) du RAD portent sur cette route', '{zone}: {n} RAD rule(s) apply to this route',
     '{zone}: {n} RAD-Regel(n) betreffen diese Route', '{zone}: {n} regla(s) del RAD se aplican a esta ruta'
   ],
-  // les règles qui ne portent que sur des espaces : UNE note sous le groupe, hors compte, sous tout verdict
-  spacesOnly: ['Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées ({n} dans les États traversés).',
-    'The RAD rules that only apply to airspaces are not verified ({n} in the States crossed).',
-    'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft ({n} in den überflogenen Staaten).',
-    'Las reglas del RAD que solo se aplican a espacios no se verifican ({n} en los Estados sobrevolados).'
+  // les règles qui ne portent que sur des espaces : UNE note sous le groupe, hors compte, sous tout verdict ; SOG-0538 (l'ergonome,
+  // 21/11) : sans nombre — le moteur compte des États que la route ne traverse pas (SOG-0537)
+  spacesOnly: ['Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées.',
+    'The RAD rules that only apply to airspaces are not verified.',
+    'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft.',
+    'Las reglas del RAD que solo se aplican a espacios no se verifican.'
   ],
   // une règle de la liste : l'endroit d'abord, la référence à la fin ; sans endroit : la référence d'abord
   ruleLine: ['{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})'],

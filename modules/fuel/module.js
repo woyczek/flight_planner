@@ -6595,7 +6595,7 @@ function verdictsHtml(a, open = false) {
       unverifiable: []
     };
   // la note des règles qui ne portent que sur des espaces : hors compte, sous tout verdict (jamais « non vérifiable » à elle seule)
-  const note = a.spacesOnly > 0 ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly, { n: a.spacesOnly }))}</p>` : '',
+  const note = a.spacesOnly > 0 ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly))}</p>` : '', // SOG-0538 : sans nombre
     // SOG-0530 (l'ergonome, 21/11) : le niveau de croisière, le moins grave en dernier, ton d'avertissement — il ne change JAMAIS le
     // verdict ; {n} ne compte que les niveaux hors règle (sans eux, le titre sans compte) ; sa note hors compte dessous, ou seule
     lw = a.levelWarn || [],
@@ -6781,15 +6781,16 @@ function autoJudge(cands, blind = cands[0]) {
     busy: true
   };
   if (!L.res?.ok) return unchecked(L.res?.reason || 'failed');
-  // SOG-0530 lot C (l'ergonome, point 4) : la conformité d'abord (les niveaux que le moteur dit conformes, conforming_tried), puis la
-  // procédure (un raccord direct conforme passe avant une procédure hors règle ; le raccord direct reste dit) ; sans niveau conforme
-  // valide, le choix de SOG-0529 sur tous les valides
+  // L'ordre de l'ergonome (SOG-0540, SOG-0530 lot C point 4) : d'abord le VERDICT — « conforme » avant « non vérifiable », un niveau
+  // qui enfreint une règle connue jamais gardé (ni valide, ni retenu) ; puis la règle semi-circulaire (les niveaux que le moteur dit
+  // conformes, conforming_tried) ; puis le raccord publié (un raccord direct passe après une procédure, et reste dit)
   const by = new Map(L.res.levels.map(x => [x.fl, x])),
-    valid = cands.filter(c => by.get(flOf(c))?.valid),
+    valid = cands.filter(c => by.get(flOf(c))?.valid && by.get(flOf(c)).verdict !== 'violates'),
     conf = new Set(L.res.conformingTried || []),
-    good = valid.filter(c => conf.has(flOf(c))),
     pref = list => list.find(c => by.get(flOf(c)).connector !== 'direct') || list[0] || null,
-    pick = pref(good) || valid.find(c => flOf(c) === L.res.firstValidConforming) || pref(valid),
+    within = list => pref(list.filter(c => conf.has(flOf(c)))) || pref(list),
+    pick = within(valid.filter(c => by.get(flOf(c)).verdict !== 'unverifiable')) || within(valid.filter(c => by.get(flOf(c))
+      .verdict === 'unverifiable')),
     partial = L.res.stopped === 'time' || L.res.stopped === 'cancelled' ? tt(TX.levelAutoPartial, {
       n: L.res.levels.length,
       m: cands.length

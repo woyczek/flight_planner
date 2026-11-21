@@ -9528,7 +9528,9 @@ def f295(c):
       'under « conforme »; « Non vérifiable : N point(s) » counts the lines; the share of the check only under 100 %, each number with its word',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0532 lot 2 (AeroDB c93f3cb25: `rad_unread` { state, flown, spaces_only }, `notVerified` per State, items { id, reason }); '
-      'the ergonomist\'s words decided on 20 Nov (ergonome_MOTS_RAD_UNREAD_SOG-0532_DECIDES.md); a fake launcher, invented rules')
+      'the ergonomist\'s words decided on 20 Nov (ergonome_MOTS_RAD_UNREAD_SOG-0532_DECIDES.md); SOG-0538 (the ergonomist, 21 Nov: the note '
+      'of the spaces without its number — the engine counts States the route does not cross, SOG-0537) — expectation changed on purpose; '
+      'a fake launcher, invented rules')
 def f296(c):
     st = _route_launcher(c, ['route/compute'])
     segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
@@ -9552,29 +9554,25 @@ def f296(c):
                'first': 'LUGEN–NEPIX — dépend de l’activité d’une zone — à vérifier le jour du vol (XX9100)',
                'second': 'XX9101 — horaire que nous ne savons pas lire', 'unknown': 'XX9108 — règle que nous ne savons pas lire',
                'more': 'et 2 autres', 'conform': 'conforme à ce que nous savons lire',
-               'note5': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées (5 dans les États traversés).',
-               'note4': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées (4 dans les États traversés).',
+               'note': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées.',
                'share': 'en infraction : 10 % · distance contrôlée : 60 % · données incomplètes : 30 %'},
         'en': {'title': 'Cannot be verified: 3 points', 'state': 'Belgium: 9 RAD rules apply to this route',
                'first': 'LUGEN–NEPIX — depends on the activity of an area — to check on the day of the flight (XX9100)',
                'second': 'XX9101 — schedule we cannot read', 'unknown': 'XX9108 — rule we cannot read',
                'more': 'and 2 others', 'conform': 'conforms to what we can read',
-               'note5': 'The RAD rules that only apply to airspaces are not verified (5 in the States crossed).',
-               'note4': 'The RAD rules that only apply to airspaces are not verified (4 in the States crossed).',
+               'note': 'The RAD rules that only apply to airspaces are not verified.',
                'share': 'in breach: 10 % · distance checked: 60 % · incomplete data: 30 %'},
         'de': {'title': 'Nicht prüfbar: 3 Punkte', 'state': 'Belgien: 9 RAD-Regeln betreffen diese Route',
                'first': 'LUGEN–NEPIX — hängt von der Aktivität eines Gebiets ab — am Flugtag zu prüfen (XX9100)',
                'second': 'XX9101 — Zeitplan, den wir nicht lesen können', 'unknown': 'XX9108 — Regel, die wir nicht lesen können',
                'more': 'und 2 weitere', 'conform': 'entspricht dem, was wir lesen können',
-               'note5': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft (5 in den überflogenen Staaten).',
-               'note4': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft (4 in den überflogenen Staaten).',
+               'note': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft.',
                'share': 'regelwidrig: 10 % · geprüfte Strecke: 60 % · unvollständige Daten: 30 %'},
         'es': {'title': 'No verificable: 3 puntos', 'state': 'Bélgica: 9 reglas del RAD se aplican a esta ruta',
                'first': 'LUGEN–NEPIX — depende de la actividad de una zona — a comprobar el día del vuelo (XX9100)',
                'second': 'XX9101 — horario que no sabemos leer', 'unknown': 'XX9108 — regla que no sabemos leer',
                'more': 'y 2 otros', 'conform': 'conforme a lo que sabemos leer',
-               'note5': 'Las reglas del RAD que solo se aplican a espacios no se verifican (5 en los Estados sobrevolados).',
-               'note4': 'Las reglas del RAD que solo se aplican a espacios no se verifican (4 en los Estados sobrevolados).',
+               'note': 'Las reglas del RAD que solo se aplican a espacios no se verifican.',
                'share': 'en infracción: 10 % · distancia controlada: 60 % · datos incompletos: 30 %'}}[c.lang]
     docs = proc_flight()
     for d in docs:
@@ -9607,12 +9605,14 @@ def f296(c):
     rest = [norm(x) for x in c.js(f"[...document.querySelectorAll('{G} [data-rulesmore] li')].map(e => e.textContent)")]
     c.eq(rest[-1:], [norm(want['unknown'])], 'an unknown reason: « règle que nous ne savons pas lire »', what='unknown')
     c.ok(not any('Annexe' in x for x in rules + rest), rules, 'neither sheet nor row of the workbook')
-    # 3. the spaces only: one note under the group, out of the count
-    c.eq(norm(c.text(f'{R0} [data-spacesonly]') or ''), norm(want['note5']), 'one note under the group, out of the count', what='note')
+    # 3. the spaces only: one note under the group, out of the count — SOG-0538: without a number (expectation changed on purpose)
+    c.eq(norm(c.text(f'{R0} [data-spacesonly]') or ''), norm(want['note']), 'one note under the group, out of the count, without a number',
+         what='note')
     # 4. spaces only: never « non vérifiable » by itself — « conforme », the note under it; at 100 %, no share
     c.eq(norm(c.text(f'{R1} [data-verdict]') or ''), norm(want['conform']), 'the spaces alone never make the route unverifiable',
          what='conform')
-    c.eq(norm(c.text(f'{R1} [data-spacesonly]') or ''), norm(want['note4']), 'the note under « conforme » too', what='note conform')
+    c.eq(norm(c.text(f'{R1} [data-spacesonly]') or ''), norm(want['note']), 'the note under « conforme » too, without a number',
+         what='note conform')
     c.eq(c.count(f'{R1} [data-share]'), 0, 'at 100 %: no share', what='100 %')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -9965,4 +9965,47 @@ def f300(c):
             timeout=8000, what='« aucun niveau conforme … » said')
     c.ok(norm(mark) not in said(), said(), 'the plain sentence instead of the suffix')
     shots('noconform')
+    c.check_errors()
+
+
+@case('F301', '« Auto » level: the VERDICT of each level first — a level « conforme » is kept before a level « non vérifiable », even '
+      'when both follow the semicircular rule; a level that breaks a known rule is never kept; THEN the semicircular rule, THEN the '
+      'published connector',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0540 (the ergonomist, 21 Nov: « conforme avant non vérifiable, une route en infraction jamais gardée, puis la règle '
+      'semi-circulaire, puis le raccord publié »); route/levels `verdict` per level (AeroDB SOG-0532 (3)); a fake launcher, an invented '
+      'sheet and an invented arrival XQNE to the north-east (053° true: the even levels follow the rule above FL195)')
+def f301(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    fl = f'{FUEL} input[data-k="fl"]'
+    M = f'{FUEL} [data-lvlwhy] [data-lvlmain]'
+
+    def answer(lv, verdict):
+        res = _ne_answer(lv)
+        for x in res['levels']:
+            x['verdict'] = verdict(x['fl'])
+        return res
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    ev = lambda lv: [x for x in lv if x // 10 % 2 == 0]  # the levels asked are read from the request (_auto_ne), never from the rule
+    # the first even level (it follows the rule) is « non vérifiable », the next even one « conforme »: the second is kept
+    lv = _auto_ne(c, st, lambda lv: answer(lv, lambda x: 'unverifiable' if x == ev(lv)[0] else 'conform'), 20000)
+    even = ev(lv)
+    c.ok(len(even) >= 2, even, 'two even levels asked (from FL200 to FL250)')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(even[1]), what='the level « conforme » kept before the « non vérifiable » one')
+    c.until(f"(document.querySelector('{M}')?.textContent || '').includes('(auto)')", timeout=8000, what='the sentence')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F301_{c.design}_{w}_{c.lang}_verdict.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # the verdict before the rule: every even level « non vérifiable », the odd ones « conforme » (outside the rule): an odd one is kept
+    lv = _auto_ne(c, st, lambda lv: answer(lv, lambda x: 'unverifiable' if x // 10 % 2 == 0 else 'conform'), 20000)
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str([x for x in lv if x // 10 % 2 == 1][0]),
+            what='the verdict before the semicircular rule')
+    # a level that breaks a known rule is never kept, even « valid » in an answer that says so (a defensive reading)
+    lv = _auto_ne(c, st, lambda lv: answer(lv, lambda x: 'violates' if x == lv[0] else 'unverifiable'), 20000)
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(ev(lv[1:])[0]), what='a level in breach never kept')
     c.check_errors()

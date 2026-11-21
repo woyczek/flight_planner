@@ -234,7 +234,7 @@ export async function levels(launcher, args, {
   }
 }
 /** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason,
- *  semicircular }], conformingTried, firstValidConforming, noConformingValid, stopped,
+ *  semicircular, verdict }], conformingTried, firstValidConforming, noConformingValid, stopped,
  *  asked } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
 export function levelsRead(res) {
   if (!res || typeof res !== 'object') return null;
@@ -249,7 +249,9 @@ export function levelsRead(res) {
     connector: CONNECTORS.includes(x?.connector) ? x.connector : 'none',
     reason: text(x?.reason, 200),
     // SOG-0530 (lot B) : warning | undecided | ok | no_table, null sans contrôle ; jamais un blocage (valid ne le lit pas)
-    semicircular: SEMICIRCULAR.includes(x?.semicircular) ? x.semicircular : null
+    semicircular: SEMICIRCULAR.includes(x?.semicircular) ? x.semicircular : null,
+    // SOG-0540 : le verdict du niveau (violates | unverifiable | conform, le mot de route/compute) ; null d'une réponse plus ancienne
+    verdict: VERDICTS.includes(x?.verdict) ? x.verdict : null
   })).filter(x => x.fl !== null);
   const flIn = v => Number.isInteger(v) && v >= 10 && v <= 660;
   return {
