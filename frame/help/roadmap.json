@@ -4,8 +4,8 @@
  "updated": "2026-11-21",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7e05510",
-  "fiches": 532,
+  "organisation": "3b8cb18",
+  "fiches": 533,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1156,6 +1156,15 @@
      "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
      "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante",
      "test": true
+    },
+    {
+     "id": "SOG-0534",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : choisir les règles de vol du plan (IFR, VFR, Y, Z) et être aidé à placer le point où l'on passe de l'une à l'autre",
+     "en": "Fuel: choose the flight rules of the plan (IFR, VFR, Y, Z) and get help placing the point where one changes to the other",
+     "de": "Kraftstoff: die Flugregeln des Flugplans wählen (IFR, VFR, Y, Z) und Hilfe beim Setzen des Punkts erhalten, an dem von einer zur anderen gewechselt wird",
+     "es": "Combustible: elegir las reglas de vuelo del plan (IFR, VFR, Y, Z) y recibir ayuda para situar el punto en que se pasa de unas a otras"
     }
    ]
   },

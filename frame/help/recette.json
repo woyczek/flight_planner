@@ -5545,21 +5545,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0135",
-   "fiche": "SOG-0530",
-   "app": "pilote",
-   "question": "Prépares-tu des vols VFR dans Carburant ?",
-   "context": "Le plan de vol y est toujours écrit en IFR (« IG »), il n'y a pas de choix des règles de vol ; l'avertissement VFR que tu as demandé n'a donc aucun écran où paraître, et un vol VFR (hélicoptère, évacuation) y part avec un plan marqué IFR. Ton « oui » à Q-0134 (lire ENR 1.1) est suspendu d'ici ta réponse : rien n'est lu ni gardé tant qu'aucun écran ne s'en sert.",
-   "options": [
-    "Oui : ajouter le choix des règles de vol au plan (IFR ou VFR), après le jalon de l'atelier ; l'avertissement VFR et la lecture de l'ENR 1.1 viennent avec",
-    "Non, IFR seulement : on abandonne la partie VFR de l'avertissement",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-21",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0132",
    "fiche": "SOG-0532",
    "app": "pilote",
