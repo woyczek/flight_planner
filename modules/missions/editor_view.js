@@ -472,8 +472,13 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-list>.ms-atpart{display:block;width:100%;margin:0;border-radius:0;border-top:0;border-right:0;border-bottom:1px solid var(--sog-line,#ddd);text-align:left}
 [data-module="missions"] .ms-itin-out{margin:0;padding:10px 8px 4px;background:var(--sog-surface-2,#eef)}
 [data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-itin-mv{display:flex;flex-wrap:wrap;gap:8px;padding:6px 8px;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-mv>button{min-height:44px}
+[data-module="missions"] .ms-itin-arrows{display:flex;gap:8px;align-self:stretch} /* deux boutons côte à côte, à eux deux toute la largeur */
+[data-module="missions"] .ms-itin-arrows>button{flex:1 1 0;min-width:0;min-height:44px}
+[data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
+[data-module="missions"] .ms-itin-list .f-row.ms-ll{align-items:stretch}
+[data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:flex-end} /* les deux champs sur la même ligne de base, même quand un libellé passe sur deux lignes */
 [data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
@@ -1043,13 +1048,14 @@ function edPlaceFormHtml(s, r, i, {
       // SOG-0521 : une station de retardant ne se « trouve » pas — ni portée, ni « trouvé sur la parole du pilote », ni hauteurs ; ce que
       // le fichier en porte reste tel quel (rien n'est réécrit tant qu'on n'y touche pas)
       station = r.okind === 'refill';
-    return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
+    return `<div class="ms-plform" data-plform="${i}">
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field ms-plkind"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
-        <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
+        <div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
         ${station ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
+        <p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
   }
   // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
@@ -1060,11 +1066,12 @@ function edPlaceFormHtml(s, r, i, {
     lock = src ? ' readonly' : '',
     srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
     nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
-  return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${nameField}</div>`}
+  return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${nameField}</div>`}
+        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
-        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
+        ${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}</div>`}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
 }
 
@@ -1129,7 +1136,7 @@ function edChipMoveHtml(s, where, chips) {
   const ends = edChipEnds(chips, edChipSel(s.ed, where)),
     w = where === 'start' ? 'start' : 'drawer',
     btn = (step, label, off) => `<button type="button" data-do="edchipmove" data-where="${w}" data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
-  return chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}">${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}</div>`;
+  return chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}">${btn(-1, EDTX.itEarlier, ends.first)}${btn(1, EDTX.itLater, ends.last)}</div>`;
 }
 
 /** Les pastilles et les flèches d'une route, remises SUR PLACE après un choix ou un déplacement (SOG-0449 : la flèche pressée n'est
@@ -1267,7 +1274,7 @@ const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'story' ? e
   'timeline' ? edTimelineHtml(s) : edCadreHtml(s);
 
 /** Les lignes de l'itinéraire d'un lieu qui sont ses déplacements (SOG-0482) : sous la ligne choisie d'un lieu de la route du départ ou d'une
- *  suite de route, au-dessus de sa fiche — « ← Plus tôt » / « Plus tard → » (désactivés aux bouts, les ancres ne comptent pas ; rien pour moins de
+ *  suite de route, au-dessus de sa fiche — « ↑ Plus tôt » / « ↓ Plus tard » (désactivés aux bouts, les ancres ne comptent pas ; rien pour moins de
  *  deux lieux libres) et « Retirer … de la route » / « … de la suite ». Les gestes d'aujourd'hui (edchipmove, edroutedel, eddrchipdel), `data-it`
  *  les adresse à la ligne choisie. Rien pour un autre lieu. */
 function edItinMoveHtml(s, l, rows) {
@@ -1283,7 +1290,7 @@ function edItinMoveHtml(s, l, rows) {
     w = start ? 'start' : 'drawer',
     attrs = `data-where="${w}" data-it="1"${start ? '' : ` data-dr="${esc(l.drawer)}"`}`,
     btn = (step, label, off) => `<button type="button" data-do="edchipmove" ${attrs} data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
-  return `<div class="ms-itin-mv" data-chipmove="${w}">${chips.filter(c => !c.fixed).length < 2 ? '' : `${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}`}<button type="button" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: text }))}</button></div>`;
+  return `<div class="ms-itin-mv" data-chipmove="${w}">${chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-itin-arrows">${btn(-1, EDTX.itEarlier, ends.first)}${btn(1, EDTX.itLater, ends.last)}</div>`}<button type="button" class="f-linkbtn" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: text }))}</button></div>`;
 }
 
 /** L'itinéraire (SOG-0482, lot 1 ; la maquette : modules/missions/maquette/atelier_itineraire.html) : UNE liste ordonnée — le départ, les lieux de la

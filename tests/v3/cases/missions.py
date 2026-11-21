@@ -5203,12 +5203,14 @@ def n78(c):
     # typing never redraws a card: the title follows in place, and ONE click on another card is enough
     c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="texts"]')
     c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=texts] .ms-dbody')).display !== 'none'", what='« Les textes » unfolded')
-    c.js(f"document.querySelectorAll('{E} [data-atflow] [data-do=edsel], {E} [data-atflow] [data-trbtn], {E} [data-atflow] [data-dradd], {_DW} [data-do=eddrgrp]').forEach(b => b.__kept = true)")
+    # every button of the itinerary outside the open sheet (the place lines, the drawer lines, the strip of arrows if any, « Essayer les clés », the add buttons) and the titles of the groups of the sheet
+    every = f"[...document.querySelectorAll('{E} [data-atflow] button, {_DW} [data-do=eddrgrp]')].filter(b => b.matches('[data-do=eddrgrp]') || !b.closest('{_DW}'))"
+    c.js(f"{every}.forEach(b => b.__kept = true)")
     c.page.fill(f'{_DW} [data-f=title]', 'Entrée nord')
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
-    kept = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-do=edsel], {E} [data-atflow] [data-trbtn], {E} [data-atflow] [data-dradd], {_DW} [data-do=eddrgrp]')].map(b => !!b.__kept)")
-    c.ok(len(kept) == 9 and all(kept), kept, 'the cards (the departure is a place line now), « Essayer les clés », « ＋ Tiroir » and the three group titles are the same elements after the keystrokes (SOG-0449)')
+    kept = c.js(f"{every}.map(b => !!b.__kept)")
+    c.ok(len(kept) >= 8 and all(kept), kept, 'every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -6937,7 +6939,7 @@ _ROUTEMOVE_JS = """async () => { const ED = await import('/modules/missions/edit
 
 
 @case('N106', 'Missions › the workshop, a route is reordered by two arrows on the chip chosen: a chip of the route of the departure is '
-      'chosen by a touch (in place: nothing is redrawn; touched again, it is left); « ← Plus tôt » and « Plus tard → » move it by one '
+      'chosen by a touch (in place: nothing is redrawn; touched again, it is left); « ↑ Plus tôt » and « ↓ Plus tard » move it by one '
       'rank and stay under the finger; IN THE ROUTE OF THE DEPARTURE the aerodrome of departure stays first and the aerodrome of '
       'arrival last — their chips are not chosen, not moved, have no cross (a forged removal does nothing), no place passes before '
       'the one nor after the other, and a place added enters before the arrival; before a chip is chosen the line says how; the '
@@ -6990,13 +6992,13 @@ def n106(c):
     # a line chosen
     pick('PT1')
     c.eq([c.js(_ITIN_MV), cur(), order()], [[True, False], ['start:1'], ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION']],
-         'a line touched is chosen: it is marked, the arrows are under it; PT1 follows the departure: « ← Plus tôt » is not given (no place passes before the departure)', what='a line chosen')
+         'a line touched is chosen: it is marked, the arrows are under it; PT1 follows the departure: « ↑ Plus tôt » is not given (no place passes before the departure)', what='a line chosen')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N106_1280_chosen.png')
     c.tap(arrow(1))
     becomes(['ORIGIN', 'TARGET', 'PT1', 'DESTINATION'], 'PT1 one rank later')
     c.eq([cur(), c.js(_ITIN_MV)], [['start:2'], [False, True]],
-         '« Plus tard → » moved PT1 by one rank; it is still the line chosen; PT1 now precedes the arrival: « Plus tard → » is not given (no place passes after the arrival)', what='one rank later')
+         '« ↓ Plus tard » moved PT1 by one rank; it is still the line chosen; PT1 now precedes the arrival: « ↓ Plus tard » is not given (no place passes after the arrival)', what='one rank later')
     c.tap(arrow(-1))
     becomes(['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], 'PT1 back')
     # touched again, the line is left
@@ -13015,7 +13017,7 @@ def n198(c):
         c.js(_REG_CLEAR)
 
 
-@case('N199', 'Missions › the workshop, the route is ordered from the itinerary without loss (SOG-0482, lot 1): a place of the route of the departure chosen, « Plus tard → » twice — the SAME '
+@case('N199', 'Missions › the workshop, the route is ordered from the itinerary without loss (SOG-0482, lot 1): a place of the route of the departure chosen, « ↓ Plus tard » twice — the SAME '
       'button, still in hand after the first press, pressed again by the keyboard without being looked for — moves it two ranks, the line stays chosen and its sheet open; « Retirer … de la route » takes '
       'it out of the route and it falls under « Hors itinéraire » when nothing else cites it; « Ajouter un lieu… » puts it back; the file written carries the route as it was left', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
@@ -13030,15 +13032,15 @@ def n199(c):
         later = f'{E} [data-atflow] [data-chipmove=start] [data-do=edchipmove][data-step="1"]'
         c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{later}')", what='the strip of the route under PT1')
-        c.eq(c.js(f"document.querySelector('{later}').disabled"), False, f'{width}: PT1 is not the last of the route: « Plus tard → » is offered', what='offered')
+        c.eq(c.js(f"document.querySelector('{later}').disabled"), False, f'{width}: PT1 is not the last of the route: « ↓ Plus tard » is offered', what='offered')
         c.tap(later)
         c.until(f"document.querySelector('{E} [data-at=\"start:2\"] b')?.textContent.startsWith('PT1')", what='PT1 moved one rank')
-        c.eq(c.js("document.activeElement?.dataset?.step"), '1', f'{width}: after the press the focus is on « Plus tard → » again (the button pressed is not lost)', what='focus')
+        c.eq(c.js("document.activeElement?.dataset?.step"), '1', f'{width}: after the press the focus is on « ↓ Plus tard » again (the button pressed is not lost)', what='focus')
         c.key('Enter')  # the same button, pressed by the keyboard without looking for it
         c.until(f"document.querySelector('{E} [data-at=\"start:3\"] b')?.textContent.startsWith('PT1')", what='PT1 moved a second rank')
         c.eq([seq()[:4], c.js(_ITIN_CUR), c.js(_ITIN_AFTER, '[data-at="start:3"]')], [['dep=XTST', 'start:1=TARGET', 'start:2=PT3', 'start:3=PT1'], ['start:3'], ['mv', 'form:5']],
-             f'{width}: « Plus tard → » twice: PT1 is third in the route, its line stays chosen, its sheet open under it', what='moved twice')
-        c.eq(c.js(f"document.querySelector('{later}').disabled"), True, f'{width}: PT1 is the last free place: « Plus tard → » is off', what='at the end')
+             f'{width}: « ↓ Plus tard » twice: PT1 is third in the route, its line stays chosen, its sheet open under it', what='moved twice')
+        c.eq(c.js(f"document.querySelector('{later}').disabled"), True, f'{width}: PT1 is the last free place: « ↓ Plus tard » is off', what='at the end')
         # PT3, cited only by the route: taken out, it falls under « Hors itinéraire »
         c.tap(f'{E} [data-at="start:2"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"7\"]')", what='the sheet of PT3')

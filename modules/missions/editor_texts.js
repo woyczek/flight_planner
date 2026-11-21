@@ -692,8 +692,8 @@ export const EDTX = {
     'Trazado: toque un lugar para añadirlo a la ruta siguiente del cajón {n}.'
   ],
   // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir)
-  rtEarlier: ['← Plus tôt', '← Earlier', '← Früher', '← Antes'],
-  rtLater: ['Plus tard →', 'Later →', 'Später →', 'Después →'],
+  itEarlier: ['↑ Plus tôt', '↑ Earlier', '↑ Früher', '↑ Antes'], // SOG-0482 : la bande sous la ligne choisie de l'itinéraire
+  itLater: ['↓ Plus tard', '↓ Later', '↓ Später', '↓ Después'],
   rtChipDel: ['Retirer {id} de la route', 'Remove {id} from the route', '{id} aus der Route entfernen', 'Quitar {id} de la ruta'],
   rtNoId: ['Ce lieu n\'a pas d\'identifiant : il n\'entre pas dans une route.',
     'This place has no identifier: it does not enter a route.',
