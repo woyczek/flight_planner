@@ -155,6 +155,44 @@ export const TX = {
     part: ['{n} en {c}', '{n} in {c}', '{n} in {c}', '{n} en {c}'],
     unknown: ['{n} de cycle inconnu', '{n} of unknown cycle', '{n} mit unbekanntem Zyklus', '{n} de ciclo desconocido']
   },
+  // L'AIP de Belgique et du Luxembourg (SOG-0541) : le PDF de l'ENR 3.2 déposé à la main ; les phrases de la ligne de Données (jugées à la date du jour), ses refus, et les deux phrases de la carte (aucun lien, aucun nom de fichier ni de source)
+  be: {
+    name: ['AIM Belgique', 'AIM Belgium', 'AIM Belgien', 'AIM Bélgica'],
+    howto: [
+      'Téléchargez le PDF de la partie ENR 3.2 de l’AIP de Belgique, puis déposez-le ici avec « Choisir le fichier… ». À refaire à chaque cycle AIRAC.',
+      'Download the PDF of part ENR 3.2 of the Belgian AIP, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
+      'Laden Sie das PDF des Teils ENR 3.2 des belgischen AIP herunter und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
+      'Descargue el PDF de la parte ENR 3.2 del AIP de Bélgica y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.'
+    ],
+    current: ['Pages déposées le {dep} (cycle {cycle}). Dernier amendement lu : {amd}.',
+      'Pages dropped on {dep} (cycle {cycle}). Latest amendment read: {amd}.',
+      'Seiten abgelegt am {dep} (Zyklus {cycle}). Letzte gelesene Änderung: {amd}.',
+      'Páginas depositadas el {dep} (ciclo {cycle}). Última enmienda leída: {amd}.'
+    ],
+    future: ['Pages déposées le {dep}, en vigueur le {amd}.', 'Pages dropped on {dep}, in force on {amd}.',
+      'Seiten abgelegt am {dep}, in Kraft am {amd}.',
+      'Páginas depositadas el {dep}, en vigor el {amd}.'
+    ],
+    expired: ['Périmé depuis le {exp}. Déposez la page ENR 3.2 du cycle en cours.',
+      'Expired since {exp}. Drop the ENR 3.2 page of the current cycle.',
+      'Veraltet seit {exp}. Legen Sie die Seite ENR 3.2 des laufenden Zyklus ab.',
+      'Caducado desde el {exp}. Deposite la página ENR 3.2 del ciclo en curso.'
+    ],
+    notRoutes: ['{name} : cette page ne sert pas au calcul des routes.', '{name}: this page is not used to compute routes.',
+      '{name}: diese Seite dient nicht der Streckenberechnung.',
+      '{name}: esta página no sirve para el cálculo de rutas.'
+    ],
+    noDate: ['{name} : aucune date d’amendement lisible. Rien n’a été déposé.',
+      '{name}: no readable amendment date. Nothing was dropped.',
+      '{name}: kein lesbares Änderungsdatum. Es wurde nichts abgelegt.',
+      '{name}: ninguna fecha de enmienda legible. No se ha depositado nada.'
+    ],
+    notKept: ['{name} : ces pages sont plus anciennes que celles déjà déposées. Rien n’a été déposé.',
+      '{name}: these pages are older than those already dropped. Nothing was dropped.',
+      '{name}: diese Seiten sind älter als die bereits abgelegten. Es wurde nichts abgelegt.',
+      '{name}: estas páginas son más antiguas que las ya depositadas. No se ha depositado nada.'
+    ]
+  },
   // « Choisir le fichier… » (SOG-0199) : l'envoi d'un fichier choisi au lanceur, qui le reconnaît par son contenu
   up: {
     choose: ['Choisir le fichier…', 'Choose the file…', 'Datei wählen…', 'Elegir el archivo…'],

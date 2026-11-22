@@ -2,6 +2,9 @@
 // chaque zone de la liste (verte, orange avec sa raison au toucher, grise, rouge, bleue pendant que la page la traite). Le lanceur dit l'état, la page le dessine : aucun critère n'est calculé ici.
 import * as M from './model.js';
 import {
+  beName
+} from './belgium.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -141,7 +144,8 @@ export function seedStatus(file) {
   if (!last) return;
   S.statusKept = M.persistable(last.status).key; // ce que le fichier dit déjà : la même lecture ne le réécrit pas, montré ou non
   if (Date.now() - last.at < STATUS_LAST_FRESH_MS) return;
-  const cur = S.d?.cat?.airac?.cycleOf?.(Date.now())?.date; // un cycle a changé depuis l'écriture : « à jour » d'hier ne l'est plus, le dire en vert serait faux : rien n'est montré
+  const cur = S.d?.cat?.airac?.cycleOf?.(Date.now())
+    ?.date; // un cycle a changé depuis l'écriture : « à jour » d'hier ne l'est plus, le dire en vert serait faux : rien n'est montré
   if (typeof cur === 'string' && last.status.current && last.status.current !== cur) return;
   S.status = last.status;
   S.statusOld = true;
@@ -176,7 +180,7 @@ export function refreshStatus(ids) {
 /** « 29 oct. 2026 » d'une date de cycle ; la valeur telle quelle si la date est illisible, '' si elle est vide. */
 const dateOf = v => !v ? '' : typeof v === 'number' ? String(v) : M.dateText(v, lang()) || v;
 /** Le nom d'une source datée dans une raison : celui du catalogue sans sa parenthèse, à défaut son identifiant en majuscules. */
-const sourceName = id => (catSource(id)?.n?.[li()] || String(id || '').toUpperCase()).replace(/\s*\(.*\)\s*$/, '');
+const sourceName = id => (catSource(id)?.n?.[li()] || beName(id) || String(id || '').toUpperCase()).replace(/\s*\(.*\)\s*$/, '');
 /** La phrase d'une raison, dans la langue de l'appli (TX.zr) ; un code que la page ne connaît pas est dit avec son code (« Raison du lanceur : … »), jamais « non reconnue ». */
 export function reasonText(r) {
   const row = M.own(TX.zr, r.code) || TX.zr.unknown;

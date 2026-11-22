@@ -57,6 +57,10 @@ import {
   framesOf
 } from './mapview.js';
 import {
+  BE_SOURCE,
+  tickOf as beTick
+} from './belgium.js';
+import {
   packUpdateHtml
 } from './packs.js';
 import {
@@ -539,6 +543,9 @@ export function downloadTick(id, item, z) {
   // une source SECONDAIRE (openAIP) ou sans rythme n'alerte jamais : sa date et son âge, en gris (SOG-0369)
   if ((item?.rank === 'secondary' || item?.rhythm === 'none') && d && (d.state === 'done' || d.state === 'late') && d.datedBy !== 'file')
     return tickHtml('download', 'yes', [d.at ? dateOf(d.at) : '', ageText(d.ageDays)].filter(Boolean).join(' · ') || '—');
+  // l'ENR 3.2 de Belgique : le lanceur dit les jeux déposés (en vigueur, publié à l'avance), la ligne les juge à la date du jour (SOG-0541)
+  const be = id === BE_SOURCE ? beTick(item) : null;
+  if (be) return tickHtml('download', be.sign, be.text);
   // un dépôt à la main n'a pas d'édition : « déposé le …, édition non connue », jamais « fait » ni « à jour » (SOG-0368)
   if (d?.datedBy === 'file') return tickHtml('download', 'todo', tt(T.depositedUnknown, {
     d: dateOf(d.deposited || d.at)
@@ -728,6 +735,8 @@ function renameOf(sid, z, item, cy) {
 }
 /** Ce que la ligne DIRCAM dit du fichier à choisir, en mots : l'archive du SIA (son nom d'après le catalogue, `files[].file`, jamais un nom inventé), lue sur cet appareil, dont seul le PDF de l'ENR 5.7 part au lanceur ; '' pour toute autre source. */
 function chooseHintHtml(sid) {
+  if (sid === BE_SOURCE)
+    return `<p class="f-muted" data-choose-hint="${esc(sid)}">${esc(tt(TX.be.howto))}</p>`; // l'ENR 3.2 de Belgique : les deux phrases de l'ergonome, sans lien ni nom de fichier ni de source (SOG-0541)
   if (sid !== DIRCAM_SOURCE) return '';
   const f = filesOf(sid, null).files[0],
     arc = typeof f?.file === 'string' && f.file !== f.name ? ` (${f.file.replace(/[\p{Cc}]/gu, ' ').slice(0, 80)})` : '';

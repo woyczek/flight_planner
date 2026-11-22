@@ -130,7 +130,31 @@ const CONTENT_STATES = ['done', 'late', 'waiting', 'unavailable', 'missing', 'se
 const WHYS = ['older-than-cycle', 'newer-in-downloads', 'no-file', 'not-downloaded', 'unavailable-at-publisher'];
 /** Les textes d'une liste, bornés (n au plus, de longueur m). */
 const texts = (a, n, m = 120) => (Array.isArray(a) ? a : []).slice(0, n).map(x => text(x, m)).filter(Boolean);
-/** Une source de la liste du cycle lue : { id, label[4], regime, personal, zones (identifiants, ou null : une source commune), download { state, cycle, at, edition }, build { zones, upToDate }, publish { published, unpublished, unknown }, why, hand { link, expected, inDownloads } | null }. */
+/** Les états d'un jeu de l'ENR 3.2 de Belgique (AeroDB, SOG-0541) : en vigueur, publié à l'avance, périmé. */
+const SET_STATES = ['current', 'future', 'expired'];
+/** Un jeu de l'ENR 3.2 de Belgique lu (une entrée de `set` de base/cycle, ou la réponse d'un dépôt) : { effective, deposited, cycle, expires (AAAA-MM-JJ), state, name } ; null quand la date d'amendement ou celle du dépôt manque (le nom est un texte
+ *  borné, jamais un chemin : il ne sert qu'à être comparé à `kept`). */
+export function setEntryOf(e) {
+  if (e === null || typeof e !== 'object') return null;
+  const x = {
+    effective: day(e.effective),
+    deposited: day(e.deposited),
+    cycle: day(e.cycle),
+    expires: day(e.expires),
+    state: SET_STATES.includes(e.state) ? e.state : '',
+    name: text(e.name, 80)
+  };
+  return x.effective && x.deposited ? x : null;
+}
+/** Les jeux de Belgique d'une source de la liste du cycle : { inForce, next } (chacun un jeu lu ou null) ; null quand la ligne n'en dit pas. */
+function setOf(s) {
+  if (s === null || typeof s !== 'object') return null;
+  return {
+    inForce: setEntryOf(s.inForce),
+    next: setEntryOf(s.next)
+  };
+}
+/** Une source de la liste du cycle lue : { id, label[4], regime, personal, zones (identifiants, ou null : une source commune), download { state, cycle, at, edition }, build { zones, upToDate }, publish { published, unpublished, unknown },why, hand { link, expected, inDownloads } | null }. */
 function itemOf(it) {
   if (it === null || typeof it !== 'object' || typeof it.id !== 'string' || !SRC.test(it.id)) return null;
   const dl = it.steps?.download,
@@ -154,7 +178,12 @@ function itemOf(it) {
       ageDays: Number.isInteger(dl?.ageDays) && dl.ageDays >= 0 && dl.ageDays < 1e5 ? dl.ageDays :
         null // l'âge du fichier le plus récent d'une source sans rythme (SOG-0369) : dit en gris, jamais une alerte
     },
-    handMode: ['only', 'fallback', 'none'].includes(it.handMode) ? it.handMode : '', // à la main seulement | prise par le lanceur avec un repli à la main | rien à déposer (SOG-0368)
+    ...(it.set !== undefined ? {
+      set: setOf(it.set)
+    } :
+    {}), // les jeux déposés de l'ENR 3.2 de Belgique (SOG-0541) : en vigueur et publié à l'avance (la clé n'existe que pour la source qui les dit)
+    handMode: ['only', 'fallback', 'none'].includes(it.handMode) ? it.handMode :
+    '', // à la main seulement | prise par le lanceur avec un repli à la main | rien à déposer (SOG-0368)
     rank: RANKS.includes(it.rank) ? it.rank :
     '', // primaire : l'éditeur officiel ; secondaire : communautaire ou dérivée (openAIP, X-Plane, MORA) : n'alerte jamais
     rhythm: RHYTHMS.includes(it.rhythm) ? it.rhythm : '',

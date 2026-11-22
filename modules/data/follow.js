@@ -255,6 +255,8 @@ async function endPickup(final, live, seconds) {
 }
 /** « Réessayer » sur la ligne d'une zone en échec (SOG-0180) : la construction de cette zone seule, avec la case « usage personnel » ; rien si le bouton de construction est gris. */
 export const retryZone = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone]) : undefined;
+/** La construction d'une zone seule, avec ses coches d'usage personnel : ce qui suit l'ENR 3.2 de Belgique reçue (SOG-0541, upload.js) ; rien si le bouton de construction est gris. */
+export const buildOwn = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone], true) : undefined;
 /** Le téléchargement de la zone puis, si sa source déposée est bonne, sa construction (SOG-0180) : la couche NASR de la FAA n'est pas produite par la construction mais par base/fetch, qui lit les trois jeux déposés (FIX, AWY, NAV) ; la zone se construit ensuite d'après ce fichier. Un échec de la source `faa` se dit (le téléchargement l'a dit) et rien ne se construit ; celui de `faaclass` seul n'empêche pas la construction. */
 export async function fetchThenBuild(zone, own = false) {
   const me = S,

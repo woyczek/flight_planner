@@ -2,6 +2,9 @@
 // (follow.js) et ne lit rien du lanceur.
 import * as M from './model.js';
 import {
+  beName
+} from './belgium.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -131,11 +134,11 @@ function heldLine(id) {
 }
 /** Le nom d'une source téléchargée : celui du catalogue d'aerodb, à défaut son identifiant. */
 function sourceName(id) {
-  return catSource(id)?.n?.[li()] || id;
+  return catSource(id)?.n?.[li()] || beName(id) || id;
 }
 /** Le nom court d'une source datée : celui du catalogue (×4) sans la parenthèse de ses formats (« SIA France »), à défaut son identifiant. */
 function srcShort(id) {
-  return String(catSource(id)?.n?.[li()] || id).replace(/\s*\(.*$/, '');
+  return String(catSource(id)?.n?.[li()] || beName(id) || id).replace(/\s*\(.*$/, '');
 }
 /** Les sources datées dont le cycle est connu, la dernière lecture : celle de la marche qui tourne (la vue du travail porte `sources` dès le plan), sinon celle de la dernière fin qui en portait (S.srcKept :
  *  un téléchargement ou une construction de la base ; une prise du fichier en retire les sources prises), sinon la dernière entrée de la base au journal qui en porte. Jamais un travail lancé pour la lire. */
@@ -681,7 +684,8 @@ export function selection(set) {
   };
 }
 /** La raison grise « une autre opération est en cours » : la carte de l'opération la dit déjà (son titre) quand elle est à l'écran du panneau ; jamais deux fois. null alors, sinon la raison telle quelle. */
-export const greyOnce = (reason, panel, place = 'head') => reason === 'busy' && busyCardHtml(panel, place) || reason === 'reading' ? null : reason; // « reading » : la ligne de lecture (ou « état non lu » avec « Réessayer ») le dit déjà, au-dessus : la même phrase sous chaque bouton gris la redirait (et dirait « Lecture… » sur un échec) (SOG-0511)
+export const greyOnce = (reason, panel, place = 'head') => reason === 'busy' && busyCardHtml(panel, place) || reason === 'reading' ? null :
+  reason; // « reading » : la ligne de lecture (ou « état non lu » avec « Réessayer ») le dit déjà, au-dessus : la même phrase sous chaque bouton gris la redirait (et dirait « Lecture… » sur un échec) (SOG-0511)
 /** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate) ; pour la base, entre Télécharger et Construire, « Prendre le fichier téléchargé » (`pk` : l'état de
  *  son verbe base/pickup, grisé pour sa propre raison). */
 function verbsHtml(gate, panel, pk) {

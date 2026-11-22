@@ -6,7 +6,7 @@
 //   · forModule(decl, { life }) → { info(), call, job, resume, current, read } : routes et préfixes de lecture déclarés seulement,
 //     tout le reste refusé sans appel ({ ok: false, status: 403, refused: true, route }) ; life (AbortSignal) : le
 //     démontage du module arrête les suivis de travaux en cours (le travail, lui, continue sur le lanceur : resume) ;
-//   · upload(route, fichier, { name, onProgress, signal }) : envoi d'un fichier (octets en corps) avec avancement et annulation (SOG-0199) ;
+//   · upload(route, fichier, { name, onProgress, signal }) : envoi d'un fichier (octets en corps) avec avancement et annulation (SOG-0199) ; refus d'un envoi : reason, message, expected, code, running (rien d'autre du corps) ;
 //   · protocole des travaux longs, fixe : POST <route> corps → { job: id } ; GET <route>?id=… → { id, state ('running' |
 //     'done' | 'error' | 'cancelled'), step, done, total, unit, log, result } ; POST <route>/cancel { id } ; GET <route>
 //     sans id → le travail en cours ou le dernier ({ job: null } sans travail). Déclarer la route d'un travail (« regen/job »)
@@ -32,6 +32,10 @@ export function dataPathOf(path) {
 const expectedOf = b => Array.isArray(b?.expected) && b.expected.length <= 10 && b.expected.every(x => typeof x === 'string' &&
   /^[a-z0-9_-]{1,20}$/.test(x)) ? {
   expected: [...b.expected]
+} : {};
+/** Le détail d'un refus que le lanceur donne en plus de `reason` (`code`, SOG-0541 : l'ENR 3.2 de Belgique reconnue et refusée : `not-routes`, `no-amendment`, `pdf-timeout`…) : un mot court [a-z0-9_-] de 30 signes au plus ; rien d'autre du corps ne passe. */
+const codeOf = b => typeof b?.code === 'string' && /^[a-z0-9_-]{1,30}$/.test(b.code) ? {
+  code: b.code
 } : {};
 /** L'opération en cours que le lanceur dit dans un refus « busy » (`running`, SOG-0245) : un jeu fermé de champs aux types bornés (mots courts [a-z0-9_-], nombres finis, `alive` parmi quatre mots, `step`
  *  un texte de 120 signes sans caractère de commande) ; rien d'autre du corps ne passe. Sans identifiant lisible : rien (un lanceur ancien). */
@@ -471,6 +475,7 @@ export function launcherClient({
               wait: body.wait
             } : {}),
             ...expectedOf(body),
+            ...codeOf(body),
             ...runningOf(body)
           });
           end({

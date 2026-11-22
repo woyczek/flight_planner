@@ -11534,3 +11534,343 @@ def l174(c):
     c.wait(11500)   # past the ten seconds of the real clock
     c.eq(reads(), base + 1, 'the retry did not start once the screen was left', what='timer stopped')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L179
+# The sentences of the Belgian ENR 3.2 (SOG-0541) written IN CLEAR here (French first, the ergonomist's words), four languages: a typo in modules/data/texts.js is a red of this case, not a copy of itself.
+_L179_BE = {
+    'fr': {'howto': 'Téléchargez le PDF de la partie ENR 3.2 de l’AIP de Belgique, puis déposez-le ici avec « Choisir le fichier… ». À refaire à chaque cycle AIRAC.',
+           'current': 'Pages déposées le {dep} (cycle {cycle}). Dernier amendement lu : {amd}.', 'future': 'Pages déposées le {dep}, en vigueur le {amd}.',
+           'expired': 'Périmé depuis le {exp}. Déposez la page ENR 3.2 du cycle en cours.', 'notRoutes': '{name} : cette page ne sert pas au calcul des routes.',
+           'noDate': '{name} : aucune date d’amendement lisible. Rien n’a été déposé.', 'inforce': 'en vigueur le', 'name': 'AIM Belgique',
+           'notKept': '{name} : ces pages sont plus anciennes que celles déjà déposées. Rien n’a été déposé.'},
+    'en': {'howto': 'Download the PDF of part ENR 3.2 of the Belgian AIP, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
+           'current': 'Pages dropped on {dep} (cycle {cycle}). Latest amendment read: {amd}.', 'future': 'Pages dropped on {dep}, in force on {amd}.',
+           'expired': 'Expired since {exp}. Drop the ENR 3.2 page of the current cycle.', 'notRoutes': '{name}: this page is not used to compute routes.',
+           'noDate': '{name}: no readable amendment date. Nothing was dropped.', 'inforce': 'in force on', 'name': 'AIM Belgium',
+           'notKept': '{name}: these pages are older than those already dropped. Nothing was dropped.'},
+    'de': {'howto': 'Laden Sie das PDF des Teils ENR 3.2 des belgischen AIP herunter und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
+           'current': 'Seiten abgelegt am {dep} (Zyklus {cycle}). Letzte gelesene Änderung: {amd}.', 'future': 'Seiten abgelegt am {dep}, in Kraft am {amd}.',
+           'expired': 'Veraltet seit {exp}. Legen Sie die Seite ENR 3.2 des laufenden Zyklus ab.', 'notRoutes': '{name}: diese Seite dient nicht der Streckenberechnung.',
+           'noDate': '{name}: kein lesbares Änderungsdatum. Es wurde nichts abgelegt.', 'inforce': 'in Kraft am', 'name': 'AIM Belgien',
+           'notKept': '{name}: diese Seiten sind älter als die bereits abgelegten. Es wurde nichts abgelegt.'},
+    'es': {'howto': 'Descargue el PDF de la parte ENR 3.2 del AIP de Bélgica y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.',
+           'current': 'Páginas depositadas el {dep} (ciclo {cycle}). Última enmienda leída: {amd}.', 'future': 'Páginas depositadas el {dep}, en vigor el {amd}.',
+           'expired': 'Caducado desde el {exp}. Deposite la página ENR 3.2 del ciclo en curso.', 'notRoutes': '{name}: esta página no sirve para el cálculo de rutas.',
+           'noDate': '{name}: ninguna fecha de enmienda legible. No se ha depositado nada.', 'inforce': 'en vigor el', 'name': 'AIM Bélgica',
+           'notKept': '{name}: estas páginas son más antiguas que las ya depositadas. No se ha depositado nada.'},
+}
+_L179_LABEL = ['AIM Belgique — AIP Belgique et Luxembourg (ENR 3.2, routes RNAV)', 'AIM Belgium — AIP Belgium and Luxembourg (ENR 3.2, RNAV routes)',
+               'AIM Belgien — AIP Belgien und Luxemburg (ENR 3.2, RNAV-Strecken)', 'AIM Bélgica — AIP Bélgica y Luxemburgo (ENR 3.2, rutas RNAV)']
+_L179_PDF = b'%PDF-1.4\n% an invented page, the case sends no real one\n' + b'0' * 940
+
+
+def _l179_go(answer, box):
+    """base/cycle with the line `aimbe` as AeroDB's contract gives it: `set` { inForce, next } (each null or { effective, deposited, cycle, state, expires, name }); a regime « hand », no file expected, no link."""
+    def go(args):
+        res = answer(args)
+        it = _l89_item('aimbe', 'hand', {'state': box.get('dl', 'done'), 'cycle': box['cycle'], 'at': box['at']}, (1, 1), (1, 0, 0), ['be'], None if box.get('dl', 'done') == 'done' else 'older-than-cycle', {'link': '', 'expected': [], 'inDownloads': []}, _L179_LABEL)
+        it.update({'set': box['set'], 'handMode': 'only', 'rank': 'primary', 'rhythm': 'airac', 'content': ['points', 'airways']})
+        res['items'] = list(res.get('items') or []) + [it]
+        if args.get('zone') == 'be':
+            res['zoneView'] = {'zone': 'be', 'known': True, 'inCoverage': True, 'sources': [it], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+        return res
+    return go
+
+
+@case('L179', 'Données: the Belgian ENR 3.2 PDF (SOG-0541) — the card says the two sentences of the ergonomist (no link, no file name, no source), « Choisir le fichier… » sends the PDF, every refusal is said (« {fichier} : cette page ne sert pas au calcul des routes. », « … aucune date d’amendement lisible. Rien n’a été déposé. », the launcher’s reason for the others), the line of the source is judged by TODAY’s date (in force, in advance, expired, a date that has passed with nothing recompiled), an accepted set says itself on the line, never starts a pickup, and builds the zone only with the personal-use box ticked',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0541 (the user dropped the Belgian AIP pages; the launcher reads the ENR 3.2 PDF, AeroDB e4a583cae): modules/data/belgium.js (the sentences, judged by today’s date), upload.js (the answer, the closed `code` of a refusal, the build that follows), countries.js (the tick of the source, the card), model_countries.js (`set` of base/cycle); frame/aerodb/INTEGRATION.md « Belgium and Luxembourg: the ENR 3.2 of the AIP dropped as a PDF »')
+def l179(c):
+    lang = c.lang
+    BE = {k: v for k, v in _L179_BE[lang].items()}
+    ZM = lambda key: _trow(key, lang, after='  zm: {')
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    today, cur, prev, nxt = _cycles()
+    d = lambda n: today + datetime.timedelta(days=n)
+    iso = lambda x: x.isoformat()
+    txt = lambda x: _date_text(x, lang)
+    fname = lambda dep: f'aimbe_be_enr_{(dep - datetime.timedelta(days=9)).strftime("%Y%m%d")}_{dep.strftime("%Y%m%d")}.geojson'
+    in_force = lambda: {'effective': iso(d(-9)), 'deposited': iso(d(-2)), 'cycle': iso(cur), 'state': 'current', 'expires': iso(nxt), 'name': fname(d(-2))}
+    box = {'set': {'inForce': in_force(), 'next': None}, 'cycle': iso(cur), 'at': f'{iso(d(-2))}T09:00:00Z'}
+    holder = {}
+    built = lambda cyc: {**_zst('up-to-date'), 'builtAt': f'{iso(cyc + datetime.timedelta(days=3))}T10:00:00Z', 'builtCycle': iso(cyc), 'publish': {'state': 'published', 'at': f'{iso(cyc + datetime.timedelta(days=4))}T12:00:00Z'}}
+    stale = lambda reason: {**_zst('stale', reason, buildable=reason['code'] == 'inputs-changed'), 'builtAt': f'{iso(prev + datetime.timedelta(days=3))}T10:00:00Z', 'builtCycle': iso(prev), 'publish': {'state': 'published', 'at': f'{iso(prev + datetime.timedelta(days=4))}T12:00:00Z'}}
+    sent = []
+    hook = {'fn': None}
+    answer = {'status': 200, 'body': {}}
+
+    def upload(route):
+        req = route.request
+        sent.append({'size': len(req.post_data_buffer or b''), 'name': req.headers.get('x-sog-name')})
+        if hook['fn'] and answer['status'] == 200:
+            hook['fn']()   # what the launcher changes when it accepts the set: the list of the cycle and the state of the zone
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+
+    def tweak(w):
+        holder['w'] = w
+        w['zs']['be'] = built(prev)   # the zone was built in the previous cycle: a set of the current cycle is NOT compiled yet
+    st = _l102_open(c, wrap=lambda a: _l179_go(a, box), world_tweak=tweak)
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)   # AFTER the launcher stub: the route registered last answers first (L70 does the same)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    sheet = '[data-sheet=be]'
+    src = f'{sheet} [data-sheet-source=aimbe]'
+    tick = f'{src} .d-cells1 li[data-tick=download]'
+
+    def group():
+        """The group Europe de l'Ouest open (a tap on its title opens it, a second one would close it)."""
+        shown = "(e => !!e && e.offsetParent !== null && e.getBoundingClientRect().height > 0)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone=be]'))"   # a closed group keeps its buttons in the DOM, hidden
+        if not c.js(shown):
+            c.tap('[data-group-id=europe-west] [data-act=grp-toggle]')
+        c.until(shown, timeout=8000, what='the group with Belgium is open')
+
+    def fresh():
+        """The screen afresh (a reload): the list of the cycle and the state of the zones are read again, no sheet is open."""
+        c.page.reload(wait_until='load')
+        _head(c)
+        c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length > 20 && !!document.querySelector('[data-todo-state=ready]')", timeout=30000, what='the map and the list of the month')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+
+    def open_be(reload=True):
+        """Opens the sheet of Belgium on a screen read afresh (the sheet of a country covers the list at 390: a sheet is opened once per reading)."""
+        if reload:
+            fresh()
+        group()
+        c.tap('[data-group-body] [data-zone=be]')
+        c.until(f"!!document.querySelector('{src}')", timeout=15000, what='the sheet of Belgium with the source AIM Belgique')
+        c.until(f"!!document.querySelector('{tick}') && !document.querySelector('{sheet} [data-inventory-state=loading]')", timeout=12000, what='the line of the source')
+        c.wait(250)
+    line = lambda: norm(c.text(tick))
+
+    def head_now(expect, what):
+        """The head of the sheet agrees with the line of the source (one state per card): `data-now` is what to do, never « Rien à faire » next to a line that says « à faire »."""
+        c.until(f"document.querySelector('{sheet} [data-sheet-now]')?.dataset.now === {json.dumps(expect)}", timeout=15000, what=f'the head of the sheet says {expect} ({what})')
+        c.ok(norm(_trow('fresh', lang, after='  now: {')) not in norm(c.text(f'{sheet} [data-sheet-now]')) or expect == 'fresh', c.text(f'{sheet} [data-sheet-now]'), f'{what}: the head of the sheet never says « Rien à faire » next to a line that says to do something')
+
+    def snap(name):
+        """The line of the source in this state, on the sheet (390 and 1280): the captures the relay reads."""
+        if c.width in (390, 1280):
+            c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
+            c.shot(f'L179_{c.width}_{lang}_state_{name}.png')
+    # ---- 1. the card: the two sentences, no link, no file name, no source name; the gesture is « Choisir le fichier… »
+    box['set'] = {'inForce': None, 'next': None}
+    open_be(reload=False)
+    c.eq(norm(c.text(f'{src} [data-choose-hint=aimbe]')), norm(BE['howto']), 'the card says the two sentences of the ergonomist, in the language of the run', what='card sentences')
+    c.eq([c.count(f'{src} a[href]'), c.count(f'{src} [data-inventory] code'), c.count(f'{src} [data-file-name]')], [0, 0, 0], 'no link, no file name on the card', what='no link no file')
+    c.eq([c.count(f'{src} [data-act=zone-upload]'), c.js(f"document.querySelector('{src} [data-act=zone-upload]').disabled"), norm(c.text(f'{src} [data-act=zone-upload]'))], [1, False, norm(UP('choose'))], 'and « Choisir le fichier… », live', what='gesture')
+    # ---- 2. the line, judged by today's date
+    # the personal-use box is NOT ticked (it is, further down): a set in force that nothing reads is not « déposé » with no effect and the card is not silent — the head says the box, with the words of the other personal sources
+    box['set'] = {'inForce': {'effective': iso(d(-9)), 'deposited': iso(d(-5)), 'cycle': iso(cur), 'state': 'current', 'expires': iso(nxt), 'name': fname(d(-5))}, 'next': None}
+    holder['w']['zs']['be'] = stale({'code': 'personal-undeclared', 'source': 'aimbe'})
+    open_be()
+    head_now('tick', 'the box is not ticked')
+    c.eq([c.js(f"document.querySelector('{sheet} [data-act=sheet-update]').disabled"), norm(c.text(f'{sheet} [data-sheet-now]'))], [True, norm(_trow('tick', lang, after='  now: {'))], 'the box is not ticked: « Mettre à jour ce pays » is grey and the head says to tick the box (the words of the other personal sources)', what='unticked card')
+    snap('unticked')
+    box['set'] = {'inForce': {'effective': iso(d(-9)), 'deposited': iso(d(-5)), 'cycle': iso(cur), 'state': 'current', 'expires': iso(nxt), 'name': fname(d(-5))}, 'next': None}
+    holder['w']['zs']['be'] = stale({'code': 'inputs-changed', 'count': 1})   # the launcher sees the new set: the zone is to rebuild
+    open_be()
+    say = BE['current'].format(dep=txt(d(-5)), cycle=_name(cur), amd=txt(d(-9)))
+    c.eq([line().endswith(norm(say)), c.attr(tick, 'data-ok')], [True, 'yes'], 'a set in force that the zone has not compiled: the box says the dropped set (« fait »), its sentence alone, no third date; the build says what remains', what='not compiled')
+    head_now('update', 'a set in force not compiled')
+    snap('update')
+    # the answer of the launcher is a day old: its set « in advance » has a date that is past — never « en vigueur le <past date> », the set is in force
+    box['set'] = {'inForce': None, 'next': {'effective': iso(d(-1)), 'deposited': iso(d(-5)), 'cycle': iso(cur), 'state': 'future', 'expires': iso(nxt), 'name': fname(d(-5))}}
+    open_be()   # the status stays « to rebuild »: the launcher has switched the set in force by the date
+    say = BE['current'].format(dep=txt(d(-5)), cycle=_name(cur), amd=txt(d(-1)))
+    c.ok(norm(say) in line() and BE['inforce'] not in line(), line(), 'a set in advance whose date has passed is in force: « Pages déposées … » and never « en vigueur le <date passée> »')
+    c.eq(c.attr(tick, 'data-ok'), 'yes', 'and the box says « fait »: the file is dropped, the build remains', what='passed done')
+    head_now('update', 'a date that has passed')
+    snap('passed')
+    # in advance: the date is to come
+    old = {'effective': iso(prev - datetime.timedelta(days=20)), 'deposited': iso(prev - datetime.timedelta(days=18)), 'cycle': iso(prev), 'state': 'expired', 'expires': iso(cur), 'name': fname(prev)}
+    box['set'] = {'inForce': old, 'next': {'effective': iso(d(9)), 'deposited': iso(d(-1)), 'cycle': iso(nxt), 'state': 'future', 'expires': iso(nxt + datetime.timedelta(days=28)), 'name': fname(d(-1))}}
+    holder['w']['zs']['be'] = stale({'code': 'source-old', 'source': 'aimbe', 'cycle': iso(prev), 'current': iso(cur)})   # the set built is of a past cycle: no set in force, a newer file is to be dropped
+    open_be()
+    c.eq([line().endswith(norm(BE['future'].format(dep=txt(d(-1)), amd=txt(d(9))))), norm(BE['expired'].format(exp=txt(cur))) in line(), c.attr(tick, 'data-ok')], [True, True, 'todo'],
+         'a set in advance while the set built is expired: the card asks for the page of the current cycle (« Périmé depuis le … ») and shows the advance set (« en vigueur le … »)', what='in advance')
+    head_now('file', 'a set in advance, nothing in force')
+    c.eq(c.js(f"document.querySelector('{sheet} [data-act=sheet-update]').disabled"), True, '« Mettre à jour ce pays » is grey: nothing can be downloaded for Belgium, the file is to be dropped', what='update grey advance')
+    snap('advance')
+    # a set in advance ALONE: no set in force, so no Belgian routes — the page of the current cycle is what is useful
+    box['set'] = {'inForce': None, 'next': {'effective': iso(d(9)), 'deposited': iso(d(-1)), 'cycle': iso(nxt), 'state': 'future', 'expires': iso(nxt + datetime.timedelta(days=28)), 'name': fname(d(-1))}}
+    holder['w']['zs']['be'] = stale({'code': 'source-missing', 'source': 'aimbe'})
+    open_be()
+    c.eq([line().endswith(norm(BE['future'].format(dep=txt(d(-1)), amd=txt(d(9))))), norm(BE['expired'].format(exp=txt(cur))) in line(), c.attr(tick, 'data-ok')], [True, False, 'todo'], 'a set in advance alone: only its line (« en vigueur le … »), a tick « à faire »', what='advance alone')
+    head_now('file', 'a set in advance alone')
+    c.eq(c.js(f"document.querySelector('{sheet} [data-act=sheet-update]').disabled"), True, '« Mettre à jour ce pays » is grey: no set in force, the page of the current cycle is to be dropped', what='update grey advance alone')
+    snap('advance_alone')
+    # expired
+    box['set'] = {'inForce': {'effective': iso(prev - datetime.timedelta(days=20)), 'deposited': iso(prev - datetime.timedelta(days=18)), 'cycle': iso(prev), 'state': 'expired', 'expires': iso(cur), 'name': fname(prev)}, 'next': None}
+    holder['w']['zs']['be'] = stale({'code': 'source-old', 'source': 'aimbe', 'cycle': iso(prev), 'current': iso(cur)})   # the set is of a past cycle: a newer file is to be dropped
+    box['dl'], box['cycle'] = 'late', iso(prev)   # and the list of the cycle says the source is late (older than the cycle in force)
+    open_be()
+    c.eq([line().endswith(norm(BE['expired'].format(exp=txt(cur)))), norm(BE['current'].split('{')[0]) in line()], [True, False], 'a set whose cycle is over: « Périmé depuis le … » and the page to drop, not the sentence of a set in force', what='expired')
+    head_now('file', 'a set expired')
+    c.eq(c.js(f"document.querySelector('{sheet} [data-act=sheet-update]').disabled"), True, '« Mettre à jour ce pays » is grey: nothing can be downloaded for Belgium, the file is to be dropped', what='update grey expired')
+    c.ok(norm(_trow('handFile', lang, after='  now: {').split('{s}')[1]) not in norm(c.text(f'{sheet} [data-sheet-now]')), c.text(f'{sheet} [data-sheet-now]'), 'the head does not name a button that is not on the card (« Prendre le fichier téléchargé »)')
+    snap('expired')
+    # in force and compiled: no update to run
+    box['dl'], box['cycle'] = 'done', iso(cur)
+    holder['w']['zs']['be'] = built(cur)
+    box['set'] = {'inForce': in_force(), 'next': None}
+    fresh()
+    group()
+    c.tap('[data-group-body] [data-zone=be]')
+    c.until(f"!!document.querySelector('{tick}')", timeout=15000, what='the line of the source')
+    c.wait(300)
+    say = BE['current'].format(dep=txt(d(-2)), cycle=_name(cur), amd=txt(d(-9)))
+    c.eq([line().endswith(norm(say)), c.attr(tick, 'data-ok')], [True, 'yes'], 'a set in force and compiled: its sentence alone, a green tick', what='in force built')
+    head_now('fresh', 'a set in force and compiled')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{sheet}').scrollIntoView({{ block: 'start' }})")
+        c.shot(f'L179_{c.width}_{lang}_card.png')
+    # ---- 3. the drop: the PDF is sent as it is, every refusal is said
+    btn = f'{src} [data-act=zone-upload]'
+    zmsg = f'{src} [data-zone-msg=be] [data-line]'
+    quiet = lambda: c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    lines_of = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{zmsg}')].map(p => p.textContent)")]
+    squash = "p.textContent.replace(/[\\s\\u202f\\u00a0]+/g, ' ').trim()"
+    has_line = lambda text: f"[...document.querySelectorAll('{zmsg}')].some(p => {squash} === {json.dumps(text)})"
+    ends_line = lambda text: f"[...document.querySelectorAll('{zmsg}')].some(p => {squash}.endsWith({json.dumps(text)}))"
+    prefix = norm(BE['current'].split('{')[0])   # « Pages déposées le »: what a set in use says, never while the box is not ticked
+
+    def choose(name):
+        c.until(f"!document.querySelector('{btn}').disabled", timeout=15000, what='the gesture is free')
+        quiet()
+        with c.page.expect_file_chooser() as fc:
+            c.js(f"document.querySelector('{btn}').click()")
+        fc.value.set_files({'name': name, 'mimeType': 'application/pdf', 'buffer': _L179_PDF})
+        for _ in range(40):
+            if len(sent) > len(done):
+                break
+            c.wait(250)
+        done.append(1)
+    done = []
+    n_pick, n_build = len(_posts(st, 'pickup')), len(_posts(st, 'build'))
+    page33 = 'ENR 3.3 <b>é</b>.pdf'
+    shot_of = {'not-routes': 'page', 'no-amendment': 'nodate', 'pdf-timeout': 'reason'}
+    refusals = ((page33, 'not-routes', 'notRoutes', True), ('EB_ENR_3_2_en.pdf', 'no-amendment', 'noDate', True), ('x.pdf', 'pdf-timeout', None, False))
+    for name, code, key, whole in refusals:
+        answer.update({'status': 422, 'body': {'ok': False, 'reason': 'unrecognised', 'code': code, 'message': 'La lecture du PDF a dépassé 40 s <i>(script)</i>', 'expected': ['sia', 'aimbe']}})
+        choose(name)
+        want = norm(BE[key].format(name=name)) if key else norm('La lecture du PDF a dépassé 40 s <i>(script)</i>')
+        c.until(has_line(want), timeout=8000, what=f'the line says the refusal {code}')
+        c.eq(lines_of() if whole else lines_of()[-1:], [want], f'{code}: the line says it' + (' — the sentence names the file, no other line repeats it' if whole else ' — the reason of the launcher, as text'), what=f'line {code}')
+        c.eq(c.count(f'{src} [data-zone-msg=be] b') + c.count(f'{src} [data-zone-msg=be] i'), 0, f'{code}: nothing of the file name or of the message is markup', what=f'escaped {code}')
+        c.ok(bool(_notes_with(c, want)), code, f'{code}: the notification says the same words')
+        c.eq([len(_posts(st, 'pickup')) - n_pick, len(_posts(st, 'build')) - n_build], [0, 0], f'{code}: no pickup, no build', what=f'nothing started {code}')
+        if c.width in (390, 1280):
+            c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
+            c.shot(f'L179_{c.width}_{lang}_refused_{shot_of[code]}.png')
+    c.eq([sent[0]['size'], sent[0]['name']], [len(_L179_PDF), urllib.parse.quote(page33, safe="-_.!~*'()")], 'the PDF goes as it is (raw bytes), its name only a hint, URL-encoded', what='request')
+    # ---- 4. accepted, a set in force, the personal-use box NOT ticked: ONE state — the line of the source shows the set kept, the line under the button and the notification say what is missing (the box),
+    # never « Pages déposées », and the state of the country and its button say there is something to do (never « Rien à faire » next to a file waiting)
+    cyc = iso(cur)
+    kept_entry = lambda: {'effective': iso(d(-3)), 'deposited': iso(today), 'cycle': cyc, 'state': 'current', 'expires': iso(nxt), 'name': fname(today)}
+    ok_body = lambda **k: {'ok': True, 'source': 'aimbe', 'zone': 'be', 'name': fname(today), 'size': len(_L179_PDF), 'replaced': True, 'sha256': 'ab' * 32, 'cycle': cyc, 'effective': iso(d(-3)), 'deposited': iso(today),
+                           'state': 'current', 'expires': iso(nxt), 'amendment': {'amdt': '002/2026', 'date': iso(d(-3)), 'pages': 4}, 'routes': 120, 'points': 400, 'segments': 600, 'unjoined': 0, 'kept': [fname(today), fname(d(-2))], **k}
+
+    def accepted():
+        box['set'] = {'inForce': kept_entry(), 'next': None}   # the launcher now lists the set it kept
+        holder['w']['zs']['be'] = stale({'code': 'personal-undeclared', 'source': 'aimbe'})   # and, without the box, the zone waits for it
+    hook['fn'] = accepted
+    answer.update({'status': 200, 'body': ok_body()})
+    choose('EB_ENR_3_2_en.pdf')
+    tickline = norm(UP('tick'))
+    c.until(has_line(tickline), timeout=8000, what='the line says the box is not ticked')
+    c.eq(lines_of()[1:], [tickline], 'accepted without the box: the line under the button says what is missing, with the words of the box', what='line')
+    c.ok(bool(_notes_with(c, tickline)) and not _notes_with(c, prefix), prefix, 'the notification says the same as the line, and never « Pages déposées »')
+    c.eq([len(_posts(st, 'pickup')) - n_pick, len(_posts(st, 'build')) - n_build], [0, 0], 'a PDF that is not kept starts no pickup; without the box nothing is built', what='no pickup no build')
+    say = norm(BE['current'].format(dep=txt(today), cycle=_name(cur), amd=txt(d(-3))))
+    c.until(f"!!document.querySelector('{tick}') && document.querySelector('{tick}').textContent.includes({json.dumps(txt(today))})", timeout=15000, what='the line of the source shows the set kept')
+    c.ok(say in line(), line(), 'ONE state: the line of the source shows the set actually kept (the one just dropped)')
+    now = f'{sheet} [data-sheet-now]'
+    upd = f'{sheet} [data-act=sheet-update]'
+    c.until(f"document.querySelector('{now}')?.dataset.now === 'tick'", timeout=15000, what='the state of the country says the box is to tick')
+    c.ok(norm(_trow('fresh', lang, after='  now: {')) not in norm(c.text(now)), c.text(now), 'the head of the sheet never says « Rien à faire » next to a file waiting')
+    c.eq(c.js(f"document.querySelector('{upd}').disabled"), True, 'and « Mettre à jour ce pays » is grey (it waits for the box)', what='grey')
+    c.ok('AIMBE' not in c.text(sheet) and BE['name'] in c.text(sheet), 'AIMBE' in c.text(sheet), 'the source is named « AIM Belgique », never its identifier in capitals')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{sheet}').scrollIntoView({{ block: 'start' }})")
+        c.shot(f'L179_{c.width}_{lang}_accepted.png')
+    # the box ticked (« Retour »: at 390 the sheet is a full page, the box is in the list under it): the line that asked for it goes, « Mettre à jour ce pays » is the gesture
+    holder['w']['zs']['be'] = stale({'code': 'inputs-changed', 'count': 1})   # with the box the launcher no longer waits for it: the inputs changed
+    c.js("[...document.querySelectorAll('[data-sheet] [data-act=sheet-close]')].find(b => b.offsetParent !== null)?.click()")
+    c.until("![...document.querySelectorAll('[data-sheet]')].some(e => e.offsetParent !== null)", timeout=8000, what='the sheet is closed')
+    _tap_certify(c)
+    c.until_doc('cache/data/personal.json', lambda x: bool(x and x.get('certified') is True), what='the certification written')
+    group()
+    c.tap('[data-group-body] [data-zone=be]')
+    c.until(f"!!document.querySelector('{btn}')", timeout=15000, what='the sheet of Belgium again')
+    c.until(f"document.querySelector('{now}')?.dataset.now === 'update'", timeout=15000, what='the state of the country says « Mettre à jour » now')
+    c.eq([c.js(f"document.querySelector('{upd}').disabled"), tickline in lines_of()], [False, False], 'the box ticked: « Mettre à jour ce pays » is live, and the line that asked for the box is gone', what='update live')
+    c.eq(c.attr(tick, 'data-ok'), 'yes', 'the box of the source says « fait »: the file is dropped, the build is what remains', what='ticked done')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{sheet}').scrollIntoView({{ block: 'start' }})")
+        c.shot(f'L179_{c.width}_{lang}_ticked.png')
+    # the same drop again with the box ticked: the zone Belgium alone is built, with the source in `personal`; the line says the set (in use), the notification the same
+    hook['fn'] = None
+    answer.update({'status': 200, 'body': ok_body(sha256='cd' * 32)})
+    choose('EB_ENR_3_2_en.pdf')
+    for _ in range(40):
+        if len(_posts(st, 'build')) > n_build:
+            break
+        c.wait(250)
+    b = _posts(st, 'build')[n_build:]
+    c.eq([[p['args'].get('zones'), p['args'].get('personal')] for p in b[:1]], [[['be'], ['aimbe']]], 'the box ticked: the zone Belgium alone is built, with the source in `personal`', what='build')
+    c.eq(len(_posts(st, 'pickup')) - n_pick, 0, 'and still no pickup', what='no pickup')
+    c.until(has_line(say), timeout=8000, what='the line says the set in use')
+    c.ok(bool(_notes_with(c, say)), say, 'the notification says the same as the line')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L179_{c.width}_{lang}_inuse.png')
+    # a set of a future date: said « en vigueur le … », nothing built (it sleeps until its date)
+    n_build = len(_posts(st, 'build'))
+    c.until(f"!document.querySelector('{btn}').disabled", timeout=30000, what='the gesture is free after the build')
+    answer.update({'status': 200, 'body': ok_body(state='future', effective=iso(d(9)), cycle=iso(nxt), expires=iso(nxt + datetime.timedelta(days=28)), name=fname(d(-1)), kept=[fname(d(-1)), fname(today)], deposited=iso(d(-1)))})
+    choose('EB_ENR_3_2_en.pdf')
+    want = norm(BE['future'].format(dep=txt(d(-1)), amd=txt(d(9))))
+    c.until(ends_line(want), timeout=8000, what='the line says the set in advance')
+    c.eq(len(_posts(st, 'build')) - n_build, 0, 'a set in advance builds nothing: it sleeps until its date', what='no build in advance')
+    # the same set dropped again: nothing changes, nothing is built
+    answer.update({'status': 200, 'body': ok_body(replaced=False)})
+    choose('EB_ENR_3_2_en.pdf')
+    c.wait(600)
+    c.eq(len(_posts(st, 'build')) - n_build, 0, 'a set already there changes nothing and builds nothing', what='unchanged')
+    # pages older than those already dropped: the launcher answers 200 and does not keep them; for the pilot nothing was dropped (the name goes through esc)
+    old_name = 'ENR 3.2 <b>vieux</b>.pdf'
+    answer.update({'status': 200, 'body': ok_body(name=fname(d(-60)), deposited=iso(today), effective=iso(d(-60)), cycle=iso(prev), expires=iso(cur), kept=[fname(d(-1)), fname(today)])})
+    choose(old_name)
+    want = norm(BE['notKept'].format(name=old_name))
+    c.until(has_line(want), timeout=8000, what='the line says the pages are older than those already dropped')
+    c.eq([lines_of(), c.count(f'{src} [data-zone-msg=be] b'), bool(_notes_with(c, want)), len(_posts(st, 'build')) - n_build], [[want], 0, True, 0],
+         'pages older than those kept: ONE sentence naming the file (escaped), the notification says the same, nothing is built', what='not kept')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L179_{c.width}_{lang}_notkept.png')
+    c.check_errors()
+
+
+@case('L180', 'Données: the refusal of an upload gives the launcher’s `code` and nothing else of the body (SOG-0541, frame/lib/launcher.js codeOf) — a valid word is passed, a word too long, in capitals, with a space, an object or a number is dropped, a body without `code` gives the refusal it gave before',
+      'L', tags=('data',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0541 (Essais, L179): the library kept only reason, message, expected and running of a refusal, so the closed `code` of the Belgian ENR 3.2 (not-routes, no-amendment…) never reached the screen; V3 Frame agreed on condition of this case, in the case file of the lot')
+def l180(c):
+    c.page.goto(f'{c.base}/LICENSE.md', wait_until='load')   # a page of the origin that boots nothing: the module is imported by hand
+    res = c.page.evaluate("""async () => {
+  const { launcherClient } = await import('/frame/lib/launcher.js');
+  const fake = (status, body) => () => { const x = { upload: {}, open() {}, setRequestHeader() {}, abort() {}, send() { setTimeout(() => { x.status = status; x.responseText = JSON.stringify(body); x.onload() }, 0) } }; return x };
+  const refuse = async body => { const l = launcherClient({ root: location.origin + '/', xhr: fake(422, body) }).forModule({ routes: ['base/upload'] }); const r = await l.upload('base/upload', new Blob(['x']), { name: 'a.pdf' }); return r };
+  const base = { ok: false, reason: 'unrecognised', message: 'm', expected: ['sia', 'aimbe'] };
+  const out = {};
+  for (const [k, code] of Object.entries({ valid: 'not-routes', max: 'a'.repeat(30), long: 'a'.repeat(31), caps: 'NOT-ROUTES', space: 'a b', object: { a: 1 }, number: 5, empty: '' })) {
+    const r = await refuse({ ...base, code }); out[k] = [Object.keys(r).sort(), r.code];
+  }
+  const r0 = await refuse(base); out.none = [Object.keys(r0).sort(), r0.code, r0.reason, r0.message, r0.expected];
+  return out }""")
+    keys = ['expected', 'message', 'ok', 'reason', 'route', 'status']
+    withcode = sorted(keys + ['code'])
+    c.eq([res['valid'], res['max']], [[withcode, 'not-routes'], [withcode, 'a' * 30]], 'a valid word (30 characters at most) is passed as `code`', what='valid')
+    for k in ('long', 'caps', 'space', 'object', 'number', 'empty'):
+        c.eq(res[k], [keys, None], f'`code` is dropped when it is {k}', what=k)
+    c.eq(res['none'], [keys, None, 'unrecognised', 'm', ['sia', 'aimbe']], 'a body without `code` gives the refusal it gave before', what='unchanged')
+    c.check_errors()

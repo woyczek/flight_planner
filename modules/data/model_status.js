@@ -239,7 +239,10 @@ export function downloadPlan(status, ids) {
       out.unknown.push(id);
       out.fetch.push(id);
     } else if (z.state === 'up-to-date') out.upToDate.push(id);
-    else if (z.reasons.some(r => r.code === 'pickup-waiting')) out.waiting.push(id);
+    else if (z.reasons.some(r => r.code === 'pickup-waiting' || (r.source === 'aimbe' && !z.buildable && isHandReason(r)))) out.waiting
+      .push(
+        id
+      ); // l'ENR 3.2 de Belgique manque ou est périmée (source-missing, source-old) : un fichier à déposer, rien à télécharger (SOG-0541)
     else if (!z.buildable && waitKind(z) === 'personal') out.personal.push(
       id); // la coche d'usage personnel manque : rien à télécharger, rien à construire
     else if (z.download && (z.download.done || z.download.sources === 0))(z.buildable ? out.build : out.waiting).push(

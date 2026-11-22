@@ -23,9 +23,14 @@ import {
   startRoute
 } from './route.js';
 import {
+  buildOwn,
   fetchThenBuild,
   startPickup
 } from './follow.js';
+import {
+  BE_SOURCE,
+  dropLines
+} from './belgium.js';
 import {
   showBusy
 } from './busy.js';
@@ -46,7 +51,12 @@ const MAX_BYTES = 1.5 * 1024 ** 3; // le plafond du lanceur : au-delà, rien n'e
 const REASONS = ['too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused'];
 /** Un identifiant de source tel que le lanceur le dit dans `expected` : minuscules, chiffres et tiret bas, 2 à 25 signes (il peut nommer une source que le catalogue n'a pas : son identifiant en majuscules). */
 const SOURCE_ID = /^[a-z][a-z0-9_]{1,24}$/;
-const nameOfSource = id => (catSource(id)?.n?.[li()] || String(id).toUpperCase()).replace(/\s*\(.*\)\s*$/, '');
+/** Les détails de refus de l'ENR 3.2 de Belgique (liste fermée du contrat d'AeroDB, SOG-0541) : `not-routes` (une autre page de l'ENR 3) et `no-amendment` (aucune date lisible) ont leur phrase ; les autres montrent le motif du lanceur. */
+const BE_CODES = ['not-routes', 'no-amendment', 'not-enr', 'too-many-pages', 'no-routes', 'too-many-objects', 'bad-values', 'pdf-missing',
+  'pdf-version', 'pdf-path', 'pdf-timeout', 'pdf-failed', 'pdf-output'
+];
+const nameOfSource = id => (id === BE_SOURCE ? tt(TX.be.name) : catSource(id)?.n?.[li()] || String(id).toUpperCase()).replace(
+  /\s*\(.*\)\s*$/, '');
 
 /** Le bouton « Choisir le fichier… » de la ligne d'une zone peut-il partir ? Un lanceur, aucune autre opération, aucun envoi en cours. */
 export const uploadOff = () => !S.ctx.launcher || busyNow() || !!S.upload;
@@ -97,7 +107,8 @@ export function outcome(r) {
     text: tt(TX.up.offline)
   };
   if (r?.ok && body.ok !== false) {
-    const src = typeof body.source === 'string' && (M.COV_SOURCES.includes(body.source) || /^eurocontrol(_rad)?$/.test(body.source)) ?
+    const src = typeof body.source === 'string' && (M.COV_SOURCES.includes(body.source) || body.source === BE_SOURCE ||
+        /^eurocontrol(_rad)?$/.test(body.source)) ?
       nameOfSource(body.source) : '',
       route = typeof body.source === 'string' && /^eurocontrol(_rad)?$/.test(body
         .source), // un classeur EUROCONTROL : pas de zone, l'import de la ligne Route suit
@@ -108,6 +119,16 @@ export function outcome(r) {
       zone,
       source: typeof body.source === 'string' ? body.source : '',
       cycle: /^\d{4}-\d{2}-\d{2}$/.test(String(body.cycle ?? '')) ? body.cycle : '',
+      // l'ENR 3.2 de Belgique (SOG-0541) : le jeu lu de la réponse et les noms que la zone garde (deux jeux au plus) ; rien d'autre n'est lu
+      ...(body.source === BE_SOURCE ? {
+        be: {
+          entry: M.setEntryOf({
+            ...body,
+            name
+          }),
+          kept: Array.isArray(body.kept) ? body.kept.filter(n => typeof n === 'string').slice(0, 4).map(n => n.slice(0, 80)) : null
+        }
+      } : {}),
       file: name,
       // le lanceur dit lui-même les jeux déjà posés pour CE cycle et ceux à envoyer (AeroDB 42aab1ae8) : listes fermées, jamais autre chose que FIX, AWY, NAV
       deposited: Array.isArray(body.deposited) ? body.deposited.filter(k => NASR_SETS.includes(k)) : null,
@@ -135,6 +156,8 @@ export function outcome(r) {
     return {
       kind: 'fail',
       running: reason === 'busy' ? M.runningOf(r?.running ?? body.running) : null, // l'opération qui tourne, dite par le lanceur (SOG-0245)
+      code: reason === 'unrecognised' && BE_CODES.includes(r?.code ?? body.code) ? r?.code ?? body.code :
+      '', // un PDF de l'AIP de Belgique reconnu et refusé, avec son détail (SOG-0541)
       detail: said, // « unrecognised » : la raison que le lanceur donne en clair (un eAIP qui n'est pas celui du Portugal, une image illisible…)
       text: tt(row, {
         s: expected
@@ -173,12 +196,13 @@ async function faaSet(out, zone) {
   await fetchThenBuild(out.zone || zone);
 }
 /** Ce que l'envoi n'a pas pu faire est écrit sur la ligne de la zone (le fichier choisi, puis le motif du lanceur) : la notification s'efface, la ligne reste jusqu'à la tentative suivante. */
-function sayOnLine(zone, name, text, detail = '') {
+function sayOnLine(zone, name, text, detail = '', whole = false) {
   S.zoneMsg.set(zone, {
     level: 'err',
-    lines: [tt(TX.zm.chosen, {
-      name
-    }), text, ...(detail ? [detail] : [])]
+    lines: whole ? [text] : [tt(TX.zm
+      .chosen, { // `whole` : la phrase dit déjà le fichier (l'ENR 3.2 de Belgique refusée : « {fichier} : cette page ne sert pas… »), pas de seconde ligne qui le répète
+        name
+      }), text, ...(detail ? [detail] : [])]
   });
   renderBuild();
 }
@@ -233,6 +257,16 @@ async function dircamTake(file, signal) {
     ...m,
     fromZip: true
   };
+}
+/** Ce qui suit l'ENR 3.2 de Belgique reçue (SOG-0541) : le lanceur a lu le PDF et écrit le jeu, rien n'est à prendre. Un jeu EN VIGUEUR, nouveau et gardé : la construction de la zone suit (la page enchaîne), à condition que la coche d'usage personnel soit cochée (la source est
+ *  à licence personnelle : sans elle rien ne la lirait, la ligne le dit et rien ne part) ; un jeu à venir dort jusqu'à sa date (l'état de la zone passera à « entrées modifiées » de lui-même), un jeu inchangé ne change rien. */
+async function aimTaken(zone, aim, note) {
+  if (!aim.build) return;
+  if (!selectionOf([zone]).personal.includes(BE_SOURCE))
+    return renderBuild(); // la ligne dit déjà qu'il faut cocher ; la coche cochée, « Mettre à jour ce pays » fait le reste
+  note.chained = true;
+  renderBuild();
+  await buildOwn(zone);
 }
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de sa zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). `source` : la ligne qui a demandé le fichier — « dircam » : le PDF de l'ENR 5.7 est lu dans
  *  l'archive du SIA et seul ce PDF est envoyé, sous le nom que le lanceur reconnaît (il le garde dans data/local/upload/ : source dircam, zone fr) ; sa réponse est dite sur la ligne. */
@@ -357,12 +391,43 @@ async function sendFile(zone, file, source, note) {
       })]), got]
     });
   }
-  if (out.kind === 'fail') sayOnLine(zone, origin, out.text, out.detail);
+  // l'ENR 3.2 de l'AIP de Belgique (SOG-0541) : refusée — la phrase dit le fichier (une autre page de l'ENR 3, aucune date lisible) ou le motif du lanceur ; acceptée — la ligne de la zone dit le jeu déposé, jugé à la date du jour
+  let whole = false;
+  if (out.kind === 'fail' && out.code) {
+    whole = out.code === 'not-routes' || out.code === 'no-amendment';
+    if (whole) out.text = tt(out.code === 'not-routes' ? TX.be.notRoutes : TX.be.noDate, {
+      name: origin
+    });
+    else if (out.detail) out.text = out.detail; // le motif du lanceur (bornée, sans commande), à la place de « non reconnu »
+    out.detail = '';
+  }
+  const aim = out.kind !== 'fail' && out.source === BE_SOURCE && out.be ? dropLines(out.be.entry, out.be.kept, out.kind !== 'same',
+    origin) : null;
+  if (aim) {
+    // un jeu en vigueur que rien ne lira tant que la coche d'usage personnel n'est pas cochée n'est pas « déposé » pour le pilote : la ligne et la notification disent ce qui manque, avec les mots de la coche (TX.up.tick), jamais « Pages déposées »
+    const waits = aim.build && !selectionOf([out.zone || zone]).personal.includes(BE_SOURCE),
+      lines = waits ? [tt(TX.up.tick)] : aim.lines;
+    if (lines.length) out.text = lines.join(' ');
+    S.zoneMsg.set(out.zone || zone, {
+      level: waits ? 'warn' : aim.level,
+      kind: 'hand',
+      ...(waits ? {
+        awaitsTick: true
+      } : {}),
+      lines: aim.kept ? [tt(TX.zm.chosen, {
+          name: origin
+        }), ...lines] :
+        lines // « {fichier} : ces pages sont plus anciennes… » dit déjà le fichier : pas de seconde ligne qui le répète
+    });
+  }
+  if (out.kind === 'fail') sayOnLine(zone, origin, out.text, out.detail, whole);
   else renderBuild();
   if (out.running) showBusy(out.running,
     'base'); // la carte de l'opération en cours, dans le panneau de la base, avec Voir / Arrêter / Libérer
-  S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
+  S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : aim && !aim.kept ? 'warn' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
+  if (aim) return aimTaken(out.zone || zone, aim,
+    note); // le PDF de l'ENR 3.2 est lu à l'envoi par le lanceur et n'est pas gardé : aucune prise ne suit
   note.chained = out.kind !== 'fail' && !dircam;
   if (out.kind === 'fail' || dircam) return; // le PDF de l'ENR 5.7 est lu par la page, pas pris par le lanceur : rien ne suit ici
   const own = pickSource(out.zone || zone);

@@ -181,7 +181,7 @@ export const meta = {
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
     'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'registry.js', 'tours.js', 'model_tours.js',
     'model_setstate.js', 'setstate.js', 'xplane.js',
-    'zipmember.js', 'model_mapview.js',
+    'zipmember.js', 'belgium.js', 'model_mapview.js',
     'mapview.js',
     'model_thread.js',
     'zoneop.js', 'select.js',
@@ -193,7 +193,9 @@ export const meta = {
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
   lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],
   net: ['tiles.openfreemap.org'],
-  reads: ['cache/data/', 'cache/sort/'], // cache/sort/ : l'ordre gardé du tableau de couverture est LU par loadState (SOG-0498), pas seulement écrit
+  reads: ['cache/data/',
+    'cache/sort/'
+  ], // cache/sort/ : l'ordre gardé du tableau de couverture est LU par loadState (SOG-0498), pas seulement écrit
   writes: [{
     prefix: 'cache/data/',
     policy: 'cache'
@@ -447,6 +449,10 @@ async function setCertified(want) {
     }
     S.certified = r.certified;
   }
+  if (S.certified)
+    for (const [z, m] of [...S.zoneMsg]) {
+      if (m.awaitsTick) S.zoneMsg.delete(z); // « cochez la case » : elle est cochée, la ligne ne le dit plus
+    }
   xplaneRefresh(); // la ligne « X-Plane (personnel, local) » n'existe qu'avec la coche : elle se lit (ou disparaît) avec elle
   savePersonal();
   if (S.d?.cov?.ids) refreshStatus(S.d.cov

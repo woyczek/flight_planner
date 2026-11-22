@@ -148,7 +148,7 @@
       content: ['points', 'airways'],
       age: 'file'
     },
-    // AIP de Belgique et du Luxembourg (AIM Belgium) : (la carte n'a ni lien ni « howto » ici : le pas à pas est écrit par la session du socle, SOG-0541) l'ENR 3.2 (routes RNAV), le PDF déposé à la main dans Données (« Choisir le fichier… ») ; reconnu par le TITRE écrit dedans, lu par le sous-processus borné du lanceur (tools/aim_be_enr.py, SOG-0541),
+    // AIP de Belgique et du Luxembourg (AIM Belgium) : (la carte n'a AUCUN lien, aucun nom de fichier ni de source : deux phrases de l'ergonome, SOG-0541 ; les mêmes que TX.be.howto de modules/data/texts.js) l'ENR 3.2 (routes RNAV), le PDF déposé à la main dans Données (« Choisir le fichier… ») ; reconnu par le TITRE écrit dedans, lu par le sous-processus borné du lanceur (tools/aim_be_enr.py, SOG-0541),
     // écrit zones/be/aimbe_be_enr_<date d'amendement>_<jour du dépôt>.geojson ; le cycle est celui du plus tardif des deux dates, « périmé » au début du cycle suivant. Aucune condition de réutilisation lue : usage personnel
     aimbe: {
       kind: 'manual',
@@ -158,6 +158,12 @@
         'AIM Belgien — AIP Belgien und Luxemburg (ENR 3.2, RNAV-Strecken)',
         'AIM Bélgica — AIP Bélgica y Luxemburgo (ENR 3.2, rutas RNAV)'),
       gives: L4('routes RNAV (ENR 3.2)', 'RNAV routes (ENR 3.2)', 'RNAV-Strecken (ENR 3.2)', 'rutas RNAV (ENR 3.2)'),
+      howto: L4(
+        'Téléchargez le PDF de la partie ENR 3.2 de l’AIP de Belgique, puis déposez-le ici avec « Choisir le fichier… ». À refaire à chaque cycle AIRAC.',
+        'Download the PDF of part ENR 3.2 of the Belgian AIP, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
+        'Laden Sie das PDF des Teils ENR 3.2 des belgischen AIP herunter und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
+        'Descargue el PDF de la parte ENR 3.2 del AIP de Bélgica y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.'
+      ),
       licence: 'AIM Belgium (usage personnel)',
       personal: 'licence', // aucune condition de réutilisation lue : la case dit qu'elle ne vaut que pour un dépôt à soi
       hand: 'only',

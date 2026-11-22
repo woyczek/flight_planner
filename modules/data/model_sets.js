@@ -40,6 +40,10 @@ export const PERSONAL = {
     kind: 'licence',
     zones: ['pt']
   },
+  aimbe: {
+    kind: 'licence',
+    zones: ['be']
+  },
   xplane: {
     kind: 'xplane',
     zones: '*'
