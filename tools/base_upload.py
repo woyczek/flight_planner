@@ -13,7 +13,9 @@ Contrat (frame/aerodb/INTEGRATION.md « Envoi d'un fichier choisi ») :
     `reason` (liste FERMÉE) : too-large (413), empty (400), type (415), unrecognised (422 ; `expected` : les identifiants des sources attendues), busy (409 : un travail tourne), merge-pending (409),
     disk (507), refused (403 : appareil du réseau local, rendu par le lanceur).
 Rien n'est écrit hors de data/local/upload/ ; le fichier temporaire est retiré quoi qu'il arrive."""
+import datetime
 import hashlib
+import json
 import os
 import re
 import secrets
@@ -24,11 +26,12 @@ import zipfile
 
 MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fait environ 1 Go
 CHUNK = 1024 * 1024
+AIP_BE_TIMEOUT = 40                     # la lecture bornée d'un PDF de l'ENR 3 (secondes) : 34 pages en 2 s
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 CD_MAX = 64 * 1024 * 1024               # un annuaire de plus de 64 Mo : idem (ZipFile le charge entier en mémoire avant tout autre contrôle)
 FOLDER = ('local', 'upload')
 AVIANS_PDF = re.compile(r'BI-ENR (?:4\.4|3\.2 [A-Z]{1,2}\d{1,4}[A-Z]?)(?:-en-GB|-is-IS)?(?: \(\d+\))?\.pdf', re.I | re.A)      # le nom d'un PDF de l'eAIP d'Islande (SOG-0368)
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians', 'aimbe']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
@@ -48,9 +51,9 @@ OPENAIP_NAME = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp)(?: \(\d
 class Refused(Exception):
     """Un refus de la liste fermée : reason, message, expected (facultatif)."""
 
-    def __init__(self, reason, message='', expected=None):
+    def __init__(self, reason, message='', expected=None, code=None):
         super().__init__(reason)
-        self.reason, self.message, self.expected = reason, message, expected
+        self.reason, self.message, self.expected, self.code = reason, message, expected, code      # `code` : le détail EN CODE d'un refus `unrecognised` que l'écran dit en toutes lettres (SOG-0541 : not-routes, no-amendment, pdf-…) ; liste fermée de tools/aim_be_enr.py REASONS + pdf-<raison de pdf_guard>
 
 
 def clean_hint(raw):
@@ -105,7 +108,32 @@ def _airac_ids(today=None):
     return out
 
 
-def recognise(path, hint='', today=None):
+def _aim_be(path, data, today):
+    """SOG-0541 : un PDF de l'ENR 3 de l'AIP de Belgique et du Luxembourg, reconnu par le TITRE écrit dedans (jamais par son nom), lu par le sous-processus borné de pdf_guard (jamais ici). Rend { source: 'aimbe', zone: 'be', name, cycle, aimbe: { geojson, … } } ; None si le titre n'est pas celui d'une partie de l'ENR 3 ; Refused (`code`) pour une partie qui ne sert pas aux routes (ENR 3.1, 3.3, 3.4 : rien n'est lu ni gardé), un PDF sans date d'amendement lisible ou plus de deux cycles à l'avance, un PDF que la lecture n'a pas pu ouvrir."""
+    import aim_be_enr
+    import pdf_guard
+    try:
+        read = pdf_guard.read_text(data, path, count=aim_be_enr.MAX_PAGES + 1, timeout=AIP_BE_TIMEOUT)
+    except pdf_guard.PdfError as e:
+        raise Refused('unrecognised', f'PDF non lu : {str(e)[:200]}', EXPECTED, code=f'pdf-{e.reason}') from None
+    texts = read['texts']
+    try:
+        info = aim_be_enr.identify(texts)
+    except aim_be_enr.Refusal as r:
+        if r.reason == 'not-enr' and not any(l.strip().startswith('ENR 3.') for t in texts[:1] for l in t.splitlines()[:10]):
+            return None          # un PDF quelconque : le refus d'avant
+        raise Refused('unrecognised', r.message, EXPECTED, code=r.reason) from None
+    if info['part'] != '3.2':
+        raise Refused('unrecognised', f'ENR {info["part"]} : cette page ne sert pas au calcul des routes', EXPECTED, code='not-routes')
+    day = today or datetime.date.today()
+    try:
+        g, n_points, n_segments, info, (eff, dep) = aim_be_enr.convert(texts, day)
+    except aim_be_enr.Refusal as r:
+        raise Refused('unrecognised', r.message, EXPECTED, code=r.reason) from None
+    return {'source': 'aimbe', 'zone': 'be', 'name': aim_be_enr.file_name(eff, dep), 'cycle': aim_be_enr.status(eff, dep, day)['cycle'], 'aimbe': {'geojson': g, 'points': n_points, 'segments': n_segments, 'info': info, 'effective': eff, 'deposited': dep, 'today': day}}
+
+
+def recognise(path, hint='', today=None, data=None):
     """Ce que le CONTENU du fichier dit : { source, zone, name (le nom canonique que base/pickup retrouve), cycle } ; lève Refused (type, unrecognised). Un zip : la liste de ses membres seulement."""
     with open(path, 'rb') as f:
         head = f.read(8)
@@ -200,6 +228,10 @@ def recognise(path, hint='', today=None):
         return {'source': 'ukmil', 'zone': 'gb', 'name': 'ENR-5-2.pdf', 'cycle': None}
     if head[:4] == b'%PDF' and AVIANS_PDF.fullmatch(hint or ''):      # SOG-0368 : le PDF de l'eAIP d'Islande est refusé (pas de second lecteur pour un repli), en disant QUOI déposer
         raise Refused('unrecognised', 'c’est le PDF ; ici c’est la PAGE de l’eAIP d’Islande qui se dépose : ouvrez-la par le lien de la carte, puis Enregistrer sous…', EXPECTED)
+    if head[:4] == b'%PDF' and data:          # SOG-0541 : l'ENR 3.2 de l'AIP de Belgique et du Luxembourg (le PDF de l'EAD), reconnu par son TITRE écrit dedans
+        rec = _aim_be(path, data, today)
+        if rec:
+            return rec
     if head[:4] == b'%PDF' or first == b'<':
         raise Refused('unrecognised', 'ce type de fichier (PDF, XML seul) n’est pas pris par cet envoi', EXPECTED)
     raise Refused('type', 'ni zip, ni JSON, ni PDF, ni XML')
@@ -222,6 +254,43 @@ def _publish_registry(base):
         return {'published': False, 'why': 'write'}
 
 
+def _write_aimbe(base, info, size, digest):
+    """Écrit le dérivé de l'ENR 3.2 de Belgique sous data/sia/zones/be/ (nom aimbe_be_enr_<amendement>_<dépôt>.geojson, atomique), puis retire ce qu'il remplace : un jeu de même date d'amendement déposé plus tôt, et tout ce qui dépasse KEEP_SETS jeux (celui en vigueur et celui publié à l'avance). Rend le corps de la réponse (SOG-0541)."""
+    import aim_be_enr
+    a = info['aimbe']
+    folder = os.path.join(base, 'sia', 'zones', 'be')
+    os.makedirs(folder, exist_ok=True)
+    if os.path.commonpath([os.path.realpath(folder), base]) != base:
+        raise OSError('dossier hors de data/')
+    try:
+        body = json.dumps(a['geojson'], ensure_ascii=False, allow_nan=False).encode('utf-8')      # jamais « Infinity » ou « NaN » : safe_json refuserait le fichier et la zone ne se lirait plus (revue de Sécurisation)
+    except ValueError:
+        raise Refused('unrecognised', 'une valeur lue n’est pas un nombre fini : le jeu n’est pas pris', EXPECTED, code='bad-values') from None
+    part = os.path.join(folder, f'.recv-{secrets.token_hex(6)}.part')
+    try:
+        with open(part, 'wb') as out:
+            out.write(body)
+        os.replace(part, os.path.join(folder, info['name']))
+    finally:
+        _drop(part)
+    sets = {}
+    for n in os.listdir(folder):
+        m = aim_be_enr.FILE.fullmatch(n)
+        p = os.path.join(folder, n)
+        if m and os.path.isfile(p) and not os.path.islink(p):
+            sets.setdefault(m.group(1), []).append((m.group(2), n))
+    keep = set()
+    for eff in sorted(sets, reverse=True)[:aim_be_enr.KEEP_SETS]:
+        keep.add(max(sets[eff])[1])
+    for names in sets.values():
+        for _, n in names:
+            if n not in keep:
+                _drop(os.path.join(folder, n))
+    st = aim_be_enr.status(a['effective'], a['deposited'], a['today'])
+    return {'ok': True, 'source': 'aimbe', 'zone': 'be', 'name': info['name'], 'size': size, 'replaced': True, 'sha256': digest, 'cycle': st['cycle'], 'effective': st['effective'], 'deposited': st['deposited'], 'state': st['state'], 'expires': st['expires'],
+            'amendment': a['geojson']['amendment'], 'routes': a['geojson']['routes'], 'points': a['points'], 'segments': a['segments'], 'unjoined': a['geojson']['skipped']['unjoined'], 'kept': sorted(keep)}
+
+
 def _sha(path):
     h = hashlib.sha256()
     with open(path, 'rb') as f:
@@ -240,8 +309,8 @@ def _drop(path):
 def receive(rfile, length, hint, data, busy=None, merge_pending=None):
     """Reçoit `length` octets de rfile, les reconnaît, les pose sous data/local/upload/. Rend (statut HTTP, corps JSON) ; `close` dans le corps (clé « _close ») : le lanceur coupe la connexion (un refus avant lecture du corps).
     busy() : un travail du lanceur tourne ; merge_pending() : une fusion interrompue attend dans data/."""
-    def no(reason, message='', expected=None, close=False, running=None):
-        return STATUS[reason], {'ok': False, 'reason': reason, 'message': message or reason, **({'expected': list(expected)} if expected else {}), **({'running': running} if running else {}), **({'_close': True} if close else {})}
+    def no(reason, message='', expected=None, close=False, running=None, code=None):
+        return STATUS[reason], {'ok': False, 'reason': reason, 'message': message or reason, **({'code': code} if code else {}), **({'expected': list(expected)} if expected else {}), **({'running': running} if running else {}), **({'_close': True} if close else {})}
     if not isinstance(length, int) or length <= 0:
         return no('empty', 'fichier vide', close=True)
     if length > MAX_BYTES:
@@ -260,7 +329,7 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
             return no('disk', 'dossier hors de data/', close=True)
         for n in os.listdir(folder):                       # les restes d'un envoi coupé, vieux d'une heure
             p = os.path.join(folder, n)
-            if n.startswith('.recv-') and n.endswith('.part') and time.time() - os.path.getmtime(p) > 3600:
+            if (n.startswith('.recv-') and n.endswith('.part') or re.fullmatch(r'recv-[0-9a-f]{12}\.pdf', n)) and time.time() - os.path.getmtime(p) > 3600:
                 _drop(p)
     except OSError as e:
         return no('disk', str(e)[:120], close=True)
@@ -278,11 +347,17 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
         if got != length:
             _drop(tmp)
             return no('empty', 'envoi interrompu', close=True)
+        with open(tmp, 'rb') as f:
+            is_pdf = f.read(5) == b'%PDF-'
+        if is_pdf:          # SOG-0541 : un PDF prend un nom que pdf_guard admet (le sous-processus borné ne lit que des noms de motif sous data/local/upload/) : un nom de travail, jamais celui du fichier choisi (renommé fichier fermé : Windows)
+            pdf = os.path.join(folder, f'recv-{secrets.token_hex(6)}.pdf')
+            os.replace(tmp, pdf)
+            tmp = pdf
         try:
-            info = recognise(tmp, clean_hint(hint))
+            info = recognise(tmp, clean_hint(hint), data=data)
         except Refused as r:
             _drop(tmp)
-            return no(r.reason, r.message, r.expected, close=False)
+            return no(r.reason, r.message, r.expected, close=False, code=r.code)
         except (OSError, ValueError, zipfile.BadZipFile) as e:
             _drop(tmp)
             return no('type', str(e)[:120])
@@ -308,6 +383,15 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
                 return no('type', str(e)[:120])
             _drop(tmp)
             return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': done[0], 'names': done, 'kind': info.get('kind', ''), 'size': got, 'replaced': True, 'sha256': h.hexdigest()}
+        if info.get('aimbe'):                               # SOG-0541 : l'ENR 3.2 de Belgique : le PDF n'est pas gardé, seul son dérivé (zones/be/) l'est
+            try:
+                return 200, _write_aimbe(base, info, got, h.hexdigest())
+            except Refused as r:
+                return no(r.reason, r.message, r.expected, code=r.code)
+            except OSError as e:
+                return no('disk', str(e)[:120])
+            finally:
+                _drop(tmp)
         if info.get('derive'):                              # le registre : dérivé à cinq colonnes, l'original (tiers : propriétaires, adresses) est supprimé aussitôt, jamais gardé, jamais dit
             import registry_fr
             try:

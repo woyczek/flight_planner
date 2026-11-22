@@ -20034,3 +20034,253 @@ def k504(c):
     c.eq((synthetic['unverifiable_count'], synthetic['violations_count']), (2, 1), 'the counts are the lengths of the two lists of the route', what='lengths')
     empty = P.level_summary(330, {'primary': {'ok': False, 'error': 'x', 'issues': [], 'legs': []}, 'states': 0})
     c.eq((empty['unverifiable_count'], empty['violations_count']), (0, 0), 'lists absent: 0 and 0, never an exception', what='absent')
+
+
+def _be_pages(part='3.2', title=None, amendments=None, drop_footer=None, routes=True):
+    """An INVENTED set of pages of the shape of an ENR 3 PDF of the Belgian AIP (SOG-0541): the headers, the title, the routes with their points, segment lines and remarks, the amendment at the foot of each page. Nothing is taken from the user's files: the names, the coordinates and the remarks are made up."""
+    amendments = amendments or [('AIRAC AMDT 002/2026', '19-FEB-2026'), ('AIRAC AMDT 002/2026', '19-FEB-2026'), ('AMDT 011/2026', '29-OCT-2026'), ('AMDT 007/2023', '13-JUL-2023')]
+    foot = lambda i: [] if drop_footer == i else [amendments[i][0], amendments[i][1], amendments[i][1]]
+    head_a = lambda n: [f'AIP Belgium and Luxembourg ENR {part}-{n}', '\xa9 AIM BELGIUM', '']
+    head_b = lambda n: [f'ENR {part}-{n} AIP Belgium and Luxembourg', '\xa9 AIM BELGIUM', '']
+    table = ['Route designator', '{RNP type} [Route usage notes]', 'Significant', 'point name', 'Significant point', 'coordinates Remarks', 'Geodesic', 'DIST', 'Upper limit /', 'lower limit', 'FL series Controlling unit', 'Remarks', 'F  B F B']
+    title = title or {'3.2': 'Area Navigation Routes', '3.3': 'Other Routes', '3.4': 'En-route Holding', '3.1': 'Conventional Routes'}[part]
+    p1 = head_a(1) + [f'ENR {part} {title}', '1 REMARKS ON RNAV ROUTES', 'Invented remark on invented routes.'] + foot(0)
+    if not routes:
+        return [p1]
+    p2 = head_b(2) + ['2 RNAV ROUTES'] + table + [
+        'ZA12', '{RNAV 5}', '(1) H24', '(2) CDR1 H24',
+        'R ZZAAA 510000N 0030000E (9)', '(3) (7)',
+        'R ZZBBB 510000N 0040000E',
+        '180\xb0 / 000\xb0 10NM FL660 FL 055 ForwardsOdd(1) BackwardsEven (1) {class C}(3) (6)',
+        'R Zeta DVOR/DME (ZET) 505000N 0040000E'] + foot(1)
+    p3 = head_a(3) + table + [
+        '180\xb0 / 000\xb0 10NM FL460 4500FT AMSL ForwardsOdd (2) BackwardsEven (2) {class C}',
+        'R', 'ZZDDD Alpha FIR -', 'Beta FIR', '504000N 0040000E (9)',
+        'Route remarks:', 'Control units: Invented ACC.', 'Point remarks:',
+        'ZB7', '{RNAV 5}', '(1) CDR1 H24',
+        'R ZZEEE 520000N 0050000E',
+        '090\xb0 / 270\xb0 36.9NM FL245 FL 095 ForwardsEven (1) BackwardsOdd (1)',
+        'R ZZFFF 520000N 0060000E',
+        'R ??? 520000N 0070000E',
+        'Segment remarks:', '(3) not a point 510000N 0030000E and not a segment 180\xb0 / 000\xb0 10NM FL100 FL050'] + foot(2)
+    p4 = head_b(4) + ['THIS PAGE INTENTIONALLY LEFT BLANK'] + foot(3)
+    return [p1, p2, p3, p4]
+
+
+def _be_deposit(td, today, pages, hint='whatever.pdf', real_read=None, length=None):
+    """Drop an invented PDF through the launcher's own entry (base_upload.receive) with the text layer given in place of the bounded child of pdf_guard (`real_read`: the real child reads the invented PDF)."""
+    import io
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import pdf_guard
+    import base_upload as BU
+    body = _pdf_of_pages(pages)
+    real, got_texts = pdf_guard.read_text, {}
+    if not real_read:
+        def fake(data, path, first=0, count=1, **k):
+            got_texts['path'] = str(path)
+            return {'pages': len(pages), 'texts': ['\n'.join(p) for p in pages][first:first + count], 'fonts': 0}
+        pdf_guard.read_text = fake
+    saved_today = BU.datetime
+    class FakeDate(BU.datetime.date):
+        @classmethod
+        def today(cls):
+            return today
+    class FakeModule:
+        date = FakeDate
+        timedelta = BU.datetime.timedelta
+    BU.datetime = FakeModule
+    try:
+        data = td
+        return BU.receive(io.BytesIO(body), len(body) if length is None else length, hint, data), got_texts, body
+    finally:
+        pdf_guard.read_text = real
+        BU.datetime = saved_today
+
+
+@case('K505', 'Belgian AIP, SOG-0541: a PDF of the ENR 3 is recognised by the TITLE written inside and by its page headers, never by its file name; the amendment number and date at the foot of EVERY page are read; ENR 3.1, 3.3 and 3.4 are recognised and set aside (« cette page ne sert pas au calcul des routes », nothing written, nothing kept); a set with no readable amendment, or a PDF that is not an ENR 3 page, writes nothing',
+      'K', static=True,
+      rule='Ergonomist, 22 Nov 2026 (SOG-0541): « un PDF titré ENR 3.1 … est refusé comme 3.3 et 3.4 : cette page ne sert pas au calcul des routes » ; « identifier une page par le titre et le cycle écrits DANS le PDF, jamais par le nom du fichier » ; « sans date d\'amendement lisible : refus, avec la raison ». Invented pages of the shape of the Belgian ENR 3 (no page, coordinate, callsign or remark of the user\'s files)')
+def k505(c):
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aim_be_enr as B
+    texts = lambda pages: ['\n'.join(p) for p in pages]
+    info = B.identify(texts(_be_pages()))
+    c.eq((info['part'], info['title'], info['pages']), ('3.2', 'Area Navigation Routes', 4), 'the part and its title are those WRITTEN on the first page', what='title')
+    c.eq([(a['page'], a['amdt'], a['airac'], a['date']) for a in info['amendments']], [(1, '002/2026', True, '2026-02-19'), (2, '002/2026', True, '2026-02-19'), (3, '011/2026', False, '2026-10-29'), (4, '007/2023', False, '2023-07-13')],
+         'the amendment number, its AIRAC mark and its date are read at the foot of EVERY page (a page not changed keeps its old date)', what='amendments')
+    c.eq(info['latest'], {'amdt': '011/2026', 'date': '2026-10-29'}, 'the date of the set is the MOST RECENT amendment date read', what='latest')
+    for part in ('3.1', '3.3', '3.4'):
+        c.eq(B.identify(texts(_be_pages(part, routes=False)))['part'], part, f'ENR {part} is recognised by its title', what=f'part {part}')
+    for bad_pages, reason, label in ((_be_pages(drop_footer=1), 'no-amendment', 'a page without amendment'), (_be_pages(amendments=[('AIRAC AMDT 002/2026', '31-FEB-2026')] * 4), 'no-amendment', 'an impossible date'),
+                                    ([['AIP Belgium and Luxembourg ENR 5.1-1', 'ENR 5.1 Military exercise areas', 'AMDT 001/2026', '19-FEB-2026']], 'not-enr', 'another part of the AIP'), ([['Some other document', 'AMDT 001/2026']], 'not-enr', 'no title')):
+        try:
+            B.identify(texts(bad_pages))
+            got = 'accepted'
+        except B.Refusal as r:
+            got = r.reason
+        c.eq(got, reason, f'{label}: refused with the code `{reason}`', what=label)
+    # through the launcher's own entry: the file NAME is never read (a 3.2 file named like a 3.3 one is read as 3.2, and the other way round)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        (code, body), seen, _ = _be_deposit(td, __import__('datetime').date(2026, 11, 22), _be_pages(), hint='EB_ENR_3_3_en.pdf')
+        c.eq((code, body.get('ok'), body.get('source'), body.get('zone')), (200, True, 'aimbe', 'be'), 'a file named like the ENR 3.3 but titled ENR 3.2 is the ENR 3.2: the title is read, not the name', what='name not read')
+        zone = Path(td) / 'sia' / 'zones' / 'be'
+        c.eq(sorted(p.name for p in zone.iterdir()), ['aimbe_be_enr_20261029_20261122.geojson'], 'one derived file in the zone, named by the amendment date and the day of the drop; nothing else written there', what='zone file')
+        c.eq(sorted(p.name for p in (Path(td) / 'local' / 'upload').iterdir()), [], 'the PDF itself is not kept (the user\'s file stays the user\'s): no working copy is left in data/local/upload', what='upload empty')
+    for part in ('3.1', '3.3', '3.4'):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            (code, body), _, _ = _be_deposit(td, __import__('datetime').date(2026, 11, 22), _be_pages(part, routes=False), hint='EB_ENR_3_2_en.pdf')
+            c.eq((code, body.get('reason'), body.get('code')), (422, 'unrecognised', 'not-routes'), f'ENR {part} (named like the ENR 3.2): refused with the code `not-routes`, the screen says « cette page ne sert pas au calcul des routes »', what=f'refused {part}')
+            c.ok('ne sert pas au calcul' in body.get('message', ''), body.get('message'), 'the message says that the page does not serve the computation of routes')
+            c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], f'ENR {part}: nothing written, nothing kept', what=f'nothing {part}')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        (code, body), _, _ = _be_deposit(td, __import__('datetime').date(2026, 11, 22), _be_pages(drop_footer=2), hint='EB_ENR_3_2_en.pdf')
+        c.eq((code, body.get('reason'), body.get('code')), (422, 'unrecognised', 'no-amendment'), 'a set with a page without amendment date: refused with the code `no-amendment` (« aucune date d\'amendement lisible »)', what='refused no amendment')
+        c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], 'nothing written, nothing kept', what='nothing no amendment')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        (code, body), _, _ = _be_deposit(td, __import__('datetime').date(2026, 11, 22), [['An invented document that is not an AIP page', 'Nothing of an ENR 3']], hint='EB_ENR_3_2_en.pdf')
+        c.eq((code, body.get('reason')), (422, 'unrecognised'), 'a PDF that is not an ENR 3 page: refused as before, whatever its name', what='refused other')
+        c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], 'nothing written, nothing kept', what='nothing other')
+
+
+@case('K506', 'Belgian AIP, SOG-0541: the ENR 3.2 reader gives the points (identifier, position), and for each route the segments BETWEEN two consecutive points (published distance, bearing, upper then lower limit in feet, availability) — a name on several lines, a beacon named by its bracketed code, a route that runs over a page break, remarks and an unreadable point are handled; two consecutive points with no segment line between them are NOT joined (the link is published by the neighbouring AIP)',
+      'K', static=True,
+      rule='The ENR 3.2 of the Belgian AIP (22 Nov 2026, read page by page on the three PDFs of the user, nothing copied): one point per line, the segment line between the two points it joins, « For continuation see AIP … » where the link belongs to the neighbour. Invented pages of the same shape; the distance published on each segment is checked against the great circle of its two points on the real pages (0 mismatches over 100 segments)')
+def k506(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aim_be_enr as B
+    pages = _be_pages()
+    points, segments, stats = B.parse_routes(['\n'.join(p) for p in pages])
+    c.eq([(p['id'], p['lat'], p['lon']) for p in points], [('ZZAAA', 51.0, 3.0), ('ZZBBB', 51.0, 4.0), ('ZET', 50.833333, 4.0), ('ZZDDD', 50.666667, 4.0), ('ZZEEE', 52.0, 5.0), ('ZZFFF', 52.0, 6.0)],
+         'the points: a fix by its name, a beacon by its bracketed code (« Zeta DVOR/DME (ZET) » is ZET), a name on three lines by its first word, positions in decimal degrees; the point that cannot be named is left out', what='points')
+    c.eq([(s['route'], s['a']['id'], s['b']['id'], s['nm'], s['trk'], s['upper'], s['lower'], s['avail']) for s in segments],
+         [('ZA12', 'ZZBBB', 'ZET', 10.0, 180, 66000, 5500, ['H24']), ('ZA12', 'ZET', 'ZZDDD', 10.0, 180, 46000, 4500, ['CDR1 H24']), ('ZB7', 'ZZEEE', 'ZZFFF', 36.9, 90, 24500, 9500, ['CDR1 H24'])],
+         'the segments: the published distance and bearing, the upper then the lower limit in feet (« FL660 FL 055 », « FL460 4500FT AMSL » stuck together or not), the availability the segment line points to (« (1) H24 », « (2) CDR1 H24 »); a route runs over a page break; the remark that looks like a point or a segment is ignored', what='segments')
+    c.eq(stats, {'routes': 2, 'skipped_points': 1, 'unjoined': 1, 'bad_segments': 0}, 'the account: two routes, one point without a readable name, one pair of consecutive points with NO segment line between them (not joined), no segment refused for its distance', what='stats')
+    g, n_points, n_segments, info, (eff, dep) = B.convert(['\n'.join(p) for p in pages], '2026-11-22')
+    c.eq((n_points, n_segments, g['issue'], g['deposited'], g['amendment'], g['routes']), (6, 3, '2026-10-29', '2026-11-22', {'amdt': '011/2026', 'date': '2026-10-29', 'pages': 4}, 2), 'the file: the date of the set is the amendment date, the drop day is written, the amendment is named', what='geojson')
+    kinds = sorted({(f['properties']['sog']) for f in g['features']})
+    c.eq(kinds, ['airway', 'point'], 'the features are the ones the base build reads (`sog: point` and `sog: airway`, two positions per segment)', what='features')
+    airway = next(f for f in g['features'] if f['properties']['sog'] == 'airway')
+    c.eq((airway['properties']['route'], airway['properties']['a'], airway['properties']['b'], airway['properties']['lower'], airway['properties']['upper'], airway['properties']['nm']), ('ZA12', 'ZZBBB', 'ZET', 5500, 66000, 10.0), 'a segment carries its route, its two points, its limits and its published distance', what='airway props')
+
+
+@case('K507', 'Belgian AIP, SOG-0541: the date of the set and « périmé » — the set is dated by its MOST RECENT amendment date; a date more than 56 days (two cycles) after the day of the drop is refused like an unreadable one; a future date within that limit is accepted (« en vigueur le … »); the set is « périmé » from the start of the AIRAC cycle that follows the later of the drop and the amendment; an unchanged set dropped again starts a new cycle; the zone keeps the set in force and the one published in advance',
+      'K', static=True,
+      rule='Ergonomist, 22 Nov 2026 (SOG-0541, criteria 2 to 4): « refuser si la date dépasse le dépôt de plus de 56 jours (traitée comme illisible) » ; « une date future dans cette limite est acceptée : en vigueur le <date> » ; « périmé » commence au début du cycle AIRAC qui suit le cycle du dépôt OU la date d\'entrée en vigueur, le plus tardif ; « un jeu inchangé déposé de nouveau repart d\'un nouveau cycle » ; the engine keeps the current set until then (the SAME flight date as for the RAD and the FRA book: nav_data takes the newest folder not after it)')
+def k507(c):
+    import datetime
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aero_cycles as A
+    import aim_be_enr as B
+    d = datetime.date
+    c.eq(B.status('2026-02-19', '2026-11-22', d(2026, 11, 22)), {'effective': '2026-02-19', 'deposited': '2026-11-22', 'cycle': '2026-10-29', 'state': 'current', 'expires': '2026-11-26'}, 'a set whose last amendment is old, dropped on 22 Nov: the cycle is the one of the DROP (the 29 Oct cycle), « périmé » from 26 Nov', what='old set')
+    c.eq(B.status('2026-11-26', '2026-11-22', d(2026, 11, 22)), {'effective': '2026-11-26', 'deposited': '2026-11-22', 'cycle': '2026-11-26', 'state': 'future', 'expires': '2026-12-24'}, 'a set published in advance: « en vigueur le 26 Nov » (state `future`), « périmé » from 24 Dec: the later of the cycle of the drop and the date it takes effect', what='future set')
+    c.eq(B.status('2026-11-26', '2026-11-22', d(2026, 11, 26))['state'], 'current', 'the day it takes effect it is current', what='takes effect')
+    c.eq((B.status('2026-10-29', '2026-10-30', d(2026, 11, 25))['state'], B.status('2026-10-29', '2026-10-30', d(2026, 11, 26))['state']), ('current', 'expired'), 'the day before the next cycle it is current, on the first day of the next cycle it is « périmé »', what='expires')
+    c.eq(B.status('2026-10-29', '2026-12-01', d(2026, 12, 1))['cycle'], '2026-11-26', 'an unchanged set dropped again (same amendment, a later day) starts a new cycle', what='dropped again')
+    info = lambda day: {'latest': {'amdt': '011/2026', 'date': day}}
+    c.eq(B.dated(info('2027-01-17'), '2026-11-22')[0].isoformat(), '2027-01-17', 'a date 56 days after the drop is accepted (two cycles)', what='56 days')
+    try:
+        B.dated(info('2027-01-18'), '2026-11-22')
+        got = 'accepted'
+    except B.Refusal as r:
+        got = r.reason
+    c.eq(got, 'no-amendment', 'a date 57 days after the drop is refused with the code of an unreadable date', what='57 days')
+    names = ['zones/be/aimbe_be_enr_20260219_20261122.geojson', 'zones/be/aimbe_be_enr_20261126_20261122.geojson']
+    sets = B.sets_of(names + ['zones/be/other.json', 'zones/fr/aimbe_be_enr_20260219_20261122.geojson'], d(2026, 11, 22))
+    c.eq((sets['inForce']['name'], sets['inForce']['state'], sets['next']['name'], sets['next']['state']), (names[0], 'current', names[1], 'future'), 'the line of `base/cycle` is fed by `sets_of`: the set in force and the one in advance, from the names of the zone `be` only', what='sets_of')
+    planted = ['zones/be/aimbe_be_enr_99991231_99991231.geojson', 'zones/be/aimbe_be_enr_19991231_20261122.geojson', 'zones/be/aimbe_be_enr_20261029_21010101.geojson']
+    c.eq((B.sets_of(planted, d(2026, 11, 22)), [A.cycled(n) for n in planted]), ({'inForce': None, 'next': None}, [None, None, None]), 'a name planted in the zone folder (every pilot of the repository can fill it) with a year outside 2000-2100 is no set: no exception (9999 overflowed the date of the following cycle and took the state of EVERY source down), no cycle (red without the guard)', what='planted names')
+    c.eq([A.cycled(n) for n in names], [('aimbe', '2026-10-29'), ('aimbe', '2026-11-26')], 'aero_cycles reads the cycle of a file from its name: the later of the amendment date and the drop day', what='cycled')
+    c.eq(A.report(names[:1], d(2026, 11, 22))['aimbe']['stale'], False, 'the set is not « périmé » on 22 Nov', what='report not stale')
+    c.eq(A.report(names[:1], d(2026, 11, 26))['aimbe'], {'cycle': '2026-10-29', 'current': '2026-11-26', 'stale': True}, 'the same set is « périmé » on 26 Nov (the cycle that follows)', what='report stale')
+    c.ok('aimbe' in A.PERSONAL_CYCLED and A.ZONE_SOURCE.get('be') == 'aimbe', str(A.ZONE_SOURCE.get('be')), 'a personal-licence source of the zone `be`, read only if the box says so')
+    # the zone keeps the set in force and the set published in advance; a set dropped again replaces its own; an older one goes
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        def drop(day, today):
+            amendments = [(f'AIRAC AMDT 002/2026', day)] * 4
+            (code, body), _, _ = _be_deposit(td, today, _be_pages(amendments=amendments), hint='x.pdf')
+            return code, body
+        z = Path(td) / 'sia' / 'zones' / 'be'
+        code, b1 = drop('19-FEB-2026', d(2026, 11, 22))
+        code2, b2 = drop('26-NOV-2026', d(2026, 11, 22))
+        c.eq((code, b1['state'], code2, b2['state']), (200, 'current', 200, 'future'), 'a set in force, then the one published in advance: both are accepted and say their state', what='two sets')
+        c.eq(sorted(p.name for p in z.iterdir()), ['aimbe_be_enr_20260219_20261122.geojson', 'aimbe_be_enr_20261126_20261122.geojson'], 'the zone keeps both: the engine takes the newest set not after the flight date (the SAME date as for the RAD and the FRA book), so the set in force serves until the other takes effect', what='both kept')
+        drop('19-FEB-2026', d(2026, 11, 23))
+        c.eq(sorted(p.name for p in z.iterdir()), ['aimbe_be_enr_20260219_20261123.geojson', 'aimbe_be_enr_20261126_20261122.geojson'], 'the same set dropped again replaces its own file (a new drop day, a new cycle)', what='dropped again file')
+        drop('24-DEC-2026', d(2026, 11, 30))
+        c.eq(sorted(p.name for p in z.iterdir()), ['aimbe_be_enr_20261126_20261122.geojson', 'aimbe_be_enr_20261224_20261130.geojson'], 'a third set: only the two newest are kept (the oldest goes)', what='pruned')
+
+
+@case('K508', 'Belgian AIP, SOG-0541: the launcher reads the dropped PDF through the bounded child of pdf_guard (the real child on an invented PDF) and writes the derived file under data/sia/zones/be/ — the answer says the cycle, the amendment, the state and the expiry; a refusal carries a closed `code` besides `reason: unrecognised`',
+      'K', static=True,
+      rule='Ergonomist, 22 Nov 2026 (SOG-0541): « lire les PDF avec le sous-processus borné de pypdf déjà prévu » ; Security (14 Nov): the launcher never imports pypdf; the PDF is read under data/local/upload/ by tools/pdf_guard.py. Invented PDF of the shape of the ENR 3.2')
+def k508(c):
+    import datetime
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import pdf_guard
+    ready = pdf_guard.status().get('ready', {}).get('text')
+    if not ready:
+        c.ok(True, 'pypdf missing', 'the real child is not run here: the other cases give the text layer in its place')
+        return
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        (code, body), _, _ = _be_deposit(td, datetime.date(2026, 11, 22), _be_pages(), hint='EB_ENR_3_2_en.pdf', real_read=True)
+        c.eq((code, body.get('ok'), body.get('source'), body.get('zone')), (200, True, 'aimbe', 'be'), 'the real child reads the invented PDF: accepted as the ENR 3.2 of Belgium', what='real read')
+        c.eq((body.get('amendment'), body.get('effective'), body.get('deposited'), body.get('cycle'), body.get('state'), body.get('expires')),
+             ({'amdt': '011/2026', 'date': '2026-10-29', 'pages': 4}, '2026-10-29', '2026-11-22', '2026-10-29', 'current', '2026-11-26'), 'the answer: the amendment read, the date of the set, the day of the drop, the cycle, the state, the day it becomes « périmé »', what='answer')
+        c.eq((body.get('routes'), body.get('points'), body.get('segments'), body.get('unjoined')), (2, 6, 3, 1), 'the answer counts what was read', what='counts')
+
+
+@case('K509', 'Belgian AIP, SOG-0541 (Sécurisation review): the distance published on a segment line is BOUNDED (0 < NM <= 2000) before it enters the set — a line of 300 digits (an infinite float, no exception) is refused and counted, never written — and the derived file never holds a non-finite value (`allow_nan=False`: `Infinity` would make `safe_json` refuse the file and the whole zone unreadable)',
+      'K', static=True,
+      rule='Security, 22 Nov 2026 (review of 71fe28a0a): « une ligne de 300 chiffres donne float = inf ; to_geojson pose nm tel quel et json.dumps écrit Infinity ; safe_json le refuse et la zone ne se lit plus (le dérivé va dans data/, que tout pilote écrit) » — two guards: the bound on the published distance and allow_nan=False in the writer. Invented pages, a made-up line')
+def k509(c):
+    import datetime
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aim_be_enr as B
+    import base_upload as BU
+    pages_with = lambda nm: [[ln.replace('36.9NM', nm + 'NM') for ln in p] for p in _be_pages()]
+    for label, nm, kept in (('300 digits', '9' * 300, False), ('zero', '0', False), ('just above the bound', '2001', False), ('at the bound', '2000', True), ('an ordinary one', '36.9', True)):
+        points, segments, stats = B.parse_routes(['\n'.join(p) for p in pages_with(nm)])
+        got = (len([s for s in segments if s['route'] == 'ZB7']), stats['bad_segments'])
+        c.eq(got, (1, 0) if kept else (0, 1), f'a published distance of {label}: the segment is {"kept" if kept else "refused and counted in `bad_segments`"}', what=label)
+    # the file of a 300-digit line: written, valid JSON, no non-finite value
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        (code, body), _, _ = _be_deposit(td, datetime.date(2026, 11, 22), pages_with('9' * 300), hint='x.pdf')
+        c.eq(code, 200, 'the set is taken, without the refused segment', what='taken')
+        text = (Path(td) / 'sia' / 'zones' / 'be' / body['name']).read_text(encoding='utf-8')
+
+        def refuse(token):
+            raise ValueError(token)
+        try:
+            json.loads(text, parse_constant=refuse)
+            said = 'finite'
+        except ValueError as e:
+            said = str(e)
+        c.eq(said, 'finite', 'the derived file holds no `Infinity` and no `NaN` (the strict reader of the launcher would refuse the zone: red without the two guards)', what='finite')
+        c.eq(body['segments'], 2, 'the two other segments of the invented pages are there', what='segments left')
+    # the second guard on its own: a value that slips past the first one is refused by the writer, nothing is written
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        day = datetime.date(2026, 11, 22)
+        try:
+            BU._write_aimbe(td, {'name': 'aimbe_be_enr_20261029_20261122.geojson', 'aimbe': {'geojson': {'amendment': {}, 'v': float('inf')}, 'effective': day, 'deposited': day, 'today': day, 'points': 0, 'segments': 0}}, 1, 'x')
+            got = 'written'
+        except BU.Refused as r:
+            got = (r.reason, r.code)
+        c.eq(got, ('unrecognised', 'bad-values'), 'the writer refuses a non-finite value with the code `bad-values`', what='writer')
+        c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], 'and writes nothing', what='nothing written')

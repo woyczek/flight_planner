@@ -27,6 +27,7 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_cycles  # noqa: E402
+import aim_be_enr  # noqa: E402
 import regen_jobs  # noqa: E402
 import types  # noqa: E402
 
@@ -179,6 +180,9 @@ def run(job, args, ctx):
         ats = [t for (z, s), t in latest.items() if s == sid and (only is None or z == only)]
         at = max(ats) if ats else None
         held = (cycles.get(sid) or {}).get('cycle') if sid in aero_cycles.CYCLED else None
+        aim_set = aim_be_enr.sets_of(rels, today) if sid == 'aimbe' else None      # SOG-0541 : le jeu EN VIGUEUR dit le cycle et le « périmé » (jamais celui publié à l'avance), à défaut celui publié à l'avance
+        if aim_set:
+            held = (aim_set['inForce'] or aim_set['next'] or {}).get('cycle')
         rhythm = src.get('rhythm')      # SOG-0369 : le rythme que le catalogue dit (airac | editions | daily | none) ; « none » : jamais « en retard » (elle dit son âge)
         files_in_dl = []
         hand = None
@@ -210,6 +214,8 @@ def run(job, args, ctx):
         item = {'id': sid, 'label': list(src['label']), 'regime': regime, 'personal': src.get('personal', ''), 'zoneCount': len(zones), **({} if common else {'zones': zones}),
                 'handMode': src.get('hand'), 'rank': src.get('rank'), 'rhythm': rhythm, 'content': list(src.get('content') or ()),
                 'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None, **({'ageDays': age_days(at, today)} if at else {}), **({'deposited': deposits[sid], 'datedBy': 'file'} if deposits.get(sid) else {})}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
+        if aim_set:
+            item['set'] = {'inForce': aim_set['inForce'], 'next': aim_set['next']}
         if why:
             item['why'] = why
         if sid in UNAVAILABLE:

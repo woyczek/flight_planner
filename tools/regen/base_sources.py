@@ -125,6 +125,11 @@ SOURCES = {
             'Avians — Icelandic eAIP (points and routes)',
             'Avians — eAIP Island (Punkte und Strecken)',
             'Avians — eAIP Islandia (puntos y rutas)'), personal='licence', provider='avians'),
+    'aimbe': _src('manual', (      # SOG-0541 : l'ENR 3.2 de l'AIP de Belgique et du Luxembourg, un PDF déposé à la main (tools/aim_be_enr.py)
+            'AIM Belgique — AIP Belgique et Luxembourg (ENR 3.2, routes RNAV)',
+            'AIM Belgium — AIP Belgium and Luxembourg (ENR 3.2, RNAV routes)',
+            'AIM Belgien — AIP Belgien und Luxemburg (ENR 3.2, RNAV-Strecken)',
+            'AIM Bélgica — AIP Bélgica y Luxemburgo (ENR 3.2, rutas RNAV)'), personal='licence'),
     'lfv': _src('manual', (
             'LFV — AIP Suède (eAIP hors ligne : points ENR 4.4, routes RNAV ENR 3.2)',
             'LFV — Sweden AIP (offline eAIP: ENR 4.4 points, ENR 3.2 RNAV routes)',
@@ -173,7 +178,7 @@ SOURCES = {
 CONTENTS = ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles', 'aar_tracks', 'mil_routes', 'nat_tracks', 'mora')
 RANKS = ('primary', 'secondary')
 RHYTHMS = ('airac', 'editions', 'daily', 'none')
-HANDS = {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback', 'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'enr51': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'}      # SOG-0368 : « only » (le lanceur n'essaie rien : le fichier se prend à la main ; NAV Portugal aussi, SOG-0318), « fallback » (prise seule, le dépôt à la main n'est qu'un repli après un échec), « none » ; miroir de `hand` de shared/aero_zones.js (K52)
+HANDS = {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'aimbe': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback', 'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'enr51': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'}      # SOG-0368 : « only » (le lanceur n'essaie rien : le fichier se prend à la main ; NAV Portugal aussi, SOG-0318), « fallback » (prise seule, le dépôt à la main n'est qu'un repli après un échec), « none » ; miroir de `hand` de shared/aero_zones.js (K52)
 SOURCE_FACTS = {
     'sia': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles')),
     'dircam': ('primary', 'none', ('aar_tracks',)),
@@ -181,6 +186,7 @@ SOURCE_FACTS = {
     'enaire': ('primary', 'airac', ('airspace', 'navaids', 'points', 'airways')),
     'airnav': ('primary', 'airac', ('points', 'airways')),
     'avians': ('primary', 'airac', ('points', 'airways')),
+    'aimbe': ('primary', 'airac', ('points', 'airways')),
     'navpt': ('primary', 'editions', ('points', 'airways')),
     'lfv': ('primary', 'airac', ('points', 'airways')),
     'faa': ('primary', 'airac', ('airspace', 'mil_routes', 'points', 'navaids', 'airways')),
@@ -200,7 +206,7 @@ assert set(HANDS) == set(SOURCES) and set(HANDS.values()) <= {'only', 'fallback'
 
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam', 'enr51'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam', 'enr51'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'be': ('aimbe',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 

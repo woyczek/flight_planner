@@ -148,6 +148,24 @@
       content: ['points', 'airways'],
       age: 'file'
     },
+    // AIP de Belgique et du Luxembourg (AIM Belgium) : (la carte n'a ni lien ni « howto » ici : le pas à pas est écrit par la session du socle, SOG-0541) l'ENR 3.2 (routes RNAV), le PDF déposé à la main dans Données (« Choisir le fichier… ») ; reconnu par le TITRE écrit dedans, lu par le sous-processus borné du lanceur (tools/aim_be_enr.py, SOG-0541),
+    // écrit zones/be/aimbe_be_enr_<date d'amendement>_<jour du dépôt>.geojson ; le cycle est celui du plus tardif des deux dates, « périmé » au début du cycle suivant. Aucune condition de réutilisation lue : usage personnel
+    aimbe: {
+      kind: 'manual',
+      readable: true,
+      label: L4('AIM Belgique — AIP Belgique et Luxembourg (ENR 3.2, routes RNAV)',
+        'AIM Belgium — AIP Belgium and Luxembourg (ENR 3.2, RNAV routes)',
+        'AIM Belgien — AIP Belgien und Luxemburg (ENR 3.2, RNAV-Strecken)',
+        'AIM Bélgica — AIP Bélgica y Luxemburgo (ENR 3.2, rutas RNAV)'),
+      gives: L4('routes RNAV (ENR 3.2)', 'RNAV routes (ENR 3.2)', 'RNAV-Strecken (ENR 3.2)', 'rutas RNAV (ENR 3.2)'),
+      licence: 'AIM Belgium (usage personnel)',
+      personal: 'licence', // aucune condition de réutilisation lue : la case dit qu'elle ne vaut que pour un dépôt à soi
+      hand: 'only',
+      rank: 'primary',
+      rhythm: 'airac',
+      content: ['points', 'airways'],
+      age: 'file'
+    },
     // eAIP hors ligne de la Suède (LFV, « AIP_OFFLINE.zip » déposé dans Téléchargements) : « Mettre à jour » en lit l'ENR 4.4 (points) et l'ENR 3.2 (routes RNAV) sans déployer l'archive (tools/lfv_eaip.py) et écrit zones/se/lfv_se_enr_AAAAMMJJ.geojson.
     // Aucune condition de réutilisation dans l'archive (ES-GEN 0.1 : publié sous l'autorité de l'Agence suédoise des transports, produit par LFV) : usage personnel, en attendant la réponse de aip@lfv.se (SOG-0153 b)
     lfv: {
@@ -451,6 +469,7 @@
     se: ['lfv'],
     pt: ['navpt'],
     is: ['avians'],
+    be: ['aimbe'],
     us: ['faa', 'faaclass'],
     ca: ['navcan']
   };

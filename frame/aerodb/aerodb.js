@@ -251,7 +251,8 @@
       ie: 'airnav',
       se: 'lfv',
       pt: 'navpt',
-      is: 'avians'
+      is: 'avians',
+      be: 'aimbe'
     },
     // les noms d'un pays que ses habitants ou l'usage courant donnent (SOG-0158) : l'endonyme (« Sverige »), les sigles et les noms d'usage (« usa », « uk », « holland ») ; les quatre noms de la zone (fr, en, de, es) sont dans `names`
     AKA = {
