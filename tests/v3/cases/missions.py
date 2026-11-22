@@ -10655,7 +10655,12 @@ def n140(c):
         c.eq([x[1] for x in c.js(_DW_CARDS)], ['Tiroir 1 · Entrée sur le glacier', 'Tiroir 2 · Personne en vue', 'Tiroir 3 · Retour au terrain'],
              f'{width}: the three drawers of the model, in order', what='the drawers')
         ed_places(c)
-        c.ok(all(c.js(_PLACE_AT, p) >= 0 for p in ('ZONE-1 · Secteur de recherche', 'OBJ-1 · Personne à trouver')), c.js(_PLACES_JS), f'{width}: the two places of the model, named')
+        # SOG-0482 lot 3 (fixup): the two places are the KEYS of drawers 1 and 2: no line in the Lieux, they are read in the sheet of their drawer
+        c.eq([c.js(_PLACE_AT, 'ZONE-1'), c.js(_PLACE_AT, 'OBJ-1')], [-1, -1], f'{width}: the two places of the model are keys: no line of their own', what='no line')
+        for drawer, ident, name in (('B', 'ZONE-1', 'Secteur de recherche'), ('C', 'OBJ-1', 'Personne à trouver')):
+            sheet = _key_open(c, drawer)
+            c.eq([c.js(f"document.querySelector('{sheet} [data-plform] [data-f=name]').value"), c.js(f"document.querySelector('{sheet} [data-k=eddr][data-f={ident[:3] == 'OBJ' and 'object' or 'zone'}]').value")], [name, ident],
+                 f'{width}: the place of the model {ident}, named, in the sheet of its drawer', what=ident)
         if width == 1280:
             c.js('window.scrollTo(0, 0)')  # the title, the line of the model and its list, for the capture
             c.shot('P11b_1280_pose.png')
@@ -10692,11 +10697,10 @@ def n141(c):
     c.until(f"({_FLOW_N}) === 3", timeout=5000, what='the three drawers of the glacier')
     # the author places ZONE-1 (a position typed in its fields)
     ed_places(c)
-    i = c.js(_PLACE_AT, 'ZONE-1')
-    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
-    c.page.fill(f'{E} [data-plform="{i}"] [data-f=lat]', '45.1')
-    c.page.fill(f'{E} [data-plform="{i}"] [data-f=lon]', '6.2')
-    c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
+    # SOG-0482 lot 3 (fixup): ZONE-1 is the key of drawer 1: no line, its fields are in the sheet of its drawer
+    sheet = _key_open(c, 'B')
+    c.page.fill(f'{sheet} [data-plform] [data-f=lat]', '45.1')
+    c.page.fill(f'{sheet} [data-plform] [data-f=lon]', '6.2')
     # « Changer de modèle » → the blank mission: the question first
     _md_pick(c, 'blank')
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question « Prendre le modèle « Mission vierge » ? »')
