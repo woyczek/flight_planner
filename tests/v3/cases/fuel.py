@@ -10310,3 +10310,60 @@ def f305(c):
              'de': 'Route gewählt: Direct. Die Route ist geändert.', 'es': 'Itinerario elegido: Direct. La ruta se ha cambiado.'}[c.lang]
     c.eq(norm(c.text(f'{FUEL} [data-rtaken]') or ''), norm(taken), '« choisi », the word of « Choisir » (no more « pris »)', what='taken')
     c.check_errors()
+
+
+@case('F306', 'Route step, Belgian airways of a past cycle: when the engine gives the day the Belgian set was deposited, the reason reads '
+      '« Routes belges d’un cycle passé (déposées le 03/10/2026). », the date in the format of the screen; without that day, or with a day '
+      'that cannot be read, the generic sentence « Belgique : données du …, périmées à la date du vol » unchanged',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0541 (the relay, 22 Nov: the words decided by the ergonomist; AeroDB e4a583cae, frame/aerodb/INTEGRATION.md: '
+      '`stale_cycle` { zone, cycle, current, routes, deposited? }, deposited AAAA-MM-JJ, year 2000-2100); a fake launcher, invented routes')
+def f306(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+
+    def stale(**more):
+        return [{'code': 'stale_cycle', 'values': dict({'zone': 'be', 'cycle': '2026-10-01', 'current': '2026-10-29', 'routes': ['XQ1']},
+                                                      **more), 'text': 'cycle'}]
+    st['alts'] = [
+        dict(_alt(1, 'Via XQ1', 'LFRS NTS1A LUGEN XQ1 NEPIX MEN1A LFML', 370, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=stale(deposited='2026-10-03')),
+        dict(_alt(2, 'Via XQ2', 'LFRS NTS1A LUGEN XQ2 NEPIX MEN1A LFML', 372, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=stale()),
+        dict(_alt(3, 'Via XQ3', 'LFRS NTS1A LUGEN XQ3 NEPIX MEN1A LFML', 374, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=stale(deposited='1999-13-45'))]
+    want = {'fr': ('Routes belges d’un cycle passé (déposées le 03/10/2026).',
+                   'Belgique : données du 01/10/2026, périmées à la date du vol — voies concernées : XQ1'),
+            'en': ('Belgian routes of a past cycle (deposited 10/03/2026).',
+                   'Belgium: data of 10/01/2026, out of date on the date of the flight — airways concerned: XQ1'),
+            'de': ('Belgische Routen eines vergangenen Zyklus (hinterlegt am 03.10.2026).',
+                   'Belgien: Daten vom 01.10.2026, am Flugdatum veraltet — betroffene Luftstraßen: XQ1'),
+            'es': ('Rutas belgas de un ciclo pasado (depositadas el 03/10/2026).',
+                   'Bélgica: datos del 01/10/2026, caducados en la fecha del vuelo — aerovías afectadas: XQ1')}[c.lang]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 3", timeout=10000, what='the verdicts of the three routes')
+    c.js(f"document.querySelectorAll('{A} details[data-reasons]').forEach(d => d.open = true)")
+    lines = {}
+    for i in range(3):
+        name = norm(c.text(f'{A} [data-alt="{i}"] [data-altname]') or '')
+        lines[name] = norm(c.text(f'{A} [data-alt="{i}"] li[data-reason=stale_cycle]') or '')
+    c.eq(lines.get('Via XQ1'), norm(want[0]), 'the day the Belgian set was deposited, in the format of the screen (red before: the '
+         'generic sentence)', what='deposited')
+    c.eq(lines.get('Via XQ2'), norm(want[1]), 'without that day: the generic sentence, unchanged', what='generic')
+    c.eq(lines.get('Via XQ3'), norm(want[1]), 'a day that cannot be read: the generic sentence, never the raw value', what='unreadable')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelectorAll('{A} details[data-reasons]').forEach(d => d.open = true)")
+        c.js(f"document.querySelector('{A} li[data-reason=stale_cycle]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F306_{c.design}_{w}_{c.lang}_belgian.png')
+    c.check_errors()
