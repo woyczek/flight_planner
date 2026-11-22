@@ -3536,7 +3536,7 @@ def n213(c):
             c.wait(1500)
             c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.7]))
             c.until(f"document.querySelector('{E} [data-drawer]')?.dataset.drawer === 'C'", timeout=8000, what='the sheet of drawer 2')
-            c.eq(c.js(f"document.querySelector('{E} [data-drawer] [data-dwhead]').textContent.trim()"), "Tiroir 2 — scellé jusqu'à ce que sa clé joue", f'{width}: the object touched on the map opens the sheet of its drawer (the title says drawer 2)', what='map')
+            c.eq(c.js(f"document.querySelector('{E} [data-drawer] [data-dline=key]').textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim()"), 'objet à trouver · OBJ-1 Naufragé · repli à H + 90 min', f'{width}: the object touched on the map opens the sheet of its drawer (SOG-0482 lot 5: no title « scellé… » any more; « La clé » says the key of drawer 2 and its fallback)', what='map')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -3553,7 +3553,7 @@ def n214(c):
         grp = c.js(f"[...document.querySelectorAll('{E} [data-drawer=\"C\"] [data-dgrp]')].map(g => g.dataset.dgrp)")
         c.eq(grp, ['key', 'texts', 'pilot'], f'{width}: the groups of the sheet: the key, the texts, what the pilot sees — no « La suite de route »', what='groups')
         key = f'{E} [data-drawer="C"] [data-dgrp=key]'
-        vals = c.js(f"[document.querySelector('{key} h4').textContent.trim(), document.querySelector('{key} [data-plform] input[data-f=name]')?.value, document.querySelector('{key} [data-plform] input[data-f=lat]')?.value, "
+        vals = c.js(f"[document.querySelector('{key} .ms-dsum b').textContent.trim(), document.querySelector('{key} [data-plform] input[data-f=name]')?.value, document.querySelector('{key} [data-plform] input[data-f=lat]')?.value, "
                     f"document.querySelector('{key} [data-plform] input[data-f=range]')?.value, document.querySelector('{key} input[data-f=fallback]')?.value]")
         c.eq(vals, ['La clé', 'Naufragé', '44,5', '1', '90'], f'{width}: the group « La clé »: the object of the key edited by the block of the sheet of a place (name, position, range), the fallback hour under it', what='key group')
         keyform = c.js(f"[...document.querySelectorAll('{E} [data-drawer=\"C\"] [data-dgrp=key] [data-plform] button')].map(b => b.dataset.do)")
@@ -4435,9 +4435,9 @@ def n73(c):
     dw_key(c, 'object')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
     none = c.text(f'{E} [data-drawer] [data-dwnone]')
-    c.ok(norm(none) == 'Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.' and c.count(f'{E} [data-drawer] [data-f=object]') == 0, none,
-         '« Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous. » (SOG-0482 lot 4: it names the gesture of the screen, no link to the Lieux), never an empty list')
-    c.eq([c.count(f'{E} [data-drawer] [data-dwnone] button'), c.js(f"[...document.querySelectorAll('{E} [data-drawer] [data-do=eddrdraw]')].map(b => b.textContent.trim())")], [0, ['Poser sur la carte']], 'no link in the sentence; the gesture it names, « Poser sur la carte », is below it (offered at 390 too, where the map is folded)', what='the gesture')
+    c.ok(norm(none) == 'Aucun objet pour cette clé.' and c.count(f'{E} [data-drawer] [data-f=object]') == 0, none,
+         '« Aucun objet pour cette clé. » (SOG-0482 lot 5: the sentence alone, followed by the ONE link « Placer sur la carte »), never an empty list')
+    c.eq([c.count(f'{E} [data-drawer] [data-dwnone] button'), c.js(f"[...document.querySelectorAll('{E} [data-drawer] [data-do=eddrdraw]')].map(b => b.textContent.trim())")], [0, ['Placer sur la carte']], 'no link in the sentence; the gesture it names, « Poser sur la carte », is below it (offered at 390 too, where the map is folded)', what='the gesture')
     # a new mission: the Cadre unfolded, no drawer
     ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
@@ -4536,7 +4536,7 @@ def n74(c):
     key2 = c.js(f"document.querySelector('{E} [data-atflow] [data-part=\"2\"]').textContent")
     # SOG-0482 lot 4: the line says the key of the sheet, to pose; the fallback of the reader (the pilot would open it by his gesture) stays measured above (`read`: 'hand') and below (the file has no trigger_zone, « À compléter » names the drawer)
     c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dmark="2"], {E} [data-atflow] [data-dkey="2"]')].map(x => x.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim())"""),
-         ['!', 'clé : zone de passage · à poser'], 'the unfolding says the key of drawer 2 as its sheet says it: the zone to cross, to pose, with « ! » (the reader would open it by the pilot\'s gesture: measured by the file below)', what='the key line')
+         ['!', 'clé : zone de passage · à dessiner'], 'the unfolding says the key of drawer 2 as its sheet says it: the zone to cross, to draw, with « ! » (the reader would open it by the pilot\'s gesture: measured by the file below)', what='the key line')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -5833,8 +5833,8 @@ def n77(c):
     c.shot('N77_390_objects.png')
     # the sheet of an object: no identifier to type, seven fields
     c.ok(c.count(f'{F} [data-f=id]') == 0 and 'OBJ-1' in c.text(f'{F} [data-plid]'), c.text(f'{F} [data-plid]'), 'the identifier is said, never typed')
-    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'confirm', 'height', 'alt'],
-         'the fields of an object', what='fields')
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'fallback', 'confirm', 'height', 'alt'],
+         'the fields of an object (SOG-0482 lot 5: the fallback hour of the key, on the row of the range, is a field of the block of the object)', what='fields')
     fold = c.js(f"(() => {{ const d = document.querySelector('{F} [data-plheights]'); return [d.open, d.querySelector('summary').textContent.trim(), d.querySelectorAll('[data-f]').length] }})()")
     c.eq(fold, [False, norm(row(c, 'plHeights', EDTX_FILE)), 2], 'the rule of seven: the two heights are in ONE fold « Hauteur — facultatif », closed at first',
          what='the fold of the heights')
@@ -5933,16 +5933,16 @@ def n78(c):
     # a drawer touched: its sheet; nothing changed, nothing written
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"!!document.querySelector('{_DW}')", what='the sheet of drawer 2')
-    c.ok(c.count(f'{E} [data-steps]') == 1 and norm(c.text(f'{_DW} [data-dwhead]')) == T('dwSheet', n=2), c.text(f'{_DW} [data-dwhead]'),
-         'the sheet of the drawer opens under its line (SOG-0482); the card « Mission » stays')
+    c.ok(c.count(f'{E} [data-steps]') == 1 and c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'C' and c.count(f'{_DW} [data-dwhead]') == 0, c.text(f'{_DW} [data-dgrp=key] [data-dline]'),
+         'the sheet of the drawer 2 opens under its line (SOG-0482), with no title « scellé… » (lot 5: « La clé » is its first group); the card « Mission » stays')
     c.eq(c.js(_DW_FIELDS), ['key', 'zone', 'shown', 'fallback', 'title', 'message', 'brief'], 'the fields of a drawer keyed by a zone (the « Ajouter un lieu… » of the onward route is the « ＋ » of the strip, SOG-0482 lot 4)', what='fields')
     c.eq([c.js(_DW_VAL, f) for f in ('key', 'zone', 'shown', 'fallback', 'title')], ['zone', 'ZONE-1', False, '60', 'Entrée du secteur'],
          'read from the file — the file does not write zone_shown: the box is unticked (SOG-0459: the zone is hidden by default)', what='values')
     c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-f=zone] option')].map(o => o.value)"), ['', 'ZONE-1'], 'the zones of the mission, to choose from', what='zones')
     folds = c.js(f"[...document.querySelectorAll('{_DW} [data-dgrp]')].map(g => [g.dataset.dgrp, g.querySelector('.ms-dbody') ? getComputedStyle(g.querySelector('.ms-dbody')).display !== 'none' : true, (g.querySelector('[data-dline]')?.textContent || '').trim()])")
-    c.eq(folds, [['key', True, ''], ['texts', False, norm(' · '.join(['Entrée du secteur', T('dwTodo_noMessage'), T('dwTodo_noBrief')]))],
+    c.eq(folds, [['key', True, 'zone de passage · ZONE-1 · repli à H + 60 min'], ['texts', False, norm(' · '.join(['Entrée du secteur', T('dwTodo_noMessage'), T('dwTodo_noBrief')]))],
                 ['pilot', False, T('dwPilotLine')]],
-         'on a phone: « La clé » unfolded; « Les textes » and « Ce que le pilote voit » folded, each saying its content in one line (SOG-0482 lot 3: no group « La suite de route »)',
+         'on a phone: « La clé » unfolded and saying the key and the fallback (SOG-0482 lot 5); « Les textes » and « Ce que le pilote voit » folded, each saying its content in one line (SOG-0482 lot 3: no group « La suite de route »)',
          what='the groups of the sheet')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(400)
@@ -5958,11 +5958,11 @@ def n78(c):
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"{every}.map(b => !!b.__kept)")
-    c.ok(len(kept) == 19 and all(kept), len(kept), 'the 19 elements of the screen (23 before the lot 4: the card « ＋ Tiroir » and the four buttons of the foot — Zone, Point tournant, Rendez-vous, Objet — are gone, the « ＋ » of the strip of the drawer chosen is new) — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
+    c.ok(len(kept) == 20 and all(kept), len(kept), 'the 20 elements of the screen (SOG-0482 lot 5: +1, « La clé » is a group button of the sheet; 23 before the lot 4: the card « ＋ Tiroir » and the four buttons of the foot — Zone, Point tournant, Rendez-vous, Objet — are gone, the « ＋ » of the strip of the drawer chosen is new) — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
-    c.eq([norm(cards[1][1]), cards[1][3]], [f"{T('atDrawer', n=2)} · Entrée nord", '✓'], 'the card follows the typing: its title, its mark (nothing left to complete)',
+    c.eq([norm(cards[1][1]), cards[1][3]], [f"{T('atDrawer', n=2)} · Entrée nord", ''], 'the card follows the typing: its title, no mark (nothing left to complete: lot 5, no more ✓)',
          what='the card of drawer 2')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N78_390_drawer_texts.png')
@@ -6003,7 +6003,7 @@ def n78(c):
     _plus_add(c, 'drawer')
     ed_kind(c, 'hand')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer open (the first free letter)')
-    c.eq([norm(c.text(f'{_DW} [data-dwhead]')), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('dwSheet', n=5), 'hand', ['key', 'title', 'message', 'brief']],
+    c.eq([norm(c.js(_DW_CARDS)[4][1]), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('atDrawer', n=5), 'hand', ['key', 'title', 'message', 'brief']],
          'a new drawer: rank 5, the pilot\'s gesture, nothing else asked', what='the new drawer')
     c.page.fill(f'{_DW} [data-f=title]', 'Retour anticipé')
     dw_key(c, 'time')
@@ -6040,7 +6040,7 @@ def n78(c):
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 1 on a wide screen')
     wide = c.js(f"[...document.querySelectorAll('{_DW} .ms-dbody')].map(x => getComputedStyle(x).display !== 'none').concat([...document.querySelectorAll('{_DW} [data-dline]')].map(x => getComputedStyle(x).display === 'none'))")
-    c.eq(wide, [True, True, True, True], 'on a wide screen the groups (« Les textes » and « Ce que le pilote voit », no more « La suite de route ») are unfolded and say no line', what='the groups on a wide screen')
+    c.eq(wide, [True] * 6, 'on a wide screen the groups (« La clé », since the lot 5, « Les textes » and « Ce que le pilote voit ») are unfolded and say no line', what='the groups on a wide screen')
     c.shot('N78_1280_drawer_object.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -11789,8 +11789,8 @@ def n157(c):
     ed_reveal(c)
     c.until(f"!!document.querySelector('{E} [data-atflow] [data-mark=places]')", timeout=10000, what='the itinerary')
     g = c.js(_MARKS_JS)
-    c.eq([[k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!'], g['places'][0], norm(g['places'][1])], [[], '✓', norm(row(c, 'atLine_noplace', EDTX_FILE))],
-         '(a) the Departure and the Arrival filled, no other place: « Lieux » keeps the tick and « aucun lieu »; no group says « à remplir » with a tick', what='Lieux, endpoints filled')
+    c.eq([[k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!'], g['places'][0], norm(g['places'][1])], [[], '', norm(row(c, 'atLine_noplace', EDTX_FILE))],
+         '(a) the Departure and the Arrival filled, no other place: « Lieux » says neither « ! » nor « à remplir » (no tick any more, SOG-0482 lot 5) and « aucun lieu »; no group says « à remplir » with a tick', what='Lieux, endpoints filled')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -11846,11 +11846,11 @@ def n158(c):
         label = norm(c.js(f"document.querySelector('{_DW} [data-f=\"rule.gap\"]').closest('label').querySelector('span').textContent"))
         c.eq(label, norm(row(c, 'dwGapMin', EDTX_FILE).replace('{min}', '5')), f'{width}: the gap says its minimum', what='the gap label')
         mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
-        c.eq(c.js(mark), '✓', f'{width}: the landing drawer with a gap of 10 s has nothing to complete', what='the mark before')
+        c.eq(c.js(mark), '', f'{width}: the landing drawer with a gap of 10 s has nothing to complete (no mark: lot 5, no more ✓)', what='the mark before')
         c.page.fill(f'{_DW} [data-f="rule.gap"]', '3')
         c.until(f"{mark} === '!'", what='the mark of the drawer says « to complete » for a gap of 3 s')
         c.page.fill(f'{_DW} [data-f="rule.gap"]', '5')
-        c.until(f"{mark} === '✓'", what='a gap of 5 s (the minimum) has nothing to complete')
+        c.until(f"{mark} === ''", what='a gap of 5 s (the minimum) has nothing to complete')
         _plus_add(c, 'drawer')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
         c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('landing'), 1,
@@ -11917,7 +11917,7 @@ def n159(c):
         c.eq([c.js(_DW_VAL, 'key'), c.js(f"document.querySelector('{_DW} [data-f=\"rule.confirm\"]').checked"), c.count(f'{_DW} [data-dwnotjudged]')],
              ['overflight', True, 0], f'{width}: the key is « overflight », the pilot\'s confirmation stays checked, no « not judged » mention', what='the sheet')
         mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
-        c.eq(c.js(mark), '✓', f'{width}: the overflight drawer has nothing to complete', what='the mark')
+        c.eq(c.js(mark), '', f'{width}: the overflight drawer has nothing to complete', what='the mark')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13c_{width}_survol_fiche.png')  # the sheet of an overflight
         _plus_add(c, 'drawer')
@@ -11988,7 +11988,7 @@ def n160(c):
         c.eq(norm(c.js(f"document.querySelector('{_DW} [data-f=\"rule.gap\"]').closest('label').querySelector('span').textContent")),
              norm(row(c, 'dwGapMin', EDTX_FILE).replace('{min}', '5')), f'{width}: the tolerated gap asks for 5 s at least (one fix period)', what='the gap label')
         mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
-        c.eq(c.js(mark), '✓', f'{width}: the hover drawer has nothing to complete', what='the mark')
+        c.eq(c.js(mark), '', f'{width}: the hover drawer has nothing to complete', what='the mark')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13d_{width}_stationnaire.png')  # the sheet of a hover
         _plus_add(c, 'drawer')
@@ -12100,7 +12100,7 @@ def n162(c):
             c.eq(c.count(f'{_DW} [data-dwnotjudged]'), 0 if name == 'judged' else 1,
                  f'{width} {name}: the mention « s\'ouvre au geste ou à l\'heure de repli » is ' + ('absent' if name == 'judged' else 'there'), what='the mention')
             mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
-            c.eq(c.js(mark), '✓', f'{width} {name}: the sequence drawer has nothing to complete', what='the mark')
+            c.eq(c.js(mark), '', f'{width} {name}: the sequence drawer has nothing to complete', what='the mark')
             if name == 'judged':
                 c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
                 c.shot(f'P13f_{width}_suite.png')  # the sheet of a judged sequence
@@ -12464,7 +12464,7 @@ def n167(c):
         c.eq(c.count(f'{_DW} [data-f="rule.radiusM"]'), 0, f'{width}: no radius (m) to type on a landing', what='no radius')
         c.eq(text(f'{_DW} [data-dwjudged=tiers]'), norm(row(c, 'dwJudgedTiers', EDTX_FILE).replace('{tiers}', tiers)), f'{width}: the tiers of a landing at a point, said', what='the tiers')
         mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
-        c.eq(c.js(mark), '✓', f'{width}: nothing to complete (the file carries its radius, the workshop does not ask for it)', what='the mark')
+        c.eq(c.js(mark), '', f'{width}: nothing to complete (the file carries its radius, the workshop does not ask for it)', what='the mark')
         c.js(f"document.querySelector('{_DW} [data-dwjudged]').scrollIntoView({{block: 'center'}})")
         c.shot(f'P14b_{width}_paliers.png')  # the sheet of a landing: the tiers instead of the radius
         c.page.select_option(f'{_DW} select[data-f="rule.point"]', 'DESTINATION')
@@ -14129,7 +14129,7 @@ _L4_TODOBTN = f"(document.querySelector('{E} [data-edtodobtn]').textContent.matc
 
 
 @case('N221', 'Missions › the itinerary says what it is (SOG-0482, lot 4, correction): in a mission created, the header « Itinéraire » carries « ! » as long as a line of the itinerary is to fill in or to place (the Departure, the Arrival, a new point), '
-      'and the key of a drawer with nothing to choose names the gesture of the screen: « Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous. » (« Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous. »)', 'N',
+      'and the key of a drawer with nothing to choose names the gesture of the screen: « Aucun objet pour cette clé. » then the ONE link « Placer sur la carte » (« Aucune zone pour cette clé. », « Dessiner sur la carte »; SOG-0482 lot 5)', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0482 lot 4 (the ergonomist: the header follows its lines; the sentence names the gesture present): editor_view.js `edItinHtml`, `edItinOk`, `none`; editor_texts.js `dwNoObject`, `dwNoZone`')
 def n221(c):
@@ -14151,7 +14151,7 @@ def n221(c):
         c.js(_REG_CLEAR)
         c.js(_MD_CLEAR)
     # the key with nothing to choose: on screen in N73 (the object); the four languages of both sentences are read here
-    # the line of a drawer says the key of its sheet: keyed by an object the mission does not have, it says « clé : objet à trouver · à poser » with « ! » (it said « clé : geste du pilote »)
+    # the line of a drawer says the key of its sheet: keyed by an object the mission does not have, it says « clé : objet à trouver · à placer » with « ! » (it said « clé : geste du pilote »)
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _AT_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"]')
@@ -14163,12 +14163,105 @@ def n221(c):
     dw_key(c, 'object')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
     c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dkey], {E} [data-atflow] [data-dmark]')].filter(x => x.dataset.dkey === '1' || x.dataset.dmark === '1').map(x => x.textContent.replace(/[\s  ]+/g, ' ').trim())"""),
-         ['!', 'clé : objet à trouver · à poser'], 'the line of the drawer says the key of its sheet, the object to pose, with « ! »', what='the key line')
+         ['!', 'clé : objet à trouver · à placer'], 'the line of the drawer says the key of its sheet, the object to place (lot 5: « à placer », never « à poser »), with « ! »', what='the key line')
     ed_leave(c)
     c.js(_REG_CLEAR)
     src = open(EDTX_FILE, encoding='utf-8').read()
-    for sentence in ('Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous.', 'No zone for this key: draw it with “Draw on the map”, below.',
-                     'Keine Zone für diesen Schlüssel: zeichnen Sie sie unten mit „Auf der Karte zeichnen“.', 'Ninguna zona para esta llave: dibújela con «Dibujar en el mapa», más abajo.',
-                     'Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.', 'No object for this key: pose it with “Pose on the map”, below.',
-                     'Kein Objekt für diesen Schlüssel: setzen Sie es unten mit „Auf der Karte setzen“.', 'Ningún objeto para esta llave: póngalo con «Poner en el mapa», más abajo.'):
+    for sentence in ('Aucune zone pour cette clé.', 'No zone for this key.', 'Keine Zone für diesen Schlüssel.', 'Ninguna zona para esta llave.',
+                     'Aucun objet pour cette clé.', 'No object for this key.', 'Kein Objekt für diesen Schlüssel.', 'Ningún objeto para esta llave.'):
         c.ok(sentence in src, sentence, 'the sentence of a key with nothing to choose names its gesture, in this language')
+
+
+_L5_NOZONE = re.sub(r"  - \{ id: ZONE-1,[^\n]*\n", '', _AT_MISSION)
+assert _L5_NOZONE != _AT_MISSION
+
+
+@case('N222', 'Missions › the words of the workshop (SOG-0482, lot 5a): one verb « Placer sur la carte » for a point or an object and « Dessiner sur la carte » for a zone; the state follows the verb (« à placer », « à dessiner »); '
+      'a key with nothing to choose says « Aucun objet pour cette clé. » / « Aucune zone pour cette clé. » followed by the ONE link; the Name of a new point asks « nom, ou code d\'un repère »; no « Poser sur la carte » and no « à poser » on the screen; '
+      'no ✓ anywhere, « ! » only where something is missing, « À compléter (n) » always in view and yellow when n > 0', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 § 0 and § 1 (the ergonomist on the lot 4; RELECTURE_MAQUETTE_ITINERAIRE § 2.10): editor_texts.js `dwNoObject`, `dwNoZone`, `itKeyToPlace`, `itKeyToDraw`, `plNameHint`; editor_view.js `edTodoBtnHtml`, the marks')
+def n222(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, [_AT_TEXTS[0], [_AT_TEXTS[1][0], _L5_NOZONE]])
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{E} [data-atflow] [data-sel=\"B\"]')", timeout=10000, what='the drawers')
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
+        links = lambda: c.js(f"[...document.querySelectorAll('{E} [data-drawer] [data-do=eddrdraw]')].map(b => b.textContent.trim())")  # noqa: E731
+        sentence = lambda: norm(c.text(f'{E} [data-drawer] [data-dwnone]'))  # noqa: E731
+        dw_key(c, 'zone')
+        c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose (zone)')
+        c.eq([sentence(), links()], ['Aucune zone pour cette clé.', ['Dessiner sur la carte']], f'{width}: a key with no zone: the sentence, then the ONE link « Dessiner sur la carte »', what='zone')
+        c.eq(norm(c.text(f'{E} [data-atflow] [data-dkey="1"]')), 'clé : zone de passage · à dessiner', f'{width}: the line of the drawer says « à dessiner » for a zone', what='line zone')
+        dw_key(c, 'object')
+        c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose (object)')
+        c.eq([sentence(), links()], ['Aucun objet pour cette clé.', ['Placer sur la carte']], f'{width}: a key with no object: the sentence, then the ONE link « Placer sur la carte »', what='object')
+        c.eq(norm(c.text(f'{E} [data-atflow] [data-dkey="1"]')), 'clé : objet à trouver · à placer', f'{width}: the line of the drawer says « à placer » for an object', what='line object')
+        page = c.js(f"document.querySelector('{E}').textContent")
+        c.ok('Poser sur la carte' not in page and 'à poser' not in page, [x for x in ('Poser sur la carte', 'à poser') if x in page], f'{width}: no « Poser sur la carte » and no « à poser » on the screen')
+        # the Name of a new point
+        _plus_add(c, 'pt')
+        c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edplname]')", what='the Name of the new point')
+        c.eq(c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').placeholder"), "nom, ou code d'un repère", f'{width}: the prompt of the Name is short enough for 390', what='prompt')
+        # no tick, « ! » only where something is missing, « À compléter » in view and yellow
+        c.eq(c.js(f"document.querySelector('{E}').textContent.includes('✓')"), False, f'{width}: no ✓ anywhere in the workshop', what='no tick')
+        marks = c.js(f"[...document.querySelectorAll('{E} .ms-stepmark')].filter(m => getComputedStyle(m).display !== 'none').map(m => m.textContent.trim())")
+        c.ok(marks and set(marks) == {'!'}, marks, f'{width}: every mark drawn is « ! »')
+        btn = c.js(f"(() => {{ const b = document.querySelector('{E} [data-edtodobtn]'), r = b.getBoundingClientRect(); return [r.top >= 0 && r.bottom <= innerHeight, !!b.querySelector('.ms-attodowarn'), b.textContent.includes('(')] }})()")
+        c.eq(btn, [True, True, True], f'{width}: « À compléter (n) » is always in view and yellow while n > 0', what='the counter')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N223', 'Missions › the sheet of a drawer around « La clé » (SOG-0482, lot 5a, the mock-up #tiroir): no title « scellé jusqu\'à ce que sa clé joue »; « La clé » is the first group, foldable, and says folded the key and the fallback '
+      '(« objet à trouver · OBJ-1 Naufragé · repli à H + 90 min »); the violet block holds the fields of the object — « Objet de la mission », Nom, Sorte d\'objet, Latitude, Longitude — with the line « L\'objet OBJ-1, caché au pilote jusqu\'à l\'ouverture »; '
+      '« Portée de détection (NM) » and « Heure de repli (min) » on ONE row; « Les textes » and « Ce que le pilote voit » stay foldable, then « Supprimer ce tiroir »', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 § 2 (decisions (b) and (c) of the ergonomist): editor_view.js `edDrawerHtml` (`objBlock`, `group`), `edDrawerLines`, `edPlaceFormHtml` (`extra`)')
+def n223(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-keyblock]')", what='the sheet of drawer 2')
+        sheet = f'{E} [data-drawer="C"]'
+        c.eq([c.count(f'{sheet} [data-dwhead]'), c.js(f"[...document.querySelectorAll('{sheet} [data-dgrp]')].map(g => g.dataset.dgrp)")], [0, ['key', 'texts', 'pilot']], f'{width}: no title, « La clé » first', what='groups')
+        c.eq(norm(c.text(f'{sheet} [data-dgrp=key] .ms-dsum b')), 'La clé', f'{width}: the first group is « La clé »', what='group title')
+        c.eq(norm(c.text(f'{sheet} [data-dline=key]')), 'objet à trouver · OBJ-1 Naufragé · repli à H + 90 min', f'{width}: folded, « La clé » says the key and the fallback', what='key summary')
+        c.eq(c.js(f"document.querySelector('{sheet} [data-keynote]').textContent.trim()"), "L'objet OBJ-1, caché au pilote jusqu'à l'ouverture", f'{width}: the violet block says the object, hidden until the opening', what='note')
+        fields = c.js(f"[...document.querySelectorAll('{sheet} [data-keyblock] [data-f]')].map(x => x.dataset.f)")
+        c.eq(fields[:5], ['object', 'name', 'okind', 'lat', 'lon'], f'{width}: the block holds « Objet de la mission », the Name, the kind, the latitude and the longitude', what='block fields')
+        c.eq(c.js(f"(() => {{ const r = document.querySelector('{sheet} [data-keyblock] [data-f=range]'), f = document.querySelector('{sheet} [data-keyblock] [data-f=fallback]');"
+                  f" return [r.closest('.f-row') === f.closest('.f-row'), r.closest('label').querySelector('span').textContent.trim(), f.closest('label').querySelector('span').textContent.trim().slice(0, 14)] }})()"),
+             [True, 'Portée de détection (NM)', 'Heure de repli'], f'{width}: the range and the fallback hour are on ONE row; the label « Portée de détection (NM) » is kept', what='row')
+        c.eq(norm(c.text(f'{sheet} [data-do=eddrdel]')), 'Supprimer ce tiroir', f'{width}: the sheet ends with « Supprimer ce tiroir »', what='delete')
+        if width < 768:  # « La clé » folds (the group is open at first; at 1280 the groups are never folded)
+            c.tap(f'{sheet} [data-dgrp=key] [data-do=eddrgrp]')
+            c.until(f"document.querySelector('{sheet} [data-dgrp=key] [data-do=eddrgrp]').getAttribute('aria-expanded') === 'false'", what='La clé folded')
+            c.eq(c.js(f"getComputedStyle(document.querySelector('{sheet} [data-dgrp=key] .ms-dbody')).display"), 'none', f'{width}: folded, the fields are hidden and the summary stays', what='folded')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N224', 'Missions › « Fermer » (SOG-0482, lot 5a): the foot of the workshop says « Fermer » (the word of the window of the bricks) instead of « Annuler »; it closes the workshop keeping the draft', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 § 4 (RELECTURE § 3: the button closes and keeps a draft, it cancels nothing): editor_view.js the foot `ms-atbar`')
+def n224(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=15000, what='the workshop')
+        c.eq(norm(c.text(f'{E} .ms-atbar [data-do=edcancel]')), 'Fermer', f'{width}: the foot says « Fermer »', what='the word')
+        if not c.count(f'{E} input[data-k=edtitle]'):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        _ed_fill(c, 'edtitle', 'Titre gardé')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until(f"!document.querySelector('{E}')", timeout=8000, what='the workshop left at once')
+        c.eq(c.count('.f-modal'), 0, f'{width}: « Fermer » with a change asks nothing: the draft keeps it', what='no question')
+        c.js(_REG_CLEAR)

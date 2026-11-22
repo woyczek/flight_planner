@@ -163,8 +163,8 @@ export const EDTX = {
   // les objets à trouver dans les Lieux (SOG-0445) : la pastille, la fiche, « caché au pilote », « clé du tiroir n »
   plObject: ['OBJ', 'OBJ', 'OBJ', 'OBJ'],
   // SOG-0480 : le Nom d'un point tournant, d'une cible, d'un rendez-vous est le champ commun de la suite, avec les points de la base
-  plNameHint: ['nom, ou code : report, balise, point du réseau', 'name, or code: reporting point, beacon, network point',
-    'Name oder Kennung: Meldepunkt, Funkfeuer, Netzpunkt', 'nombre, o código: notificación, radioayuda, punto de red'
+  plNameHint: ['nom, ou code d\'un repère', 'name, or code of a landmark', 'Name oder Kennung eines Orientierungspunkts',
+    'nombre, o código de una referencia'
   ],
   plNameList: ['Points proposés', 'Suggested points', 'Vorgeschlagene Punkte', 'Puntos propuestos'],
   // SOG-0506 : un point nommé de la base donne sa position et la verrouille — la fiche du lieu dit sa source
@@ -313,10 +313,6 @@ export const EDTX = {
     'Modelo «{name}» puesto: {n} cajón(es), {m} lugar(es) por situar.'
   ],
   dwMax: ['Douze tiroirs au plus.', 'Twelve drawers at most.', 'Höchstens zwölf Schubladen.', 'Doce cajones como máximo.'],
-  dwSheet: ['Tiroir {n} — scellé jusqu\'à ce que sa clé joue', 'Drawer {n} — sealed until its key plays',
-    'Schublade {n} — versiegelt, bis ihr Schlüssel greift',
-    'Cajón {n} — sellado hasta que su llave actúe'
-  ],
   dwGrpKey: ['La clé', 'The key', 'Der Schlüssel', 'La llave'],
   dwGrpTexts: ['Les textes', 'The texts', 'Die Texte', 'Los textos'],
   dwKey: ['Ce qui ouvre le tiroir', 'What opens the drawer', 'Was die Schublade öffnet', 'Lo que abre el cajón'],
@@ -357,15 +353,9 @@ export const EDTX = {
     'Mostrar esta zona al piloto desde la salida'
   ],
   dwObject: ['Objet de la mission', 'Object of the mission', 'Objekt der Mission', 'Objeto de la misión'],
-  dwNoZone: ['Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous.',
-    'No zone for this key: draw it with “Draw on the map”, below.',
-    'Keine Zone für diesen Schlüssel: zeichnen Sie sie unten mit „Auf der Karte zeichnen“.',
-    'Ninguna zona para esta llave: dibújela con «Dibujar en el mapa», más abajo.'
-  ],
-  dwNoObject: ['Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.',
-    'No object for this key: pose it with “Pose on the map”, below.',
-    'Kein Objekt für diesen Schlüssel: setzen Sie es unten mit „Auf der Karte setzen“.',
-    'Ningún objeto para esta llave: póngalo con «Poner en el mapa», más abajo.'
+  dwNoZone: ['Aucune zone pour cette clé.', 'No zone for this key.', 'Keine Zone für diesen Schlüssel.', 'Ninguna zona para esta llave.'],
+  dwNoObject: ['Aucun objet pour cette clé.', 'No object for this key.', 'Kein Objekt für diesen Schlüssel.',
+    'Ningún objeto para esta llave.'
   ],
   dwToPlaces: ['Ouvrir les Lieux', 'Open the Places', 'Orte öffnen', 'Abrir los Lugares'],
   dwLineNoTitle: ['sans titre', 'no title', 'kein Titel', 'sin título'],
@@ -817,7 +807,6 @@ export const EDTX = {
     'Sitúe primero la zona y dele un radio: su contorno parte de su círculo.'
   ],
   dwDraw: ['Dessiner sur la carte', 'Draw on the map', 'Auf der Karte zeichnen', 'Dibujar en el mapa'],
-  dwPose: ['Poser sur la carte', 'Pose on the map', 'Auf der Karte setzen', 'Poner en el mapa'],
   atHint_point: ['Touchez la carte : le point tournant est posé là.', 'Touch the map: the turning point is posed there.',
     'Berühren Sie die Karte: der Wendepunkt wird dort gesetzt.', 'Toque el mapa: el punto de viraje se pone ahí.'
   ],
@@ -912,7 +901,13 @@ export const EDTX = {
   atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
-  itKeyToPose: ['à poser', 'to pose', 'zu setzen', 'por poner'],
+  itBadgeDrawer: ['TIROIR', 'DRAWER', 'SCHUBLADE', 'CAJÓN'],
+  itKeyToPlace: ['à placer', 'to place', 'zu platzieren', 'por colocar'],
+  itKeyToDraw: ['à dessiner', 'to draw', 'zu zeichnen', 'por dibujar'],
+  itKeyHidden: ["L'objet {id}, caché au pilote jusqu'à l'ouverture", 'Object {id}, hidden from the pilot until the opening',
+    'Objekt {id}, dem Piloten bis zur Öffnung verborgen', 'Objeto {id}, oculto al piloto hasta la apertura'
+  ],
+  itFallbackLine: ['repli à H + {n} min', 'fallback at H + {n} min', 'Rückfall bei H + {n} min', 'repliegue a H + {n} min'],
   atKey_object: ['clé : objet à trouver', 'key: object to find', 'Schlüssel: zu findendes Objekt', 'llave: objeto por encontrar'],
   atKey_arrival: ['clé : arrivée au terrain', 'key: arrival at the aerodrome', 'Schlüssel: Ankunft am Platz',
     'llave: llegada al aeródromo'
