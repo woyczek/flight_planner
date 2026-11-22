@@ -1295,7 +1295,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
                 if named and named[-1][0]==via:named[-1][2]=b_
                 else:named.append([via,a_,b_])
             seen_cycle=nav.cycles.get(zone)
-            issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.','stale_cycle',True,zone=zone,cycle=cycle,current=seen_cycle,routes=[v for v,_a,_b in named[:6]])      # SOG-0532 (6) : un État dont les données sont d'un cycle périmé : « non vérifiable » pour cet État, nommé
+            deposit=belgian_deposit(nav,cycle) if zone=='be' else None      # SOG-0541 lot 2 : le jour du dépôt du jeu belge compilé : Carburant écrit « Routes belges d'un cycle passé (déposées le … ) »
+            issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.','stale_cycle',True,zone=zone,cycle=cycle,current=seen_cycle,routes=[v for v,_a,_b in named[:6]],**({'deposited':deposit} if deposit else {}))      # SOG-0532 (6) : un État dont les données sont d'un cycle périmé : « non vérifiable » pour cet État, nommé
     if request.get('fl_basis')=='default':issues.insert(0,dict(level='REVUE',text=f"Niveau du vol absent : le calcul est fait au FL{fl:03d}, le niveau par défaut du moteur ; un autre niveau donne d'autres voies (les voies ont leurs bandes de niveau)."))      # SOG-0517 : la demande n'avait pas de niveau (Carburant : le vol sans niveau) : dit EN TÊTE (l'IFPS de l'utilisateur du 19/11 : calculé au FL180, déposé au FL270)
     errors=[x for x in issues if x['level']=='ERREUR']
     violations=[dict(code=x.get('code') or 'other',values=x.get('values') or {},text=x['text'][:300]) for x in errors[:MAX_VERDICT_ITEMS]]      # SOG-0532 (3) : les règles CONNUES enfreintes (jamais confondues avec ce qui n'a pas pu être vérifié)
@@ -1317,6 +1318,14 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result['report']=report(result)
     if _nav is None:nav.release_graph_caches()
     return result
+
+def belgian_deposit(nav,cycle):
+    """SOG-0541 lot 2 : le jour du DÉPÔT du jeu de l'ENR 3.2 de Belgique compilé dans le cycle `cycle` : lu dans les NOMS des fichiers de data/sia/zones/be/ (jamais leur contenu ; au plus 400 noms) ; None s'il n'y est plus ou si le module manque."""
+    try:
+        import aim_be_enr
+        names=sorted(p.name for p in Path(nav.data_dir,'sia','zones','be').iterdir())[:400]
+    except (ImportError,OSError):return None
+    return aim_be_enr.deposited_of(names,cycle)
 
 def report(r):
     altitude=f'Altitude VFR {r.get("target_altitude_ft",r["fl"]*100):g} ft' if r.get('planning',{}).get('traffic')=='VFR' else f'FL{r["fl"]:03.0f}'

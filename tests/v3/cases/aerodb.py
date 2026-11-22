@@ -20314,3 +20314,34 @@ def k511(c):
     c.eq([A.report(rels, day)['aimbe']['cycle'] for day in (d(2026, 11, 22), d(2026, 11, 26))], ['2026-10-29', '2026-11-26'], 'the cycle of the zone is the one of the set the build reads: the set in advance does not give its cycle before its date', what='report')
     c.eq([A.aimbe_selected(rels, day) for day in (d(2026, 11, 22), d(2026, 11, 26), d(2025, 1, 1))], ['zones/be/' + old, 'zones/be/' + new, None], 'the selection: the newest set whose amendment date is not after the day', what='selected')
     c.eq(A.aimbe_selected(['zones/be/aimbe_be_enr_99991231_99991231.geojson', 'zones/fr/aimbe_be_enr_20260219_20261122.geojson'], d(2026, 11, 22)), None, 'a name planted with a year outside 2000-2100, or in another zone, is no set', what='planted')
+
+
+@case('K512', 'Route engine, SOG-0541 lot 2: a route that flies a Belgian segment of a set whose cycle has passed AT THE DATE OF THE FLIGHT is `unverifiable` with the existing code `stale_cycle` (zone `be`) and now carries `deposited`, the day the set was dropped, read from the NAMES of the files of the zone (the screen writes « Routes belges d\'un cycle passé (déposées le … ) »); a flight inside the cycle gives nothing; an unreadable name gives no `deposited`',
+      'K', static=True,
+      rule='Ergonomist, 22 Nov 2026 (SOG-0541, lot 2, condition): « « périmé » sur la route se juge par LA DATE DU VOL, comme le choix du jeu : un vol dans un cycle ultérieur à celui du jeu rend la route « non vérifiable », raison « Routes belges d\'un cycle passé (déposées le {date}) » » ; no new code: `stale_cycle` (SOG-0532 (6)) already compares the date of the flight with the cycle of each segment used. The names of the zone folder are untrusted (year 2000-2100, no exception). Invented base, the zone `be` named like the real one')
+def k512(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+
+    def fly(day, names):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, zone='be', base_cycle='2026-10-29')
+            folder = os.path.join(data, 'sia', 'zones', 'be')
+            os.makedirs(folder)
+            for n in names:
+                open(os.path.join(folder, n), 'w', encoding='utf-8').write('{}')
+            p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': day, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+        return [x for x in p.get('unverifiable') or [] if x['code'] == 'stale_cycle'], p
+    good = ['aimbe_be_enr_20260219_20261122.geojson']
+    late, p = fly('2026-11-30', good)
+    c.eq([(x['values']['zone'], x['values']['cycle'], x['values'].get('deposited')) for x in late], [('be', '2026-10-29', '2026-11-22')], 'a flight of 30 Nov on a Belgian set of the cycle of 29 Oct (32 days later): `stale_cycle`, zone `be`, with the day the set was dropped (red before: no `deposited`)', what='late flight')
+    c.eq(p.get('verdict'), 'unverifiable', 'the route is « non vérifiable »: never conform on a past cycle', what='verdict')
+    inside, _ = fly('2026-11-20', good)
+    c.eq(inside, [], 'a flight inside the cycle of the set (20 Nov, 22 days): nothing', what='inside')
+    unreadable, _ = fly('2026-11-30', ['aimbe_be_enr_99991231_99991231.geojson', 'aimbe_be_enr_xx.geojson', 'other.json'])
+    c.eq([(x['values']['zone'], 'deposited' in x['values']) for x in unreadable], [('be', False)], 'names that cannot be read (a year outside 2000-2100, a name outside the rule): no `deposited`, no exception — the route keeps its generic `stale_cycle`', what='unreadable')
+    gone, _ = fly('2026-11-30', [])
+    c.eq([(x['values']['zone'], 'deposited' in x['values']) for x in gone], [('be', False)], 'the file of the set is gone from the zone: no `deposited` either', what='gone')

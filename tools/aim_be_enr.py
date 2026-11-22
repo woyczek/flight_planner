@@ -252,5 +252,21 @@ def sets_of(rels, today=None):
     return {'inForce': max(now, key=lambda s: (s['effective'], s['deposited'])) if now else None, 'next': min(later, key=lambda s: (s['effective'], s['deposited'])) if later else None}
 
 
+def deposited_of(names, cycle):
+    """Le jour du DÉPÔT (AAAA-MM-JJ) du jeu compilé dans le cycle `cycle` (début AIRAC AAAA-MM-JJ), d'après les NOMS de fichiers de la zone (« aimbe_be_enr_<amendement>_<dépôt>.geojson », jamais leur contenu) ; le plus récent si plusieurs ; None s'il n'y en a plus."""
+    best = None
+    for name in names:
+        m = FILE.fullmatch(str(name))
+        if not m or not all(2000 <= int(x[:4]) <= 2100 for x in m.groups()):
+            continue
+        try:
+            st = status(f'{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:]}', f'{m.group(2)[:4]}-{m.group(2)[4:6]}-{m.group(2)[6:]}')
+        except (ValueError, OverflowError):
+            continue
+        if st['cycle'] == cycle and (best is None or st['deposited'] > best):
+            best = st['deposited']
+    return best
+
+
 def file_name(effective, deposit):
     return f'aimbe_be_enr_{_day(effective).strftime("%Y%m%d")}_{_day(deposit).strftime("%Y%m%d")}.geojson'
