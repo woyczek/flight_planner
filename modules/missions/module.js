@@ -1210,7 +1210,7 @@ function draw(s) {
   const was = s.open && !s.ed ? s.el.querySelector('.ms-sheet[data-id]') : null;
   if (was && was.dataset.id === s.open.row?.id) s.open.secs = new Set([...was.querySelectorAll('details.ms-sec[data-sec]')].filter(d => d
     .open).map(d => d.dataset.sec));
-  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}</style>${s.ed ? '' : `<h1>${esc(s.tt(meta.title))}</h1>`}${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
   // SOG-0441 : la section « Tiroirs » de la fiche ouverte (repeinte dans l'élément neuf à chaque dessin), arrêtée hors de la fiche
   const dw = !s.ed && s.open?.mission ? s.el.querySelector('[data-drawers]') : null;

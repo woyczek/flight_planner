@@ -272,7 +272,7 @@ function edModelLine(s) {
 function edModelHtml(s) {
   const e = s.ed;
   if (e.veil) return '';
-  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button><button type="button" class="f-linkbtn" data-do="edmodelsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(EDTX.mdSave))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
+  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><span aria-hidden="true"> · </span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button><span aria-hidden="true"> · </span><button type="button" class="f-linkbtn" data-do="edmodelsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(EDTX.mdSave))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
 }
 
 /** La liste des modèles du type de la mission : un modèle sans type va à toute famille ; sans famille choisie, ceux-là seuls et une
@@ -472,7 +472,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atplhead>h3{margin:0}
 [data-module="missions"] .ms-itinhead{grid-template-columns:auto auto minmax(0,1fr) auto}
 [data-module="missions"] .ms-itin-list{position:relative;margin:0;gap:0;border:1px solid var(--sog-line,#ddd)} /* gap:0 — les lignes se touchent, la bande et la fiche forment un seul bloc */
-[data-module="missions"] .ms-itin-list>.ms-plrow{display:block;padding:0;border-bottom:1px solid var(--sog-line,#ddd);scroll-margin-top:calc(var(--f-head-h,57px) + 8px);scroll-margin-bottom:6rem}
+[data-module="missions"] .ms-itin-list>.ms-plrow{display:block;padding:0;border-bottom:1px solid var(--sog-line,#ddd);scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 8px);scroll-margin-bottom:6rem}
 [data-module="missions"] .ms-itin-list>.ms-plrow.ms-itin-in{margin-left:1.25rem;border-left:2px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-list>.ms-atpart{display:block;width:100%;margin:0;border-radius:0;border-top:0;border-right:0;border-bottom:1px solid var(--sog-line,#ddd);text-align:left}
 [data-module="missions"]{--ms-key:color-mix(in srgb,#8a3ffc 75%,var(--sog-fg,#222))} /* le violet du tiroir : un jeton du module, éclairci par le texte du cadre en mode sombre */
@@ -488,8 +488,10 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-mvrow{display:flex;gap:8px;align-self:stretch;width:100%}
 [data-module="missions"] .ms-itin-mvrow>.f-reorder{flex:1 1 auto} /* les deux flèches du bloc du cadre */
 [data-module="missions"] .ms-itin-plus{flex:0 0 56px;min-height:44px;margin:0;font-size:22px;font-weight:600;color:var(--sog-accent,#1a73e8)} /* « ＋ » : le bouton du module, dans la rangée des flèches (la maquette : .mv .plus) */
-[data-module="missions"] .ms-attabs{order:0;display:flex;gap:0;margin:0 0 8px;border-bottom:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-attab{flex:1 1 0;min-height:44px;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;font:inherit;font-weight:600;color:var(--sog-muted,#555)}
+[data-module="missions"]{--ms-tabs-h:48px} /* la hauteur de la rangée collante des onglets : une ligne amenée à l'écran se place sous elle */
+[data-module="missions"] .ms-attabs{order:0;position:sticky;top:var(--f-head-h,57px);z-index:4;background:var(--sog-bg,#fff);align-items:stretch;display:flex;gap:0;margin:0 0 8px;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-attabs>.ms-hist{align-self:center;gap:4px;padding-left:4px}
+[data-module="missions"] .ms-attab{flex:1 1 0;min-width:0;padding-left:2px;padding-right:2px;min-height:44px;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;font:inherit;font-weight:600;color:var(--sog-muted,#555)}
 [data-module="missions"] .ms-attab[aria-selected=true]{color:var(--sog-accent,#1a73e8);border-bottom-color:var(--sog-accent,#1a73e8)}
 [data-module="missions"] .ms-at[data-tab=itin] .ms-atmap,[data-module="missions"] .ms-at[data-tab=itin] .ms-atprof,[data-module="missions"] .ms-at[data-tab=itin] .ms-atsheet:not([data-trial]){display:none}
 [data-module="missions"] .ms-at[data-tab=map] .ms-atitin,[data-module="missions"] .ms-at[data-tab=map] .ms-atsheet:not([data-trial]){display:none}
@@ -506,7 +508,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
 [data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0}
 [data-module="missions"] .ms-itin-list .ms-plform .f-row:not(.ms-ll)>.f-field{flex:1 1 100%} /* Nom, Identifiant, Rôle… : toute la largeur */
-[data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;padding-left:12px;padding-right:12px;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
+[data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;padding-left:12px;padding-right:12px;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
 [data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
@@ -600,11 +602,13 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 @media (max-width:760px){.f-modal.ms-brickdlg{padding:0;place-items:stretch}.f-modal.ms-brickdlg>div{width:100%;height:100dvh;max-height:none;border-radius:0;box-sizing:border-box}}
 [data-module="missions"] .ms-kindchg{color:var(--sog-link,var(--sog-accent,#1a73e8));font-size:.9em}
 [data-module="missions"] .ms-atmodel{margin:0 0 10px} /* le modèle de la mission, sous le titre (lot « modèles de mission ») */
-[data-module="missions"] .ms-atmodelline{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0}
+[data-module="missions"] .ms-atmodelline{display:block;margin:0} /* lot 6 (la maquette #cadre) : une phrase, ses deux liens EN LIGNE */
+[data-module="missions"] .ms-atmodelline>.f-linkbtn{display:inline;min-height:0;min-width:0;padding:0;margin:0;border:0;background:none;font:inherit;text-align:left;text-decoration:underline}
   [data-module="missions"] .ms-atmodelline>.f-linkbtn{padding-left:0;padding-right:0} /* retouche de l'ergonome : sans le retrait latéral du lien (le bord gauche reste aligné sur « Modèle : … »), mais gardant les 44 px de haut de la cible tactile */
 [data-module="missions"] .ms-models{margin:4px 0 0 0;max-width:40em}
 [data-module="missions"] .ms-models>p{margin:4px 0}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
+[data-module="missions"] .ms-itin-sheet>.ms-dgrp:first-child,[data-module="missions"] [data-steps]>.ms-atgrp:first-child{border-top:0} /* lot 6 : la bande ou le titre de la fiche suffit ; les traits ENTRE groupes restent */
 [data-module="missions"] .ms-dgrp>h4{margin:4px 0 8px}
 [data-module="missions"] .ms-dgrp .f-row{align-items:flex-start}
 [data-module="missions"] .ms-dgrp .f-row>.f-field{flex:1 1 10em;min-width:0}
@@ -652,8 +656,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
 [data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
 [data-module="missions"] .ms-atbody .f-row.ms-adrow{position:relative} /* SOG-0465 : la liste des terrains proposés s'y pose */
-[data-module="missions"] .ms-atsheet{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
-[data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
+[data-module="missions"] .ms-atsheet{scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 8px)}
+[data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
 [data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
 [data-module="missions"] .ms-atbody .ms-edteams{position:relative} /* SOG-0488 : la liste des indicatifs proposés s'y pose */
@@ -1132,7 +1136,7 @@ function edPlaceFormHtml(s, r, i, {
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
-        <p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
+        ${embedded && !r.moving ? '' : `<p class="f-muted" data-plid>${esc([embedded ? '' : r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>`}
         ${embedded ? '' : `<div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" class="f-linkbtn" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.itDelAnyway : EDTX.itDelObject))}</button></div>`}</div>`;
   }
   // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
@@ -3920,9 +3924,10 @@ const edTab = e => ['itin', 'map', 'mission'].includes(e.tab) ? e.tab : 'itin';
 
 /** Les onglets (la maquette) : « Itinéraire », « Carte », « Mission » au téléphone ; sur un module large la carte est à gauche, toujours visible, et deux onglets seulement (CSS). Aucune marque sur un onglet (relecture § 2.10). */
 function edTabsHtml(s) {
-  const tab = edTab(s.ed),
+  const e = s.ed,
+    tab = edTab(e),
     on = k => (k === tab) || (k === 'itin' && tab === 'map' && edWide(s));
-  return `<div class="ms-attabs" role="tablist" data-attabs>${[['itin', EDTX.atItin], ['map', EDTX.itTabMap], ['mission', EDTX.atMission]].map(([k, tx]) => `<button type="button" role="tab" class="ms-attab" data-do="edtab" data-tab="${k}" aria-selected="${tab === k}">${esc(s.tt(tx))}</button>`).join('')}</div>`;
+  return `<div class="ms-attabs" role="tablist" data-attabs>${[['itin', EDTX.atItin], ['map', EDTX.itTabMap], ['mission', EDTX.atMission]].map(([k, tx]) => `<button type="button" role="tab" class="ms-attab" data-do="edtab" data-tab="${k}" aria-selected="${tab === k}">${esc(s.tt(tx))}</button>`).join('')}<span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>`;
 }
 
 /** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
@@ -3932,7 +3937,7 @@ export function edHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
-  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}" data-tab="${edTab(e)}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p><span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>
+  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}" data-tab="${edTab(e)}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p></div>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${edTabsHtml(s)}${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
