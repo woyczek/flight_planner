@@ -3,7 +3,7 @@
 // accorde les marques « (s) » d'après {n}). Les textes des six premières étapes restent dans module.js (Features SOG).
 //
 // API :
-//   EDTX : les textes — tr… (l'essai des clés, SOG-0444 lot P4) ; dw… (la fiche d'un tiroir, SOG-0445) ; pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
+//   EDTX : les textes — tr… (l'essai des clés, SOG-0444 lot P4) ; dw… (la fiche d'un tiroir, SOG-0445) ; pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
@@ -12,13 +12,55 @@
 //     par : la route de la mission · le tiroir B (…). « Supprimer quand même » le supprime avec ces citations. »
 
 export const EDTX = {
-  plRemoveAnyway: ['Retirer quand même', 'Remove anyway', 'Trotzdem entfernen', 'Quitar de todos modos'],
   // SOG-0482 : le bas de la fiche d'un lieu (supprime le lieu et ses citations) et la bande sous la ligne choisie (sort la ligne de sa route)
   itRemove: ["Retirer de l'itinéraire", 'Remove from the itinerary', 'Aus der Reiseroute entfernen', 'Quitar del itinerario'],
   itDelPlace: ['Supprimer le lieu', 'Delete the place', 'Ort löschen', 'Eliminar el lugar'],
   itDelZone: ['Supprimer la zone', 'Delete the zone', 'Zone löschen', 'Eliminar la zona'],
   itDelObject: ["Supprimer l'objet", 'Delete the object', 'Objekt löschen', 'Eliminar el objeto'],
   itDelAnyway: ['Supprimer quand même', 'Delete anyway', 'Trotzdem löschen', 'Eliminar de todos modos'],
+  // SOG-0482, lot 3 : les deux intitulés de l'itinéraire, les titres des flèches grisées (le bloc de frame/lib/reorder.js dit les siens pour le premier et le dernier lieu d'une liste), « Hors itinéraire »
+  itHeadStart: ['Au départ — visible par le pilote', 'At the start — visible to the pilot', 'Beim Start — für den Piloten sichtbar',
+    'Al inicio — visible para el piloto'
+  ],
+  itHeadDrawers: ['Les tiroirs — cachés jusqu\'à leur ouverture', 'The drawers — hidden until they open',
+    'Die Schubladen — verborgen, bis sie sich öffnen',
+    'Los cajones — ocultos hasta que se abren'
+  ],
+  itLimRoute: ['La limite des tiroirs : retirez ce lieu de l\'itinéraire, puis ajoutez-le à sa nouvelle place.',
+    'The limit of the drawers: remove this place from the itinerary, then add it at its new position.',
+    'Die Grenze der Schubladen: Entfernen Sie diesen Ort aus der Reiseroute und fügen Sie ihn an seiner neuen Stelle wieder hinzu.',
+    'El límite de los cajones: quite este lugar del itinerario y añádalo de nuevo en su nueva posición.'
+  ],
+  itLimSuite: ['La limite du tiroir {n} : retirez ce lieu de l\'itinéraire, puis ajoutez-le à sa nouvelle place.',
+    'The limit of drawer {n}: remove this place from the itinerary, then add it at its new position.',
+    'Die Grenze der Schublade {n}: Entfernen Sie diesen Ort aus der Reiseroute und fügen Sie ihn an seiner neuen Stelle wieder hinzu.',
+    'El límite del cajón {n}: quite este lugar del itinerario y añádalo de nuevo en su nueva posición.'
+  ],
+  itFirstDrawer: ['Le premier tiroir : rien ne s\'ouvre avant lui.', 'The first drawer: nothing opens before it.',
+    'Die erste Schublade: vor ihr öffnet sich nichts.',
+    'El primer cajón: nada se abre antes que él.'
+  ],
+  itLastDrawer: ['Le dernier tiroir : l\'Arrivée reste à la fin.', 'The last drawer: the Arrival stays at the end.',
+    'Die letzte Schublade: die Ankunft bleibt am Ende.',
+    'El último cajón: la llegada se queda al final.'
+  ],
+  itCiteMap: ['montré par la carte « {name} »', 'shown by the map “{name}”', 'von der Karte „{name}“ gezeigt',
+    'mostrado por el mapa «{name}»'
+  ],
+  itCiteEvent: ['cité par la chronologie', 'cited by the timeline', 'von der Chronologie genannt', 'citado por la cronología'],
+  itCiteTarget: ['étape de la route de la cible {name}', 'stop on the route of target {name}', 'Station der Route des Ziels {name}',
+    'etapa de la ruta del objetivo {name}'
+  ],
+  itCiteAlert: ['étape de la route de l\'alerte {name}', 'stop on the route of alert {name}', 'Station der Route des Alarms {name}',
+    'etapa de la ruta de la alerta {name}'
+  ],
+  itCiteDrawer: ['cité par le tiroir {name}', 'cited by drawer {name}', 'von Schublade {name} genannt', 'citado por el cajón {name}'],
+  itAddSuite: ['Ajouter un lieu à la suite de route…', 'Add a place to the onward route…', 'Ort zur Folgeroute hinzufügen…',
+    'Añadir un lugar a la ruta siguiente…'
+  ], // jusqu'au « ＋ » de la bande (lot 4)
+  itNoCite: ['rien ne le cite : le pilote ne le verra pas', 'nothing cites it: the pilot will not see it',
+    'nichts nennt es: der Pilot sieht es nicht', 'nada lo cita: el piloto no lo verá'
+  ],
   plCited: ['{id} est encore cité par : {who}. « Supprimer quand même » le supprime avec ces citations.',
     '{id} is still cited by: {who}. “Delete anyway” deletes it with these citations.',
     '{id} wird noch genannt von: {who}. „Trotzdem löschen“ löscht den Ort mit diesen Nennungen.',
@@ -154,7 +196,6 @@ export const EDTX = {
     'blanco móvil, conservado tal cual'
   ],
   plKeyOf: ['clé du tiroir {name}', 'key of drawer {name}', 'Schlüssel der Schublade {name}', 'llave del cajón {name}'],
-  plNoDrawer: ['aucun tiroir ne le cite', 'no drawer cites it', 'keine Schublade nennt es', 'ningún cajón lo cita'],
   // la fiche d'un tiroir (SOG-0445) : le déroulé, les trois groupes (la clé, les textes, la suite de route), « à compléter », la clé
   // dite en clair (`trigger`, que le pilote lit sur le tiroir fermé : des mots qui ne nomment ni la zone ni l'objet)
   dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
@@ -268,7 +309,6 @@ export const EDTX = {
   ],
   dwGrpKey: ['La clé', 'The key', 'Der Schlüssel', 'La llave'],
   dwGrpTexts: ['Les textes', 'The texts', 'Die Texte', 'Los textos'],
-  dwGrpRoute: ['La suite de route', 'The onward route', 'Die Folgeroute', 'La ruta siguiente'],
   dwKey: ['Ce qui ouvre le tiroir', 'What opens the drawer', 'Was die Schublade öffnet', 'Lo que abre el cajón'],
   dwKey_hand: ['le geste du pilote seul', 'the pilot\'s gesture alone', 'nur die Geste des Piloten', 'solo el gesto del piloto'],
   dwKey_time: ['une heure', 'an hour', 'eine Uhrzeit', 'una hora'],
@@ -317,7 +357,6 @@ export const EDTX = {
   dwLineNoTitle: ['sans titre', 'no title', 'kein Titel', 'sin título'],
   dwLineMsg: ['message de {n} signe(s)', 'message of {n} sign(s)', 'Nachricht mit {n} Zeichen', 'mensaje de {n} signo(s)'],
   dwLineBrief: ['briefing de {n} signe(s)', 'briefing of {n} sign(s)', 'Briefing mit {n} Zeichen', 'briefing de {n} signo(s)'],
-  dwLineNoRoute: ['aucune suite', 'no onward route', 'keine Folgeroute', 'sin ruta siguiente'],
   dwChoose: ['Choisir…', 'Choose…', 'Wählen…', 'Elegir…'],
   dwArrPoint: ['Terrain ou lieu', 'Aerodrome or place', 'Platz oder Ort', 'Aeródromo o lugar'],
   dwDest: ['l\'arrivée', 'the arrival', 'die Ankunft', 'la llegada'],
@@ -370,16 +409,10 @@ export const EDTX = {
   dwTitle: ['Titre', 'Title', 'Titel', 'Título'],
   dwMessage: ['Message à l\'ouverture', 'Message at the opening', 'Nachricht beim Öffnen', 'Mensaje a la apertura'],
   dwBrief: ['Briefing du tiroir', 'Briefing of the drawer', 'Briefing der Schublade', 'Briefing del cajón'],
-  dwRouteNone: ['Aucune suite : la route de la mission continue.', 'No onward route: the mission route goes on.',
-    'Keine Folgeroute: die Route der Mission geht weiter.', 'Sin ruta siguiente: la ruta de la misión continúa.'
-  ],
   dwRouteAdd: ['Ajouter un lieu…', 'Add a place…', 'Ort hinzufügen…', 'Añadir un lugar…'],
-  dwChipDel: ['Retirer {id} de la suite', 'Remove {id} from the onward route', '{id} aus der Folgeroute entfernen',
-    'Quitar {id} de la ruta siguiente'
-  ],
-  dwRemove: ['Retirer ce tiroir', 'Remove this drawer', 'Diese Schublade entfernen', 'Quitar este cajón'],
-  dwRemoved: ['Tiroir retiré ; les suivants ont pris son rang.', 'Drawer removed; the following ones took its rank.',
-    'Schublade entfernt; die folgenden sind aufgerückt.', 'Cajón quitado; los siguientes han tomado su rango.'
+  dwRemove: ['Supprimer ce tiroir', 'Delete this drawer', 'Diese Schublade löschen', 'Eliminar este cajón'],
+  dwRemoved: ['Tiroir supprimé ; les suivants ont pris son rang.', 'Drawer deleted; the following ones took its rank.',
+    'Schublade gelöscht; die folgenden sind aufgerückt.', 'Cajón eliminado; los siguientes han tomado su rango.'
   ],
   dwTodoOf: ['Tiroir {name} : {what}', 'Drawer {name}: {what}', 'Schublade {name}: {what}', 'Cajón {name}: {what}'],
   dwTodo_noMessage: ['sans message', 'no message', 'keine Nachricht', 'sin mensaje'],
@@ -692,10 +725,7 @@ export const EDTX = {
     'Route: Berühren Sie einen Ort, um ihn der Folgeroute der Schublade {n} hinzuzufügen.',
     'Trazado: toque un lugar para añadirlo a la ruta siguiente del cajón {n}.'
   ],
-  // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir)
-  itEarlier: ['↑ Plus tôt', '↑ Earlier', '↑ Früher', '↑ Antes'], // SOG-0482 : la bande sous la ligne choisie de l'itinéraire
-  itLater: ['↓ Plus tard', '↓ Later', '↓ Später', '↓ Después'],
-  rtChipDel: ['Retirer {id} de la route', 'Remove {id} from the route', '{id} aus der Route entfernen', 'Quitar {id} de la ruta'],
+  // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir) // SOG-0482 : la bande sous la ligne choisie de l'itinéraire
   rtNoId: ['Ce lieu n\'a pas d\'identifiant : il n\'entre pas dans une route.',
     'This place has no identifier: it does not enter a route.',
     'Dieser Ort hat keine Kennung: er kommt nicht in eine Route.', 'Este lugar no tiene identificador: no entra en una ruta.'

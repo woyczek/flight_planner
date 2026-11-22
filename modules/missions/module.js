@@ -61,6 +61,7 @@ export const meta = {
     '../../frame/lib/precision.js', // SOG-0516 : les paliers d'un posé de précision, importés par drawers.js (il importe crossing.js et untrusted.js, déjà là)
     '../../frame/lib/geo.js', // SOG-0468 (2) : gcNm, que crossing.js importera (V3 Frame ; cas I26)
     '../../frame/lib/sortlist.js', // SOG-0487 : le tableau triable du registre (il importe untrusted.js, déjà là)
+    '../../frame/lib/reorder.js', // SOG-0482 (lot 3) : le bloc des flèches « ↑ Plus tôt » / « ↓ Plus tard » (V3 Frame, pur, sans import), importé par editor_view.js
     '../../frame/lib/fold.js', // SOG-0508 : les plis de la fenêtre des briques, importés par editor_view.js (pur, sans import)
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
@@ -1722,7 +1723,8 @@ function onClick(s, e) {
   // SOG-0487 : un « ⋯ » ouvert se ferme dès qu'on touche ailleurs
   for (const d of s.el.querySelectorAll('details.ms-rmore[open]'))
     if (!d.contains(e.target)) d.open = false;
-  const row = !s.open && e.target.closest('[data-id]');
+  // lot 3 : les flèches du bloc du cadre (frame/lib/reorder.js) portent un `data-id` — ce n'est pas une ligne du registre ; l'atelier n'en a pas non plus
+  const row = !s.open && !s.ed && !e.target.closest('.f-reorder') && e.target.closest('[data-id]');
   if (row) return openMission(s, s.rows.find(r => r.id === row.dataset.id));
   const b = e.target.closest('[data-do]');
   if (!b) return;

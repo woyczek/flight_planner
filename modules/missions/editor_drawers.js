@@ -692,7 +692,8 @@ export function withDrawerRows(doc, rows) {
       }
       return o;
     },
-    kept = [];
+    kept = [],
+    posOf = new Map();
   let count = 0;
   before.forEach((p, i) => {
     // une partie que le lecteur refuse n'est pas un tiroir : elle reste à sa place
@@ -700,10 +701,23 @@ export function withDrawerRows(doc, rows) {
     const r = byI.get(i);
     if (!r) return; // la ligne retirée : sa partie part
     count += 1;
+    posOf.set(i, kept.length); // la place de cette partie dans le fichier écrit (SOG-0482, lot 3 : un tiroir se déplace)
     kept.push(edit({
       ...p
     }, r, prev.find(x => x.i === i)) || p);
   });
+  // l'ORDRE des lignes est l'ordre d'ouverture : quand il n'est plus celui des parties lues, elles reprennent les places des parties lues dans l'ordre des lignes
+  // (une partie que le lecteur refuse reste à sa place ; chaque partie garde son identifiant et sa suite de route)
+  {
+    const have = [...posOf.keys()],
+      want = list.filter(r => Number.isInteger(r.i) && posOf.has(r.i)).map(r => r.i);
+    if (want.length === have.length && want.some((x, k) => x !== have[k])) {
+      const parts = new Map(have.map(i => [i, kept[posOf.get(i)]]));
+      have.forEach((slot, k) => {
+        kept[posOf.get(slot)] = parts.get(want[k]);
+      });
+    }
+  }
   const taken = new Set(prev.filter(p => byI.has(p.i)).map(p => p.id));
   for (const r of list) {
     if (Number.isInteger(r.i) && slots.has(r.i)) continue;

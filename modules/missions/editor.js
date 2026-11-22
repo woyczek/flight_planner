@@ -1638,11 +1638,12 @@ export function routeMoveStart(route, n, step) {
   };
 }
 
-/** Les lignes de l'itinéraire (SOG-0482, lot 1) : UNE liste ordonnée de ce que le pilote vivra — le départ ; chaque lieu de la route du
+/** Les lignes de l'itinéraire (SOG-0482, lots 1 et 3) : UNE liste ordonnée de ce que le pilote vivra — le départ ; chaque lieu de la route du
  *  départ dans son ordre (hors les ancres ORIGIN et DESTINATION, qui sont le départ et l'arrivée) ; puis, tiroir par tiroir dans l'ordre
- *  du fichier, une ligne de tiroir et, EN RETRAIT sous elle, le lieu que sa clé cite (une zone de passage, un objet à trouver) quand la
- *  route du départ ne le porte pas déjà, puis chaque lieu de sa suite de route ; l'arrivée ; enfin « hors itinéraire » : les autres lieux,
- *  dans l'ordre des lignes. Un lieu cité deux fois a deux lignes (leur clé `at` les distingue). Un jeton qui ne désigne aucun lieu, ou un
+ *  du fichier, une ligne de tiroir et, EN RETRAIT sous elle, chaque lieu de sa suite de route SEULEMENT (lot 3 : la clé d'un tiroir — une zone
+ *  de passage, un objet à trouver — n'est PAS une ligne : elle est dite dans la ligne du tiroir et son lieu se modifie dans sa fiche) ; l'arrivée ;
+ *  enfin « hors itinéraire » : tout lieu qui n'est pas une étape (un lieu que la clé d'un tiroir cite y figure : « clé du tiroir N » ; sa fiche est aussi
+ *  dans celle de son tiroir). Un lieu cité deux fois a deux lignes (leur clé `at` les distingue). Un jeton qui ne désigne aucun lieu, ou un
  *  lieu que `shown(i)` cache (l'atelier voilé), n'a pas de ligne. `rows` : les lignes des Lieux ; `route` : les jetons de la route du
  *  départ ; `drawers` : [{ id, key, zone, object, route }] dans l'ordre (vide en atelier voilé) ; `now(id)` : l'identifiant d'aujourd'hui
  *  d'un lieu cité par le fichier. Des entrées hostiles (un texte, null, un nombre) sont lues comme absentes : jamais d'exception.
@@ -1702,10 +1703,6 @@ export function itinRows(rows, route, drawers, o = {}) {
       in: false,
       at: `drawer:${d.id}`
     });
-    const kind = d.key === 'zone' ? 'zone' : d.key === 'object' ? 'object' : '',
-      cited = kind ? up(now(d[kind])) : '',
-      ki = cited ? list.findIndex(r => r && r.kind === kind && r.id && up(r.id) === cited) : -1;
-    if (ki >= 0 && ok(ki) && !onRoute.has(ki)) place('key', ki, -1, d.id, true);
     (Array.isArray(d.route) ? d.route : []).forEach((w, n) => {
       const i = by.get(up(now(w)));
       if (i !== undefined && ok(i) && stop(i) && list[i].kind !== 'dep' && list[i].kind !== 'arr') place('drawer', i, n, d.id, true);
