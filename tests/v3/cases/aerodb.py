@@ -20284,3 +20284,33 @@ def k509(c):
             got = (r.reason, r.code)
         c.eq(got, ('unrecognised', 'bad-values'), 'the writer refuses a non-finite value with the code `bad-values`', what='writer')
         c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], 'and writes nothing', what='nothing written')
+
+
+@case('K511', 'Belgian AIP, SOG-0541: the build NEVER merges two sets of the ENR 3.2 — the zone holds the set in force and the one in advance, but `list_inputs` (what the build reads) and `aero_cycles.report` (the cycle of the zone) take the set IN FORCE at the day of the build only; the set in advance sleeps in `zones/be/` and is read from its date, into the base folder of ITS cycle',
+      'K', static=True,
+      rule='Relay and ergonomist, 22 Nov 2026 (SOG-0541, decision 3): « la construction ne fusionne jamais deux jeux » — found before the push: the build reads every file of a zone folder, so a set dropped in advance would have been merged with the one in force (the segments of both, a folder dated at the cycle of the set in advance, no Belgian route before it). First step accepted: the filter by the day of the build; limit in DECISIONS (a flight calculated before the first build from the effective date uses the set in force)')
+def k511(c):
+    import datetime
+    import importlib
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aero_cycles as A
+    B = importlib.import_module('regen.base')
+    d = datetime.date
+    old, new = 'aimbe_be_enr_20260219_20261122.geojson', 'aimbe_be_enr_20261126_20261122.geojson'
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        zone = Path(td) / 'sia' / 'zones' / 'be'
+        zone.mkdir(parents=True)
+        for n in (old, new, 'other_be.geojson'):
+            (zone / n).write_text('{}', encoding='utf-8')
+        reads = lambda day: sorted(r for r in B.list_inputs(td, day) if r.startswith('zones/be/'))
+        c.eq(reads(d(2026, 11, 22)), ['zones/be/' + old, 'zones/be/other_be.geojson'], 'the day before the set in advance takes effect, the build reads the set in force ONLY (not the two: red without the filter), and the files of other sources are not touched', what='before')
+        c.eq(reads(d(2026, 11, 25)), ['zones/be/' + old, 'zones/be/other_be.geojson'], 'the day before the effective date: still the set in force', what='day before')
+        c.eq(reads(d(2026, 11, 26)), ['zones/be/' + new, 'zones/be/other_be.geojson'], 'on the effective date the build reads the new set ONLY, which enters the base folder of its cycle', what='on the date')
+        c.eq(reads(d(2025, 1, 1)), ['zones/be/other_be.geojson'], 'before every set: no Belgian set at all (no route before the first one)', what='none in force')
+    rels = ['zones/be/' + old, 'zones/be/' + new]
+    c.eq([A.report(rels, day)['aimbe']['cycle'] for day in (d(2026, 11, 22), d(2026, 11, 26))], ['2026-10-29', '2026-11-26'], 'the cycle of the zone is the one of the set the build reads: the set in advance does not give its cycle before its date', what='report')
+    c.eq([A.aimbe_selected(rels, day) for day in (d(2026, 11, 22), d(2026, 11, 26), d(2025, 1, 1))], ['zones/be/' + old, 'zones/be/' + new, None], 'the selection: the newest set whose amendment date is not after the day', what='selected')
+    c.eq(A.aimbe_selected(['zones/be/aimbe_be_enr_99991231_99991231.geojson', 'zones/fr/aimbe_be_enr_20260219_20261122.geojson'], d(2026, 11, 22)), None, 'a name planted with a year outside 2000-2100, or in another zone, is no set', what='planted')

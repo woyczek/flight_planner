@@ -381,7 +381,7 @@ def check(a):
 SIA_RAW = aero_cycles.SIA_RAW  # les XML bruts du SIA (la racine de data/sia/ avant le déplacement ; leur nouvel emplacement : tools/aero_cycles.py)
 
 
-def list_inputs(data):
+def list_inputs(data, today=None):
     """Fichiers que la construction peut lire : { chemin relatif (avec « / »): chemin absolu }. Dans data/sia/ : à la racine les XML (SIA, AIXM, axes ENR 5.7) et mora.csv ; openaip/, aixm5/,
     geojson/ et zones/<zone>/ : les fichiers .xml .geojson .json .txt .air. Les XML bruts du SIA se lisent d'abord dans data/local/sources/sia/<cycle>/ (l'emplacement nouveau) et, à défaut,
     à l'ancien, la racine de data/sia/ (repli le temps du déplacement) : un même nom aux deux endroits se lit à data/sia/ (SOG-0144 : cette copie-là la page la lit sans route du travail ; avant, l'emplacement nouveau l'emportait). Ni lien, ni nom hors de SAFE_NAME, ni fichier caché. Le tri
@@ -409,6 +409,8 @@ def list_inputs(data):
         zdirs = []
     for z in zdirs:
         scan(os.path.join(root, 'zones', z), f'zones/{z}/', lambda n: bool(INPUT_EXT.search(n)))
+    keep = set(aero_cycles.aimbe_filter(out, today))      # SOG-0541 : de l'ENR 3.2 de Belgique, seul le jeu en vigueur est lu (un jeu publié à l'avance dort dans zones/be/, deux jeux ne se fusionnent pas)
+    out = {rel: path for rel, path in out.items() if rel in keep}
     for name, (_, path) in aero_cycles.moved_sources(data).items():
         out.setdefault(name, path)      # SOG-0144 : un même nom aux deux endroits se lit à data/sia/ (la copie que la page lit sur /data/sia/, sans la route du travail : un lanceur plus ancien, un dossier d'entrées copié à la main)
     return out

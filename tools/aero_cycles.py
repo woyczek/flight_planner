@@ -92,12 +92,37 @@ def cycled(rel, root=None, today=None):
     return None
 
 
+def aimbe_selected(rels, today=None):
+    """SOG-0541 : le SEUL fichier de l'ENR 3.2 de Belgique que la construction lit : le jeu EN VIGUEUR à `today` (le plus récent dont la date d'amendement n'est pas après aujourd'hui) ; un jeu publié à l'avance dort dans zones/be/ jusqu'à sa date, un jeu plus ancien n'est jamais mêlé (la construction lit tous les fichiers d'un dossier : deux jeux se fusionneraient). Rend le chemin relatif (avec « / ») ou None."""
+    today = today or datetime.date.today()
+    best = None
+    for rel in rels:
+        rel = str(rel).replace(chr(92), '/')
+        m = _AIMBE.match(rel)
+        if not m or not all(2000 <= int(x) <= 2100 for x in (m.group(1), m.group(4))):
+            continue
+        try:
+            key = (datetime.date(*map(int, m.groups()[:3])), datetime.date(*map(int, m.groups()[3:])))
+        except ValueError:
+            continue
+        if key[0] <= today and (best is None or key > best[0]):
+            best = (key, rel)
+    return best[1] if best else None
+
+
+def aimbe_filter(rels, today=None):
+    """Les chemins `rels` sans les fichiers de l'ENR 3.2 de Belgique que la construction ne lit pas (voir aimbe_selected) ; l'ordre est gardé."""
+    rels = list(rels)
+    keep = aimbe_selected(rels, today)
+    return [r for r in rels if not _AIMBE.match(str(r).replace(chr(92), '/')) or str(r).replace(chr(92), '/') == keep]
+
+
 def report(rels, today=None, root=None):
     """{ source cyclée: { cycle (le plus récent de ses fichiers présents, None sans fichier), current, stale } } pour un ensemble de
     chemins relatifs de data/sia/ (root : ce dossier, pour lire le cycle des jeux ENAIRE) ; stale : un cycle connu plus ancien que le cycle en vigueur."""
     current = airac_start(today)
     best = dict.fromkeys(CYCLED)
-    for rel in rels:
+    for rel in aimbe_filter(rels, today):      # SOG-0541 : la Belgique ne compte que le jeu que la construction lit
         hit = cycled(rel, root, today)
         if hit and (best[hit[0]] is None or hit[1] > best[hit[0]]):
             best[hit[0]] = hit[1]
