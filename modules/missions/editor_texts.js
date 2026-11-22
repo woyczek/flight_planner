@@ -357,11 +357,15 @@ export const EDTX = {
     'Mostrar esta zona al piloto desde la salida'
   ],
   dwObject: ['Objet de la mission', 'Object of the mission', 'Objekt der Mission', 'Objeto de la misión'],
-  dwNoZone: ['Aucune zone dans cette mission — créez-la dans les Lieux.', 'No zone in this mission — create it in the Places.',
-    'Keine Zone in dieser Mission — legen Sie sie in den Orten an.', 'Ninguna zona en esta misión — créela en los Lugares.'
+  dwNoZone: ['Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous.',
+    'No zone for this key: draw it with “Draw on the map”, below.',
+    'Keine Zone für diesen Schlüssel: zeichnen Sie sie unten mit „Auf der Karte zeichnen“.',
+    'Ninguna zona para esta llave: dibújela con «Dibujar en el mapa», más abajo.'
   ],
-  dwNoObject: ['Aucun objet dans cette mission — créez-le dans les Lieux.', 'No object in this mission — create it in the Places.',
-    'Kein Objekt in dieser Mission — legen Sie es in den Orten an.', 'Ningún objeto en esta misión — créelo en los Lugares.'
+  dwNoObject: ['Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.',
+    'No object for this key: pose it with “Pose on the map”, below.',
+    'Kein Objekt für diesen Schlüssel: setzen Sie es unten mit „Auf der Karte setzen“.',
+    'Ningún objeto para esta llave: póngalo con «Poner en el mapa», más abajo.'
   ],
   dwToPlaces: ['Ouvrir les Lieux', 'Open the Places', 'Orte öffnen', 'Abrir los Lugares'],
   dwLineNoTitle: ['sans titre', 'no title', 'kein Titel', 'sin título'],

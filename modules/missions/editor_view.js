@@ -1508,7 +1508,8 @@ function edItinHtml(s, doc, run = null) {
       object: EDTX.plObject
     },
     route = edRoute(e),
-    ok = edStepOk(e, doc, 'places'),
+    ok = edStepOk(e, doc, 'places') && !lines.some(l => l.kind === 'place' && l.where !== 'out' && said.needs(rows[l
+      .i])), // lot 4 : « ! » dès qu'une ligne est à remplir ou à placer
     todo = new Set(edDrawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
     id = e.cadre.id.trim().toUpperCase(),
@@ -3629,9 +3630,9 @@ function edDrawerHtml(s, doc) {
     },
     check = (f, text, on) => `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${f}"${on ? ' checked' : ''}><span>${esc(s.tt(text))}</span></label>`,
     // rien à choisir : la fiche le dit et mène aux Lieux, où la zone ou l'objet se crée
-    none = text => `<p class="f-muted" data-dwnone>${esc(s.tt(text))} <button type="button" class="f-linkbtn" data-do="eddrplaces">${esc(s.tt(EDTX.dwToPlaces))}</button></p>`,
+    none = text => `<p class="f-muted" data-dwnone>${esc(s.tt(text))}</p>`, // lot 4 : la phrase nomme le geste de cet écran (« Poser sur la carte »), plus de lien vers les Lieux
     // avec la carte : la zone ou l'objet se pose aussi sur elle, et devient la clé de ce tiroir
-    onMap = (kind, text) => EM.stateOf(e) ? `<p class="ms-dwdraw"><button type="button" class="f-linkbtn" data-do="eddrdraw" data-kind="${kind}">${esc(s.tt(text))}</button></p>` : '',
+    onMap = (kind, text) => `<p class="ms-dwdraw"><button type="button" class="f-linkbtn" data-do="eddrdraw" data-kind="${kind}">${esc(s.tt(text))}</button></p>`, // lot 4 : au téléphone la carte est repliée, « Poser sur la carte » la déplie
     num = ' inputmode="decimal" maxlength="8"',
     // SOG-0500 : les lieux d'une règle (un point, ou un objet suivi), pour la condition et pour chaque étape d'une suite
     ruleOpts = {
@@ -4158,13 +4159,23 @@ function thumbHtml(s, doc, run = null) {
 /** Ce qui suit la frappe, mis à jour SUR PLACE (SOG-0449 : on ne redessine pas ce que le doigt est en train de presser — les pastilles
  *  d'étape, remplacées à chaque saisie et à chaque sortie de champ, perdaient le clic qui suivait) : le titre, la ligne et la marque de
  *  chaque groupe, le déroulé, le croquis, « À compléter », les lignes des Lieux (titre et détail). Aucun bouton n'est remplacé ; seuls des textes et des attributs changent. */
+/** Aucune ligne de l'itinéraire n'est à remplir ni à placer (lot 4 : la marque de l'en-tête « Itinéraire » suit ses lignes). */
+function edItinOk(s, doc) {
+  const {
+    rows,
+    lines
+  } = edItinLines(s, doc),
+    said = edPlaceTexts(s, rows, doc);
+  return !lines.some(l => l.kind === 'place' && l.where !== 'out' && said.needs(rows[l.i]));
+}
+
 function edRefresh(s) {
   const e = s.ed,
     doc = edDoc(e),
     q = sel => s.el.querySelector(sel);
   put(q('[data-edhead]'), [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '));
   for (const k of ED.STEPS) {
-    const ok = edStepOk(e, doc, k),
+    const ok = edStepOk(e, doc, k) && (k !== 'places' || edItinOk(s, doc)),
       mark = q(`[data-mark="${k}"]`);
     put(q(`[data-line="${k}"]`), edLine(s, doc, k));
     put(mark, ok ? '✓' : '!');
@@ -4592,7 +4603,7 @@ export function edClick(s, b) {
       // en main, la carte dépliée ; ce qui sera posé deviendra la clé de ce tiroir
       const e = s.ed,
         kind = b.dataset.kind === 'object' ? 'object' : 'zone';
-      if (!EM.stateOf(e) || !edDrawerRow(e)) return;
+      if (!edDrawerRow(e)) return;
       e.tool = kind;
       e.drawFor = e.sel;
       e.placeFor = -1;

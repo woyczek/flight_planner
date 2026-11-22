@@ -4435,11 +4435,9 @@ def n73(c):
     dw_key(c, 'object')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
     none = c.text(f'{E} [data-drawer] [data-dwnone]')
-    c.ok(norm(row(c, 'dwNoObject', EDTX_FILE)) in norm(none) and c.count(f'{E} [data-drawer] [data-f=object]') == 0, none,
-         '« Aucun objet dans cette mission — créez-le dans les Lieux », never an empty list')
-    c.tap(f'{E} [data-drawer] [data-do="eddrplaces"]')
-    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the link opens the Lieux of the departure')
-    c.eq(c.js(f"document.querySelector('{E}').dataset.step"), 'places', 'the Lieux are unfolded', what='the open group')
+    c.ok(norm(none) == 'Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.' and c.count(f'{E} [data-drawer] [data-f=object]') == 0, none,
+         '« Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous. » (SOG-0482 lot 4: it names the gesture of the screen, no link to the Lieux), never an empty list')
+    c.eq([c.count(f'{E} [data-drawer] [data-dwnone] button'), c.js(f"[...document.querySelectorAll('{E} [data-drawer] [data-do=eddrdraw]')].map(b => b.textContent.trim())")], [0, ['Poser sur la carte']], 'no link in the sentence; the gesture it names, « Poser sur la carte », is below it (offered at 390 too, where the map is folded)', what='the gesture')
     # a new mission: the Cadre unfolded, no drawer
     ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
@@ -14112,3 +14110,38 @@ def n220(c):
         c.eq(detail('start:1'), '44°48′N 1°12′E', f'{width}: a point of the route keeps its coordinates', what='point')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+_L4_MARK = f"(() => {{ const m = document.querySelector('{E} [data-atflow] [data-mark=places]'); return [m.textContent.trim(), m.dataset.kind, document.querySelector('{E} [data-atflow] [data-line=places]').textContent.trim()] }})()"
+_L4_TODOBTN = f"(document.querySelector('{E} [data-edtodobtn]').textContent.match(/\((\d+)\)/) || [0, ''])[1]"
+
+
+@case('N221', 'Missions › the itinerary says what it is (SOG-0482, lot 4, correction): in a mission created, the header « Itinéraire » carries « ! » as long as a line of the itinerary is to fill in or to place (the Departure, the Arrival, a new point), '
+      'and the key of a drawer with nothing to choose names the gesture of the screen: « Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous. » (« Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous. »)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 4 (the ergonomist: the header follows its lines; the sentence names the gesture present): editor_view.js `edItinHtml`, `edItinOk`, `none`; editor_texts.js `dwNoObject`, `dwNoZone`')
+def n221(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _ED_TEXTS)
+        c.js(_MD_CLEAR)
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", timeout=10000, what='the itinerary of a new mission')
+        mark = c.js(_L4_MARK)
+        c.eq(mark[:2], ['!', 'warn'], f'{width}: a new mission: Departure and Arrival are « à remplir »: the header of the itinerary carries « ! », not « ✓ » (it said « aucun lieu » with a tick before)', what='header mark')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => x.dataset.at)"), ['dep', 'arr'], f'{width}: the lines to fill in are the Departure and the Arrival', what='lines')
+        before = c.js(_L4_TODOBTN)
+        _plus_add(c, 'pt')
+        c.until(f"!!document.querySelector('{E} [data-plform]')", what='the new point')
+        c.eq(c.js(_L4_MARK)[:2], ['!', 'warn'], f'{width}: a point « à placer » is one more line to place: the mark stays « ! »', what='after a point')
+        c.ok(before.isdigit() and c.js(_L4_TODOBTN).isdigit(), [before, c.js(_L4_TODOBTN)], f'{width}: « À compléter » keeps counting from the fields of the Cadre (read before the point: {before}, after: {c.js(_L4_TODOBTN)}) — the header mark does not touch it')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        c.js(_MD_CLEAR)
+    # the key with nothing to choose: on screen in N73 (the object); the four languages of both sentences are read here
+    src = open(EDTX_FILE, encoding='utf-8').read()
+    for sentence in ('Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous.', 'No zone for this key: draw it with “Draw on the map”, below.',
+                     'Keine Zone für diesen Schlüssel: zeichnen Sie sie unten mit „Auf der Karte zeichnen“.', 'Ninguna zona para esta llave: dibújela con «Dibujar en el mapa», más abajo.',
+                     'Aucun objet pour cette clé : posez-le avec « Poser sur la carte », ci-dessous.', 'No object for this key: pose it with “Pose on the map”, below.',
+                     'Kein Objekt für diesen Schlüssel: setzen Sie es unten mit „Auf der Karte setzen“.', 'Ningún objeto para esta llave: póngalo con «Poner en el mapa», más abajo.'):
+        c.ok(sentence in src, sentence, 'the sentence of a key with nothing to choose names its gesture, in this language')
