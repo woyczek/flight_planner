@@ -2,7 +2,7 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-22",
+  "at": "2026-11-23",
   "tests": 383,
   "verdicts": 242
  },
