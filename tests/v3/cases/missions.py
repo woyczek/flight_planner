@@ -4534,7 +4534,9 @@ def n74(c):
     c.eq(c.js(_PLACE_AT, 'ZONE-1'), -1, 'the second press removes the zone', what='the zone row')
     c.ok('drawerNoKey' in c.js(_ED_TODO) and ' 2 ' in c.js(_ED_TODO_TEXT), c.js(_ED_TODO_TEXT), '« À compléter » names the drawer 2, left without its key')
     key2 = c.js(f"document.querySelector('{E} [data-atflow] [data-part=\"2\"]').textContent")
-    c.ok(norm(row(c, 'atKey_hand', EDTX_FILE)) in norm(key2), key2, 'the unfolding says the key of drawer 2 as it is now: the pilot\'s gesture')
+    # SOG-0482 lot 4: the line says the key of the sheet, to pose; the fallback of the reader (the pilot would open it by his gesture) stays measured above (`read`: 'hand') and below (the file has no trigger_zone, « À compléter » names the drawer)
+    c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dmark="2"], {E} [data-atflow] [data-dkey="2"]')].map(x => x.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim())"""),
+         ['!', 'clé : zone de passage · à poser'], 'the unfolding says the key of drawer 2 as its sheet says it: the zone to cross, to pose, with « ! » (the reader would open it by the pilot\'s gesture: measured by the file below)', what='the key line')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -11775,10 +11777,20 @@ def n157(c):
     to_fill = norm(row(c, 'atLine_none', EDTX_FILE))
     lies = [k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!']
     c.eq(lies, [], 'no group says « à remplir » with a tick', what='tick against « à remplir »')
-    c.eq([g['places'][0], norm(g['places'][1])], ['✓', norm(row(c, 'atLine_noplace', EDTX_FILE))],
-         '« Lieux » with only its endpoints: the tick, and a line that says what it holds (no place), not « à remplir »', what='Lieux')
+    # SOG-0482 lot 4: the Departure and the Arrival of a mission created are lines « ! à remplir » of the itinerary, so the group takes « ! » (until now the endpoints were empty and not lines: the tick)
+    c.eq([g['places'][0], norm(g['places'][1])], ['!', norm(row(c, 'atLine_noplace', EDTX_FILE))],
+         '« Lieux » of a mission created: its Departure and Arrival are to fill in: « ! », and a line that says what it holds (no place), not « à remplir »', what='Lieux, endpoints to fill in')
     c.eq([[k, g[k][0], norm(g[k][1])] for k in ('teams', 'risks', 'timeline')], [[k, '!', to_fill] for k in ('teams', 'risks', 'timeline')],
          'the groups a mission does lack keep « ! » and « à remplir »', what='the others')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    # (a) the original fact, unchanged: the Departure and the Arrival FILLED (with their position), no other place: the tick and « aucun lieu », no group says « à remplir » with a tick
+    _ed_open(c, 'mission: { id: X-001A, type: REG }\ntitle: Liaison\norigin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\ndestination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }\n')
+    ed_reveal(c)
+    c.until(f"!!document.querySelector('{E} [data-atflow] [data-mark=places]')", timeout=10000, what='the itinerary')
+    g = c.js(_MARKS_JS)
+    c.eq([[k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!'], g['places'][0], norm(g['places'][1])], [[], '✓', norm(row(c, 'atLine_noplace', EDTX_FILE))],
+         '(a) the Departure and the Arrival filled, no other place: « Lieux » keeps the tick and « aucun lieu »; no group says « à remplir » with a tick', what='Lieux, endpoints filled')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
