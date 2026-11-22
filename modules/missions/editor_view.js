@@ -1234,7 +1234,10 @@ const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'story' ? e
 
 /** Ce que dit la ligne d'un tiroir de sa clé (lot 3 : la clé n'est plus une ligne en retrait, elle est dite ici) : « clé : objet à trouver · OBJ-1 Naufragé »,
  *  « clé : heure · H + 60 min », « clé : zone de passage · ZONE-1 » — les phrases de clé d'aujourd'hui (atKey_<sorte>), puis ce qu'elle désigne. `d` : un tiroir du lecteur. */
-function edKeyLine(s, d) {
+function edKeyLine(s, d, rows = []) {
+  // lot 4 : la clé de la fiche — le lecteur la lit « geste du pilote » quand l'objet ou la zone manque ; la ligne dit alors la clé de la fiche, « à poser »
+  const row = rows.find(x => x.id === d?.id);
+  if (row && ['object', 'zone'].includes(row.key) && !['object', 'zone'].includes(d?.key?.kind)) return `${s.tt(EDTX[`atKey_${row.key}`])} · ${s.tt(EDTX.itKeyToPose)}`;
   const k = d?.key || {},
     base = s.tt(EDTX[`atKey_${k.kind}`] || EDTX.atKey_hand),
     n = Number.isFinite(+k.delayMin) ? +k.delayMin : 0,
@@ -1495,6 +1498,7 @@ function edItinHtml(s, doc, run = null) {
       rows,
       shown,
       reader,
+      drows,
       lines
     } = edItinLines(s, doc),
     said = edPlaceTexts(s, rows, doc),
@@ -1542,7 +1546,7 @@ function edItinHtml(s, doc, run = null) {
     if (l.kind === 'drawer') {
       const d = reader.find(x => x.id === l.drawer);
       if (!d) return;
-      html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(edKeyLine(s, d))}</span></button>`);
+      html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(edKeyLine(s, d, drows))}</span></button>`);
       if (sel === d.id && !run) {
         strip = true;
         html.push(edItinDrawerMoveHtml(s, d, reader, edPlusHtml(s, `drawer:${d.id}`, rows, lines, reader, said.title)), edDrawerHtml(s, doc));
@@ -4195,7 +4199,7 @@ function edRefresh(s) {
     const mark = q(`[data-dmark="${d.rank}"]`),
       bad = dtodo.has(String(d.rank));
     put(q(`[data-dtitle="${d.rank}"]`), `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`);
-    put(q(`[data-dkey="${d.rank}"]`), edKeyLine(s, d));
+    put(q(`[data-dkey="${d.rank}"]`), edKeyLine(s, d, edDrawers(e)));
     put(mark, bad ? '!' : '✓');
     putData(mark, 'kind', bad ? 'warn' : 'ok');
   }

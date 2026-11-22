@@ -14139,6 +14139,21 @@ def n221(c):
         c.js(_REG_CLEAR)
         c.js(_MD_CLEAR)
     # the key with nothing to choose: on screen in N73 (the object); the four languages of both sentences are read here
+    # the line of a drawer says the key of its sheet: keyed by an object the mission does not have, it says « clé : objet à trouver · à poser » with « ! » (it said « clé : geste du pilote »)
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _AT_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+    ed_reveal(c)
+    c.until(f"!!document.querySelector('{E} [data-atflow] [data-sel=\"B\"]')", timeout=10000, what='the drawers')
+    c.tap(f'{E} [data-atflow] [data-sel="B"]')
+    c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
+    dw_key(c, 'object')
+    c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
+    c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dkey], {E} [data-atflow] [data-dmark]')].filter(x => x.dataset.dkey === '1' || x.dataset.dmark === '1').map(x => x.textContent.replace(/[\s  ]+/g, ' ').trim())"""),
+         ['!', 'clé : objet à trouver · à poser'], 'the line of the drawer says the key of its sheet, the object to pose, with « ! »', what='the key line')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
     src = open(EDTX_FILE, encoding='utf-8').read()
     for sentence in ('Aucune zone pour cette clé : dessinez-la avec « Dessiner sur la carte », ci-dessous.', 'No zone for this key: draw it with “Draw on the map”, below.',
                      'Keine Zone für diesen Schlüssel: zeichnen Sie sie unten mit „Auf der Karte zeichnen“.', 'Ninguna zona para esta llave: dibújela con «Dibujar en el mapa», más abajo.',
