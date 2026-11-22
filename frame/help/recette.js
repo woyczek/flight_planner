@@ -265,6 +265,9 @@
     'si se presenta la ocasión'
   ];
   T.pathAll = ['Tout le chemin est bon', 'The whole path is good', 'Der ganze Pfad ist gut', 'Todo el recorrido está bien'];
+  T.pathBlocked = ['Étape {n} mauvaise : le chemin ne peut pas être validé.', 'Step {n} is bad: the path cannot be marked good.',
+    'Schritt {n} ist schlecht: der Pfad kann nicht als gut gelten.', 'El paso {n} está mal: el recorrido no puede darse por bueno.'
+  ]; // « Tout le chemin est bon » est inactif tant qu’un pas est mauvais
   T.stepResult = ['Résultat de l’étape {n}', 'Result of step {n}', 'Ergebnis von Schritt {n}', 'Resultado del paso {n}'];
   T.stepCommentFor = ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt',
     '{p}, paso {n}: qué falla'
@@ -639,11 +642,12 @@
       const played = p.steps.filter((s, i) => stepState(PA.stepKey(p.id, i))).length,
         mineT = tests.filter(x => cover.get(x.id) === p.id).sort((a, b) => a.id.localeCompare(b.id)),
         todoN = mineT.filter(x => !verdictOf(x)).length,
-        allGood = p.steps.every((s, i) => s.optional || stepState(PA.stepKey(p.id, i)) === 'ok');
+        allGood = p.steps.every((s, i) => s.optional || stepState(PA.stepKey(p.id, i)) === 'ok'),
+        badAt = p.steps.map((s, i) => stepState(PA.stepKey(p.id, i)) === 'ko' ? i + 1 : 0).filter(Boolean);
       return `<details class="f-rc-sec f-rc-path" data-path="${esc(p.id)}"${pathOpen(p) ? ' open' : ''}><summary><b><span class="f-rm-id">${esc(p.id)}</span> <span lang="fr">${esc(p.title)}</span></b>${p.where ? ` <small class="f-muted" lang="fr" data-where>${esc(p.where)}</small>` : ''}${p.steps.length ? ` <small class="f-muted" data-progress>${esc(t(T.stepsDone, { k: played, n: p.steps.length }))}</small>` : ''}${p.note ? ` <small class="f-muted" lang="fr" data-summary-note>${esc(p.note)}</small>` : ''}</summary>
         ${p.note || p.ref ? `<p class="f-muted" data-path-note>${p.note ? `<span lang="fr">${esc(p.note)}</span>` : ''}${p.ref ? ` <span class="f-rm-id">${esc(p.ref)}</span>` : ''}</p>` : ''}
         ${p.steps.length ? `<ol class="f-rc-list" data-steps>${p.steps.map((s, i) => stepHtml(p, s, i)).join('')}</ol>` : ''}
-        ${p.steps.length && !allGood ? `<div class="f-row"><button type="button" class="primary" data-path-all="${esc(p.id)}">${esc(t(T.pathAll))}</button></div>` : ''}
+        ${p.steps.length && !allGood ? `<div class="f-row"><button type="button" class="primary" data-path-all="${esc(p.id)}"${badAt.length ? ' disabled' : ''}>${esc(t(T.pathAll))}</button></div>${badAt.length ? `<p class="f-warn" data-path-blocked>${esc(t(T.pathBlocked, { n: badAt.join(', ') }))}</p>` : ''}` : ''}
         ${mineT.length ? `<details class="f-rc-covered" data-covered="${esc(p.id)}"${ui.copen[p.id] ? ' open' : ''}><summary>${esc(cnt(T.covered, mineT.length))}${todoN ? ` · ${esc(sumPart(t, 'todo', todoN))}` : ''}</summary><ul class="f-rc-list">${mineT.map(x => item(x)).join('')}</ul></details>` : ''}</details>`;
     };
     /** Change l'état de pas ([{ key, state: 'ok' | 'ko' | null, comment? }]) et écrit le verdict de leurs fiches d'après tous les pas qui les citent (derive) : UN enregistrement, UNE note, UN « Annuler ». */
@@ -772,7 +776,8 @@
     };
     const pathAll = pid => {
       const p = P?.paths.find(q => q.id === pid);
-      if (!p) return;
+      if (!p || p.steps.some((s, i) => stepState(PA.stepKey(p.id, i)) === 'ko'))
+        return; // un chemin qui a un pas mauvais ne se valide jamais en bloc
       const changes = p.steps.map((s, i) => ({
         key: PA.stepKey(p.id, i),
         s

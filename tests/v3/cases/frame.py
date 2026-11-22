@@ -4798,7 +4798,7 @@ def _paths_fixture(garbage=None):
     fx = _rc_fixture()
     st = lambda g, f, **kw: {'gesture': g, 'expect': 'Ce qu\'on doit voir : ' + g, 'fiches': [f'SOG-{n:04d}' for n in f], **kw}
     fx['paths'] = garbage if garbage is not None else {
-        'preamble': 'Relance le lanceur, puis recharge la page.', 'order': ['C1', 'C3', 'C2', 'C7'], 'majors_first': ['SOG-0308'],
+        'preamble': 'Préparez le poste avant le premier chemin.', 'order': ['C1', 'C3', 'C2', 'C7'], 'majors_first': ['SOG-0308'],
         'paths': [{'id': 'C1', 'title': 'Préparer un vol', 'where': 'ordinateur', 'steps': [st('Premier geste', (301, 302)), st('Deuxième geste', (302, 303)), st('Troisième geste', (304,), optional=True), st('Quatrième geste', (305,))]},
                   {'id': 'C3', 'title': '<img src=x onerror=window.__pwn=1>', 'where': 'téléphone', 'steps': [st('Cinquième geste', (303, 306))]},
                   {'id': 'C7', 'title': 'Parcours de l\'atelier', 'where': 'ordinateur', 'folded': True, 'note': 'À jouer après le jalon de l\'atelier.', 'ref': 'SOG-0526', 'covers': ['SOG-0307'], 'steps': []}],
@@ -4824,6 +4824,7 @@ def a362(c):
         'ok': ['Bon', 'Good', 'Gut', 'Bien'], 'ko': ['Mauvais', 'Bad', 'Schlecht', 'Mal'], 'skip': ['Non jouée', 'Not played', 'Nicht gespielt', 'No probado'],
         'optional': ['si l’occasion se présente', 'if the opportunity arises', 'wenn sich die Gelegenheit bietet', 'si se presenta la ocasión'],
         'all': ['Tout le chemin est bon', 'The whole path is good', 'Der ganze Pfad ist gut', 'Todo el recorrido está bien'],
+        'blocked': ['Étape {n} mauvaise : le chemin ne peut pas être validé.', 'Step {n} is bad: the path cannot be marked good.', 'Schritt {n} ist schlecht: der Pfad kann nicht als gut gelten.', 'El paso {n} está mal: el recorrido no puede darse por bueno.'],
         'noted': ['Chemin C1 : 1 fiche validée', 'Path C1: 1 card passed', 'Pfad C1: 1 Karte bestanden', 'Ruta C1: 1 ficha válida'],
         'comment': ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt', '{p}, paso {n}: qué falla'],
     }.items()}
@@ -4891,14 +4892,18 @@ def a362(c):
         c.tap('[data-skey="C1:1"][data-sbtn="ok"]')
         got = until_written(lambda g: 'SOG-0302' in g, '302 ok')
         c.eq([got['SOG-0302']['verdict'], 'SOG-0303' in got], ['ok', False], 'the fiche is ok when every step that cites it is good (303 waits for the step of C3)', what='step 2')
+        # ---- « the whole path is good » plays what is left of the path: the step to play (not the optional one, whose fiche keeps waiting), then the button is gone
+        c.tap('[data-path-all=C1]')
+        got = until_written(lambda g: 'SOG-0305' in g, '305 ok')
+        c.eq([got['SOG-0305']['verdict'], c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), c.js("document.querySelector('[data-step=\"C1:2\"]').dataset.state"), 'SOG-0304' in got, c.count('[data-path-all=C1]')], ['ok', 'ok', 'todo', False, 0], 'the whole path plays the step left to play, not the optional one (its fiche keeps waiting); the button is gone once every step to play is good', what='all C1')
         # ---- a bad step needs its words: the first touch opens the field and says so, nothing is written
         c.tap('[data-skey="C1:3"][data-sbtn="ko"]')
         c.until("!!document.querySelector('[data-step=\"C1:3\"] [data-step-comment]')", what='the field of the words')
-        c.eq([norm(c.text('[data-step="C1:3"] [data-need]')), norm(c.text('[data-step="C1:3"] [data-comment-for]')), 'SOG-0305' in written()], [need, norm(W['comment'].replace('{p}', 'C1').replace('{n}', '4')), False], 'the field says what it is for and asks for words; nothing is written', what='need')
+        c.eq([norm(c.text('[data-step="C1:3"] [data-need]')), norm(c.text('[data-step="C1:3"] [data-comment-for]')), written()['SOG-0305']['verdict']], [need, norm(W['comment'].replace('{p}', 'C1').replace('{n}', '4')), 'ok'], 'the field says what it is for and asks for words; nothing is written (the fiche keeps its verdict)', what='need')
         c.shot(f'A362_recette_mauvais_{c.width}_{lang}.png')
         c.page.fill('[data-step="C1:3"] [data-step-comment]', 'Le bouton reste gris')
         c.tap('[data-skey="C1:3"][data-sbtn="ko"]')
-        got = until_written(lambda g: 'SOG-0305' in g, '305 ko')
+        got = until_written(lambda g: g.get('SOG-0305', {}).get('verdict') == 'ko', '305 ko')
         c.eq([got['SOG-0305']['verdict'], got['SOG-0305'].get('comment'), got['SOG-0301']['verdict'], got['SOG-0302']['verdict'], 'SOG-0304' in got], ['ko', 'Le bouton reste gris', 'ok', 'ok', False], 'a bad step writes ko with its words on ITS fiche only; the fiches of the other steps keep their verdict', what='ko')
         c.until("!!document.querySelector('[data-step=\"C1:3\"] [data-step-note]')", what='the words are kept under the step')
         c.eq([norm(c.text('[data-step="C1:3"] [data-step-note]')), c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state")], ['Le bouton reste gris', 'ko'], 'the step shows its words and is bad', what='ko state')
@@ -4908,10 +4913,12 @@ def a362(c):
         c.until("document.querySelector('[data-step=\"C1:0\"]').dataset.state === 'todo'", what='the step goes back to waiting')
         c.wait(800)
         c.eq([written() == before, norm(c.text('[data-path=C1] [data-progress]'))], [True, norm(steps(2, 4))], '« not played » writes nothing (the file is as it was) and the progress goes down', what='not played')
-        # ---- « the whole path is good » plays what is left: the step to play (not the bad one, not the optional one)
-        c.tap('[data-path-all=C1]')
-        c.until("document.querySelector('[data-step=\"C1:0\"]').dataset.state === 'ok'", what='the first step is played again')
-        c.eq([c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), c.js("document.querySelector('[data-step=\"C1:2\"]').dataset.state"), 'SOG-0304' in written(), written()['SOG-0305']['verdict']], ['ko', 'todo', False, 'ko'], 'the whole path leaves the bad step bad and the optional step waiting; the optional one\'s fiche stays without a verdict', what='all C1')
+        # ---- a path with a bad step is NEVER played as good in one touch: the button stays visible but disabled, and says which step is bad; a touch changes nothing
+        before = written()
+        c.eq([c.js("document.querySelector('[data-path-all=C1]').disabled"), norm(c.text('[data-path=C1] [data-path-blocked]'))], [True, norm(W['blocked'].replace('{n}', '4'))], 'the button « the whole path is good » is disabled while a step is bad, and names it', what='blocked')
+        c.js("document.querySelector('[data-path-all=C1]').click()")
+        c.wait(800)
+        c.eq([written() == before, c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state"), c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), written()['SOG-0305']['verdict']], [True, 'todo', 'ko', 'ko'], 'a touch on the disabled button writes nothing: the bad step stays bad, its fiche stays refused with its words', what='blocked touch')
         c.tap('[data-path-all=C3]')
         got = until_written(lambda g: 'SOG-0303' in g and 'SOG-0306' in g, '303 and 306 ok')
         c.eq([got['SOG-0303']['verdict'], got['SOG-0306']['verdict'], c.count('[data-path-all=C3]'), norm(c.text('[data-path=C3] [data-progress]'))], ['ok', 'ok', 0, norm(steps(1, 1))], 'the path of one step: its two fiches are ok (303 now that both steps that cite it are good), the button is gone once the path is good', what='all C3')
@@ -4922,7 +4929,7 @@ def a362(c):
         c.page.reload()
         c.until("!!document.querySelector('[data-paths]')", timeout=15000, what='the page again')
         c.eq([c.js("document.querySelector('[data-step=\"C1:3\"]').dataset.state"), norm(c.text('[data-step="C1:3"] [data-step-note]')), c.js("[...document.querySelectorAll('details[data-path]')].map(d => d.open)"), norm(c.text('[data-path=C1] [data-progress]'))],
-             ['ko', 'Le bouton reste gris', [True, False, False], norm(steps(3, 4))], 'after a reload: the steps, their words and the shut path are as left', what='reload')
+             ['ko', 'Le bouton reste gris', [True, False, False], norm(steps(2, 4))], 'after a reload: the steps, their words and the shut path are as left', what='reload')
         c.shot(f'A362_recette_apres_{c.width}_{lang}.png')
         full(f'A362_page_apres_{c.width}_{lang}.png')
         # ---- filtered by application the list is the one of before: no path, every essay of the application listed (the one without test stays out)
