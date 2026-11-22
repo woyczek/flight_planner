@@ -4911,7 +4911,7 @@ def k63(c):
         stale_fr = '2026-10-01' < cur
         c.eq((res['stale'], res['blocking']), (stale_fr, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}] if stale_fr else []),
              'only fr blocks (its SIA files of 2610): gb holds its NATS cycle, de has no AIRAC', what='blocking')
-        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None, 'lfv': None, 'navpt': None, 'avians': None}, 'the cycle the workstation holds per dated source (LFV is one since 9b060a061: none held here)', what='sources')
+        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None, 'lfv': None, 'navpt': None, 'avians': None, 'aimbe': None}, 'the cycle the workstation holds per dated source (LFV is one since 9b060a061: none held here; the Belgian AIP is one since SOG-0541)', what='sources')
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')
@@ -7291,7 +7291,7 @@ def k146(c):
             st, r = up(b'%PDF-1.4 fake', 'ENR-5-2 (1).pdf')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'ukmil', 'ENR-5-2.pdf', 'gb'), 'the UK military AIP ENR 5.2 (the server cuts the launcher TLS connection): a PDF with its own name', what='ukmil')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
-            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians', 'aimbe']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
             st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
             c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
             st, r = up(b'', 'a.zip', {'Content-Length': '0'})
@@ -20285,6 +20285,23 @@ def k509(c):
         c.eq(got, ('unrecognised', 'bad-values'), 'the writer refuses a non-finite value with the code `bad-values`', what='writer')
         c.eq(sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if p.is_file()), [], 'and writes nothing', what='nothing written')
 
+    # the guard of the reader on its own (the bound on the distance already refuses what the text can give: here a non-finite value is forced past it)
+    real = B.parse_routes
+
+    def forced(texts):
+        points, segments, stats = real(texts)
+        return points, [dict(s, nm=float('inf')) for s in segments], stats
+    B.parse_routes = forced
+    try:
+        try:
+            B.convert([chr(10).join(p) for p in _be_pages()], '2026-11-22')
+            got = 'accepted'
+        except B.Refusal as r:
+            got = r.reason
+    finally:
+        B.parse_routes = real
+    c.eq(got, 'bad-values', 'the reader refuses a set that holds a non-finite value (`allow_nan=False` in `convert`, code `bad-values`): red without that guard', what='convert guard')
+
 
 @case('K511', 'Belgian AIP, SOG-0541: the build NEVER merges two sets of the ENR 3.2 — the zone holds the set in force and the one in advance, but `list_inputs` (what the build reads) and `aero_cycles.report` (the cycle of the zone) take the set IN FORCE at the day of the build only; the set in advance sleeps in `zones/be/` and is read from its date, into the base folder of ITS cycle',
       'K', static=True,
@@ -20345,3 +20362,21 @@ def k512(c):
     c.eq([(x['values']['zone'], 'deposited' in x['values']) for x in unreadable], [('be', False)], 'names that cannot be read (a year outside 2000-2100, a name outside the rule): no `deposited`, no exception — the route keeps its generic `stale_cycle`', what='unreadable')
     gone, _ = fly('2026-11-30', [])
     c.eq([(x['values']['zone'], 'deposited' in x['values']) for x in gone], [('be', False)], 'the file of the set is gone from the zone: no `deposited` either', what='gone')
+
+    # the guards of the readers of NAMES, each on its own
+    import datetime
+    import aim_be_enr as B
+    import aero_cycles as A
+    names = ['aimbe_be_enr_20260219_20261122.geojson', 'aimbe_be_enr_20261126_20261123.geojson']
+    c.eq([B.deposited_of(names, '2026-10-29'), B.deposited_of(names, '2026-11-26'), B.deposited_of(names, '2026-09-03')], ['2026-11-22', '2026-11-23', None], 'the day of the drop is the one of the set COMPILED in that cycle (two sets, two cycles, two drop days: red without the cycle filter, which would answer the latest drop for both), none for a cycle no name gives', what='cycle filter')
+    c.eq([B.deposited_of(['aimbe_be_enr_20260219_21010101.geojson'], A.airac_start(datetime.date(2101, 1, 1))), B.deposited_of(['aimbe_be_enr_19991231_20261122.geojson'], '2026-10-29')], [None, None], 'a year outside 2000-2100, in the amendment or in the drop, is no set even when its cycle is the one asked (red without the bound of the year)', what='year bound')
+    real = B.status
+
+    def overflow(*a, **k):
+        raise OverflowError('date value out of range')
+    B.status = overflow
+    try:
+        got = (B.deposited_of(names, '2026-10-29'), B.sets_of(['zones/be/' + n for n in names], datetime.date(2026, 11, 22)))
+    finally:
+        B.status = real
+    c.eq(got, (None, {'inForce': None, 'next': None}), 'an `OverflowError` of the date of the following cycle is caught on its own, in `deposited_of` and in `sets_of` (the year bound alone would hide it): red without `except OverflowError`', what='overflow caught')

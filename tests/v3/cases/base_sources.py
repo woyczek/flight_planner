@@ -775,7 +775,7 @@ def k64(c):
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True},
-               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'navpt': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'avians': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'navpt': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'avians': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'aimbe': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
          'report: the newest cycle of each source (NATS: the AIP alone dates it, SOG-0077; ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
@@ -789,7 +789,7 @@ def k64(c):
             view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
         cur = C.airac_start()
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
-                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}, 'navpt': {'cycle': None, 'current': cur, 'stale': False}, 'avians': {'cycle': None, 'current': cur, 'stale': False}}
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}, 'navpt': {'cycle': None, 'current': cur, 'stale': False}, 'avians': {'cycle': None, 'current': cur, 'stale': False}, 'aimbe': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
 
 
@@ -2599,7 +2599,7 @@ def k283(c):
     from pathlib import Path
     RJ, BS, AF, DS = _mods()
     c.eq({k: v['hand'] for k, v in BS.SOURCES.items()},
-         {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback',
+         {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'aimbe': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback',
           'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'enr51': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'},
          'the catalogue says how the hand enters each source: `only` (the launcher tries nothing: SIA, NATS, LFV, DIRCAM and NAV Portugal, SOG-0318), `fallback` (taken alone, the deposit is only a fallback: Iceland, UK Mil, openAIP, FAA), `none` (the others)', what='hand')
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
