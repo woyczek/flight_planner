@@ -2405,6 +2405,7 @@ def ed_reveal(c):
     de caché » (a mission without drawers) — that one only: another one, the map offline for instance, is the case's own — is removed
     and the page goes back to its top, so that what the case reads next is what it read before the veil."""
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop and « Dévoiler la mission complète »')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-unveil]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question « Dévoiler la mission complète ? »')
     c.tap('.f-modal [data-ok]')
@@ -2418,6 +2419,7 @@ def ed_places(c):
     the sheet still unfolded is folded, as touching the old group « Lieux » did (one group at a time): what the case touches next opens."""
     c.until(f"!!document.querySelector('{E} [data-atplaces] [data-edplaces]')", what='the frame of the Lieux')
     if c.count(f'{E} [data-steps] [data-do="edstep"][aria-expanded="true"]'):
+        _tab(c, 'mission')
         c.tap(f'{E} [data-steps] [data-do="edstep"][aria-expanded="true"]')
         c.until(f"!document.querySelector('{E} [data-steps] [aria-expanded=\"true\"]')", what='the open group folded')
     # the old group came into view when touched (scrollIntoView, nearest): the frame does the same
@@ -2435,6 +2437,7 @@ def ed_kind(c, key):
 def dw_key(c, key):
     """Changes the key of the drawer whose sheet is open by « Changer la clé », which opens THE window of « ＋ Tiroir » (SOG-0508): touches
     the key in the sheet, then the key alone in the window."""
+    _tab(c, 'itin')
     c.tap(f'{E} [data-drawer] [data-kindcur]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window of the bricks, for the key of the drawer')
     ed_kind(c, key)
@@ -2464,21 +2467,28 @@ def n50(c):
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
     steps = c.js(f"[...document.querySelectorAll('{E} [data-mark]')].map(m => [m.dataset.mark, !!m.closest('button')?.disabled])")
-    c.eq([x[0] for x in steps], ['places', 'cadre', 'teams', 'story', 'risks', 'timeline'],
-         'the six steps of the mock-up — the Lieux in their frame at the head of the right column (SOG-0472), the five others folded', what='steps')
+    c.eq([x[0] for x in steps], ['cadre', 'teams', 'story', 'risks', 'timeline'],
+         'the five groups of the tab « Mission » (SOG-0482 lot 5: the Lieux have no header any more, the tab « Itinéraire » is their frame), folded', what='steps')
     c.ok(all(x[1] is False for x in steps), steps, 'the six steps open (delivered one push each, 13 Nov)')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier of the family proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-1')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(300)
     c.ok(c.js(_TEXT_OF, 'missions/X_REG/X-1/missionX-1.yaml') is None and 'X-1' not in (reg_text(c) or ''), 'written',
          'an identifier without its form blocks: nothing written')
     c.ok(any(norm(row(c, 'edBlock_idForm')) in norm(n) for n in c.note_log()), c.note_log(), 'and the floating notification says why')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-002')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission créée')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _end_open(c, 'dep')
     _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _end_open(c, 'arr')
     _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='« modifiée sur cet appareil — pas encore envoyée »')
@@ -2506,8 +2516,10 @@ def n50(c):
     c.settle()
     c.shot('N50_1280_cadre.png')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid', 'stacked', 'wide: the sheet beside the map and the unfolding')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission retouchée')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -2547,6 +2559,7 @@ def n51(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
     c.until(f"!!document.querySelector('{E} [data-edteams]')", what='the group « Équipes » unfolds')
     c.eq(c.js(_TEAMS_JS), [['ALPHA1', 'H135', "Service d'essai", 'recherche'], ['BRAVO2', 'H145', "Service d'essai", 'relais'],
@@ -2597,19 +2610,29 @@ def n52(c):
     c.ok('45°00′N 1°00′E' in dep, dep, 'the position in degrees and minutes, as the mock-up, on the line of a step')
     pt1 = c.js(f"document.querySelector('{E} [data-place=\"5\"] .ms-plbody .f-muted').textContent")
     c.ok('°' not in pt1, pt1, 'the line of a place that is no step says no position')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="5"] [data-do="edplace"]')
     c.eq([c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])], ['44.8', '1.2'], 'the sheet of PT1 says its position', what='the position in the sheet')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="5"] [data-f=lat]', '44,9')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="5"] [data-do="edplaceok"]')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="5"] [data-do="edplace"]')
     c.eq(c.js(_EDPLACE_VAL, [5, 'lat']), '44.9', 'the decimal comma is read: the sheet says the new latitude', what='the latitude read')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="5"] [data-do="edplaceok"]')
     _plus_add(c, 'pt')
     c.until(f"!!document.querySelector('{E} [data-plform] [data-f=name]')", what='the new turning point open')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'Point trois')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.7')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="8"] [data-do="edplace"]')
     _del_place(c, f'{E} [data-plform="8"] [data-do="edplacedel"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -2645,6 +2668,7 @@ def n53(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory]')", what='the Récit')
     st = c.js(_STORY_JS)
@@ -2652,9 +2676,12 @@ def n53(c):
          ['Premier paragraphe inventé.\n\nSecond paragraphe inventé.', 'Trouver la cible inventée.', 'Rester en contact.\nRentrer avant la nuit.',
           'Un treuil inventé.', '120', '2'], 'the story of the file in its fields', what='fields')
     c.ok(st['summary'].startswith('Une recherche inventée'), st['summary'][:60], 'the summary')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé retouché, court.')
     c.ok(c.text(f'{E} [data-stcount]').startswith('26'), c.text(f'{E} [data-stcount]'), 'the count of signs follows the typing')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=secondary]', 'Rester en contact.\nRentrer avant la nuit.\nPrévenir la base.')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=pax]', '3')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N53_390_story.png')
@@ -2715,9 +2742,11 @@ def n54(c):
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the messy file in the editor')
     # SOG-0472: the Lieux have their frame, always shown — a place opened then closed puts their rows in the sitting
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-do="edplace"]')
     c.tap(f'{E} [data-do="edplaceok"]')
     for step in ('teams', 'story', 'risks', 'timeline', 'cadre'):
+        _tab(c, 'mission')
         c.tap(f'{E} [data-steps] [data-step="{step}"]')
         c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
     c.tap(f'{E} [data-do="edsave"]')
@@ -2726,6 +2755,7 @@ def n54(c):
     c.ok(any(norm(row(c, 'edSame')) in norm(n) for n in c.note_log()), c.note_log(), 'and the editor says there is nothing to save')
     # one change: only its field (the toast of the step before cleared: at 390 it covers the bar)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
     c.page.fill(f'{E} [data-team="1"] [data-f=role]', 'relais')
     c.tap(f'{E} [data-do="edsave"]')
@@ -2805,10 +2835,12 @@ def n200(c):
         c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the file of 1.0 in the workshop')
         ed_places(c)
         for step in c.js(f"[...document.querySelectorAll('{E} [data-steps] [data-do=edstep]')].map(b => b.dataset.step)"):
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="{step}"]')
             c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
         lines = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow, {E} [data-atflow] [data-edplaces] > [data-do=edsel]')].map(x => x.matches('.ms-plrow') ? ['place', x.dataset.at] : ['drawer', x.dataset.part])")
         c.ok(sum(1 for k, _ in lines if k == 'drawer') == 5 and sum(1 for k, _ in lines if k == 'place') == 7, lines, f'{width}: five drawers and the seven places of the itinerary are listed (the places that are the key of a drawer have no line)')
+        _tab(c, 'itin')
         for kind, ref in lines:
             sel = f'{E} [data-atflow] [data-at="{ref}"] [data-do=edplace]' if kind == 'place' else f'{E} [data-atflow] [data-do=edsel][data-part="{ref}"]'
             c.js(f"document.querySelector('{sel}').scrollIntoView({{block: 'center'}})")
@@ -2819,7 +2851,9 @@ def n200(c):
         c.eq(c.js(_TEXT_OF, path), _V10_MISSION, f'{width} (a): everything opened, nothing typed, « Enregistrer »: the file of 1.0 is identical, byte for byte', what='file')
         # (b) one change: the title
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        _tab(c, 'mission')
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        _tab(c, 'mission')
         c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -2832,8 +2866,10 @@ def n200(c):
         _ed_open(c, _V10_MISSION)
         c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
         if not c.count(f'{E} input[data-k=edtitle]'):  # the Cadre may already be unfolded: touching it again would fold it
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the title of the veiled workshop')
+        _tab(c, 'mission')
         c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved, veiled')
@@ -2869,6 +2905,7 @@ def n201(c):
             ed_reveal(c)
             c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
             c.js(f"document.querySelector('{E} [data-at=\"start:1\"]').scrollIntoView({{block: 'center'}})")
+            _tab(c, 'itin')
             c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
             c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what='the sheet of PT1')
             if typed == '44,9':
@@ -2879,6 +2916,7 @@ def n201(c):
                      f'{width}: the French screen says the decimal comma', what='shown')
                 c.eq([norm(c.text(f'{E} [data-chipmove=start] [data-do=edroutedel]')), norm(c.text(f'{E} [data-plform] [data-do=edplacedel]'))], ["Retirer de l'itinéraire", 'Supprimer le lieu'],
                      f'{width}: the strip takes the place out of the route, the foot of the sheet deletes it', what='links')
+            _tab(c, 'itin')
             c.page.fill(f'{E} [data-plform] input[data-f=lat]', typed)
             c.tap(f'{E} [data-do="edsave"]')
             c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -2896,6 +2934,7 @@ def n201(c):
         before = c.js(lines)
         at = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow')].find(x => x.querySelector('b').textContent.startsWith('ZONE-2')).dataset.at")
         c.js(f"document.querySelector('{E} [data-at=\"{at}\"]').scrollIntoView({{block: 'center'}})")
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at}"] [data-do=edplace]')
         dele = f'{E} [data-plform] [data-do=edplacedel]'
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
@@ -2912,6 +2951,7 @@ def n201(c):
         c.tap(f'{_EDHIST} [data-do=edmapundo]')
         c.until(f"({lines}).includes('ZONE-2')", what='ZONE-2 given back')
         c.eq(c.js(lines), before, f'{width}: « Annuler le geste » gives the place back at its rank', what='undone')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2 again')
         c.eq(c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)"), fields, f'{width}: the place is back with its identifier and its fields', what='fields')
@@ -2948,6 +2988,7 @@ def _n20_open(c, width, mission=None):
 
 def _n20_pick(c, ref):
     """Opens the sheet of the line `ref` — a touch on a line whose sheet is already open would close it."""
+    _tab(c, 'itin')
     sel = f'{E} [data-at="{ref}"] [data-do=edplace]'
     if c.js(f"document.querySelector('{sel}')?.getAttribute('aria-current')") != 'true':
         c.tap(sel)
@@ -3046,6 +3087,7 @@ def n205(c):
     for width in (390, 1280):
         _n20_open(c, width)
         _n20_gesture(c, width, 'add to the route', lambda: _plus_out(c, 'ZONE-2'))  # was « Ajouter un lieu… » of the route: ZONE-2 (under « Hors itinéraire ») enters the route
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"]')", what='the sheet of drawer 2')
         _n20_gesture(c, width, 'add to the onward route', lambda: _plus_add(c, 'pt'))  # was « Ajouter un lieu à la suite… »: a point from the strip of drawer 2
@@ -3068,6 +3110,7 @@ def n206(c):
         dele = f'{E} [data-plform] [data-do=edplacedel]'
         _n20_open(c, width)
         before = _n20_lines(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
         fields = c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)")
@@ -3083,6 +3126,7 @@ def n206(c):
         c.ok(not any(x.startswith('out:') and 'ZONE-2' in x for x in after), after, f'{width}: ZONE-2 is gone after the second touch')
         c.tap(f'{_n20_hist()} [data-do=edmapundo]')
         c.until(f"JSON.stringify({_N202_SNAP}) === {__import__('json').dumps(__import__('json').dumps(before, separators=(',', ':'), ensure_ascii=False))}", what='ZONE-2 given back')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2 again')
         c.eq(c.js(f"[...document.querySelectorAll('{E} [data-plform] input')].map(x => x.value)"), fields, f'{width}: the place is back with its identifier and its fields', what='fields')
@@ -3091,6 +3135,7 @@ def n206(c):
         # a place cited by a key AND by a route: ZONE-1 — the second touch deletes, ↶ gives it back with ALL its citations
         _n20_open(c, width, cited)
         before = _n20_lines(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("ZONE-1")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-1')
         c.eq(norm(c.text(dele)), 'Supprimer la zone', f'{width}: the foot of the sheet of a zone', what='label')
@@ -3126,6 +3171,7 @@ def n207(c):
         at = lambda title: c.js(_AT_OF, title)  # noqa: E731
         hist = _n20_hist()
         s0 = _n20_lines(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("PT1")}"] [data-do=edplace]')
         later = f'{E} [data-atflow] [data-chipmove=start] [data-reorder=down]'
         c.until(f"!!document.querySelector('{later}')", what='the strip under PT1')
@@ -3133,6 +3179,7 @@ def n207(c):
         c.until(f"JSON.stringify({_N202_SNAP}) !== {lit(s0)}", timeout=8000, what='the gesture')
         s1 = _n20_lines(c)
         dele = f'{E} [data-plform] [data-do=edplacedel]'
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("ZONE-2")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{dele}')", what='the sheet of ZONE-2')
         c.tap(dele)
@@ -3150,8 +3197,10 @@ def n207(c):
         c.tap(f'{hist} [data-do=edmapredo]')
         becomes(s2, 'two ↷ play them again')
         # a typing empties the history
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="{at("PT3")}"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=name]')", what='the sheet of PT3')
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] input[data-f=name]', 'Point trois bis')
         c.eq(_n20_flags(c), [True, True], f'{width}: a typing empties the history (↶ and ↷ off)', what='typing')
         ed_leave(c)
@@ -3216,6 +3265,7 @@ def n203(c):
         # the two menus of the « ＋ » (SOG-0482 lot 4: they replace the two « Ajouter un lieu… » lists): what they offer, read in the page
         _plus_open(c)
         start = c.js(_L4_MENU)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"]')", what='the sheet of drawer 2')
         _plus_open(c)
@@ -3234,7 +3284,9 @@ def n203(c):
         # a change of the title keeps the tokens (as data)
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
         if not c.count(f'{E} input[data-k=edtitle]'):  # the Cadre may already be unfolded: touching it again would fold it
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        _tab(c, 'mission')
         c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -3270,10 +3322,11 @@ def n209(c):
         ed_reveal(c)
         c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the itinerary')
         if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-            c.tap(f'{E} [data-do="edmap"]')
+            _tab(c, 'map')
         c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map)", timeout=15000, what='the map')
         c.wait(800)
         c.eq([hint(), c.js(row_js)], ['', [True, 0]], f'{width}: places on the map, nothing chosen: no sentence, and its row is hidden — no blank', what='no sentence')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
         c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.trim() !== ''", what='the sentence of the place chosen')
         c.eq([hint(), c.js(row_js)[0]], [{'fr': 'PT1 · Point un : faites-le glisser pour le déplacer.', 'en': 'PT1 · Point un: drag it to move it.', 'de': 'PT1 · Point un: ziehen, um zu verschieben.',
@@ -3307,6 +3360,7 @@ def n209(c):
     summ = norm(c.text(f'{E} [data-plform] .ms-plfold summary'))
     c.ok(alt in summ, summ, f'the fold of the heights says « {alt} »')
     # the sentence of the tool « Placer l'avion » (a quarter of a minute of the slider)
+    _tab(c, 'map')
     c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR} [data-f=min]')", what='the trial')
     c.js(_TR_SET, 7.25)
@@ -3336,9 +3390,45 @@ def _l3_pick(c, ref):
     c.wait(400)
 
 
+def _tab(c, name):
+    """SOG-0482 lot 5: brings the tab `name` ('itin', 'map', 'mission') of the workshop into view — a touch on its tab; a no-op when it is shown already, or when it has no tab on this width (the map of a wide module is always there)."""
+    btn = f'{E} .ms-attab[data-tab="{name}"]'
+    if c.js(f"(() => {{ const b = document.querySelector('{btn}'); return !!b && b.getBoundingClientRect().width > 0 && b.getAttribute('aria-selected') !== 'true' }})()"):
+        c.tap(btn)
+        c.wait(150)
+
+
+def _end_open(c, which):
+    """SOG-0482 lot 5: the Departure ('dep') and the Arrival ('arr') are edited in the sheet of their line of the itinerary (the common field of the suite): opens that sheet if it is not."""
+    _tab(c, 'itin')
+    if not c.count(f'{E} [data-plform] input[data-k=ed{which}]'):
+        c.tap(f'{E} [data-at={which}] [data-do=edplace]')
+    c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=ed{which}]')", what=f'the sheet of the {which}')
+
+
+def _end_vals(c):
+    """SOG-0482 lot 5: [Departure, Arrival] as their sheets say them — each sheet is opened in turn (one at a time)."""
+    out = []
+    for k in ('dep', 'arr'):
+        _end_open(c, k)
+        out.append(c.js(f"document.querySelector('{E} [data-plform] input[data-k=ed{k}]').value"))
+    return out
+
+
+def _end_state(c):
+    """[[Departure, Arrival], [the first signs of the name line of each]] — read in the two sheets, in turn."""
+    vals, names = [], []
+    for k in ('dep', 'arr'):
+        _end_open(c, k)
+        vals.append(c.js(f"document.querySelector('{E} [data-plform] input[data-k=ed{k}]').value"))
+        names.append(norm(c.text(f'{E} [data-adline=ed{k}]') or '')[:6])
+    return [vals, names]
+
+
 def _plus_open(c):
     """SOG-0482 lot 4: opens the menu of the « ＋ » that is in view — the one in the strip of the line chosen, else the one above the Arrival."""
     if not c.count(f'{E} [data-plusmenu]'):
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edplus]')
     c.until(f"!!document.querySelector('{E} [data-plusmenu]')", what='the menu of the « ＋ »')
 
@@ -3358,22 +3448,26 @@ def _plus_out(c, ident):
 def _pose_object(c):
     """An object to find, posed by the tool « Objet » of the map (it is no step of a route: the menu of the « ＋ » does not offer it; the map tool and the key of a drawer create it): the map is brought into view, the tool taken, the map touched at its middle."""
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map)", timeout=15000, what='the map of the workshop')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="object"]')
     box = c.page.locator(f'{_EDMAP}').first.bounding_box()
+    _tab(c, 'map')
     c.page.mouse.click(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
 
 
 def _plus_free(c, kind):
     """A new place that nothing cites: added by the « ＋ », then taken out of the route (it falls under « Hors itinéraire », its sheet stays open)."""
     _plus_add(c, kind)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-chipmove=start] [data-do=edroutedel]')
 
 
 def _key_open(c, drawer):
     """SOG-0482 lot 3 (fixup): the place that a drawer cites as its KEY (a zone to cross, an object to find) has NO line in the itinerary: its fields are in the sheet of its drawer, group « La clé ».
     Opens the sheet of the drawer `drawer` (its id, « C ») and returns the selector of that sheet; the fields of the place are `[data-plform="<rank>"]` inside it (no « OK », no « Retirer »)."""
+    _tab(c, 'itin')
     line = f'{E} [data-atflow] [data-do=edsel][data-sel="{drawer}"]'
     if c.js(f"document.querySelector('{line}')?.getAttribute('aria-current')") != 'true':
         c.tap(line)
@@ -3406,12 +3500,15 @@ def n210(c):
         c.eq(arrows(), [['↑ Plus tôt', True, 'Déjà en première place de sa liste'], ['↓ Plus tard', True, "La limite du tiroir 2 : retirez ce lieu de l'itinéraire, puis ajoutez-le à sa nouvelle place."]],
              f'{width}: the only place of an onward route: both arrows greyed, titled', what='alone')
         # the drawers among themselves: the first, one in the middle, the last
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="1"]')
         c.wait(400)
         c.eq(arrows(), [['↑ Plus tôt', True, "Le premier tiroir : rien ne s'ouvre avant lui."], ['↓ Plus tard', False, '']], f'{width}: the first drawer: « ↑ Plus tôt » greyed, titled', what='first drawer')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="3"]')
         c.wait(400)
         c.eq(arrows(), [['↑ Plus tôt', False, ''], ['↓ Plus tard', False, '']], f'{width}: a drawer in the middle: both arrows open', what='middle drawer')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="5"]')
         c.wait(400)
         c.eq(arrows(), [['↑ Plus tôt', False, ''], ['↓ Plus tard', True, "Le dernier tiroir : l'Arrivée reste à la fin."]], f'{width}: the last drawer: « ↓ Plus tard » greyed, titled', what='last drawer')
@@ -3443,6 +3540,7 @@ def n211(c):
         _l3_open(c, width)
         heads = lambda: c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-do=edsel]')].map(x => x.querySelector('[data-dtitle]').textContent.trim())")
         c.eq(heads(), ['Tiroir 1 · Zone', 'Tiroir 2 · Objet', 'Tiroir 3 · Retour', 'Tiroir 4 · Geste', 'Tiroir 5 · Geste final'], f'{width}: the drawers as the file says them', what='before')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         down = f'{E} .ms-itin-mv [data-reorder=down][data-list=tiroirs]'
         c.until(f"!!document.querySelector('{down}')", what='the strip under drawer 2')
@@ -3463,6 +3561,7 @@ def n211(c):
         c.js(_REG_CLEAR)
         # « Annuler le geste » gives the order back: nothing to write
         _l3_open(c, width)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{down}')", what='the strip under drawer 2')
         c.tap(down)
@@ -3494,6 +3593,7 @@ def n212(c):
                 c.js(f"(() => {{ const b = document.querySelector('{E} .ms-itin-mv {sel}'); {'b.disabled = false; ' if opened else ''}b.click() }})()")
                 c.wait(300)
                 c.eq([_n20_lines(c) == before, _n20_flags(c)], [True, [True, True]], f'{width}: a forced click on the {"opened" if opened else "greyed"} arrow of {what}: the itinerary is the same, nothing to undo', what=what)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="1"]')
         c.until(f"!!document.querySelector('{E} .ms-itin-mv [data-reorder=up][data-list=tiroirs]')", what='the strip under drawer 1')
         for opened in (False, True):
@@ -3534,6 +3634,7 @@ def n213(c):
         if width == 1280:
             c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map')
             c.wait(1500)
+            _tab(c, 'map')
             c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.7]))
             c.until(f"document.querySelector('{E} [data-drawer]')?.dataset.drawer === 'C'", timeout=8000, what='the sheet of drawer 2')
             c.eq(c.js(f"document.querySelector('{E} [data-drawer] [data-dline=key]').textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim()"), 'objet à trouver · OBJ-1 Naufragé · repli à H + 90 min', f'{width}: the object touched on the map opens the sheet of its drawer (SOG-0482 lot 5: no title « scellé… » any more; « La clé » says the key of drawer 2 and its fallback)', what='map')
@@ -3548,6 +3649,7 @@ def n213(c):
 def n214(c):
     for width in (390, 1280):
         _l3_open(c, width)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"]')", what='the sheet of drawer 2')
         grp = c.js(f"[...document.querySelectorAll('{E} [data-drawer=\"C\"] [data-dgrp]')].map(g => g.dataset.dgrp)")
@@ -3560,6 +3662,7 @@ def n214(c):
         c.ok('edplaceok' not in keyform and 'edplacedel' not in keyform, keyform, f'{width}: the place of the key has no « OK » and no « Supprimer » of its own')
         c.eq(norm(c.text(f'{E} [data-drawer="C"] [data-do=eddrdel]')), 'Supprimer ce tiroir', f'{width}: the foot of the sheet says « Supprimer ce tiroir »', what='delete')
         c.js(f"document.querySelector('{E} [data-drawer=\"C\"] [data-do=eddrdel]').scrollIntoView({{block: 'center'}})")
+        _tab(c, 'itin')
         c.tap(f'{E} [data-drawer="C"] [data-do=eddrdel]')
         c.wait(300)
         c.eq(norm(c.text(f'{E} [data-drawer="C"] [data-do=eddrdel]')), 'Supprimer quand même', f'{width}: a first touch: « Supprimer quand même »', what='second step')
@@ -3603,13 +3706,16 @@ def n55(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques')
     c.eq(c.js(_RISKS_JS), [f'Danger {w} → Parade {w}' for w in ('un', 'deux', 'trois', 'quatre', 'cinq')], 'one row « danger → parade » per risk',
          what='rows')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-risk="0"] [data-do="edrisk"]')
     c.page.fill(f'{E} [data-rkform="0"] [data-f=mitigation]', 'Parade retouchée')
     c.tap(f'{E} [data-rkform="0"] [data-do="edriskok"]')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-risk="1"] [data-do="edrisk"]')
     c.tap(f'{E} [data-rkform="1"] [data-do="edriskdel"]')
     c.tap(f'{E} [data-do="edriskadd"]')
@@ -3658,8 +3764,11 @@ def n56(c):
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-place][data-kind=rdv]')", what='the single rendezvous listed')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place][data-kind=target] [data-do="edplace"]')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.65')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -3701,13 +3810,17 @@ def n57(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"), ['general', 'zone_1', 'bad'],
          'the declared maps', what='maps')
     c.tap(f'{E} [data-do="edeventadd"]')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-event="0"] [data-f=at]', 'H+30mn')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'PT1')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-event="0"] [data-f=text]', 'Un message inventé arrive.')
     c.tap(f'{E} [data-do="edmapspropose"]')
     c.until(f"document.querySelectorAll('{E} [data-edmaps] [data-map]').length > 3", what='the proposed maps')
@@ -3750,17 +3863,24 @@ def n58(c):
     c.until(f"!!document.querySelector('{E}')", what='the editor')
     fam = c.js(f"[...document.querySelectorAll('{E} select[data-k=edfam] option')].map(o => [o.value, o.textContent.trim()]).find(o => o[0] === 'COMMERCIAL')")
     c.ok(bool(fam) and fam[1].startswith('E · CAT'), fam, 'the commercial family offered as « E · CAT · … »')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'COMMERCIAL')
     c.until(f"!!document.querySelector('{E} [data-liaison]')", what='the reduced Cadre')
     c.ok(not c.count(f'{E} select[data-k=edth]') and c.count(f'{E} [data-k=edco]') == 1 and c.count(f'{E} [data-k=edac]') == 1,
          'fields', 'no theatre; the airline and the aircraft asked')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edsub]', 'PASSENGERS')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'E-901')
+    _end_open(c, 'dep')
     _ed_fill(c, 'eddep', 'LFPO · Orly')
+    _end_open(c, 'arr')
     _ed_fill(c, 'edarr', 'LFRS')
     c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]').value"), 'LFPO → LFRS', 'the title proposed by itself', what='title')
+    _end_open(c, 'arr')
     _ed_fill(c, 'edarr', 'LFRN')
     c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]').value"), 'LFPO → LFRN', 'and it follows the two ends', what='title')
+    _tab(c, 'mission')
     _ed_fill(c, 'edac', 'a320')
     todo = c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.dataset.todo)")
     c.ok(not set(todo) & {'teams', 'risks', 'timeline', 'theatre'}, todo, '« À compléter » without teams, risks, chronology nor theatre')
@@ -3856,9 +3976,11 @@ def n60(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events of the list shown')
     c.tap(f'{E} [data-do="edeventadd"]')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-event="2"] [data-f=text]', 'Troisième inventé')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -4138,6 +4260,7 @@ def n70(c):
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
     c.eq(c.js(_EV_PLACES), ['PT1', 'RDV-1'], 'the places of the file', what='events before')
@@ -4147,11 +4270,15 @@ def n70(c):
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
     i = c.js(_PLACE_AT, 'PT1')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="{i}"] [data-f=id]', 'ALPHA')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
     # « Retirer » the rendezvous: cited six ways — the first press removes nothing, says who cites it, and the button changes
     i = c.js(_PLACE_AT, 'RDV-1')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
     first = c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -4172,6 +4299,7 @@ def n70(c):
     # the notification stays until its cross or the second press (a plain note leaves by itself after 6 s)
     c.page.wait_for_timeout(6500)
     c.ok('RDV-1' in c.js(_NOTES), c.js(_NOTES), 'the notification is still there after more than 6 s')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.eq(c.js(_PLACE_AT, 'RDV-1'), -1, 'the second press removes the place', what='the rendezvous row')
     note = c.js(_NOTES)
@@ -4187,11 +4315,16 @@ def n70(c):
     _plus_free(c, 'pt')  # SOG-0482 lot 4: the « ＋ » adds it to the route; taken out again, it is the place « never cited » of this case
     c.until(f"!!document.querySelector('{E} [data-plform] [data-f=name]')", what='the new turning point open')
     c.eq(c.js(f"document.querySelector('{E} [data-plform] [data-f=id]').value"), 'PT3', 'neither PT1 (renamed in this sitting) nor PT2', what='the new identifier')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'Point trois')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.7')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
     # the rows of the Chronologie, on screen since before the rename, show the identifier of today
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie again')
     c.eq(c.js(_EV_PLACES), ['ALPHA', ''], 'renamed in the row already on screen; the removed place is gone from its event', what='events after')
@@ -4310,22 +4443,27 @@ def n72(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
     # the buttons are marked, then a field is typed in: the SAME elements must still be there (a redrawn button has lost its mark)
     c.js(f"document.querySelectorAll('{E} [data-steps] [data-step], {E} [data-do=edsave], {E} [data-do=edtodo], {E} [data-do=edcancel]').forEach(b => b.__kept = true)")
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé retouché, puis un seul clic.')
     kept = c.js(f"[...document.querySelectorAll('{E} [data-steps] [data-step], {E} [data-do=edsave], {E} [data-do=edtodo], {E} [data-do=edcancel]')].map(b => !!b.__kept)")
     c.ok(len(kept) == 8 and all(kept), kept, 'the five groups\' buttons (the Lieux have their frame, SOG-0472) and the three buttons of the foot are the same elements after the keystrokes')
     line = c.js(f"document.querySelector('{E} [data-line=story]').textContent")
     c.ok('38' in line, line, 'and the line of the group follows the typing (38 signs)')
     # ONE real click (press and release of a pointer), straight from the field: the Risques unfold
+    _tab(c, 'mission')
     c.page.click(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!!document.querySelector('{E} [data-edrisks]')", timeout=3000, what='the Risques unfolded by ONE click')
     c.eq(c.js(f"document.querySelector('{E}').dataset.step"), 'risks', 'one click was enough', what='the open group')
     # the same from the Cadre: a title typed, one click on « Enregistrer » saves
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+    _tab(c, 'mission')
     c.page.fill(f'{E} input[data-k=edtitle]', 'Mission complète, retouchée')
     c.page.click(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved by ONE click after typing')
@@ -4365,13 +4503,13 @@ def n73(c):
          'the itinerary: the three drawers of the file, said by their rank (the departure is a place line since SOG-0482)', what='the unfolding')
     c.eq(c.js(f"document.querySelector('{E}').dataset.step"), '', 'on a phone every group is folded', what='the open group')
     lines = c.js(_AT_LINES)
-    c.ok(set(lines) == {'cadre', 'teams', 'places', 'story', 'risks', 'timeline'} and all(lines.values()) and 'XTST → XTSU' in lines['cadre'], lines,
-         'each of the six groups says its content in one line (the Cadre: its family and « XTST → XTSU »)')
-    c.eq(c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display"), 'none', 'on a phone the map is folded behind its button', what='the map')
-    c.tap(f'{E} [data-do="edmap"]')
-    c.until(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display !== 'none'", what='the map unfolded by its button')
+    c.ok(set(lines) == {'cadre', 'teams', 'story', 'risks', 'timeline'} and all(lines.values()) and 'XTST → XTSU' in lines['cadre'], lines,
+         'each of the five groups of the tab « Mission » (SOG-0482 lot 5: the Lieux have no group any more) says its content in one line (the Cadre: its family and « XTST → XTSU »)')
+    c.eq(c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display"), 'none', 'on a phone the map is folded: its tab is not the one in view (SOG-0482 lot 5)', what='the map')
+    _tab(c, 'map')
+    c.until(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display !== 'none'", what='the map unfolded by its tab')
     c.ok(c.count(f'{E} [data-atmapbody] [data-edthumb]') == 1, 'no sketch', 'the sketch of the places in the map')
-    c.tap(f'{E} [data-do="edmap"]')
+    _tab(c, 'map')
     # the foot: « À compléter (n) » alone on a phone, a button that opens the named list
     btn = c.text(f'{E} [data-edtodobtn]')
     c.ok('(4)' in btn and c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") == 'none', btn,
@@ -4389,11 +4527,14 @@ def n73(c):
     c.shot('N73_390_workshop.png')
     c.tap(f'{E} [data-do="edtodo"]')
     # a group unfolds by its name; touched again, it folds; one at a time
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
     c.until(f"!!document.querySelector('{E} [data-edteams]')", what='the Équipes unfolded')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques unfolded')
     c.eq(c.count(f'{E} [data-edform]'), 1, 'one group unfolded at a time', what='unfolded groups')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!document.querySelector('{E} [data-edform]')", what='the group folded when touched again')
     # saving without touching anything writes nothing; a change keeps the drawers of the file as they are
@@ -4401,8 +4542,10 @@ def n73(c):
     c.wait(400)
     c.eq(c.js(_TEXT_OF, path), _AT_MISSION, 'nothing touched: the file is the same', what='the file')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # at 390 the toast covers the foot
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé changé dans l’atelier.')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -4421,8 +4564,8 @@ def n73(c):
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='on a wide screen the Cadre is unfolded at the opening')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid' and
          c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display") != 'none' and
-         c.js(f"getComputedStyle(document.querySelector('{E} [data-do=edmap]')).display") == 'none', 'not side by side',
-         'wide: the map (always shown, no button) and the unfolding on the left, the sheet on the right')
+         c.js(f"getComputedStyle(document.querySelector('{E} .ms-attab[data-tab=map]')).display") == 'none', 'not side by side',
+         'wide: the map (always shown, no tab « Carte ») and the unfolding on the left, the sheet on the right')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") != 'none', 'hidden',
          'wide: the foot also says the first point to complete')
     row_w = c.js(f"(() => {{ const r = document.querySelector('{E} .ms-itin-list'); return [r.scrollWidth <= r.clientWidth, getComputedStyle(r).display] }})()")
@@ -4430,6 +4573,7 @@ def n73(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N73_1280_workshop.png')
     # a drawer keyed by an object in a mission that has none: the sheet says so and leads to the Lieux (SOG-0445, the ergonomist's reading)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
     dw_key(c, 'object')
@@ -4520,8 +4664,10 @@ def n74(c):
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
     i = c.js(_PLACE_AT, 'ZONE-1')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.settle()
     c.ok(c.js(_PLACE_AT, 'ZONE-1') == i, c.js(_PLACES_JS), 'a zone cited by a drawer\'s key is not removed at the first press')
@@ -4530,6 +4676,7 @@ def n74(c):
          'the notification says who cites it: the drawer 2, its key')
     c.shot('N74_390_cited.png')
     c.wait(1100)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.eq(c.js(_PLACE_AT, 'ZONE-1'), -1, 'the second press removes the zone', what='the zone row')
     c.ok('drawerNoKey' in c.js(_ED_TODO) and ' 2 ' in c.js(_ED_TODO_TEXT), c.js(_ED_TODO_TEXT), '« À compléter » names the drawer 2, left without its key')
@@ -5857,17 +6004,24 @@ def n77(c):
     c.until(f"!!document.querySelector('{E} [data-plform] [data-plid]')", what='the new object open')
     c.ok('OBJ-3' in c.text(f'{E} [data-plform] [data-plid]') and c.js(f"document.querySelector('{E} [data-plform] [data-f=confirm]').checked") is True,
          c.text(f'{E} [data-plform] [data-plid]'), 'the new object is OBJ-3, and its box « trouvé seulement quand le pilote le déclare » is checked from the start')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'Épave')
+    _tab(c, 'itin')
     c.page.select_option(f'{E} [data-plform] [data-f=okind]', 'wreck')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.5')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.4')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=range]', '1')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
     c.eq(c.count(f'{E} [data-atmapbody] [data-thobject]'), 3, 'the sketch draws the three objects (the map is the author\'s)', what='objects on the sketch')
     # SOG-0482 lot 3 (fixup): « Retirer » an object that a drawer cites as its KEY is no gesture of the screen any more (the sheet of its drawer carries no « Retirer »: the key place is edited there,
     # not removed); what the removal does — the cited object says who cites it, the key goes and the fallback hour stays — is read on the pure part above (`removePlace`, `citedBy`, `gone`)
     # an event of the timeline is never placed on an object
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
     opts = c.js(f"[...document.querySelectorAll('{E} [data-event] select[data-f=place] option')].map(o => o.value)")
@@ -5931,6 +6085,7 @@ def n78(c):
     c.tap(f'{E} [data-do=edplus]')
     c.ok(c.count(f'{E} [data-drawerskept]') == 0, 'still there', 'the sentence « ils ne se modifient pas encore ici » is gone')
     # a drawer touched: its sheet; nothing changed, nothing written
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"!!document.querySelector('{_DW}')", what='the sheet of drawer 2')
     c.ok(c.count(f'{E} [data-steps]') == 1 and c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'C' and c.count(f'{_DW} [data-dwhead]') == 0, c.text(f'{_DW} [data-dgrp=key] [data-dline]'),
@@ -5949,16 +6104,21 @@ def n78(c):
     c.eq(c.js(_TEXT_OF, path), _OBJ_MISSION, 'a drawer touched, nothing changed: the file is the same', what='the file')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     # typing never redraws a card: the title follows in place, and ONE click on another card is enough
+    _tab(c, 'itin')
+    c.js(f"document.querySelector('{_DW} [data-do=eddrgrp][data-grp=texts]').scrollIntoView({{block: 'center'}})")  # SOG-0482 lot 5: the sheet is longer, the group comes to the middle of the screen, clear of the foot
     c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="texts"]')
     c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=texts] .ms-dbody')).display !== 'none'", what='« Les textes » unfolded')
     # every button of the itinerary outside the open sheet (the place lines, the drawer lines, the strip of arrows if any, « Essayer les clés », the add buttons) and the titles of the groups of the sheet
     every = f"[...document.querySelectorAll('{E} [data-atflow] button, {_DW} [data-do=eddrgrp]')].filter(b => b.matches('[data-do=eddrgrp]') || !b.closest('{_DW}'))"
     c.js(f"{every}.forEach(b => b.__kept = true)")
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=title]', 'Entrée nord')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"{every}.map(b => !!b.__kept)")
-    c.ok(len(kept) == 20 and all(kept), len(kept), 'the 20 elements of the screen (SOG-0482 lot 5: +1, « La clé » is a group button of the sheet; 23 before the lot 4: the card « ＋ Tiroir » and the four buttons of the foot — Zone, Point tournant, Rendez-vous, Objet — are gone, the « ＋ » of the strip of the drawer chosen is new) — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
+    c.ok(len(kept) == 19 and all(kept), len(kept), 'the 19 elements of the screen (SOG-0482 lot 5: +1 « La clé » is a group button of the sheet, -1 « Essayer les clés » is in the bar of the map, outside the itinerary; 23 before the lot 4: the card « ＋ Tiroir » and the four buttons of the foot — Zone, Point tournant, Rendez-vous, Objet — are gone, the « ＋ » of the strip of the drawer chosen is new) — every button of the itinerary outside the open sheet (the lines of the places and of the drawers, « Essayer les clés », the add buttons) and the titles of the groups of the sheet — are the same elements after the keystrokes: no line is redrawn while typing (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -5977,7 +6137,9 @@ def n78(c):
     did = c.js(f"document.querySelector('{_DW}').dataset.drawer")  # the drawer of the sheet (the case removed another one before)
     # SOG-0482 lot 4: the « ＋ » of the strip adds the places (new points, PT3 to PT5: the mission has PT1 and PT2): the first from the line of the drawer (start of its onward route), the next ones after the place just added
     def placed():  # a new point is « à placer »: a drawer whose onward route leads to a place without position says « suite de route vers un lieu absent » — the points are placed
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.5')
     _plus_add(c, 'pt')
     placed()
@@ -5988,16 +6150,19 @@ def n78(c):
     _plus_add(c, 'pt')
     placed()
     c.until(f"({_dwc(did)}).length === 3", what='three places')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-chipmove=drawer] [data-do="eddrchipdel"]')
     c.eq(c.js(_dwc(did)), ['PT3', 'PT4'], 'a place removed from the onward route; the others in order', what='the route')
     _del_place(c, f'{E} [data-plform] [data-do="edplacedel"]')  # PT5 is cited by nothing now (its sheet stays open): deleted, so that « À compléter » says what it said before
     # the arrival drawer: its fields; a key kept as it is would say so (N75) — here the hour
+    _tab(c, 'itin')
     c.page.click(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
     c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrSpeed', 'arrGround', 'stopadd', 'fallback', 'title', 'message', 'brief'],
          'the fields of an arrival (no radius to type since SOG-0507: the arrival is judged at 1 NM of the airfield)', what='fields')
     c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrSpeed', 'arrGround')], ['DESTINATION', '30', True], 'read from the file', what='the arrival')
     # « ＋ Tiroir »: the fifth, by the pilot's gesture (SOG-0467: chosen in the choice of the type it opens); then an hour after take-off
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="E"]')  # SOG-0482 lot 4: the drawer added by the « ＋ » of a strip comes after the drawer chosen — the last one, so that the new drawer is the fifth
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'E'", what='the sheet of the last drawer')
     _plus_add(c, 'drawer')
@@ -6005,10 +6170,12 @@ def n78(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer open (the first free letter)')
     c.eq([norm(c.js(_DW_CARDS)[4][1]), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('atDrawer', n=5), 'hand', ['key', 'title', 'message', 'brief']],
          'a new drawer: rank 5, the pilot\'s gesture, nothing else asked', what='the new drawer')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=title]', 'Retour anticipé')
     dw_key(c, 'time')
     c.until(f"!!document.querySelector('{_DW} [data-f=delay]')", what='the key « hour »')
     c.eq(c.js(_DW_VAL, 'point'), 'ORIGIN', 'after the take-off by default', what='the point')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=delay]', '20')
     # « À compléter »: one line per drawer
     c.tap(f'{E} [data-do="edtodo"]')
@@ -6021,6 +6188,7 @@ def n78(c):
     c.shot('N78_390_todo.png')
     c.tap(f'{E} [data-do="edtodo"]')
     # « Retirer ce tiroir »: two presses, the second inert for a second; the ranks close up
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='drawer 1')
     c.js(f"""() => {{ const b = document.querySelector('{_DW} [data-do=eddrdel]'); b.click(); document.querySelector('{_DW} [data-do=eddrdel]').click() }}""")
@@ -6028,6 +6196,7 @@ def n78(c):
     c.ok(c.js(f"document.querySelector('{_DW}')?.dataset.drawer") == 'B' and norm(c.text(f'{_DW} [data-do=eddrdel]')) == 'Supprimer quand même',
          c.text(f'{_DW} [data-do=eddrdel]'), 'a double press removes nothing: the button now says « Retirer quand même »')
     c.wait(1100)
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-do=eddrdel]')
     c.until(f"!document.querySelector('{_DW}')", what='the drawer removed, back to the departure')
     c.eq([[x[0], norm(x[1])] for x in c.js(_DW_CARDS)],
@@ -6037,10 +6206,11 @@ def n78(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 1 on a wide screen')
     wide = c.js(f"[...document.querySelectorAll('{_DW} .ms-dbody')].map(x => getComputedStyle(x).display !== 'none').concat([...document.querySelectorAll('{_DW} [data-dline]')].map(x => getComputedStyle(x).display === 'none'))")
-    c.eq(wide, [True] * 6, 'on a wide screen the groups (« La clé », since the lot 5, « Les textes » and « Ce que le pilote voit ») are unfolded and say no line', what='the groups on a wide screen')
+    c.eq(wide, [True, True, True, False, True, True], 'on a wide screen the three groups (« La clé », since the lot 5, « Les textes » and « Ce que le pilote voit ») are unfolded; « Les textes » and « Ce que le pilote voit » say no line, « La clé » always says the key and the fallback', what='the groups on a wide screen')
     c.shot('N78_1280_drawer_object.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -6085,6 +6255,7 @@ def n79(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
     pv = c.js(_PV)
@@ -6095,16 +6266,23 @@ def n79(c):
          'open: its title (without its rank), no message yet, no briefing, no onward route', what='the open drawer')
     # it follows the typing and the boxes, in place
     c.js(f"document.querySelectorAll('{_DW} [data-pvbefore], {_DW} [data-pvafter]').forEach(x => x.__kept = true)")
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-f=shown]')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=title]', 'Entrée nord')
+    _tab(c, 'itin')
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.')
     did = c.js(f"document.querySelector('{_DW}').dataset.drawer")
     # SOG-0482 lot 4: the « ＋ » of the strip adds a point to the onward route (its sheet opens, the sheet of the drawer closes): named « Point deux », then the sheet of the drawer again
     _plus_add(c, 'pt')
     c.until(f"({_dwc(did)}).length === 1", what='one place in the onward route')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=name]', 'Point deux')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.4')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.6')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="{did}"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === '{did}'", what='the sheet of the drawer again')
     pv = c.js(_PV)
@@ -6115,23 +6293,30 @@ def n79(c):
     c.js(f"document.querySelector('{_DW} [data-dgrp=pilot]').scrollIntoView({{block: 'center'}})")
     c.shot('N79_1280_pilot.png')
     # the stops of an arrival: chips
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", what='the sheet of drawer 3')
     c.eq([norm(c.js(_PV)['name']), norm(c.js(_PV)['nothing'])], ['Retour', T('dwPilotNothing')], 'an arrival: nothing before the opening, its title once open',
          what='the key of an arrival')
+    _tab(c, 'itin')
     c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT2')
     c.until(f"document.querySelectorAll('{_DW} [data-stop]').length === 1", what='one stop')
+    _tab(c, 'itin')
     c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT1')
     c.until(f"document.querySelectorAll('{_DW} [data-stop]').length === 2", what='two stops')
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-stop="PT1"] [data-do="eddrstopdel"]')
     c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-stop]')].map(x => x.dataset.stop)"), ['PT2'], 'a stop removed; the other stays', what='the stops')
     # on a phone: the group is folded and says what it holds
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 2 on a phone')
     c.eq([c.js(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=pilot] .ms-dbody')).display"), norm(c.text(f'{_DW} [data-dline="pilot"]'))], ['none', T('dwPilotLine')],
          'folded on a phone, with its line', what='the group on a phone')
+    _tab(c, 'itin')
+    c.js(f"document.querySelector('{_DW} [data-do=eddrgrp][data-grp=pilot]').scrollIntoView({{block: 'center'}})")  # SOG-0482 lot 5: the sheet is longer, the group comes to the middle of the screen, clear of the foot
     c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="pilot"]')
     c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=pilot] .ms-dbody')).display !== 'none'", what='« Ce que le pilote voit » unfolded')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -6276,9 +6461,11 @@ def n91(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
-    c.ok(c.count(_TR) == 0 and norm(c.text(f'{E} [data-atflow] [data-trbtn]')) == T('trBtn'), c.text(f'{E} [data-atflow] [data-trbtn]'),
+    c.ok(c.count(_TR) == 0 and norm(c.text(f'{E} [data-trbtn]')) == T('trBtn'), c.text(f'{E} [data-trbtn]'),
          '« Essayer les clés » is a button of the unfolding; no trial at the opening')
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.ok(c.count(f'{E} [data-steps]') == 1 and c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid', 'not beside',
          'the pane comes before the itinerary, beside the map (the card « Mission » stays under them)')
@@ -6466,6 +6653,7 @@ def n93(c):
     # a place touched leads to its row, open; the same canvas, the same view
     view = c.js(_EDMAP_VIEW)
     c.js(f"document.querySelector('{_EDMAP} canvas').__kept = true")
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"!!document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"5\"][data-f=lat]')", what='the row of PT2, open')
     c.ok(c.js(f"document.querySelector('{_EDMAP} canvas').__kept === true") and c.js(_EDMAP_VIEW) == view and c.js(f"document.querySelector('{_EDMAP}').dataset.map") == 'tiles',
@@ -6479,6 +6667,7 @@ def n93(c):
     c.shot('N93_1280_row.png')
     # the map follows the typing, in place
     c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-edplaces] [data-k=edplace][data-i="5"][data-f=lat]', '44.3')
     c.until(f"(({_EDMAP_IDS})([44.3, 1.6]) || []).includes('place:5')", timeout=8000, what='PT2 moved on the map')
     kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
@@ -6486,19 +6675,27 @@ def n93(c):
     # « Recentrer » (the page may have scrolled to the row: the map is brought back in view first)
     c.js(f"document.querySelector('{_EDMAP}').scrollIntoView({{block: 'center'}})")
     x, y = c.js(_EDMAP_XY, [44.3, 1.1])
+    _tab(c, 'map')
     c.page.mouse.move(x, y)
+    _tab(c, 'map')
     c.page.mouse.down()
+    _tab(c, 'map')
     c.page.mouse.move(x + 120, y + 60, steps=6)
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"(() => {{ const v = {_EDMAP_VIEW}; return Math.abs(v[0] - {view[0]}) > 0.002 || Math.abs(v[1] - {view[1]}) > 0.002 }})()", what='the view moved by the author')
+    _tab(c, 'map')
     c.tap(f'{_EDMAP} [data-do=edmapfit]')
     c.eq(c.js(_EDMAP_VIEW), view, '« Recentrer » brings the view back to the frame of the mission', what='the view')
     # the trial of the keys: the aircraft and its trail; a touch does nothing
     c.tap(f'{E} [data-do="edplaceok"]')
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.js(_TR_SET, 10)
     c.until(f"['plane', 'trail'].every(k => (({_EDMAP_IDS})() || []).includes(k))", timeout=8000, what='the aircraft and its trail on the map')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.0, 2.0]))
     c.wait(300)
     c.ok(c.count(_TR) == 1 and c.count(f'{E} [data-steps]') == 1, 'the trial left', 'during the trial a touch on a place does nothing: the trial stays')
@@ -6508,7 +6705,7 @@ def n93(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
@@ -6590,7 +6787,7 @@ def n94(c):
 _EDTOOLS = f'{_EDMAP} [data-atmaptools]'
 # SOG-0542: « ↶ » and « ↷ » are on the line of the crumb ([data-athist]); the state keeps the old order: the five tools, undo, redo, fit
 _EDHIST = f'{E} [data-athist]'
-_EDTOOL_STATE = f"[...document.querySelectorAll('{_EDTOOLS} button:not([data-do=edmapfit])'), ...document.querySelectorAll('{_EDHIST} button'), ...document.querySelectorAll('{_EDTOOLS} [data-do=edmapfit]')].map(b => [b.dataset.tool || b.dataset.do, b.getAttribute('aria-pressed'), b.disabled])"
+_EDTOOL_STATE = f"[...document.querySelectorAll('{_EDTOOLS} button:not([data-do=edmapfit]):not([data-trbtn])'), ...document.querySelectorAll('{_EDHIST} button'), ...document.querySelectorAll('{_EDTOOLS} [data-do=edmapfit]')].map(b => [b.dataset.tool || b.dataset.do, b.getAttribute('aria-pressed'), b.disabled])"
 # SOG-0482: the French screen says the decimal comma (« 44,8 »); this helper reads the NUMBER the field holds, with the point, as the cases always compared it
 _EDPLACE_VAL = f"""([i, f]) => {{ const v = document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null; return /^-?[0-9]+,[0-9]+$/.test(v || '') ? v.replace(',', '.') : v }}"""
 def _dotted(v):
@@ -6608,10 +6805,15 @@ def _ed_drag(c, a, b):
     c.js(f"document.querySelector('{_EDMAP}')?.scrollIntoView({{block: 'center'}})")
     x0, y0 = c.js(_EDMAP_XY, a)
     x1, y1 = c.js(_EDMAP_XY, b)
+    _tab(c, 'map')
     c.page.mouse.move(x0, y0)
+    _tab(c, 'map')
     c.page.mouse.down()
+    _tab(c, 'map')
     c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
+    _tab(c, 'map')
     c.page.mouse.move(x1, y1, steps=4)
+    _tab(c, 'map')
     c.page.mouse.up()
 
 
@@ -6642,11 +6844,13 @@ def n95(c):
            ['edmapredo', None, True], ['edmapfit', None, False]],
           ''], 'the tools above the map: Sélection in hand, nothing to undo; the line says nothing (conforts 1-3: no permanent help sentence)', what='the tools')
     # Sélection: a place touched is chosen — its name on the map, its row open
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"{_EDSEL} === 'PT2 · Point deux'", what='PT2 chosen, its name on the map')
     c.eq([c.js(_EDPLACE_VAL, [5, 'lat']), norm(c.text(f'{_EDMAP} [data-maphint]'))], ['44.4', T('atHint_chosen', name='PT2 · Point deux')],
          'its row of the Lieux is open; the line says it can be dragged', what='the chosen place')
     # a located place is dragged: its row takes the new position
+    _tab(c, 'map')
     _ed_drag(c, [44.4, 1.6], [44.3, 1.75])
     c.until(f"(({_EDMAP_IDS})([44.3, 1.75]) || []).includes('place:5')", timeout=8000, what='PT2 moved on the map')
     lat, lon = c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])
@@ -6659,29 +6863,36 @@ def n95(c):
     c.eq(c.js(_EDTOOL_STATE)[5], ['edmapundo', None, True], '« Annuler le geste » gave the place back; nothing more to undo', what='undone')
     # the departure is not moved: the same press drags the map
     view = c.js(_EDMAP_VIEW)
+    _tab(c, 'map')
     _ed_drag(c, [45.0, 1.0], [44.9, 1.1])
     c.until(f"(() => {{ const v = {_EDMAP_VIEW}; return Math.abs(v[0] - {view[0]}) > 0.002 || Math.abs(v[1] - {view[1]}) > 0.002 }})()", what='the view moved')
     c.ok(c.js(_EDMAP_IDS, [45.0, 1.0]) is not None and 'place:0' in c.js(_EDMAP_IDS, [45.0, 1.0]) and c.js(_EDTOOL_STATE)[5][2] is True, c.js(_EDMAP_IDS, [45.0, 1.0]),
          'a press on the departure drags the map: the departure stays where it is, nothing to undo')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     # a tool of pose: taken in place (no button redrawn); a touch poses; the tool goes back to Sélection
     c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
     kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
     c.ok(all(kept) and c.js(_EDTOOL_STATE)[:2] == [['select', 'false', False], ['point', 'true', False]] and norm(c.text(f'{_EDMAP} [data-maphint]')) == T('atHint_point')
          and c.js(_EDSEL) is None, [c.js(_EDTOOL_STATE)[:2], c.text(f'{_EDMAP} [data-maphint]')], '« Point » taken in hand in place: no button was redrawn (SOG-0449); the line says what a touch will do')
     kinds = c.js(_EDPLACE_IDS)
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.until(f"{_EDSEL} === 'PT3'", what='PT3 posed and chosen')
     c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.2) and near(c.js(_EDPLACE_VAL, [6, 'lon']), 1.2) and c.js(_EDPLACE_VAL, [6, 'id']) == 'PT3'
          and c.js(_EDTOOL_STATE)[:2] == [['select', 'true', False], ['point', 'false', False]] and len(c.js(_EDPLACE_IDS)) == len(kinds) + 1,
          [c.js(_EDPLACE_VAL, [6, 'id']), c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDTOOL_STATE)[:2]],
          'a touch on the bare map posed PT3 there (a free identifier), its row is open, and the tool went back to Sélection')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.1, 1.3]))
     c.until(f"{_EDSEL} === null", what='nothing chosen')
     c.eq(len(c.js(_EDPLACE_IDS)), len(kinds) + 1, 'a second touch on the bare map creates nothing: no creation by accident', what='the rows')
     # a zone: round, with a radius; chosen, it shows the handle of its radius, which sets it
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="zone"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.15, 1.45]))
     c.until(f"{_EDSEL} === 'ZONE-2'", what='ZONE-2 posed and chosen')
     km = float(c.js(_EDPLACE_VAL, [4, 'radius']))
@@ -6689,11 +6900,14 @@ def n95(c):
          [km, c.js(_EDPLACE_VAL, [4, 'lat']), c.text(f'{_EDMAP} [data-maphint]'), c.js(_EDMAP_IDS, None)],
          'a round zone posed with a radius from the width of the view; chosen, it shows the handle of its radius and the line says so')
     east = 1.45 + km / (111.32 * 0.7176)
+    _tab(c, 'map')
     _ed_drag(c, [44.15, east], [44.15, east + 0.25])
     c.until(f"parseFloat(({_EDPLACE_VAL})([4, 'radius']) || '0') > {km} + 5", timeout=8000, what='the radius grown by its handle')
     c.ok(near(c.js(_EDPLACE_VAL, [4, 'lat']), 44.15), c.js(_EDPLACE_VAL, [4, 'lat']), 'the handle of the radius sets the radius; the centre did not move')
     # an object to find
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="object"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.9, 1.7]))
     c.until(f"{_EDSEL} === 'OBJ-2'", what='OBJ-2 posed and chosen')
     c.ok(near(c.js(_EDPLACE_VAL, [9, 'lat']), 44.9) and c.js(_EDTOOL_STATE)[0] == ['select', 'true', False], c.js(_EDPLACE_VAL, [9, 'lat']), 'an object posed; back to Sélection')
@@ -6701,6 +6915,7 @@ def n95(c):
     c.shot('N95_1280_posed.png')
     # « Annuler le geste » never undoes a typing: after one, nothing to give back
     c.ok(c.js(_EDTOOL_STATE)[5][2] is False, c.js(_EDTOOL_STATE)[5], 'the poses can be undone')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-edplaces] [data-k=edplace][data-i="9"][data-f=name]', 'Balise')
     c.until(f"({_EDTOOL_STATE})[5][2] === true", what='nothing to undo after a typing')
     # saved: the file carries what was posed
@@ -6714,7 +6929,7 @@ def n95(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     c.ok(c.js(f"document.querySelector('{_EDTOOLS}').scrollWidth <= document.querySelector('{_EDTOOLS}').clientWidth + 1"), 'the tools overflow', 'on a phone the tools hold in the width (they wrap)')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -6821,6 +7036,7 @@ def n97(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     # SOG-0482 lot 3 (fixup): ZONE-1 is the key of drawer 1, it has no row in the Lieux: it is chosen by a touch on the map, which opens the sheet of its drawer (the fields of the key, with « Changer en polygone »)
     ed_places(c)
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen on the map by a touch')
     c.until(f"!!document.querySelector('{E} [data-edplaces] [data-plform=\"3\"]')", what='the sheet of its drawer, with the fields of the key')
@@ -6828,6 +7044,7 @@ def n97(c):
          'the row of ZONE-1 open: a round zone, with its radius, the handle of its radius on the map, and « Changer en polygone »', what='a round zone')
     # round → contour: six vertices, and the points that add one; the view is framed on the zone
     view0 = c.js(_EDMAP_VIEW)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='the six vertices on the map')
     a0, a3 = c.js(_EDMAP_XY, [44.84497, 1.2]), c.js(_EDMAP_XY, [44.75503, 1.2])
@@ -6841,6 +7058,7 @@ def n97(c):
          what='round to contour')
     # a vertex is dragged; touched, it is chosen and « Retirer ce sommet » is offered
     c.ok(c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden") is True, 'shown', '« Retirer ce sommet » is not shown while no vertex is chosen')
+    _tab(c, 'map')
     _ed_drag(c, [44.84497, 1.2], [44.86, 1.2])
     c.until(f"(({_EDMAP_IDS})([44.86, 1.2]) || []).includes('vertex:3:0')", timeout=8000, what='the first vertex moved')
     c.eq(c.js(_EDMAP_VIEW), zoomed, 'moving a vertex never reframes the view', what='the view after a move')
@@ -6851,10 +7069,12 @@ def n97(c):
     c.shot('N97_1280_contour.png')
     # the point between two vertices adds one; « Retirer ce sommet » removes the chosen one
     mid = c.js(f"(() => {{ const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'mid:3:2'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] }})()")
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, mid))
     c.until(f"({_EDVERTS})(3) === 7", timeout=8000, what='a seventh vertex')
     c.eq([shape(3)[1], hint()], [T('plContour', n=7), T('atHint_vertex', k=4, name='ZONE-1 · Secteur nord')], 'a touch on the point between two vertices added one there, chosen',
          what='a vertex added')
+    _tab(c, 'map')
     c.tap(f'{_EDMAP} [data-vertexdel]')
     c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='six vertices again')
     c.ok(c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden") is True and hint() == T('atHint_contour', name='ZONE-1 · Secteur nord'), hint(),
@@ -6862,6 +7082,7 @@ def n97(c):
     # the contour is moved as a block by its middle; « Annuler le geste » gives it back
     where = c.js(f"(() => {{ const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'vertex:3:3'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] }})()")
     lbl = c.js("(() => { const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'place:3' && x.geometry.type === 'Point'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] })()")
+    _tab(c, 'map')
     _ed_drag(c, lbl, [lbl[0] - 0.02, lbl[1] - 0.02])
     c.until(f"!(({_EDMAP_IDS})({where}) || []).includes('vertex:3:3')", timeout=8000, what='the contour moved away')
     c.ok(c.js(_EDVERTS, 3) == 6 and 'vertex:3:3' in c.js(_EDMAP_IDS, [where[0] - 0.02, where[1] - 0.02]), c.js(_EDMAP_IDS, [where[0] - 0.02, where[1] - 0.02]),
@@ -6877,34 +7098,42 @@ def n97(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.ok(c.count(f'{E} [data-edplaces] [data-do="edplace"]') >= 5, c.count(f'{E} [data-edplaces] [data-do="edplace"]'),
          'after the save the group « Lieux », left unfolded, still lists the places (it used to be empty until folded and reopened): the five steps, the keys have no row')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen again')
     c.until(f"!!document.querySelector('{E} [data-edplaces] [data-plform=\"3\"]')", what='the sheet of its drawer')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 0 && (({_EDMAP_IDS})() || []).includes('radius:3')", timeout=8000, what='the zone round again')
     c.eq(shape(3), ['round', '', T('plToContour'), True], '« Changer en cercle »: the circle is back, with its radius field', what='contour to round')
     # « Recentrer » comes back to the mission
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     c.eq(c.js(_EDMAP_VIEW), view0, '« Recentrer » brings the view back from the zone to the frame of the mission', what='the view recentred')
     # from the sheet of a drawer: « Dessiner sur la carte » poses a zone that becomes its key
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of drawer 1')
     c.eq(c.js(f"document.querySelector('{_DW} [data-f=zone]').value"), 'ZONE-1', 'drawer 1 cites ZONE-1', what='the key of drawer 1')
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-do="eddrdraw"][data-kind="zone"]')
     c.eq([c.js(_EDTOOL_STATE)[3][:2], hint()], [['zone', 'true'], T('atHint_drawFor', n=1)], '« Dessiner sur la carte »: the tool Zone in hand, the line says for which drawer',
          what='drawing for a drawer')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.3]))
     c.until(f"document.querySelector('{_DW} [data-f=zone]')?.value === 'ZONE-2'", timeout=8000, what='the zone posed is the key of drawer 1')
     c.ok(c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'B' and c.js(_EDTOOL_STATE)[0][:2] == ['select', 'true'] and c.js(_EDSEL) == 'ZONE-2', c.js(_EDSEL),
          'the zone posed on the map is the key of drawer 1; the sheet of the drawer stays; the tool went back to Sélection')
     # on a phone
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]') if c.count(f'{E} [data-edplaces] [data-plform="3"]') == 0 else None
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='a contour again')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
@@ -6996,23 +7225,29 @@ def n99(c):
     c.eq(c.js(_RTCHIPS), [['ORIGIN', 'XTST'], ['PT1', 'PT1'], ['TARGET', 'TARGET'], ['DESTINATION', 'XTSU']],
          'the route of the departure as lines of the itinerary: the departure and the arrival by the code of their aerodrome, the places by their identifier', what='the lines')
     c.js(f"document.querySelector('{E} [data-atflow] [data-edplaces]').scrollIntoView({{block: 'center'}})")
+    _tab(c, 'itin')
     c.tap(f'{E} [data-at="{c.js(_AT_OF, "TARGET")}"] [data-do=edplace]')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]')
     c.until(f"({_RTCHIPS}).length === 3", what='TARGET removed from the route')
     _plus_add(c, 'pt')  # SOG-0482 lot 4: the « ＋ » above the Arrival replaces « Ajouter un lieu… »; the point it adds is new (PT3)
     c.until(f"({_RTCHIPS}).length === 4", what='a point added by the « ＋ »')
     c.eq([x[0] for x in c.js(_RTCHIPS)], ['ORIGIN', 'PT1', 'PT3', 'DESTINATION'], 'a cross removes a place; the « ＋ » above the Arrival adds one — before the arrival, which stays last',
          what='the route retouched')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]')
     c.until(f"({_RTCHIPS}).length === 3", what='the new point removed again')
     # the tool « Tracé »: taken in place, it stays in hand; a place touched joins the route of the departure
     c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="route"]')
     kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
     c.ok(all(kept) and c.js(_EDTOOL_STATE)[2][:2] == ['route', 'true'] and hint() == T('atHint_route'), [c.js(_EDTOOL_STATE)[2], hint()],
          '« Tracé » taken in hand in place (no button redrawn): the line says a touch adds to the route of the departure')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"({_RTCHIPS}).length === 4", timeout=8000, what='PT2 added by a touch on the map')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [45.0, 1.0]))
     c.until(f"({_RTCHIPS}).length === 5", timeout=8000, what='the departure added by a touch on the map')
     c.eq([[x[0] for x in c.js(_RTCHIPS)], c.js(_EDTOOL_STATE)[2][:2]], [['ORIGIN', 'PT1', 'PT2', 'ORIGIN', 'DESTINATION'], ['route', 'true']],
@@ -7025,21 +7260,26 @@ def n99(c):
     c.until(f"({_RTCHIPS}).length === 3", timeout=8000, what='the touch before undone')
     c.eq([[x[0] for x in c.js(_RTCHIPS)], c.js(_EDTOOL_STATE)[5], c.js(_EDTOOL_STATE)[2][:2]], [['ORIGIN', 'PT1', 'DESTINATION'], ['edmapundo', None, False], ['route', 'true']],
          '« Annuler le geste » gave the two places back, the last first; the removals of the sheet before them are still to undo (SOG-0542); the tool is still in hand', what='the route undone')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"({_RTCHIPS}).length === 4", timeout=8000, what='PT2 traced again')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [45.0, 1.0]))
     c.until(f"({_RTCHIPS}).length === 5", timeout=8000, what='the departure traced again')
     n = len(c.js(_EDPLACE_IDS))
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.wait(300)
     c.eq([len(c.js(_RTCHIPS)), len(c.js(_EDPLACE_IDS))], [5, n], 'a touch on the bare map adds nothing to the route and creates no place', what='the bare map')
     # with a drawer chosen in the unfolding, Tracé fills its onward route; the map draws it
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
     c.eq([c.js(_dwc('C')), hint(), c.js(_EDTOOL_STATE)[2][:2]], [['PT2'], T('atHint_routeDrawer', n=2), ['route', 'true']],
          'drawer 2 chosen: its onward route is PT2; the tool is still in hand and the line says it now fills the onward route of drawer 2', what='a drawer chosen')
     # the sheet of a drawer is shorter than the Lieux: the page, scrolled for the chips, may leave the map above the view — bring it back
     c.js(f"document.querySelector('{_EDMAP} [data-atmapslot]').scrollIntoView({{block: 'center'}})")
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.25]))
     c.until(f"({_dwc('C')}).length === 2", timeout=8000, what='a place added to the onward route of drawer 2')
     c.ok(c.js(_dwc('C'))[0] == 'PT2' and c.js(_dwc('C'))[1] in ('ZONE-1', 'PT1') and 'onward' in c.js(_EDMAP_IDS, None), [c.js(_dwc('C')), c.js(_EDMAP_IDS, None)],
@@ -7048,11 +7288,13 @@ def n99(c):
     c.until(f"({_dwc('C')}).length === 1", timeout=8000, what='the place added to the onward route undone')
     c.eq([c.js(_dwc('C')), c.js(f"document.querySelector('{_DW}').dataset.drawer")], [['PT2'], 'C'], '« Annuler le geste » gives back the onward route of the drawer too; its sheet stays',
          what='the onward route undone')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.25]))
     c.until(f"({_dwc('C')}).length === 2", timeout=8000, what='the place added again')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N99_1280_route.png')
     # the tool is left by taking it again
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="route"]')
     c.eq([c.js(_EDTOOL_STATE)[0][:2], c.js(_EDTOOL_STATE)[2][:2]], [['select', 'true'], ['route', 'false']], 'taken again, « Tracé » is left: back to Sélection', what='the tool left')
     # saved: the file carries both routes
@@ -7129,6 +7371,7 @@ def n100(c):
     c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
     c.eq(hint(), '', 'the landmarks are shown; nothing is chosen', what='the line')
     # a landmark with a local mark is neither drawn nor addable (the base seeded carries two: one from X-Plane, one said local)
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.1]))
     c.wait(400)
     c.ok(c.js(_EDREFS) == ['LFZZ', 'NEPIX', 'TSV'] and add() is True and hint() == '', [c.js(_EDREFS), hint()],
@@ -7138,21 +7381,26 @@ def n100(c):
     c.until(f"({_EDPLACE_IDS}).length === 6", what='the six lines of the places of the mission listed (the seventh, OBJ-1, is the key of a drawer: no line)')
     n = len(c.js(_EDPLACE_IDS))
     c.ok(add() is True, add(), '« Ajouter comme point » is not shown while no landmark is touched')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched')
     c.eq([hint(), norm(c.text(f'{_EDMAP} [data-refadd]')), len(c.js(_EDPLACE_IDS)), c.js(_EDSEL)], [T('atRef_navaid', id='TSV'), T('atRefAdd'), n, None],
          'the beacon touched says what it is, « Ajouter comme point » is offered — and no place was created by the touch', what='a landmark touched')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N100_1280_landmark.png')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.25, 1.7]))
     c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('LFZZ')", timeout=8000, what='the aerodrome touched')
     c.eq(hint(), T('atRef_aerodrome', id='LFZZ'), 'an aerodrome of the base says it is one', what='an aerodrome touched')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.15, 1.15]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === true", timeout=8000, what='the landmark forgotten')
     c.eq([hint(), len(c.js(_EDPLACE_IDS))], ['', n], 'a touch on the bare map forgets the landmark; still nothing created', what='the bare map')
     # « Ajouter comme point »: a turning point at its position, under its name; a gesture of the map
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched again')
+    _tab(c, 'map')
     c.tap(f'{_EDMAP} [data-refadd]')
     c.until(f"{_EDSEL} === 'PT3 · TSV'", timeout=8000, what='PT3 created from the beacon and chosen')
     c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.3) and near(c.js(_EDPLACE_VAL, [6, 'lon']), 1.3) and c.js(_EDPLACE_VAL, [6, 'name']) == 'TSV' and len(c.js(_EDPLACE_IDS)) == n + 1
@@ -7161,7 +7409,9 @@ def n100(c):
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"({_EDPLACE_IDS}).length === {n}", timeout=8000, what='the point undone')
     # with a tool of pose in hand, a touch on a landmark poses as anywhere else
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.7, 1.75]))
     c.until(f"{_EDSEL} === 'PT3'", timeout=8000, what='a point posed on a landmark')
     c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.7) and c.js(_EDPLACE_VAL, [6, 'name']) == '' and add() is True, [c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDPLACE_VAL, [6, 'name'])],
@@ -7170,7 +7420,7 @@ def n100(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     # the frame of a wide mission on a phone is under the zoom of the landmarks (7): they are neither shown nor asked for; closer, they come
     c.ok(c.js("window.__edMap.getZoom()") < 7 and c.js(_EDREFS) == [], [c.js("window.__edMap.getZoom()"), c.js(_EDREFS)],
@@ -7178,6 +7428,7 @@ def n100(c):
     c.js("window.__edMap.jumpTo({ center: [1.35, 44.35], zoom: 8.5 })")
     c.until(f"({_EDREFS} || []).includes('TSV')", timeout=15000, what='the landmarks on a phone, closer')
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched on a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -7274,7 +7525,9 @@ def n102(c):
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq(c.js(_TRPUT_STATE), [True, 'false'], 'out of a trial « Placer l\'avion ici » is not shown', what='before the trial')
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.js(_TR_SET, 2)
     c.eq([c.js(_TRPUT_STATE), norm(c.text(_TRPUT)), hint(), c.js(_TR_STATES)[0][1]], [[False, 'false'], T('atPut'), T('atHint_view'), ''],
@@ -7286,6 +7539,7 @@ def n102(c):
     c.ok(all(kept) and c.js(_TRPUT_STATE) == [False, 'true'] and hint() == T('atHint_put', m=2), [c.js(_TRPUT_STATE), hint()],
          '« Placer l\'avion ici » taken in hand in place (no button redrawn): the line says the next touch puts the aircraft there, at H + 2 min')
     # the touch puts the aircraft in the zone: it opens at that minute; the tool is dropped
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.until(f"({_TR_STATES})[0][1] === '1'", timeout=8000, what='drawer 1 open')
     log = [norm(x) for x in c.js(_TR_LOG)]
@@ -7295,6 +7549,7 @@ def n102(c):
          'tool is dropped')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N102_1280_put.png')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.wait(300)
     c.ok('plane' in c.js(_EDMAP_IDS, [44.8, 1.2]) and c.count(_TR) == 1, c.js(_EDMAP_IDS, [44.8, 1.2]), 'the tool dropped, another touch on the map does nothing: the aircraft stays')
@@ -7305,6 +7560,7 @@ def n102(c):
          what='started again')
     # the order of the flight is said: placed near the object of drawer 2 while drawer 1 is closed, nothing opens and the log says why
     c.tap(_TRPUT)
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.6, 1.42]))
     c.until(f"({_TR_LOG}).length >= 3", timeout=8000, what='the log after the placement near the object')
     log = [norm(x) for x in c.js(_TR_LOG)]
@@ -7321,7 +7577,9 @@ def n102(c):
     # on a phone
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane on a phone')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     c.tap(_TRPUT)
@@ -7489,6 +7747,7 @@ def n104(c):
          'hides (OBJ-1) and the point of its onward route (PT2) are neither drawn nor named; the tools are not given and the line says why', what='the pilot at the departure')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N104_1280_pilot.png')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.wait(300)
     c.ok(c.js(_EDSEL) is None and c.count(f'{E} [data-steps]') == 1 and c.js(f"document.querySelector('{_EDVIEW}').value") == '0', c.js(_EDSEL),
@@ -7507,7 +7766,9 @@ def n104(c):
     c.eq([c.js(_EDMAP_IDS, None), hint(), c.js(_EDTOOL_STATE)[0]], [every, '', ['select', 'true', False]], '« Tout »: everything is drawn, the tools come back',
          what='the author again')
     # during a trial of the keys the list is not shown (the trial shows everything)
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.eq(c.count(f'{_EDMAP} [data-mapview]'), 0, 'during a trial of the keys the list of the views is not shown', what='during the trial')
     c.tap(f'{_TR} [data-do="edtrialoff"]')
@@ -7517,7 +7778,7 @@ def n104(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_EDMAP} [data-mapview]').scrollIntoView({{block: 'end'}})")
@@ -7570,10 +7831,13 @@ def n105(c):
 
     def seek(text, enter=False):
         """Types a text in the field and searches: the button, or Enter."""
+        _tab(c, 'map')
         c.page.fill(f'{_SEEK} input', text)
         if enter:
+            _tab(c, 'map')
             c.page.press(f'{_SEEK} input', 'Enter')
         else:
+            _tab(c, 'map')
             c.tap(f'{_SEEK} > button')
 
     # the candidates of a search are bounded, and confirmed by the base, before anything reaches the screen
@@ -7623,6 +7887,7 @@ def n105(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N105_1280_seek.png')
     # « Recentrer » comes back to the mission
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     c.until(f"JSON.stringify({_EDMAP_VIEW}) === '{__import__('json').dumps(home, separators=(',', ':'))}'", timeout=8000, what='the view back on the mission')
     # a name that several landmarks answer, by Enter: they are offered; the one chosen is gone to
@@ -7632,11 +7897,13 @@ def n105(c):
          'Enter searches as the button does; two landmarks answer the name: they are offered under the field, the view has not moved', what='several landmarks')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N105_1280_seek_many.png')
+    _tab(c, 'map')
     c.tap(f'{_SEEK} [data-refseekout] button >> nth=1')
     c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('LFZZ')", timeout=10000, what='the aerodrome chosen')
     c.ok(at(view(), 44.25, 1.7) and hint() == T('atRef_aerodrome', id='LFZZ') and c.js(_SEEK_OUT) == [] and len(c.js(_EDPLACE_IDS)) == n, [view(), hint(), c.js(_SEEK_OUT)],
          'the candidate chosen: the view goes to the aerodrome, the line says it, the candidates are gone; nothing created')
     # a tool of pose in hand is dropped: the landmark found is said as one touched in Sélection
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
     seek('NEPIX')
     c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('NEPIX')", timeout=10000, what='the fix found')
@@ -7657,6 +7924,7 @@ def n105(c):
     c.ok(norm(T('atSeekShort')) in norm(c.js(_NOTES)) and view() == here, norm(c.js(_NOTES)), 'one sign is not searched: a notification asks for two')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     # « Ajouter comme point » on the landmark found: a gesture of the map as for a landmark touched
+    _tab(c, 'map')
     c.tap(f'{_EDMAP} [data-refadd]')
     c.until(f"{_EDSEL} === 'PT3 · NEPIX'", timeout=8000, what='PT3 created from the fix found')
     c.ok(abs(float(c.js(_EDPLACE_VAL, [6, 'lat'])) - 44.7) < 0.001 and abs(float(c.js(_EDPLACE_VAL, [6, 'lon'])) - 1.75) < 0.001 and len(c.js(_EDPLACE_IDS)) == n + 1,
@@ -7668,7 +7936,9 @@ def n105(c):
     c.until(f"!document.querySelector('{_SEEK}')", timeout=8000, what='the field gone in the pilot\'s view')
     c.page.select_option(_EDVIEW, '-1')
     c.until(f"document.querySelector('{_SEEK} input')?.disabled === false", timeout=8000, what='the field back with « Tout »')
-    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    _tab(c, 'map')
+    _tab(c, 'map')
+    c.tap(f'{E} [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.eq(c.count(_SEEK), 0, 'during a trial of the keys the field is not given (the map only shows)', what='during the trial')
     c.tap(f'{_TR} [data-do="edtrialoff"]')
@@ -7677,7 +7947,7 @@ def n105(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
     seek('test')
     c.until(f"({_SEEK_OUT}).length === 2", timeout=10000, what='two candidates offered on a phone')
@@ -7755,6 +8025,7 @@ def n106(c):
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", what='the route of the departure in the Lieux')
     c.js(f"document.querySelector('{E} [data-atflow] [data-edplaces]').scrollIntoView({{block: 'center'}})")
+    _tab(c, 'itin')
     pick = lambda title: c.tap(f'{E} [data-at="{c.js(_AT_OF, title)}"] [data-do=edplace]')  # noqa: E731
     arrow = lambda step: f'{E} [data-atflow] [data-chipmove=start] [data-reorder="{"down" if step == 1 else "up"}"]'  # noqa: E731
     cur = lambda: c.js(_ITIN_CUR)  # noqa: E731
@@ -7791,10 +8062,12 @@ def n106(c):
     c.eq([cur(), c.js(_ITIN_MV)], [['start:1'], [True, False]],
          'the « ＋ » above the Arrival put PT3 before the arrival, which stays last; the same arrow, pressed twice in a row, brought it just after the departure — not before', what='pressed twice')
     # « Retirer … de la route » forgets the choice of the line; one free place: no arrows; a forged removal of the departure does nothing
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]')
     becomes(['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], 'PT3 removed')
     c.eq(c.js(_ITIN_MV), None, 'a place removed from the route: no arrows of the route under the sheet that stays', what='after a removal')
     pick('TARGET')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]')
     becomes(['ORIGIN', 'PT1', 'DESTINATION'], 'TARGET removed')
     pick('PT1')
@@ -7804,6 +8077,7 @@ def n106(c):
         c.wait(250)
     c.eq(order(), ['ORIGIN', 'PT1', 'DESTINATION'], 'a forged cross on the departure, then on the arrival, removes nothing: a route keeps its departure and its arrival', what='forged')
     # the onward route of a drawer: the same two arrows under the line chosen (SOG-0482 lot 3: its lines are under the drawer, no more chips in the sheet)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
     c.eq(c.js(_dwc('C')), ['PT2'], 'a route of one place', what='one place')
@@ -7815,13 +8089,17 @@ def n106(c):
     c.until(f"({_dwc('C')}).length === 3", what='PT5 added to the onward route')
     drv = f"(() => {{ const r = document.querySelector('{E} [data-atflow] [data-chipmove=drawer]'); return r ? [...r.querySelectorAll('[data-reorder]')].map(b => b.disabled) : null }})()"
     c.eq(c.js(_dwc('C')), ['PT2', 'PT4', 'PT5'], 'three places in the onward route, in the order of the adds', what='the onward route')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-at="drawer:C:1"] [data-do="edplace"]')
     c.eq([c.js(drv), cur()], [[False, False], ['drawer:C:1']], 'PT4, in the middle of the onward route, chosen: both arrows are open', what='chosen')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=drawer] [data-reorder=up]')
     c.until(f"({_dwc('C')})[0] === 'PT4'", timeout=8000, what='PT4 first in the onward route')
     c.eq([c.js(_dwc('C')), c.js(drv), cur()], [['PT4', 'PT2', 'PT5'], [True, False], ['drawer:C:0']],
          'the place chosen of the onward route moved one rank earlier: it is first, still the line chosen, « ↑ Plus tôt » is greyed (first of its list)', what='earlier')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-at="drawer:C:2"] [data-do="edplace"]')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-chipmove=drawer] [data-reorder=up]')
     c.until(f"({_dwc('C')})[1] === 'PT5'", timeout=8000, what='PT5 second in the onward route')
     c.eq([c.js(_dwc('C')), cur()], [['PT4', 'PT5', 'PT2'], ['drawer:C:1']], 'in the onward route of a drawer every place moves (SOG-0543: the Arrival is no longer offered in the menu, a file that cites it keeps it: N203)', what='free')
@@ -7969,17 +8247,23 @@ def n108(c):
     c.shot('N108_1280_offline.png')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     # the gestures work: a place chosen, a point posed
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"{_EDSEL} === 'PT2 · Point deux'", timeout=8000, what='PT2 chosen by a touch')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.until(f"{_EDSEL} === 'PT3'", timeout=8000, what='a point posed offline')
     c.ok(abs(float(c.js(_EDPLACE_VAL, [6, 'lat'])) - 44.2) < 0.02 and c.js(_EDTOOL_STATE)[5] == ['edmapundo', None, False], [c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDTOOL_STATE)[5]],
          'a place is chosen by a touch and a point is posed where the map is touched: the gestures do not need the background')
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
     # the landmarks of the base already on the device: shown closer, found by their name
+    _tab(c, 'map')
     c.page.fill(f'{_SEEK} input', 'TSV')
+    _tab(c, 'map')
     c.tap(f'{_SEEK} > button')
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=10000, what='the beacon found offline')
     c.until(f"({_EDREFS} || []).includes('TSV')", timeout=15000, what='the landmarks drawn offline')
@@ -7990,8 +8274,9 @@ def n108(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     c.wait(400)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -8039,6 +8324,7 @@ def n109(c):
         if not wide:
             return
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
 
@@ -8063,6 +8349,7 @@ def n109(c):
     c.eq(c.js(_FOOT_JS), _FOOT, 'at 1280: the same foot', what='the foot at 1280')
     c.shot('N109_1280_foot.png')
     t0 = c.js(title)
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Un titre retouché')
     c.tap(f'{E} [data-do="edcancel"]')
     c.until(asked, timeout=8000, what='the question before leaving')
@@ -8082,6 +8369,7 @@ def n109(c):
     reg_open(c, _TRIAL_TEXTS)
     open_x(True)
     c.eq(c.js(title), t0, 'the mission reopened is the one of the file', what='reopened')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Un titre enregistré')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved')
@@ -8098,6 +8386,7 @@ def n109(c):
     c.until(_REG_READ, timeout=20000, what='the registry')
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Une mission commencée')
     c.tap(f'{E} [data-do="edcancel"]')
     gone('the new mission with a title: its draft keeps it, left at once')
@@ -8211,6 +8500,7 @@ def n110(c):
     c.js("window.__edMap.jumpTo({ zoom: 3 })")
     c.until(f"(({_MAP_TONES}) || []).length === 0", timeout=8000, what='the layer emptied')
     c.eq(look()[2], T('atSpacesFar'), 'a view too wide reads nothing: the line says to come closer', what='too wide')
+    _tab(c, 'map')
     c.tap(f'{_EDMAP} [data-do="edmapfit"]')
     c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces back')
     # « Relief » that does not come (the bench answers no tile host): said, the map stays in « Rapide », the choice stays
@@ -8263,7 +8553,7 @@ def n110(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     if not c.js(f"document.querySelector('{E} [data-atmap]').dataset.open"):
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"{state} === 'tiles'", timeout=10000, what='the map at 390')
     c.tap(f'{_LOOK} input[data-k="edmapspaces"]')
     c.until(f"(({_MAP_TONES}) || []).length >= 1", timeout=10000, what='the airspaces at 390')
@@ -8339,6 +8629,7 @@ def n111(c):
     c.js(_MM_POSE, [_TRIAL_MISSION, 0, False])
     c.wait(300)
     # it only shows: a touch on a place chooses nothing; no handle
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.wait(300)
     c.eq([c.count(f'{_MM} [data-mapsel]'), st()['labels']], [0, ['PT1', 'TARGET', 'XTST', 'XTSU']], 'a touch on a place chooses nothing: the map only shows', what='read only')
@@ -8667,6 +8958,7 @@ def n114(c):
           f"return [b.match(/\\((\\d+)\\)/)?.[1], document.querySelectorAll('{E} [data-edtodo] [data-todo]').length] }})()")],
          [4, 0, ['4', 4]], 'the Lieux: the four places of the departure (the hidden rows stay in the sitting, not shown); no « Cible » in the menu of the « ＋ » of a veiled workshop; '
          '« À compléter » counts what it lists, nothing of a drawer', what='the Lieux and the count')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie unfolded')
     v = c.js(_VEIL_LEAKS)
@@ -8676,22 +8968,28 @@ def n114(c):
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded again')
     clear()
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
     c.until(f"!!document.querySelector('{E} [data-plform=\"4\"]')", what='the form of PT1')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="4"] [data-do="edplacedel"]')
     c.wait(300)
     c.ok(heard('veilLocked') and c.count(f'{E} [data-edplaces] [data-place="4"]') == 1, said(), 'PT1 removed in a veiled workshop: the sentence, and nothing is removed')
     clear()
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="4"] input[data-f=id]', 'PT9')
     c.wait(300)
     c.ok(c.js(f"document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]').value") == 'PT1' and heard('veilLocked'), [c.js(f"document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]').value"), said()],
          'its identifier changed in a veiled workshop: the field gives it back, and the same sentence')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="4"] input[data-f=name]', 'Point un retouché')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-plform="4"] [data-do="edplaceok"]')
     # a place added in the sitting: renamed and removed freely; its identifier is the greatest number carried, plus one (a gap proves nothing)
     _plus_add(c, 'pt')
     c.until(f"!!document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]')", what='the form of the new point')
     new_id = c.js(f"document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]').value")
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="6"] input[data-f=id]', 'PT7')
     c.wait(200)
     renamed = c.js(f"document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]').value")
@@ -8701,8 +8999,10 @@ def n114(c):
     c.eq([new_id, renamed, c.count(f'{E} [data-edplaces] [data-place]'), heard('veilLocked')], ['PT3', 'PT7', 4, False],
          'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed by two touches — no sentence', what='a place added')
     # the title, then « Enregistrer »: the drawers and the hidden places are written back INTACT
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    _tab(c, 'mission')
     c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, voilée')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -8729,6 +9029,7 @@ def n114(c):
         c.js(f"document.querySelector('{E} [data-atflow]').scrollIntoView({{block: 'center'}})")
         c.wait(300)
         shots.append(c.shot(_VEIL_TO.format(w=w, n='voile')))
+        _tab(c, 'itin')
         c.tap(f'{E} [data-unveil]')
         c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question')
         c.eq([norm(c.text('.f-modal p')), norm(c.text('.f-modal [data-ok]')), norm(c.text('.f-modal [data-no]'))], [T('veilAsk'), T('veilOk'), T('veilKeep')],
@@ -8739,6 +9040,7 @@ def n114(c):
             c.wait(300)
             c.eq([c.count('.f-modal'), c.js(f"document.querySelector('{E}').dataset.veil"), c.js(_VEIL_LEAKS)['found']], [0, '1', []], '« Garder le secret »: nothing changes',
                  what='keep the secret')
+            _tab(c, 'itin')
             c.tap(f'{E} [data-unveil]')
             c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question again')
         c.tap('.f-modal [data-ok]')
@@ -8774,6 +9076,7 @@ def n114(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='a mission without drawer, veiled')
     clear()
+    _tab(c, 'itin')
     c.tap(f'{E} [data-unveil]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question')
     c.tap('.f-modal [data-ok]')
@@ -8863,14 +9166,17 @@ def n116(c):
     c.tap(f'{R} [data-rowid="X-001A"]')
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events')
     v = c.js(_VEIL_EV_VALUES)
     c.eq(v, {'hits': [False] * 5, 'places': [['', ['', 'TARGET', 'PT1']], ['PT1', ['', 'TARGET', 'PT1']]]},
          'veiled: the event at the hidden PT2 shows « aucun lieu » chosen and the visible places alone, as an event without a place; PT2 is nowhere — not in the '
          'text, not in a value, not in an option; the event at PT1 keeps PT1', what='the hidden reference')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    _tab(c, 'mission')
     c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, chronologie')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -8878,9 +9184,11 @@ def n116(c):
                                                                      {'at': 'H+10mn', 'place': 'PT1', 'text': 'Passage du col'}], 4, ['PT1', 'PT2']],
          'saved without touching the events: the title written, the event still cites PT2, the drawers and the hidden point kept', what='the saved file')
     # the author chooses a place himself: his choice replaces it
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events again')
     c.eq(c.js(_VEIL_EV_VALUES)['hits'], [False] * 5, 'after the save, still nothing of PT2 in the page', what='after the save')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'TARGET')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
@@ -8924,6 +9232,7 @@ def n117(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     _plus_add(c, 'zone')
     c.until(f"!!document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]')", what='the form of the new zone')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform="4"] input[data-f=id]', 'ZONE-9')
     _del_place(c, f'{E} [data-plform="4"] [data-do="edplacedel"]')
     c.wait(400)
@@ -8931,8 +9240,10 @@ def n117(c):
          [{'notes': [False, False], 'page': [False, False, False]}, 4, 0],
          'the new zone named ZONE-9 is removed by two presses: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
          what='the probe')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    _tab(c, 'mission')
     c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, sonde')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -8995,7 +9306,7 @@ def n118(c):
     def unfold():
         """On a phone the map is folded behind its button."""
         if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-            c.tap(f'{E} [data-do="edmap"]')
+            _tab(c, 'map')
         c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000,
                 what='the map unfolded')
 
@@ -9048,16 +9359,18 @@ def n118(c):
          'no aerodrome known, no place located: the map is alive and empty on the start view of the Carte (the sitting has seen nothing yet), nothing labelled; the sketch « Aucun lieu placé » is '
          'hidden and the line says « Aucun lieu : choisissez Point, puis touchez la carte. » in place of the usual instruction; « Recentrer » and every tool are given (only « Annuler le geste » waits)',
          what='the empty map')
-    if not c.count(f'{E} input[data-k=eddep]'):  # the Cadre is open at the opening
-        c.tap(f'{E} [data-steps] [data-step="cadre"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
     c.wait(800)
-    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').value"), c.js(f"document.querySelector('{E} input[data-k=edarr]').value")], ['metz', 'Piste (nord)'],
-         'the base knows neither METZ nor NORD: the Cadre keeps « metz » and « Piste (nord) » as written — no capital, no position', what='the Cadre, unknown codes')
+    c.eq(_end_vals(c), ['metz', 'Piste (nord)'],
+         'the base knows neither METZ nor NORD: the lines of the Departure and of the Arrival keep « metz » and « Piste (nord) » as written — no capital, no position', what='the endpoints, unknown codes')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(500)
     c.eq(c.js(_TEXT_OF, pb), _LC_B, 'nothing touched: « Enregistrer » writes nothing', what='the file')
     look('N118_1280_vue_large.png')
+    _tab(c, 'itin')
+    if c.count(f'{E} [data-atflow] .ms-plpick[aria-current]'):
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-atflow] .ms-plpick[aria-current]')  # the sheet of an end, left open above, would choose its place on the map: its line touched again closes it
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     unfold()
@@ -9074,16 +9387,14 @@ def n118(c):
     c.eq([c.js(labels), c.js(_LC_FOUND), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), norm(c.text(f'{_EDMAP} [data-maphint]'))],
          [['XTST', 'XTSU'], True, True, ''],
          'no place carries a position, yet the map is alive, framed on XTST and XTSU found in the base (their labels in capitals); the usual instruction is given', what='the map')
-    if not c.count(f'{E} input[data-k=eddep]'):  # the Cadre is open at the opening
-        c.tap(f'{E} [data-steps] [data-step="cadre"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
-    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST' && document.querySelector('{E} input[data-k=edarr]').value === 'XTSU'", timeout=8000,
-            what='the departure and the arrival read in capitals once the base has answered')
-    # SOG-0465: the field of an aerodrome carries its code alone, the name is read under it (« XTSU — … »)
-    c.until(f"[...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what='the names under the fields')
-    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').value"), c.js(f"document.querySelector('{E} input[data-k=edarr]').value"),
-          [norm(c.text(f'{E} [data-adline={k}]') or '')[:6] for k in ('eddep', 'edarr')]], ['XTST', 'XTSU', ['XTST —', 'XTSU —']],
-         'the Cadre shows the departure and the arrival with their code in capitals (SOG-0465: the code in the field, the name under it)', what='the Cadre')
+    _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
+    for k, code in (('dep', 'XTST'), ('arr', 'XTSU')):
+        _end_open(c, k)
+        c.until(f"document.querySelector('{E} input[data-k=ed{k}]').value === '{code}'", timeout=8000, what=f'the {k} read in capitals once the base has answered')
+        # SOG-0465: the field of an aerodrome carries its code alone, the name is read under it (« XTSU — … »)
+        c.until(f"[...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what='the name under the field')
+    c.eq(_end_state(c), [['XTST', 'XTSU'], ['XTST —', 'XTSU —']],
+         'the lines of the Departure and of the Arrival show their code in capitals (SOG-0465: the code in the field, the name under it)', what='the endpoints')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(500)
     c.eq(c.js(_TEXT_OF, pa), _LC_A, 'nothing touched: « Enregistrer » writes nothing, the file keeps its lower case', what='the file')
@@ -9105,7 +9416,9 @@ def n118(c):
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
     c.until(live, timeout=10000, what='the map back at 1280')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.5]))
     c.until(f"(({_EDMAP_IDS})() || []).includes('place:2')", timeout=10000, what='the first place set on the empty map')
     c.eq([c.js(_EDMAP_IDS, None), c.js(f"document.querySelector('{_EDMAP}').dataset.map") in ('tiles', 'plain')], [['place:2'], True],
@@ -9134,6 +9447,7 @@ def n119(c):
         ed_reveal(c)
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
 
@@ -9173,6 +9487,7 @@ def n119(c):
     # changed: (a) the menu of the suite, (b) another address of Missions, (c) the browser's Back
     to_registry()
     open_x()
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Un titre retouché')
     ASKED = [1, FRAME_ASK, 'Quitter sans enregistrer', 'Rester']
     to_fuel('menu')
@@ -9197,6 +9512,7 @@ def n119(c):
     # « Annuler »: ONE question, the frame's words, and the frame does not ask again (a fresh page: the history of the steps above is not this one's)
     reg_open(c, _NODRAFT_TEXTS)
     open_x()
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Un titre retouché')
     c.tap(f'{E} [data-do="edcancel"]')
     c.eq(question(), ASKED, '« Annuler »: ONE question, with the words of the frame', what='question (Annuler)')
@@ -9210,6 +9526,7 @@ def n119(c):
     # saved: nothing to lose, the menu leaves at once
     reg_open(c, _TRIAL_TEXTS)
     open_x()
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Un titre enregistré')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved')
@@ -9243,18 +9560,17 @@ _AD_BOX = f"""(() => {{ const b = document.querySelector('{E} [data-adsug]'), r 
       'are not a code); modules/missions/EDITOR.md § 7 tricies')
 def n120(c):
     pa, pc = 'missions/X_REG/X-001A/missionX-001A.yaml', 'missions/X_REG/X-003/missionX-003.yaml'
-    val = lambda k: c.js(f"document.querySelector('{E} input[data-k={k}]').value")  # noqa: E731
-    line = lambda k: norm(c.text(f'{E} [data-adline={k}]') or '')  # noqa: E731
+    val = lambda k: (_end_open(c, k[2:]), c.js(f"document.querySelector('{E} input[data-k={k}]').value"))[1]  # noqa: E731
+    line = lambda k: (_end_open(c, k[2:]), norm(c.text(f'{E} [data-adline={k}]') or ''))[1]  # noqa: E731
     shut = f"document.querySelector('{E} [data-adsug]').hidden"
 
     def cadre():
         """The Cadre unfolded in the sheet of the workshop."""
-        if not c.count(f'{E} input[data-k=eddep]'):
-            c.tap(f'{E} [data-steps] [data-step="cadre"]')
-        c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+        _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
 
     def typed(k, text):
         """Types a text in a field key by key, as a finger would (the field emptied first)."""
+        _end_open(c, k[2:])
         c.page.fill(f'{E} input[data-k={k}]', '')
         c.page.locator(f'{E} input[data-k={k}]').press_sequentially(text, delay=40)
 
@@ -9295,9 +9611,10 @@ def n120(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the workshop of X-001A')
     cadre()
-    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST' && document.querySelector('{E} input[data-k=edarr]').value === 'XTSU' && "
-            f"[...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what='the codes in the fields, the names under them')
-    c.ok(line('eddep').startswith('XTST — ') and line('edarr').startswith('XTSU — '), [line('eddep'), line('edarr')], 'under each field « XTST — <its name> »')
+    for k, code in (('dep', 'XTST'), ('arr', 'XTSU')):
+        _end_open(c, k)
+        c.until(f"document.querySelector('{E} input[data-k=ed{k}]').value === '{code}' && [...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what=f'the code of the {k} in its field, the name under it')
+        c.ok(line(f'ed{k}').startswith(f'{code} — '), line(f'ed{k}'), f'under the field of the {k}: « {code} — <its name> »')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(500)
     c.eq(c.js(_TEXT_OF, pa), _LC_A, 'an existing mission saved untouched: nothing written', what='the file of X-001A')
@@ -9306,9 +9623,12 @@ def n120(c):
     c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=10000, what='back to the registry')
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-003')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Liaison choisie')
     cadre()
     c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').closest('label') !== null"), c.count(f'{E} [data-adsug]'), c.js(shut)], [True, 1, True],
@@ -9342,7 +9662,7 @@ def n120(c):
     look('P7a_390_choisi.png')
     # the map of the workshop framed on the aerodromes chosen
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map) && !!window.__edMap", timeout=15000, what='the map of the workshop')
     c.until(_AD_FRAMED, timeout=10000, what='the map framed on XTST and XTSU')
     # saved: the file in the form of before
@@ -9393,9 +9713,13 @@ def _ed_hold(c, a, b):
     """Presses the mouse on the position `a` of the workshop's map and moves it to `b` WITHOUT releasing: a gesture in progress."""
     x0, y0 = c.js(_EDMAP_XY, a)
     x1, y1 = c.js(_EDMAP_XY, b)
+    _tab(c, 'map')
     c.page.mouse.move(x0, y0)
+    _tab(c, 'map')
     c.page.mouse.down()
+    _tab(c, 'map')
     c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
+    _tab(c, 'map')
     c.page.mouse.move(x1, y1, steps=4)
 
 
@@ -9424,12 +9748,14 @@ def n121(c):
     # THAT sheet (the fields of the key) — a step of the route (PT1) still says it on its line
     pos = lambda i: [float(c.js(_EDPLACE_VAL, [i, 'lat']) or 0), float(c.js(_EDPLACE_VAL, [i, 'lon']) or 0)]  # noqa: E731
     at = lambda i, la, lo, d=0.02: abs(pos(i)[0] - la) < d and abs(pos(i)[1] - lo) < d  # noqa: E731
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.8]))
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen')
     c.until(f"!!({_DRAG_RING})('place:3')", what='the circle of ZONE-1 drawn')
     view0 = c.js(_EDMAP_VIEW)
     c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.245, 1.8), c.js(_DRAG_RING, 'place:3'), 'the circle of ZONE-1 is drawn on its centre (44.2 / 1.8), 5 km')
     # the centre of a zone: the finger is still down, the circle already follows, the row says the position, the view stays
+    _tab(c, 'map')
     _ed_hold(c, [44.2, 1.8], [44.1, 1.95])
     c.until(f"(({_DRAG_RING})('place:3') || [0, 0])[1] > 1.9", timeout=5000, what='the circle follows the finger')
     c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.145, 1.95), c.js(_DRAG_RING, 'place:3'),
@@ -9437,6 +9763,7 @@ def n121(c):
     c.ok(c.js(_EDMAP_VIEW) == view0, [c.js(_EDMAP_VIEW), view0],
          'finger still down: the view did not move under the finger (the position of ZONE-1, a key, has no row to say it: the circle is the place that says it, above; its sheet says it once released)')
     c.ok(undo() is True, c.js(_EDTOOL_STATE)[5], 'nothing to undo while the gesture is not over: no state was kept')
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the gesture can be undone')
     c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.145, 1.95) and at(3, 44.1, 1.95), [c.js(_DRAG_RING, 'place:3'), pos(3)],
@@ -9446,8 +9773,10 @@ def n121(c):
     c.ok(undo() is True and at(3, 44.2, 1.8), [undo(), pos(3)], 'ONE « Annuler le geste » gave the zone back (nothing more to undo): the circle and the sheet are where they were')
     # the handle of the radius goes through the same path: the circle grows with the finger
     east = 1.8 + 5 / (111.32 * 0.7176)
+    _tab(c, 'map')
     _ed_hold(c, [44.2, east], [44.2, east + 0.25])
     c.until(f"(({_DRAG_RING})('place:3') || [0, 0])[0] > 44.3", timeout=5000, what='the circle grows with the finger')
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the radius set, to undo')
     c.ok(float(c.js(f"document.querySelector('{E} [data-edplaces] [data-plform=\"3\"] [data-f=radius]')?.value.replace(',', '.') || 0")) > 5, c.js(f"document.querySelector('{E} [data-edplaces] [data-plform=\"3\"] [data-f=radius]')?.value"),
@@ -9455,37 +9784,47 @@ def n121(c):
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"(({_DRAG_RING})('place:3') || [99, 0])[0] < 44.26", timeout=5000, what='the radius back')
     # an object: its dot follows, its row too
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.9]))
     c.until(f"{_EDSEL} === 'OBJ-1 · Naufragé'", what='OBJ-1 chosen')
+    _tab(c, 'map')
     _ed_hold(c, [44.5, 1.9], [44.35, 1.95])
     c.until(f"(({_DRAG_DOT})('place:6') || [99, 0])[0] < 44.4", timeout=5000, what='the dot of OBJ-1 follows the finger')
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the object moved, to undo')
     c.ok(at(6, 44.35, 1.95), pos(6), 'released: the sheet of OBJ-1, its key, says 44,35 / 1,95 (44°21′N 1°57′E)')
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"(({_DRAG_DOT})('place:6') || [0, 0])[0] > 44.45", timeout=5000, what='the object back')
     # a point of the route: the line of the route already goes through the new position
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
     c.until(f"{_EDSEL} === 'PT1 · Point un'", what='PT1 chosen')
+    _tab(c, 'map')
     _ed_hold(c, [44.8, 1.2], [44.9, 1.3])
     c.until(f"({_DRAG_ROUTE})([44.9, 1.3]) && !({_DRAG_ROUTE})([44.8, 1.2])", timeout=5000, what='the route goes through the finger')
     c.ok(near(c.js(_DRAG_DOT, 'place:4'), 44.9, 1.3) and '44°54′N' in row(4), [c.js(_DRAG_DOT, 'place:4'), row(4)],
          'finger still down: the dot of PT1 and the row of the Lieux say the new position, and the line of the route goes through it')
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the point moved, to undo')
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"({_DRAG_ROUTE})([44.8, 1.2])", timeout=5000, what='the route back')
     # a vertex of a contour: the outline already has it where the finger is
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.8]))
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen again')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='the six vertices on the map')
     v0 = c.js(_DRAG_DOT, 'vertex:3:0')
     view1 = c.js(_EDMAP_VIEW)
+    _tab(c, 'map')
     _ed_hold(c, v0, [v0[0] - 0.02, v0[1] + 0.02])
     c.until(f"(({_DRAG_DOT})('vertex:3:0') || [99, 0])[0] < {v0[0] - 0.01}", timeout=5000, what='the vertex follows the finger')
     c.ok(near(c.js(_DRAG_DOT, 'vertex:3:0'), v0[0] - 0.02, v0[1] + 0.02) and c.js(_EDMAP_VIEW) == view1, [c.js(_DRAG_DOT, 'vertex:3:0'), c.js(_EDMAP_VIEW), view1],
          'finger still down: the first vertex of the outline of ZONE-1 is already at the finger, the view stays')
+    _tab(c, 'map')
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the vertex moved, to undo')
     ed_leave(c)
@@ -9516,6 +9855,7 @@ def n122(c):
         """Unfolds a group of the sheet when it is not (a mission modified on a phone opens with every group folded)."""
         if not c.js(f"!!document.querySelector('{E} {probe}')"):
             c.js(quiet)
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="{step}"]')
         c.until(f"!!document.querySelector('{E} {probe}')", what=f'the group {step} unfolded')
 
@@ -9536,14 +9876,21 @@ def n122(c):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission on its Cadre')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission créée, avec son récit')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _end_open(c, 'dep')
     _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _end_open(c, 'arr')
     _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
     unfold('story', '[data-k=edstory][data-f=summary]')
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=summary]', summ)
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=description]', desc)
     save('the created mission saved')
     st = c.js(_STORY_OF, path_new) or {}
@@ -9553,6 +9900,7 @@ def n122(c):
     c.eq([shown.get('summary'), shown.get('description')], [summ, desc],
          '(A) after « Enregistrer », the Récit left unfolded still shows what was typed (an empty field reads as a lost text)', what='created, the screen')
     # a second retouch of the description after the save: written too (it was dropped while the fields showed nothing)
+    _tab(c, 'mission')
     c.page.fill(f'{E} [data-k=edstory][data-f=description]', desc + '\n\nTroisième paragraphe, après l’enregistrement.')
     save('the second save')
     st = c.js(_STORY_OF, path_new) or {}
@@ -9571,6 +9919,7 @@ def n122(c):
     c.ok(bool(base and base['summary'] and base['description'] and base['objectives'] and base['payload']), base, 'the file of X-001A has a story')
     open_row('X-001A')
     unfold('cadre', 'input[data-k=edtitle]')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission complète, titre retouché')
     save('X-001A saved, the Récit never unfolded')
     st = c.js(_STORY_OF, path_old) or {}
@@ -9580,6 +9929,7 @@ def n122(c):
     # the Récit unfolded and read, nothing typed in it, the title changed again: saved, the story still identical, the fields still full
     unfold('story', '[data-k=edstory][data-f=summary]')
     unfold('cadre', 'input[data-k=edtitle]')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission complète, retouchée deux fois')
     unfold('story', '[data-k=edstory][data-f=summary]')
     save('X-001A saved, the Récit unfolded')
@@ -9608,12 +9958,13 @@ _HELI_FRAMED = "(() => { const b = window.__edMap.getBounds(), z = +window.__edM
       'reconnue par le champ et par la carte »): modules/missions/editor.js `isCode`, `wordCode`; editor_view.js `edAdValue`; frame/lib/ad_field.js `isCode`')
 def n123(c):
     pc = 'missions/X_REG/X-004/missionX-004.yaml'
-    val = lambda k: c.js(f"document.querySelector('{E} input[data-k={k}]').value")  # noqa: E731
-    line = lambda k: norm(c.text(f'{E} [data-adline={k}]') or '')  # noqa: E731
+    val = lambda k: (_end_open(c, k[2:]), c.js(f"document.querySelector('{E} input[data-k={k}]').value"))[1]  # noqa: E731
+    line = lambda k: (_end_open(c, k[2:]), norm(c.text(f'{E} [data-adline={k}]') or ''))[1]  # noqa: E731
     shut = f"document.querySelector('{E} [data-adsug]').hidden"
 
     def typed(k, text):
         """Types a text in a field key by key, as a finger would (the field emptied first)."""
+        _end_open(c, k[2:])
         c.page.fill(f'{E} input[data-k={k}]', '')
         c.page.locator(f'{E} input[data-k={k}]').press_sequentially(text, delay=40)
 
@@ -9631,13 +9982,14 @@ def n123(c):
     c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=10000, what='the Registry')
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-004')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Hélistation choisie')
-    if not c.count(f'{E} input[data-k=eddep]'):
-        c.tap(f'{E} [data-steps] [data-step="cadre"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
     c.until("async () => !!(window.__aeroDb && await window.__aeroDb.coords('XT123'))", timeout=20000, what='the published base knows XT123')
     # the helistation is proposed for « xt1 » and chosen by the keyboard
     typed('eddep', 'xt1')
@@ -9655,7 +10007,7 @@ def n123(c):
     c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XT123'", timeout=5000, what='« xt123 », known to the base, put in capitals')
     # the map of the workshop is framed on it
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map) && !!window.__edMap", timeout=15000, what='the map of the workshop')
     c.until(_HELI_FRAMED, timeout=10000, what='the map framed on the helistation')
     # saved: the code written as for any aerodrome
@@ -9707,6 +10059,7 @@ def _pb_open(c, width=1280):
 def _pb_click(c, at):
     """Brings the map of the workshop into view and touches it at a position ([lat, lon])."""
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, at))
 
 
@@ -9733,15 +10086,19 @@ def n124(c):
           c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').closest('label') !== null")], [1, 1, 0, True],
          'ONE list of proposals, ONE Name field in the sheet of the point (no field « Point de la base » apart), the field in its label', what='the marking')
     # free text typed in the Name stays as it is: no position, nothing written from the base
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-k=edplname]', 'Phare du test')
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press('Tab')
     c.wait(600)
     c.eq([c.js(_EDPLACE_VAL, [5, 'name']), c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])], ['Phare du test', '', ''],
          'free text typed in the Name stays as it is, with no position', what='free text')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-k=edplname]', '')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
     sug = f"[...document.querySelectorAll('{E} [data-plform] [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
     c.until(f"({sug}).length > 0", timeout=8000, what='the point of the base proposed for « xpt »')
@@ -9752,7 +10109,9 @@ def n124(c):
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
     c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').focus()")
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-k=edplname]', '')
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
     c.until(f"({sug}).length > 0", timeout=8000, what='the point proposed at 1280')
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
@@ -9851,7 +10210,9 @@ def n126(c):
         """A new turning point, the name typed and left (the change of the field)."""
         _plus_add(c, 'pt')
         c.until(f"({_EDPLACE_IDS}).length === {i + 1}", what='a turning point added')
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        _tab(c, 'itin')
         c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
 
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -9870,9 +10231,13 @@ def n126(c):
     c.eq([val(7, 'name'), val(7, 'lat'), val(7, 'lon')], ['Pont nord', '', ''], 'a name the base does not know: nothing changes, the place stays to be placed', what='unknown')
     _plus_add(c, 'pt')
     c.until(f"({_EDPLACE_IDS}).length === 9", what='a turning point added')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.5')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.1')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'xpt01')
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
     c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"8\"][data-f=lat]')?.value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved')
     c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['XPT01', '44.9', '1.45'],
@@ -9904,7 +10269,9 @@ def n136(c):
         """A new turning point, the name typed and left (the change of the field)."""
         _plus_add(c, 'pt')
         c.until(f"({_EDPLACE_IDS}).length === {i + 1}", what='a turning point added')
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        _tab(c, 'itin')
         c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
 
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -10017,6 +10384,7 @@ def n128(c):
     c.eq(pos(), ['', ''], 'before the choice, the sheet of the new place has no position (it is « à placer »)', what='before')
     sug = f"[...document.querySelectorAll('{E} [data-plform] [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
     c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').focus()")
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
     c.until(f"({sug}).length > 0", timeout=8000, what='XPT01 proposed')
     c.key('ArrowDown')
@@ -10088,6 +10456,7 @@ def n129(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer, its sheet open')
     c.eq([c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'zone')], [5, 'zone', 'ZONE-1'], 'a drawer keyed by a zone, the first zone guessed', what='the new drawer')
     # its key by THE SAME choice, in its sheet
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-kindcur]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
     same = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, x.getAttribute('aria-pressed')])")
@@ -10137,6 +10506,7 @@ def n130(c):
     g0 = c.js(_PL_GEO, None)
     c.ok(g0 and g0['overflow'] == 'visible' and not g0['scroll'], g0, 'a list that does not scroll in itself (the page scrolls)')
     # a place touched on the map: its row chosen, its fields under it
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
     c.until(f"!!document.querySelector('{_PL_LIST} [data-place=\"5\"] [aria-current]')", what='the row of PT2 chosen')
     c.until(f"!!document.querySelector('{E} [data-atplaces] [data-edplaces] > [data-plform=\"5\"]')", what='the fields of PT2 under its row')
@@ -10146,22 +10516,23 @@ def n130(c):
     row = c.js(f"Math.round(document.querySelector('{_PL_LIST} [data-place=\"5\"]').getBoundingClientRect().bottom)")
     c.ok(form >= row - 1, [form, row], 'the fields of the chosen place are UNDER its row, in the same frame')
     # a row touched: the place chosen on the map
+    _tab(c, 'itin')
     c.tap(f'{_PL_LIST} [data-place="2"] [data-do="edplace"]')
     c.until(f"(document.querySelector('{_EDMAP} [data-maplbl][data-mapsel]')?.textContent || '').startsWith('TARGET')", what='TARGET chosen on the map')
     c.ok(c.js(_PL_GEO, 2)['marked'] and c.count(f'{_PL_LIST} [aria-current]') == 1, c.js(_PL_GEO, 2), 'one row marked: the one touched')
     # a phone: the frame right under the map, the card « Mission » under it
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
-    order = c.js(f"""(() => {{ const y = s => document.querySelector('{E} ' + s)?.getBoundingClientRect(); const m = y('[data-atmap]'), p = y('[data-atitin]'), f = y('[data-atsheet]:not([data-trial])');
-      return [p.top >= m.bottom - 1, f.top >= p.bottom - 1, document.documentElement.scrollWidth <= document.documentElement.clientWidth] }})()""")
-    c.eq(order, [True, True, True], '390: the itinerary comes right under the map, before the card « Mission »; nothing scrolls sideways', what='the order at 390')
+    order = c.js(f"""(() => {{ const y = s => document.querySelector('{E} ' + s)?.getBoundingClientRect(); const t = y('[data-attabs]'), p = y('[data-atitin]');
+      return [p.top >= t.bottom - 1, document.documentElement.scrollWidth <= document.documentElement.clientWidth] }})()""")
+    c.eq(order, [True, True], '390: the tabs come first, the section of the tab in view right under them (SOG-0482 lot 5: the sections are in tabs, no longer one under the other); nothing scrolls sideways', what='the order at 390')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
 
 
 # SOG-0542: ↶ ↷ are on the line of the crumb ([data-athist]); the list keeps the old order — the five tools, undo, redo, « Recentrer », the two backgrounds
-_TOOL_NAMES = f"[...document.querySelectorAll('{_EDTOOLS} button:not([data-do=edmapfit])'), ...document.querySelectorAll('{_EDHIST} button'), ...document.querySelectorAll('{_EDTOOLS} [data-do=edmapfit], {_LOOK} [data-do=edmapbase]')].map(b => [b.dataset.tool || b.dataset.base || b.dataset.do, b.getAttribute('aria-label'), b.title])"
+_TOOL_NAMES = f"[...document.querySelectorAll('{_EDTOOLS} button:not([data-do=edmapfit]):not([data-trbtn])'), ...document.querySelectorAll('{_EDHIST} button'), ...document.querySelectorAll('{_EDTOOLS} [data-do=edmapfit], {_LOOK} [data-do=edmapbase]')].map(b => [b.dataset.tool || b.dataset.base || b.dataset.do, b.getAttribute('aria-label'), b.title])"
 _ZONE_TOOL = f'{_EDTOOLS} [data-tool="zone"]'
 _ZONE_STATE = f"(() => {{ const b = document.querySelector('{_ZONE_TOOL}'); return [b.dataset.shape, b.getAttribute('aria-pressed'), b.getAttribute('aria-label')] }})()"
 _REDO = f"document.querySelector('{_EDHIST} [data-do=edmapredo]').disabled"
@@ -10191,7 +10562,7 @@ def n131(c):
          'each button of the map has its name read (aria-label)', what='the names')
     c.ok(all(x[1] and x[1] == x[2] for x in names), names, 'and the same name as a tooltip (title)')
     # SOG-0471: the whole row is icons (all or nothing), no button keeps its written name
-    ico = c.js(f"[...document.querySelectorAll('{_EDTOOLS} button, {_EDHIST} button, {_LOOK} [data-do=edmapbase]')].map(b => [b.hasAttribute('data-icon'), !!b.querySelector('svg'), b.textContent.trim()])")
+    ico = c.js(f"[...document.querySelectorAll('{_EDTOOLS} button:not([data-trbtn]), {_EDHIST} button, {_LOOK} [data-do=edmapbase]')].map(b => [b.hasAttribute('data-icon'), !!b.querySelector('svg'), b.textContent.trim()])")
     c.ok(len(ico) == 10 and all(x[0] and x[1] and not x[2] for x in ico), ico, 'every button of the map is an icon of the suite (an svg, no written name)')
     c.eq(c.js(_ZONE_STATE)[:2], ['round', 'false'], 'the tool « Zone » poses a circle at the opening', what='Zone')
     # a second touch on the chosen « Zone » changes its shape (it stays in hand)
@@ -10202,6 +10573,7 @@ def n131(c):
     c.ok(st[0] == 'contour' and st[1] == 'true' and T('plToRound') in norm(st[2]), st, 'a second touch: the polygon, « Changer en cercle » in its name, still in hand')
     # a zone posed in polygon shape is a contour
     n0 = c.count(f'{E} [data-edplaces] [data-place]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0 + 1}", what='the zone posed')
     c.until(f"!!document.querySelector('{E} [data-edplaces] [data-plform] [data-plshape=contour]')", what='a contour')
@@ -10218,15 +10590,19 @@ def n131(c):
     # a new gesture empties « Rétablir »
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0}", what='undone again')
+    _tab(c, 'map')
     c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.1, 1.3]))
     c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0 + 1}", what='a point posed')
     c.eq(c.js(_REDO), True, 'a new gesture empties « Rétablir »', what='Rétablir')
     # a long press on « Zone » changes the shape (once: the click that ends it does nothing more)
     was = c.js(_ZONE_STATE)[0]
     c.page.hover(_ZONE_TOOL)
+    _tab(c, 'map')
     c.page.mouse.down()
     c.wait(800)
+    _tab(c, 'map')
     c.page.mouse.up()
     c.wait(200)
     st = c.js(_ZONE_STATE)
@@ -10248,7 +10624,7 @@ def n131(c):
 # And no secondary text smaller than `.f-muted` (a probe gives its size).
 _TEXT_RULE = f"""(() => {{ const root = document.querySelector('{E}'); if (!root) return null;
   const GROUPS = '.f-card, .ms-atgrp, .ms-dgrp, .ms-edsub, .ms-plform, .ms-atmaphintrow',
-    NOT = 'label, .ms-lbl, .f-item, .ms-plrow, .ms-edteam, li, .ms-chip, .ms-pilot, .ms-adname, .ms-atsketch, .ms-crumb',
+    NOT = 'label, .ms-lbl, .f-item, .ms-plrow, .ms-edteam, li, .ms-chip, .ms-pilot, .ms-adname, .ms-atsketch, .ms-dsum, .ms-crumb',
     seen = el => {{ const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' }},
     probe = Object.assign(document.createElement('p'), {{ className: 'f-muted', textContent: 'x' }});
   root.append(probe); const ref = parseFloat(getComputedStyle(probe).fontSize); probe.remove();
@@ -10293,7 +10669,7 @@ def n132(c):
         c.until(f"!!document.querySelector('{E} [data-atflow] [data-do=edplus]')", timeout=10000, what='the whole workshop')
         _text_rule(c, f'{width}, the workshop')
         if width < 850:
-            c.tap(f'{E} [data-do=edmap]')
+            _tab(c, 'map')
             _text_rule(c, f'{width}, the map unfolded')
         _plus_add(c, 'drawer')
         c.until(f"document.querySelectorAll('{_KW} [data-do=edbrick]').length > 0", timeout=10000, what='the window of the bricks')
@@ -10302,31 +10678,41 @@ def n132(c):
         c.until(f"!document.querySelector('{_KW}')", what='the window closed')
         for step in ('cadre', 'teams', 'story', 'risks', 'timeline'):
             if c.js(f"document.querySelector('{E} [data-steps] [data-step=\"{step}\"]').getAttribute('aria-expanded')") != 'true':
+                _tab(c, 'mission')
                 c.tap(f'{E} [data-steps] [data-step="{step}"]')
             c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
             _text_rule(c, f'{width}, the group {step}')
         # SOG-0482 lot 3 (fixup): the places that are the key of a drawer (ZONE-1, OBJ-1) have no line: their sheet is read below, inside the sheet of their drawer
         for i in c.js(f"[...new Set([...document.querySelectorAll('{E} [data-edplaces] > [data-place]')].map(x => +x.dataset.place))]"):
+            _tab(c, 'itin')
             c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="{i}"]')
             c.until(f"!!document.querySelector('{E} [data-plform=\"{i}\"]')", what=f'the place {i} open')
             _text_rule(c, f'{width}, the place {i} open')
         for d in ('B', 'C', 'D', 'E'):
+            _tab(c, 'itin')
             c.tap(f'{E} [data-atflow] [data-sel="{d}"]')
             c.until(f"document.querySelector('{_DW}')?.dataset.drawer === '{d}'", what=f'the sheet of drawer {d}')
             _text_rule(c, f'{width}, the sheet of drawer {d}')
             for g in ('texts', 'pilot') if width < 850 else ():  # on a wide module the groups are unfolded (SOG-0482 lot 3: no group « La suite de route » any more)
                 if c.js(f"document.querySelector('{_DW} [data-do=eddrgrp][data-grp={g}]').getAttribute('aria-expanded')") != 'true':
+                    c.js(f"document.querySelector('{_DW} [data-do=eddrgrp][data-grp={g}]').scrollIntoView({{block: 'center'}})")  # the sheet is longer since the lot 5 (« La clé » first): the group comes to the middle of the screen, clear of the foot
+                    _tab(c, 'itin')
                     c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="{g}"]')
                 _text_rule(c, f'{width}, drawer {d}, {g} unfolded')
+            _tab(c, 'itin')
             c.tap(f'{_DW} [data-kindcur]')
             c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
             _text_rule(c, f'{width}, drawer {d}, the choice of its key (the window of the bricks, SOG-0508)', _TEXT_RULE_KW)
             c.key('Escape')
             c.until(f"!document.querySelector('{_KW}')", what='the window closed')
-        c.tap(f'{E} [data-atflow] [data-trbtn]')
+        _tab(c, 'map')
+        _tab(c, 'map')
+        c.tap(f'{E} [data-trbtn]')
         c.until(f"!!document.querySelector('{E} [data-trial]')", what='the trial')
         _text_rule(c, f'{width}, the trial')
-        c.tap(f'{E} [data-atflow] [data-trbtn]')
+        _tab(c, 'map')
+        _tab(c, 'map')
+        c.tap(f'{E} [data-trbtn]')
         ed_leave(c)
         c.until(_REG_READ, timeout=20000, what='back to the registry')
         c.tap(f'{R} [data-do="edcreate"]')
@@ -10359,6 +10745,7 @@ def n134(c):
         # the finger is on the row: the page is scrolled so that the row is near the top of the window, the sheet (above it in the column) out of sight
         c.js(f"document.querySelector('{E} [data-atflow] [data-sel=C]').scrollIntoView({{block: 'start'}})")
         c.wait(200)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="C"]')
         c.until(f"document.querySelector('{E} [data-drawer]')?.dataset.drawer === 'C'", what='the sheet of the drawer touched')
         c.wait(400)
@@ -10385,6 +10772,7 @@ def n135(c):
     reg_open(c, _ED_TEXTS + [list(_FLEET)])
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor of a created mission')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
     c.tap(f'{E} [data-do="edteamadd"]')
     N0, T0 = f'{E} [data-team="0"] [data-f=name]', f'{E} [data-team="0"] [data-f=type]'
@@ -10416,12 +10804,18 @@ def n135(c):
     c.eq(c.js(f"document.querySelector('{E} [data-team=\"2\"] [data-f=name]').value"), 'Équipe libre', 'a free text stays as typed', what='free text')
     c.eq(c.js(_CS_LIST)['shown'], False, 'and proposes nothing', what='list free')
     # save: the file keeps its form
+    _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Mission équipes')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _end_open(c, 'dep')
     _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _end_open(c, 'arr')
     _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -10509,8 +10903,10 @@ def n137(c):
     clear()
     c.shot('P10a_1280_profil.png')
     ed_places(c)
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i=\"4\"][data-f=lat]')", what='the row of PT1 open')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-edplaces] [data-k^=edpl][data-i="4"][data-f=lat]', '45.6')
     c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.trim() !== {json.dumps(says)}", timeout=10000, what='the length of the route changed')
     c.until(f"(() => {{ const k = document.querySelector('{_PROF_CV}'); return k.toDataURL().length + ':' + k.toDataURL().slice(-60) }})() !== {json.dumps(sig)}",
@@ -10532,6 +10928,7 @@ def n137(c):
     modify()
     c.eq([c.js(f"document.querySelector('{_PROF} [data-atprofbody]').getBoundingClientRect().height"), c.js(f"document.querySelector('{_PROF} [data-do=edprof]').getAttribute('aria-expanded')")],
          [0, 'false'], 'at 390 the section is folded: its body takes no room, its button says it is not expanded', what='folded at 390')
+    _tab(c, 'map')
     c.tap(f'{_PROF} [data-do="edprof"]')
     c.until(f"document.querySelector('{_PROF} [data-do=edprof]').getAttribute('aria-expanded') === 'true' && document.querySelector('{_PROF_CV}').getBoundingClientRect().width > 250",
             timeout=10000, what='the section unfolded')
@@ -10591,6 +10988,7 @@ def _ed_new(c, family):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E} select[data-k=edfam]')", timeout=10000, what='a new mission on its Cadre')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', family)
     c.until(f"document.querySelector('{E} select[data-k=edfam]')?.value === '{family}'", what=f'the family {family}')
 
@@ -10634,6 +11032,7 @@ def n139(c):
             c.shot('P11a_390_tiroir.png')
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the note of the new drawer (SOG-0508)
         # the key of a drawer: THE SAME window since SOG-0508, its bricks included (a brick there does not rewrite the author's texts: N176)
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-kindcur]')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
         c.ok(c.count(f'{_KW}[data-kinds=drawer] [data-do=edbrick]') > 0, c.count(f'{_KW}[data-kinds=drawer] [data-do=edbrick]'), f'{width}: the same window, its bricks too, for the key of a drawer')
@@ -10700,6 +11099,7 @@ def n140(c):
         c.until(f"document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]').length > 0", timeout=10000, what='the list of the models')
         c.eq([c.count(f'{E} [data-models] [data-modelfam]'), [m[0] for m in c.js(_MD_LIST)]], [1, ['blank']], f'{width}: no family yet — the family first, the blank mission only',
              what='the list without family')
+        _tab(c, 'mission')
         c.page.select_option(f'{E} select[data-k=edfam]', 'SAR')
         c.until(f"document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]').length === 2", what='the models of SAR')
         c.eq(c.js(_MD_LIST), [['blank', 'Mission vierge', '', 'false'], ['search-glacier', 'Recherche sur un glacier', '', 'false']],
@@ -10749,6 +11149,7 @@ def n141(c):
     c.js(_MD_CLEAR)
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E} select[data-k=edfam]')", timeout=10000, what='a new mission')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'SAR')
     c.until(f"document.querySelector('{E} select[data-k=edfam]')?.value === 'SAR'", what='the family SAR')
     _md_pick(c, 'search-glacier')
@@ -10757,7 +11158,9 @@ def n141(c):
     ed_places(c)
     # SOG-0482 lot 3 (fixup): ZONE-1 is the key of drawer 1: no line, its fields are in the sheet of its drawer
     sheet = _key_open(c, 'B')
+    _tab(c, 'itin')
     c.page.fill(f'{sheet} [data-plform] [data-f=lat]', '45.1')
+    _tab(c, 'itin')
     c.page.fill(f'{sheet} [data-plform] [data-f=lon]', '6.2')
     # « Changer de modèle » → the blank mission: the question first
     _md_pick(c, 'blank')
@@ -10886,10 +11289,13 @@ def n142(c):
         c.wait(400)
         c.eq(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')[path], text, f'{width}: « Garder l\'ancien »: the file is unchanged', what='kept')
         # « Remplacer le modèle »: replaced (the drawer « Geste » removed first, so that the content differs)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="E"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'E'", what='the drawer « Geste »')
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-do="eddrdel"]')
         c.wait(1100)
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-do="eddrdel"]')
         c.until(f"({_FLOW_N}) === 3", what='three drawers left')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
@@ -10910,6 +11316,7 @@ def n142(c):
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the first drawer')
         if c.count(f'{_DW} [data-do="eddrgrp"][data-grp="texts"]'):  # folded on a narrow module only
             c.js("(q) => { const b = document.querySelector(q); b.scrollIntoView({ block: 'center' }); b.click() }", f'{_DW} [data-do="eddrgrp"][data-grp="texts"]')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="message"]', 'altitude < 500')
         c.js(quiet)
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
@@ -11097,6 +11504,7 @@ def n150(c):
         """Unfolds the Récit when it is not, and waits for its summary."""
         if not c.js(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')"):
             c.js(quiet)
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="story"]')
         c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
 
@@ -11131,10 +11539,13 @@ def n150(c):
         reg_open(c, _ED_TEXTS)
         c.tap(f'{R} [data-do="edcreate"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission on its Cadre')
+        _tab(c, 'mission')
         c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
         c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier proposed')
+        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', title)
         story()
+        _tab(c, 'mission')
         c.page.fill(f'{E} [data-k=edstory][data-f=summary]', summ)
         d = draft_until('cache/missions/draft_new.json', lambda d: bool(d and (d.get('read') or {}).get('summary') == summ),
                         f'{width}: the draft is written while the workshop is open (at most one second after the change)')
@@ -11170,7 +11581,9 @@ def n150(c):
     c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A') && document.querySelector('{E}').dataset.veil === '1'",
             timeout=15000, what='X-001A in the veiled workshop')
     if not c.count(f'{E} input[data-k=edtitle]'):
+        _tab(c, 'mission')
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', retitled)
     leave_unsaved('(B)')
     d = draft_until('cache/missions/draft_X-001A.json', lambda d: bool(d and (d.get('read') or {}).get('title') == retitled), 'the draft of X-001A after leaving')
@@ -11226,6 +11639,7 @@ def n150(c):
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='(D) a new mission on its Cadre')
     c.js(_DRAFT_PUT, [[f'cache/missions/draft_X-{100 + i}.json', _draft_env(f'X-{100 + i}', 'edit', good, f'Ancien {i}'), 1000000 + i] for i in range(1, 46)])
     c.eq(len(c.js(_DRAFT_PATHS)), 45, '(D) 45 old drafts on the device before the workshop writes its own', what='(D) before')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Le quarante-sixième brouillon')
     left = []
     for _ in range(40):
@@ -11363,6 +11777,7 @@ def n152(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, _LANDING_MISSION)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
         c.eq([c.js(_DW_VAL, 'key'), c.count(f'{_DW} [data-dwnotjudged]'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent"))],
@@ -11374,10 +11789,12 @@ def n152(c):
         c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P13a_{width}_landing.png')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '99999')
         want = norm(row(c, 'dwTodo_condIncomplete', EDTX_FILE).replace('{what}', row(c, 'dwDuration', EDTX_FILE)))
         c.until(f"""(w) => document.querySelector('{E} [data-edtodo]')?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)""", want,
                 what='« À compléter » says the duration')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
         _plus_add(c, 'drawer')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
@@ -11525,6 +11942,7 @@ def n154(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, _SEQ_MISSION)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the sequence')
         c.eq([c.js(_DW_VAL, 'key'), c.count(f'{_DW} [data-dwnotjudged]'), c.js(_STEPS)], ['sequence', 1, [['1', '1'], ['2', '']]],
@@ -11536,17 +11954,22 @@ def n154(c):
              f'{width}: the message sent at the opening: its identifier only is typed, no recipient field, the recipients of the file said and kept', what='the message sent')
         c.js(f"document.querySelector('{_DW} [data-dwsteps]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P13a_{width}_sequence.png')
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstep][data-n="1"]')
         c.until(f"document.querySelector('{_DW} [data-dwsteps] [data-step=\"2\"]')?.dataset.open === '1'", what='step 2 open')
+        _tab(c, 'itin')
         c.page.select_option(f'{_DW} select[data-f="step.kind"][data-n="1"]', 'landing')
         c.until(f"document.querySelector('{_DW} select[data-f=\"step.kind\"][data-n=\"1\"]')?.value === 'landing'", what='step 2 a landing')
         c.eq([c.js(_STEP_VAL, [1, f]) for f in ('label', 'point', 'radiusM', 'duration', 'gap', 'speed', 'confirmation', 'tol')],
              ['Reprise', 'DESTINATION', None, '10', '10', '3', None, None], f'{width}: a landing step: its fields, its name kept, no confirmation word', what='step 2')
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstepadd]')
         c.until(f"document.querySelectorAll('{_DW} [data-dwsteps] [data-step]').length === 3", what='a third step')
         c.eq([c.js(_STEPS), c.js(_STEP_VAL, [2, 'kind'])], [[['1', ''], ['2', ''], ['3', '1']], 'hover'], f'{width}: « ＋ Étape » adds a hover, open', what='added')
+        _tab(c, 'itin')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstepdel][data-n="2"]')
         c.until(f"document.querySelectorAll('{_DW} [data-dwsteps] [data-step]').length === 2", what='the third step removed')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="C"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the drawer awaiting the message')
         c.eq([c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'event'), norm(c.js(f"document.querySelector('{_DW} [data-dwemitter]').textContent"))],
@@ -11671,8 +12094,10 @@ def n155(c):
     page = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
     c.eq(page, g['offered'], 'the page offers what DR.offered says', what='the page')
     c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-kindcur]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
     got = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
@@ -11777,9 +12202,10 @@ def n157(c):
     to_fill = norm(row(c, 'atLine_none', EDTX_FILE))
     lies = [k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!']
     c.eq(lies, [], 'no group says « à remplir » with a tick', what='tick against « à remplir »')
-    # SOG-0482 lot 4: the Departure and the Arrival of a mission created are lines « ! à remplir » of the itinerary, so the group takes « ! » (until now the endpoints were empty and not lines: the tick)
-    c.eq([g['places'][0], norm(g['places'][1])], ['!', norm(row(c, 'atLine_noplace', EDTX_FILE))],
-         '« Lieux » of a mission created: its Departure and Arrival are to fill in: « ! », and a line that says what it holds (no place), not « à remplir »', what='Lieux, endpoints to fill in')
+    # SOG-0482 lot 5: there is no header « Itinéraire » any more (the tab is the header): what the group « Lieux » said is said by the LINES of the itinerary — the Departure and the Arrival of a mission created are « ! » « à remplir »
+    c.eq([[x[0], x[1], x[2]] for x in c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => [x.dataset.at, x.querySelector('.ms-plbody .f-muted').textContent.trim(), getComputedStyle(x.querySelector('.ms-plbody > b'), '::before').content])")],
+         [['dep', 'à remplir', '"!"'], ['arr', 'à remplir', '"!"']], '« Lieux » of a mission created: its Departure and its Arrival are lines « ! » « à remplir »; no group « Lieux » says a tick or anything else', what='Lieux, endpoints to fill in')
+    c.eq('places' in g, False, 'no group « Lieux » any more: the tab « Itinéraire » is its header', what='no group Lieux')
     c.eq([[k, g[k][0], norm(g[k][1])] for k in ('teams', 'risks', 'timeline')], [[k, '!', to_fill] for k in ('teams', 'risks', 'timeline')],
          'the groups a mission does lack keep « ! » and « à remplir »', what='the others')
     ed_leave(c)
@@ -11787,10 +12213,10 @@ def n157(c):
     # (a) the original fact, unchanged: the Departure and the Arrival FILLED (with their position), no other place: the tick and « aucun lieu », no group says « à remplir » with a tick
     _ed_open(c, 'mission: { id: X-001A, type: REG }\ntitle: Liaison\norigin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\ndestination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }\n')
     ed_reveal(c)
-    c.until(f"!!document.querySelector('{E} [data-atflow] [data-mark=places]')", timeout=10000, what='the itinerary')
+    c.until(f"!!document.querySelector('{E} [data-atflow] [data-at=arr]')", timeout=10000, what='the itinerary')
     g = c.js(_MARKS_JS)
-    c.eq([[k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!'], g['places'][0], norm(g['places'][1])], [[], '', norm(row(c, 'atLine_noplace', EDTX_FILE))],
-         '(a) the Departure and the Arrival filled, no other place: « Lieux » says neither « ! » nor « à remplir » (no tick any more, SOG-0482 lot 5) and « aucun lieu »; no group says « à remplir » with a tick', what='Lieux, endpoints filled')
+    c.eq([[k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!'], c.count(f'{E} [data-atflow] [data-needs]'), c.count(f'{E} [data-atflow] [data-outbad]')], [[], 0, 0],
+         '(a) the Departure and the Arrival filled, no other place: the itinerary says neither « ! » nor « à remplir » on any line (no tick any more, SOG-0482 lot 5); no group says « à remplir » with a tick', what='Lieux, endpoints filled')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -11839,6 +12265,7 @@ def n158(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, text)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the landing')
         opts = c.js(f"[...document.querySelectorAll('{_DW} select[data-f=\"rule.object\"] option')].map(o => o.value)")
@@ -11847,8 +12274,10 @@ def n158(c):
         c.eq(label, norm(row(c, 'dwGapMin', EDTX_FILE).replace('{min}', '5')), f'{width}: the gap says its minimum', what='the gap label')
         mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
         c.eq(c.js(mark), '', f'{width}: the landing drawer with a gap of 10 s has nothing to complete (no mark: lot 5, no more ✓)', what='the mark before')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.gap"]', '3')
         c.until(f"{mark} === '!'", what='the mark of the drawer says « to complete » for a gap of 3 s')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.gap"]', '5')
         c.until(f"{mark} === ''", what='a gap of 5 s (the minimum) has nothing to complete')
         _plus_add(c, 'drawer')
@@ -11910,6 +12339,7 @@ def n159(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, text)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the overflight')
         opts = c.js(f"[...document.querySelectorAll('{_DW} select[data-f=\"rule.object\"] option')].map(o => o.value)")
@@ -11980,6 +12410,7 @@ def n160(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, text)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the hover')
         opts = c.js(f"[...document.querySelectorAll('{_DW} select[data-f=\"rule.object\"] option')].map(o => o.value)")
@@ -12022,6 +12453,7 @@ def n161(c):
         for kind, cond in conds.items():
             _ed_open(c, _LANDING_MISSION.replace('objects:\n', ship).replace(land, cond))
             ed_reveal(c)
+            _tab(c, 'itin')
             c.tap(f'{E} [data-atflow] [data-sel="B"]')
             c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
             val, text, values = c.js(opt)
@@ -12094,6 +12526,7 @@ def n162(c):
         for name, cond in seq.items():
             _ed_open(c, text.replace(old, cond))
             ed_reveal(c)
+            _tab(c, 'itin')
             c.tap(f'{E} [data-atflow] [data-sel="B"]')
             c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the sequence')
             c.eq(c.js(_DW_VAL, 'key'), 'sequence', f'{width} {name}: the key is « suite d\'étapes »', what='the key')
@@ -12209,7 +12642,7 @@ def _lk_open(c, width, base=None):
 def _lk_map(c):
     """The map of the workshop in view (unfolded on a phone), the notifications gone."""
     if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
-        c.tap(f'{E} [data-do="edmap"]')
+        _tab(c, 'map')
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.settle()
 
@@ -12264,16 +12697,20 @@ def n163(c):
     _lk_map(c)
     # the map refuses to move it; a free point moves (the gesture is the same)
     c.until(f"(({_EDMAP_IDS})({_LK_AT}) || []).includes('place:5')", timeout=8000, what='XTSL drawn on the map')
+    _tab(c, 'map')
     c.page.mouse.click(*c.js(_EDMAP_XY, _LK_AT))
     c.until(f"String(({_EDSEL}) ?? '').includes('XTSL')", timeout=5000, what='the locked point chosen on the map')
     hint = norm(c.text(f'{_EDMAP} [data-maphint]') or '')
     c.eq(hint, norm(row(c, 'atHint_locked', EDTX_FILE).replace('{name}', 'PT3 · XTSL')), 'the line under the map says it is locked by the base', what='the line')
+    _tab(c, 'map')
     _ed_drag(c, _LK_AT, [44.45, 1.95])
     c.wait(500)
     c.ok(near(val(5, 'lat'), _LK_AT[0]) and near(val(5, 'lon'), _LK_AT[1]), [val(5, 'lat'), val(5, 'lon')], 'dragged on the map, the locked point does not move')
+    _tab(c, 'map')
     _ed_drag(c, [44.8, 1.2], [44.85, 1.3])
     c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"3\"][data-f=lat]')?.value !== '44.8'", timeout=5000, what='PT1, a free point, dragged')
     # the code erased: a free point, at the same position — the fields are written again, the map moves it
+    _tab(c, 'itin')
     c.tap(f'{E} [data-edplaces] [data-place="5"] [data-do=edplace]')
     c.until(f"!!document.querySelector('{name}')", what='the sheet of PT3 open again')
     c.page.fill(name, '')
@@ -12281,6 +12718,7 @@ def n163(c):
     c.ok(c.js(_LK_STATE) == [[False, False], ''] and near(val(5, 'lat'), _LK_AT[0]) and near(val(5, 'lon'), _LK_AT[1]), [c.js(_LK_STATE), val(5, 'lat'), val(5, 'lon')],
          'the code erased: the place keeps its position as a free point, its fields are written again, no source said')
     _lk_map(c)
+    _tab(c, 'map')
     _ed_drag(c, _LK_AT, [44.45, 1.95])
     c.until(f"!(({_EDMAP_IDS})({_LK_AT}) || []).includes('place:5')", timeout=5000, what='the freed point moved on the map')
     c.ok(not near(val(5, 'lat'), _LK_AT[0]), val(5, 'lat'), 'the freed point is moved by the map')
@@ -12331,20 +12769,24 @@ def n164(c):
     # 2. a new mission: the departure typed in lower case
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-007')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Départ de la base')
-    if not c.count(f'{E} input[data-k=eddep]'):
-        c.tap(f'{E} [data-steps] [data-step="cadre"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
+    _end_open(c, 'dep')
     c.page.locator(f'{E} input[data-k=eddep]').press_sequentially('xtsl', delay=40)
+    _end_open(c, 'dep')
     c.page.locator(f'{E} input[data-k=eddep]').press('Tab')
     c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTSL'", timeout=8000, what='« xtsl » recognised: XTSL')
     ed_places(c)
     dep = f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].findIndex(x => x.dataset.kind === 'dep')"
     c.until(f"{dep} >= 0", what='the line of the departure in the Lieux')
-    c.tap(f"{E} [data-edplaces] [data-place][data-kind=dep] [data-do=edplace]")
+    _tab(c, 'itin')
+    _end_open(c, 'dep')  # the sheet of the departure is open already (its field was typed above): a second touch on its line would close it
     c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what='the sheet of the departure')
     c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value !== ''", timeout=8000, what='the departure placed from the base')
     lat = c.js(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value")
@@ -12355,7 +12797,9 @@ def n164(c):
     _lk_map(c)
     _plus_add(c, 'pt')
     c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what='a turning point')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.2')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.4')
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_LK_ROUTE})() || []).length > 1", timeout=8000, what='the route of the map')
@@ -12459,6 +12903,7 @@ def n167(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, _TOL_MISSION)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the landing')
         c.eq(c.count(f'{_DW} [data-f="rule.radiusM"]'), 0, f'{width}: no radius (m) to type on a landing', what='no radius')
@@ -12467,11 +12912,14 @@ def n167(c):
         c.eq(c.js(mark), '', f'{width}: nothing to complete (the file carries its radius, the workshop does not ask for it)', what='the mark')
         c.js(f"document.querySelector('{_DW} [data-dwjudged]').scrollIntoView({{block: 'center'}})")
         c.shot(f'P14b_{width}_paliers.png')  # the sheet of a landing: the tiers instead of the radius
+        _tab(c, 'itin')
         c.page.select_option(f'{_DW} select[data-f="rule.point"]', 'DESTINATION')
         c.until(f"!!document.querySelector('{_DW} [data-dwjudged=field]')", what='the landing at the arrival: judged at the airfield')
         c.eq(text(f'{_DW} [data-dwjudged=field]'), norm(row(c, 'dwJudgedField', EDTX_FILE).replace('{nm}', '1')), f'{width}: a landing at the arrival: 1 NM of the airfield', what='the airfield')
+        _tab(c, 'itin')
         c.page.select_option(f'{_DW} select[data-f="rule.point"]', 'PT1')
         c.until(f"!!document.querySelector('{_DW} [data-dwjudged=tiers]')", what='back at the point')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="C"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the arrival')
         c.eq([c.count(f'{_DW} [data-f="arrRadius"]'), c.count(f'{_DW} [data-f="arrSpeed"]')], [0, 1], f'{width}: the arrival: no radius, its speed', what='the fields')
@@ -12480,8 +12928,10 @@ def n167(c):
              f'{width}: the arrival at 1 NM of the airfield, a stopover at 2 NM', what='the arrival lines')
         c.js(f"document.querySelector('{_DW} [data-dwjudged=arrival]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P14b_{width}_arrivee.png')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the landing again')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
@@ -12519,7 +12969,9 @@ def n168(c):
         """A new turning point, the name typed and left (the change of the field)."""
         _plus_add(c, 'pt')
         c.until(f"({_EDPLACE_IDS}).length === {i + 1}", what='a turning point added')
+        _tab(c, 'itin')
         c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        _tab(c, 'itin')
         c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
 
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -12548,9 +13000,13 @@ def n168(c):
     # 4. a point placed by hand at the position of XLNM and named XLNM: not locked (a local record locks nothing)
     _plus_add(c, 'pt')
     c.until(f"({_EDPLACE_IDS}).length === 10", what='a turning point added')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.9')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'XLNM')
+    _tab(c, 'itin')
     c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
     c.wait(800)
     c.eq([c.js(_LK_STATE), val(9, 'lat'), val(9, 'lon')], [[[False, False], ''], '44.3', '1.9'],
@@ -12567,20 +13023,23 @@ def n168(c):
         c.tap(f'{R} [data-regsheet] [data-do=regsheetclose] >> visible=true')
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
+    _tab(c, 'mission')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _tab(c, 'mission')
     _ed_fill(c, 'edid', 'X-008')
+    _tab(c, 'mission')
     _ed_fill(c, 'edtitle', 'Terrains locaux')
-    if not c.count(f'{E} input[data-k=eddep]'):
-        c.tap(f'{E} [data-steps] [data-step="cadre"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
     for k, code in (('eddep', 'XLNM'), ('edarr', 'XLOC')):
+        _end_open(c, k[2:])
         c.page.locator(f'{E} input[data-k={k}]').press_sequentially(code.lower(), delay=40)
         c.page.locator(f'{E} input[data-k={k}]').press('Tab')
         c.until(f"document.querySelector('{E} input[data-k={k}]').value === '{code}'", timeout=8000, what=f'« {code.lower()} » recognised: {code}')
     c.wait(800)
     ed_places(c)
     for kind in ('dep', 'arr'):
+        _tab(c, 'itin')
         c.tap(f"{E} [data-edplaces] [data-place][data-kind={kind}] [data-do=edplace]")
         c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what=f'the sheet of the line {kind}')
         got = [c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value") for f in ('lat', 'lon')] + [c.js(_LK_STATE)]
@@ -12626,7 +13085,9 @@ def n169(c):
     _plus_add(c, 'pt')
     c.until(f"!!document.querySelector('{name}')", what='the sheet of a new turning point')
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
     typed('Pont nord')
     c.wait(600)
@@ -12805,6 +13266,7 @@ def n176(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer created')
     c.js(_KW_NOTES_OFF)
     c.eq(c.text(f'{_DW} [data-kindcur] [data-kindchg]'), row(c, 'dwKeyChange', EDTX_FILE), 'the key of the drawer says « Changer la clé »', what='the key')
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-kindcur]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
     same = c.js(f"""[document.querySelector('{_KW} [role=dialog] h3')?.textContent.trim(), !!document.querySelector('{_KW} input[data-kwq]'),
@@ -12815,6 +13277,7 @@ def n176(c):
     c.until(f"!document.querySelector('{_KW}')", timeout=3000, what='Échap')
     c.eq([c.js(_DW_VAL, 'key'), c.js(f"document.activeElement?.matches('{_DW} [data-kindcur]')")], ['zone', True], 'Échap changes nothing, the focus back on the key', what='Échap')
     # a brick: its key (a landing), the author's texts kept
+    _tab(c, 'itin')
     c.tap(f'{_DW} [data-kindcur]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window again')
     c.page.fill(f'{_KW} input[data-kwq]', 'precision')
@@ -12890,7 +13353,9 @@ def n171(c):
     c.wait(1500)
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0], note('PT3 · XHOM')], ['xhom', '', '', [False, False], []],
          '« xhom » typed on a place with no position, two homonyms in the base: it stays to place, free, and nothing is said', what='homonyms, no position')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
     typed('Pont nord')
     c.wait(600)
@@ -12920,7 +13385,9 @@ def n171(c):
     c.page.fill(name, '')
     typed('Pont nord')
     c.wait(600)
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    _tab(c, 'itin')
     c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
     typed('xpt01')
     c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value.replace(',', '.') === '44.9'", timeout=8000, what='the placed point moved to the single XPT01')
@@ -12963,13 +13430,13 @@ def n180(c):
         # the WHOLE workshop (« Dévoiler la mission complète »): the layout of a new mission, the user's capture (the veiled one placed the list
         # right already)
         ed_reveal(c)
-        if not c.count(f'{E} input[data-k=eddep]'):
-            c.tap(f'{E} [data-steps] [data-step="cadre"]')
-        c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", timeout=10000, what='the Cadre')
+        _end_open(c, 'dep')  # SOG-0482 lot 5: the Departure and the Arrival are edited in the sheet of their line, not in the Cadre
         # the page scrolled: the field in the lower half of the screen, the page above it scrolled away (the user's capture)
         c.js(f"(() => {{ const i = document.querySelector('{E} input[data-k=eddep]'); window.scrollBy(0, i.getBoundingClientRect().top - innerHeight * .55) }})()")
         orig = c.js(f"document.querySelector('{E} input[data-k=eddep]').value")
+        _end_open(c, 'dep')
         c.page.fill(f'{E} input[data-k=eddep]', '')
+        _end_open(c, 'dep')
         c.page.locator(f'{E} input[data-k=eddep]').press_sequentially('xt', delay=40)
         c.until(f"!!document.querySelector('{E} [data-adsug]:not([hidden]) [data-code]')", timeout=8000, what=f'{w} px: the aerodromes proposed')
         a = c.js(_SUG_AT)
@@ -12981,7 +13448,9 @@ def n180(c):
         b = c.js(_SUG_AT)
         c.ok(0 <= b['gap'] <= 2, b, f'{w} px: the page scrolls, the list follows its field')
         c.key('Escape')
+        _end_open(c, 'dep')
         c.page.fill(f'{E} input[data-k=eddep]', orig)  # the mission left as it was (nothing to save)
+        _end_open(c, 'dep')
         c.page.locator(f'{E} input[data-k=eddep]').blur()
     c.js(_REG_CLEAR)
 
@@ -13286,6 +13755,7 @@ def n183(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_open(c, _REFILL_MISSION)
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
         c.eq([c.js(_DW_VAL, 'key'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent")),
@@ -13300,7 +13770,9 @@ def n183(c):
         c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P16a_{width}_refuel.png')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.heading"]', '270')
+        _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="rule.durMin"]', '7')
         want = norm(rule.replace('{r}', '15').replace('{hdg}', hdg.replace('{hdg}', '270').replace('{tol}', '15')).replace('{min}', '7'))
         c.until(f"(w) => {line}.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w", want, what=f'{width}: the line follows the typing')
@@ -13314,15 +13786,19 @@ def n183(c):
         st, veh = c.js(place, 'OBJ-2'), c.js(place, 'OBJ-1')
         c.ok(st and row(c, 'ok_refill', EDTX_FILE) in st[1] and '0,4' not in st[1] and '0.4' not in st[1], st,
              f'{width}: the line of the station says « Station de retardant », no range')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-place="{st[0]}"] [data-do="edplace"]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"{st[0]}\"]')", what='the sheet of the station')
         c.eq(c.js(form, st[0]), ['name', 'okind', 'lat', 'lon'], f'{width}: the station: no range, no confirmation, no heights', what='the station')
         c.js(f"document.querySelector('{E} [data-plform=\"{st[0]}\"]').scrollIntoView({{block: 'center'}})")
         c.shot(f'P16a_{width}_refuel_station.png')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-plform="{st[0]}"] [data-do="edplaceok"]')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-place="{veh[0]}"] [data-do="edplace"]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"{veh[0]}\"]')", what='the sheet of the vehicle')
         c.eq(c.js(form, veh[0]), ['name', 'okind', 'lat', 'lon', 'range', 'confirm', 'height', 'alt'], f'{width}: the vehicle keeps its fields of detection', what='the vehicle')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-plform="{veh[0]}"] [data-do="edplaceok"]')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
@@ -13434,6 +13910,7 @@ def n185(c):
         ed_places(c)
         for oid in ('OBJ-1', 'OBJ-2'):  # the vehicle and the station: the rule is the page's, for every kind
             i = c.js(f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].find(x => x.querySelector('b')?.textContent.startsWith('{oid}'))?.dataset.place")
+            _tab(c, 'itin')
             c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
             c.until(f"!!document.querySelector('{E} [data-plform=\"{i}\"]')", what=f'the sheet of {oid}')
             m = c.js(_OKIND_JS, i)
@@ -13442,6 +13919,7 @@ def n185(c):
             if oid == 'OBJ-2':
                 c.js(f"document.querySelector('{E} [data-plform=\"{i}\"]').scrollIntoView({{block: 'center'}})")
                 c.shot(f'P16a_{width}_refuel_station.png')
+            _tab(c, 'itin')
             c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
         ed_leave(c)
         c.js(_REG_CLEAR)
@@ -13555,14 +14033,18 @@ def n195(c):
             c.ok(unplaced not in ' '.join(dep) and at in dep[2], dep, f'{width}: the departure XTSL, a known code, says the position of the base — not « à placer »')
             # SOG-0482 lot 3 (fixup): PT3 and PT4 are « Hors itinéraire »: their line says what cites them, no position — the position is read in their sheet
             k3 = c.js(_PLACE_AT, 'PT3')
+            _tab(c, 'itin')
             c.tap(f'{E} [data-place="{k3}"] [data-do="edplace"]')
             c.eq([unplaced in ' '.join(pt3), [c.js(_EDPLACE_VAL, [k3, 'lat']), c.js(_EDPLACE_VAL, [k3, 'lon'])]], [False, ['44.55', '1.85']],
                  f'{width}: PT3 named XTSL at the position of the base says that position in its sheet — and its line does not say « à placer »', what='PT3')
+            _tab(c, 'itin')
             c.tap(f'{E} [data-plform="{k3}"] [data-do="edplaceok"]')
             if want_todo:
                 k4 = c.js(_PLACE_AT, 'PT4')
+                _tab(c, 'itin')
                 c.tap(f'{E} [data-place="{k4}"] [data-do="edplace"]')
                 c.eq([c.js(_EDPLACE_VAL, [k4, 'lat']), c.js(_EDPLACE_VAL, [k4, 'lon'])], ['', ''], f'{width}: PT4, a true place to place, has no position in its sheet (« À compléter » below counts it)', what='PT4')
+                _tab(c, 'itin')
                 c.tap(f'{E} [data-plform="{k4}"] [data-do="edplaceok"]')
             c.tap(f'{E} [data-do="edtodo"]')
             c.ok('origin' not in c.js(_LKP_TODO), c.js(_LKP_TODO), f'{width}: « À compléter » no longer asks for « position du départ » (the base places XTSL)')
@@ -13598,6 +14080,7 @@ def n196(c):
         ed_reveal(c)
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
 
@@ -13619,6 +14102,7 @@ def n196(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         # (A) « Annuler » with a kept draft: no question, one notification, the draft is there
         open_x(_TRIAL_TEXTS)
+        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', title)
         c.eq(c.js("() => window.SogFrame.unsaved()"), False, f'{width}: the draft keeps the change: the frame is told there is nothing to lose', what='unsaved')
         c.js(quiet)
@@ -13634,6 +14118,7 @@ def n196(c):
         c.js(_REG_CLEAR)
         # (B) the browser's « Back »: the frame asks nothing, the workshop is left, the note says so
         open_x(_TRIAL_TEXTS)
+        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', title)
         c.js(quiet)
         c.page.go_back()
@@ -13643,6 +14128,7 @@ def n196(c):
         c.js(_REG_CLEAR)
         # (C) a draft that cannot be written: the question stays, with the words of the frame (the changes would be lost)
         open_x(_NODRAFT_TEXTS)
+        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', title)
         c.wait(1500)
         c.eq(c.js("() => window.SogFrame.unsaved()"), True, f'{width}: no draft can be written (text over the bound): the frame knows there is something to lose', what='unsaved')
@@ -13661,6 +14147,7 @@ def n196(c):
         cond = 'trigger_condition: { kind: landing, object: OBJ-2, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }'
         _ed_open(c, _LANDING_MISSION.replace('objects:\n', ship).replace(land, cond))
         ed_reveal(c)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
         sel = f'{_DW} select[data-f="rule.object"]'
@@ -13675,6 +14162,7 @@ def n196(c):
         for how in ('Annuler', 'Back'):
             open_x(_TRIAL_TEXTS)
             c.js('window.__failDraft = true')
+            _tab(c, 'mission')
             _ed_fill(c, 'edtitle', title)
             c.js(quiet)
             if how == 'Annuler':
@@ -13755,7 +14243,7 @@ def n197(c):
         c.eq(c.js(_ITIN_SEQ), ['L', 'dep=XTST', 'start:1=PT1', 'start:2=TARGET', 'L', 'T1', 'T2', 'drawer:C:0=PT2+', 'T3', 'T4', 'arr=XTSU'],
              f'{width}: the heading of the start, the departure, the route, the heading of the drawers, each drawer with its onward route ONLY in a recess (no key line), the arrival; ZONE-1 and OBJ-1, the keys of drawers, have NO line (not under « Hors itinéraire » either)', what='the lines')
         c.eq(c.count(f'{E} [data-atflow] [data-itinout]'), 0, f'{width}: no heading « Hors itinéraire »: every place is a step or a key', what='heading')
-        c.eq(c.text(f'{E} [data-atflow] h3'), 'Itinéraire', f'{width}: the card is « Itinéraire »', what='the title')
+        c.eq(c.text(f'{E} .ms-attab[aria-selected=true]'), 'Itinéraire', f'{width}: the tab « Itinéraire » is the title of the itinerary (SOG-0482 lot 5: no header of a card any more)', what='the title')
         # no sideways scroll
         c.ok(c.js("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), c.js("[document.documentElement.scrollWidth, document.documentElement.clientWidth]"), f'{width}: nothing wider than the screen')
         c.js(_REG_CLEAR)
@@ -13794,35 +14282,41 @@ def n198(c):
         after = lambda sel: c.js(_ITIN_AFTER, sel)  # noqa: E731
         c.eq(c.js(_ITIN_MISSION_SHEETS), ['Mission'], f'{width}: the card « Mission » is there, titled « Mission »', what='the sheet of the mission')
         # a place of the route: its sheet follows its line (the strip of the route first)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"5\"]')", what='the sheet of PT1')
         c.eq([after('[data-at="start:1"]'), c.count(f'{E} [data-drawer]'), c.js(_ITIN_MISSION_SHEETS)], [['mv', 'form:5'], 0, ['Mission']],
              f'{width}: PT1 chosen: its sheet follows its line (after the strip of the route), no sheet of a drawer, « Mission » still there', what='a place chosen')
         c.eq(c.count(f'{E} [data-plform]'), 1, f'{width}: one sheet at a time', what='one place sheet')
         # a drawer: its sheet follows its line, the sheet of the place is closed
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-sel="C"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the drawer 2')
         c.eq([after('[data-do=edsel][data-sel="C"]'), c.count(f'{E} [data-plform]'), c.js(_ITIN_MISSION_SHEETS), c.js(_ITIN_CUR)], [['mv', 'drawer:C'], 1, ['Mission'], ['T2']],
              f'{width}: a drawer chosen: its sheet follows its line, the sheet of the place is closed, « Mission » still there, only the line of the drawer is marked', what='a drawer chosen')
         # a place cited twice: the sheet opens under the line touched
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="drawer:E:0"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"5\"]')", what='the sheet of PT1 under the second line')
         c.eq([after('[data-at="drawer:E:0"]'), after('[data-at="start:1"]'), c.count(f'{_DW}'), c.js(_ITIN_CUR)], [['mv', 'form:5'], [], 0, ['drawer:E:0']],
              f'{width}: PT1 cited by the route and by the onward route of the drawer 4: the sheet is under the line TOUCHED (the second), not under the first', what='a place cited twice')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="drawer:E:0"] [data-do=edplace]')
         c.until(f"!document.querySelector('{E} [data-plform]')", what='the same line touched again closes the sheet')
         c.eq(c.js(_ITIN_CUR), [], f'{width}: closed: nothing is marked', what='closed')
         # on the map
         if width == 390:
-            c.tap(f'{E} [data-do="edmap"]')
+            _tab(c, 'map')
         c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the workshop')
         c.js(f"document.querySelector('{_EDMAP} [data-atmapslot]')?.scrollIntoView({{block: 'center'}})")
+        _tab(c, 'map')
         c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
         c.until(f"!!document.querySelector('{E} [data-plform=\"5\"]')", what='PT1 chosen on the map')
         c.eq([after('[data-at="start:1"]'), after('[data-at="drawer:E:0"]'), c.js(_ITIN_CUR)], [['mv', 'form:5'], [], ['start:1']],
              f'{width}: PT1 chosen on the map: its sheet opens under its FIRST line', what='map, first line')
         # ZONE-2 is « Hors itinéraire », far down: chosen on the map, its line comes into view
         c.js(f"document.querySelector('{_EDMAP} [data-atmapslot]')?.scrollIntoView({{block: 'center'}})")
+        _tab(c, 'map')
         c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.9]))
         c.until(f"!!document.querySelector('{E} [data-plform=\"4\"]')", what='ZONE-2 chosen on the map')
         seen = c.js(f"""(() => {{ const r = document.querySelector('{E} [data-at="out:4"]').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight }})()""")
@@ -13843,6 +14337,7 @@ def n199(c):
         ed_reveal(c)
         c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers')
         later = f'{E} [data-atflow] [data-chipmove=start] [data-reorder=down]'
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{later}')", what='the strip of the route under PT1')
         c.eq(c.js(f"document.querySelector('{later}').disabled"), False, f'{width}: PT1 is not the last of the route: « ↓ Plus tard » is offered', what='offered')
@@ -13855,8 +14350,10 @@ def n199(c):
              f'{width}: « ↓ Plus tard » twice: PT1 is third in the route, its line stays chosen, its sheet open under it', what='moved twice')
         c.eq(c.js(f"document.querySelector('{later}').disabled"), True, f'{width}: PT1 is the last free place: « ↓ Plus tard » is off', what='at the end')
         # PT3, cited only by the route: taken out, it falls under « Hors itinéraire »
+        _tab(c, 'itin')
         c.tap(f'{E} [data-at="start:2"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"7\"]')", what='the sheet of PT3')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-chipmove=start] [data-do=edroutedel]')
         c.until(f"!!document.querySelector('{E} [data-at=\"out:7\"]')", what='PT3 under « Hors itinéraire »')
         c.eq([[x for x in seq() if x.startswith('out:')], c.js(_ITIN_AFTER, '[data-at="out:7"]')], [['out:4=ZONE-2', 'out:7=PT3'], ['form:7']],  # ZONE-1 and OBJ-1, keys of drawers, are not under « Hors itinéraire »
@@ -13904,6 +14401,7 @@ def n216(c):
             _l3_pick(c, ref)
             c.eq([c.js(_L4_STRIP), c.js(_L4_PLUS)], [strip, [[ref, 'Ajouter après cette ligne', '＋']]], f'{width}: the strip of {ref}: the arrows, « ＋ », then « Retirer de l\'itinéraire »; that « ＋ » is the only one', what=ref)
             c.eq(c.count(f'{E} .ms-itin-mv .f-reorder .ms-itin-plus'), 0, f'{width}: {ref}: the « ＋ » is not inside the block of the arrows', what='outside the block')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"]')", what='the sheet of drawer 2')
         c.eq([c.js(_L4_STRIP), c.js(_L4_PLUS)], [['↑ Plus tôt', '↓ Plus tard', '＋'], [['drawer:C', 'Ajouter après cette ligne', '＋']]], f'{width}: the strip of a drawer: the arrows and « ＋ », no « Retirer » (it has its own at the foot of the sheet)', what='drawer')
@@ -13934,6 +14432,7 @@ def n217(c):
             _l3_pick(c, ref)
             _plus_open(c)
             c.eq(c.js(_L4_MENU), plain, f'{width}: from the strip of {ref}: the same list', what=ref)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"]')", what='the sheet of drawer 2')
         _plus_open(c)
@@ -13964,6 +14463,7 @@ def _l4_do(c, width, ref, kind, then=None):
     """Opens the workshop on the mission of the lot 3, chooses the line `ref` (None: no line chosen; 'T<n>': a drawer), adds `kind` by the « ＋ »; for a drawer, chooses the pilot's gesture in the window. → the file written by « Enregistrer »."""
     _l3_open(c, width)
     if ref and ref.startswith('T'):
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="{ref[1:]}"]')
         c.until(f"!!document.querySelector('{E} [data-drawer]')", what='the sheet of the drawer')
     elif ref:
@@ -14063,13 +14563,14 @@ def n219(c):
         c.js(_MD_CLEAR)
         c.tap(f'{R} [data-do="edcreate"]')
         c.until(f"!!document.querySelector('{E} select[data-k=edfam]')", timeout=10000, what='a new mission on its Cadre')
+        _tab(c, 'mission')
         c.page.select_option(f'{E} select[data-k=edfam]', 'SAR')
         c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", timeout=10000, what='the itinerary of a new mission')
         c.eq(c.js(_ITIN_SEQ), ['L', 'dep=Départ', 'arr=Arrivée'], f'{width}: a new mission: the heading, the Departure, the Arrival', what='lines')
         c.eq(c.js(_L4_ORDER), ['dep', 'plus', 'arr'], f'{width}: ONE « ＋ », between the Departure and the Arrival', what='order')
         c.eq(c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => [x.dataset.at, x.querySelector('.ms-plbody .f-muted').textContent.trim()])"),
              [['dep', 'à remplir'], ['arr', 'à remplir']], f'{width}: the Departure and the Arrival carry the mark « ! » and say « à remplir »', what='to fill in')
-        c.ok(c.count(f'{E} input[data-k=eddep]') == 1 and c.count(f'{E} input[data-k=edarr]') == 1, 'Cadre', f'{width}: the Departure and the Arrival are still fields of the Cadre (they leave it with the lot 5)')
+        c.ok(c.count(f'{E} [data-grp=cadre] input[data-k=eddep]') == 0 and c.count(f'{E} [data-grp=cadre] input[data-k=edarr]') == 0, 'Cadre', f'{width}: the Departure and the Arrival are no fields of the Cadre any more (lot 5b: they are edited in their line)')
         # a point added by the « ＋ »: « à placer », in the route, its sheet open, its first field in hand
         _plus_add(c, 'pt')
         c.until(f"!!document.querySelector('{E} [data-plform]')", what='the sheet of the new point')
@@ -14080,6 +14581,7 @@ def n219(c):
         c.eq([c.js(f"[...document.querySelectorAll('{E} [data-plform] [data-do=edplaceonmap]')].map(b => b.textContent.trim())"),
               c.js(f"[...document.querySelectorAll('{E} [data-plform] .ms-ll ~ .ms-plonmap')].length")], [['Placer sur la carte'], 1], f'{width}: « Placer sur la carte » is under the coordinates', what='the button')
         # « Placer sur la carte » arms the tool for THIS place
+        _tab(c, 'itin')
         c.tap(f'{E} [data-plform] [data-do=edplaceonmap]')
         c.until(f"['point', 'true'].join() === ({_EDTOOL_STATE})[1].slice(0, 2).join()", what='the tool Point in hand')
         hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
@@ -14090,6 +14592,7 @@ def n219(c):
              f'{width}: the map is brought into view')
         n = len(c.js(_EDPLACE_IDS))
         box = c.page.locator(f'{_EDMAP}').first.bounding_box()
+        _tab(c, 'map')
         c.page.mouse.click(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
         c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]')?.value !== ''", timeout=8000, what='the coordinates of the place')
         got = [c.js(_EDPLACE_VAL, [2, 'lat']), c.js(_EDPLACE_VAL, [2, 'lon'])]
@@ -14098,7 +14601,9 @@ def n219(c):
         c.eq([c.js(_ITIN_SEQ), c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => x.dataset.at)"), c.js(_EDTOOL_STATE)[1][:2]],
              [['L', 'dep=Départ', 'start:0=PT1', 'arr=Arrivée'], ['dep', 'arr'], ['point', 'false']], f'{width}: PT1 is placed (no « ! » any more), the tool is back to Selection', what='placed')
         # the coordinates are in the file saved (the Departure and the Arrival are named at the Cadre)
+        _end_open(c, 'dep')
         c.page.fill(f'{E} input[data-k=eddep]', 'XTST')
+        _end_open(c, 'arr')
         c.page.fill(f'{E} input[data-k=edarr]', 'XTSU')
         text, doc = _md_save(c)
         pt = (doc.get('turning_points') or [{}])[0]
@@ -14139,13 +14644,12 @@ def n221(c):
         c.js(_MD_CLEAR)
         c.tap(f'{R} [data-do="edcreate"]')
         c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", timeout=10000, what='the itinerary of a new mission')
-        mark = c.js(_L4_MARK)
-        c.eq(mark[:2], ['!', 'warn'], f'{width}: a new mission: Departure and Arrival are « à remplir »: the header of the itinerary carries « ! », not « ✓ » (it said « aucun lieu » with a tick before)', what='header mark')
+        c.eq([c.count(f'{E} [data-mark=places]'), c.js(f"document.querySelector('{E} [data-attabs]').textContent.includes('!')")], [0, False], f'{width}: SOG-0482 lot 5: no header « Itinéraire » any more (the tab is the header) and no « ! » on a tab', what='no header mark')
         c.eq(c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => x.dataset.at)"), ['dep', 'arr'], f'{width}: the lines to fill in are the Departure and the Arrival', what='lines')
         before = c.js(_L4_TODOBTN)
         _plus_add(c, 'pt')
         c.until(f"!!document.querySelector('{E} [data-plform]')", what='the new point')
-        c.eq(c.js(_L4_MARK)[:2], ['!', 'warn'], f'{width}: a point « à placer » is one more line to place: the mark stays « ! »', what='after a point')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-needs]')].map(x => x.dataset.at)"), ['dep', 'start:0', 'arr'], f'{width}: a point « à placer » is one more line with « ! »', what='after a point')
         c.ok(before.isdigit() and c.js(_L4_TODOBTN).isdigit(), [before, c.js(_L4_TODOBTN)], f'{width}: « À compléter » keeps counting from the fields of the Cadre (read before the point: {before}, after: {c.js(_L4_TODOBTN)}) — the header mark does not touch it')
         ed_leave(c)
         c.js(_REG_CLEAR)
@@ -14158,6 +14662,7 @@ def n221(c):
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"!!document.querySelector('{E} [data-atflow] [data-sel=\"B\"]')", timeout=10000, what='the drawers')
+    _tab(c, 'itin')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
     dw_key(c, 'object')
@@ -14189,6 +14694,7 @@ def n222(c):
         c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"!!document.querySelector('{E} [data-atflow] [data-sel=\"B\"]')", timeout=10000, what='the drawers')
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-sel="B"]')
         c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
         links = lambda: c.js(f"[...document.querySelectorAll('{E} [data-drawer] [data-do=eddrdraw]')].map(b => b.textContent.trim())")  # noqa: E731
@@ -14225,6 +14731,7 @@ def n222(c):
 def n223(c):
     for width in (390, 1280):
         _l3_open(c, width)
+        _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
         c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-keyblock]')", what='the sheet of drawer 2')
         sheet = f'{E} [data-drawer="C"]'
@@ -14239,6 +14746,7 @@ def n223(c):
              [True, 'Portée de détection (NM)', 'Heure de repli'], f'{width}: the range and the fallback hour are on ONE row; the label « Portée de détection (NM) » is kept', what='row')
         c.eq(norm(c.text(f'{sheet} [data-do=eddrdel]')), 'Supprimer ce tiroir', f'{width}: the sheet ends with « Supprimer ce tiroir »', what='delete')
         if width < 768:  # « La clé » folds (the group is open at first; at 1280 the groups are never folded)
+            _tab(c, 'itin')
             c.tap(f'{sheet} [data-dgrp=key] [data-do=eddrgrp]')
             c.until(f"document.querySelector('{sheet} [data-dgrp=key] [data-do=eddrgrp]').getAttribute('aria-expanded') === 'false'", what='La clé folded')
             c.eq(c.js(f"getComputedStyle(document.querySelector('{sheet} [data-dgrp=key] .ms-dbody')).display"), 'none', f'{width}: folded, the fields are hidden and the summary stays', what='folded')
@@ -14258,10 +14766,136 @@ def n224(c):
         c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=15000, what='the workshop')
         c.eq(norm(c.text(f'{E} .ms-atbar [data-do=edcancel]')), 'Fermer', f'{width}: the foot says « Fermer »', what='the word')
         if not c.count(f'{E} input[data-k=edtitle]'):
+            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', 'Titre gardé')
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
         c.tap(f'{E} [data-do="edcancel"]')
         c.until(f"!document.querySelector('{E}')", timeout=8000, what='the workshop left at once')
         c.eq(c.count('.f-modal'), 0, f'{width}: « Fermer » with a change asks nothing: the draft keeps it', what='no question')
         c.js(_REG_CLEAR)
+
+
+@case('N225', 'Missions › the tabs of the workshop (SOG-0482, lot 5b, the mock-up): at 390 three tabs « Itinéraire », « Carte », « Mission » and only the section of the tab in view; at 1280 the map on the left, always in view, and two tabs on the right, « Itinéraire » and « Mission »; '
+      'no « ! » on a tab and no header « Itinéraire » any more (the tab is the header); « Essayer les clés » is in the bar of the map; the default tab is « Itinéraire », at each opening; « Placer sur la carte » leads to the tab « Carte » at 390 with the tool armed, '
+      'and « Voir dans l\'itinéraire » to the tab « Itinéraire » with the line chosen; the object touched on the map opens the sheet of its drawer in the tab « Itinéraire »', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 § 5 (RELECTURE_MAQUETTE_ITINERAIRE § 4 lot 5, § 2.10; the mock-up #itin, #neuve, #annuler): editor_view.js `edTabsHtml`, `edTab`, `edtab`, `edseeitin`, `edMapPick`')
+def n225(c):
+    c.page.add_init_script(_EDMAP_HOOK)
+    vis = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return !!x && x.getBoundingClientRect().height > 0 && getComputedStyle(x).display !== 'none' }})()")  # noqa: E731
+    tabs = lambda: c.js(f"[...document.querySelectorAll('{E} .ms-attab')].filter(b => b.getBoundingClientRect().width > 0).map(b => [b.dataset.tab, b.textContent.trim(), b.getAttribute('aria-selected')])")  # noqa: E731
+    seen = lambda: [vis(f'{E} [data-atitin]'), vis(f'{E} [data-atmap]'), vis(f'{E} [data-atsheet]:not([data-trial])')]  # noqa: E731
+    _l3_open(c, 390)
+    c.eq(tabs(), [['itin', 'Itinéraire', 'true'], ['map', 'Carte', 'false'], ['mission', 'Mission', 'false']], '390: three tabs, « Itinéraire » in view', what='tabs 390')
+    c.eq(seen(), [True, False, False], '390: only the itinerary is in view', what='itinerary tab')
+    c.eq([c.count(f'{E} [data-mark=places]'), c.js(f"document.querySelector('{E} [data-attabs]').textContent.includes('!')"), c.count(f'{E} [data-atmaptools] [data-trbtn]')], [0, False, 1],
+         '390: no header « Itinéraire », no « ! » on a tab, « Essayer les clés » in the bar of the map', what='no header')
+    for tab, want in (('map', [False, True, False]), ('mission', [False, False, True]), ('itin', [True, False, False])):
+        c.tap(f'{E} .ms-attab[data-tab="{tab}"]')
+        c.until(f"document.querySelector('{E} .ms-attab[data-tab=\"{tab}\"]').getAttribute('aria-selected') === 'true'", what=f'the tab {tab}')
+        c.eq(seen(), want, f'390: the tab {tab} shows only its section', what=f'tab {tab}')
+    # « Placer sur la carte » leads to the tab Carte, the tool armed; « Voir dans l'itinéraire » brings the line back
+    _plus_add(c, 'pt')
+    c.until(f"!!document.querySelector('{E} [data-plform] [data-do=edplaceonmap]')", what='the new point')
+    _tab(c, 'itin')
+    c.tap(f'{E} [data-plform] [data-do=edplaceonmap]')
+    c.until(f"document.querySelector('{E} .ms-attab[data-tab=map]').getAttribute('aria-selected') === 'true'", what='the tab Carte')
+    c.eq([seen(), c.js(_EDTOOL_STATE)[1][:2], norm(c.text(f'{E} [data-seebar] b')), c.js(f"document.querySelector('{E} [data-seebar] button').textContent.trim()")],
+         [[False, True, False], ['point', 'true'], 'PT5 · à placer', "Voir dans l'itinéraire"], '390: « Placer sur la carte »: the tab Carte, the tool Point in hand, a bar « PT5 · à placer » with « Voir dans l\'itinéraire »', what='armed')
+    c.tap(f'{E} [data-seebar] button')
+    c.until(f"document.querySelector('{E} .ms-attab[data-tab=itin]').getAttribute('aria-selected') === 'true'", what='the tab Itinéraire')
+    c.eq([seen(), c.js(f"document.querySelector('{E} [data-plform]') !== null"), c.js(_EDTOOL_STATE)[1][:2]], [[True, False, False], True, ['point', 'false']], '390: « Voir dans l\'itinéraire »: the itinerary, the sheet of the place open, the tool lowered', what='seen')
+    # a touch on OBJ-1 on the map opens the sheet of its drawer, in the tab Itinéraire
+    _tab(c, 'map')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map')
+    c.wait(1200)
+    _tab(c, 'map')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.7]))
+    c.until(f"document.querySelector('{E} [data-drawer]')?.dataset.drawer === 'C'", timeout=8000, what='the sheet of drawer 2')
+    c.eq([c.js(f"document.querySelector('{E} .ms-attab[data-tab=itin]').getAttribute('aria-selected')"), seen()[0]], ['true', True], '390: the object touched on the map: the tab Itinéraire, the sheet of its drawer', what='map to itinerary')
+    # the default tab at each opening
+    _tab(c, 'map')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    _l3_open(c, 390)
+    c.eq(c.js(f"document.querySelector('{E} .ms-attab[aria-selected=true]').dataset.tab"), 'itin', 'the workshop opens on « Itinéraire » again', what='default tab')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    # 1280: the map always there, two tabs
+    _l3_open(c, 1280)
+    c.eq(tabs(), [['itin', 'Itinéraire', 'true'], ['mission', 'Mission', 'false']], '1280: two tabs on the right', what='tabs 1280')
+    c.eq(seen(), [True, True, False], '1280: the map and the itinerary', what='wide itinerary')
+    c.tap(f'{E} .ms-attab[data-tab="mission"]')
+    c.until(f"document.querySelector('{E} .ms-attab[data-tab=mission]').getAttribute('aria-selected') === 'true'", what='the tab Mission')
+    c.eq(seen(), [False, True, True], '1280: the tab Mission replaces the itinerary, the map stays', what='wide mission')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N226', 'Missions › the Departure and the Arrival in their line (SOG-0482, lot 5b): they are edited in the sheet of their line of the itinerary with the common field of the suite (the code of an aerodrome or of a helistation, or a name; its list and the name under it); '
+      'the Cadre has six fields and says « Départ et Arrivée se modifient dans leur ligne de l\'itinéraire. »; their line has no arrows, no « Retirer de l\'itinéraire », no « Supprimer »; the file written keeps its form (`origin`, `destination`); '
+      '« À compléter » names their line, not the Cadre', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 § 6 (RELECTURE_MAQUETTE_ITINERAIRE § 2.7, § 2.8; the mock-up #cadre): editor_view.js `edAdFieldHtml`, `edPlaceFormHtml` (`fixed`), `edCadreHtml`, `todoWhere`')
+def n226(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-at=dep] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=eddep]')", what='the sheet of the Departure')
+        c.eq([c.count(f'{E} [data-plform] [data-adsug]'), c.count(f'{E} [data-plform] [data-adline=eddep]'), c.count(f'{E} .ms-itin-mv'), c.count(f'{E} [data-plform] [data-do=edplacedel]'), c.count(f'{E} [data-do=edroutedel]'),
+              c.js(f"[...document.querySelectorAll('{E} [data-plform] button')].map(b => b.textContent.trim())")], [1, 1, 0, 0, 0, ['OK']],
+             f'{width}: the sheet of the Departure: the common field with its list and its name line; no strip, no « Retirer de l\'itinéraire », no « Supprimer » — only « OK »', what='dep sheet')
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-plform] [data-do=edplaceok]')
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-at=arr] [data-do=edplace]')
+        c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edarr]')", what='the sheet of the Arrival')
+        c.eq([c.count(f'{E} .ms-itin-mv'), c.count(f'{E} [data-plform] [data-do=edplacedel]'), c.js(f"[...document.querySelectorAll('{E} [data-plform] button')].map(b => b.textContent.trim())")], [0, 0, ['OK']],
+             f'{width}: the sheet of the Arrival: no arrows, no « Retirer », no « Supprimer »', what='arr sheet')
+        _tab(c, 'itin')
+        _end_open(c, 'arr')
+        _tab(c, 'itin')
+        _end_open(c, 'arr')
+        _tab(c, 'itin')
+        _end_open(c, 'arr')
+        c.page.fill(f'{E} [data-plform] input[data-k=edarr]', 'LFRS · Nantes')
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-plform] [data-do=edplaceok]')
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-at=dep] [data-do=edplace]')
+        _tab(c, 'itin')
+        _end_open(c, 'dep')
+        _tab(c, 'itin')
+        _end_open(c, 'dep')
+        _tab(c, 'itin')
+        _end_open(c, 'dep')
+        c.page.fill(f'{E} [data-plform] input[data-k=eddep]', 'LFPO · Orly')
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-plform] [data-do=edplaceok]')
+        _tab(c, 'mission')
+        c.tap(f'{E} [data-steps] [data-step="cadre"]') if not c.count(f'{E} [data-grp=cadre] input[data-k=edtitle]') else None
+        c.until(f"!!document.querySelector('{E} [data-grp=cadre] input[data-k=edtitle]')", what='the Cadre')
+        fields = c.js(f"[...document.querySelectorAll('{E} [data-grp=cadre] input, {E} [data-grp=cadre] select')].map(x => x.dataset.k)")
+        c.eq([len(fields), 'eddep' in fields, 'edarr' in fields, norm(c.text(f'{E} [data-endsinline]'))], [6, False, False, "Départ et Arrivée se modifient dans leur ligne de l'itinéraire."],
+             f'{width}: the Cadre has six fields, neither the Departure nor the Arrival, and says where they are edited', what='cadre')
+        c.eq(norm(c.text(f'{E} [data-line=cadre]')), 'REG · LFPO → LFRS', f'{width}: the Cadre keeps its summary « REG · LFPO → LFRS »', what='summary')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.wait(700)
+        f = c.js(_L4_FILE, _L4_PATH)
+        c.eq([f['origin'].get('name'), f['destination'].get('name')], ['Orly (LFPO)', 'Nantes (LFRS)'], f'{width}: the file written keeps its form: `origin` and `destination` carry what was typed in their lines', what='file')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+    # « À compléter » names the line of the Departure, not the Cadre
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", timeout=10000, what='a new mission')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
+    said = [norm(x) for x in c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.textContent)")]
+    c.ok(not any(x.startswith('Cadre : position du départ') or x.startswith('Cadre : position de l') for x in said), said, '« À compléter » does not name the Cadre for the Departure and the Arrival')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

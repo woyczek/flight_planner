@@ -663,7 +663,6 @@ export const EDTX = {
   atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
     'Misiones › Registro › Taller'
   ],
-  atMap: ['Carte de la mission', 'Map of the mission', 'Karte der Mission', 'Mapa de la misión'],
   // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (titre du repli, légende du dessin, relief absent, état vide)
   atProf: ['Profil', 'Profile', 'Profil', 'Perfil'],
   atProfAlt: ['Profil vertical sous la route de la partie affichée', 'Vertical profile under the route of the part shown',
@@ -902,6 +901,13 @@ export const EDTX = {
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
   itBadgeDrawer: ['TIROIR', 'DRAWER', 'SCHUBLADE', 'CAJÓN'],
+  itTabMap: ['Carte', 'Map', 'Karte', 'Mapa'],
+  itSeeItin: ["Voir dans l'itinéraire", 'See in the itinerary', 'In der Reiseroute zeigen', 'Ver en el itinerario'],
+  itEndsInLine: ["Départ et Arrivée se modifient dans leur ligne de l'itinéraire.",
+    'Departure and Arrival are edited in their line of the itinerary.',
+    'Abflug und Ankunft werden in ihrer Zeile der Reiseroute bearbeitet.',
+    'La salida y la llegada se editan en su línea del itinerario.'
+  ],
   itKeyToPlace: ['à placer', 'to place', 'zu platzieren', 'por colocar'],
   itKeyToDraw: ['à dessiner', 'to draw', 'zu zeichnen', 'por dibujar'],
   itKeyHidden: ["L'objet {id}, caché au pilote jusqu'à l'ouverture", 'Object {id}, hidden from the pilot until the opening',

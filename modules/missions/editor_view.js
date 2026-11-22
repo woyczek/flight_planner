@@ -488,6 +488,14 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-mvrow{display:flex;gap:8px;align-self:stretch;width:100%}
 [data-module="missions"] .ms-itin-mvrow>.f-reorder{flex:1 1 auto} /* les deux flèches du bloc du cadre */
 [data-module="missions"] .ms-itin-plus{flex:0 0 56px;min-height:44px;margin:0;font-size:22px;font-weight:600;color:var(--sog-accent,#1a73e8)} /* « ＋ » : le bouton du module, dans la rangée des flèches (la maquette : .mv .plus) */
+[data-module="missions"] .ms-attabs{display:flex;gap:0;margin:0 0 8px;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-attab{flex:1 1 0;min-height:44px;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;font:inherit;font-weight:600;color:var(--sog-muted,#555)}
+[data-module="missions"] .ms-attab[aria-selected=true]{color:var(--sog-accent,#1a73e8);border-bottom-color:var(--sog-accent,#1a73e8)}
+[data-module="missions"] .ms-at[data-tab=itin] .ms-atmap,[data-module="missions"] .ms-at[data-tab=itin] .ms-atprof,[data-module="missions"] .ms-at[data-tab=itin] .ms-atsheet:not([data-trial]){display:none}
+[data-module="missions"] .ms-at[data-tab=map] .ms-atitin,[data-module="missions"] .ms-at[data-tab=map] .ms-atsheet:not([data-trial]){display:none}
+[data-module="missions"] .ms-at[data-tab=mission] .ms-atmap,[data-module="missions"] .ms-at[data-tab=mission] .ms-atprof,[data-module="missions"] .ms-at[data-tab=mission] .ms-atitin{display:none}
+[data-module="missions"] .ms-seebar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 8px;margin:0 0 8px;background:color-mix(in srgb,var(--sog-accent,#1a73e8) 10%,var(--sog-surface,#fff));border-left:3px solid var(--sog-accent,#1a73e8)}
+[data-module="missions"] .ms-itin-veil{padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-self:stretch;width:100%;padding:8px 0;box-sizing:border-box}
 [data-module="missions"] .ms-itin-menu>button{min-width:0;padding:0 6px}
 [data-module="missions"] .ms-itin-mcap{grid-column:1 / -1;margin:4px 0 0;font-size:var(--sog-size-s,13px);font-weight:700;color:var(--sog-muted,#555)}
@@ -504,7 +512,6 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
 [data-module="missions"] .ms-itin-list>.ms-plform{padding:8px 8px 8px 8px;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmap{margin:0 0 12px}
-[data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
 [data-module="missions"] .ms-atprof{margin:0 0 12px}
 [data-module="missions"] .ms-atprofbtn{min-height:44px}
@@ -629,6 +636,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atsum>b{white-space:nowrap}
 [data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
 [data-module="missions"] :is(.ms-atgrp, .ms-dgrp)[data-open="1"]>.ms-atsum>.ms-atline{display:none} /* déplié, le groupe montre son contenu : sa ligne se tait */
+[data-module="missions"] .ms-dgrp[data-dgrp=key]>.ms-dsum{display:block;text-align:left;pointer-events:auto}
+[data-module="missions"] .ms-dgrp[data-dgrp=key]>.ms-dsum>.ms-atline,[data-module="missions"] .ms-dgrp[data-dgrp=key][data-open]>.ms-dsum>.ms-atline{display:block;text-align:left;white-space:normal} /* lot 5 (la maquette #tiroir) : « La clé » dit toujours la clé et le repli sous son titre, dépliée ou non */
 [data-module="missions"] .ms-atgrp[data-open="1"]>.ms-atsum{font-size:1.05em}
 [data-module="missions"] .ms-atbody{padding:2px 0 10px;min-width:0}
 [data-module="missions"] .ms-atbody>h3{display:none}
@@ -678,7 +687,11 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 @container (min-width: 850px){
   [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
   [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:block}
-  [data-module="missions"] .ms-atmapbtn,[data-module="missions"] .ms-atprofbtn{display:none}
+  [data-module="missions"] .ms-atprofbtn{display:none}
+  [data-module="missions"] .ms-at[data-tab] .ms-atmap,[data-module="missions"] .ms-at[data-tab] .ms-atprof{display:block}
+  [data-module="missions"] .ms-at[data-tab=map] .ms-atitin{display:block}
+  [data-module="missions"] .ms-attab[data-tab=map]{display:none}
+  [data-module="missions"] .ms-at[data-tab=map] .ms-atsheet:not([data-trial]){display:none}
   [data-module="missions"] .ms-atprofbody{display:block;margin-top:0}
   [data-module="missions"] .ms-atprofcv{height:200px}
   [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
@@ -856,11 +869,8 @@ function edCadreHtml(s) {
     seriesHint = e.mode === 'edit' ? '' : s.tt(TX.edNextSeries, {
       n: num.nextSeries
     }),
-    // SOG-0465 : Départ et Arrivée, le champ de terrain de la suite (frame/lib/ad_field.js) — le code d'un terrain dans le champ (son nom
-    // dessous, data-adline), le texte d'un lieu qui n'est pas un terrain ; la liste des propositions posée dans la rangée (data-adsug)
-    AD = edAd(s),
-    ad = (k, label, v) => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="${k}" value="${esc(ED.fieldText(v))}" maxlength="160" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-adsug" placeholder="${esc(s.tt(TX.edPlaceHint))}"><small class="ms-adname" data-adline="${k}"></small></label>`,
-    ads = `<div class="f-row ms-adrow">${ad('eddep', TX.edDep, c.dep)}${ad('edarr', TX.edArr, c.arr)}<div class="ms-adsug" id="ed-adsug" data-adsug role="listbox" aria-label="${esc(s.tt(AD.texts.listLabel))}" hidden></div></div>`;
+    // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire (le champ commun, edAdFieldHtml) ; le Cadre le dit
+    ads = `<p class="f-muted" data-endsinline>${esc(s.tt(EDTX.itEndsInLine))}</p>`; // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire
   if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
     return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3>
     <div class="f-row" data-liaison>${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
@@ -1083,6 +1093,11 @@ function edPlaceTexts(s, rows, doc) {
 
 /** La fiche d'un lieu (ses champs, « OK », « Retirer ») : celle d'aujourd'hui, extraite de la liste des Lieux — l'itinéraire (SOG-0482) la pose SOUS
  *  la ligne choisie. `said` : { zk, ok } de edPlaceTexts. Tout texte du fichier passe par esc(). */
+/** Le champ commun de la suite pour Départ et Arrivée (frame/lib/ad_field.js ; SOG-0465, SOG-0480) : le code d'un terrain ou d'une hélistation, ou un nom ; son nom dessous (data-adline), la liste posée dessous (data-adsug). */
+function edAdFieldHtml(s, k, label, v) {
+  return `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="${k}" value="${esc(ED.fieldText(v))}" maxlength="160" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-adsug" placeholder="${esc(s.tt(TX.edPlaceHint))}"><small class="ms-adname" data-adline="${k}"></small></label><div class="ms-adsug" id="ed-adsug" data-adsug role="listbox" aria-label="${esc(s.tt(edAd(s).texts.listLabel))}" hidden></div>`;
+}
+
 function edPlaceFormHtml(s, r, i, {
   zk,
   ok
@@ -1123,7 +1138,7 @@ function edPlaceFormHtml(s, r, i, {
     lock = src ? ' readonly' : '',
     srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
     nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
-  return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${nameField}</div>`}
+  return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? `<div class="f-row ms-adrow">${edAdFieldHtml(s, r.kind === 'dep' ? 'eddep' : 'edarr', r.kind === 'dep' ? TX.edDep : TX.edArr, r.kind === 'dep' ? e.cadre.dep : e.cadre.arr)}</div>` : `<div class="f-row${named ? ' ms-adrow' : ''}">${nameField}</div>`}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${onMapBtn}${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
@@ -1581,7 +1596,7 @@ function edItinHtml(s, doc, run = null) {
       html.push(st, edPlaceFormHtml(s, r, l.i, said));
     }
   });
-  return `<section class="f-card ms-atitin" data-atitin data-atflow data-atplaces data-grp="places"><div class="ms-atplhead ms-itinhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '' : '!'}</span><h3>${esc(s.tt(EDTX.atItin))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span>${e.veil ? `<button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button>` : `<button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button>`}</div>
+  return `<section class="f-card ms-atitin" data-atitin data-atflow data-atplaces data-grp="places">${e.veil ? `<div class="ms-itin-veil"><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div>` : ''}
     <div class="f-list ms-itin-list" data-edplaces data-pllist>${html.join('')}</div>
     ${e.mode === 'edit' && id ? `<div class="f-row ms-pladd"><a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a></div>` : ''}</section>`;
 }
@@ -2194,7 +2209,8 @@ function edMapHtml(s, doc, run = null) {
     tool = edMapTool(e),
     off = !live || edMapTrial(tool);
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`, 'ms-atmapend')}</div><div class="ms-atmaphintrow"${edHintRowOff(s, e, tool, live) ? ' hidden' : ''}><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
+  const placing = e.placeFor >= 0 && (e.places || [])[e.placeFor] ? (e.places || [])[e.placeFor] : null;
+  return `<div class="ms-atmap" data-atmap data-open="${edTab(e) === 'map' || run ? '1' : ''}">${placing ? `<div class="ms-seebar" data-seebar><b>${esc(edPlaceName(placing))} · ${esc(s.tt(TX.plUnplaced))}</b><button type="button" data-do="edseeitin">${esc(s.tt(EDTX.itSeeItin))}</button></div>` : ''}<div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`, 'ms-atmapend')}${e.veil ? '' : `<button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button>`}</div><div class="ms-atmaphintrow"${edHintRowOff(s, e, tool, live) ? ' hidden' : ''}><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Le fond et la couche de la carte de la mission en cours (SOG-0456) : le choix de la séance, sinon ce que le fichier dit. */
@@ -2273,6 +2289,7 @@ function edMapShow(s) {
       }
       putProp(sketch, 'hidden', !!live);
       for (const b of s.el.querySelectorAll('[data-atmaptools] button')) {
+        if (b.hasAttribute('data-trbtn')) continue; // « Essayer les clés » (lot 5 : dans la barre de la carte) ne dépend pas de la carte
         const t = b.dataset.tool,
           dis = b.dataset.do === 'edmapfit' ? !live : b.dataset.do === 'edmapundo' ? off || !e.mapUndo?.size() : b.dataset.do ===
           'edmapredo' ?
@@ -2637,6 +2654,7 @@ function edMapPick(s, e, i) {
     e.mapSel = -1;
     return edRefresh(s);
   }
+  e.tab = 'itin'; // lot 5 : un geste de carte qui ouvre une fiche (un lieu, ou le tiroir d'un objet) mène à l'onglet Itinéraire
   // lot 3 : un lieu qu'un tiroir cite comme clé et qui n'a pas de ligne (un objet à trouver) : toucher sa marque sur la carte ouvre la fiche de SON tiroir
   const keyOf = edKeyDrawerOf(s, e, i);
   if (keyOf) {
@@ -3327,7 +3345,7 @@ function edTodoHtml(s, doc) {
   const names = edNames(),
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
-    lines = [...todo.map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}">${esc(t.text)}</li>`)];
+    lines = [...todo.map(t => `<li data-todo="${t.key}">${esc(todoWhere(s, names, t))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}">${esc(t.text)}</li>`)];
   return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 
@@ -3338,13 +3356,17 @@ function edTodoBtnHtml(s, doc) {
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc),
     t = todo[0],
-    first = t ? `${s.tt(names[t.step])} — ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}` : drawers[0]?.text || '';
+    first = t ? `${todoWhere(s, names, t)} — ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}` : drawers[0]?.text || '';
   const count = todo.length + drawers.length,
     label = esc(s.tt(EDTX.atTodo, {
       n: count
     }));
   return `${count ? `<span class="ms-attodowarn">${label}</span>` : label}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
 }
+
+/** Où se complète un point de « À compléter » : le Cadre, l'étape ; le départ et l'arrivée se complètent dans LEUR LIGNE de l'itinéraire (lot 5 : ils ne sont plus des champs du Cadre) — le point la nomme. */
+const todoWhere = (s, names, t) => t.key === 'origin' ? s.tt(EDTX.itNewDep) : t.key === 'destination' ? s.tt(EDTX.itNewArr) : s.tt(names[t
+  .step]);
 
 /** Les tiroirs de la séance en lignes (editor_drawers.js) : celles déjà retouchées, sinon celles du fichier. */
 const edDrawers = e => e.drawers || DR.drawerRowsOf(e.base);
@@ -3884,6 +3906,16 @@ function edTrialInput(s, ev) {
   return edRefresh(s);
 }
 
+/** L'onglet en vue (lot 5) : « itin » (d'office, aussi à la réouverture), « map » ou « mission » ; sur un module large la carte est toujours là, « map » y vaut « itin ». */
+const edTab = e => ['itin', 'map', 'mission'].includes(e.tab) ? e.tab : 'itin';
+
+/** Les onglets (la maquette) : « Itinéraire », « Carte », « Mission » au téléphone ; sur un module large la carte est à gauche, toujours visible, et deux onglets seulement (CSS). Aucune marque sur un onglet (relecture § 2.10). */
+function edTabsHtml(s) {
+  const tab = edTab(s.ed),
+    on = k => (k === tab) || (k === 'itin' && tab === 'map' && edWide(s));
+  return `<div class="ms-attabs" role="tablist" data-attabs>${[['itin', EDTX.atItin], ['map', EDTX.itTabMap], ['mission', EDTX.atMission]].map(([k, tx]) => `<button type="button" role="tab" class="ms-attab" data-do="edtab" data-tab="${k}" aria-selected="${tab === k}">${esc(s.tt(tx))}</button>`).join('')}</div>`;
+}
+
 /** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
  *  départ en six groupes, le pied (« Enregistrer » et « Annuler » collés, comme dans les autres formulaires de la suite — SOG-0454 —
  *  puis « À compléter (n) »). */
@@ -3891,9 +3923,10 @@ export function edHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
-  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p><span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>
+  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}" data-tab="${edTab(e)}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p><span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}${edModelHtml(s)}
+    ${edTabsHtml(s)}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
     <div class="ms-atfoot" data-f-foot><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(EDTX.dwWinClose))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
@@ -4587,8 +4620,17 @@ export function edClick(s, b) {
     case 'edtodo':
       s.ed.todoOpen = !s.ed.todoOpen;
       return draw(s);
-    case 'edmap':
-      s.ed.mapOpen = !s.ed.mapOpen;
+    case 'edtab': { // un onglet : sur place, rien n'est perdu (les sections restent dans la page, la carte reprend sa taille)
+      const k = ['itin', 'map', 'mission'].includes(b.dataset.tab) ? b.dataset.tab : 'itin';
+      if (s.ed.tab === k) return;
+      s.ed.tab = k;
+      draw(s);
+      return k === 'map' ? edMapShow(s) : undefined;
+    }
+    case 'edseeitin': // « Voir dans l'itinéraire » : l'onglet Itinéraire, la ligne du lieu choisie ; l'outil armé est lâché
+      s.ed.tab = 'itin';
+      s.ed.placeFor = -1;
+      s.ed.tool = 'select';
       return draw(s);
     case 'edprof': // SOG-0464 : le repli « Profil » (au téléphone) ; le dessin se refait avec l'écran (edAfter)
       s.ed.profOpen = !s.ed.profOpen;
@@ -4637,7 +4679,7 @@ export function edClick(s, b) {
       e.tool = kind;
       e.drawFor = e.sel;
       e.placeFor = -1;
-      e.mapOpen = true;
+      e.tab = 'map'; // lot 5 : « Placer sur la carte » mène à l'onglet Carte (au téléphone), l'outil armé
       draw(s);
       return s.el.querySelector('[data-atmap]')?.scrollIntoView?.({
         block: 'nearest'
@@ -4812,7 +4854,7 @@ export function edClick(s, b) {
       e.placeFor = i;
       e.drawFor = '';
       e.mapRef = null;
-      e.mapOpen = true;
+      e.tab = 'map'; // lot 5 : « Placer sur la carte » mène à l'onglet Carte (au téléphone), l'outil armé
       draw(s);
       return s.el.querySelector('[data-atmap]')?.scrollIntoView?.({
         block: 'nearest'
