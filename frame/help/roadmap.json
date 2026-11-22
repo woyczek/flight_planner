@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-21",
+ "updated": "2026-11-22",
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "525b563",
-  "fiches": 547,
+  "fiches": 548,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1072,11 +1072,12 @@
     {
      "id": "SOG-0544",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : « Proposer un dégagement » ne lit la météo que de trois terrains sur sept, et « météo non lue » couvre des cas où elle a été lue",
      "en": "Fuel: “Suggest an alternate” reads the weather of only three airfields out of seven, and “weather not read” covers cases where it was read",
      "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
-     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
+     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó",
+     "test": true
     }
    ]
   },
@@ -2616,6 +2617,16 @@
      "es": "Mapa, corte en el teléfono: etiquetas superpuestas («350» y «NM», «TOD» y una temperatura, «TOC» y un símbolo de viento)",
      "rank": 412,
      "test": true
+    },
+    {
+     "id": "SOG-0549",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carte, téléphone : la fenêtre d'un terrain passe sous la colonne des boutons d'outils et cache la fin de ses lignes",
+     "en": "Map, phone: an airfield's window slides under the column of tool buttons and hides the end of its lines",
+     "de": "Karte, Telefon: das Fenster eines Platzes rutscht unter die Spalte der Werkzeugknöpfe und verdeckt das Ende seiner Zeilen",
+     "es": "Mapa, teléfono: la ventana de un aeródromo pasa bajo la columna de botones de herramientas y oculta el final de sus líneas",
+     "test": true
     }
    ]
   },
@@ -3599,11 +3610,12 @@
     {
      "id": "SOG-0546",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : terminal_gates refuse les points d'arrivée publiés de la route libre quand ils sont plus près que la distance de descente",
      "en": "Routes: terminal_gates refuses published free-route arrival points when they are closer than the descent distance",
      "de": "Routen: terminal_gates lehnt veröffentlichte Ankunftspunkte der freien Streckenführung ab, wenn sie näher als die Sinkflugstrecke liegen",
-     "es": "Rutas: terminal_gates rechaza los puntos de llegada publicados de la ruta libre cuando están más cerca que la distancia de descenso"
+     "es": "Rutas: terminal_gates rechaza los puntos de llegada publicados de la ruta libre cuando están más cerca que la distancia de descenso",
+     "test": true
     }
    ]
   },
@@ -4739,20 +4751,22 @@
     {
      "id": "SOG-0542",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « Annuler » ne couvre pas les gestes de la liste, et supprimer un lieu vide l'historique d'annulation",
      "en": "Mission workshop: “Undo” does not cover the gestures of the list, and deleting a place clears the undo history",
      "de": "Missionswerkstatt: „Rückgängig“ deckt die Gesten der Liste nicht ab, und das Löschen eines Ortes leert den Verlauf",
-     "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial"
+     "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial",
+     "test": true
     },
     {
      "id": "SOG-0543",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : le menu « ajouter à la route » propose des objets, que le lecteur ne résout pas dans une route",
      "en": "Mission workshop: the “add to route” menu offers objects, which the reader does not resolve in a route",
      "de": "Missionswerkstatt: Das Menü „zur Route hinzufügen“ bietet Objekte an, die der Leser in einer Route nicht auflöst",
-     "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta"
+     "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta",
+     "test": true
     }
    ]
   },

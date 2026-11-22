@@ -2,8 +2,8 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-21",
-  "tests": 377,
+  "at": "2026-11-22",
+  "tests": 382,
   "verdicts": 242
  },
  "apps": [
@@ -5640,39 +5640,77 @@
    "state": "ok",
    "delivered": "2026-11-21T15:38:58Z",
    "at": "2026-11-21T18:27:28Z"
-  }
- ],
- "decisions": [
-  {
-   "id": "Q-0137",
-   "fiche": "",
-   "app": "",
-   "question": "Un site nouveau que le lanceur lit (comme l'eAIP belge) : l'ergonome peut-il le décider seul désormais ?",
-   "context": "Tu as écrit à l'ergonome « les hôtes, go. ». Jusqu'ici, chaque site nouveau attendait ta réponse ici, dans l'appli : un mot rapporté par une session ne suffit pas pour ouvrir un accès. Si tu dis oui, l'ergonome décide par écrit, site par site, avec ces règles : source officielle seulement, lecture seule, site déclaré exactement dans la liste du lanceur et dans la politique de sécurité de la page, relecture de Sécurisation avant l'envoi, et une ligne close ici (« décidé par l'ergonome le … ») pour que tu la voies. Restent à toi dans tous les cas : ouvrir le lanceur sur Internet, les jetons, un site qui refuse l'accès automatique, les essais sur le réseau réel.",
-   "options": [
-    "Oui : l'ergonome décide seul, avec ces règles",
-    "Non : chaque site nouveau reste à ma réponse ici",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-21",
-   "state": "todo",
-   "recommended": 0
   },
   {
-   "id": "Q-0138",
-   "fiche": "SOG-0541",
-   "app": "maintenance",
-   "question": "Le site de l'eAIP belge refuse le lanceur. Comment avoir les voies de la Belgique ?",
-   "context": "Tu avais dit oui pour que le lanceur lise l'eAIP belge (Q-0136). À la première demande, une seule, le site ops.skeyes.be a répondu « 403 Forbidden » : il refuse les lectures automatiques (c'était déjà le cas le 11/11). Le lanceur ne contourne pas ce refus (ni faux navigateur, ni autre astuce). Aujourd'hui la base n'a aucune voie pour la Belgique et le Luxembourg : les routes qui les traversent y sont « non vérifiables », et l'écran le dit en les nommant. On vérifie encore si l'AIP belge se lit par la voie déjà en place (EAD, sans site nouveau) ; si oui, cette réponse sera ajoutée en tête. En attendant, l'ergonome recommande de laisser la Belgique « non vérifiable » (l'écran le dit) plutôt qu'un dépôt à la main à chaque cycle de 28 jours ; demander l'accès à skeyes reste ton choix. La lecture de l'AIP belge par l'EAD reste possible plus tard, par un lot (elle demande ta connexion).",
-   "options": [
-    "Je dépose moi-même les pages ENR 3 enregistrées depuis mon navigateur, à chaque cycle ; le lanceur lit le fichier déposé",
-    "Je demande à skeyes l'autorisation d'un accès automatique (je m'en occupe)",
-    "On laisse la Belgique « non vérifiable », nommée à l'écran, pour le moment",
-    "Autre (dans le texte)"
-   ],
+   "id": "SOG-0542",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : « Annuler » ne couvre pas les gestes de la liste, et supprimer un lieu vide l'historique d'annulation",
+    "en": "Mission workshop: “Undo” does not cover the gestures of the list, and deleting a place clears the undo history",
+    "de": "Missionswerkstatt: „Rückgängig“ deckt die Gesten der Liste nicht ab, und das Löschen eines Ortes leert den Verlauf",
+    "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial"
+   },
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-21",
    "state": "todo",
-   "recommended": 2
+   "delivered": "2026-11-21T20:13:55Z"
+  },
+  {
+   "id": "SOG-0543",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : le menu « ajouter à la route » propose des objets, que le lecteur ne résout pas dans une route",
+    "en": "Mission workshop: the “add to route” menu offers objects, which the reader does not resolve in a route",
+    "de": "Missionswerkstatt: Das Menü „zur Route hinzufügen“ bietet Objekte an, die der Leser in einer Route nicht auflöst",
+    "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta"
+   },
+   "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T20:13:55Z"
+  },
+  {
+   "id": "SOG-0544",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : « Proposer un dégagement » ne lit la météo que de trois terrains sur sept, et « météo non lue » couvre des cas où elle a été lue",
+    "en": "Fuel: “Suggest an alternate” reads the weather of only three airfields out of seven, and “weather not read” covers cases where it was read",
+    "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
+    "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
+   },
+   "test": "Recharge la page. Carburant, vol EGGW → LQSA, étape Vol : touche « Proposer un dégagement ». La météo est lue pour tous les terrains proposés. Un terrain sans TAF indique « pas de TAF » (ou « hors validité du TAF »), jamais « météo non lue », et n'est jamais en vert ; « météo non lue » ne paraît que si la lecture a échoué, avec sa raison. Sur la Carte, un terrain dont la météo n'est pas connue est orange « À vérifier », après les terrains bons.",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T19:16:32Z"
+  },
+  {
+   "id": "SOG-0546",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : terminal_gates refuse les points d'arrivée publiés de la route libre quand ils sont plus près que la distance de descente",
+    "en": "Routes: terminal_gates refuses published free-route arrival points when they are closer than the descent distance",
+    "de": "Routen: terminal_gates lehnt veröffentlichte Ankunftspunkte der freien Streckenführung ab, wenn sie näher als die Sinkflugstrecke liegen",
+    "es": "Rutas: terminal_gates rechaza los puntos de llegada publicados de la ruta libre cuando están más cerca que la distancia de descenso"
+   },
+   "test": "Un seul geste, sans rien déposer. Dans la validation d'Eurocontrol, passe ce plan : départ LFPG, arrivée LQSA, niveau FL330, le 26/11/2026 à 12 h 00 Z, route : LFPG OKASI7B OKASI DCT IBNIT DCT LSE DCT ROBEX DCT NITAM DCT KEB DCT LQSA. Dis s'il est accepté ; sinon colle les erreurs telles quelles. (Ce qu'on vérifie : l'arrivée à Sarajevo par KEB. Une erreur qui cite une règle de la Suisse ou de l'Italie ne concerne pas cet essai.)",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T21:06:30Z"
+  },
+  {
+   "id": "SOG-0549",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte, téléphone : la fenêtre d'un terrain passe sous la colonne des boutons d'outils et cache la fin de ses lignes",
+    "en": "Map, phone: an airfield's window slides under the column of tool buttons and hides the end of its lines",
+    "de": "Karte, Telefon: das Fenster eines Platzes rutscht unter die Spalte der Werkzeugknöpfe und verdeckt das Ende seiner Zeilen",
+    "es": "Mapa, teléfono: la ventana de un aeródromo pasa bajo la columna de botones de herramientas y oculta el final de sus líneas"
+   },
+   "test": "Recharge la page. Au téléphone (ou fenêtre de 390 px), Carte d'un vol avec des dégagements proposés : touche un terrain orange ou vert. Sa fenêtre s'ouvre à côté de la colonne des boutons d'outils et tout son texte se lit ; la distance s'écrit avec une virgule (« 40,2 NM ») ; le carburant de dégagement est dans la même unité que Carburant (kg si Carburant affiche des kg).",
+   "since": "2026-11-21",
+   "state": "todo",
+   "delivered": "2026-11-21T21:02:14Z"
   }
- ]
+ ],
+ "decisions": []
 }
