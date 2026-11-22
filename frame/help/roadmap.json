@@ -4,7 +4,7 @@
  "updated": "2026-11-22",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b1411c9",
+  "organisation": "33eab96",
   "fiches": 548,
   "untranslated": 0,
   "priorities": 481,
@@ -8062,11 +8062,12 @@
     {
      "id": "SOG-0541",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : lire les voies de la Belgique (ENR 3) dans l'eAIP de skeyes pendant la mise à jour des données",
      "en": "Routes: read the airways of Belgium (ENR 3) from the skeyes eAIP during the data update",
      "de": "Routen: die Luftstraßen Belgiens (ENR 3) während der Datenaktualisierung aus dem eAIP von skeyes lesen",
-     "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos"
+     "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos",
+     "test": true
     }
    ]
   },

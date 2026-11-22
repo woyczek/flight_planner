@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-22",
-  "tests": 382,
+  "tests": 383,
   "verdicts": 242
  },
  "apps": [
@@ -5642,6 +5642,20 @@
    "at": "2026-11-21T18:27:28Z"
   },
   {
+   "id": "SOG-0541",
+   "app": "maintenance",
+   "title": {
+    "fr": "Routes : lire les voies de la Belgique (ENR 3) dans l'eAIP de skeyes pendant la mise à jour des données",
+    "en": "Routes: read the airways of Belgium (ENR 3) from the skeyes eAIP during the data update",
+    "de": "Routen: die Luftstraßen Belgiens (ENR 3) während der Datenaktualisierung aus dem eAIP von skeyes lesen",
+    "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Données, ouvre la Belgique : la carte « AIM Belgique » dit de déposer la partie ENR 3.2. Coche la case d'usage personnel si elle ne l'est pas, puis « Choisir le fichier… » et prends ton EB_ENR_3_2_en.pdf. Ce qu'on doit voir : « Pages déposées le … (cycle …). Dernier amendement lu : … », puis « Mettre à jour ce pays » construit la Belgique. Ensuite, dans Carburant, calcule une route qui traverse la Belgique (par exemple EHAM → LFPG) : des voies belges apparaissent, sans raison « Routes belges d'un cycle passé ». (Dépose aussi une autre page, 3.3 ou 3.4 : elle doit être refusée, « cette page ne sert pas au calcul des routes ».)",
+   "since": "2026-11-22",
+   "state": "todo",
+   "delivered": "2026-11-22T09:32:03Z"
+  },
+  {
    "id": "SOG-0542",
    "app": "compagnie",
    "title": {
@@ -5712,5 +5726,610 @@
    "delivered": "2026-11-21T21:02:14Z"
   }
  ],
- "decisions": []
+ "decisions": [],
+ "paths": {
+  "preamble": "Relance le lanceur, puis recharge la page.",
+  "order": [
+   "C1",
+   "C4",
+   "C3",
+   "C5",
+   "C6",
+   "C8",
+   "C2",
+   "C7"
+  ],
+  "paths": [
+   {
+    "id": "C1",
+    "title": "Préparer un vol IFR en Europe",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Carburant, vol EDDF → LFMN au FL350 : touche « Calculer A → B ».",
+      "expect": "Une route paraît en quelques secondes.",
+      "fiches": [
+       "SOG-0424",
+       "SOG-0354"
+      ]
+     },
+     {
+      "gesture": "Vol EGGW → LQSA au FL330 : touche « Calculer A → B ».",
+      "expect": "La route ne passe plus par REDFA–NOMKA. Sur le profil, la croisière reste au FL330 d'un bout à l'autre. Le message « profil adapté aux plafonds » n'apparaît plus.",
+      "fiches": [
+       "SOG-0535",
+       "SOG-0532"
+      ]
+     },
+     {
+      "gesture": "Sur cette route, lis le verdict et la note en dessous.",
+      "expect": "S'il y a des infractions, le message les compte toutes. La note sur les règles d'espaces n'a pas de nombre. Seuls les États traversés sont cités.",
+      "fiches": [
+       "SOG-0537",
+       "SOG-0538"
+      ]
+     },
+     {
+      "gesture": "Choisis le niveau « Auto », puis recalcule.",
+      "expect": "Si un niveau a une route « conforme », c'est ce niveau qui est gardé. L'avertissement de la règle semi-circulaire ne change jamais le verdict.",
+      "fiches": [
+       "SOG-0530",
+       "SOG-0540"
+      ]
+     },
+     {
+      "gesture": "Passe le niveau à FL250, sans recalculer.",
+      "expect": "Sous la route : « calculée pour le FL… ». Le plan de vol garde le niveau du calcul.",
+      "fiches": [
+       "SOG-0533"
+      ]
+     },
+     {
+      "gesture": "Vol EGLL → LFRN au FL270. Colle cette route dans le champ Route : MID L612 HAWKE DCT NEVIL G27 ANGLO G273 RAVIG T501 LUKEM T493 UPALO V20 LUVOP",
+      "expect": "Chaque erreur est dite (voie trop basse pour le niveau, règle du RAD, limite de la SID), ou le calcul l'évite.",
+      "fiches": [
+       "SOG-0513"
+      ]
+     },
+     {
+      "gesture": "Efface la route et tape une route qui contient « 51/20 52/30 ».",
+      "expect": "Les deux points sont reconnus. La route se dessine.",
+      "fiches": [
+       "SOG-0408"
+      ]
+     },
+     {
+      "gesture": "Vol ESSA → LEMG : touche « Calculer A → B » deux fois de suite.",
+      "expect": "Une route paraît, la même les deux fois.",
+      "fiches": [
+       "SOG-0475",
+       "SOG-0524"
+      ]
+     },
+     {
+      "gesture": "Choisis un itinéraire sur la Carte, puis reviens dans Carburant.",
+      "expect": "L'itinéraire choisi est gardé. Le texte de la route garde tous ses points.",
+      "fiches": [
+       "SOG-0400",
+       "SOG-0390"
+      ]
+     },
+     {
+      "gesture": "Touche « Copier le plan de vol », puis colle le texte dans un éditeur.",
+      "expect": "Un plan de vol OACI complet.",
+      "fiches": [
+       "SOG-0402"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C4",
+    "title": "Suivre le vol sur la Carte",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Carburant : démarre un vol et laisse-le avancer une minute.",
+      "expect": "Aucune saccade toutes les quelques secondes.",
+      "fiches": [
+       "SOG-0435"
+      ]
+     },
+     {
+      "gesture": "Touche « Direct vers… » sur un point plus loin de la route, puis ouvre la Carte.",
+      "expect": "Le morceau de route abandonné reste visible, dessiné autrement.",
+      "fiches": [
+       "SOG-0326"
+      ]
+     },
+     {
+      "gesture": "Carte, vol LFLB → LIMC au FL090 (la croisière passe sous les Alpes) : ouvre le profil dans le volet du bas.",
+      "expect": "La partie fautive du trait de croisière est rouge, avec une marque au point le plus bas et son nombre. Sous le profil : « Croisière sous le relief : … ft trop bas, à … NM après … ».",
+      "fiches": [
+       "SOG-0502"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C3",
+    "title": "Traverser l'Atlantique Nord",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Carburant, étape Route : lis la ligne des routes NAT.",
+      "expect": "Elle indique les sens et leurs fenêtres du jour, et propose de relire les routes.",
+      "fiches": [
+       "SOG-0413"
+      ]
+     },
+     {
+      "gesture": "Vol KJFK → EGLL, départ à 23 h 00 Z : touche « Calculer A → B ».",
+      "expect": "Le message de la veille et celui du jour sont gardés, chacun avec sa date.",
+      "fiches": [
+       "SOG-0394"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Vol EGGW → KJFK, départ vers 09 h 30 Z : touche « Calculer A → B ».",
+      "expect": "La route passe par une route NAT du jour, et non en route libre le long d'elle.",
+      "fiches": [
+       "SOG-0403",
+       "SOG-0412"
+      ]
+     },
+     {
+      "gesture": "Lis la route écrite.",
+      "expect": "La route NAT est écrite par son nom. Jamais « NATF » pour une autre.",
+      "fiches": [
+       "SOG-0414"
+      ]
+     },
+     {
+      "gesture": "Touche « Choisir », puis « Contrôler ».",
+      "expect": "Plus de « Portion NATF non couverte ».",
+      "fiches": [
+       "SOG-0411"
+      ]
+     },
+     {
+      "gesture": "Un vol à une heure où aucune route NAT de son sens n'est lue : « Calculer A → B ».",
+      "expect": "L'écran dit pourquoi la route est en route libre.",
+      "fiches": [
+       "SOG-0391"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Quand la ligne indique « aucune vers l'est » : un vol vers l'est, « Calculer A → B ».",
+      "expect": "Les points d'entrée et de sortie de la route libre sont justes.",
+      "fiches": [
+       "SOG-0396"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Réglages › Maintenance › Données aéronautiques, ligne Portugal : touche la mise à jour.",
+      "expect": "La ligne passe à jour.",
+      "fiches": [
+       "SOG-0417"
+      ]
+     },
+     {
+      "gesture": "Carburant, vol LPPT → KJFK : touche « Calculer A → B ».",
+      "expect": "Une route qui entre dans l'Atlantique depuis le Portugal.",
+      "fiches": [
+       "SOG-0417"
+      ]
+     },
+     {
+      "gesture": "Reprends EGGW → KJFK, touche « Copier pour Eurocontrol » et colle dans la validation d'Eurocontrol.",
+      "expect": "Aucun tiret fautif dans la route.",
+      "fiches": [
+       "SOG-0422"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C5",
+    "title": "Mettre à jour les données",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Ouvre Maintenance › Données.",
+      "expect": "En deux secondes environ : le cycle et l'état de la base.",
+      "fiches": [
+       "SOG-0384"
+      ]
+     },
+     {
+      "gesture": "Lis les lignes des jeux de données.",
+      "expect": "Chaque ligne dit son état et pourquoi, en mots, sans code.",
+      "fiches": [
+       "SOG-0119"
+      ]
+     },
+     {
+      "gesture": "Ouvre le bloc « Couverture par pays », en bas.",
+      "expect": "Un tableau, une ligne par pays : points, voies, espaces.",
+      "fiches": [
+       "SOG-0174"
+      ]
+     },
+     {
+      "gesture": "Regarde une zone qui attend un fichier (Royaume-Uni, Suède).",
+      "expect": "Sous sa ligne, un pas-à-pas avec le lien direct.",
+      "fiches": [
+       "SOG-0189"
+      ]
+     },
+     {
+      "gesture": "Regarde la ligne « Route (RAD, points FRA) ».",
+      "expect": "Elle dit où créer le compte EUROCONTROL et propose « Choisir le fichier ».",
+      "fiches": [
+       "SOG-0237"
+      ]
+     },
+     {
+      "gesture": "Islande, case d'usage personnel cochée : touche « Mettre à jour ce pays ».",
+      "expect": "La source « Avians » est listée et lue.",
+      "fiches": [
+       "SOG-0240"
+      ]
+     },
+     {
+      "gesture": "Reconstruis un pays.",
+      "expect": "Il passe au vert sur la carte et dans la liste, sans recharger.",
+      "fiches": [
+       "SOG-0072"
+      ]
+     },
+     {
+      "gesture": "Points VFR : lance le téléchargement, arrête-le, puis lance la construction.",
+      "expect": "L'état indique « En partie à jour », avec ce qui manque.",
+      "fiches": [
+       "SOG-0191"
+      ]
+     },
+     {
+      "gesture": "Pendant la reconstruction VFR, regarde la console du lanceur.",
+      "expect": "Plus de lignes d'avertissement en masse.",
+      "fiches": [
+       "SOG-0427"
+      ]
+     },
+     {
+      "gesture": "Après une construction, touche « Publier la base ».",
+      "expect": "Le nombre de fichiers envoyés est juste, pas « 0 fichier envoyé ».",
+      "fiches": [
+       "SOG-0230"
+      ]
+     },
+     {
+      "gesture": "Ligne « Synoptique monde (GFS) » : touche « Construire », quitte la page, puis reviens.",
+      "expect": "La construction a continué.",
+      "fiches": [
+       "SOG-0429"
+      ]
+     },
+     {
+      "gesture": "Attends la fin de la construction GFS.",
+      "expect": "Le rafraîchissement aboutit.",
+      "fiches": [
+       "SOG-0525"
+      ]
+     }
+    ],
+    "note": "Long : une reconstruction prend plusieurs minutes."
+   },
+   {
+    "id": "C6",
+    "title": "Au téléphone",
+    "where": "téléphone",
+    "steps": [
+     {
+      "gesture": "Appli Maintenance : touche l'onglet « Données », puis « Fiches », dans la barre du bas.",
+      "expect": "L'onglet actif a son icône, pas une pastille vide.",
+      "fiches": [
+       "SOG-0284"
+      ]
+     },
+     {
+      "gesture": "Réglages : descends à mi-page pendant une synchronisation.",
+      "expect": "La page reste en place.",
+      "fiches": [
+       "SOG-0342"
+      ]
+     },
+     {
+      "gesture": "Réglages : regarde les cartes de la compagnie.",
+      "expect": "Leur hauteur suit leur contenu.",
+      "fiches": [
+       "SOG-0361"
+      ]
+     },
+     {
+      "gesture": "Si le bandeau « GitLab limite les requêtes » paraît : regarde les écrans.",
+      "expect": "Rien ne clignote, rien ne se recharge.",
+      "fiches": [
+       "SOG-0359"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Carte, vol LFPO → EIDW.",
+      "expect": "Terrains, voies et espaces paraissent, nettement plus vite qu'avant.",
+      "fiches": [
+       "SOG-0349",
+       "SOG-0356"
+      ]
+     },
+     {
+      "gesture": "Coche puis décoche « Autour du vol seulement ».",
+      "expect": "Les données restent affichées.",
+      "fiches": [
+       "SOG-0349"
+      ]
+     },
+     {
+      "gesture": "Touche la poignée du volet du bas.",
+      "expect": "Le volet ouvert reste ouvert.",
+      "fiches": [
+       "SOG-0416"
+      ]
+     },
+     {
+      "gesture": "Ouvre le volet du bas sur la coupe météo (bouton nuage).",
+      "expect": "Aucune étiquette ne chevauche une autre.",
+      "fiches": [
+       "SOG-0418"
+      ]
+     },
+     {
+      "gesture": "Carburant, vol LFPO → EIDW, bloc Procédures.",
+      "expect": "Chaque côté montre ses procédures lues. Un côté vide le dit.",
+      "fiches": [
+       "SOG-0345"
+      ]
+     },
+     {
+      "gesture": "Carte du vol, volet « Couches » : coche une case au doigt.",
+      "expect": "Elle se coche du premier coup.",
+      "fiches": [
+       "SOG-0350"
+      ]
+     },
+     {
+      "gesture": "Météo : touche près d'un point déjà lu.",
+      "expect": "C'est ce point qui s'ouvre.",
+      "fiches": [
+       "SOG-0343"
+      ]
+     },
+     {
+      "gesture": "Missions : touche « Tirer au sort » plusieurs fois.",
+      "expect": "La mission tirée s'ouvre à chaque fois.",
+      "fiches": [
+       "SOG-0365"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C8",
+    "title": "Réglages, recette et signalements",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Réglages › Affichage › Langue : choisis Français, puis English, puis Automatique.",
+      "expect": "La page se recharge chaque fois dans la langue choisie. Automatique prend celle du navigateur.",
+      "fiches": [
+       "SOG-0477"
+      ]
+     },
+     {
+      "gesture": "Change de langue trois fois de suite, vite.",
+      "expect": "Aucune alerte « Rechargements en série ». Réglages se rouvre par-dessus l'écran d'avant. Échap le referme.",
+      "fiches": [
+       "SOG-0484"
+      ]
+     },
+     {
+      "gesture": "Fenêtre étroite : coche puis décoche « Utilisation sur cette machine seule ».",
+      "expect": "L'écran ne bouge pas. Le second clic tombe où tu vises.",
+      "fiches": [
+       "SOG-0473"
+      ]
+     },
+     {
+      "gesture": "Design Material : regarde le menu.",
+      "expect": "« Administration » tient sur une ligne.",
+      "fiches": [
+       "SOG-0315"
+      ]
+     },
+     {
+      "gesture": "Maintenance › Données : regarde la liste des pays.",
+      "expect": "Son titre est « Pays définis », avec « Ajouter ce pays » et « Retirer ce pays ».",
+      "fiches": [
+       "SOG-0315"
+      ]
+     },
+     {
+      "gesture": "Données : touche « Tout mettre à jour ».",
+      "expect": "Les tuiles restent bleues « en cours » jusqu'au bout.",
+      "fiches": [
+       "SOG-0324"
+      ]
+     },
+     {
+      "gesture": "Réglages › État : touche « Quelque chose semble bizarre ? ». Ne confirme rien.",
+      "expect": "Il mène à « Repartir de zéro sur cet appareil », qui dit en chiffres ce qui part et ce qui reste, et demande une confirmation.",
+      "fiches": [
+       "SOG-0324"
+      ]
+     },
+     {
+      "gesture": "Réglages › Synchronisation, après la première synchronisation du jour : lis « La plus longue aujourd'hui ».",
+      "expect": "La durée de chaque étape est écrite.",
+      "fiches": [
+       "SOG-0149"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Touche la coccinelle « Signaler », puis « Mes signalements ».",
+      "expect": "Un champ de recherche. Tes signalements groupés en Maintenant, Ensuite, Plus tard, À classer, chacun avec sa couleur et son mot d'état.",
+      "fiches": [
+       "SOG-0410"
+      ]
+     },
+     {
+      "gesture": "Page de recette : valide un essai, puis recharge la page.",
+      "expect": "L'essai est toujours validé.",
+      "fiches": [
+       "SOG-0497"
+      ]
+     },
+     {
+      "gesture": "Mes appareils : ouvre un appareil, touche « Base » et tape « LF ».",
+      "expect": "La liste propose des terrains avec leur nom. Le terrain choisi écrit son code.",
+      "fiches": [
+       "SOG-0490"
+      ]
+     },
+     {
+      "gesture": "Carburant : vol depuis l'hélistation LF418 vers un terrain OACI, « Copier le plan de vol ».",
+      "expect": "La case départ indique ZZZZ. La case 18 « DEP/ » donne le nom et la position de l'hélistation.",
+      "fiches": [
+       "SOG-0483"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C2",
+    "title": "Dégagements et météo",
+    "where": "ordinateur",
+    "steps": [
+     {
+      "gesture": "Carburant, étape Vol : saisis un terrain de dégagement.",
+      "expect": "Sous les trois champs, une ligne : un signe (✓, !, ✕ ou ?) et les critères.",
+      "fiches": [
+       "SOG-0398"
+      ]
+     },
+     {
+      "gesture": "Vol EGGW → LQSA : touche « Proposer un dégagement ».",
+      "expect": "Des terrains autour de Sarajevo, la météo lue pour chacun.",
+      "fiches": [
+       "SOG-0494",
+       "SOG-0544"
+      ]
+     },
+     {
+      "gesture": "Regarde un terrain proposé qui n'a pas de TAF.",
+      "expect": "Il indique « pas de TAF », pas « météo non lue ». Il n'est jamais en vert.",
+      "fiches": [
+       "SOG-0544"
+      ]
+     },
+     {
+      "gesture": "Un dégagement dont la base n'a pas les procédures (LFFI) : regarde le critère « Moyens ».",
+      "expect": "La ligne dit ce qui manque et propose le geste.",
+      "fiches": [
+       "SOG-0527"
+      ]
+     },
+     {
+      "gesture": "Vol vers un terrain contrôlé dont l'ATIS est en ligne : touche « Lire la météo des terrains ».",
+      "expect": "Côté arrivée : lettre, piste, QNH et vent de l'ATIS.",
+      "fiches": [
+       "SOG-0325"
+      ],
+      "optional": true
+     },
+     {
+      "gesture": "Quitte Carburant aussitôt ouvert, plusieurs fois de suite.",
+      "expect": "Aucune erreur. La lecture de l'ATIS s'arrête.",
+      "fiches": [
+       "SOG-0317"
+      ]
+     },
+     {
+      "gesture": "Bloc Procédures, départ EGGW : touche « Lire les départs dans le paquet du Royaume-Uni ».",
+      "expect": "Les SID des cartes lues paraissent, avec le nombre de cartes lues.",
+      "fiches": [
+       "SOG-0499"
+      ]
+     },
+     {
+      "gesture": "Même bloc, départ EGLL : touche « Relire ».",
+      "expect": "Une lecture datée d'aujourd'hui, avec le nombre de cartes lues sur 15.",
+      "fiches": [
+       "SOG-0374"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "C7",
+    "title": "Parcours de l'atelier",
+    "where": "ordinateur",
+    "steps": [],
+    "note": "À jouer après le jalon de l'atelier.",
+    "folded": true,
+    "ref": "SOG-0526",
+    "covers": [
+     "SOG-0443",
+     "SOG-0444",
+     "SOG-0448",
+     "SOG-0458",
+     "SOG-0459",
+     "SOG-0460",
+     "SOG-0463",
+     "SOG-0464",
+     "SOG-0465",
+     "SOG-0467",
+     "SOG-0469",
+     "SOG-0471",
+     "SOG-0472",
+     "SOG-0478",
+     "SOG-0479",
+     "SOG-0480",
+     "SOG-0481",
+     "SOG-0485",
+     "SOG-0488",
+     "SOG-0495",
+     "SOG-0496",
+     "SOG-0503",
+     "SOG-0507",
+     "SOG-0508",
+     "SOG-0516",
+     "SOG-0519",
+     "SOG-0521",
+     "SOG-0526"
+    ]
+   }
+  ],
+  "majors_first": [
+   "SOG-0546",
+   "SOG-0430",
+   "SOG-0520"
+  ],
+  "no_test": [
+   {
+    "id": "SOG-0504",
+    "title": {
+     "fr": "Routes : quand la reprise « passer par X » échoue, le moteur abandonne sans essayer « X écarté », et la revue dit « X écarté … +0 NM » à tort",
+     "en": "Routes: when the “go via X” retry fails, the engine gives up without trying “X avoided”, and the review wrongly says “X avoided … +0 NM”",
+     "de": "Routen: Scheitert der Versuch „über X“, gibt der Rechner auf, ohne „X gemieden“ zu probieren, und die Prüfung meldet fälschlich „X gemieden … +0 NM“",
+     "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»"
+    },
+    "reason": "sans essai : rien de visible"
+   }
+  ]
+ }
 }
