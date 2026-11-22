@@ -3354,7 +3354,7 @@ def n209(c):
     c.ok(circle in lines, lines, f'the line of ZONE-1, a step of the route, says « {circle} »')
     sheet = _key_open(c, 'C')
     rng = '0.3' if L == 'en' else '0,3'
-    c.eq(c.js(f"document.querySelector('{sheet} [data-plform] [data-f=range]').value"), rng, f'the range of OBJ-1 in the sheet of its drawer says « {rng} » (a decimal comma but in English)', what='the range')
+    c.eq(c.js(f"document.querySelector('{sheet} [data-keyrow] [data-f=range]').value"), rng, f'the range of OBJ-1 in the sheet of its drawer says « {rng} » (a decimal comma but in English)', what='the range')
     c.until(f"!!document.querySelector('{E} [data-plform] .ms-plfold summary')", what='the sheet of OBJ-1')
     alt = {'fr': 'objet à 12,5 ft', 'en': 'object at 12.5 ft', 'de': 'Objekt auf 12,5 ft', 'es': 'objeto a 12,5 ft'}[L]
     summ = norm(c.text(f'{E} [data-plform] .ms-plfold summary'))
@@ -3656,7 +3656,7 @@ def n214(c):
         c.eq(grp, ['key', 'texts', 'pilot'], f'{width}: the groups of the sheet: the key, the texts, what the pilot sees — no « La suite de route »', what='groups')
         key = f'{E} [data-drawer="C"] [data-dgrp=key]'
         vals = c.js(f"[document.querySelector('{key} .ms-dsum b').textContent.trim(), document.querySelector('{key} [data-plform] input[data-f=name]')?.value, document.querySelector('{key} [data-plform] input[data-f=lat]')?.value, "
-                    f"document.querySelector('{key} [data-plform] input[data-f=range]')?.value, document.querySelector('{key} input[data-f=fallback]')?.value]")
+                    f"document.querySelector('{key} [data-keyrow] input[data-f=range]')?.value, document.querySelector('{key} [data-keyrow] input[data-f=fallback]')?.value]")
         c.eq(vals, ['La clé', 'Naufragé', '44,5', '1', '90'], f'{width}: the group « La clé »: the object of the key edited by the block of the sheet of a place (name, position, range), the fallback hour under it', what='key group')
         keyform = c.js(f"[...document.querySelectorAll('{E} [data-drawer=\"C\"] [data-dgrp=key] [data-plform] button')].map(b => b.dataset.do)")
         c.ok('edplaceok' not in keyform and 'edplacedel' not in keyform, keyform, f'{width}: the place of the key has no « OK » and no « Supprimer » of its own')
@@ -5970,7 +5970,7 @@ def n77(c):
     sheet = _key_open(c, 'E')
     F = f'{sheet} [data-plform]'
     i = int(c.js(f"document.querySelector('{F}').dataset.plform"))
-    c.eq(c.js(f"[...['name', 'okind', 'range'].map(f => document.querySelector('{F} [data-f=' + f + ']').value), document.querySelector('{F} [data-plid]').textContent.trim()]"),
+    c.eq(c.js(f"[...['name', 'okind'].map(f => document.querySelector('{F} [data-f=' + f + ']').value), document.querySelector('{sheet} [data-keyrow] [data-f=range]').value, document.querySelector('{F} [data-plid]').textContent.trim()]"),
          ['Naufragé', 'person', '0,3', 'OBJ-1'], 'the sheet of the key of drawer 4: the name, the kind (« personne »), the range with a decimal comma, the identifier of the object', what='the object in the sheet of its drawer')
     moving = c.js(_PLACE_LINE, c.js(_PLACE_AT, 'OBJ-2'))
     c.eq([moving[0], norm(moving[3])], ['object', 'aéronef · rien ne cite ce lieu : le pilote ne le verra pas'], 'the moving target, nothing cites it: its line says its kind and « rien ne cite ce lieu : le pilote ne le verra pas » (SOG-0482 lot 3)',
@@ -5980,8 +5980,8 @@ def n77(c):
     c.shot('N77_390_objects.png')
     # the sheet of an object: no identifier to type, seven fields
     c.ok(c.count(f'{F} [data-f=id]') == 0 and 'OBJ-1' in c.text(f'{F} [data-plid]'), c.text(f'{F} [data-plid]'), 'the identifier is said, never typed')
-    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'fallback', 'confirm', 'height', 'alt'],
-         'the fields of an object (SOG-0482 lot 5: the fallback hour of the key, on the row of the range, is a field of the block of the object)', what='fields')
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'confirm', 'height', 'alt'],
+         'the fields of an object (SOG-0482 lot 5: the range and the fallback hour belong to the key, they are on a row UNDER the block of the object, not in it)', what='fields')
     fold = c.js(f"(() => {{ const d = document.querySelector('{F} [data-plheights]'); return [d.open, d.querySelector('summary').textContent.trim(), d.querySelectorAll('[data-f]').length] }})()")
     c.eq(fold, [False, norm(row(c, 'plHeights', EDTX_FILE)), 2], 'the rule of seven: the two heights are in ONE fold « Hauteur — facultatif », closed at first',
          what='the fold of the heights')
@@ -5989,8 +5989,8 @@ def n77(c):
          what='the box')
     c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f=okind] option')].map(o => o.value)"), ['', 'wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft', 'refill'],
          'the kinds are the reader\'s list', what='kinds')
-    c.page.fill(f'{F} [data-f=range]', '0.5')
-    forged = c.js(f"""() => {{ const f = document.querySelector('{F} [data-f=range]'), x = f.cloneNode(); x.dataset.f = 'id'; x.value = 'FORGED'; f.parentNode.appendChild(x);
+    c.page.fill(f'{E} [data-drawer] [data-keyrow] [data-f=range]', '0.5')
+    forged = c.js(f"""() => {{ const f = document.querySelector('{E} [data-drawer] [data-keyrow] [data-f=range]'), x = f.cloneNode(); x.dataset.f = 'id'; x.value = 'FORGED'; f.parentNode.appendChild(x);
       x.dispatchEvent(new Event('input', {{ bubbles: true }})); x.remove(); return document.querySelector('{F} [data-plid]').textContent }}""")
     c.ok('OBJ-1' in forged and 'FORGED' not in forged and c.js(f"document.querySelector('{F}')?.dataset.plform") == str(i), forged, 'a forged field « id » does not rename an object')
     c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
@@ -6210,7 +6210,7 @@ def n78(c):
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 1 on a wide screen')
     wide = c.js(f"[...document.querySelectorAll('{_DW} .ms-dbody')].map(x => getComputedStyle(x).display !== 'none').concat([...document.querySelectorAll('{_DW} [data-dline]')].map(x => getComputedStyle(x).display === 'none'))")
-    c.eq(wide, [True, True, True, False, True, True], 'on a wide screen the three groups (« La clé », since the lot 5, « Les textes » and « Ce que le pilote voit ») are unfolded; « Les textes » and « Ce que le pilote voit » say no line, « La clé » always says the key and the fallback', what='the groups on a wide screen')
+    c.eq(wide, [True] * 6, 'on a wide screen the groups (« La clé », since the lot 5, « Les textes » and « Ce que le pilote voit ») are unfolded and say no line', what='the groups on a wide screen')
     c.shot('N78_1280_drawer_object.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -10501,8 +10501,8 @@ def n130(c):
     ed_reveal(c)
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the places drawn')
-    head = c.js(f"!!document.querySelector('{E} .ms-atside')?.firstElementChild?.matches('[data-atitin]')")
-    c.ok(head, head, '1280: the itinerary is the head of the right column, in a frame')
+    head = c.js(f"(() => {{ const f = document.querySelector('{E} .ms-atside')?.firstElementChild; return [f?.matches('[data-attabs]'), f?.nextElementSibling?.matches('[data-atitin]')] }})()")
+    c.eq(head, [True, True], '1280: the head of the right column is its two tabs, the itinerary (a frame) right under them', what='the right column')
     g0 = c.js(_PL_GEO, None)
     c.ok(g0 and g0['overflow'] == 'visible' and not g0['scroll'], g0, 'a list that does not scroll in itself (the page scrolls)')
     # a place touched on the map: its row chosen, its fields under it
@@ -10624,7 +10624,7 @@ def n131(c):
 # And no secondary text smaller than `.f-muted` (a probe gives its size).
 _TEXT_RULE = f"""(() => {{ const root = document.querySelector('{E}'); if (!root) return null;
   const GROUPS = '.f-card, .ms-atgrp, .ms-dgrp, .ms-edsub, .ms-plform, .ms-atmaphintrow',
-    NOT = 'label, .ms-lbl, .f-item, .ms-plrow, .ms-edteam, li, .ms-chip, .ms-pilot, .ms-adname, .ms-atsketch, .ms-dsum, .ms-crumb',
+    NOT = 'label, .ms-lbl, .f-item, .ms-plrow, .ms-edteam, li, .ms-chip, .ms-pilot, .ms-adname, .ms-atsketch, .ms-crumb',
     seen = el => {{ const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' }},
     probe = Object.assign(document.createElement('p'), {{ className: 'f-muted', textContent: 'x' }});
   root.append(probe); const ref = parseFloat(getComputedStyle(probe).fontSize); probe.remove();
@@ -11073,8 +11073,10 @@ def _md_save(c):
 def _md_pick(c, model):
     """Opens the list of the models under the title (if closed) and touches one."""
     if not c.count(f'{E} [data-models]'):
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
     c.until(f"!!document.querySelector('{E} [data-models] [data-model=\"{model}\"]')", timeout=10000, what=f'the model {model} in the list')
+    _tab(c, 'mission')
     c.tap(f'{E} [data-models] [data-model="{model}"]')
 
 
@@ -11095,6 +11097,7 @@ def n140(c):
         c.tap(f'{R} [data-do="edcreate"]')
         c.until(f"!!document.querySelector('{E} [data-atmodel]')", timeout=10000, what='the line of the model under the title')
         c.eq(c.js(_MD_LINE), ['Modèle : aucun', 'Choisir un modèle'], f'{width}: a new mission, no model yet', what='the line')
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
         c.until(f"document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]').length > 0", timeout=10000, what='the list of the models')
         c.eq([c.count(f'{E} [data-models] [data-modelfam]'), [m[0] for m in c.js(_MD_LIST)]], [1, ['blank']], f'{width}: no family yet — the family first, the blank mission only',
@@ -11255,6 +11258,7 @@ def n142(c):
         if width == 390:
             c.js('window.scrollTo(0, 0)')
             c.shot('P11c_390_ligne.png')
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
         c.until("!!document.querySelector('.f-modal [data-in]')", timeout=5000, what='the name of the model asked')
         c.shot(f'P11c_{width}_nom.png')
@@ -11272,14 +11276,17 @@ def n142(c):
         c.ok(len(text.encode('utf-8')) < 131072 and len(m.get('drawers')) <= 12 and len(m.get('places')) <= 20, len(text), f'{width}: under the bounds of the reader')
         # re-read at once among « Vos modèles »
         c.js(quiet)
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
         c.until(f"!!document.querySelector('{E} [data-models] [data-model=\"modele-d-essai\"]')", timeout=10000, what='the model among « Vos modèles »')
         c.eq([x for x in c.js(_MD_LIST) if x[2] == '1'], [['modele-d-essai', 'Modèle d\'essai', '1', 'false']], f'{width}: re-read as a personal model', what='« Vos modèles »')
         if width == 1280:
             c.js('window.scrollTo(0, 0)')
             c.shot('P11c_1280_vos_modeles.png')
+        _tab(c, 'mission')
         c.tap(f'{E} [data-models] [data-do=edmodeloff]')
         # the same name: the question first — « Garder l'ancien » writes nothing
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
         _md_name(c, 'Modèle d\'essai')
         c.until("!!document.querySelector('.f-modal [data-ok]') && /existe|exists/.test(document.querySelector('.f-modal p')?.textContent || '')", timeout=5000, what='the question « le remplacer ? »')
@@ -11298,6 +11305,7 @@ def n142(c):
         _tab(c, 'itin')
         c.tap(f'{_DW} [data-do="eddrdel"]')
         c.until(f"({_FLOW_N}) === 3", what='three drawers left')
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
         _md_name(c, 'Modèle d\'essai')
         c.until("!!document.querySelector('.f-modal [data-ok]') && /existe|exists/.test(document.querySelector('.f-modal p')?.textContent || '')", timeout=5000, what='the question again')
@@ -11306,6 +11314,7 @@ def n142(c):
         c.eq(sorted(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')), [path], f'{width}: one file, replaced in place', what='the files of the models')
         # the name of a model of the suite is refused
         c.js(quiet)
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
         _md_name(c, 'Interception')
         c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /modèle de la suite/.test(n.textContent))", timeout=5000, what='the name of the suite refused')
@@ -11319,6 +11328,7 @@ def n142(c):
         _tab(c, 'itin')
         c.page.fill(f'{_DW} [data-f="message"]', 'altitude < 500')
         c.js(quiet)
+        _tab(c, 'mission')
         c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
         _md_name(c, 'Modèle deux')
         path2 = 'pilot/ABC/modeles/modele-deux.yaml'
@@ -14264,7 +14274,7 @@ _ITIN_AFTER = """(sel) => { const r = document.querySelector('%s [data-atflow] [
   while (x && !x.matches('.ms-plrow, [data-do=edsel], .ms-itin-add, h4')) { out.push(x.matches('.ms-itin-mv') ? 'mv' : x.matches('[data-plform]') ? 'form:' + x.dataset.plform : x.matches('[data-drawer]') ? 'drawer:' + x.dataset.drawer : '?'); x = x.nextElementSibling }
   return r ? out : null }""" % E
 _ITIN_CUR = f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] [aria-current]')].map(x => x.dataset.at || 'T' + x.dataset.part)"
-_ITIN_MISSION_SHEETS = f"[...document.querySelectorAll('{E} [data-atsheet]:not([data-trial])')].map(x => x.querySelector('h3')?.textContent.trim())"
+_ITIN_MISSION_SHEETS = f"[...document.querySelectorAll('{E} [data-atsheet]:not([data-trial])')].map(x => x.querySelector(':scope > h3')?.textContent.trim())"
 
 
 @case('N198', 'Missions › the workshop, the sheet of a line opens UNDER the line (SOG-0482, lot 1): a place chosen — its sheet is the sibling that follows its line (after the strip of the route, for '
@@ -14280,19 +14290,19 @@ def n198(c):
         ed_reveal(c)
         c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers')
         after = lambda sel: c.js(_ITIN_AFTER, sel)  # noqa: E731
-        c.eq(c.js(_ITIN_MISSION_SHEETS), ['Mission'], f'{width}: the card « Mission » is there, titled « Mission »', what='the sheet of the mission')
+        c.eq(c.js(_ITIN_MISSION_SHEETS), [None], f'{width}: the card « Mission » is there and has no heading of its own (SOG-0482 lot 5: the tab « Mission » is the heading)', what='the sheet of the mission')
         # a place of the route: its sheet follows its line (the strip of the route first)
         _tab(c, 'itin')
         c.tap(f'{E} [data-at="start:1"] [data-do=edplace]')
         c.until(f"!!document.querySelector('{E} [data-plform=\"5\"]')", what='the sheet of PT1')
-        c.eq([after('[data-at="start:1"]'), c.count(f'{E} [data-drawer]'), c.js(_ITIN_MISSION_SHEETS)], [['mv', 'form:5'], 0, ['Mission']],
+        c.eq([after('[data-at="start:1"]'), c.count(f'{E} [data-drawer]'), c.js(_ITIN_MISSION_SHEETS)], [['mv', 'form:5'], 0, [None]],
              f'{width}: PT1 chosen: its sheet follows its line (after the strip of the route), no sheet of a drawer, « Mission » still there', what='a place chosen')
         c.eq(c.count(f'{E} [data-plform]'), 1, f'{width}: one sheet at a time', what='one place sheet')
         # a drawer: its sheet follows its line, the sheet of the place is closed
         _tab(c, 'itin')
         c.tap(f'{E} [data-atflow] [data-do=edsel][data-sel="C"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the drawer 2')
-        c.eq([after('[data-do=edsel][data-sel="C"]'), c.count(f'{E} [data-plform]'), c.js(_ITIN_MISSION_SHEETS), c.js(_ITIN_CUR)], [['mv', 'drawer:C'], 1, ['Mission'], ['T2']],
+        c.eq([after('[data-do=edsel][data-sel="C"]'), c.count(f'{E} [data-plform]'), c.js(_ITIN_MISSION_SHEETS), c.js(_ITIN_CUR)], [['mv', 'drawer:C'], 1, [None], ['T2']],
              f'{width}: a drawer chosen: its sheet follows its line, the sheet of the place is closed, « Mission » still there, only the line of the drawer is marked', what='a drawer chosen')
         # a place cited twice: the sheet opens under the line touched
         _tab(c, 'itin')
@@ -14740,16 +14750,22 @@ def n223(c):
         c.eq(norm(c.text(f'{sheet} [data-dline=key]')), 'objet à trouver · OBJ-1 Naufragé · repli à H + 90 min', f'{width}: folded, « La clé » says the key and the fallback', what='key summary')
         c.eq(c.js(f"document.querySelector('{sheet} [data-keynote]').textContent.trim()"), "L'objet OBJ-1, caché au pilote jusqu'à l'ouverture", f'{width}: the violet block says the object, hidden until the opening', what='note')
         fields = c.js(f"[...document.querySelectorAll('{sheet} [data-keyblock] [data-f]')].map(x => x.dataset.f)")
-        c.eq(fields[:5], ['object', 'name', 'okind', 'lat', 'lon'], f'{width}: the block holds « Objet de la mission », the Name, the kind, the latitude and the longitude', what='block fields')
-        c.eq(c.js(f"(() => {{ const r = document.querySelector('{sheet} [data-keyblock] [data-f=range]'), f = document.querySelector('{sheet} [data-keyblock] [data-f=fallback]');"
-                  f" return [r.closest('.f-row') === f.closest('.f-row'), r.closest('label').querySelector('span').textContent.trim(), f.closest('label').querySelector('span').textContent.trim().slice(0, 14)] }})()"),
-             [True, 'Portée de détection (NM)', 'Heure de repli'], f'{width}: the range and the fallback hour are on ONE row; the label « Portée de détection (NM) » is kept', what='row')
+        c.eq(fields, ['object', 'name', 'okind', 'lat', 'lon', 'confirm', 'height', 'alt'], f'{width}: the block holds « Objet de la mission », the Name, the kind, the latitude and the longitude (then the box and the heights): neither the range nor the fallback hour', what='block fields')
+        # SOG-0482 lot 5 (fixup): the range and the fallback hour belong to the KEY, not to the object: OUTSIDE the violet block, under it, on ONE row
+        row = c.js(f"(() => {{ const b = document.querySelector('{sheet} [data-keyblock]'), w = document.querySelector('{sheet} [data-keyrow]'), r = w.querySelector('[data-f=range]'), f = w.querySelector('[data-f=fallback]');"
+                   f" return [!b.contains(w), w.getBoundingClientRect().top >= b.getBoundingClientRect().bottom - 1, r.closest('label').querySelector('span').textContent.trim(), f.closest('label').querySelector('span').textContent.trim(),"
+                   f" Math.abs(r.getBoundingClientRect().bottom - f.getBoundingClientRect().bottom) < 2] }})()")
+        c.eq(row, [True, True, 'Portée de détection (NM)', 'Heure de repli (min)', True], f'{width}: the range and the fallback hour are OUTSIDE the violet block, under it, on ONE row: « Portée de détection (NM) » and « Heure de repli (min) »', what='row')
+        # the summary of « La clé » is the summary of the FOLDED group, as for the others: open (390), the line is not shown — the line of the drawer above says the key; at 1280 no group is folded
+        shown = c.js(f"(() => {{ const x = document.querySelector('{sheet} [data-dline=key]'); return getComputedStyle(x).display !== 'none' && x.getBoundingClientRect().height > 0 }})()")
+        c.eq(shown, False, f'{width}: « La clé » open: its summary line is not shown', what='open summary')
         c.eq(norm(c.text(f'{sheet} [data-do=eddrdel]')), 'Supprimer ce tiroir', f'{width}: the sheet ends with « Supprimer ce tiroir »', what='delete')
         if width < 768:  # « La clé » folds (the group is open at first; at 1280 the groups are never folded)
             _tab(c, 'itin')
             c.tap(f'{sheet} [data-dgrp=key] [data-do=eddrgrp]')
             c.until(f"document.querySelector('{sheet} [data-dgrp=key] [data-do=eddrgrp]').getAttribute('aria-expanded') === 'false'", what='La clé folded')
             c.eq(c.js(f"getComputedStyle(document.querySelector('{sheet} [data-dgrp=key] .ms-dbody')).display"), 'none', f'{width}: folded, the fields are hidden and the summary stays', what='folded')
+            c.eq(c.js(f"(() => {{ const x = document.querySelector('{sheet} [data-dline=key]'); return getComputedStyle(x).display !== 'none' && x.getBoundingClientRect().height > 0 }})()"), True, f'{width}: folded, « La clé » shows its summary line', what='folded summary')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -14899,3 +14915,115 @@ def n226(c):
     c.ok(not any(x.startswith('Cadre : position du départ') or x.startswith('Cadre : position de l') for x in said), said, '« À compléter » does not name the Cadre for the Departure and the Arrival')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+
+@case('N227', 'Missions › the tabs in the right column at 1280 (SOG-0482, lot 5, correction): the two tabs are in the column of the right ONLY, above the itinerary, and the column of the map starts at the same height with its bar of tools; '
+      'at 390 the three tabs come right under the title (nothing between them and the title)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 correction 1 (the mock-up #itin and #cadre at 1280): editor_view.js `edHtml` (the tabs open `.ms-atside`)')
+def n227(c):
+    box = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); if (!x) return null; const r = x.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top + scrollY), Math.round(r.right), Math.round(r.bottom + scrollY)] }})()")  # noqa: E731
+    _l3_open(c, 1280)
+    tabs, main, tools, itin = box(f'{E} [data-attabs]'), box(f'{E} .ms-atmain'), box(f'{E} [data-atmaptools]'), box(f'{E} [data-atitin]')
+    c.eq([tabs[0] >= main[2], tabs[2] <= 1280, tabs[2] - tabs[0] < 560, abs(tabs[1] - main[1]) <= 2, itin[1] >= tabs[3] - 1, 0 <= tools[1] - main[1] <= 24],
+         [True, True, True, True, True, True],
+         f'1280: the tabs {tabs} are right of the map {main} and no wider than the right column, at the height of the top of the map column, the itinerary {itin} under them; the bar of tools {tools} opens the map column', what='tabs at 1280')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    _l3_open(c, 390)
+    head, tabs = box(f'{E} [data-edhead]'), box(f'{E} [data-attabs]')
+    c.ok(0 <= tabs[1] - head[3] <= 24, [head, tabs], '390: the three tabs come right under the title (nothing between them and the title: the model line is in the tab « Mission »)')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N228', 'Missions › the tab « Mission » (SOG-0482, lot 5, correction): « Modèle : aucun · Choisir un modèle · Enregistrer comme modèle » is at the head of the tab « Mission » and not above the tabs; '
+      'no heading « Mission » in that tab (the tab is the heading); the Cadre keeps its summary « REG · XTST → XTSU » under its title, in one line', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 correction 2 and 3 (the mock-up #cadre): editor_view.js `edSheetHtml`, `edModelHtml`, the style of `.ms-atgrp>.ms-atsum`')
+def n228(c):
+    seen = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return !!x && x.getBoundingClientRect().height > 0 && getComputedStyle(x).display !== 'none' }})()")  # noqa: E731
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        c.eq([seen(f'{E} [data-atmodel]'), c.count(f'{E} [data-atsheet] [data-atmodel]'), c.js(f"document.querySelector('{E} [data-atmodel]')?.closest('[data-atsheet]') !== null")], [False, 1, True],
+             f'{width}: in the tab « Itinéraire » the line of the model is not in view; it is the first block of the sheet « Mission »', what='model in itinerary')
+        c.tap(f'{E} .ms-attab[data-tab="mission"]')
+        c.until(f"document.querySelector('{E} .ms-attab[data-tab=mission]').getAttribute('aria-selected') === 'true'", what='the tab Mission')
+        c.eq([seen(f'{E} [data-atmodel]'), norm(c.text(f'{E} [data-atmodel] [data-atmodelname]')), c.count(f'{E} [data-atsheet] > h3'),
+              c.js(f"document.querySelector('{E} [data-atsheet]').firstElementChild.matches('[data-atmodel]')")], [True, 'Modèle : aucun', 0, True],
+             f'{width}: in the tab « Mission » the line of the model is in view at its head, and no heading « Mission »', what='model in mission')
+        if not c.count(f'{E} [data-grp=cadre] input[data-k=edtitle]'):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} [data-grp=cadre] input[data-k=edtitle]')", what='the Cadre open')
+        line = c.js(f"(() => {{ const l = document.querySelector('{E} [data-line=cadre]'), b = document.querySelector('{E} [data-grp=cadre] .ms-atsum b'), r = l.getBoundingClientRect(), t = b.getBoundingClientRect();"
+                    f" return [l.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), getComputedStyle(l).display !== 'none' && r.height > 0, r.top >= t.bottom - 1, Math.abs(r.left - t.left) <= 2, r.height < 30] }})()")
+        c.eq(line, ['REG · XTST → XTSU', True, True, True, True], f'{width}: the Cadre, open, shows its summary under its title, on one line', what='cadre summary')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+# SOG-0482 lot 5 (correction): the object of the key of drawer 2 has no position (« à placer »)
+_L5F_UNPLACED = _LOT3_MISSION.replace('lat: 44.5, lon: 1.7, detection_range_nm: 1, altitude_ft: 0', 'detection_range_nm: 1, altitude_ft: 0')
+assert _L5F_UNPLACED != _LOT3_MISSION
+
+
+@case('N229', 'Missions › the block of the object in the sheet of a drawer (SOG-0482, lot 5, correction): « Placer sur la carte » only when the key has no object or when its object is « à placer » (no position) — a placed object is moved on the map, no link; '
+      'no wide blank between the fields of the block; « Portée de détection (NM) » and « Heure de repli (min) » are OUTSIDE the violet block, under it, on ONE row — with an object and without one; '
+      '« Longitude (°, décimale) » holds on one line at 390', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 5 corrections 5 and 6 (the mock-up #tiroir): editor_view.js `edDrawerHtml` (`objBlock`), `edPlaceFormHtml` (`outside`)')
+def n229(c):
+    top = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return x ? Math.round(x.getBoundingClientRect().top) : null }})()")  # noqa: E731
+    bottom = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return x ? Math.round(x.getBoundingClientRect().bottom) : null }})()")  # noqa: E731
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-keyblock]')", what='the sheet of drawer 2')
+        sheet = f'{E} [data-drawer="C"]'
+        blk = f'{sheet} [data-keyblock]'
+        # a placed object: no link in the block, no blank between « Objet de la mission » and « Nom »
+        c.eq([c.count(f'{blk} [data-do=eddrdraw]'), c.count(f'{blk} [data-do=edplaceonmap]')], [0, 0], f'{width}: the object OBJ-1 has a position: no « Placer sur la carte » in its block', what='placed')
+        gap = c.js(f"(() => {{ const a = document.querySelector('{blk} [data-f=object]').closest('label').getBoundingClientRect(), b = document.querySelector('{blk} [data-f=name]').closest('label').getBoundingClientRect(); return Math.round(b.top - a.bottom) }})()")
+        c.ok(0 <= gap <= 24, gap, f'{width}: no wide blank between « Objet de la mission » and the Name (the gap between the two fields is {gap} px, one margin)')
+        # the range and the fallback hour: OUTSIDE the block, under it, on one row
+        row = c.js(f"(() => {{ const b = document.querySelector('{blk}'), w = document.querySelector('{sheet} [data-keyrow]'), r = w.querySelector('[data-f=range]'), f = w.querySelector('[data-f=fallback]'), br = b.getBoundingClientRect(), wr = w.getBoundingClientRect();"
+                   f" return [!b.contains(w), wr.top >= br.bottom - 1 && wr.top - br.bottom <= 24, r.closest('label').querySelector('span').textContent.trim(), f.closest('label').querySelector('span').textContent.trim(), Math.abs(r.getBoundingClientRect().bottom - f.getBoundingClientRect().bottom) < 2] }})()")
+        c.eq(row, [True, True, 'Portée de détection (NM)', 'Heure de repli (min)', True], f'{width}: the range and the fallback hour: outside the block, right under it, on one row, « Heure de repli (min) »', what='row')
+        c.eq(c.count(f'{blk} [data-f=range]') + c.count(f'{blk} [data-f=fallback]'), 0, f'{width}: neither the range nor the fallback hour is a field of the block', what='not in block')
+        if width == 390:
+            lon = c.js(f"(() => {{ const l = [...document.querySelectorAll('{blk} label > span')].find(x => x.textContent.startsWith('Longitude')); return Math.round(l.getBoundingClientRect().height) }})()")
+            c.ok(lon < 30, lon, f'390: « Longitude (°, décimale) » holds on one line (height {lon} px; 144 px wide the label was cut onto two lines, 154 px now for a text of 153 px)')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        # « à placer » (an object with no position): the link, ONCE
+        _l3_open(c, width, _L5F_UNPLACED)
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-atflow] [data-do=edsel][data-part="2"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-keyblock]')", what='the sheet of drawer 2, its object without position')
+        blk = f'{E} [data-drawer="C"] [data-keyblock]'
+        c.eq([c.count(f'{blk} [data-do=eddrdraw]'), c.count(f'{blk} [data-do=edplaceonmap]'), norm(c.text(f'{blk} [data-do=edplaceonmap]'))], [0, 1, 'Placer sur la carte'],
+             f'{width}: an object « à placer » (no position): the link « Placer sur la carte », once', what='to place')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        # a key without object: the sentence, the link, and the fallback hour — outside the block too
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, [_AT_TEXTS[0], [_AT_TEXTS[1][0], _L5_NOZONE]])
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
+        dw_key(c, 'object')
+        c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose')
+        row = c.js(f"(() => {{ const b = document.querySelector('{E} [data-drawer] [data-keyblock]'), w = document.querySelector('{E} [data-drawer] [data-keyrow]'); return [!!w && !b.contains(w), !!w && !!w.querySelector('[data-f=fallback]'), !!w && w.querySelectorAll('[data-f=range]').length, w ? w.querySelector('label span').textContent.trim() : null] }})()")
+        c.eq(row, [True, True, 0, 'Heure de repli (min)'], f'{width}: without object the fallback hour is under the block, alone on its row (no range without an object)', what='no object')
+        c.eq(c.count(f'{E} [data-drawer] [data-keyblock] [data-f=fallback]'), 0, f'{width}: the fallback hour is no field of the block without an object either', what='not in block')
+        # the blank above « Aucun objet pour cette clé. »: the sentence sits right under the top of the block
+        gap = top(f'{E} [data-drawer] [data-dwnone]') - top(f'{E} [data-drawer] [data-keyblock]')
+        c.ok(0 <= gap <= 24, gap, f'{width}: no wide blank above « Aucun objet pour cette clé. » (the gap, in px, is {gap})')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

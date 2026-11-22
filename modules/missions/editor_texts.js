@@ -407,6 +407,9 @@ export const EDTX = {
   dwPilotRoute: ['Suite de route proposée : {r}', 'Onward route proposed: {r}', 'Vorgeschlagene Folgeroute: {r}',
     'Ruta siguiente propuesta: {r}'
   ],
+  dwFallbackRow: ['Heure de repli (min)', 'Fallback time (min)', 'Ersatzzeit (min)',
+    'Hora de reserva (min)'
+  ], // lot 5 : le libellé de la rangée sous le bloc de l'objet
   dwFallback: ['Heure de repli (min après le décollage)', 'Fallback time (min after take-off)', 'Ersatzzeit (min nach dem Start)',
     'Hora de reserva (min tras el despegue)'
   ],

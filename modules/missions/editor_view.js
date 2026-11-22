@@ -465,7 +465,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atprof{order:1}
-[data-module="missions"] .ms-atitin{order:3;padding-left:8px;padding-right:8px} /* moins de retrait autour de la liste, comme la maquette : les libellés de la fiche tiennent à leur taille, sans rien rapetisser */
+[data-module="missions"] .ms-atitin{order:3;padding-left:0;padding-right:0} /* moins de retrait autour de la liste, comme la maquette : les libellés de la fiche tiennent à leur taille, sans rien rapetisser */
 [data-module="missions"] .ms-atsheet{order:4}
 [data-module="missions"] .ms-atsheet[data-trial]{order:2}
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
@@ -488,7 +488,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-mvrow{display:flex;gap:8px;align-self:stretch;width:100%}
 [data-module="missions"] .ms-itin-mvrow>.f-reorder{flex:1 1 auto} /* les deux flèches du bloc du cadre */
 [data-module="missions"] .ms-itin-plus{flex:0 0 56px;min-height:44px;margin:0;font-size:22px;font-weight:600;color:var(--sog-accent,#1a73e8)} /* « ＋ » : le bouton du module, dans la rangée des flèches (la maquette : .mv .plus) */
-[data-module="missions"] .ms-attabs{display:flex;gap:0;margin:0 0 8px;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-attabs{order:0;display:flex;gap:0;margin:0 0 8px;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-attab{flex:1 1 0;min-height:44px;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;font:inherit;font-weight:600;color:var(--sog-muted,#555)}
 [data-module="missions"] .ms-attab[aria-selected=true]{color:var(--sog-accent,#1a73e8);border-bottom-color:var(--sog-accent,#1a73e8)}
 [data-module="missions"] .ms-at[data-tab=itin] .ms-atmap,[data-module="missions"] .ms-at[data-tab=itin] .ms-atprof,[data-module="missions"] .ms-at[data-tab=itin] .ms-atsheet:not([data-trial]){display:none}
@@ -506,7 +506,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
 [data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0}
 [data-module="missions"] .ms-itin-list .ms-plform .f-row:not(.ms-ll)>.f-field{flex:1 1 100%} /* Nom, Identifiant, Rôle… : toute la largeur */
-[data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
+[data-module="missions"] .ms-itin-list>.ms-itin-sheet{margin:0;padding-left:12px;padding-right:12px;border:0;border-left:3px solid var(--sog-accent,#1a73e8);border-bottom:1px solid var(--sog-line,#ddd);border-radius:0;box-shadow:none;scroll-margin-top:calc(var(--f-head-h,57px) + 8px)}
 [data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 [data-module="missions"] .ms-plpick>*{pointer-events:none}
 [data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
@@ -561,7 +561,13 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atpart>.f-muted,[data-module="missions"] .ms-kind>.f-muted{grid-column:1 / -1}
 [data-module="missions"] .ms-atpart .ms-stepmark{display:inline-block;font-size:.9em}
 [data-module="missions"] .ms-keyblock{margin:6px 0;padding:6px 8px 4px;border-left:3px solid var(--ms-key,#8a3ffc);background:color-mix(in srgb,var(--ms-key,#8a3ffc) 8%,var(--sog-surface,#fff))}
-[data-module="missions"] .ms-itin-list .ms-keyblock .f-row:not(.ms-ll)>.f-field{flex:1 1 0} /* la portée et l'heure de repli sur UNE rangée */
+[data-module="missions"] .ms-itin-list .ms-keyrow>.f-field{flex:1 1 0} /* la portée et l'heure de repli sur UNE rangée, sous le bloc de l'objet */
+[data-module="missions"] .ms-itin-list .f-row.ms-keyrow{margin-top:8px;align-items:flex-end} /* les deux champs alignés par le bas, même si le libellé de la portée passe sur deux lignes */
+[data-module="missions"] .ms-hint{margin:8px 0;color:var(--sog-muted,#555)} /* une consigne : la taille du texte, jamais plus petite */
+[data-module="missions"] .ms-keyblock .ms-dwdraw{margin:2px 0 4px}
+[data-module="missions"] .ms-keyblock .f-field,[data-module="missions"] .ms-keyblock .f-row{margin-top:0;margin-bottom:8px} /* les champs du bloc de l'objet : le rythme de la maquette #tiroir, sans grand blanc entre eux */
+[data-module="missions"] .ms-atitin{padding-top:0} /* la liste commence à la bordure de sa carte, comme la maquette */
+[data-module="missions"] .ms-keyblock>.f-muted[data-dwnone]{margin:0 0 4px}
 [data-module="missions"] .ms-keynote{margin:0 0 6px;font-weight:600;color:var(--ms-key,#8a3ffc)}
 [data-module="missions"] .ms-stepmark[data-kind=ok]{display:none} /* lot 5 : plus de ✓ — seul « ! » est dessiné, les noms regagnent la largeur */
 [data-module="missions"] .ms-plrow[data-outbad] .ms-plbody>b::before,[data-module="missions"] .ms-plrow[data-needs] .ms-plbody>b::before{content:"!";display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;margin-right:6px;border-radius:50%;text-align:center;font-size:.9em;font-weight:600;background:color-mix(in srgb,var(--sog-warn,#b06f00) 14%,transparent);color:var(--sog-warn,#b06f00)} /* « ! » : rien ne cite ce lieu, le pilote ne le verra pas */
@@ -636,8 +642,11 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atsum>b{white-space:nowrap}
 [data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
 [data-module="missions"] :is(.ms-atgrp, .ms-dgrp)[data-open="1"]>.ms-atsum>.ms-atline{display:none} /* déplié, le groupe montre son contenu : sa ligne se tait */
-[data-module="missions"] .ms-dgrp[data-dgrp=key]>.ms-dsum{display:block;text-align:left;pointer-events:auto}
-[data-module="missions"] .ms-dgrp[data-dgrp=key]>.ms-dsum>.ms-atline,[data-module="missions"] .ms-dgrp[data-dgrp=key][data-open]>.ms-dsum>.ms-atline{display:block;text-align:left;white-space:normal} /* lot 5 (la maquette #tiroir) : « La clé » dit toujours la clé et le repli sous son titre, dépliée ou non */
+[data-module="missions"] .ms-atgrp>.ms-atsum{grid-template-columns:auto minmax(0,1fr);column-gap:0;row-gap:0;align-content:center} /* lot 5 (la maquette #cadre) : le résumé sous le titre */
+[data-module="missions"] .ms-atgrp>.ms-atsum>.ms-stepmark{grid-column:1;grid-row:1 / span 2;margin-right:8px}
+[data-module="missions"] .ms-atgrp>.ms-atsum>b{grid-column:2;grid-row:1}
+[data-module="missions"] .ms-atgrp>.ms-atsum>.ms-atline{grid-column:2;grid-row:2;text-align:left}
+[data-module="missions"] .ms-atgrp[data-grp=cadre][data-open="1"]>.ms-atsum>.ms-atline{display:block} /* le Cadre déplié garde son résumé sous son titre (la maquette #cadre) */
 [data-module="missions"] .ms-atgrp[data-open="1"]>.ms-atsum{font-size:1.05em}
 [data-module="missions"] .ms-atbody{padding:2px 0 10px;min-width:0}
 [data-module="missions"] .ms-atbody>h3{display:none}
@@ -870,7 +879,7 @@ function edCadreHtml(s) {
       n: num.nextSeries
     }),
     // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire (le champ commun, edAdFieldHtml) ; le Cadre le dit
-    ads = `<p class="f-muted" data-endsinline>${esc(s.tt(EDTX.itEndsInLine))}</p>`; // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire
+    ads = `<p class="ms-hint" data-endsinline>${esc(s.tt(EDTX.itEndsInLine))}</p>`; // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire
   if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
     return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3>
     <div class="f-row" data-liaison>${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
@@ -1101,7 +1110,7 @@ function edAdFieldHtml(s, k, label, v) {
 function edPlaceFormHtml(s, r, i, {
   zk,
   ok
-}, embedded = false, extra = '') {
+}, embedded = false, extra = '', outside = false) {
   const e = s.ed,
     field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(edNumShown(s, f, v))}" autocomplete="off"${extra}></label>`;
   const fixed = r.kind === 'dep' || r.kind === 'arr',
@@ -1123,7 +1132,7 @@ function edPlaceFormHtml(s, r, i, {
     return `<div class="ms-plform" data-plform="${i}">
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field ms-plkind"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>${onMapBtn}
-        ${station ? extra : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}${extra}</div>
+        ${station ? extra : `${outside ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}${extra}</div>`}
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
@@ -1619,7 +1628,7 @@ function edItinRepaint(s, focusSel = '') {
  *  groupe dit son contenu en une ligne et porte sa marque (✓ ou !). */
 function edSheetHtml(s, doc) {
   const names = edNames();
-  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atMission))}</h3>
+  return `<section class="f-card ms-atsheet" data-atsheet>${edModelHtml(s)}
     <div data-steps>${ED.STEPS.filter(k => k !== 'places').map(k => {
     const ok = edStepOk(s.ed, doc, k),
       open = s.ed.step === k;
@@ -3698,15 +3707,19 @@ function edDrawerHtml(s, doc) {
     fallback = field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"'),
     zones = of('zone'),
     // lot 3 : le lieu de la clé (la zone de passage, l'objet à trouver) se modifie dans la fiche du tiroir, par le MÊME bloc que la fiche d'un lieu (sans « OK » ni « Supprimer »)
-    keyPlace = (kind, id, extra = '') => {
+    keyPlace = (kind, id, extra = '', outside = false) => {
       const k = places.findIndex(p => p.kind === kind && p.id && String(now(id)).toUpperCase() === String(p.id).toUpperCase());
-      return k < 0 ? '' : edPlaceFormHtml(s, places[k], k, edPlaceTexts(s, places, doc), true, extra);
+      return k < 0 ? '' : edPlaceFormHtml(s, places[k], k, edPlaceTexts(s, places, doc), true, extra, outside);
     },
     // lot 5 (la maquette #tiroir, décision (c)) : le bloc de l'objet — « L'objet OBJ-1, caché au pilote jusqu'à l'ouverture », « Objet de la mission », puis les champs de l'objet, la portée et l'heure de repli sur UNE rangée
     objBlock = () => {
-      const kp = keyPlace('object', r.object, fallback),
-        o = places.find(p => p.kind === 'object' && p.id && String(now(r.object)).toUpperCase() === String(p.id).toUpperCase());
-      return `<div class="ms-keyblock" data-keyblock>${o ? `<p class="ms-keynote" data-keynote>${esc(s.tt(EDTX.itKeyHidden, { id: o.id }))}</p>` : ''}${findable.length || r.object ? select('object', EDTX.dwObject, r.object, findable) : none(EDTX.dwNoObject)}${onMap('object', EDTX.plPlaceOnMap)}${kp || fallback}</div>`;
+      const kp = keyPlace('object', r.object, '', true),
+        k = places.findIndex(p => p.kind === 'object' && p.id && String(now(r.object)).toUpperCase() === String(p.id).toUpperCase()),
+        o = k < 0 ? null : places[k],
+        // la portée de détection et l'heure de repli sont à la clé, pas à l'objet : sous le bloc violet, sur UNE rangée (la maquette #tiroir)
+        range = o && o.okind !== 'refill' ? `<label class="f-field"><span>${esc(s.tt(EDTX.plRange))}</span><input data-k="edplace" data-i="${k}" data-f="range" value="${esc(edNumShown(s, 'range', o.range))}" autocomplete="off" inputmode="decimal" maxlength="8"></label>` : '';
+      return `<div class="ms-keyblock" data-keyblock>${o ? `<p class="ms-keynote" data-keynote>${esc(s.tt(EDTX.itKeyHidden, { id: o.id }))}</p>` : ''}${findable.length || r.object ? select('object', EDTX.dwObject, r.object, findable) : none(EDTX.dwNoObject)}${o ? '' : onMap('object', EDTX.plPlaceOnMap)}${kp}</div>
+        <div class="f-row ms-keyrow" data-keyrow>${range}${field('fallback', EDTX.dwFallbackRow, r.fallback, ' inputmode="numeric" maxlength="4"')}</div>`;
     },
     // SOG-0521 : un objet à trouver n'est jamais une station de retardant (elle ne se « trouve » pas : le lecteur refuse la clé)
     findable = places.filter(p => p.id && p.kind === 'object' && p.okind !== 'refill').map(p => [p.id, label(p)]),
@@ -3925,9 +3938,8 @@ export function edHtml(s) {
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}" data-tab="${edTab(e)}"><div class="ms-crumbrow"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p><span class="ms-hist" data-athist>${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${edHistOff(e, 'undo') ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${edHistOff(e, 'redo') ? ' disabled' : ''}`)}</span></div>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
-    ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}${edModelHtml(s)}
-    ${edTabsHtml(s)}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
+    ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${edTabsHtml(s)}${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
     <div class="ms-atfoot" data-f-foot><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(EDTX.dwWinClose))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
