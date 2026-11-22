@@ -14895,8 +14895,8 @@ def n226(c):
         c.tap(f'{E} [data-steps] [data-step="cadre"]') if not c.count(f'{E} [data-grp=cadre] input[data-k=edtitle]') else None
         c.until(f"!!document.querySelector('{E} [data-grp=cadre] input[data-k=edtitle]')", what='the Cadre')
         fields = c.js(f"[...document.querySelectorAll('{E} [data-grp=cadre] input, {E} [data-grp=cadre] select')].map(x => x.dataset.k)")
-        c.eq([len(fields), 'eddep' in fields, 'edarr' in fields, norm(c.text(f'{E} [data-endsinline]'))], [6, False, False, "Départ et Arrivée se modifient dans leur ligne de l'itinéraire."],
-             f'{width}: the Cadre has six fields, neither the Departure nor the Arrival, and says where they are edited', what='cadre')
+        c.eq([len(fields), 'eddep' in fields, 'edarr' in fields, c.count(f'{E} [data-endsinline]'), c.count(f'{E} [data-grp=cadre] .f-muted')], [6, False, False, 0, 1],
+             f'{width}: the Cadre has six fields, neither the Departure nor the Arrival, no sentence of explanation (only its summary is secondary text: the one `.f-muted` of the group)', what='cadre')
         c.eq(norm(c.text(f'{E} [data-line=cadre]')), 'REG · LFPO → LFRS', f'{width}: the Cadre keeps its summary « REG · LFPO → LFRS »', what='summary')
         c.tap(f'{E} [data-do="edsave"]')
         c.wait(700)

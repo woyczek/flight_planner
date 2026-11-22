@@ -563,7 +563,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-keyblock{margin:6px 0;padding:6px 8px 4px;border-left:3px solid var(--ms-key,#8a3ffc);background:color-mix(in srgb,var(--ms-key,#8a3ffc) 8%,var(--sog-surface,#fff))}
 [data-module="missions"] .ms-itin-list .ms-keyrow>.f-field{flex:1 1 0} /* la portée et l'heure de repli sur UNE rangée, sous le bloc de l'objet */
 [data-module="missions"] .ms-itin-list .f-row.ms-keyrow{margin-top:8px;align-items:flex-end} /* les deux champs alignés par le bas, même si le libellé de la portée passe sur deux lignes */
-[data-module="missions"] .ms-hint{margin:8px 0;color:var(--sog-muted,#555)} /* une consigne : la taille du texte, jamais plus petite */
 [data-module="missions"] .ms-keyblock .ms-dwdraw{margin:2px 0 4px}
 [data-module="missions"] .ms-keyblock .f-field,[data-module="missions"] .ms-keyblock .f-row{margin-top:0;margin-bottom:8px} /* les champs du bloc de l'objet : le rythme de la maquette #tiroir, sans grand blanc entre eux */
 [data-module="missions"] .ms-atitin{padding-top:0} /* la liste commence à la bordure de sa carte, comme la maquette */
@@ -877,13 +876,10 @@ function edCadreHtml(s) {
     idHint = e.mode === 'edit' && c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '',
     seriesHint = e.mode === 'edit' ? '' : s.tt(TX.edNextSeries, {
       n: num.nextSeries
-    }),
-    // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire (le champ commun, edAdFieldHtml) ; le Cadre le dit
-    ads = `<p class="ms-hint" data-endsinline>${esc(s.tt(EDTX.itEndsInLine))}</p>`; // lot 5 : Départ et Arrivée se modifient dans leur ligne de l'itinéraire
+    });
   if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
     return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3>
     <div class="f-row" data-liaison>${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
-    ${ads}
     <div class="f-row">${field('edco', TX.edAirline, coSelect(s, 'edco', c.airline || MS.PERSONAL))}${field('edac', TX.edAircraft, text('edac', c.aircraft, ' maxlength="12" autocapitalize="characters" placeholder="A320"'))}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     <div class="f-row">${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), idHint ? '' : seriesHint)}</div>`;
@@ -892,7 +888,7 @@ function edCadreHtml(s) {
     <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), idHint ? '' : seriesHint)}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
-    ${ads}`;
+`;
 }
 
 /** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
