@@ -442,6 +442,9 @@ async function edModelPick(s, id, own) {
     mapSel: -1,
     mapVertex: -1,
     drawFor: '',
+    plus: '',
+    placeFor: -1,
+    kwAt: -1,
     chipSel: null,
     drawerAsk: ''
   });
@@ -476,7 +479,15 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 8px 0;background:color-mix(in srgb,var(--sog-accent,#1a73e8) 10%,var(--sog-surface,#fff));border-left:3px solid var(--sog-accent,#1a73e8);margin:0} /* la bande et la fiche : UN bloc, une seule barre */
 [data-module="missions"] .ms-itin-mv>button{min-height:44px}
-[data-module="missions"] .ms-itin-mv>.f-reorder{align-self:stretch} /* les deux flèches du bloc du cadre, à elles deux toute la largeur */
+[data-module="missions"] .ms-itin-mvrow{display:flex;gap:8px;align-self:stretch;width:100%}
+[data-module="missions"] .ms-itin-mvrow>.f-reorder{flex:1 1 auto} /* les deux flèches du bloc du cadre */
+[data-module="missions"] .ms-itin-plus{flex:0 0 56px;min-height:44px;margin:0;font-size:22px;font-weight:600;color:var(--sog-accent,#1a73e8)} /* « ＋ » : le bouton du module, dans la rangée des flèches (la maquette : .mv .plus) */
+[data-module="missions"] .ms-itin-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-self:stretch;width:100%;padding:8px 0;box-sizing:border-box}
+[data-module="missions"] .ms-itin-menu>button{min-width:0;padding:0 6px}
+[data-module="missions"] .ms-itin-mcap{grid-column:1 / -1;margin:4px 0 0;font-size:var(--sog-size-s,13px);font-weight:700;color:var(--sog-muted,#555)}
+[data-module="missions"] .ms-itin-wide{grid-column:1 / -1;justify-content:flex-start;text-align:left}
+[data-module="missions"] .ms-itin-addplus{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:0;border:0;border-bottom:1px dashed var(--sog-line,#ddd);border-radius:0;background:var(--sog-surface,#fff);color:var(--sog-accent,#1a73e8);font-size:22px;font-weight:600} /* « ＋ » au-dessus de l'Arrivée : la maquette .add */
+@media (max-width:520px){[data-module="missions"] .ms-itin-menu{grid-template-columns:repeat(2,minmax(0,1fr))}}
 [data-module="missions"] .ms-itin-lim{margin:0;padding:8px 8px 6px;font-size:var(--sog-size-s,13px);font-weight:600;color:var(--sog-muted,#555);background:var(--sog-surface-2,#eef);border-bottom:1px solid var(--sog-line,#ddd)} /* « Au départ — visible par le pilote » / « Les tiroirs — cachés jusqu'à leur ouverture » */
 [data-module="missions"] .ms-itin-list .f-row.ms-ll{flex-wrap:nowrap} /* latitude et longitude sur UNE rangée, à toutes les largeurs */
 [data-module="missions"] .ms-itin-list .f-row.ms-ll>.f-field{flex:1 1 0;min-width:0}
@@ -536,7 +547,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atparthead>b{overflow-wrap:anywhere}
 [data-module="missions"] .ms-atpart>.f-muted,[data-module="missions"] .ms-kind>.f-muted{grid-column:1 / -1}
 [data-module="missions"] .ms-atpart .ms-stepmark{display:inline-block;font-size:.9em}
-[data-module="missions"] .ms-plrow[data-outbad] .ms-plbody>b::before{content:"!";display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;margin-right:6px;border-radius:50%;text-align:center;font-size:.9em;font-weight:600;background:color-mix(in srgb,var(--sog-warn,#b06f00) 14%,transparent);color:var(--sog-warn,#b06f00)} /* « ! » : rien ne cite ce lieu, le pilote ne le verra pas */
+[data-module="missions"] .ms-plrow[data-outbad] .ms-plbody>b::before,[data-module="missions"] .ms-plrow[data-needs] .ms-plbody>b::before{content:"!";display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;margin-right:6px;border-radius:50%;text-align:center;font-size:.9em;font-weight:600;background:color-mix(in srgb,var(--sog-warn,#b06f00) 14%,transparent);color:var(--sog-warn,#b06f00)} /* « ! » : rien ne cite ce lieu, le pilote ne le verra pas */
 [data-module="missions"] .ms-itin-list>.ms-plrow[data-at^="out:"] .ms-plbody>.f-muted{white-space:normal;overflow:visible;text-overflow:clip} /* « Hors itinéraire » : ce qui cite le lieu se lit en entier */
 [data-module="missions"] button.ms-atadd{grid-template-columns:minmax(0,1fr);justify-items:center;border-style:dashed;border-left-width:1px;font-weight:600}
 [data-module="missions"] .ms-kinds{margin:0 0 0 16px;padding-left:10px;border-left:2px solid var(--sog-accent,#1a73e8)}
@@ -758,6 +769,8 @@ async function edOpen(s, mode, line = null, draft = null) {
       draftKey: DF.keyOf(mode, '')
     });
     // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454) ; un brouillon repris, la mission vierge — il a à perdre
+    if (mode === 'new') s.ed.places = ED.withEnds(ED.placesOf(edDoc(s
+      .ed))); // lot 4 : l'itinéraire d'une mission neuve dit son Départ et son Arrivée, à remplir
     s.ed.start = draft ? edDoc({
       base: ED.blank(),
       cadre: ED.cadreOf(ED.blank())
@@ -1006,6 +1019,12 @@ function edPlaceTexts(s, rows, doc) {
       EDTX.plKeyOf, {
         name: c.name
       })),
+    // la position que dit la ligne d'une étape : jamais pour une zone (lot 4, décision d'ergonome : « recherche · clé du tiroir 1 · cercle 5 km ») ; « à remplir » pour un départ ou une arrivée sans rien
+    posText = r => {
+      if (r.kind === 'zone') return '';
+      const d = dms(s, ...edLinePos(s, r));
+      return d === s.tt(TX.plUnplaced) && (r.kind === 'dep' || r.kind === 'arr') ? s.tt(EDTX.itFill) : d;
+    },
     // ce que dit la ligne d'une ÉTAPE de route (les phrases de ce qui la cite, `cl`, à leur place) : sa sorte ou son rôle, sa forme, sa position
     build = (r, cl) => [r.kind === 'zone' ? zk(r.zkind) : '', r.role, ...cl, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
       n: r.poly
@@ -1013,8 +1032,7 @@ function edPlaceTexts(s, rows, doc) {
       r: dec(s, r.radius)
     }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
       n: r.tot
-    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, ...edLinePos(s, r))].filter(Boolean).join(
-      ' · '),
+    }) : '', r.kind === 'rdv' ? r.participants : '', posText(r)].filter(Boolean).join(' · '),
     detail = (r, i) => build(r, r.kind === 'zone' ? usedBy(i) : []);
   // « Hors itinéraire » (lot 3) : un lieu qui n'est NI une étape NI la clé d'un tiroir dit sa sorte ou son rôle et ce qui le cite — la carte qui le montre, la chronologie, la route d'une cible, un
   // tiroir — ou « rien ne cite ce lieu : le pilote ne le verra pas » (avec « ! ») ; rien d'autre (pas de position, de rayon ni de portée : la fiche les dit)
@@ -1042,7 +1060,13 @@ function edPlaceTexts(s, rows, doc) {
     ok,
     detail,
     outDetail,
-    title: r => [r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced)
+    // « ! » : un lieu à remplir ou à placer (le départ et l'arrivée sans nom ni position, une position qui manque ; un contour a ses sommets)
+    needs: r => !(r.kind === 'zone' && r.poly) && !edPos({
+      lat: edLinePos(s, r)[0],
+      lon: edLinePos(s, r)[1]
+    }) || (r.kind === 'dep' || r.kind === 'arr') && !String(r.name ?? '').trim(),
+    title: r => [r.id, r.name].filter(Boolean).join(' · ') || (r.kind === 'dep' ? s.tt(EDTX.itNewDep) : r.kind === 'arr' ? s.tt(EDTX
+      .itNewArr) : s.tt(TX.plUnplaced))
   };
 }
 
@@ -1055,7 +1079,9 @@ function edPlaceFormHtml(s, r, i, {
   const e = s.ed,
     field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(edNumShown(s, f, v))}" autocomplete="off"${extra}></label>`;
   const fixed = r.kind === 'dep' || r.kind === 'arr',
-    num = ' inputmode="decimal" maxlength="12"';
+    num = ' inputmode="decimal" maxlength="12"',
+    // lot 4 : un lieu « à placer » (sans position) offre « Placer sur la carte » sous ses coordonnées (au téléphone, la carte est repliée : le bouton la déplie)
+    onMapBtn = !r.poly && ['pt', 'target', 'rdv', 'zone', 'object'].includes(r.kind) && !edPos(r) ? `<div class="f-row ms-plonmap"><button type="button" data-do="edplaceonmap" data-i="${i}">${esc(s.tt(EDTX.plPlaceOnMap))}</button></div>` : '';
   // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
   if (r.kind === 'object') {
     // la règle des sept : le nom, la sorte, la latitude, la longitude, la portée, « trouvé sur la parole du pilote », et UN repli
@@ -1070,7 +1096,7 @@ function edPlaceFormHtml(s, r, i, {
       station = r.okind === 'refill';
     return `<div class="ms-plform" data-plform="${i}">
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field ms-plkind"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
-        <div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
+        <div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>${onMapBtn}
         ${station ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
@@ -1087,7 +1113,7 @@ function edPlaceFormHtml(s, r, i, {
     srcLine = named || fixed ? `<p class="f-muted ms-plsrc" data-plsrc${src ? '' : ' hidden'}>${esc(edSrcText(s, src))}</p>` : '',
     nameField = named ? `<label class="f-field"><span>${esc(s.tt(TX.plName))}</span><input data-k="edplname" data-i="${i}" data-f="name" value="${esc(r.name ?? '')}" maxlength="120" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plNameHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plNameList))}" hidden></div>` : field(i, 'name', TX.plName, r.name, ' maxlength="120"');
   return `<div class="ms-plform" data-plform="${i}"${named ? ' data-adform' : ''}>${fixed ? '' : `<div class="f-row${named ? ' ms-adrow' : ''}">${nameField}</div>`}
-        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${srcLine}`}
+        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row ms-ll">${field(i, 'lat', TX.plLat, r.lat, num + lock)}${field(i, 'lon', TX.plLon, r.lon, num + lock)}</div>${onMapBtn}${srcLine}`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
@@ -1223,11 +1249,89 @@ function edKeyLine(s, d) {
   return more ? `${base} · ${more}` : base;
 }
 
+/** Ce que dit la ligne d'un lieu de la SUITE de route d'un tiroir (lot 4, décision d'ergonome : comme la maquette, sans coordonnées) : « suite de route du tiroir 2 » ;
+ *  '' pour une autre ligne. `at` : l'adresse de la ligne (« drawer:C:0 »). */
+function edSuiteText(s, doc, at) {
+  const m = /^drawer:([^:]+):\d+$/.exec(String(at || ''));
+  const d = m && !s.ed.veil ? (edMission(doc)?.drawers || []).find(x => x.id === m[1]) : null;
+  return d ? s.tt(EDTX.itSuiteOf, {
+    n: d.rank
+  }) : '';
+}
+
+/** Où le « ＋ » d'une ligne ajoute (lot 4) : { list: 'route' | <id d'un tiroir>, idx: la place dans cette liste, drawer: la place d'un tiroir ajouté dans l'ordre des tiroirs } ; null si l'adresse ne désigne rien.
+ *  « arr » (le « ＋ » au-dessus de l'Arrivée) : la fin de la route du départ (avant l'arrivée qu'elle termine) ; « start:n » : juste après le lieu n de la route ; « drawer:T:n » : juste après le lieu n de la suite du
+ *  tiroir T ; « drawer:T » (la ligne d'un tiroir) : au début de sa suite. Un tiroir ajouté ne coupe jamais une route : depuis la route du départ il va avant le premier tiroir (depuis « arr » : après le dernier),
+ *  depuis un tiroir ou sa suite il va APRÈS ce tiroir et sa suite. */
+function edPlusTarget(e, at) {
+  const route = edRoute(e),
+    drawers = edDrawers(e),
+    pos = id => drawers.findIndex(r => r.id === id);
+  if (at === 'arr') return {
+    list: 'route',
+    idx: ED.routeAddStart(route, '\u0000').lastIndexOf('\u0000'),
+    drawer: drawers.length
+  };
+  let m = /^start:(\d+)$/.exec(at);
+  if (m) return {
+    list: 'route',
+    idx: +m[1] + 1,
+    drawer: 0
+  };
+  m = /^drawer:([^:]+):(\d+)$/.exec(at);
+  if (m) return pos(m[1]) < 0 ? null : {
+    list: m[1],
+    idx: +m[2] + 1,
+    drawer: pos(m[1]) + 1
+  };
+  m = /^drawer:([^:]+)$/.exec(at);
+  return m && pos(m[1]) >= 0 ? {
+    list: m[1],
+    idx: 0,
+    drawer: pos(m[1]) + 1
+  } : null;
+}
+
+/** Le jeton posé dans la liste visée par `tg` (edPlusTarget) : l'adresse de la ligne qu'il devient (« start:2 », « drawer:C:0 »), ou '' quand la liste est pleine (rien n'est changé). */
+function edPlusInsert(e, tg, token) {
+  if (tg.list === 'route') {
+    const route = edRoute(e);
+    if (route.length >= ED.ROUTE_MAX) return '';
+    e.route = [...route.slice(0, tg.idx), token, ...route.slice(tg.idx)];
+    return `start:${tg.idx}`;
+  }
+  const r = edDrawerRowOf(e, tg.list);
+  if (!r || r.route.length >= 60) return '';
+  r.route = [...r.route.slice(0, tg.idx), token, ...r.route.slice(tg.idx)];
+  return `drawer:${tg.list}:${tg.idx}`;
+}
+
+/** Le « ＋ » (lot 4 ; le bouton du module, dans la rangée des flèches : le bloc du cadre ne le dessine pas, INTEGRATION § 12h) et son menu — ne propose que le possible :
+ *  Point, Zone, Rendez-vous, Cible (s'il n'y en a pas), Tiroir (jamais dans l'atelier voilé, ni quand les douze lettres sont prises), puis, sous « Hors itinéraire », les lieux de cette liste
+ *  (jamais un objet : le lecteur ne le résout pas dans une route). `at` : l'adresse de la ligne choisie, ou « arr ». → { btn, menu } */
+function edPlusHtml(s, at, rows, lines, reader, title, end = false) {
+  const e = s.ed,
+    open = e.plus === at,
+    items = [
+      ['pt', EDTX.itMenuPt],
+      ['zone', EDTX.itMenuZone],
+      ['rdv', EDTX.itMenuRdv]
+    ];
+  if (!e.veil && !rows.some(r => r && r.kind === 'target')) items.push(['target', EDTX.itMenuTarget]);
+  if (!e.veil && reader.length < MS.DRAWER_IDS.length) items.push(['drawer', EDTX.itMenuDrawer]);
+  const outs = lines.filter(l => l.kind === 'place' && l.where === 'out' && rows[l.i] && rows[l.i].kind !== 'object'),
+    label = s.tt(end ? EDTX.itPlusEnd : EDTX.itPlus);
+  return {
+    btn: `<button type="button" class="${end ? 'ms-itin-addplus' : 'ms-itin-plus'}" data-do="edplus" data-at="${esc(at)}" aria-label="${esc(label)}" aria-expanded="${open}">＋</button>`,
+    menu: open ? `<div class="ms-itin-menu" data-plusmenu data-at="${esc(at)}">${items.map(([k, tx]) => `<button type="button" data-do="edplusadd" data-add="${k}">${esc(s.tt(tx))}</button>`).join('')}${outs.length ? `<p class="ms-itin-mcap" data-plusout>${esc(s.tt(EDTX.atOut))}</p>${outs.map(l => `<button type="button" class="ms-itin-wide" data-do="edplusadd" data-add="out" data-i="${l.i}">${esc(title(rows[l.i]))}</button>`).join('')}` : ''}</div>` : ''
+  };
+}
+
 /** Les flèches d'une liste de l'itinéraire (SOG-0482, lot 3 ; le bloc frame/lib/reorder.js : ses deux boutons, la flèche au bord GRISÉE avec son titre, jamais cachée) : sous la
  *  ligne choisie d'un lieu de la route du départ (liste « route ») ou de la suite d'un tiroir (liste « suite:<tiroir> »), au-dessus de sa fiche, puis « Retirer … de l'itinéraire »
  *  (le geste d'aujourd'hui : edroutedel, eddrchipdel ; `data-it` l'adresse à la ligne choisie). Le départ et l'arrivée n'ont pas de flèches, ni les lieux « hors itinéraire ».
  *  `id` d'une flèche : le rang du lieu dans sa route (il se lit sur la ligne, un lieu peut y figurer deux fois). */
-function edItinMoveHtml(s, l, lines, reader) {
+function edItinMoveHtml(s, l, lines, reader, plus) {
   if (l.where !== 'start' && l.where !== 'drawer') return '';
   const start = l.where === 'start',
     mates = lines.filter(x => x.kind === 'place' && x.where === l.where && (start || x.drawer === l.drawer)),
@@ -1249,15 +1353,15 @@ function edItinMoveHtml(s, l, lines, reader) {
         })
       } : {}
     });
-  return `<div class="ms-itin-mv" data-chipmove="${w}">${arrows}<button type="button" class="f-linkbtn" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(EDTX.itRemove))}</button></div>`;
+  return `<div class="ms-itin-mv" data-chipmove="${w}"><div class="ms-itin-mvrow">${arrows}${plus.btn}</div>${plus.menu}<button type="button" class="f-linkbtn" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" ${attrs} data-n="${l.n}">${esc(s.tt(EDTX.itRemove))}</button></div>`;
 }
 
 /** Les flèches d'un tiroir (liste « tiroirs ») : sous sa ligne choisie, au-dessus de sa fiche ; « ↑ » grisé pour le premier (« rien ne s'ouvre avant lui »), « ↓ » grisé pour le dernier
  *  (« l'Arrivée reste à la fin »). Un tiroir bouge AVEC sa suite : sa ligne de route est dans le même élément. `d` : le tiroir du lecteur ; `reader` : les tiroirs montrés. */
-function edItinDrawerMoveHtml(s, d, reader) {
+function edItinDrawerMoveHtml(s, d, reader, plus) {
   const i = reader.findIndex(x => x.id === d.id);
   if (i < 0) return '';
-  return `<div class="ms-itin-mv" data-chipmove="drawers">${RO.arrowsHtml({
+  return `<div class="ms-itin-mv" data-chipmove="drawers"><div class="ms-itin-mvrow">${RO.arrowsHtml({
     lang: s.ctx.lang?.() || 'fr',
     list: 'tiroirs',
     id: d.id,
@@ -1270,7 +1374,7 @@ function edItinDrawerMoveHtml(s, d, reader) {
       up: s.tt(EDTX.itFirstDrawer),
       down: s.tt(EDTX.itLastDrawer)
     }
-  })}</div>`;
+  })}${plus.btn}</div>${plus.menu}</div>`;
 }
 
 /** Un geste d'une flèche du bloc (frame/lib/reorder.js, `bind`) : { list: 'route' | 'suite:<tiroir>' | 'tiroirs', id, dir }. L'état d'avant est gardé (edMapRemember : « Annuler le geste » le rend,
@@ -1415,16 +1519,8 @@ function edItinHtml(s, doc, run = null) {
   const mapOn = placeOn < 0 ? edMapSel(e) : -1,
     mapAt = mapOn < 0 ? -1 : lines.findIndex(l => l.kind === 'place' && l.i === mapOn),
     firstOf = new Set(),
-    options = [...new Map(rows.map((r, i) => [i, r]).filter(([i, r]) => shown[i] && r && ED.routeToken(r) && !['dep', 'arr', 'object']
-      .includes(r.kind)).map(([, r]) => [ED.routeToken(r),
-      r
-    ]))]
-    .map(([t, r]) => [t, [r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id, r.kind === 'dep' || r.kind ===
-      'arr' ? '' : r.name
-    ].filter(Boolean).join(' · ')]),
-    add = route.length < ED.ROUTE_MAX ? `<label class="f-field ms-itin-add" data-edroute><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="edroute" data-f="add"><option value=""></option>${options.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : '',
     html = [];
-  let addDone = false,
+  let strip = false, // une bande (flèches, « ＋ ») est dessinée : le « ＋ » au-dessus de l'Arrivée n'y est pas
     outDone = false,
     headDone = false,
     drawDone = false;
@@ -1433,10 +1529,6 @@ function edItinHtml(s, doc, run = null) {
     if (!headDone) {
       html.push(`<h4 class="ms-itin-lim" data-itinlim="start">${esc(s.tt(EDTX.itHeadStart))}</h4>`);
       headDone = true;
-    }
-    if (!addDone && !(l.kind === 'place' && (l.where === 'dep' || l.where === 'start'))) {
-      html.push(add);
-      addDone = true;
     }
     if (l.kind === 'drawer' && !drawDone) {
       html.push(`<h4 class="ms-itin-lim" data-itinlim="drawers">${esc(s.tt(EDTX.itHeadDrawers))}</h4>`);
@@ -1450,20 +1542,32 @@ function edItinHtml(s, doc, run = null) {
       const d = reader.find(x => x.id === l.drawer);
       if (!d) return;
       html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(edKeyLine(s, d))}</span></button>`);
-      if (sel === d.id && !run) html.push(edItinDrawerMoveHtml(s, d, reader), edDrawerHtml(s, doc));
+      if (sel === d.id && !run) {
+        strip = true;
+        html.push(edItinDrawerMoveHtml(s, d, reader, edPlusHtml(s, `drawer:${d.id}`, rows, lines, reader, said.title)), edDrawerHtml(s, doc));
+      }
       return;
+    }
+    // lot 4 : sans bande, un « ＋ » AU-DESSUS de l'Arrivée (rien ne vient après elle) ; son menu s'ouvre dessous
+    if (l.where === 'arr' && !strip && !run) {
+      const pl = edPlusHtml(s, 'arr', rows, lines, reader, said.title, true);
+      html.push(pl.btn, pl.menu);
     }
     const r = rows[l.i],
       first = !firstOf.has(l.i),
-      od = l.where === 'out' ? said.outDetail(r, l.i) : null;
+      od = l.where === 'out' ? said.outDetail(r, l.i) : null,
+      needs = !od && said.needs(r);
     firstOf.add(l.i);
-    html.push(`<div class="ms-plrow${l.in ? ' ms-itin-in' : ''}" data-place="${l.i}" data-kind="${esc(r.kind)}" data-at="${esc(l.at)}"${od?.bad ? ' data-outbad' : ''}><button type="button" class="ms-plpick" data-do="edplace" data-i="${l.i}" data-at="${esc(l.at)}"${first ? ' data-first="1"' : ''}${k === openAt || k === mapAt ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(said.title(r))}</b><span class="f-muted">${esc(od ? od.text : said.detail(r, l.i))}</span></span></button></div>`);
-    if (k === openAt && !run) html.push(edItinMoveHtml(s, l, lines, reader), edPlaceFormHtml(s, r, l.i, said));
+    html.push(`<div class="ms-plrow${l.in ? ' ms-itin-in' : ''}" data-place="${l.i}" data-kind="${esc(r.kind)}" data-at="${esc(l.at)}"${od?.bad ? ' data-outbad' : ''}${needs ? ' data-needs' : ''}><button type="button" class="ms-plpick" data-do="edplace" data-i="${l.i}" data-at="${esc(l.at)}"${first ? ' data-first="1"' : ''}${k === openAt || k === mapAt ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(said.title(r))}</b><span class="f-muted">${esc(od ? od.text : l.where === 'drawer' ? edSuiteText(s, doc, l.at) : said.detail(r, l.i))}</span></span></button></div>`);
+    if (k === openAt && !run) {
+      const st = edItinMoveHtml(s, l, lines, reader, edPlusHtml(s, l.at, rows, lines, reader, said.title));
+      if (st) strip = true;
+      html.push(st, edPlaceFormHtml(s, r, l.i, said));
+    }
   });
-  if (!addDone) html.push(add);
   return `<section class="f-card ms-atitin" data-atitin data-atflow data-atplaces data-grp="places"><div class="ms-atplhead ms-itinhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(EDTX.atItin))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span>${e.veil ? `<button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button>` : `<button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button>`}</div>
     <div class="f-list ms-itin-list" data-edplaces data-pllist>${html.join('')}</div>
-    <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}${!e.veil && reader.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-haspopup="dialog"><b>${esc(s.tt(EDTX.dwAdd))}</b><span class="f-muted">${esc(s.tt(EDTX.dwAddSub))}</span></button>` : ''}</div></section>`;
+    ${e.mode === 'edit' && id ? `<div class="f-row ms-pladd"><a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a></div>` : ''}</section>`;
 }
 
 /** Redessine l'itinéraire SEUL (un déplacement ou un retrait de route : la carte, le profil et les marques suivent par edRefresh) et rend le focus au
@@ -1714,8 +1818,9 @@ function kwClose(s) {
   const was = s.ed?.kinds;
   if (!was) return;
   s.ed.kinds = '';
+  s.ed.kwAt = -1;
   draw(s);
-  s.el?.querySelector(was === 'drawer' ? '[data-drawer] [data-kindcur]' : '[data-atflow] [data-dradd]')?.focus();
+  s.el?.querySelector(was === 'drawer' ? '[data-drawer] [data-kindcur]' : '[data-atflow] [data-do=edplus]')?.focus();
 }
 
 /** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
@@ -1971,6 +2076,9 @@ function edMapHint(s) {
     m: dec(s, trMin(e.trial.min)) // « H + 7,25 min » en français (SOG-0482, conforts 3)
   });
   if (tool === 'view' && !e.trial?.on) return s.tt(EDTX.atHint_pilot);
+  if (['point', 'zone', 'object'].includes(tool) && e.placeFor >= 0 && (e.places || [])[e.placeFor]) return s.tt(EDTX.atHint_placeFor, {
+    name: edPlaceName(e.places[e.placeFor])
+  });
   if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
     n: edDrawFor(e).rank
   });
@@ -2280,6 +2388,70 @@ function edRouteAdd(s, e, token) {
   return true;
 }
 
+/** Un choix du menu du « ＋ » (lot 4) — à la place que dit la ligne du « ＋ » (edPlusTarget) : un lieu NEUF (Point, Zone, Rendez-vous, Cible) est créé « à placer », entre dans la route ou la suite visée,
+ *  sa fiche ouverte, son premier champ en main ; un lieu de « Hors itinéraire » y entre et quitte « Hors itinéraire » ; « Tiroir » ouvre le choix d'une brique et le tiroir créé prend la place dite
+ *  (edKind). Chaque ajout s'annule (edMapRemember). Avec un repère de la base choisi sur la carte, Point et Cible ajoutent CE point (SOG-0481). Une liste pleine : une notification, rien n'est changé. */
+function edPlusAdd(s, b) {
+  const e = s.ed,
+    menu = b.closest('[data-plusmenu]'),
+    tg = menu ? edPlusTarget(e, menu.dataset.at || '') : null,
+    kind = String(b.dataset.add || '');
+  if (!tg || state() !== s) return;
+  e.plus = '';
+  if (kind === 'drawer') {
+    if (e.veil) return;
+    if (!DR.blankDrawer(edDrawers(e), e.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
+    e.kwAt = tg.drawer;
+    return kwOpen(s, 'new');
+  }
+  const room = tg.list === 'route' ? edRoute(e).length < ED.ROUTE_MAX : (edDrawerRowOf(e, tg.list)?.route.length ?? 60) < 60;
+  if (!room) {
+    s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
+    return draw(s);
+  }
+  if (kind === 'out') {
+    const i = +b.dataset.i,
+      rows = edPlaces(e),
+      token = Number.isInteger(i) && rows[i] && edShown(e, rows)[i] && rows[i].kind !== 'object' ? ED.routeToken(rows[i]) : '';
+    if (!token) return draw(s);
+    edMapRemember(e); // SOG-0542 : l'entrée d'un lieu de « Hors itinéraire » s'annule
+    const at = edPlusInsert(e, tg, token);
+    e.mapSel = -1;
+    e.placeEdit = i;
+    e.itAt = at;
+    e.sel = 'start';
+    return draw(s);
+  }
+  if (!['pt', 'zone', 'rdv', 'target'].includes(kind) || e.veil && kind === 'target') return;
+  // SOG-0481 : avec un repère de la base choisi sur la carte, Point et Cible ajoutent CE point (le même chemin qu'« Ajouter comme point ») ; sans repère, une ligne neuve à placer
+  const ref = ['pt', 'target'].includes(kind) ? edMapRef(e) : null;
+  if (ref) {
+    const at = edPlaceFromBase(s, e, {
+      kind,
+      code: ref.id,
+      lat: ref.lat,
+      lon: ref.lon,
+      from: ref.kind, // SOG-0506 : le genre du repère, la source du lieu
+      rec: ref // le repère de la carte (EM.refData l'a déjà passé par EM.publishable)
+    });
+    if (at < 0) return edMapShow(s);
+    edPlusInsert(e, tg, ED.routeToken(edPlaces(e)[at]));
+    return edMapPick(s, e, at);
+  }
+  const made = ED.newPlace(edPlaces(e), kind, e.base);
+  if (!made) return draw(s);
+  const token = ED.routeToken(made.rows[made.at]);
+  edMapRemember(e); // SOG-0542 : l'ajout d'un lieu s'annule
+  e.places = made.rows;
+  const at = token ? edPlusInsert(e, tg, token) : '';
+  e.mapSel = -1;
+  e.placeEdit = made.at;
+  e.itAt = at;
+  e.sel = 'start';
+  draw(s);
+  return s.el.querySelector(`[data-plform="${made.at}"] input`)?.focus();
+}
+
 /** Tracé : un lieu touché sur la carte rejoint la route choisie — la suite de route du tiroir choisi dans le déroulé, sinon la route du
  *  départ. L'outil reste en main (on trace plusieurs lieux de suite). Un lieu sans identifiant, une route pleine : une notification. */
 function edMapRoute(s, e, i) {
@@ -2320,7 +2492,9 @@ function edMapSnap(e) {
       route: [...r.route],
       zone: r.zone,
       object: r.object
-    }))
+    })),
+    rows: edDrawers(e).map(r => structuredClone(
+      r)) // lot 4 : les tiroirs eux-mêmes — « ＋ Tiroir » s'annule (le tiroir part), et « Rétablir » le rend
   };
 }
 
@@ -2332,7 +2506,12 @@ function edMapBack(s, e, snap) {
     same = !!was && !!now && now.kind === was.kind && now.id === was.id;
   e.places = snap.places;
   e.route = Array.isArray(snap.route) ? snap.route : null;
-  if (e.drawers && Array.isArray(snap.drawers)) { // l'ordre d'avant d'abord (les tiroirs que l'état gardé ne connaît pas suivent)
+  if (e.drawers && Array.isArray(snap
+      .rows
+    )) { // lot 4 : les tiroirs d'avant, dans leur ordre (un tiroir ajouté depuis part, un tiroir retiré revient) ; le tiroir choisi reste, sinon plus aucun
+    e.drawers = snap.rows.map(r => structuredClone(r));
+    if (e.sel && e.sel !== 'start' && !e.drawers.some(r => r.id === e.sel)) e.sel = 'start';
+  } else if (e.drawers && Array.isArray(snap.drawers)) { // l'ordre d'avant d'abord (les tiroirs que l'état gardé ne connaît pas suivent)
     const order = snap.drawers.map(d => e.drawers.find(x => x.id === d.id)).filter(Boolean);
     e.drawers = [...order, ...e.drawers.filter(x => !order.includes(x))];
   }
@@ -2559,6 +2738,24 @@ function edMapPose(s, e, p) {
     } [edMapTool(e)],
     before = edPlaces(e);
   if (!kind) return;
+  // lot 4 : « Placer sur la carte » — le lieu armé (e.placeFor) prend la position touchée, rien n'est créé ; l'outil revient à Sélection, le lieu reste choisi
+  const pf = e.placeFor;
+  if (Number.isInteger(pf) && pf >= 0 && before[pf]) {
+    e.placeFor = -1;
+    e.tool = 'select';
+    let after = ED.movePlace(before, pf, {
+      lat: p.lat,
+      lon: p.lon
+    });
+    if (after[pf]?.kind === 'zone' && !after[pf].poly && !after[pf].radius) after = after.map((x, k) => k === pf ? {
+      ...x,
+      radius: String(Math.min(100, Math.max(1, Math.round((p.spanKm || 40) / 8))))
+    } : x);
+    if (after === before) return edMapShow(s);
+    edMapRemember(e);
+    e.places = after;
+    return edMapPick(s, e, pf);
+  }
   const made = ED.newPlace(before, kind, e.base, {
     lat: p.lat,
     lon: p.lon,
@@ -3061,7 +3258,8 @@ function edCadreSet(s, key, value) {
   if ((key === 'dep' || key === 'arr') && e.places) {
     const fresh = ED.placesOf(ED.withCadre(e.base, e.cadre)).find(r => r.kind === key),
       at = e.places.findIndex(r => r.kind === key);
-    if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.places.filter((_, i) => i !== at);
+    if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.mode === 'new' ? ED.withEnds(e.places.filter((_, i) =>
+      i !== at)) : e.places.filter((_, i) => i !== at); // une mission neuve garde son Départ et son Arrivée (vides)
     else if (fresh) e.places = [fresh, ...e.places];
   }
   if (key === 'dep' || key === 'arr') edEndFill(s, e, key); // SOG-0506 : un terrain que la base connaît prend sa position
@@ -3486,8 +3684,6 @@ function edDrawerHtml(s, doc) {
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
-    <!-- la suite de route est dans la liste (lot 3) ; jusqu'au « ＋ » de la bande (lot 4), « Ajouter un lieu… » reste ici -->
-    ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.itAddSuite))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}
     ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p data-pvnothing>${esc(s.tt(EDTX.dwPilotNothing))}</p></div>
       <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.itDelAnyway : EDTX.dwRemove))}</button></div></section>`;
@@ -3503,10 +3699,7 @@ function edDrawerInput(s, ev) {
   if (list && ev.type !== 'change') return;
   const r = edDrawerRow(e);
   if (!r) return;
-  // une saisie vide l'historique ; « Ajouter un lieu… » de la suite de route est un geste de la liste (SOG-0542) : il se garde, il s'annule
-  if (f === 'routeadd' && list) {
-    if (t.value) edMapRemember(e);
-  } else edUndoClear(e);
+  edUndoClear(e); // une saisie vide l'historique
   // SOG-0500 : un champ d'une règle (la condition du tiroir)
   const rf = /^rule\.([a-zA-Z]+)$/.exec(f || '');
   if (rf) return edRuleInput(s, r.rule, rf[1], t, list);
@@ -3533,10 +3726,6 @@ function edDrawerInput(s, ev) {
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
     r[f] = String(t.value).slice(0, 40);
     if (f === 'point') r.said = edSaid(s, r);
-    return draw(s);
-  }
-  if (f === 'routeadd' && list) {
-    if (t.value) r.route = [...r.route, String(t.value).slice(0, 40)].slice(0, 60);
     return draw(s);
   }
   if (f === 'stopadd' && list) {
@@ -3711,16 +3900,6 @@ export function edInput(s, ev) {
     e.mapVertex = -1;
     e.mapRef = null;
     e.drawFor = '';
-    return draw(s);
-  }
-  if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un (avant l'arrivée quand elle termine la route)
-    const token = String(ev.target.value || '').slice(0, 40);
-    // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
-    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || ED.placesOf(edDoc(e))).some(r => r && ED
-        .routeToken(r) ===
-        token)) return;
-    edMapRemember(e); // SOG-0542 : « Ajouter un lieu… » de la route du départ s'annule
-    edRouteAdd(s, e, token);
     return draw(s);
   }
   if (k === 'edtr') return edTrialInput(s, ev); // le volet de l'essai des clés
@@ -4056,8 +4235,9 @@ function edRefresh(s) {
         put(live.querySelector('.ms-plbody > b'), said.title(r));
         const od = live.dataset.at?.startsWith('out:') ? said.outDetail(r, i) :
           null; // lot 3 : « Hors itinéraire » dit ce qui cite le lieu
-        put(live.querySelector('.ms-plbody > .f-muted'), od ? od.text : said.detail(r, i));
+        put(live.querySelector('.ms-plbody > .f-muted'), od ? od.text : edSuiteText(s, doc, live.dataset.at) || said.detail(r, i));
         if (od) live.toggleAttribute('data-outbad', od.bad); // « ! » : rien ne cite ce lieu
+        else live.toggleAttribute('data-needs', said.needs(r)); // « ! » : un lieu à remplir ou à placer
       }
     });
   }
@@ -4146,6 +4326,9 @@ async function edSave(s) {
       mapRedo: null,
       tool: 'select',
       drawFor: '',
+      plus: '',
+      placeFor: -1,
+      kwAt: -1,
       story: null,
       risks: null,
       riskEdit: -1,
@@ -4269,9 +4452,6 @@ export function edClick(s, b) {
       draw(s);
       return edSheetShow(s); // SOG-0467 : la fiche choisie vient à l'écran
     }
-    case 'eddradd': // « ＋ Tiroir » (SOG-0508) : la fenêtre des briques s'ouvre — rien n'est créé
-      if (!DR.blankDrawer(edDrawers(s.ed), s.ed.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
-      return kwOpen(s, 'new');
     case 'edkindopen': // « Changer la clé » d'un tiroir : LA MÊME fenêtre
       if (!edDrawerRow(s.ed)) return;
       return kwOpen(s, 'drawer');
@@ -4382,6 +4562,7 @@ export function edClick(s, b) {
       if (b.dataset.tool === 'zone' && edMapTool(s.ed) === 'zone' && !s.ed.drawFor) return edZoneFlip(s); // SOG-0471 : la forme change
       s.ed.tool = ['point', 'route', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
       s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
+      s.ed.placeFor = -1;
       s.ed.mapRef = null;
       return edMapShow(s);
     case 'edrefseek': // « Chercher » : le repère de ce nom (sur place : le bouton pressé n'est pas redessiné)
@@ -4414,6 +4595,7 @@ export function edClick(s, b) {
       if (!EM.stateOf(e) || !edDrawerRow(e)) return;
       e.tool = kind;
       e.drawFor = e.sel;
+      e.placeFor = -1;
       e.mapOpen = true;
       draw(s);
       return s.el.querySelector('[data-atmap]')?.scrollIntoView?.({
@@ -4575,30 +4757,25 @@ export function edClick(s, b) {
       s.ed.placeAsk = r.ask;
       return draw(s);
     }
-    case 'edplaceadd': { // une ligne neuve à la place de sa sorte (ED.newPlace : la même que la pose sur la carte), son premier champ en main
-      if (s.ed.veil && b.dataset.kind === 'target') return; // « + Cible » n'est pas donné dans l'atelier voilé
-      // SOG-0481 : avec un repère de la base choisi sur la carte, « + Point tournant » et « + Cible » ajoutent CE point (le même chemin
-      // qu'« Ajouter comme point ») ; sans repère, une ligne neuve à placer
-      const ref = ['pt', 'target'].includes(b.dataset.kind) ? edMapRef(s.ed) : null;
-      if (ref) {
-        const at = edPlaceFromBase(s, s.ed, {
-          kind: b.dataset.kind,
-          code: ref.id,
-          lat: ref.lat,
-          lon: ref.lon,
-          from: ref.kind, // SOG-0506 : le genre du repère, la source du lieu
-          rec: ref // le repère de la carte (EM.refData l'a déjà passé par EM.publishable)
-        });
-        return at < 0 ? edMapShow(s) : edMapPick(s, s.ed, at);
-      }
-      const made = ED.newPlace(edPlaces(s.ed), b.dataset.kind, s.ed.base);
-      if (!made) return;
-      edMapRemember(s.ed); // SOG-0542 : « + Zone / Point tournant… » s'annule
-      s.ed.mapSel = -1;
-      s.ed.places = made.rows;
-      s.ed.placeEdit = made.at;
+    case 'edplus': // le « ＋ » d'une ligne (sa bande, ou au-dessus de l'Arrivée) : son menu s'ouvre, ou se referme
+      s.ed.plus = s.ed.plus === String(b.dataset.at || '') ? '' : String(b.dataset.at || '');
+      return draw(s);
+    case 'edplusadd': // un choix du menu du « ＋ » : le lieu ou le tiroir naît à la place que la ligne dit
+      return edPlusAdd(s, b);
+    case 'edplaceonmap': { // « Placer sur la carte » (la fiche d'un lieu « à placer ») : l'outil de la carte armé pour CE lieu, la carte à l'écran ; un toucher sur la carte le pose
+      const e = s.ed,
+        i = +b.dataset.i,
+        r = edPlaces(e)[i];
+      if (!r || edHid(e, i) || !['pt', 'target', 'rdv', 'zone', 'object'].includes(r.kind)) return;
+      e.tool = r.kind === 'zone' ? 'zone' : r.kind === 'object' ? 'object' : 'point';
+      e.placeFor = i;
+      e.drawFor = '';
+      e.mapRef = null;
+      e.mapOpen = true;
       draw(s);
-      return s.el.querySelector(`[data-plform="${s.ed.placeEdit}"] input`)?.focus();
+      return s.el.querySelector('[data-atmap]')?.scrollIntoView?.({
+        block: 'nearest'
+      });
     }
     case 'edteamadd':
       s.ed.teams = [...(s.ed.teams || ED.teamsOf(s.ed.base)), {
@@ -4632,7 +4809,7 @@ export function edClick(s, b) {
 
 /** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
  *  les zones par leur rang). */
-const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
+const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
   'eddrstep', 'eddrstepadd', 'eddrstepdel',
   'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
   'edmodeloff', 'edmodelpick', 'edmodelsave'
@@ -4656,6 +4833,8 @@ function edKind(s, key, brick = null) {
     posed = brick?.places?.length ? CAT.posePlaces(e.places || ED.placesOf(edDoc(e)), brick.places, e.base, lang) : null,
     places = posed ? posed.rows : e.places || ED.placesOf(edDoc(e)),
     idOf = k => posed?.map.get(k) || '';
+  if (e.kinds === 'new' && DR.blankDrawer(edDrawers(e), e.base)) edMapRemember(
+    e); // lot 4 : « ＋ Tiroir » s'annule (l'ordre des tiroirs et les lieux que la brique pose, compris)
   if (posed && (e.kinds !== 'new' || DR.blankDrawer(edDrawers(e), e.base))) e.places = posed.rows;
   if (e.kinds === 'new') {
     const blank = DR.blankDrawer(edDrawers(e), e.base),
@@ -4668,7 +4847,10 @@ function edKind(s, key, brick = null) {
     edDrawerRow(e);
     const row = brick ? CAT.drawerFrom(blank, brick, places, lang, idOf) : DR.keyed(blank, key, places);
     row.said = edSaid(s, row);
-    e.drawers = [...e.drawers, row];
+    // lot 4 : à la place que le « ＋ » a dite (jamais au milieu d'une route : après un tiroir et sa suite, ou avant le premier tiroir), sinon à la fin
+    const at = Number.isInteger(e.kwAt) && e.kwAt >= 0 && e.kwAt <= e.drawers.length ? e.kwAt : e.drawers.length;
+    e.kwAt = -1;
+    e.drawers = [...e.drawers.slice(0, at), row, ...e.drawers.slice(at)];
     e.sel = row.id;
     e.drawerAsk = '';
     e.dopen = {

@@ -484,6 +484,24 @@ export function ringOf(row) {
 }
 
 /** Les lieux d'une mission (voir l'en-tête). */
+/** Les lignes avec un Départ et une Arrivée (SOG-0482, lot 4) : une mission NEUVE n'a ni l'un ni l'autre dans son document, et son itinéraire les dit pourtant — « Départ », « Arrivée », à remplir. Une ligne vide
+ *  ne s'écrit nulle part (withPlaces ne lit un départ ou une arrivée que s'il existe dans le fichier ; leur nom se saisit au Cadre jusqu'au lot 5). Le départ en tête, l'arrivée juste après. */
+export function withEnds(rows) {
+  const out = Array.isArray(rows) ? [...rows] : [],
+    blank = kind => ({
+      kind,
+      i: 0,
+      id: '',
+      name: '',
+      role: '',
+      lat: '',
+      lon: ''
+    });
+  if (!out.some(r => r?.kind === 'dep')) out.unshift(blank('dep'));
+  if (!out.some(r => r?.kind === 'arr')) out.splice(out.findIndex(r => r?.kind === 'dep') + 1, 0, blank('arr'));
+  return out;
+}
+
 export function placesOf(doc) {
   const d = obj(doc),
     arr = v => arrOf(v).slice(0, PLACES_MAX),

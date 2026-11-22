@@ -719,18 +719,32 @@ export function withDrawerRows(doc, rows) {
     }
   }
   const taken = new Set(prev.filter(p => byI.has(p.i)).map(p => p.id));
+  // SOG-0482, lot 4 : une ligne neuve s'écrit À SA PLACE dans l'ordre des lignes (« ＋ » : après un tiroir et sa suite, ou avant le premier), pas à la fin — la place de la partie de chaque ligne
+  // dans `kept` (après l'éventuel échange ci-dessus) : la k-ième ligne retenue prend la place de la k-ième partie lue
+  const rowPos = new Map(),
+    slotsOrder = [...posOf.keys()],
+    rowsOrder = list.filter(r => Number.isInteger(r.i) && posOf.has(r.i)).map(r => r.i);
+  rowsOrder.forEach((ri, k) => rowPos.set(ri, posOf.get(slotsOrder[k])));
+  let lastPos = rowPos.size ? Math.min(...rowPos.values()) - 1 : kept.length - 1;
   for (const r of list) {
-    if (Number.isInteger(r.i) && slots.has(r.i)) continue;
+    if (Number.isInteger(r.i) && slots.has(r.i)) {
+      if (rowPos.has(r.i)) lastPos = rowPos.get(r.i);
+      continue;
+    }
     const id = String(r.id ?? '').toUpperCase();
     // une ligne neuve : son identifiant est une lettre libre de B à M ; au-delà de douze, rien
     if (count >= MS.DRAWER_IDS.length || !MS.DRAWER_IDS.includes(id) || taken.has(id)) continue;
     taken.add(id);
     count += 1;
-    kept.push(edit({
+    const at = lastPos + 1;
+    kept.splice(at, 0, edit({
       id
     }, r, null) || {
       id
     });
+    for (const [ri, pp] of rowPos)
+      if (pp >= at) rowPos.set(ri, pp + 1);
+    lastPos = at;
   }
   if (kept.length) out.phases = kept;
   else delete out.phases;

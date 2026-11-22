@@ -53,9 +53,25 @@ export const EDTX = {
     'en la ruta de la alerta {name}'
   ],
   itCiteDrawer: ['dans le tiroir {name}', 'in drawer {name}', 'in Schublade {name}', 'en el cajón {name}'],
-  itAddSuite: ['Ajouter un lieu à la suite de route…', 'Add a place to the onward route…', 'Ort zur Folgeroute hinzufügen…',
-    'Añadir un lugar a la ruta siguiente…'
-  ], // jusqu'au « ＋ » de la bande (lot 4)
+  // SOG-0482, lot 4 : le « ＋ » de la bande, son menu du possible, la ligne d'une suite, la mission neuve, « Placer sur la carte »
+  itPlus: ['Ajouter après cette ligne', 'Add after this line', 'Nach dieser Zeile hinzufügen', 'Añadir después de esta línea'],
+  itPlusEnd: ["Ajouter avant l'arrivée", 'Add before the arrival', 'Vor der Ankunft hinzufügen', 'Añadir antes de la llegada'],
+  itMenuPt: ['Point', 'Point', 'Punkt', 'Punto'],
+  itMenuZone: ['Zone', 'Zone', 'Zone', 'Zona'],
+  itMenuRdv: ['Rendez-vous', 'Rendezvous', 'Treffpunkt', 'Encuentro'],
+  itMenuTarget: ['Cible', 'Target', 'Ziel', 'Objetivo'],
+  itMenuDrawer: ['Tiroir', 'Drawer', 'Schublade', 'Cajón'],
+  itSuiteOf: ['suite de route du tiroir {n}', 'onward route of drawer {n}', 'Folgeroute der Schublade {n}',
+    'ruta siguiente del cajón {n}'
+  ],
+  itFill: ['à remplir', 'to fill in', 'auszufüllen', 'por rellenar'],
+  itNewDep: ['Départ', 'Departure', 'Abflug', 'Salida'],
+  itNewArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
+  plPlaceOnMap: ['Placer sur la carte', 'Place on the map', 'Auf der Karte platzieren', 'Colocar en el mapa'],
+  atHint_placeFor: ['{name} : touchez la carte pour le placer.', '{name}: touch the map to place it.',
+    '{name}: Karte berühren, um es zu platzieren.',
+    '{name}: toque el mapa para colocarlo.'
+  ],
   itNoCite: ['rien ne cite ce lieu : le pilote ne le verra pas', 'nothing cites this place: the pilot will not see it',
     'nichts nennt diesen Ort: der Pilot sieht ihn nicht',
     'nada cita este lugar: el piloto no lo verá'
@@ -146,7 +162,6 @@ export const EDTX = {
   ],
   // les objets à trouver dans les Lieux (SOG-0445) : la pastille, la fiche, « caché au pilote », « clé du tiroir n »
   plObject: ['OBJ', 'OBJ', 'OBJ', 'OBJ'],
-  plAddObject: ['+ Objet à trouver', '+ Object to find', '+ Zu findendes Objekt', '+ Objeto por encontrar'],
   // SOG-0480 : le Nom d'un point tournant, d'une cible, d'un rendez-vous est le champ commun de la suite, avec les points de la base
   plNameHint: ['nom, ou code : report, balise, point du réseau', 'name, or code: reporting point, beacon, network point',
     'Name oder Kennung: Meldepunkt, Funkfeuer, Netzpunkt', 'nombre, o código: notificación, radioayuda, punto de red'
@@ -195,9 +210,7 @@ export const EDTX = {
   plKeyOf: ['clé du tiroir {name}', 'key of drawer {name}', 'Schlüssel der Schublade {name}', 'llave del cajón {name}'],
   // la fiche d'un tiroir (SOG-0445) : le déroulé, les trois groupes (la clé, les textes, la suite de route), « à compléter », la clé
   // dite en clair (`trigger`, que le pilote lit sur le tiroir fermé : des mots qui ne nomment ni la zone ni l'objet)
-  dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
   // SOG-0508 : la fenêtre des briques que « ＋ Tiroir » et « Changer la clé » ouvrent (la maquette de l'utilisateur)
-  dwAddSub: ['Choisir une brique', 'Choose a brick', 'Baustein wählen', 'Elegir un ladrillo'],
   dwKeyChange: ['Changer la clé', 'Change the key', 'Schlüssel ändern', 'Cambiar la llave'],
   dwWinTitle: ['Choisir une brique de tiroir', 'Choose a drawer brick', 'Schubladen-Baustein wählen', 'Elegir un ladrillo de cajón'],
   dwWinClose: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
@@ -406,7 +419,6 @@ export const EDTX = {
   dwTitle: ['Titre', 'Title', 'Titel', 'Título'],
   dwMessage: ['Message à l\'ouverture', 'Message at the opening', 'Nachricht beim Öffnen', 'Mensaje a la apertura'],
   dwBrief: ['Briefing du tiroir', 'Briefing of the drawer', 'Briefing der Schublade', 'Briefing del cajón'],
-  dwRouteAdd: ['Ajouter un lieu…', 'Add a place…', 'Ort hinzufügen…', 'Añadir un lugar…'],
   dwRemove: ['Supprimer ce tiroir', 'Delete this drawer', 'Diese Schublade löschen', 'Eliminar este cajón'],
   dwRemoved: ['Tiroir supprimé ; les suivants ont pris son rang.', 'Drawer deleted; the following ones took its rank.',
     'Schublade gelöscht; die folgenden sind aufgerückt.', 'Cajón eliminado; los siguientes han tomado su rango.'
