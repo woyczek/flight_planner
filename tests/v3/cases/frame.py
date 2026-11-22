@@ -4916,6 +4916,8 @@ def a362(c):
         # ---- with a bad step the button stays ACTIVE and changes its name (« the other steps are good », no explanation line, nothing disabled); the gesture plays the steps without a verdict, never the bad one and never the optional one, and validates no fiche (the file does not change)
         before = written()
         c.eq([c.js("document.querySelector('[data-path-all=C1]').disabled"), norm(c.text('[data-path-all=C1]')), c.count('[data-path=C1] [data-path-blocked]'), c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state")], [False, norm(W['others']), 0, 'todo'], 'one bad step: the button stays active and is renamed, without any explanation line', what='renamed')
+        c.js("document.querySelector('[data-path-all=C1]').scrollIntoView({block: 'center'})")
+        c.shot(f'A362_bouton_autres_{c.width}_{lang}.png')   # the state the ergonomist decided: one step « bad », the others without a verdict, the button active and renamed
         c.tap('[data-path-all=C1]')
         c.until("document.querySelector('[data-step=\"C1:0\"]').dataset.state === 'ok'", what='the step without a verdict is played')
         c.wait(800)
