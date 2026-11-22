@@ -11459,3 +11459,61 @@ def a312(c):
     puts = c.js("window.__demo.puts.map(p => [p[0], p[2]])")
     c.ok(puts and all(p == ['cache/sort/demo.json', 'cache'] for p in puts), puts, 'the state written to cache/sort/demo.json with the policy cache only')
     c.check_errors()
+
+
+@case('A364', "The common block of the « ↑ Plus tôt » / « ↓ Plus tard » arrows (SOG-0482, frame/lib/reorder.js): the pure move (a NEW array, the edge refused, an unreadable index or direction refused, a drawer moves WITH its suite), the two arrows (the arrow at an edge GREYED with its title, never hidden; an element alone in its list: both greyed; hostile texts stay text; four languages), the delegated listener (an open arrow calls, a greyed arrow or an unknown direction does not) and the focus given back after the redraw", 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0482 (Création, lot 3; mock-up modules/missions/maquette/atelier_itineraire_v2.html, point (a)): three simple lists (the departure route, the continuation of each drawer, the drawers among themselves), arrows first; no arrow ever crosses a boundary; a greyed arrow stays visible with a title that says why; the block draws no row and redraws nothing')
+def a364(c):
+    _bench(c, 'frame/lib/test/reorder.html', '__reorderBench')
+
+
+@case('A365', "The arrows block mounted (SOG-0482, frame/lib/test/reorder_demo.html, the three lists of the mock-up): an arrow moves its element one place in ITS list and never further, the arrow at an edge is greyed with its title (the departure route ends on TARGET: « ↓ Plus tard » greyed; the only place of a continuation: both greyed; the first drawer: « ↑ Plus tôt »; the last: « ↓ Plus tard »), a greyed arrow does nothing, a drawer moves with its continuation, the focus goes back to the arrow, the buttons are 44 px and equal in width with no horizontal scroll; four languages", 'A',
+      tags=('launcher',), designs=('standard',), langs4=True,
+      rule='SOG-0482 (Création, lot 3; the mock-up, point (a)): the arrow at the edge of its list is GREYED, never hidden, with a title that says why; no arrow crosses a boundary; a drawer moves together with its continuation; 44 px targets (--sog-touch)')
+def a365(c):
+    lang = c.lang
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    W = {k: v[i] for k, v in {
+        'up': ['↑ Plus tôt', '↑ Earlier', '↑ Früher', '↑ Antes'],
+        'down': ['↓ Plus tard', '↓ Later', '↓ Später', '↓ Después'],
+        'edgeUp': ['Déjà en première place de sa liste', 'Already first in its list', 'Schon an erster Stelle seiner Liste', 'Ya es el primero de su lista'],
+        'limit': ['La limite du tiroir 1 : retirez de l’itinéraire, puis ＋ sous la ligne voulue', 'The limit of drawer 1: remove it from the route, then ＋ under the line you want', 'Die Grenze von Fach 1: aus der Route entfernen, dann ＋ unter die gewünschte Zeile', 'El límite del cajón 1: quítelo de la ruta y luego ＋ bajo la línea deseada'],
+        'only': ['Seul lieu de la suite du tiroir 1 : retirez de l’itinéraire, puis ＋ sous la ligne voulue', 'Only place of the route continuation of drawer 1: remove it from the route, then ＋ under the line you want', 'Einziger Ort der Routenfortsetzung von Fach 1: aus der Route entfernen, dann ＋ unter die gewünschte Zeile', 'Único lugar de la continuación del cajón 1: quítelo de la ruta y luego ＋ bajo la línea deseada'],
+        'first': ['Le premier tiroir : rien ne s’ouvre avant lui', 'The first drawer: nothing opens before it', 'Das erste Fach: davor öffnet sich nichts', 'El primer cajón: nada se abre antes'],
+        'last': ['Le dernier tiroir : l’Arrivée reste à la fin', 'The last drawer: the Arrival stays at the end', 'Das letzte Fach: die Ankunft bleibt am Ende', 'El último cajón: la Llegada se queda al final'],
+    }.items()}
+    c.page.goto(f'{c.base}/frame/lib/test/reorder_demo.html?lang={lang}&design={c.design}&tone={c.tone}', wait_until='load')
+    c.until('window.__demo && window.__demo.ready', timeout=15000, what='the demo is mounted')
+    arrow = lambda lst, id, d: f'ul[data-list="{lst}"] li[data-id="{id}"] button[data-reorder="{d}"]'
+    state = lambda lst, id, d: c.js(f"(() => {{ const b = document.querySelector('{arrow(lst, id, d)}'); return b ? [b.disabled, b.title, b.textContent] : null }})()")
+    order = lambda: c.js('window.__demo.order()')
+    focus = "[document.activeElement.dataset.list, document.activeElement.dataset.id, document.activeElement.dataset.reorder]"
+    start = {'route': ['PT1', 'ZONE-1', 'TARGET'], 'suite': ['PT2'], 'drawers': ['T1', 'T2', 'T3', 'T4', 'T5']}
+    c.eq(order(), start, 'the three lists as the mock-up draws them', what='start')
+    # ---- the arrow at an edge is GREYED (present, with its title), never hidden
+    c.eq([state('route', 'TARGET', 'down'), state('route', 'PT1', 'up')], [[True, W['limit'], W['down']], [True, W['edgeUp'], W['up']]], "the departure route ends on TARGET: « Plus tard » greyed with the limit of the drawer; the first place: the block's own title", what='route edges')
+    c.eq([state('suite', 'PT2', 'up'), state('suite', 'PT2', 'down')], [[True, W['only'], W['up']], [True, W['only'], W['down']]], 'the only place of a continuation: both arrows greyed, each with its title', what='suite alone')
+    c.eq([state('drawers', 'T1', 'up'), state('drawers', 'T5', 'down'), state('drawers', 'T1', 'down')[0]], [[True, W['first'], W['up']], [True, W['last'], W['down']], False], 'the first drawer: « Plus tôt » greyed; the last: « Plus tard » greyed; the others open', what='drawer edges')
+    # ---- a greyed arrow does nothing
+    c.js(f"document.querySelector('{arrow('drawers', 'T5', 'down')}').click()")
+    c.js(f"document.querySelector('{arrow('route', 'TARGET', 'down')}').click()")
+    c.wait(300)
+    c.eq([order(), c.js('window.__demo.moves')], [start, []], 'a touch on a greyed arrow changes nothing', what='greyed touch')
+    # ---- an open arrow moves ONE place in ITS list and the focus goes back to the arrow
+    c.tap(arrow('route', 'ZONE-1', 'down'))
+    c.eq(order()['route'], ['PT1', 'TARGET', 'ZONE-1'], 'ZONE-1 moves one place later in the departure route', what='route move')
+    c.eq(c.js(focus), ['route', 'ZONE-1', 'up'], 'ZONE-1 reached the end: « Plus tard » is greyed, the focus goes to « Plus tôt » of the same line', what='focus at the edge')
+    c.eq([order()['suite'], order()['drawers']], [start['suite'], start['drawers']], 'no arrow crosses a boundary: the other two lists are as they were', what='other lists')
+    c.tap(arrow('drawers', 'T1', 'down'))
+    c.eq(order()['drawers'], ['T2', 'T1', 'T3', 'T4', 'T5'], 'drawer 1 moves one place later', what='drawer move')
+    c.eq(c.js(focus), ['drawers', 'T1', 'down'], 'the focus stays on the arrow just used (« Plus tard » is still open)', what='focus kept')
+    c.ok('PT2' in c.text('ul[data-list="drawers"] li[data-id="T1"] small'), c.text('ul[data-list="drawers"] li[data-id="T1"] small'), 'a drawer moves WITH its continuation')
+    c.eq([state('drawers', 'T2', 'up')[0], state('drawers', 'T1', 'up')[0]], [True, False], 'the edge follows the move: the first drawer is now T2', what='edge follows')
+    c.eq(c.js('window.__demo.moves'), ['route:ZONE-1:down', 'drawers:T1:down'], 'one move per touch', what='moves')
+    # ---- 44 px, equal in width, no horizontal scroll
+    sizes = c.js("[...document.querySelectorAll('.f-reorder')].map(g => { const b = [...g.querySelectorAll('button')].map(x => x.getBoundingClientRect()); return [Math.min(...b.map(r => r.height)), Math.abs(b[0].width - b[1].width)] })")
+    c.ok(sizes and all(h >= 43.5 and d <= 1 for h, d in sizes), sizes, 'every pair of arrows: 44 px high, the two buttons of the same width')
+    c.ok(c.js("document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"), 'horizontal scroll', 'no horizontal scroll')
+    c.shot(f'A365_fleches_{c.width}_{lang}.png')
+    c.check_errors()

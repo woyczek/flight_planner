@@ -1,0 +1,150 @@
+<!doctype html>
+<!-- Démonstration du bloc des flèches « Plus tôt » / « Plus tard » (frame/lib/reorder.js, SOG-0482) monté comme un module le monterait : les TROIS listes de la maquette de l'itinéraire (la route de départ, la suite
+     du tiroir 1, les tiroirs entre eux), des noms inventés. Une flèche déplace d'un cran dans SA liste et jamais plus loin ; celle d'un bord est grisée avec son titre ; un tiroir bouge avec sa suite ; le focus revient
+     sur la flèche. Adresse : ?lang=fr|en|de|es&design=standard|metro|swiss|…&tone=day|night. window.__demo = { ready, moves, order } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reorder — démonstration</title>
+<link rel="stylesheet" href="../../design/tokens.css">
+<link rel="stylesheet" href="../../design/primitives.css">
+<link rel="stylesheet" href="../../design/metro.css">
+<link rel="stylesheet" href="../../design/swiss.css">
+<link rel="stylesheet" href="../../design/cupertino.css">
+<link rel="stylesheet" href="../../design/material.css">
+<style>
+  body {
+    margin: 0
+  }
+  .demo {
+    padding: 8px 16px 32px
+  }
+  .demo h2 {
+    font-size: 1rem;
+    margin: 16px 0 4px
+  }
+  .demo ul {
+    list-style: none;
+    margin: 0;
+    padding: 0
+  }
+  .demo li {
+    border-bottom: 1px solid var(--sog-border);
+    padding: 8px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px
+  }
+  .demo li small {
+    color: var(--sog-muted)
+  }
+</style>
+</head>
+<body>
+<div class="f-module demo" id="root"></div>
+<script type="module">
+  import {
+    moveId,
+    arrowsHtml,
+    bind,
+    focusAfter
+  } from '../reorder.js?v=0';
+  const q = new URLSearchParams(location.search),
+    lang = ['fr', 'en', 'de', 'es'].includes(q.get('lang')) ? q.get('lang') : 'fr';
+  document.documentElement.lang = lang;
+  document.documentElement.dataset.design = q.get('design') || 'standard';
+  document.documentElement.dataset.tone = q.get('tone') === 'night' ? 'night' : 'day';
+  const T = {
+    route: ['Route de départ', 'Departure route', 'Abflugroute', 'Ruta de salida'],
+    suite: ['Suite de route du tiroir 1', 'Route continuation of drawer 1', 'Routenfortsetzung von Fach 1',
+      'Continuación de ruta del cajón 1'
+    ],
+    drawers: ['Les tiroirs', 'The drawers', 'Die Fächer', 'Los cajones'],
+    limit: ['La limite du tiroir 1 : retirez de l’itinéraire, puis ＋ sous la ligne voulue',
+      'The limit of drawer 1: remove it from the route, then ＋ under the line you want',
+      'Die Grenze von Fach 1: aus der Route entfernen, dann ＋ unter die gewünschte Zeile',
+      'El límite del cajón 1: quítelo de la ruta y luego ＋ bajo la línea deseada'
+    ],
+    only: ['Seul lieu de la suite du tiroir 1 : retirez de l’itinéraire, puis ＋ sous la ligne voulue',
+      'Only place of the route continuation of drawer 1: remove it from the route, then ＋ under the line you want',
+      'Einziger Ort der Routenfortsetzung von Fach 1: aus der Route entfernen, dann ＋ unter die gewünschte Zeile',
+      'Único lugar de la continuación del cajón 1: quítelo de la ruta y luego ＋ bajo la línea deseada'
+    ],
+    first: ['Le premier tiroir : rien ne s’ouvre avant lui', 'The first drawer: nothing opens before it',
+      'Das erste Fach: davor öffnet sich nichts', 'El primer cajón: nada se abre antes'
+    ],
+    last: ['Le dernier tiroir : l’Arrivée reste à la fin', 'The last drawer: the Arrival stays at the end',
+      'Das letzte Fach: die Ankunft bleibt am Ende', 'El último cajón: la Llegada se queda al final'
+    ],
+    withSuite: ['avec sa suite', 'with its continuation', 'mit seiner Fortsetzung', 'con su continuación']
+  };
+  const t = k => T[k][
+    ['fr', 'en', 'de', 'es'].indexOf(lang)
+  ];
+  const S = {
+    route: [{
+      id: 'PT1',
+      name: 'PT1 · Point un'
+    }, {
+      id: 'ZONE-1',
+      name: 'ZONE-1 · Secteur nord'
+    }, {
+      id: 'TARGET',
+      name: 'TARGET · Cible d’essai'
+    }],
+    suite: [{
+      id: 'PT2',
+      name: 'PT2 · Point deux'
+    }],
+    drawers: [1, 2, 3, 4, 5].map(n => ({
+      id: `T${n}`,
+      name: `Tiroir ${n}`,
+      suite: n === 1 ? ['PT2'] : []
+    }))
+  };
+  const moves = [];
+  const root = document.getElementById('root');
+  const reasons = {
+    route: {
+      down: t('limit')
+    },
+    suite: {
+      up: t('only'),
+      down: t('only')
+    },
+    drawers: {
+      up: t('first'),
+      down: t('last')
+    }
+  };
+  const draw = () => {
+    root.innerHTML = ['route', 'suite', 'drawers'].map(list => `<h2>${t(list)}</h2><ul data-list="${list}">${S[list].map((x, i) => `<li data-id="${x.id}"><span><b>${x.name}</b>${x.suite && x.suite.length ? ` <small>${t('withSuite')} : ${x.suite.join(', ')}</small>` : ''}</span>${arrowsHtml({
+      lang,
+      list,
+      id: x.id,
+      n: S[list].length,
+      i,
+      name: x.name,
+      why: list === 'drawers' ? { up: i === 0 ? reasons.drawers.up : '', down: i === S.drawers.length - 1 ? reasons.drawers.down : '' } : reasons[list]
+    })}</li>`).join('')}</ul>`).join('');
+  };
+  draw();
+  bind(root, {
+    onMove: m => {
+      const r = moveId(S[m.list], m.id, m.dir);
+      if (!r) return;
+      S[m.list] = r.items;
+      moves.push(`${m.list}:${m.id}:${m.dir}`);
+      draw();
+      focusAfter(root, m);
+    }
+  });
+  window.__demo = {
+    ready: true,
+    moves,
+    order: () => Object.fromEntries(Object.entries(S).map(([k, v]) => [k, v.map(x => x.id)]))
+  };
+</script>
+</body>
+</html>

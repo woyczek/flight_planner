@@ -471,6 +471,20 @@ th:is([aria-sort="ascending"], [aria-sort="descending"]):has(> .f-sortbtn) {
   }
 }
 
+/* ---- flèches « ↑ Plus tôt » / « ↓ Plus tard » (frame/lib/reorder.js, SOG-0482, frame/INTEGRATION.md § 12h) : deux boutons de 44 px côte à côte, de même largeur ; la flèche d'un bord est GRISÉE (button:disabled,
+   plus haut), jamais cachée. Plat dans tous les designs (aucun coin arrondi à elle seule : le design pose les siens). */
+.f-reorder {
+  display: flex;
+  gap: var(--sog-gap-s);
+  flex: 1 1 auto;
+  min-width: 0
+}
+.f-reorder>.f-reorder-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--sog-touch)
+}
+
 /* ---- tuiles de chiffres */
 .f-tiles {
   display: grid;

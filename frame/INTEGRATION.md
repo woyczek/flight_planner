@@ -1112,6 +1112,41 @@ SOG-0507 put the tiers of a precision landing (excellent ≤ 0.05 NM, parfait �
 
 **The rule: recomputed, never read.** The logbook and all it carries are untrusted (written by any pilot). It is read bounded (`own`, `plain`), never throws on an absent or wrongly typed value, and the tier written in it (`tier`, `distNm`) is ignored: the tier is recomputed by `landTier` from the fix `to` on the rule of the mission. A row without a recomputed tier is omitted. Every module that imports it lists `'../../frame/lib/precision.js'` (and `crossing.js`, `untrusted.js`) in its `meta.files` (case I26); no line in `sw.js`: no screen of the shell imports it. The bench `frame/lib/test/precision.html` (`window.__precisionBench`, case A360) proves the tiers equal to those before the move on a corpus of bounds, then `landTier` and `precisionLandings` on hostile input.
 
+## 12h. Place arrows (`frame/lib/reorder.js`, SOG-0482)
+
+ONE block for every list whose order the user changes with « ↑ Plus tôt » / « ↓ Plus tard » (Création, lot 3; mock-up `modules/missions/maquette/atelier_itineraire_v2.html`, point (a): the departure route, the continuation of each drawer, the drawers among themselves — three simple lists, arrows first, no drag). **The block draws no row, keeps nothing and redraws nothing**: the module keeps its list, draws its own lines, and the block gives it the pure move, the two arrows, ONE delegated listener and the focus back after the redraw. Pure at import: no page, no storage, no network.
+
+The rules of the mock-up, which the block enforces:
+
+- **No arrow ever crosses the boundary of its list**: a place does not change list by moving (to change list: « Retirer de l'itinéraire », then « ＋ » under the line you want — the module's gestures, not the block's).
+- **An arrow at the edge of its list is GREYED, never hidden**, with a `title` that says why (the module's text, e.g. « La limite du tiroir 1 : retirez de l'itinéraire, puis ＋ sous la ligne voulue »; without one, the block's own « Déjà en première / dernière place de sa liste »). An element alone in its list: both arrows greyed.
+- **A line that does not move has no arrows**: Départ and Arrivée — the module does not call `arrowsHtml` for them.
+- **A drawer moves WITH its continuation**: the module's element of the drawers list contains its continuation (the block moves elements, it never copies them).
+
+```js
+import { moveId, arrowsHtml, bind, focusAfter } from '../../frame/lib/reorder.js';
+// draw: one line per element of the list, then the arrows of THAT line
+`<li>${name} ${arrowsHtml({ lang, list: 'route', id: x.id, n: items.length, i, name: x.name, why: { down: 'La limite du tiroir 1 : …' } })}</li>`
+const unbind = bind(root, { onMove: m => {            // m = { list: 'route', id, dir: 'up' | 'down' }
+  const r = moveId(S[m.list], m.id, m.dir);            // { items, from, to } or null (the edge): nothing to do
+  if (!r) return;
+  S[m.list] = r.items; save(); draw();                 // the module's own record and redraw (keepScroll around it)
+  focusAfter(root, m);                                 // the focus goes back to the same arrow of the same line, or to the other one at the edge
+} });
+```
+
+| Export | Gives |
+|---|---|
+| `move(list, i, dir)` | a NEW array with element `i` one place earlier (`'up'`) or later (`'down'`), or `null` when refused (edge, unreadable index or direction, not a list); the input is never modified |
+| `moveId(items, id, dir, idOf)` | `{ items, from, to }`, the same gesture by identifier (`idOf(x)` → identifier, `x => x?.id` by default; compared as text, a `data-id` is text); `null`: unknown identifier or edge |
+| `canMove(n, i)` | `{ up, down }` open for element `i` of a list of `n` (none when `i` is not an index of the list) |
+| `arrowsHtml({ lang, list, id, n, i, name, why })` | `<span class="f-reorder" role="group">` with two `<button type="button" class="f-reorder-btn" data-reorder="up\|down" data-list data-id>`; a closed arrow is `disabled` with its `title` (`why.up` / `why.down`, bounded to 200 characters, or the block's own); `name` (the element's name) is the `aria-label` of the group and of each arrow for a screen reader; every text is escaped |
+| `bind(root, { onMove })` | ONE `click` listener on `root`: an open arrow calls `onMove({ list, id, dir })`; a greyed arrow or an unknown direction calls nothing; returns `unbind()` (an `AbortController`) |
+| `focusAfter(root, { list, id, dir })` | after the redraw: the focus on the same-direction arrow of the moved element (matched by `list` AND `id`, so the same identifier in two lists is safe), or on the other one when that one closed (the element reached the edge); returns the focused button or `null` (alone in its list: nothing open) |
+| `TEXTS`, `DIRS` | the block's words in four languages (the two arrows, the group name, the `aria-label`s, the two edge titles); `['up', 'down']`, frozen |
+
+**The module declares** `'../../frame/lib/reorder.js'` in `meta.files` (I26). **CSS** (`frame/design/primitives.css`, tokens only): `.f-reorder` (a flex row, `--sog-gap-s`), `.f-reorder-btn` (equal width, `--sog-touch` = 44 px high); the greyed look is the common `button:disabled`. The module's own « ＋ » button sits in the same row if it wants (the mock-up's `.mv` bar); the block does not draw it. Bench `frame/lib/test/reorder.html` (A364), demonstration `frame/lib/test/reorder_demo.html` — the three lists of the mock-up (A365). The module's own cases (the Itinéraire list, the drawers' order in the file) are Création's.
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

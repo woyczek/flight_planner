@@ -1,0 +1,349 @@
+<!doctype html>
+<!-- Banc du bloc commun des flèches « Plus tôt » / « Plus tard » (frame/lib/reorder.js, SOG-0482) : le geste pur (move, moveId, canMove) sur les trois listes de la maquette de l'itinéraire (la route de départ, la suite
+     d'un tiroir, les tiroirs entre eux), les deux flèches (arrowsHtml : la flèche d'un bord grisée avec son titre, jamais cachée ; textes échappés ; quatre langues), l'écouteur délégué (bind : une flèche ouverte appelle,
+     une grisée ou un sens inconnu non), le focus rendu après le redessin (focusAfter). Page nue ; window.__reorderBench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>reorder — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<div id="stage"></div>
+<script type="module">
+  import {
+    DIRS,
+    TEXTS,
+    canMove,
+    move,
+    moveId,
+    arrowsHtml,
+    bind,
+    focusAfter
+  } from '../reorder.js?v=0';
+  const rows = [],
+    out = document.getElementById('out'),
+    stage = document.getElementById('stage');
+  window.__reorderBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__reorderBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  const eq = (name, got, want) => ck(name, J(got) === J(want), `got ${J(got)}, want ${J(want)}`);
+  const parse = h => new DOMParser().parseFromString(`<body>${h}</body>`, 'text/html').body;
+
+  // ---- canMove : les flèches ouvertes ------------------------------------------------------------------
+  eq('une liste de trois : le premier ne remonte pas, le dernier ne descend pas', [canMove(3, 0), canMove(3, 1), canMove(3, 2)], [{
+    up: false,
+    down: true
+  }, {
+    up: true,
+    down: true
+  }, {
+    up: true,
+    down: false
+  }]);
+  eq('un élément seul dans sa liste : les deux flèches fermées', canMove(1, 0), {
+    up: false,
+    down: false
+  });
+  eq('un indice qui n\'en est pas un (hors liste, fraction, texte, NaN, négatif, liste vide) : rien d\'ouvert', [canMove(3, 3), canMove(3, -
+    1), canMove(3, 1.5), canMove(3, '1'), canMove(3, NaN), canMove(0, 0), canMove('3', 1), canMove(undefined, undefined)].map(x => x
+    .up || x.down), [false, false, false, false, false, false, false, false]);
+
+  // ---- move : un NOUVEAU tableau, la liste n'est jamais modifiée ----------------------------------------
+  const L = ['a', 'b', 'c', 'd'];
+  eq('move down : b passe après c', move(L, 1, 'down'), ['a', 'c', 'b', 'd']);
+  eq('move up : c passe avant b', move(L, 2, 'up'), ['a', 'c', 'b', 'd']);
+  eq('la liste d\'origine n\'est pas modifiée', L, ['a', 'b', 'c', 'd']);
+  ck('le résultat est un autre tableau', move(L, 1, 'down') !== L);
+  eq('le bord : le premier ne remonte pas, le dernier ne descend pas (null)', [move(L, 0, 'up'), move(L, 3, 'down')], [null, null]);
+  eq('un sens illisible, un indice illisible, ce qui n\'est pas une liste : null', [move(L, 1, 'left'), move(L, 1, undefined), move(L, 9,
+    'up'), move(L, 1.2, 'up'), move('abc', 1, 'up'), move(null, 0, 'up'), move({
+    length: 3
+  }, 1, 'up')], [null, null, null, null, null, null, null]);
+  eq('deux fois de suite (down puis up) : on retrouve l\'ordre', move(move(L, 1, 'down'), 2, 'up'), L);
+  eq('les éléments sont rangés, jamais copiés : un objet reste le même objet', (() => {
+    const o = {
+        id: 'x'
+      },
+      r = move([{
+        id: 'w'
+      }, o], 1, 'up');
+    return r[0] === o;
+  })(), true);
+
+  // ---- moveId : le même geste par identifiant ----------------------------------------------------------
+  const drawers = [{
+    id: 'T1',
+    suite: ['PT2']
+  }, {
+    id: 'T2',
+    suite: []
+  }, {
+    id: 'T3',
+    suite: ['PT9', 'PT10']
+  }];
+  const r1 = moveId(drawers, 'T1', 'down');
+  eq('un tiroir bouge AVEC sa suite (l\'élément contient sa suite)', [r1.items.map(x => x.id), r1.items[1].suite, r1.from, r1.to], [
+    ['T2', 'T1', 'T3'],
+    ['PT2'], 0, 1
+  ]);
+  eq('moveId : le bord, l\'identifiant inconnu, un sens inconnu : null', [moveId(drawers, 'T1', 'up'), moveId(drawers, 'T3', 'down'),
+    moveId(drawers, 'T9', 'up'), moveId(drawers, 'T2', 'sideways')
+  ], [null, null, null, null]);
+  eq('moveId : idOf donné, identifiant numérique lu d\'un data-id (texte)', moveId([{
+    n: 7
+  }, {
+    n: 8
+  }], '8', 'up', x => x.n).items.map(x => x.n), [8, 7]);
+  eq('moveId : ce qui n\'est pas une liste → null', [moveId(null, 'a', 'up'), moveId('abc', 'a', 'up')], [null, null]);
+  eq('les trois listes de la maquette : la route de départ finit par TARGET (« Plus tard » fermé), PT2 seul (rien), les tiroirs 1 à 5', [
+    canMove(3, 2).down, canMove(1, 0), canMove(5, 0).up, canMove(5, 4).down
+  ], [false, {
+    up: false,
+    down: false
+  }, false, false]);
+
+  // ---- arrowsHtml ----------------------------------------------------------------------------------------
+  const one = (o) => parse(arrowsHtml(o)).querySelector('.f-reorder');
+  let g = one({
+    lang: 'fr',
+    list: 'route',
+    id: 'PT1',
+    n: 3,
+    i: 1,
+    name: 'PT1 · Point un'
+  });
+  let b = [...g.querySelectorAll('button')];
+  eq('deux boutons, « ↑ Plus tôt » puis « ↓ Plus tard », des vrais boutons (type=button)', [b.map(x => x.textContent), b.map(x => x.type), b
+    .map(x => x.dataset.reorder)
+  ], [
+    ['↑ Plus tôt', '↓ Plus tard'],
+    ['button', 'button'],
+    ['up', 'down']
+  ]);
+  eq('au milieu : les deux ouvertes, sans titre', [b.map(x => x.disabled), b.map(x => x.hasAttribute('title'))], [
+    [false, false],
+    [false, false]
+  ]);
+  eq('la liste et l\'identifiant portés par chaque flèche', b.map(x => [x.dataset.list, x.dataset.id]), [
+    ['route', 'PT1'],
+    ['route', 'PT1']
+  ]);
+  eq('le groupe et chaque flèche nomment l\'élément pour un lecteur d\'écran', [g.getAttribute('role'), g.getAttribute('aria-label'), b.map(
+    x => x.getAttribute('aria-label'))], ['group', 'Changer la place : PT1 · Point un', ['PT1 · Point un : plus tôt',
+    'PT1 · Point un : plus tard'
+  ]]);
+  g = one({
+    lang: 'fr',
+    list: 'route',
+    id: 'TARGET',
+    n: 3,
+    i: 2,
+    why: {
+      down: 'La limite du tiroir 1 : retirez de l\'itinéraire, puis ＋ sous la ligne voulue'
+    }
+  });
+  b = [...g.querySelectorAll('button')];
+  eq('le dernier : « ↓ Plus tard » est GRISÉ (présent, jamais caché) avec le titre du module', [b.length, b.map(x => x.disabled), b[1]
+    .title, b[0].hasAttribute('title')
+  ], [2, [false, true], 'La limite du tiroir 1 : retirez de l\'itinéraire, puis ＋ sous la ligne voulue', false]);
+  g = one({
+    lang: 'fr',
+    list: 'suite',
+    id: 'PT2',
+    n: 1,
+    i: 0,
+    why: {
+      up: 'Seul lieu de la suite',
+      down: 'Seul lieu de la suite'
+    }
+  });
+  b = [...g.querySelectorAll('button')];
+  eq('seul dans sa liste : les deux grisées, chacune avec son titre', [b.map(x => x.disabled), b.map(x => x.title)], [
+    [true, true],
+    ['Seul lieu de la suite', 'Seul lieu de la suite']
+  ]);
+  g = one({
+    lang: 'en',
+    list: 'drawers',
+    id: 'T1',
+    n: 5,
+    i: 0
+  });
+  b = [...g.querySelectorAll('button')];
+  eq('sans texte du module, le titre du bloc (en anglais ici) ; sans nom, pas d\'aria-label', [b[0].disabled, b[0].title, b[1].disabled, b
+    .map(x => x.hasAttribute('aria-label')), g.hasAttribute('aria-label')
+  ], [true, 'Already first in its list', false, [false, false], false]);
+  const texts = {};
+  for (const lang of ['fr', 'en', 'de', 'es']) {
+    const bb = [...one({
+      lang,
+      list: 'l',
+      id: 'x',
+      n: 2,
+      i: 1
+    }).querySelectorAll('button')];
+    texts[lang] = [bb[0].textContent, bb[1].textContent, bb[1].title];
+  }
+  eq('les quatre langues : les flèches et le titre d\'un bord', texts, {
+    fr: ['↑ Plus tôt', '↓ Plus tard', 'Déjà en dernière place de sa liste'],
+    en: ['↑ Earlier', '↓ Later', 'Already last in its list'],
+    de: ['↑ Früher', '↓ Später', 'Schon an letzter Stelle seiner Liste'],
+    es: ['↑ Antes', '↓ Después', 'Ya es el último de su lista']
+  });
+  eq('une langue inconnue : le français', one({
+    lang: 'xx',
+    list: 'l',
+    id: 'x',
+    n: 2,
+    i: 0
+  }).querySelector('button').textContent, '↑ Plus tôt');
+  eq('TEXTS : quatre langues pour chaque texte', Object.entries(TEXTS).filter(([, v]) => !Array.isArray(v) || v.length !== 4 || v.some(s =>
+    !s)).map(([k]) => k), []);
+  const hostile = '"><img src=x onerror=window.__pwn=1>\u0007<b>';
+  const h = parse(arrowsHtml({
+    lang: 'fr',
+    list: hostile,
+    id: hostile,
+    n: 3,
+    i: 1,
+    name: hostile,
+    why: {
+      up: hostile,
+      down: hostile
+    }
+  }));
+  eq('un texte hostile (identifiant, liste, nom) reste du texte : aucune balise de plus, aucun attribut de plus', [h.querySelectorAll(
+      'img, b, script').length, [...h.querySelectorAll('button')].every(x => x.attributes.length <= 7), h.querySelectorAll('button')
+    .length, window.__pwn
+  ], [0, true, 2, undefined]);
+  const h2 = parse(arrowsHtml({
+    lang: 'fr',
+    list: 'l',
+    id: 'x',
+    n: 1,
+    i: 0,
+    why: {
+      up: hostile,
+      down: 'x'.repeat(5000)
+    }
+  }));
+  eq('un titre hostile est du texte et la longueur est bornée (200)', [h2.querySelectorAll('img').length, h2.querySelectorAll('button')[1]
+    .title.length
+  ], [0, 200]);
+  eq('les entrées illisibles : deux flèches fermées, rien d\'autre', [...parse(arrowsHtml({
+    n: 'x',
+    i: {}
+  })).querySelectorAll('button')].map(x => x.disabled), [true, true]);
+  eq('sans argument : un groupe de deux flèches fermées', [...parse(arrowsHtml()).querySelectorAll('button')].map(x => x.disabled), [true,
+    true
+  ]);
+
+  // ---- bind : l'écouteur délégué ---------------------------------------------------------------------------
+  const calls = [];
+  stage.innerHTML = `<div id="root">${arrowsHtml({ lang: 'fr', list: 'route', id: 'A', n: 3, i: 0 })}${arrowsHtml({ lang: 'fr', list: 'route', id: 'B', n: 3, i: 1 })}${arrowsHtml({ lang: 'fr', list: 'drawers', id: 'B', n: 2, i: 1 })}<p id="away">x</p><button id="forged" data-reorder="sideways" data-list="route" data-id="A">?</button></div>`;
+  const root = stage.querySelector('#root');
+  const unbind = bind(root, {
+    onMove: m => calls.push(m)
+  });
+  const btn = (list, id, dir) => root.querySelector(`button[data-list="${list}"][data-id="${id}"][data-reorder="${dir}"]`);
+  btn('route', 'B', 'down').click();
+  eq('une flèche ouverte appelle onMove avec la liste, l\'identifiant et le sens', calls, [{
+    list: 'route',
+    id: 'B',
+    dir: 'down'
+  }]);
+  btn('route', 'A', 'up').click();
+  btn('drawers', 'B', 'down').click();
+  eq('une flèche grisée n\'appelle rien', calls.length, 1);
+  root.querySelector('#forged').click();
+  root.querySelector('#away').click();
+  eq('un sens inconnu, un clic ailleurs : rien', calls.length, 1);
+  btn('drawers', 'B', 'up').click();
+  eq('la même clé dans une autre liste : la liste est dite', calls[1], {
+    list: 'drawers',
+    id: 'B',
+    dir: 'up'
+  });
+  unbind();
+  btn('route', 'B', 'up').click();
+  eq('après unbind : plus d\'appel', calls.length, 2);
+  eq('onMove absent ou illisible : aucune erreur', (() => {
+    try {
+      const u = bind(root, {});
+      btn('route', 'B', 'up').click();
+      const u2 = bind(root);
+      u();
+      u2();
+      return 'ok';
+    } catch (e) {
+      return String(e);
+    }
+  })(), 'ok');
+
+  // ---- focusAfter : le focus après le redessin ---------------------------------------------------------------
+  const draw = (items, list) => items.map((id, i) => arrowsHtml({
+    lang: 'fr',
+    list,
+    id,
+    n: items.length,
+    i
+  })).join('');
+  stage.innerHTML = `<div id="r2">${draw(['a', 'b', 'c'], 'route')}${draw(['b', 'z'], 'suite')}</div>`;
+  const r2 = stage.querySelector('#r2');
+  let f = focusAfter(r2, {
+    list: 'route',
+    id: 'b',
+    dir: 'down'
+  });
+  eq('le focus sur la flèche du même sens de l\'élément', [f && f.dataset.id, f && f.dataset.reorder, f && f.dataset.list, document
+    .activeElement === f
+  ], ['b', 'down', 'route', true]);
+  r2.innerHTML = draw(['b', 'a', 'c'], 'route');
+  f = focusAfter(r2, {
+    list: 'route',
+    id: 'b',
+    dir: 'up'
+  });
+  eq('l\'élément est arrivé au bord : la flèche du même sens est fermée, le focus va sur l\'autre', [f && f.dataset.reorder, f && f
+    .disabled, document.activeElement === f
+  ], ['down', false, true]);
+  r2.innerHTML = draw(['b'], 'route');
+  f = focusAfter(r2, {
+    list: 'route',
+    id: 'b',
+    dir: 'up'
+  });
+  eq('seul dans sa liste : aucune flèche ouverte, pas de focus (null)', f, null);
+  eq('un identifiant inconnu, une autre liste : null', [focusAfter(r2, {
+    list: 'route',
+    id: 'nope',
+    dir: 'up'
+  }), focusAfter(r2, {
+    list: 'other',
+    id: 'b',
+    dir: 'up'
+  })], [null, null]);
+  r2.innerHTML = draw(['a', 'b', 'c'], 'route') + draw(['b', 'z'], 'suite');
+  f = focusAfter(r2, {
+    list: 'suite',
+    id: 'b',
+    dir: 'down'
+  });
+  eq('le même identifiant dans deux listes : la liste choisit', [f.dataset.list, f.dataset.reorder], ['suite', 'down']);
+  eq('DIRS est figé', [Object.isFrozen(DIRS), DIRS], [true, ['up', 'down']]);
+
+  window.__reorderBench.done = true;
+  out.append(`\n${window.__reorderBench.pass} passed, ${window.__reorderBench.fail} failed\n`);
+</script>
+</body>
+</html>
