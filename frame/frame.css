@@ -1636,10 +1636,6 @@ p.f-back {
   flex-wrap: wrap;
   gap: 4px 8px
 }
-.f-rc-path [data-path-all][disabled] {
-  opacity: .5;
-  cursor: not-allowed
-}
 .f-rc-path>summary [data-summary-note] {
   flex-basis: 100%
 }
