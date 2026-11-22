@@ -191,6 +191,10 @@ export const ROWS = {
     '{zone}: Daten vom {cycle}, am Flugdatum veraltet — betroffene Luftstraßen: {routes}',
     '{zone}: datos del {cycle}, caducados en la fecha del vuelo — aerovías afectadas: {routes}'
   ],
+  // SOG-0541 : les routes belges d'un jeu d'un cycle passé, avec le jour du dépôt du jeu (mots de l'ergonome)
+  staleBe: ['Routes belges d’un cycle passé (déposées le {date}).', 'Belgian routes of a past cycle (deposited {date}).',
+    'Belgische Routen eines vergangenen Zyklus (hinterlegt am {date}).', 'Rutas belgas de un ciclo pasado (depositadas el {date}).'
+  ],
   stale_cycle0: ['{zone} : données du {cycle}, périmées à la date du vol',
     '{zone}: data of {cycle}, out of date on the date of the flight',
     '{zone}: Daten vom {cycle}, am Flugdatum veraltet', '{zone}: datos del {cycle}, caducados en la fecha del vuelo'
@@ -230,6 +234,13 @@ function zoneName(z, lang) {
   } catch {
     return code;
   }
+}
+/** SOG-0541 : un jour AAAA-MM-JJ lisible (une entrée non fiable) — année 2000 à 2100, un jour qui existe. */
+function isDay(d) {
+  const m = typeof d === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(d) : null;
+  if (!m || +m[1] < 2000 || +m[1] > 2100) return false;
+  const x = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return x.getUTCMonth() === +m[2] - 1 && x.getUTCDate() === +m[3];
 }
 /** Une date ISO (AAAA-MM-JJ) en date courte de l'écran ; la chaîne telle quelle sinon. */
 function dayOf(d, lang) {
@@ -366,6 +377,10 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
       });
     }
     case 'stale_cycle': {
+      // SOG-0541 : la Belgique avec le jour du dépôt de son jeu (AAAA-MM-JJ, année 2000-2100, un vrai jour) ; sinon la phrase générique
+      if (String(v.zone).toLowerCase() === 'be' && isDay(v.deposited)) return t(ROWS.staleBe, {
+        date: dayOf(v.deposited, lang)
+      });
       if (!has(v.zone) || !has(v.cycle)) return fallback;
       const routes = Array.isArray(v.routes) ? v.routes.filter(has) : [];
       return t(routes.length ? ROWS.stale_cycle : ROWS.stale_cycle0, {

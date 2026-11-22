@@ -2537,3 +2537,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the list: the variants are added under it and the list does not jump (SOG-0296; F109, F117, F218 unchanged). « conforme » is one word on the route (`rConformShort`) and explained once under « Calculé à »
   (`rConformLine`, with « Seul Eurocontrol valide un plan. »). « pris » becomes « choisie » / « Itinéraire choisi », the word of
   « Choisir ». A point placed from X-Plane serves the computation only. F305 red before; F297 changed on purpose.
+- **22 Nov 2026 — Belgian routes of a past cycle say the day their set was deposited** (SOG-0541, the relay; AeroDB e4a583cae:
+  `stale_cycle` carries `deposited` for zone `be`). With a readable `deposited` (AAAA-MM-JJ, year 2000-2100, a real day) the reason
+  reads the ergonomist's words « Routes belges d’un cycle passé (déposées le {date}). », the date through `dayOf` like the other dates of
+  the reasons; without it, or unreadable, the generic `stale_cycle` sentence is unchanged (never the raw value). Case F306, red before.
