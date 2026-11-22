@@ -220,9 +220,10 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
 <div id="app">
 <details class="mockbar" data-mockbar>
   <summary><span class="note" data-statename>Maquette</span><span class="w" role="group" aria-label="Largeur montrée"><button type="button" data-w="390" aria-pressed="false">390</button><button type="button" data-w="1280" aria-pressed="false">1280</button></span></summary>
-  <p>L'itinéraire, maquette CORRIGÉE après la relecture de l'ergonome (21/11, RELECTURE_MAQUETTE_ITINERAIRE_2026-11-21.md) — rien n'est écrit ; mission X-001A inventée ; la carte est un dessin d'attente. États : <a href="#itin">itinéraire</a> · <a href="#tiroir">un tiroir et sa clé</a> · <a href="#bande">la bande et son ＋</a> · <a href="#hors">hors itinéraire</a> · <a href="#neuve">mission neuve</a> · <a href="#annuler">annuler dans la ligne du titre</a> · <a href="#cadre">le Cadre</a>.</p>
+  <p>L'itinéraire, maquette CORRIGÉE après la relecture de l'ergonome (21/11, RELECTURE_MAQUETTE_ITINERAIRE_2026-11-21.md) — rien n'est écrit ; mission X-001A inventée ; la carte est un dessin d'attente. États : <a href="#itin">itinéraire</a> · <a href="#tiroir">un tiroir et sa clé</a> · <a href="#bande">la bande et son ＋</a> · flèches au bord : <a href="#suite">la suite d'un tiroir</a>, <a href="#premier">le premier tiroir</a>, <a href="#dernier">le dernier tiroir</a> ·<a href="#hors">hors itinéraire</a> · <a href="#neuve">mission neuve</a> · <a href="#annuler">annuler dans la ligne du titre</a> · <a href="#cadre">le Cadre</a>.</p>
   <p>Ce qui change depuis 1623c2bdb : la clé est dite DANS la ligne du tiroir (plus de ligne de clé en retrait) ; l'intitulé « Au départ — visible par le pilote » marque la limite ; les flèches ne franchissent pas la limite d'un tiroir ; le « ＋ » est dans la bande de la ligne choisie, sinon au-dessus de l'Arrivée ; pas d'« Objet » au menu ; « Hors itinéraire » dit ce qui cite chaque lieu ; plus de ✓ ni de « ! » dans les onglets ; « ↶ ↷ » dans la ligne du titre ; Départ et Arrivée dans leur ligne, plus dans le Cadre ; le pied dit « Fermer ».</p>
   <p>Le champ « Nom » d'un point, d'une cible, d'un rendez-vous, du Départ et de l'Arrivée est le champ commun de la suite (createAdField : un code de la base ou un nom libre), comme aujourd'hui. Une flèche au bord de sa liste est GRISÉE, jamais cachée (TARGET : « ↓ Plus tard »).</p>
+  <p>Les flèches (relecture § 4 (a), 21/11) : TROIS listes simples, et aucune flèche ne franchit une limite. (1) La route du départ, de la première étape à la dernière avant « Les tiroirs » : TARGET, dernière étape, a « ↓ » grisé (état bande). (2) La suite de chaque tiroir, à part : PT2, seul dans la suite du tiroir 1, a ses deux flèches grisées (état suite). (3) Les tiroirs entre eux, chacun avec sa suite : le tiroir 1 a « ↑ » grisé (état premier), le tiroir 5 a « ↓ » grisé (état dernier). Départ et Arrivée n'ont pas de flèches. Pour changer un lieu de liste : « Retirer de l'itinéraire », puis « ＋ » sous la ligne voulue.</p>
 </details>
 <div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
 <div class="page">
@@ -230,7 +231,7 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
     <div class="titleline"><div class="crumb">Missions › Registre › Atelier</div>
       <span class="undo" role="group" aria-label="Annuler et rétablir"><button class="ic" aria-label="Annuler le geste" title="Annuler le geste" data-undo><svg><use href="#i-undo"/></svg></button><button class="ic" disabled aria-label="Rétablir" title="Rétablir"><svg><use href="#i-redo"/></svg></button></span>
     </div>
-    <h1 data-only="itin tiroir bande hors annuler cadre">X-001A · Recherche en baie</h1>
+    <h1 data-only="itin tiroir bande hors annuler cadre suite premier dernier">X-001A · Recherche en baie</h1>
     <h1 data-only="neuve">Nouvelle mission</h1>
   </div>
   <div class="cols">
@@ -248,7 +249,7 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
         <button class="btn">Essayer les clés</button>
       </div>
       <div class="emap">
-        <svg class="draw" viewBox="0 0 820 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-only="itin tiroir bande hors annuler cadre">
+        <svg class="draw" viewBox="0 0 820 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-only="itin tiroir bande hors annuler cadre suite premier dernier">
           <rect width="820" height="430" fill="#e9efe6"/>
           <path d="M0 330 C120 300 210 370 330 352 S560 280 650 330 820 360 820 360 V430 H0Z" fill="#cfe0ee"/>
           <path d="M50 90 C170 60 280 130 420 100 S650 40 780 110" fill="none" stroke="#c9d3c2" stroke-width="12" stroke-linecap="round"/>
@@ -265,6 +266,7 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
           <rect x="605" y="281" width="10" height="10" fill="#59636e"/><text x="622" y="302" font-size="14" fill="#1b1f24">PT2</text>
           <g data-only="tiroir"><circle cx="498" cy="262" r="26" fill="none" stroke="#1a6fd8" stroke-width="3"/></g>
           <g data-only="bande"><circle cx="458" cy="214" r="20" fill="none" stroke="#1a6fd8" stroke-width="3"/></g>
+          <g data-only="suite"><circle cx="610" cy="286" r="20" fill="none" stroke="#1a6fd8" stroke-width="3"/></g>
         </svg>
         <svg class="draw" viewBox="0 0 820 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-only="neuve">
           <rect width="820" height="430" fill="#e9efe6"/>
@@ -285,7 +287,7 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
       </nav>
 
       <!-- L'ITINÉRAIRE d'une mission existante -->
-      <section id="p-itin" aria-label="Itinéraire" data-only="itin tiroir bande hors annuler cadre">
+      <section id="p-itin" aria-label="Itinéraire" data-only="itin tiroir bande hors annuler cadre suite premier dernier">
         <div class="itin">
           <div class="lim"><h3>Au départ — visible par le pilote</h3></div>
           <div class="it"><span class="kd end">DÉP</span><span class="tx"><b>XTST · Base Test</b><small>45°00′N 1°00′E</small></span><span></span></div>
@@ -293,7 +295,7 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
           <div class="it"><span class="kd">ZONE</span><span class="tx"><b>ZONE-1 · Secteur nord</b><small>recherche · 5 km · clé du tiroir 1</small></span><button class="hd" aria-label="Déplacer ZONE-1">⋮⋮</button></div>
 
           <!-- TARGET : ligne ordinaire, ou choisie avec sa bande (dernière étape avant le tiroir 1 : « ↓ Plus tard » ne franchit pas la limite) -->
-          <div data-only="itin tiroir hors annuler cadre"><div class="it"><span class="kd">CIBLE</span><span class="tx"><b>TARGET · Cible d'essai</b><small>44°36′N 1°24′E</small></span><button class="hd" aria-label="Déplacer TARGET">⋮⋮</button></div></div>
+          <div data-only="itin tiroir hors annuler cadre suite premier dernier"><div class="it"><span class="kd">CIBLE</span><span class="tx"><b>TARGET · Cible d'essai</b><small>44°36′N 1°24′E</small></span><button class="hd" aria-label="Déplacer TARGET">⋮⋮</button></div></div>
           <div data-only="bande" class="selblock">
             <div class="it sel" aria-current="true"><span class="kd">CIBLE</span><span class="tx"><b>TARGET · Cible d'essai</b><small>44°36′N 1°24′E</small></span><button class="hd" aria-label="Déplacer TARGET">⋮⋮</button></div>
             <div class="mv"><button>↑ Plus tôt</button><button disabled title="La limite du tiroir 1 : retirez de l'itinéraire, puis ＋ sous la ligne voulue">↓ Plus tard</button><button class="plus" aria-label="Ajouter après cette ligne" aria-expanded="true">＋</button></div>
@@ -310,12 +312,27 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
           </div>
 
           <div class="lim"><h3>Les tiroirs — cachés jusqu'à leur ouverture</h3></div>
-          <!-- Tiroir 1 : sa clé est l'étape ZONE-1, au-dessus -->
-          <div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 1 · Entrée du secteur</b><small>clé : zone de passage · ZONE-1</small></span><button class="hd" aria-label="Déplacer le tiroir 1">⋮⋮</button></div>
-          <div class="it in"><span class="kd">PT</span><span class="tx"><b>PT2 · Point deux</b><small>suite de route du tiroir 1</small></span><button class="hd" aria-label="Déplacer PT2">⋮⋮</button></div>
+          <!-- Trois listes simples, jamais une flèche à travers une limite (relecture § 4 (a), 21/11) : la route du départ
+               (état bande : TARGET), la suite de chaque tiroir (état suite : PT2), les tiroirs entre eux (états premier et
+               dernier). Une flèche au bord de SA liste est grisée, jamais cachée. -->
+          <!-- Tiroir 1 : sa clé est l'étape ZONE-1, au-dessus ; premier des tiroirs, « ↑ Plus tôt » grisé -->
+          <div data-only="itin tiroir bande hors annuler cadre suite dernier"><div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 1 · Entrée du secteur</b><small>clé : zone de passage · ZONE-1</small></span><button class="hd" aria-label="Déplacer le tiroir 1">⋮⋮</button></div></div>
+          <div data-only="premier" class="selblock">
+            <div class="it tiroir sel" aria-current="true"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 1 · Entrée du secteur</b><small>clé : zone de passage · ZONE-1</small></span><button class="hd" aria-label="Déplacer le tiroir 1">⋮⋮</button></div>
+            <div class="mv"><button disabled title="Le premier tiroir : rien ne s'ouvre avant lui">↑ Plus tôt</button><button>↓ Plus tard</button><button class="plus" aria-label="Ajouter après ce tiroir">＋</button></div>
+            <div class="fiche"><p class="f-note">La fiche du tiroir 1 (comme pour le tiroir 2) ; « ↓ Plus tard » le place après le tiroir 2, avec sa suite PT2.</p></div>
+          </div>
+          <!-- PT2 : seul lieu de la suite du tiroir 1, les deux flèches grisées -->
+          <div data-only="itin tiroir bande hors annuler cadre premier dernier"><div class="it in"><span class="kd">PT</span><span class="tx"><b>PT2 · Point deux</b><small>suite de route du tiroir 1</small></span><button class="hd" aria-label="Déplacer PT2">⋮⋮</button></div></div>
+          <div data-only="suite" class="selblock">
+            <div class="it in sel" aria-current="true"><span class="kd">PT</span><span class="tx"><b>PT2 · Point deux</b><small>suite de route du tiroir 1</small></span><button class="hd" aria-label="Déplacer PT2">⋮⋮</button></div>
+            <div class="mv"><button disabled title="Seul lieu de la suite du tiroir 1 : retirez de l'itinéraire, puis ＋ sous la ligne voulue">↑ Plus tôt</button><button disabled title="Seul lieu de la suite du tiroir 1 : retirez de l'itinéraire, puis ＋ sous la ligne voulue">↓ Plus tard</button><button class="plus" aria-label="Ajouter après cette ligne">＋</button></div>
+            <div class="mvlink"><button class="link">Retirer de l'itinéraire</button></div>
+            <div class="fiche"><p class="f-note">La fiche de PT2 (comme pour TARGET). Le « ＋ » ajoute un lieu dans la suite du tiroir 1, sous PT2.</p></div>
+          </div>
 
           <!-- Tiroir 2 : la clé DANS sa ligne ; choisi, la fiche dit « La clé » avec la fiche de son objet -->
-          <div data-only="itin bande hors annuler cadre"><div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 2 · Objet repéré</b><small>clé : objet à trouver · OBJ-1 Naufragé</small></span><button class="hd" aria-label="Déplacer le tiroir 2">⋮⋮</button></div></div>
+          <div data-only="itin bande hors annuler cadre suite premier dernier"><div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 2 · Objet repéré</b><small>clé : objet à trouver · OBJ-1 Naufragé</small></span><button class="hd" aria-label="Déplacer le tiroir 2">⋮⋮</button></div></div>
           <div data-only="tiroir" class="selblock">
             <div class="it tiroir sel" aria-current="true"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 2 · Objet repéré</b><small>clé : objet à trouver · OBJ-1 Naufragé</small></span><button class="hd" aria-label="Déplacer le tiroir 2">⋮⋮</button></div>
             <div class="mv"><button>↑ Plus tôt</button><button>↓ Plus tard</button><button class="plus" aria-label="Ajouter après ce tiroir">＋</button></div>
@@ -337,7 +354,13 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
 
           <div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 3 · Au bout d'une heure</b><small>clé : heure · H + 60 min</small></span><button class="hd" aria-label="Déplacer le tiroir 3">⋮⋮</button></div>
           <div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b><span class="mk warn">!</span>Tiroir 4 · Retour</b><small>clé : arrivée au terrain · sans heure de repli</small></span><button class="hd" aria-label="Déplacer le tiroir 4">⋮⋮</button></div>
-          <div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 5 · Geste final</b><small>clé : geste du pilote</small></span><button class="hd" aria-label="Déplacer le tiroir 5">⋮⋮</button></div>
+          <!-- Tiroir 5 : dernier des tiroirs, « ↓ Plus tard » grisé (l'Arrivée ne bouge pas) -->
+          <div data-only="itin tiroir bande hors annuler cadre suite premier"><div class="it tiroir"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 5 · Geste final</b><small>clé : geste du pilote</small></span><button class="hd" aria-label="Déplacer le tiroir 5">⋮⋮</button></div></div>
+          <div data-only="dernier" class="selblock">
+            <div class="it tiroir sel" aria-current="true"><span class="kd key">TIROIR</span><span class="tx"><b>Tiroir 5 · Geste final</b><small>clé : geste du pilote</small></span><button class="hd" aria-label="Déplacer le tiroir 5">⋮⋮</button></div>
+            <div class="mv"><button>↑ Plus tôt</button><button disabled title="Le dernier tiroir : l'Arrivée reste à la fin">↓ Plus tard</button><button class="plus" aria-label="Ajouter après ce tiroir">＋</button></div>
+            <div class="fiche"><p class="f-note">La fiche du tiroir 5 (comme pour le tiroir 2).</p></div>
+          </div>
           <div data-only="itin hors annuler cadre"><button class="add" aria-label="Ajouter avant l'arrivée">＋</button></div>
           <div class="it"><span class="kd end">ARR</span><span class="tx"><b>XTSU · Base Test Sud</b><small>44°00′N 2°00′E</small></span><span></span></div>
 
@@ -396,11 +419,14 @@ html[data-w="1280"] body[data-tab=mission] #p-itin-neuve{display:none}
 
 <script>
 // Les états : chacun est une ancre. La largeur : celle de la fenêtre (390 sous 1000 px), ou fixée par le bouton de la barre.
-const STATES = ['itin', 'tiroir', 'bande', 'hors', 'neuve', 'annuler', 'cadre'],
+const STATES = ['itin', 'tiroir', 'bande', 'suite', 'premier', 'dernier', 'hors', 'neuve', 'annuler', 'cadre'],
   NAMES = {
     itin: 'Itinéraire : « Au départ — visible par le pilote », la clé dans la ligne du tiroir, « ＋ » au-dessus de l\'Arrivée',
     tiroir: 'Tiroir 2 choisi : sa clé dans sa ligne, la fiche de son objet dans le groupe « La clé »',
     bande: 'TARGET choisie : la bande ↑ ↓ ＋ (↓ ne franchit pas la limite du tiroir 1), le menu du ＋, « Retirer de l\'itinéraire »',
+    suite: 'PT2 choisi, seul dans la suite du tiroir 1 : ses deux flèches grisées, aucune ne sort de la suite',
+    premier: 'Tiroir 1 choisi, premier des tiroirs : « ↑ Plus tôt » grisé',
+    dernier: 'Tiroir 5 choisi, dernier des tiroirs : « ↓ Plus tard » grisé, l\'Arrivée reste à la fin',
     hors: '« Hors itinéraire » : ce qui cite chaque lieu ; « ! » seulement pour ce que rien ne cite',
     neuve: 'Mission neuve : Départ et Arrivée à remplir, un point ajouté « à placer », « Placer sur la carte »',
     annuler: '« ↶ ↷ » dans la ligne du titre, visibles dans les trois onglets (ici : Itinéraire)',
@@ -410,6 +436,9 @@ const STATES = ['itin', 'tiroir', 'bande', 'hors', 'neuve', 'annuler', 'cadre'],
     itin: 'Sélection — touchez un lieu pour le choisir.',
     tiroir: 'Tiroir 2 : sa clé, l\'objet OBJ-1, est cerclée.',
     bande: 'TARGET · Cible d\'essai.',
+    suite: 'PT2 · Point deux.',
+    premier: 'Tiroir 1 : sa clé, ZONE-1.',
+    dernier: 'Tiroir 5 : sa clé est un geste du pilote.',
     hors: 'Sélection — touchez un lieu pour le choisir.',
     neuve: 'PT1 · à placer : touchez la carte pour le placer.',
     annuler: 'Sélection — touchez un lieu pour le choisir.',
