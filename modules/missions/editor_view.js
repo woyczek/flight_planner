@@ -474,7 +474,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-list>.ms-atpart{display:block;width:100%;margin:0;border-radius:0;border-top:0;border-right:0;border-bottom:1px solid var(--sog-line,#ddd);text-align:left}
 [data-module="missions"] .ms-itin-out{margin:0;padding:10px 8px 4px;background:var(--sog-surface-2,#eef)}
 [data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 8px 0;background:var(--sog-surface-2,#eef);border-left:3px solid var(--sog-accent,#1a73e8);margin:0} /* la bande et la fiche : UN bloc, une seule barre */
+[data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 8px 0;background:color-mix(in srgb,var(--sog-accent,#1a73e8) 10%,var(--sog-surface,#fff));border-left:3px solid var(--sog-accent,#1a73e8);margin:0} /* la bande et la fiche : UN bloc, une seule barre */
 [data-module="missions"] .ms-itin-mv>button{min-height:44px}
 [data-module="missions"] .ms-itin-mv>.f-reorder{align-self:stretch} /* les deux flèches du bloc du cadre, à elles deux toute la largeur */
 [data-module="missions"] .ms-itin-lim{margin:0;padding:8px 8px 6px;font-size:var(--sog-size-s,13px);font-weight:600;color:var(--sog-muted,#555);background:var(--sog-surface-2,#eef);border-bottom:1px solid var(--sog-line,#ddd)} /* « Au départ — visible par le pilote » / « Les tiroirs — cachés jusqu'à leur ouverture » */
@@ -1006,27 +1006,20 @@ function edPlaceTexts(s, rows, doc) {
       EDTX.plKeyOf, {
         name: c.name
       })),
-    // ce que dit la ligne d'un lieu, les phrases de ce qui le cite (`cl`) à leur place — UNE source pour une étape de route (detail) et pour « Hors itinéraire » (outDetail)
-    // un objet à trouver : sa sorte, « caché au pilote », ce qui le cite, sa portée, sa position
-    // SOG-0521 : une station de retardant ne se « trouve » pas — sa ligne ne dit pas de portée
-    build = (r, cl) => r.kind === 'object' ? [ok(r.okind), s.tt(EDTX.plHidden), ...cl, r.range && r.okind !== 'refill' ? s.tt(
-      EDTX.plRangeIs, {
-        r: dec(s, r.range)
-      }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)].filter(Boolean).join(' · ') : [r.kind === 'zone' ? zk(r.zkind) :
-      '', r.role, ...cl, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
-        n: r.poly
-      }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
-        r: dec(s, r.radius)
-      }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
-        n: r.tot
-      }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, ...edLinePos(s, r))
-    ].filter(Boolean).join(' · '),
-    detail = (r, i) => build(r, r.kind === 'object' ? usedBy(i).length ? usedBy(i) : [s.tt(EDTX.itNoCite)] : r.kind === 'zone' ? usedBy(i) :
-      []);
-  // « Hors itinéraire » (lot 3) : tout lieu qui n'est pas une étape dit ce qui le cite — la carte qui le montre, la chronologie, la route d'une cible, un tiroir — ou « rien ne le cite : le pilote ne le
-  // verra pas » (avec « ! ») ; le reste de la ligne (la sorte, le rayon, la position) est celui des étapes
+    // ce que dit la ligne d'une ÉTAPE de route (les phrases de ce qui la cite, `cl`, à leur place) : sa sorte ou son rôle, sa forme, sa position
+    build = (r, cl) => [r.kind === 'zone' ? zk(r.zkind) : '', r.role, ...cl, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
+      n: r.poly
+    }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
+      r: dec(s, r.radius)
+    }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
+      n: r.tot
+    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, ...edLinePos(s, r))].filter(Boolean).join(
+      ' · '),
+    detail = (r, i) => build(r, r.kind === 'zone' ? usedBy(i) : []);
+  // « Hors itinéraire » (lot 3) : un lieu qui n'est NI une étape NI la clé d'un tiroir dit sa sorte ou son rôle et ce qui le cite — la carte qui le montre, la chronologie, la route d'une cible, un
+  // tiroir — ou « rien ne cite ce lieu : le pilote ne le verra pas » (avec « ! ») ; rien d'autre (pas de position, de rayon ni de portée : la fiche les dit)
   const cite = c => c.where === 'map' ? s.tt(EDTX.itCiteMap, {
-      name: c.name
+      n: ED.mapsOf(doc).findIndex(m => m.id === c.name) + 1 || ''
     }) : c.where === 'event' ? s.tt(EDTX.itCiteEvent) : c.where === 'objectRoute' ? s.tt(EDTX.itCiteTarget, {
       name: c.name
     }) : c.where === 'alert' ? s.tt(EDTX.itCiteAlert, {
@@ -1040,7 +1033,8 @@ function edPlaceTexts(s, rows, doc) {
       const who = e.veil ? [] : ED.citedBy(doc, rows, i).map(cite).filter(Boolean);
       return {
         bad: !who.length,
-        text: build(r, who.length ? who : [s.tt(EDTX.itNoCite)])
+        text: [r.kind === 'zone' ? zk(r.zkind) : r.kind === 'object' ? ok(r.okind) : r.role, ...(who.length ? who : [s.tt(EDTX.itNoCite)])]
+          .filter(Boolean).join(' · ')
       };
     };
   return {
@@ -2430,7 +2424,7 @@ function edKeyDrawerOf(s, e, i) {
       drows
     } = edItinLines(s, doc),
     r = rows[i];
-  if (!r || !['zone', 'object'].includes(r.kind) || lines.some(l => l.kind === 'place' && l.i === i && l.where !== 'out'))
+  if (!r || !['zone', 'object'].includes(r.kind) || lines.some(l => l.kind === 'place' && l.i === i))
     return ''; // une étape de route garde sa ligne et sa fiche
   const up = v => String(v ?? '').toUpperCase();
   return drows.find(d => d.key === r.kind && up(ED.refNow(d[r.kind], e.base, e.places)) === up(r.id))?.id || '';
@@ -3422,7 +3416,8 @@ function edDrawerHtml(s, doc) {
     at = rows.findIndex(r => r.id === e.sel),
     r = rows[at];
   if (!r) return '';
-  const places = e.places || ED.placesOf(doc),
+  // lot 3 : les lieux DE LA SÉANCE (créés ici s'ils ne le sont pas encore) — le lieu de la clé s'y retouche ; sans eux, la saisie d'un champ de la clé ne trouvait aucune ligne et se perdait
+  const places = edPlaces(e),
     now = id => ED.refNow(id, e.base, e.places), // l'identifiant d'aujourd'hui d'un lieu cité par le fichier
     label = p => [p.id, p.name].filter(Boolean).join(' · '),
     of = kind => places.filter(p => p.id && p.kind === kind).map(p => [p.id, label(p)]),

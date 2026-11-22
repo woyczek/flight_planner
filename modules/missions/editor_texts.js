@@ -44,22 +44,21 @@ export const EDTX = {
     'Die letzte Schublade: die Ankunft bleibt am Ende.',
     'El último cajón: la llegada se queda al final.'
   ],
-  itCiteMap: ['montré par la carte « {name} »', 'shown by the map “{name}”', 'von der Karte „{name}“ gezeigt',
-    'mostrado por el mapa «{name}»'
+  itCiteMap: ['sur la carte {n}', 'on map {n}', 'auf Karte {n}', 'en el mapa {n}'],
+  itCiteEvent: ['dans la chronologie', 'in the timeline', 'in der Chronologie', 'en la cronología'],
+  itCiteTarget: ['sur la route de la cible {name}', 'on the route of target {name}', 'auf der Route des Ziels {name}',
+    'en la ruta del objetivo {name}'
   ],
-  itCiteEvent: ['cité par la chronologie', 'cited by the timeline', 'von der Chronologie genannt', 'citado por la cronología'],
-  itCiteTarget: ['étape de la route de la cible {name}', 'stop on the route of target {name}', 'Station der Route des Ziels {name}',
-    'etapa de la ruta del objetivo {name}'
+  itCiteAlert: ['sur la route de l\'alerte {name}', 'on the route of alert {name}', 'auf der Route des Alarms {name}',
+    'en la ruta de la alerta {name}'
   ],
-  itCiteAlert: ['étape de la route de l\'alerte {name}', 'stop on the route of alert {name}', 'Station der Route des Alarms {name}',
-    'etapa de la ruta de la alerta {name}'
-  ],
-  itCiteDrawer: ['cité par le tiroir {name}', 'cited by drawer {name}', 'von Schublade {name} genannt', 'citado por el cajón {name}'],
+  itCiteDrawer: ['dans le tiroir {name}', 'in drawer {name}', 'in Schublade {name}', 'en el cajón {name}'],
   itAddSuite: ['Ajouter un lieu à la suite de route…', 'Add a place to the onward route…', 'Ort zur Folgeroute hinzufügen…',
     'Añadir un lugar a la ruta siguiente…'
   ], // jusqu'au « ＋ » de la bande (lot 4)
-  itNoCite: ['rien ne le cite : le pilote ne le verra pas', 'nothing cites it: the pilot will not see it',
-    'nichts nennt es: der Pilot sieht es nicht', 'nada lo cita: el piloto no lo verá'
+  itNoCite: ['rien ne cite ce lieu : le pilote ne le verra pas', 'nothing cites this place: the pilot will not see it',
+    'nichts nennt diesen Ort: der Pilot sieht ihn nicht',
+    'nada cita este lugar: el piloto no lo verá'
   ],
   plCited: ['{id} est encore cité par : {who}. « Supprimer quand même » le supprime avec ces citations.',
     '{id} is still cited by: {who}. “Delete anyway” deletes it with these citations.',
@@ -190,8 +189,6 @@ export const EDTX = {
     'Found only when the pilot declares it (« Object in sight »)',
     'Erst gefunden, wenn der Pilot es meldet („Objekt in Sicht“)', 'Encontrado solo cuando el piloto lo declara («Objeto a la vista»)'
   ],
-  plHidden: ['caché au pilote', 'hidden from the pilot', 'für den Piloten verborgen', 'oculto al piloto'],
-  plRangeIs: ['portée {r} NM', 'range {r} NM', 'Reichweite {r} NM', 'alcance {r} NM'],
   plMoving: ['cible mobile, gardée telle quelle', 'moving target, kept as it is', 'bewegliches Ziel, unverändert',
     'blanco móvil, conservado tal cual'
   ],

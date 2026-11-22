@@ -1642,8 +1642,8 @@ export function routeMoveStart(route, n, step) {
  *  départ dans son ordre (hors les ancres ORIGIN et DESTINATION, qui sont le départ et l'arrivée) ; puis, tiroir par tiroir dans l'ordre
  *  du fichier, une ligne de tiroir et, EN RETRAIT sous elle, chaque lieu de sa suite de route SEULEMENT (lot 3 : la clé d'un tiroir — une zone
  *  de passage, un objet à trouver — n'est PAS une ligne : elle est dite dans la ligne du tiroir et son lieu se modifie dans sa fiche) ; l'arrivée ;
- *  enfin « hors itinéraire » : tout lieu qui n'est pas une étape (un lieu que la clé d'un tiroir cite y figure : « clé du tiroir N » ; sa fiche est aussi
- *  dans celle de son tiroir). Un lieu cité deux fois a deux lignes (leur clé `at` les distingue). Un jeton qui ne désigne aucun lieu, ou un
+ *  enfin « hors itinéraire » : tout lieu qui n'est NI une étape NI la clé d'un tiroir (la clé n'est pas une ligne : elle est dite dans la ligne de son tiroir et son
+ *  lieu se modifie dans la fiche du tiroir ; une zone qui est étape ET clé garde sa ligne d'étape). Un lieu cité deux fois a deux lignes (leur clé `at` les distingue). Un jeton qui ne désigne aucun lieu, ou un
  *  lieu que `shown(i)` cache (l'atelier voilé), n'a pas de ligne. `rows` : les lignes des Lieux ; `route` : les jetons de la route du
  *  départ ; `drawers` : [{ id, key, zone, object, route }] dans l'ordre (vide en atelier voilé) ; `now(id)` : l'identifiant d'aujourd'hui
  *  d'un lieu cité par le fichier. Des entrées hostiles (un texte, null, un nombre) sont lues comme absentes : jamais d'exception.
@@ -1709,8 +1709,17 @@ export function itinRows(rows, route, drawers, o = {}) {
     });
   }
   if (ok(arr)) place('arr', arr);
+  // les lieux qu'un tiroir cite comme clé (une zone de passage, un objet à trouver) n'ont pas de ligne : dans la fiche de leur tiroir (« La clé ») et sur la carte, qui l'ouvre
+  const keyed = new Set();
+  for (const dr of Array.isArray(drawers) ? drawers : []) {
+    const kind = dr && dr.key === 'zone' ? 'zone' : dr && dr.key === 'object' ? 'object' : '';
+    if (!kind) continue;
+    const cited = up(now(dr[kind])),
+      ki = cited ? list.findIndex(r => r && r.kind === kind && r.id && up(r.id) === cited) : -1;
+    if (ki >= 0) keyed.add(ki);
+  }
   list.forEach((r, i) => {
-    if (ok(i) && !used.has(i)) place('out', i);
+    if (ok(i) && !used.has(i) && !keyed.has(i)) place('out', i);
   });
   return out;
 }
