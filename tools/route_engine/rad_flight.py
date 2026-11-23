@@ -194,7 +194,7 @@ def unread_spaces_issue(summary,limit=8):
 # SOG-0532 lot 2 : « dire ce qui n'est pas vérifié, sans noyer » : par État, le COMPTE des règles du RAD (annexe 2B) dont la CIBLE est volée et que le contrôle n'a pas pu décider (avec, par règle, la référence et la raison en CODE), et le COMPTE de celles qui ne visent qu'un espace que la base ne connaît pas ; jamais celles où la route n'apparaît que dans une condition.
 MAX_NV_STATES = 40
 MAX_NV_ITEMS = 40
-_SPACE = r'(?:[A-Z]{2,6}(?:FIR|UIR|CTA|UTA|FRA|ACC|SECT|TMA|CTR)[A-Z0-9]*|[A-Z]{3,6}(?:ZON|ZOC)[A-Z]?)'
+_SPACE = r'(?:[A-Z]{2,6}(?:FIR|UIR|CTA|UTA|FRA|ACC|SECT|TMA|CTR)[A-Z0-9]*|[A-Z]{3,6}(?:ZON|ZOC)[A-Z]?|(?:LFRR|LFBB|LFFF|LFMM|EDUU|EDGG|EDMM|EDYY|EGTT|EGPX|LECB|LECM|LIMM|LIRR|LSAG|LOVV|EBBU|EHAA|ELLX|LPPC|LGGG|LTAA|EKDK|ESAA|ENOR|EFIN|EPWW|LKAA|LZBB|LHCC|LRBB|LBSR|LYBA)[A-Z0-9]{1,6})'      # SOG-0576 : un SECTEUR d'un centre (LFRRN, LFBBUBDX : le code du centre, une ou plusieurs lettres) est un espace sans contour comme une FIR : LF2923 « VIA LFRRN » était rangée « unread » (aucune forme connue) au lieu de « espace sans contour »
 _SPACE_RE = re.compile(r'\b' + _SPACE + r'\b')
 _REASONS = (      # (code, cellule, motif) : la PREMIÈRE raison qui correspond est celle que la règle porte ; les autres suivent dans `reasons`
     ('zone_state', 9, re.compile(r'\b(?:NOT\s+ACT|ACT|NOT\s+AVBL|AVBL)\b')),

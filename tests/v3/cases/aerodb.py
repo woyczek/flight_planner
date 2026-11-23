@@ -20780,3 +20780,21 @@ def k529(c):
     c.eq((cut['cache']['hit'], n_cut, hand['cache']['hit'], n_hand), (False, 2, False, 3), 'an entry cut in two, then one whose signature is changed by hand, are IGNORED: the calculation is redone each time (and a good entry is written again)', what='damaged')
     c.eq((stale['cache']['hit'], n_stale), (False, 4), 'a file of the base that changes (its date) makes the entry stale: the answer is calculated again', what='stale')
     c.ok(kept_files <= 3, str(kept_files), 'the cache is BOUNDED in number: with a limit of three entries, five different requests leave three files at most')
+@case('K530', 'Route engine, SOG-0576 lot 1b: a level group that LOWERS the level is written where the control accepts it — a descent to FL240 that begins before a direct whose floor is FL245 (the free route of the United Kingdom) is written on the point AFTER that direct, not on its first point (« ADHAV/F240 DCT LEMGU » : the engine wrote a text that its own control refused: « sous le plancher FL245 », and Eurocontrol answered ROUTE165); and the sector of a centre (« VIA LFRRN ») is named « space without contour », no longer « unread » (LF2923)',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0576, the third real validation, error 8; the invariant « le moteur n\'écrit pas un texte que son propre contrôle refuse », the same family as SOG-0517 (2)): `level_marks` wrote the group on the point where the profile BEGINS the descent; a group holds from that point, so the next direct was flown below its floor. Unit case on invented legs (the same shape as EGLL → EIDW: FOXLA DCT LEMGU, then M17 LEMGU–VATRY, the descent from FL250 to FL240); the round trip of the real flights is in the replay (DECISIONS)',
+      )
+def k530(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine as E, rad_flight as RF
+    leg = lambda a, b, via='DCT', lower=None, upper=None: {'kind': 'AIRWAY' if via != 'DCT' else 'FRA', 'via': via, 'start': {'id': a}, 'end': {'id': b}, 'lower': lower, 'upper': upper}
+    legs = [leg('P1', 'P2', 'DCT', 24500, 66000), leg('P2', 'P3', 'DCT', 24500, 66000), leg('P3', 'P4', 'M17', 15500, 24500), leg('P4', 'P5', 'M17', 15500, 24500)]
+    change = lambda point, end: [{'point': point, 'end_point': end, 'from_ft': 25000, 'to_ft': 24000, 'kind': 'profile'}]
+    late = E.level_marks(legs, change('P2', 'P5'), None, 250)
+    c.eq(late, {2: 240}, 'the descent to FL240 begins at P2 where the direct P2–P3 has a floor of FL245: the group is written on P3 (the first leg that accepts FL240, the next ones too), NOT on P2 (red before: { 1: 240 }, the direct flown at FL240, below its floor)', what='late')
+    open_legs = [leg('P1', 'P2', 'DCT', 5000, 66000), leg('P2', 'P3', 'DCT', 5000, 66000), leg('P3', 'P4', 'M17', 15500, 24500)]
+    c.eq(E.level_marks(open_legs, change('P2', 'P4'), None, 250), {1: 240}, 'a descent whose first leg accepts the new level keeps its group where the profile begins (nothing changes for the routes that already round-trip)', what='kept')
+    row = lambda text: ['', '', '', 'ZZ1', '', '', '', '', text, 'H24']
+    c.eq((RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + '1. DEP NAT_GROUP & ARR (LFPN, LFPO)' + chr(10) + '2. VIA LFRRN')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + '1. VIA BOKNO')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + 'DEP LFBB VIA LFBBUBDX'))),
+         (['space_unread'], ['unread'], ['space_unread']), 'a sector of a centre (« VIA LFRRN », « VIA LFBBUBDX ») is named « space without contour » like a FIR (red before: « unread »); a point (« VIA BOKNO ») stays « unread »', what='reason')
