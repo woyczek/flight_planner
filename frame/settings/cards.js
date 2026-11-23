@@ -70,7 +70,7 @@
         <p class="f-muted" data-level-says title="${esc(t(T.levelShows, { m: shows(lvl) }))}"><b>${esc(t(name))}</b> — ${esc(t(desc))}</p>`;
     // la langue de l'écran (SOG-0477) : le choix enregistré sur cet appareil ; « Automatique » = la langue du navigateur ; les noms des langues sont écrits dans leur langue
     const saved = window.SogSettingsKit.savedLang(),
-      langBlock = `<h3>${esc(t(T.lang))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.lang))}">${[['auto', t(T.langAuto), ''], ['fr', 'Français', 'fr'], ['en', 'English', 'en'], ['de', 'Deutsch', 'de'], ['es', 'Español', 'es']].map(([k, n, l]) => `<label class="f-pill"><input type="radio" name="sogLang" data-lang-pick="${k}" ${saved === k ? 'checked' : ''}><span${l ? ` lang="${l}"` : ''}>${esc(n)}</span></label>`).join('')}</div>`;
+      langBlock = `<h3>${esc(t(T.lang))}</h3><select class="f-select" data-lang-select aria-label="${esc(t(T.lang))}">${[['auto', t(T.langAuto), ''], ['fr', 'Français', 'fr'], ['en', 'English', 'en'], ['de', 'Deutsch', 'de'], ['es', 'Español', 'es']].map(([k, n, l]) => `<option value="${k}" data-lang-pick="${k}"${l ? ` lang="${l}"` : ''}${saved === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
     const sets = c.designs?.() || [];
     let design = '';
     if (sets.length) {
@@ -82,7 +82,7 @@
         },
         desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '',
         on = id => (cur.applied || cur.design) === id;
-      design = `<h3>${esc(t(T.appearance))}</h3><div class="f-pills" role="group" aria-label="${esc(t(T.appearance))}">${sets.map(d => `<button type="button" class="f-pill" data-design-pick="${esc(d.id)}" aria-pressed="${on(d.id)}">${esc(t(d.label))}</button>`).join('')}</div>${desk}
+      design = `<h3>${esc(t(T.appearance))}</h3><select class="f-select" data-design-select aria-label="${esc(t(T.appearance))}">${sets.map(d => `<option value="${esc(d.id)}" data-design-pick="${esc(d.id)}"${on(d.id) ? ' selected' : ''}>${esc(t(d.label))}</option>`).join('')}</select>${desk}
         <h3>${esc(t(T.tone))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.tone))}">${['auto', 'day', 'night'].map(k => `<label class="f-pill"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}><span>${esc(t(T.tones[k]).replace(/\s*\(.*\)\s*$/, ''))}</span></label>`).join('')}</div>
         <details class="f-previews" data-previews><summary>${esc(t(T.previews))}</summary><div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-preview="${esc(d.id)}" aria-pressed="${on(d.id)}">
           <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>

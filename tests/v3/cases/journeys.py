@@ -430,7 +430,7 @@ def j5(c):
     before = design_probe(c)
     if c.count('[data-group="display"]') and not c.js("document.querySelector('[data-group=\"display\"]').open"):
         c.tap('[data-group="display"] > summary')     # Settings: the card sits in a folded group (SPEC 1)
-    c.tap('[data-design-pick="metro"]')
+    c.page.locator('[data-card="display"] select[data-design-select]').select_option('metro')     # the appearance is a list: it applies at the choice
     c.until("document.documentElement.dataset.design === 'metro'", what='the frame applies the design chosen')
     c.wait(500)
     after = design_probe(c)
@@ -454,12 +454,12 @@ def j5(c):
             c.tap('[data-group="display"] > summary')
         c.until("!!document.querySelector('[data-card=\"display\"] [data-lang-pick]')", timeout=10000, what='the language choice in the Display card')
         c.js('window.__beforeLang = 1')
-        c.tap(f'[data-card="display"] [data-lang-pick={lang}]')
+        c.page.locator('[data-card="display"] select[data-lang-select]').select_option(lang)
         c.until("(t) => !window.__beforeLang && document.querySelector('[data-card=\"display\"] h2')?.textContent.trim() === t", arg=shown[lang], timeout=15000,
                 what=f'{lang}: the screen reloaded and the Display card is titled « {shown[lang]} »')
     pick('en')
     c.eq(c.js("localStorage.getItem('sogFrame:lang')"), 'en', 'the choice is kept on the device', what='sogFrame:lang')
-    c.eq(c.js("document.querySelector('[data-lang-pick=en]').checked"), True, 'English is the box checked', what='checked')
+    c.eq(c.js("document.querySelector('[data-lang-pick=en]').selected"), True, 'English is the option selected', what='selected')
     pick('fr')     # back to the language of the run: the next steps compare the texts with it
     c.eq(c.js("localStorage.getItem('sogFrame:lang')"), 'fr', 'the choice is kept on the device', what='sogFrame:lang back')
     # the reload left Réglages as the page itself (not a screen opened over another one): Escape has nothing to close, as after any direct load of #settings; the next steps open it by the gear again

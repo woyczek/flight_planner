@@ -644,6 +644,14 @@ html .f-head button.f-stale:focus-visible {
   outline: 2px solid var(--sog-accent);
   outline-offset: 2px
 }
+/* « Langue » et « Apparence » de la carte Affichage : une liste déroulante, une rangée de 44 px (18 boutons sur quatre rangs faisaient passer la partie toujours visible à 1 080 px en allemand, A185) */
+.f-select {
+  display: block;
+  width: 100%;
+  min-height: var(--sog-touch, 44px);
+  margin: 0 0 4px;
+  font: inherit
+}
 .f-previews {
   margin: 4px 0 0
 }
@@ -1893,6 +1901,10 @@ p.f-back {
 .f-status-dot[hidden] {
   display: block;
   visibility: hidden
+}
+/* aucune ligne n'a de pastille : la place vide ne sert à rien, le texte prend la largeur (« État » reste compact, A185) */
+.f-status-list:not(:has(.f-status-dot:not([hidden]))) .f-status-dot[hidden] {
+  display: none
 }
 .f-status-dot[data-attn] {
   color: var(--sog-warn)

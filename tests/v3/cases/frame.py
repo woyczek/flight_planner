@@ -927,11 +927,11 @@ def a26(c):
     if not c.js("fetch(new URL('/frame/app.js', location.href)).then(r => r.text()).then(t => t.includes('appliedDesign'))"):
         c.skip('the frame does not give design().applied yet (Aqua not integrated)')
     c.eq(c.count('[data-design-pick="aqua"]'), 0, 'no Aqua thumbnail on a phone (designs() leaves it out)', what='Aqua thumbnails')
-    c.eq(c.attr('[data-design-pick="standard"]', 'aria-pressed'), 'true', 'Standard, the design applied, is marked as set', what='Standard aria-pressed')
+    c.eq(c.js("document.querySelector('[data-design-pick=\"standard\"]').selected"), True, 'Standard, the design applied, is the option selected in the list', what='Standard selected')
     line = c.text('[data-card="display"] [data-design-applied]') or ''
     c.ok('Aqua' in line and 'Standard' in line, f'line {line!r}', 'one line names Aqua and Standard')
-    c.ok(c.js("(() => { const p = document.querySelector('[data-design-applied]'); return !!p.previousElementSibling?.matches('.f-pills') })()"),
-         'the line is not right after the thumbnails', 'the line sits under the thumbnails')
+    c.ok(c.js("(() => { const p = document.querySelector('[data-design-applied]'); return !!p.previousElementSibling?.matches('select[data-design-select]') })()"),
+         'the line is not right after the list', 'the line sits under the appearance list')
 
 
 @case('A27', 'A card reached by its address, whatever the level', 'A', screens=False, designs=('standard',), night=False,
@@ -9120,6 +9120,8 @@ def a185(c):
     c.eq(c.count('[data-card="display"]'), 1, 'one « Affichage » card', what='display card')
     c.eq([c.count('[data-card="display"] [data-level]'), c.count('[data-card="display"] [data-design-pick]'), c.count('[data-card="display"] [data-tone-pick]')], [3, c.count('[data-card="display"] [data-design-pick]'), 3], 'three levels, the designs, three tones: all in it', what='display controls')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] details')].map(d => [d.hasAttribute('data-previews'), d.open])"), [[True, False]], 'the previews are behind a closed fold', what='previews')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] select')].map(s => [s.hasAttribute('data-lang-select') ? 'language' : s.hasAttribute('data-design-select') ? 'appearance' : '?', Math.round(s.getBoundingClientRect().height)])"), [['language', 44], ['appearance', 44]],
+         'the language and the appearance are two lists of ONE row each (18 buttons on four rows took the always-visible part past its bound in German): level and tone stay buttons', what='lists')
     fiche = c.js("(f => f ? [f.tagName, f.open] : null)(document.querySelector('[data-card=\"company\"] details[data-fiche-fold]'))")
     c.eq(fiche, ['DETAILS', False], 'the airline sheet is one closed line', what='fiche fold')
     c.eq(c.count('details.f-group[data-group=start] + details, details.f-group[data-group=start] ~ details:not(.f-group)'), 1, '« Comment s’en servir » follows « Mise en route »', what='howto')
@@ -10715,13 +10717,13 @@ def a266(c):
     c.until("!!document.querySelector('[data-card=\"display\"] [data-lang-pick]')", timeout=20000, what='the language choice in the Display card (there is none before SOG-0477)')
     c.eq(c.count('[data-card="display"] [data-lang-pick]'), 5, 'five choices: auto, fr, en, de, es', what='[data-lang-pick]')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].map(i => i.dataset.langPick)"), ['auto', 'fr', 'en', 'de', 'es'], 'the choices, in this order')
-    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].map(i => i.closest('label').textContent.trim()).slice(1)"),
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].map(i => i.textContent.trim()).slice(1)"),
          ['Français', 'English', 'Deutsch', 'Español'], 'the languages are named in their own language')
     for lang in ('fr', 'en', 'de', 'es', 'auto'):
         shown = lang if lang != 'auto' else c.lang          # the locale of the run is the language of the browser
-        if not c.js("(l) => document.querySelector(`[data-lang-pick=${l}]`).checked", lang):
+        if not c.js("(l) => document.querySelector(`[data-lang-pick=${l}]`).selected", lang):
             c.js("window.__beforeLang = 1")
-            c.tap(f'[data-card="display"] [data-lang-pick={lang}]')
+            c.page.locator('[data-card="display"] select[data-lang-select]').select_option(lang)     # the language is a list (one row): chosen as a pilot chooses in a list
             c.until("(t) => !window.__beforeLang && document.querySelector('[data-card=\"display\"] h2')?.textContent.trim() === t", arg=titles[shown], timeout=15000,
                     what=f'{lang}: the screen reloaded and the card is titled « {titles[shown]} »')
             kept = c.js("JSON.parse(sessionStorage.getItem('__keepLang') || 'null')")   # what the page held when it left
@@ -10731,10 +10733,10 @@ def a266(c):
             else:
                 c.eq(kept['sogFrame:lang'], lang, f'sogFrame:lang is the language chosen ({lang})', what='sogFrame:lang')
             c.eq(kept['repositoryLanguageMode'], lang, f'repositoryLanguageMode is {lang}: the pages of V2 read it', what='repositoryLanguageMode')
-        c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].filter(i => i.checked).map(i => i.dataset.langPick)"), [lang],
-             f'{lang}: the radio checked is the one kept', what='radio checked')
+        c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].filter(i => i.selected).map(i => i.dataset.langPick)"), [lang],
+             f'{lang}: the option selected is the one kept', what='option selected')
         c.eq(c.text('[data-card="display"] h2'), titles[shown], f'{lang}: the card is titled in the language chosen', what='title of the card')
-    c.shot(f'A266_auto_{c.width}.png')   # the Display card after « Automatic »: five choices, Automatic checked
+    c.shot(f'A266_auto_{c.width}.png')   # the Display card after « Automatic »: the language list, Automatic selected
 
 
 # ------------------------------------------------------------------------------------------------------ A267-A270: « Mes signalements » (SOG-0410)

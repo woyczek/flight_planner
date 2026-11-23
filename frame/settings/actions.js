@@ -298,13 +298,16 @@
       again
     } = env;
     view.onclick = e => onClick(env, e);
-    view.querySelectorAll('[data-design-pick], [data-design-preview]').forEach(b => b.addEventListener('click', async () => {
+    // le choix du design (liste déroulante, SOG-0320 retouchée) s'applique dès le choix, comme le bouton d'avant ; les aperçus dessous restent des boutons
+    const saveDesign = async id => {
       await c.saveDesign({
         ...(c.design?.() || {}),
-        design: b.dataset.designPick || b.dataset.designPreview
+        design: id
       });
       again();
-    }));
+    };
+    view.querySelectorAll('select[data-design-select]').forEach(s => s.addEventListener('change', () => saveDesign(s.value)));
+    view.querySelectorAll('[data-design-preview]').forEach(b => b.addEventListener('click', () => saveDesign(b.dataset.designPreview)));
     view.querySelectorAll('[data-tone-pick]').forEach(i => i.addEventListener('change', async () => {
       await c.saveDesign({
         ...(c.design?.() || {}),
@@ -313,8 +316,8 @@
       again();
     }));
     // la langue (SOG-0477) : écrite d'abord, puis l'écran est rechargé — elle touche la barre, les titres et tous les écrans
-    view.querySelectorAll('[data-lang-pick]').forEach(i => i.addEventListener('change', () => {
-      if (!window.SogSettingsKit.saveLang(i.dataset.langPick)) return;
+    view.querySelectorAll('select[data-lang-select]').forEach(i => i.addEventListener('change', () => {
+      if (!window.SogSettingsKit.saveLang(i.value)) return;
       // le cadre compte les rechargements qu'il fait lui-même (selfNavigate) : un rechargement brut, trois fois en dix secondes, lui ressemble à une boucle (« Rechargements en série arrêtés ») ; sans son API : le rechargement simple
       if (typeof c.reloadApp === 'function') c.reloadApp('reload: language');
       else location.reload();
