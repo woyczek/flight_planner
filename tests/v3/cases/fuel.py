@@ -11116,3 +11116,36 @@ def f314(c):
     by = {norm(f): norm(t) for f, t in marks}
     c.eq((by.get('FL330'), by.get('FL190')), (norm(W['card']), ''), 'on the card of the route above the ceiling, nothing under it', what='card')
     c.check_errors()
+
+
+@case('F316', 'Procedures, the arrival\'s « Terrain » line: when it says « QNH inconnu », the gesture « Lire la météo des terrains » is offered '
+      'IN PLACE — the same gesture as the Weather step (data-do=wx) —; once read, the QNH of the METAR is said and the gesture goes',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0325 reopened (the user\'s refusal: « lire la météo des terrains est dans l\'écran 3, on est sur l\'écran 1 »; the ergonomist: '
+      'the pilot never changes screen to fill a line of screen 1; the words of the gesture, the rule of SOG-0548); invented METARs')
+def f316(c):
+    words = {'fr': 'Lire la météo des terrains', 'en': 'Read the aerodromes’ weather', 'de': 'Flugplatzwetter lesen',
+             'es': 'Leer la meteorología de los aeródromos'}[c.lang]
+    A = f'{FUEL} [data-proc="arr"]'
+    # no METAR for the arrival, no ATIS: « QNH inconnu »
+    route_metar(c, {'LFRS': (30, 5)})
+    _atis_open(c, {'offline': True})
+    c.until(f"!!document.querySelector('{A} [data-terrain]') && /100/.test(document.querySelector('{A} [data-terrain]').textContent)", timeout=20000,
+            what='the Terrain line')
+    c.until(f"!!document.querySelector('{A} [data-terrain] [data-do=wx]')", timeout=8000,
+            what='the gesture offered on the line (red before: the Weather step only)')
+    c.eq(norm(c.text(f'{A} [data-terrain] [data-do=wx]') or ''), norm(words), 'the words of the Weather step', what='words')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{A} [data-terrain]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F316_{c.design}_{w}_{c.lang}_qnh.png')
+    # the METAR of the arrival answers now: the gesture in place reads it, the QNH is said, the gesture goes
+    c.context.unroute(re.compile(r'aviationweather\.gov(/|%2F)api(/|%2F)data(/|%2F)metar', re.I))
+    c.context.unroute(re.compile(r'metar\.vatsim\.net', re.I))
+    route_metar(c, {'LFRS': (30, 5), 'LFML': (310, 12)})   # QNH 1015 in the invented METAR
+    c.tap(f'{A} [data-terrain] [data-do=wx]')
+    c.until(f"/1015/.test(document.querySelector('{A} [data-terrain]')?.textContent || '')", timeout=15000, what='the QNH of the METAR said')
+    c.eq(c.count(f'{A} [data-terrain] [data-do=wx]'), 0, 'the gesture goes once the QNH is known', what='gone')
+    c.check_errors()
