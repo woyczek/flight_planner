@@ -14,7 +14,7 @@
 //     idPrefix,     facultatif : le préfixe des identifiants des propositions ('ad-sug')
 //     points,       facultatif (SOG-0480) : vrai, le champ propose AUSSI les points de la base (balises, points du réseau, points de
 //                   report : « LF485 », « REN »), après les terrains ; sans lui, des terrains seulement (Carburant)
-//     texts         facultatif : { unknown: [fr, en, de, es], … } — des lignes de texte (les clés de TX : unknown, listLabel, navaid, point, vrp)
+//     texts         facultatif : un objet { clé: [fr, en, de, es] } (clé « unknown » par exemple) — des lignes de texte (les clés de TX : unknown, listLabel, navaid, point, vrp)
 //                   qui remplacent celles du bloc POUR CE MONTAGE SEUL (l'atelier de Missions dit « Terrain inconnu : indiquez sa position. »,
 //                   Carburant garde « inconnu ») ; une clé inconnue, une ligne qui n'a pas quatre textes ou dont un texte est vide après
 //                   nettoyage est ignorée (le texte commun reste) ; chaque texte : sans caractère de commande, borné à 200 signes
