@@ -1230,7 +1230,8 @@
                 [27, '27']
               ]) {
               const a = k * Math.PI / 18,
-                r = R - long - fs * .92; // un écart d'un quart de la hauteur du chiffre au moins entre sa tête et la base de la pointe pleine du point cardinal (SOG-0328)
+                r = R - long - fs *
+                .92; // un écart d'un quart de la hauteur du chiffre au moins entre sa tête et la base de la pointe pleine du point cardinal (SOG-0328)
               ctx.save();
               ctx.translate(Math.sin(a) * r, -Math.cos(a) * r);
               ctx.rotate(a);
