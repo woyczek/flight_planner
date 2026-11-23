@@ -10936,14 +10936,18 @@ def f312(c):
 # SOG-0559: the words of the line of an alternate not judged, written in clear (the ergonomist's sentences, 23 Nov)
 _AW_WORDS = {
     'fr': {'notaf': 'LFMT : pas de TAF.', 'none': 'LFMT : ni TAF ni METAR.', 'notime': 'Sans date de vol, la météo du dégagement n’est pas jugée.',
-           'obs': 'METAR de {t} : VFR.', 'rule': 'Météo : jugée sur le TAF, une heure avant et après l’arrivée.'},
+           'obs': 'METAR de {t} : VFR.', 'rule': 'Météo : jugée sur le TAF, une heure avant et après l’arrivée.',
+           'read': 'Lire les procédures de LFMT'},
     'en': {'notaf': 'LFMT: no TAF.', 'none': 'LFMT: neither TAF nor METAR.', 'notime': 'Without a flight date, the alternate’s weather is not judged.',
-           'obs': 'METAR of {t}: VFR.', 'rule': 'Weather: judged on the TAF, one hour either side of the arrival.'},
+           'obs': 'METAR of {t}: VFR.', 'rule': 'Weather: judged on the TAF, one hour either side of the arrival.',
+           'read': 'Read the procedures of LFMT'},
     'de': {'notaf': 'LFMT: kein TAF.', 'none': 'LFMT: weder TAF noch METAR.',
            'notime': 'Ohne Flugdatum wird das Wetter des Ausweichflugplatzes nicht beurteilt.',
-           'obs': 'METAR von {t}: VFR.', 'rule': 'Wetter: nach dem TAF beurteilt, eine Stunde vor und nach der Ankunft.'},
+           'obs': 'METAR von {t}: VFR.', 'rule': 'Wetter: nach dem TAF beurteilt, eine Stunde vor und nach der Ankunft.',
+           'read': 'Verfahren von LFMT lesen'},
     'es': {'notaf': 'LFMT: sin TAF.', 'none': 'LFMT: ni TAF ni METAR.', 'notime': 'Sin fecha de vuelo, la meteorología del alternativo no se evalúa.',
-           'obs': 'METAR de las {t}: VFR.', 'rule': 'Meteorología: evaluada con el TAF, una hora antes y después de la llegada.'},
+           'obs': 'METAR de las {t}: VFR.', 'rule': 'Meteorología: evaluada con el TAF, una hora antes y después de la llegada.',
+           'read': 'Leer los procedimientos de LFMT'},
 }
 
 
@@ -10981,6 +10985,9 @@ def f313(c):
     c.eq(c.js(f"document.querySelector('{L} .fu-altnline').dataset.state"), 'grey', 'the sign stays « ? »: not judged', what='sign')
     c.js(f"document.querySelector('{L} details[data-altnfold]').open = true")
     c.eq(norm(c.text(f'{L} li[data-crit=wx] > span:not(.fu-altnsign)') or ''), norm(W['rule']), 'the fold keeps the rule, without the cause again', what='rule')
+    # the rule of SOG-0548 (the relay, 23 Nov): out of its block the reading gesture says the action and its object, never the mode
+    # « Lire à la demande » (France is read on demand)
+    c.eq(norm(c.text(f'{L} li[data-crit=aids] [data-do=procfetch]') or ''), norm(W['read']), '« Moyens »: the action and its object', what='read')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
