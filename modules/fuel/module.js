@@ -5817,7 +5817,7 @@ const altnPropKey = () => {
  *  Procédures pour ce terrain (S.P.readButtonFor : mêmes mots, même appel, rien quand l'État ne se lit pas) ; '' sinon. */
 function altnReadHtml(c, id) {
   if (c?.k !== 'aids' || !['aidsNoBase', 'aidsPartial'].includes(c.code) || typeof S.P?.readButtonFor !== 'function') return '';
-  const b = S.P.readButtonFor(id, c.code === 'aidsPartial');
+  const b = S.P.readButtonFor(id, c.code === 'aidsPartial', true); // SOG-0559 (règle de SOG-0548) : l'action et son objet, jamais le mode
   return b ? ` ${b}` : '';
 }
 /** SOG-0528 : la distance de l'arrivée au dégagement (NM, le trait droit, comme la proposition), ou null sans l'une des positions. */

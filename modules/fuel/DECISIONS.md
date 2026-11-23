@@ -2622,4 +2622,5 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   la validité du TAF. », « {ad} : le TAF ne donne pas de catégorie à l’heure d’arrivée. »; when a METAR exists the line ends with its
   observation « METAR de 14:20Z : VFR. » (`WX.station` on the METAR alone, the category written as on the Weather step); without one either:
   « {ad} : ni TAF ni METAR. ». The fold keeps the rule (« Météo : jugée sur le TAF, une heure avant et après l’arrivée. ») without the cause
-  again; a reading in progress or failed stays said in the fold (SOG-0527 (2)). Case F313, red before.
+  again; a reading in progress or failed stays said in the fold (SOG-0527 (2)). The rule of SOG-0548 applied to the alternate's line
+  « Moyens »: the reading gesture says « Lire les procédures de {ad} », never the mode « Lire à la demande ». Case F313, red before.
