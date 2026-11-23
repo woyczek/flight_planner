@@ -569,6 +569,8 @@ def recover_swaps(zdir):
         if not m:
             continue
         path, cyc = os.path.join(zdir, n), os.path.join(zdir, m.group(1))
+        if os.path.islink(path) or getattr(os.path, 'isjunction', lambda q: False)(path):      # jamais un lien (une jonction Windows) remis en place d'un dossier de cycle (Sécurisation)
+            continue
         try:
             if m.group(2) == 'old' and not os.path.exists(cyc):
                 os.replace(path, cyc)

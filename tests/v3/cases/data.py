@@ -11876,13 +11876,13 @@ def l180(c):
 
 
 _L181 = {
-    'fr': {'redo': 'à jour · relecture possible', 'upd': 'à jour · mise à jour possible', 'redoLine': 'Une relecture apporte : noms usuels des zones R, D et P (absents aujourd’hui), horaires des zones mieux lus.', 'redoNote': 'Sans téléchargement. La lecture actuelle est remplacée.',
+    'fr': {'redo': 'à jour · relecture possible', 'upd': 'à jour · complément possible', 'redoLine': 'Une relecture apporte : noms usuels des zones R, D et P (absents aujourd’hui), horaires des zones mieux lus.', 'redoNote': 'Sans téléchargement. La lecture actuelle est remplacée.',
            'updLine': 'Une mise à jour apporte : règle semi-circulaire (absente aujourd’hui).', 'updNote': 'Avec téléchargement d’une page.', 'keep': 'Les données d’avant sont gardées.', 'btnRedo': 'Relire ce pays', 'btnUpd': 'Mettre à jour ce pays', 'all': 'Relire tous les pays (3)', 'fresh': 'Rien à faire : cycle en cours, lu par la version actuelle.'},
-    'en': {'redo': 'up to date · reread possible', 'upd': 'up to date · update possible', 'redoLine': 'A reread brings: usual names of the R, D and P areas (not there today), hours of the areas better read.', 'redoNote': 'No download. The current reading is replaced.',
+    'en': {'redo': 'up to date · reread possible', 'upd': 'up to date · supplement possible', 'redoLine': 'A reread brings: usual names of the R, D and P areas (not there today), hours of the areas better read.', 'redoNote': 'No download. The current reading is replaced.',
            'updLine': 'An update brings: semicircular rule (not there today).', 'updNote': 'With the download of one page.', 'keep': 'The previous data are kept.', 'btnRedo': 'Reread this country', 'btnUpd': 'Update this country', 'all': 'Reread all countries (3)', 'fresh': 'Nothing to do: cycle in force, read by the current version.'},
-    'de': {'redo': 'aktuell · erneutes Einlesen möglich', 'upd': 'aktuell · Aktualisierung möglich', 'redoLine': 'Ein erneutes Einlesen bringt: Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden), Zeiten der Gebiete besser gelesen.', 'redoNote': 'Ohne Download. Die aktuelle Lesung wird ersetzt.',
+    'de': {'redo': 'aktuell · erneutes Einlesen möglich', 'upd': 'aktuell · Ergänzung möglich', 'redoLine': 'Ein erneutes Einlesen bringt: Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden), Zeiten der Gebiete besser gelesen.', 'redoNote': 'Ohne Download. Die aktuelle Lesung wird ersetzt.',
            'updLine': 'Eine Aktualisierung bringt: Halbkreisregel (heute nicht vorhanden).', 'updNote': 'Mit dem Download einer Seite.', 'keep': 'Die bisherigen Daten bleiben erhalten.', 'btnRedo': 'Dieses Land erneut einlesen', 'btnUpd': 'Dieses Land aktualisieren', 'all': 'Alle Länder erneut einlesen (3)', 'fresh': 'Nichts zu tun: gültiger Zyklus, von der aktuellen Version gelesen.'},
-    'es': {'redo': 'al día · relectura posible', 'upd': 'al día · actualización posible', 'redoLine': 'Una relectura aporta: nombres de uso de las zonas R, D y P (hoy ausentes), horarios de las zonas mejor leídos.', 'redoNote': 'Sin descarga. La lectura actual se reemplaza.',
+    'es': {'redo': 'al día · relectura posible', 'upd': 'al día · complemento posible', 'redoLine': 'Una relectura aporta: nombres de uso de las zonas R, D y P (hoy ausentes), horarios de las zonas mejor leídos.', 'redoNote': 'Sin descarga. La lectura actual se reemplaza.',
            'updLine': 'Una actualización aporta: regla semicircular (hoy ausente).', 'updNote': 'Con la descarga de una página.', 'keep': 'Los datos anteriores se conservan.', 'btnRedo': 'Releer este país', 'btnUpd': 'Actualizar este país', 'all': 'Releer todos los países (3)', 'fresh': 'Nada que hacer: ciclo vigente, leído por la versión actual.'},
 }
 _L181_GAINS = {
@@ -11908,6 +11908,7 @@ def l181(c):
         w['zs']['gb'] = ok([_L181_GAINS['hours']])                                                    # a reread only
         w['zs']['ca'] = ok([_L181_GAINS['hours']])                                                    # a reread only
         w['zs']['es'] = ok()                                                                          # nothing to receive: plain green
+        w['zs']['us'] = ok([], [_L181_GAINS['levels']])                                               # only a piece to download: « à jour · complément possible », the update alone
     st = _l102_open(c, world_tweak=tweak)
     group = '[data-group-body]'
 
@@ -11927,6 +11928,8 @@ def l181(c):
     # ---- 1. the map: the striped green for a country that can receive something; plain for the others
     c.eq(c.js("(z => z.map(i => [i, !!document.querySelector(`[data-wmap] path[data-zone=${i}]`)?.hasAttribute('data-redo')]))(['fr', 'gb', 'ca', 'es', 'us'])"),
          [['fr', True], ['gb', True], ['ca', True], ['es', False], ['us', False]], 'the map: the striped fill for the countries with a gain, the plain one for the others (the brown of « à faire » is for de, not for them)', what='map stripes')
+    us = c.js("(p => [p.dataset.tone, p.hasAttribute('data-redo'), p.getAttribute('aria-label')])(document.querySelector('[data-wmap] path[data-zone=us]'))")
+    c.eq([us[0], us[1], us[2].split(' : ')[1].startswith(W['upd'])], ['ok', True, True], 'a country that only lacks a piece: the same striped green, the word follows the gesture offered (« à jour · complément possible », the update alone)', what='piece only')
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone"), 'ok', 'a country that can receive something is still « ok » (green): the map never paints it as to do', what='tone ok')
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').getAttribute('aria-label')").split(' : ')[1].startswith(W['redo']), True, 'the label of the map path says « à jour · relecture possible »', what='map label')
     # ---- 2. ONE « Relire tous les pays (n) » above every list; two countries at least (here three); no grey

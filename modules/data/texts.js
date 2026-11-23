@@ -2339,8 +2339,8 @@ export const TX = {
     stateRedo: ['à jour · relecture possible', 'up to date · reread possible', 'aktuell · erneutes Einlesen möglich',
       'al día · relectura posible'
     ],
-    stateUpd: ['à jour · mise à jour possible', 'up to date · update possible', 'aktuell · Aktualisierung möglich',
-      'al día · actualización posible'
+    stateUpd: ['à jour · complément possible', 'up to date · supplement possible', 'aktuell · Ergänzung möglich',
+      'al día · complemento posible'
     ],
     redoLine: ['Une relecture apporte : {list}.', 'A reread brings: {list}.', 'Ein erneutes Einlesen bringt: {list}.',
       'Una relectura aporta: {list}.'
