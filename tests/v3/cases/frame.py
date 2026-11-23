@@ -1336,6 +1336,7 @@ def a43(c):
     c.eq(c.count(f'{card} p[data-ivao-steps]'), 1, 'the steps are in the help: one line says the object and leads to the help (SOG-0579)', what='steps line')
     c.eq(c.attr(f'{card} [data-ivao-steps] a[data-help-link]', 'href'), '#help?m=settings&a=settings-ivao-app', 'the link opens the help at the paragraph of the IVAO application', what='help link')
     link = f'{card} [data-ivao-steps] a[target="_blank"]'
+    c.eq(norm(c.text(link)), norm(t('ivaoOpen')), 'the link says where it leads, never the bare address', what='link text')
     c.eq(c.attr(link, 'href'), 'https://developers.ivao.aero/create', "a real link to IVAO's application form", what='link')
     c.ok('noopener' in c.attr(link, 'rel') and c.attr(link, 'target') == '_blank', f"{c.attr(link, 'rel')} {c.attr(link, 'target')}", 'a new tab, noopener')
     # the return addresses, filled from the one read of the secrets

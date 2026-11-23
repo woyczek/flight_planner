@@ -227,7 +227,7 @@ Bajo la clave IVAO, el bloque «EAD Basic (EUROCONTROL)» recibe el usuario y la
 
 1. Abra la página de IVAO que indica el asistente (`https://developers.ivao.aero/create`; se necesita una cuenta IVAO).
 2. Rellene el formulario: Name = el nombre de la compañía; App Type = Third Party; Active = Enabled.
-3. Pulse «+ Add Redirect URL» una vez por cada dirección de retorno que lista el asistente (la de este equipo y, si su dirección pública está configurada, la del relé; «Copiar» las da tal cual), pegándola tal cual.
+3. Pulse «+ Add Redirect URL» una vez por cada dirección de retorno que lista el asistente, y péguela sin modificarla («Copiar» la da exacta).
 4. Pulse Submit y copie en el asistente el Client ID y el Client Secret que muestra IVAO.
 
 El lanzador escribe el Client ID y el Client Secret en `secrets/ivao_oauth.json`: no edita ningún archivo, y la página no los vuelve a mostrar nunca (solo dice si la aplicación está guardada y cuándo). «Probar» alcanza el documento de descubrimiento OpenID de IVAO; «Borrar» quita la aplicación. La clave API de la aplicación (`secrets/ivao.json`) es otro ajuste: la de una aplicación nueva se traslada a «Clave IVAO».
@@ -238,7 +238,7 @@ El lanzador escribe el Client ID y el Client Secret en `secrets/ivao_oauth.json`
 «Acceso del equipo» abre la aplicación Piloto a los dispositivos de la misma red local (o inicie `lancer.cmd --lan`).
 
 1. **Abrir a los dispositivos de la red local**: la tarjeta muestra la dirección que abrir en el dispositivo, su
-   código QR y un código de vinculación de 8 cifras (6 hasta el 30 de octubre de 2026). Windows puede pedir que autorice Python: acéptelo solo para
+   código QR y un código de vinculación de 8 cifras. Windows puede pedir que autorice Python: acéptelo solo para
    redes privadas.
 2. En la tableta, escanee el código QR con la cámara (o escriba la dirección) y luego introduzca el código. Se pide
    **una sola vez por dispositivo**.

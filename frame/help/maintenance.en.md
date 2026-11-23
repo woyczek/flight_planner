@@ -232,7 +232,7 @@ Under the IVAO key, the “EAD Basic (EUROCONTROL)” block takes the user name 
 
 1. Open the IVAO page that the assistant shows (`https://developers.ivao.aero/create`; an IVAO account is required).
 2. Fill in the form: Name = the airline’s name; App Type = Third Party; Active = Enabled.
-3. Click “+ Add Redirect URL” once for each return address the assistant lists (this workstation’s, and the relay’s when its public address is set; “Copy” gives them exactly as they must be pasted), pasting it exactly as it is.
+3. Click “+ Add Redirect URL” once for each return address the assistant lists, and paste it without changing it (“Copy” gives it exactly).
 4. Click Submit, then copy the Client ID and the Client Secret that IVAO shows into the assistant.
 
 The launcher writes the Client ID and the Client Secret to `secrets/ivao_oauth.json`: you edit no file, and the page never shows them again (it only says whether the application is saved, and when). “Test” reaches IVAO’s OpenID discovery document; “Erase” removes the application. The application’s API key (`secrets/ivao.json`) is another setting: a new application’s key is carried over into “IVAO key”.
@@ -243,7 +243,7 @@ The launcher writes the Client ID and the Client Secret to `secrets/ivao_oauth.j
 “Computer access” opens the Pilot application to devices of the same local network (or start `lancer.cmd --lan`).
 
 1. **Open to devices of the local network**: the card shows the address to open on the device, its QR code and a
-   8-digit pairing code (6 until 30 October 2026). Windows may ask to allow Python: accept for private networks only.
+   8-digit pairing code. Windows may ask to allow Python: accept for private networks only.
 2. On the tablet, scan the QR code with the camera (or type the address), then enter the code. It is asked only
    **once per device**.
 3. The tablet then sees the computer's data, the simulator's position in the flight badge, and “Launcher on

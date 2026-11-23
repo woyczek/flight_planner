@@ -155,6 +155,7 @@
       'Acceso de un dispositivo de la red local'
     ],
     seeHelp: ['voir l’aide', 'see the help', 'siehe Hilfe', 'ver la ayuda'],
+    ivaoOpen: ['Ouvrir la page d’IVAO', 'Open the IVAO page', 'IVAO-Seite öffnen', 'Abrir la página de IVAO'],
     lanWarn: [
       'Réseau local en http, sans chiffrement : à n’ouvrir que sur un réseau de confiance (à la maison), jamais sur un wifi public ou d’hôtel.',
       'Local network over http, unencrypted: open it only on a trusted network (at home), never on public or hotel wifi.',
@@ -661,7 +662,7 @@
       fld
     } = env;
     return `<div class="f-card" data-card="ivaoapp"><h2>${esc(t(T.ivaoAppTitle))}</h2><p class="f-muted">${esc(t(T.ivaoAppIntro))}</p>
-      <p data-ivao-steps>${esc(t(T.ivaoHelp))} : <a href="#help?m=settings&amp;a=settings-ivao-app" data-help-link>${esc(t(T.seeHelp))}</a> · <a href="https://developers.ivao.aero/create" target="_blank" rel="noopener noreferrer">developers.ivao.aero/create</a></p>
+      <p data-ivao-steps>${esc(t(T.ivaoHelp))} : <a href="#help?m=settings&amp;a=settings-ivao-app" data-help-link>${esc(t(T.seeHelp))}</a> · <a href="https://developers.ivao.aero/create" target="_blank" rel="noopener noreferrer">${esc(t(T.ivaoOpen))}</a></p>
       <h3>${esc(t(T.ivaoRedirTitle))}</h3><ul data-ivao-redirects><li class="f-muted">…</li></ul><p class="f-muted">${esc(t(T.ivaoRedirHint))}</p>
       <p><b data-ivaoapp>…</b></p>${fld('ivaoClientId', T.ivaoClientId, '')}${fld('ivaoClientSecret', T.ivaoClientSecret, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="ivaoAppSave">${esc(t(T.save))}</button><button type="button" data-act="ivaoAppTest">${esc(t(T.test))}</button><button type="button" data-act="ivaoAppErase">${esc(t(T.erase))}</button></div>
