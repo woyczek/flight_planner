@@ -95,6 +95,7 @@ def today():
     """SOG-0532 (7) : la date du jour (UTC, « AAAA-MM-JJ », sans heure : on ne suppose pas d'heure de départ) quand la demande n'en donne pas. Jamais une date figée dans le code : le cycle AIRAC de la base et les règles du RAD en dépendent."""
     return dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d')
 
+SAME_PLACE_NM=2.0      # SOG-0576 lot D : au plus cette distance, deux points de même nom sont le MÊME point (deux sources, deux placements voisins)
 WARNING_CODES={'level_semicircular','level_rule_near_limit','level_rule_no_variation'}      # SOG-0530 : les raisons qui sont des AVERTISSEMENTS (la route reste valide, le verdict ne change pas) : rendues à part dans `warnings`
 MAX_VERDICT_ITEMS=100      # SOG-0532 : au plus cent raisons dans `violations` et dans `unverifiable` (la réponse reste bornée)
 
@@ -315,6 +316,11 @@ class Nav:
         extra=nm(pts[worst-1],pts[worst])+nm(pts[worst],pts[worst+1])-nm(pts[worst-1],pts[worst+1])
         raise ValueError(f"Point loin de la route : {pts[worst]['id']} ajoute {extra:.0f} NM à une route directe de {direct:.0f} NM (position {pts[worst]['lat']:.2f}, {pts[worst]['lon']:.2f}) ; aucun homonyme plus proche dans la base : point inconnu à proximité.")
 
+    def same_place(self,key):
+        """SOG-0576 lot D : les clés de MÊME NOM à moins de SAME_PLACE_NM NM de celle-ci, elle comprise : un même point que deux sources placent à quelques centaines de mètres l'un de l'autre (CIV : le point d'une liste et celui des voies ; un point de SID ajouté à la base) n'est pas un homonyme."""
+        here=self.nodes[key]
+        return [k for k in self.ids.get(here['id'],[]) if k in self.nodes and nm(here,self.nodes[k])<=SAME_PLACE_NM]
+
     def resolve_sequence(self,names,start=None,end=None):
         """Resolve homonyms by the shortest complete geographical chain.
         A close second interpretation stays an explicit ambiguity.
@@ -332,7 +338,7 @@ class Nav:
         ranked=sorted((cost+(nm(self.nodes[key],self.nodes[end]) if end else 0),chosen) for cost,key,chosen in paths)
         best=ranked[0]
         self.check_detour(best[1],start,end)
-        if len(ranked)>1 and ranked[1][0]-best[0]<max(1,best[0]*.005):
+        if len(ranked)>1 and ranked[1][0]-best[0]<max(1,best[0]*.005) and not all(b in self.same_place(a) for a,b in zip(best[1],ranked[1][1])):      # SOG-0576 lot D : deux lectures qui ne diffèrent que par un même point placé à deux endroits voisins ne sont pas une ambiguïté
             raise ValueError('Route géographiquement ambiguë : plusieurs positions de points donnent des trajets comparables. Préciser un point voisin.')
         return best[1]
 
@@ -1089,11 +1095,13 @@ def assess(request,_nav=None,_rad=None,_path=None):
     for n in [n for n in marks if words[n] in connectors]:
         issue('ERREUR',f'Groupe de niveau sur une voie : {words[n]}/F{marks[n]:03d} (il se pose sur un point).'); del marks[n]
     route=' '.join(w+(f'/F{marks[n]:03d}' if n in marks else '') for n,w in enumerate(words))      # la route lue est rendue avec ses groupes
-    resolved_by_word={}
+    resolved_by_word={}; ambiguity=None
     if not path:
         point_indices=[i for i,w in enumerate(words) if w not in connectors]
         try:resolved_by_word=dict(zip(point_indices,nav.resolve_sequence([words[i] for i in point_indices])))
-        except ValueError as e:issue('ERREUR',str(e))
+        except ValueError as e:
+            if 'ambiguë' in str(e):ambiguity=str(e)      # SOG-0576 lot D : des positions voisines donnent des trajets comparables : chaque point est alors lu AVEC sa voisine (la voie qui le suit ou le précède : `resolve_context`) ; l'ambiguïté n'est DITE que si cette lecture n'a pas tout levé
+            else:issue('ERREUR',str(e))
     preferred={e.get('procedure_id') for a,b,e in path if e.get('procedure_id')}
     # An airway name must sit between two points. Adjacent points mean implicit DCT.
     i=0
@@ -1126,13 +1134,16 @@ def assess(request,_nav=None,_rad=None,_path=None):
             matches=nav.fra.match(current,target,fl,when,dep,arr,active_fra,strategy=='adapt') if request.get('enable_fra',True) and getattr(nav,'fra',None) else []
             if matches:
                 hints=[x for u,v,x in path if x.get('kind')=='FRA' and nav.nodes[u]['id']==nav.nodes[current]['id'] and nav.nodes[v]['id']==nav.nodes[target]['id']]
-                m=next((m for m in matches if any(h.get('fra_area')==m['area'] and h.get('fra_rows')==m['rows'] for h in hints)),matches[0]); e.update(kind='FRA',fra_area=m['area'],lower=m['lower'],upper=m['upper'],from_role=m['from_role'],to_role=m['to_role'],fra_rows=m['rows'],source_cycle=m['cycle'])
+                m=next((m for m in matches if any(h.get('fra_area')==m['area'] and h.get('fra_rows')==m['rows'] for h in hints)),None) or next((m for m in matches if m['lower']<=fl*100<=m['upper']),matches[0]); e.update(kind='FRA',fra_area=m['area'],lower=m['lower'],upper=m['upper'],from_role=m['from_role'],to_role=m['to_role'],fra_rows=m['rows'],source_cycle=m['cycle'])
                 active_fra={m['area']} if not m['exits'] else set()
             else: active_fra=set()
             parsed.append((current,target,e))
         else:
             active_fra=set()
             p=nav.path(nav.graph(None,via),current,target)
+            if p is None:      # SOG-0576 lot D : le même point placé à deux endroits voisins : la voie s'attache à l'une des deux clés
+                alt=next(((c,t,q) for c in nav.same_place(current) for t in nav.same_place(target) if (c,t)!=(current,target) for q in [nav.path(nav.graph(None,via),c,t)] if q is not None),None)
+                if alt:current,target,p=alt
             if p is None and nav.path(nav.graph(None,via,directed=False),current,target) is not None:   # SOG-0078 : le chemin existe à contre-sens d'un segment à sens unique
                 issue('ERREUR',f'Sens interdit : {via} est à sens unique et {nav.nodes[current]["id"]} → {word} le parcourt à contre-sens.')
             elif p is None:
@@ -1145,6 +1156,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
                     parsed.append((current,target,dict(route=via,kind='UNRESOLVED_AIRWAY',nm=nm(nav.nodes[current],nav.nodes[target]),data_gap=reason)))
             else: parsed.extend(p)
         current=target
+    if ambiguity and any(x['level']=='ERREUR' and ('Identifiant géographiquement ambigu' in x['text'] or 'ne peut pas être localisé' in x['text']) for x in issues):issues.insert(0,dict(level='ERREUR',text=ambiguity))      # le point resté ambigu après la lecture par ses voisines : l'ambiguïté d'origine est dite
     if path:parsed=[(a,b,e) for a,b,e in path if e.get('kind')!='FRA_GATE']
     for ident in mandatory:
         if ident in nav.ads and ident not in [dep,arr]:issue('REVUE',f'{ident} est survolé à l’altitude du profil, sans atterrissage. Raccords DCT AD–réseau de simulation, autorisation non vérifiée.')

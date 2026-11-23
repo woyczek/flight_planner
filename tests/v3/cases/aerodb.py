@@ -8642,7 +8642,7 @@ def k186(c):
       const fresh = [{ id: 'C', route: ['61/20'], from: '2026-11-12T11:30:00Z', to: '2026-11-12T19:00:00Z' }];
       const mk = (launcher, at, start = old) => {
         let tracks = start;
-        const reader = { read: async p => /\/nat\/[^/]+\/meta\.json$/.test(p) ? { value: { data: { natTracks: { tracks } } }, rev: String(tracks.length) + tracks[0].id } : null, list: async () => ['sia/base/nat/2026-10-29/meta.json'], watch: () => () => {} };
+        const reader = { read: async p => /\\/nat\\/[^/]+\\/meta\\.json$/.test(p) ? { value: { data: { natTracks: { tracks } } }, rev: String(tracks.length) + tracks[0].id } : null, list: async () => ['sia/base/nat/2026-10-29/meta.json'], watch: () => () => {} };
         const t = { v: Date.parse(at) };
         const db = AeroDB.create({ reader, launcher: launcher && launcher(() => { tracks = fresh; }), lnmperf: false, now: () => t.v });
         return { db, t };
@@ -20598,7 +20598,7 @@ def k518(c):
     c.eq(fly(False)[:2] + (fly(False)[2],), (True, 'FAR', ['exceeded']), 'NEAR is in the graph but leads nowhere that reaches ZZEE: no route with the restricted connectors, the search is redone once with the connectors of before: the route of before (FAR) and the check says the limit that is exceeded — a route that violates never becomes « no route »', what='fallback')
 @case('K519', 'Route engine, SOG-0561 lot 1: a rule of Annex 2B whose AIRWAY column is a list of aliases ("(H1, UH1)", "H1, UH1") or the short form "H/UH1" (the same airway under its lower and its upper name) is read for the airway that the flight flies, instead of being judged "not concerned" in silence (103 rules of the cycle, 8 on one real flight, 2 of them among the nine errors of the IFPS); an unclosed list stays unread; the search avoids a prohibition written that way',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0561, the nine errors of a real validation): « une règle écartée en silence est pire qu\'une règle non lue » ; the measure: the column « Airway » of 103 rules of the cycle is « (P83, UP83) » ; `target` compared the whole text with the airway of the leg, found nothing and answered « this rule does not concern this flight » (decided, no finding, not even counted as unread). Invented base (ZZAA → ZZBB, the airway UH1, a second airway UH2 by an invented point Q2), rules written like the real ones',
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0561, the nine errors of a real validation): « une règle écartée en silence est pire qu\'une règle non lue » ; the measure: the column « Airway » of 103 rules of the cycle is « (P83, UP83) » ; `target` compared the whole text with the airway of the leg, found nothing and answered « this rule does not concern this flight » (decided, no finding, not even counted as unread). Invented base (ZZAA → ZZBB, the airway UH1, a second airway UH2 by an invented point Q2), rules written like the real ones',
       )
 def k519(c):
     import sys
@@ -20627,7 +20627,7 @@ def k519(c):
     c.ok(('UH1', 'P2', 'P3') not in legs and any(w == 'UH2' for w, _a, _b in legs), str(legs), 'a prohibition written « (H1, UH1) P2–P3, not available for traffic » is avoided by the SEARCH: the route takes UH2 by Q2 (red before: the shorter UH1 P2–P3, the rule silently dropped)')
 @case('K520', 'Route engine, SOG-0561 lot 2: a condition of the RAD written as numbered alternatives (an OR) is TRUE as soon as one alternative is true, even when another alternative carries a level that is not read ("2. ARR ZZCC & ABV FL100 IN ZZ") — before, the level guard refused the whole text (LF2272, one of the nine errors of a real validation: the arrival EIDW was listed in alternative 1 and the rule stayed « unread »)',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0561, lot 2: « le OU des alternatives numérotées avant le garde-fou de niveau »). `condition` looked for level words on the WHOLE text before it read the numbered alternatives; an alternative that is decided true makes an OR true whatever the others say, and an alternative that is not read stays « not decided » (it never makes a rule violated by itself). Invented base, rules written like LF2272',
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0561, lot 2: « le OU des alternatives numérotées avant le garde-fou de niveau »). `condition` looked for level words on the WHOLE text before it read the numbered alternatives; an alternative that is decided true makes an OR true whatever the others say, and an alternative that is not read stays « not decided » (it never makes a rule violated by itself). Invented base, rules written like LF2272',
       )
 def k520(c):
     import sys
@@ -20648,7 +20648,7 @@ def k520(c):
     c.eq(sorted(i['id'] for st in p.get('not_verified') or [] for i in st['items']), ['ZZ6002'], 'only the rule whose alternatives are not all decided stays unread (ZZ6003 is decided: allowed)', what='unread')
 @case('K526', 'Route engine and launcher, SOG-0563 + SOG-0557: `route/levels` reports its progress after EACH level (`job.step` done / total: before, one step at the beginning and one at the end, so the screen showed nothing for 70 to 106 s of the level « Auto ») and keeps the answer of an IDENTICAL request (same flight, date and levels, same state of the data and of the engine) in the cache of the results — the second call computes nothing; a changed file of the data, other levels, a cancelled call (partial) are never answered from it',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0557 « route/levels garde son résultat pour une demande identique, dans un cache BORNÉ ; une donnée qui change le périme » and SOG-0563 « plan.levels prend un rappel on_level(n_done, n_asked), appelé après chaque niveau ; route.py passe job.step(\'route : niveaux\', d, t, \'niveau\') »). The cache is the one of `route/compute` (`results_cache`: 64 files, 4 MB each, signature of the data and of the code of the engine); an entry expires at the end of the UTC day (the NAT tracks of the day). Invented base',
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0557 « route/levels garde son résultat pour une demande identique, dans un cache BORNÉ ; une donnée qui change le périme » and SOG-0563 « plan.levels prend un rappel on_level(n_done, n_asked), appelé après chaque niveau ; route.py passe job.step(\'route : niveaux\', d, t, \'niveau\') »). The cache is the one of `route/compute` (`results_cache`: 64 files, 4 MB each, signature of the data and of the code of the engine); an entry expires at the end of the UTC day (the NAT tracks of the day). Invented base',
       )
 def k526(c):
     import os
@@ -20706,9 +20706,9 @@ def k526(c):
     c.eq(after_data, 3, 'a file of the data that changes (the RAD workbook) makes the entry stale: computed again', what='data')
     c.eq((partial['stopped'], partial['levels'], after_p, after_partial), ('cancelled', [], 4, 5), 'a cancelled call (partial) is answered but never kept: the next identical request is computed (the 5th call of the engine, not answered from a partial)', what='partial')
     c.eq(again['stopped'], 'end', 'the next call after a cancelled one is complete', what='again')
-@case('K529', 'Route engine and launcher, SOG-0557 (the conditions of the cache of `route/levels`, the ergonomist 24 Nov): the entry is written under data/local/route-cache/ (never elsewhere), holds no callsign nor registration (the request is closed: such a field is refused), is BOUNDED in number, is expired by a change of the files of the base, a damaged or hand-modified entry is ignored (the calculation is redone), and an answer served from the cache keeps the time of its ORIGIN',
+@case('K529', 'Route engine and launcher, SOG-0557 (the conditions of the cache of `route/levels`, the ergonomist 23 Nov): the entry is written under data/local/route-cache/ (never elsewhere), holds no callsign nor registration (the request is closed: such a field is refused), is BOUNDED in number, is expired by a change of the files of the base, a damaged or hand-modified entry is ignored (the calculation is redone), and an answer served from the cache keeps the time of its ORIGIN',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (conditions of the cache of `route/levels`): « sous data/local/, jamais dans le dépôt ; BORNÉ en nombre d\'entrées et en taille ; sa CLÉ contient l\'état des données ; il ne contient ni indicatif ni immatriculation ; un résultat servi par le cache garde son heure de calcul d\'ORIGINE ». Sécurisation (c): « fais vérifier que le texte du fichier gardé ne contient ni indicatif ni immatriculation ». Invented base',
+      rule='The ergonomist through the relay, 23 Nov 2026 (conditions of the cache of `route/levels`): « sous data/local/, jamais dans le dépôt ; BORNÉ en nombre d\'entrées et en taille ; sa CLÉ contient l\'état des données ; il ne contient ni indicatif ni immatriculation ; un résultat servi par le cache garde son heure de calcul d\'ORIGINE ». Sécurisation (c): « fais vérifier que le texte du fichier gardé ne contient ni indicatif ni immatriculation ». Invented base',
       )
 def k529(c):
     import json
@@ -20782,7 +20782,7 @@ def k529(c):
     c.ok(kept_files <= 3, str(kept_files), 'the cache is BOUNDED in number: with a limit of three entries, five different requests leave three files at most')
 @case('K530', 'Route engine, SOG-0576 lot 1b: a level group that LOWERS the level is written where the control accepts it — a descent to FL240 that begins before a direct whose floor is FL245 (the free route of the United Kingdom) is written on the point AFTER that direct, not on its first point (« ADHAV/F240 DCT LEMGU » : the engine wrote a text that its own control refused: « sous le plancher FL245 », and Eurocontrol answered ROUTE165); and the sector of a centre (« VIA LFRRN ») is named « space without contour », no longer « unread » (LF2923)',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0576, the third real validation, error 8; the invariant « le moteur n\'écrit pas un texte que son propre contrôle refuse », the same family as SOG-0517 (2)): `level_marks` wrote the group on the point where the profile BEGINS the descent; a group holds from that point, so the next direct was flown below its floor. Unit case on invented legs (the same shape as EGLL → EIDW: FOXLA DCT LEMGU, then M17 LEMGU–VATRY, the descent from FL250 to FL240); the round trip of the real flights is in the replay (DECISIONS)',
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0576, the third real validation, error 8; the invariant « le moteur n\'écrit pas un texte que son propre contrôle refuse », the same family as SOG-0517 (2)): `level_marks` wrote the group on the point where the profile BEGINS the descent; a group holds from that point, so the next direct was flown below its floor. Unit case on invented legs (the same shape as EGLL → EIDW: FOXLA DCT LEMGU, then M17 LEMGU–VATRY, the descent from FL250 to FL240); the round trip of the real flights is in the replay (DECISIONS)',
       )
 def k530(c):
     import sys
@@ -20801,7 +20801,7 @@ def k530(c):
 
 @case('K534', 'Route engine / launcher, SOG-0586 (Auto 2): route/levels keeps ONE ENTRY PER LEVEL as soon as that level is judged — a call cancelled after its first level keeps it, a second call (the same flight, the same list or another one) re-reads the levels kept and computes only the others (`kept` names them), a change of the data or an expired day computes them all again, an interrupted level is never kept, a damaged entry is ignored; the entries of the levels live in a folder of their own bounded on its own: twelve levels per click never push out the entry of a whole call',
       'K', static=True,
-      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0586; Features SOG: « ce que le second temps a déjà calculé n\'est PAS perdu à l\'interruption »; the ergonomist\'s condition for Sécurisation: « une entrée par niveau ne doit pas faire sauter la borne. Un cas rouge sans la garde »): one entry per level, same conditions as K529 (under data/local/route-cache/, no callsign or registration, the request closed, expires with the day and with the data), the key = the request of ONE level (the fields of route/compute, `levels` and `first_valid` out); the entry is read as an untrusted file (size, version, key, signature, expiry, then the shape of a level row). Invented set of the bench of K526',
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0586; Features SOG: « ce que le second temps a déjà calculé n\'est PAS perdu à l\'interruption »; the ergonomist\'s condition for Sécurisation: « une entrée par niveau ne doit pas faire sauter la borne. Un cas rouge sans la garde »): one entry per level, same conditions as K529 (under data/local/route-cache/, no callsign or registration, the request closed, expires with the day and with the data), the key = the request of ONE level (the fields of route/compute, `levels` and `first_valid` out); the entry is read as an untrusted file (size, version, key, signature, expiry, then the shape of a level row). Invented set of the bench of K526',
       )
 def k534(c):
     import os
@@ -20899,3 +20899,105 @@ def k534(c):
     c.eq(bound, (2, True), 'GUARD — five more levels with a bound of two: the levels folder holds two entries, and the entries of whole calls are still there (red without the folder of its own: the levels push the whole calls out)', what='bound')
     c.eq(interrupted_kept, 0, 'an interrupted level is never kept', what='interrupted')
     c.eq(n_damaged, [310, 320], 'a damaged entry is ignored: the levels are computed', what='damaged')
+
+@case('K531', 'Route engine, SOG-0576 lot A: when the FRA workbook gives a direct TWO bands (a low one, entry then exit; a high one, entry then continuation), the control of a typed route reads the band that CONTAINS the filed level — the same one the search flew — and no longer the first one listed (« niveau … hors de la bande », which made 7 of the 24 computed routes come back worse from the control); a direct whose ONLY band is the low one stays refused at FL330',
+      'K', static=True,
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0576, lot A « sans groupe »; the invariant « le moteur n\'écrit pas un texte que son propre contrôle refuse »): `assess` took `matches[0]` of `Fra.match` when the route carried no search hint, whatever the level; the search, which keeps the band of its own edge, took the high one. Invented set: an invented FRA workbook (TESTFRA) with two bands on T2–T3, a route of invented points; the replay of 160 flights is in DECISIONS (7 of the 24 round trips fixed, none worse)',
+      )
+def k531(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view
+    dms = lambda v, hemi: f"{hemi}{int(abs(v)):02d}{int(round((abs(v) - int(abs(v))) * 60)):02d}00" if hemi == 'N' else f"{hemi}{int(abs(v)):03d}{int(round((abs(v) - int(abs(v))) * 60)):02d}00"
+    nodes = {'T1': (55.0, 12.0), 'T2': (55.0, 14.0), 'T3': (55.0, 16.0), 'T4': (55.0, 18.0)}
+    row = lambda ident, role, band: ['', '', ident, dms(nodes[ident][0], 'N'), dms(nodes[ident][1], 'E'), 'TESTFRA', role, '-', '', '', '-', band, 'H24', 'XXXX', '']
+    wide, low, high = 'FL195 / FL660', 'FL175 / FL245', 'FL245 / FL660'
+    two = [row('T1', 'E', wide), row('T2', 'X', wide), row('T2', 'E', low), row('T2', 'E', high), row('T3', 'X', low), row('T3', 'I', high), row('T4', 'X', high)]
+    only_low = [row('T1', 'E', wide), row('T2', 'X', wide), row('T2', 'E', low), row('T3', 'X', low), row('T4', 'X', low)]
+
+    def check(rows, fl):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+                ai = json.load(f)
+            ai['data']['rows'] += [['XSTA', 'DEPART', 55.0, 10.0, 20, 0, 0], ['XEND', 'ARRIVE', 55.0, 20.0, 20, 0, 0]]
+            with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+                json.dump(ai, f)
+            with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in nodes.items()]
+            with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': i + 2, 'v': v} for i, v in enumerate(rows)]}
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([book], f)
+            p = P.compute(view.to_request({'action': 'check', 'adep': 'XSTA', 'adest': 'XEND', 'fl': fl, 'date': '2026-11-10T12:00', 'route': 'XSTA DCT T1 DCT T2 DCT T3 DCT T4 DCT XEND'}), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+        bands = {(l['start']['id'], l['end']['id']): (l.get('lower'), l.get('upper')) for l in p.get('legs') or []}
+        errors = [i['text'] for i in p.get('issues') or [] if i.get('level') == 'ERREUR' and 'hors de la bande' in i['text']]
+        return p.get('verdict'), bands[('T2', 'T3')], bands[('T3', 'T4')], len(errors)
+    c.eq(check(two, 330), ('unverifiable', (24500, 66000), (24500, 66000), 0), 'FL330 on a direct that has two bands: the HIGH band (FL245–FL660) is read, the next direct continues in the same free-route area, no band error — red before: (violates, (17500, 24500), (None, None), 1)', what='high')
+    c.eq(check(only_low, 330)[0::3], ('violates', 1), 'a direct whose only band is the low one is still refused at FL330 (a low lane flown in cruise stays refused)', what='guard')
+
+@case('K532', 'Route engine, SOG-0576 lot D: the control reads a name that the base places TWICE with the airway or the neighbours — two sources place the same point a few hundred metres or a few NM apart (CIV, GASGU, an added SID point) — instead of refusing the text (« Route géographiquement ambiguë », 3 computed routes out of 140 came back worse); a name that stays ambiguous after that (two positions 4 NM apart, a text with no airway to decide) is STILL refused',
+      'K', static=True,
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0576, family D: « un nom à deux positions se lève par la proximité des voisins »): `resolve_sequence` refused when two chains differed by less than 0.5 %; two positions of the same name within 2 NM are now the SAME point (`same_place`), and an ambiguity that remains is lifted by the airway that follows or precedes the point (`resolve_context`) before it is said. Invented set: a point TD placed twice, the airway L9 on one of the two; the replay of 160 flights is in DECISIONS',
+      )
+def k532(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view
+
+    def check(bare, air, route, homonym=False):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+                ai = json.load(f)
+            ai['data']['rows'] += [['XSTA', 'DEPART', 55.0, 10.0, 20, 0, 0], ['XEND', 'ARRIVE', 55.0, 20.0, 20, 0, 0]]
+            with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+                json.dump(ai, f)
+            pts = {'T1': (55.0, 12.0), 'T3': (55.0, 16.0), 'T4': (55.0, 17.0), 'T5': (55.0, 19.0)}
+            with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in pts.items()] + [{'id': 'TD', 'type': 'ICAO', 'lat': bare[0], 'lon': bare[1]}] + ([{'id': 'HM', 'type': 'ICAO', 'lat': 58.0, 'lon': 18.0}] if homonym else [])
+            with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            if air or homonym:
+                with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+                    al = json.load(f)
+                node = lambda n, v: {'id': n, 'lat': v[0], 'lon': v[1]}
+                if air:
+                    al['data'] += [{'route': 'L9', 'a': node('T1', pts['T1']), 'b': node('TD', air), 'lower': 2000, 'upper': 66000}, {'route': 'L9', 'a': node('TD', air), 'b': node('T3', pts['T3']), 'lower': 2000, 'upper': 66000}]
+                if homonym:      # HM: a TRUE homonym, two positions far apart (58°N, and 55°N on the airway L8): the airway decides
+                    al['data'] += [{'route': 'L8', 'a': node('T4', pts['T4']), 'b': node('HM', (55.0, 18.0)), 'lower': 2000, 'upper': 66000}, {'route': 'L8', 'a': node('HM', (55.0, 18.0)), 'b': node('T5', pts['T5']), 'lower': 2000, 'upper': 66000}]
+                with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+                    json.dump(al, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            p = P.compute(view.to_request({'action': 'check', 'adep': 'XSTA', 'adest': 'XEND', 'fl': 330, 'date': '2026-11-10T12:00', 'route': route}), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+        return p.get('verdict'), sum('ambigu' in i['text'] for i in p.get('issues') or [] if i.get('level') == 'ERREUR'), [(l['via'], l['start']['id'], l['end']['id'], l.get('kind')) for l in p.get('legs') or []][1:3]
+    on_air = 'XSTA DCT T1 L9 TD L9 T3 DCT XEND'
+    dct = 'XSTA DCT T1 DCT TD DCT T3 DCT XEND'
+    c.eq(check((55.0, 14.0), (54.96, 14.0), on_air), ('unverifiable', 0, [('L9', 'T1', 'TD', 'AIRWAY'), ('L9', 'TD', 'T3', 'AIRWAY')]), 'TD placed twice 2.4 NM apart, the airway L9 on one of them: the airway decides, the route is read (red before: « Route géographiquement ambiguë », violates)', what='airway')
+    c.eq(check((55.0, 14.0), (54.98, 14.0), on_air), ('unverifiable', 0, [('L9', 'T1', 'TD', 'AIRWAY'), ('L9', 'TD', 'T3', 'AIRWAY')]), 'TD placed twice 1.2 NM apart (the same point; the shorter chain takes the position WITHOUT the airway): read, the airway attaches to the position that has it', what='same airway')
+    c.eq(check((55.0, 14.0), (54.98, 14.0), dct)[:2], ('unverifiable', 0), 'the same point placed twice, a text with no airway: read (red before: ambiguous) — the one position or the other, the leg is the same', what='same dct')
+    c.eq(check((55.0, 14.0), (54.93, 14.0), dct)[:2], ('violates', 2), 'TD placed twice 4 NM apart, a text with no airway to decide: STILL refused, and the ambiguity is said (a homonym is never guessed)', what='guard')
+    both = 'XSTA DCT T1 DCT TD DCT T3 DCT T4 L8 HM L8 T5 DCT XEND'
+    c.eq(check((55.0, 14.0), (54.98, 14.0), both, homonym=True)[:2], ('unverifiable', 0), 'a text that has BOTH a true homonym lifted by its airway (HM, two positions far apart) AND a point placed twice 1.2 NM apart (TD) joined by DCT on both sides: read — the same place is one point, the homonym is decided by its airway (red before: « Identifiant géographiquement ambigu : TD (2 positions encore possibles) »)', what='both')
