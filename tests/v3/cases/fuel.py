@@ -11302,3 +11302,185 @@ def f319(c):
         c.wait(300)
         c.shot(f'F319_{c.design}_{w}_{c.lang}_cache.png')
     c.check_errors()
+
+
+# SOG-0586: the words decided by the ergonomist (23 Nov), written in clear (never read from the texts of the module)
+_AM_WORDS = {
+    'fr': {'busy': 'Calcul des {n} autres niveaux en cours…', 'none': 'Les {n} autres niveaux n’apportent rien de mieux.',
+           'better': 'Un niveau plus économe a été trouvé : FL{x}.', 'see': 'Voir'},
+    'en': {'busy': 'Computing the {n} other levels…', 'none': 'The {n} other levels bring nothing better.',
+           'better': 'A more economical level was found: FL{x}.', 'see': 'Show'},
+    'de': {'busy': 'Berechnung der {n} weiteren Flugflächen läuft…', 'none': 'Die {n} weiteren Flugflächen bringen nichts Besseres.',
+           'better': 'Eine sparsamere Flugfläche wurde gefunden: FL{x}.', 'see': 'Anzeigen'},
+    'es': {'busy': 'Calculando los {n} otros niveles…', 'none': 'Los {n} otros niveles no aportan nada mejor.',
+           'better': 'Se ha encontrado un nivel más económico: FL{x}.', 'see': 'Ver'},
+}
+
+
+def _am_better(lv):
+    """The level of the second time that is cheaper: the first one the semicircular rule accepts (its route is 200 NM, the others 330+)."""
+    return next((x for x in lv if _ne_semi(x) == 'ok'), lv[0])
+
+
+def _am_answer(lv, mode=None):
+    """route/levels for SOG-0586: every level « non vérifiable » with a route of its own (330 NM and more, growing with the level); in the
+    second time (`mode`), « better »: one level with a route of 200 NM (cheaper), « none »: every route of 600 NM (nothing better)."""
+    res = _ne_answer(lv)
+    for x in res['levels']:
+        f = x['fl']
+        nm = 330.0 + (f - 100) / 5
+        if mode == 'better' and f == _am_better(lv):
+            nm = 200.0
+        elif mode == 'none':
+            nm = 600.0
+        x.update(route=f'LFRS XQA{f} XQNE', distance_nm=nm, verdict='unverifiable', unverifiable_count=2, violations_count=0,
+                 points=[{'id': 'LFRS', 'lat': 47.15, 'lon': -1.61}, {'id': f'XQA{f}', 'lat': 48.3, 'lon': 0.9}, dict(_XQNE)])
+    return res
+
+
+def _am_setup(c, mode):
+    """« Auto » on LFRS → XQNE, levels from FL100 to the ceiling (FL250: 16 levels, 12 candidates); the first route/levels answered at
+    once, the second one held until A['hold'] is False, then answered in `mode`. Returns (st, A, the levels of the first call)."""
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    A = {'first': None, 'hold': True, 'mode': mode}
+
+    def rule(asked):
+        t = tuple(asked)
+        if A['first'] is None:
+            A['first'] = t
+        if t == A['first']:
+            return _am_answer(list(asked))
+        return None if A['hold'] else _am_answer(list(asked), A['mode'])
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    first = _auto_ne(c, st, rule, 10000)
+    c.until(f"(document.querySelector('{FUEL} [data-lvlwhy] [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=10000,
+            what='« Auto » has kept a level')
+    return st, A, first
+
+
+def _am_seconds(st, first):
+    """The route/levels requests of the second time (levels other than those of the first call), in order."""
+    return [p['args']['levels'] for p in st['posts'] if 'levels' in (p.get('args') or {}) and tuple(p['args']['levels']) != tuple(first)]
+
+
+def _am_line(c):
+    return norm(c.text(f'{FUEL} [data-routealts] [data-automore] > span') or c.text(f'{FUEL} [data-routealts] [data-automore]') or '')
+
+
+def _am_fls(c):
+    return c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => (e.querySelector('[data-altfl]')?.textContent || '')"
+                f" + (e.querySelector('[data-autokept]') ? ' auto' : ''))")
+
+
+@case('F320', '« Auto » in two times: the first route/levels judges the SEVEN first candidates only; once « Calculer A → B » has drawn '
+      'the list, the other levels are computed behind it — « Calcul des 5 autres niveaux en cours… » under the list, no line moving; '
+      'a new « Calculer » cancels that second time and starts it again after its answer; at the end « Un niveau plus économe a été trouvé '
+      ': FLxxx. » with « Voir », and only « Voir » remakes the list and moves the pill « Auto » (and the level) to that level',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0586 (the ergonomist, 23 Nov: K = 7 measured on 10 flights × 2 aircraft, the second time after « Calculer », the line '
+      'and its three states, « Voir », a « Calculer » cancels it and starts it again); a fake launcher, an invented sheet, arrival and routes')
+def f320(c):
+    W = _AM_WORDS[c.lang]
+    st, A, first = _am_setup(c, 'better')
+    c.eq(len(first), 7, 'the first time judges seven levels (red before: the twelve candidates at once)', what='first time')
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 5", timeout=10000, what='the list of five lines')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-automore]')", timeout=10000, what='the line of the second time')
+    rest = _am_seconds(st, first)
+    c.ok(len(rest) == 1 and len(rest[0]) == 5 and not set(rest[0]) & set(first), [rest, first], 'one second request, the 5 other levels')
+    c.eq(_am_line(c), norm(W['busy'].format(n=5)), 'the line under the list while the others are computed', what='busy')
+    before = _am_fls(c)
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts] [data-automore]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F320_{c.design}_{w}_{c.lang}_busy.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # a new « Calculer » cancels the second time, then starts it again after its answer
+    n_cancel = len(st.get('cancels') or [])
+    _compute_now(c, st)
+    for _ in range(60):
+        if len(_am_seconds(st, first)) >= 2:
+            break
+        c.wait(200)
+    c.ok(len(st.get('cancels') or []) > n_cancel, st.get('cancels'), 'the second time cancelled by « Calculer »')
+    c.eq(len(_am_seconds(st, first)), 2, 'started again after the answer', what='again')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-automore]')", timeout=10000, what='the line back')
+    # the end: a cheaper level found — said with « Voir »; nothing moves before the gesture
+    x = _am_better(rest[0])
+    A['hold'] = False
+    c.until(f"(w) => (document.querySelector('{FUEL} [data-routealts] [data-automore]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ')"
+            f".includes(w)", norm(W['better'].format(x=f'{x:03d}')), timeout=10000, what='« Un niveau plus économe a été trouvé »')
+    c.eq(norm(c.text(f'{FUEL} [data-routealts] [data-automore] [data-do=automore]') or ''), norm(W['see']), 'the gesture « Voir »', what='see')
+    c.eq(_am_fls(c), before, 'no line moved before « Voir »', what='still')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts] [data-automore]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F320_{c.design}_{w}_{c.lang}_better.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.tap(f'{FUEL} [data-routealts] [data-do=automore]')
+    c.until(f"(w) => [...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].some(e => (e.querySelector('[data-altfl]')?.textContent"
+            f" || '') === w && !!e.querySelector('[data-autokept]'))", f'FL{x:03d}', timeout=10000, what='the pill « Auto » on the level found')
+    c.until(f"(v) => document.querySelector('{FUEL} input[data-k=fl]').value === v", str(x), timeout=10000, what='the level moved to it')
+    c.eq(c.count(f'{FUEL} [data-routealts] [data-automore]'), 0, 'the line gone once seen', what='gone')
+    c.check_errors()
+
+
+@case('F321', '« Auto » in two times: when the other levels bring nothing better, the line under the list says « Les 5 autres niveaux '
+      'n’apportent rien de mieux. », with no gesture; the list and the level stay',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0586 (the ergonomist, 23 Nov: the line and its three states); a fake launcher, an invented sheet, arrival and routes')
+def f321(c):
+    W = _AM_WORDS[c.lang]
+    st, A, first = _am_setup(c, 'none')
+    kept = c.js(f"document.querySelector('{FUEL} input[data-k=fl]').value")
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-automore]')", timeout=10000, what='the line of the second time')
+    before = _am_fls(c)
+    A['hold'] = False
+    c.until(f"(w) => (document.querySelector('{FUEL} [data-routealts] [data-automore]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ')"
+            f".includes(w)", norm(W['none'].format(n=5)), timeout=10000, what='« rien de mieux » (red before: no second time)')
+    c.eq(c.count(f'{FUEL} [data-routealts] [data-automore] button'), 0, 'no gesture', what='no gesture')
+    c.eq(_am_fls(c), before, 'the list stays', what='list')
+    c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=fl]').value"), kept, 'the level stays', what='level')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts] [data-automore]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F321_{c.design}_{w}_{c.lang}_none.png')
+    c.check_errors()
+
+
+@case('F322', '« Auto » in two times: a route CHOSEN by the pilot during the second time holds — the line and « Voir » stay offered under '
+      '« Itinéraire choisi »; « Voir » shows the remade list with « choisie » on the line taken, and changes neither the route nor the level',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0586 (the ergonomist, 23 Nov: « si le pilote a déjà choisi une route, son choix tient ; la ligne et Voir restent offerts »)')
+def f322(c):
+    W = _AM_WORDS[c.lang]
+    st, A, first = _am_setup(c, 'better')
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-automore]')", timeout=10000, what='the second time under way')
+    rest = _am_seconds(st, first)[0]
+    c.tap(f'{FUEL} [data-altlist] [data-alt] [data-do=rtake]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rtaken]')", timeout=8000, what='the route chosen')
+    route = c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value")
+    level = c.js(f"document.querySelector('{FUEL} input[data-k=fl]').value")
+    x = _am_better(rest)
+    A['hold'] = False
+    c.until(f"(w) => (document.querySelector('{FUEL} [data-routealts] [data-automore]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ')"
+            f".includes(w)", norm(W['better'].format(x=f'{x:03d}')), timeout=10000, what='the line under « Itinéraire choisi »')
+    c.tap(f'{FUEL} [data-routealts] [data-do=automore]')
+    c.until(f"(w) => [...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altfl]')].some(e => e.textContent === w)",
+            f'FL{x:03d}', timeout=10000, what='the remade list shows the level found')
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt] [data-chosen]'), 1, '« choisie » on the line taken', what='chosen')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), route, 'the route chosen holds', what='route')
+    c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=fl]').value"), level, 'the level chosen holds', what='level')
+    c.check_errors()
