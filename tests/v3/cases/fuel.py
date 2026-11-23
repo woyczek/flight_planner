@@ -11014,3 +11014,49 @@ def f313(c):
     _prop_open(c, tafs={}, planned=False)
     c.eq(line(), norm(f"{W['notime']} {W['obs'].format(t=at)}"), 'without a flight date, then the observation', what='no date')
     c.check_errors()
+
+
+# SOG-0566: the words, written in clear
+_PS_WORDS = {'fr': ('Périmé', 'Recalculer'), 'en': ('Stale', 'Compute again'), 'de': ('Veraltet', 'Neu berechnen'), 'es': ('Caducado', 'Recalcular')}
+
+
+@case('F315', '« Proposer un dégagement »: once the flight changes (its date or time here), the list of the proposal is said STALE — « Périmé '
+      '(calculé à …) » with « Recalculer », as for the routes —, never computed again by itself; « Recalculer » proposes again for the flight '
+      'as it is', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0566 (the user\'s recette, high priority: « On met à jour l\'horaire, mais on ne peut pas redemander un calcul. »; the '
+      'ergonomist: as for the routes, « Périmé (calculé à …) » and « Recalculer », never a computation by itself); a fake launcher and '
+      'relay, invented aerodromes')
+def f315(c):
+    import time as _t
+    stale, again = _PS_WORDS[c.lang]
+    B = f'{FUEL} [data-altnchk]'
+    calls = _prop_net(c, tafs={})
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _prop_open(c, tafs={})
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three listed')
+    c.eq(c.count(f'{B} [data-altnstale]'), 0, 'fresh: not said stale', what='fresh')
+    # the time of the flight changed (a day later): the list is said stale, with « Recalculer »; nothing computed by itself
+    n0 = len(calls)
+    later = _t.strftime('%Y-%m-%dT%H:00', _t.gmtime(int(_t.time()) + 26 * 3600))
+    c.js(f"""(() => {{ const i = document.querySelector('{FUEL} input[data-k=wxdate]'); i.value = '{later}';
+        i.dispatchEvent(new Event('input', {{ bubbles: true }})); i.dispatchEvent(new Event('change', {{ bubbles: true }})); return true }})()""")
+    c.until(f"!!document.querySelector('{B} [data-altnstale] [data-do=altnpropose]')", timeout=10000,
+            what='« Périmé (calculé à …) » with « Recalculer » (red before: the list as if nothing changed, no way to propose again)')
+    c.ok(norm(c.text(f'{B} [data-altnstale]') or '').startswith(norm(stale)), c.text(f'{B} [data-altnstale]'), '« Périmé (calculé à …) »')
+    c.eq(norm(c.text(f'{B} [data-altnstale] [data-do=altnpropose]') or ''), norm(again), 'the word of the routes', what='word')
+    c.wait(800)
+    c.eq(len(calls), n0, 'never a computation by itself', what='no call')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{B} [data-altnstale]').scrollIntoView({{block: 'center'}})")
+        c.wait(400)
+        c.shot(f'F315_{c.design}_{w}_{c.lang}_stale.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # « Recalculer »: the proposal again, for the flight as it is now
+    c.tap(f'{B} [data-altnstale] [data-do=altnpropose]')
+    c.until(f"!document.querySelector('{B} [data-altnstale]') && document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3",
+            timeout=20000, what='proposed again, no longer stale')
+    c.check_errors()
