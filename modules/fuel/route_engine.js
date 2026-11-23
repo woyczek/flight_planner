@@ -743,6 +743,17 @@ export function radOf(v) {
       space: text(own(u, 'space'), 24),
       rules: arr(own(u, 'rules'), 30).map(r => text(r, 24)).filter(Boolean)
     })).filter(u => u.space),
+    // SOG-0539 (AeroDB K500) : les règles du RAD qui nomment un terrain du vol ET visent un espace non lu, par terrain (départ, arrivée :
+    // deux au plus) ; références de 20 signes, cent au plus ; `total` jamais sous le nombre listé (une entrée non fiable)
+    terrain_rules: arr(own(v, 'terrain_rules'), 2).map(x => {
+      const rules = arr(own(x, 'rules'), 100).map(r => text(r, 20)).filter(Boolean);
+      return {
+        role: own(x, 'role') === 'arr' ? 'arr' : own(x, 'role') === 'dep' ? 'dep' : '',
+        ad: text(own(x, 'ad'), 8).toUpperCase(),
+        rules,
+        total: Math.max(int(own(x, 'total')), rules.length)
+      };
+    }).filter(x => x.role && x.ad && x.total > 0),
     items: arr(own(v, 'items'), 1500).map(x => ({
       id: text(own(x, 'id'), 32),
       reason: text(own(x, 'reason'), 200),

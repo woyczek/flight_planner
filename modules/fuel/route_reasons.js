@@ -62,6 +62,17 @@ export const ROWS = {
   ],
   // rad_unread (lot 2 d'AeroDB ; mots décidés par l'ergonome le 20/11) : une ligne par État dont des règles portent sur la route ; la
   // ligne EST le bouton qui ouvre sa liste
+  // SOG-0539 (l'ergonome) : la ligne d'un terrain du vol sous « Non vérifiable » — le verbe accordé (deux lignes : une règle, plusieurs)
+  terrainRules: ['{ad} : {n} règles du RAD citent ce terrain et un espace que nous ne lisons pas',
+    '{ad}: {n} RAD rules name this aerodrome and an airspace we do not read',
+    '{ad}: {n} RAD-Regeln nennen diesen Flugplatz und einen Luftraum, den wir nicht lesen',
+    '{ad}: {n} reglas del RAD citan este aeródromo y un espacio que no leemos'
+  ],
+  terrainRules1: ['{ad} : {n} règle du RAD cite ce terrain et un espace que nous ne lisons pas',
+    '{ad}: {n} RAD rule names this aerodrome and an airspace we do not read',
+    '{ad}: {n} RAD-Regel nennt diesen Flugplatz und einen Luftraum, den wir nicht lesen',
+    '{ad}: {n} regla del RAD cita este aeródromo y un espacio que no leemos'
+  ],
   rad_unread: ['{zone} : {n} règle(s) du RAD portent sur cette route', '{zone}: {n} RAD rule(s) apply to this route',
     '{zone}: {n} RAD-Regel(n) betreffen diese Route', '{zone}: {n} regla(s) del RAD se aplican a esta ruta'
   ],

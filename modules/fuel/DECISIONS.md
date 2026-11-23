@@ -2585,3 +2585,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « Contrôler » (a typed route, no verdict line) the title of the fold stays « Non vérifiable : N points »: there it is the verdict. The
   RAD line stays under the verdict of that box (« once per screen »): the box and the list are never on screen together (« Contrôler »
   replaces the list in the same place). Case F309, red before.
+- **23 Nov 2026 — the RAD rules that name a terrain of the flight, under « Non vérifiable »** (SOG-0539, screen side; the
+  ergonomist's fiche; AeroDB K500 `rad.terrain_rules`). Under « Non vérifiable », one closed line per terrain (departure first, two at
+  most) when n > 0: « {terrain} : {n} règles du RAD citent ce terrain et un espace que nous ne lisons pas » (one rule: « cite »; the frame's
+  plural marks do not agree a verb, so two rows). It opens like the line of a State: one reference per line, sorted, 40 at most, then
+  « et {n} autres » (n = total − 40); the references come from the RAD: written with esc. Out of the count: the verdict and its count do
+  not change. The lines follow the group « Non vérifiable » of each route (the terrains are the flight's: the same on every route) and of
+  the box « Contrôler »; a route without that group shows none (the sentence above the list says the airspace rules, SOG-0552). Read
+  bounded by `RE.radOf` (2 terrains, 100 references of 20 signs). Case F310, red before.

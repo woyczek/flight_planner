@@ -4773,7 +4773,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
         errors: []
       } : a),
       ok = !a?.verdict || a.verdict === 'conform' ? `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>` : '';
-    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : ok}${a ? verdictsHtml(a, true) : ''}${limitsHtml(n)}`;
+    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : ok}${a ? verdictsHtml(a, true, n.rad?.terrain_rules || []) : ''}${limitsHtml(n)}`;
     S.ralts = null;
     if (a) altsPublish('check', [a], [r.points || []]); // la route tapée est déjà lue : ses points (INTEGRATION § 3 bis)
     renderPts();
@@ -6818,7 +6818,7 @@ function unverifTitle(list, n = 0) {
 /** SOG-0532 (3) : les deux groupes, montrés s'ils ont des lignes — « Règles connues enfreintes », « Non vérifiable : N point(s) » ;
  *  chaque ligne composée dans la langue de l'écran (RR.compose, posée par esc), sept au plus, puis « et N autre(s) » qui ouvre le
  *  reste. `open` : dépliés (le contrôle d'une route tapée). */
-function verdictsHtml(a, open = false) {
+function verdictsHtml(a, open = false, terrain = S.ralts?.n?.rad?.terrain_rules || []) {
   const lang = S.ctx.lang(),
     // SOG-0532 lot 2 (l'ergonome) : la ligne d'un État dont des règles du RAD portent sur la route EST le bouton qui ouvre leur liste
     // (sept, puis le reste) ; sans liste, une ligne simple
@@ -6831,7 +6831,11 @@ function verdictsHtml(a, open = false) {
         li = x => `<li data-rule>${esc(RR.ruleLine(x, tt))}</li>`;
       return it.length ? `<li data-reason="${esc(r.code)}"><details class="fu-faultmore" data-staterules><summary>${text}</summary><ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? `<details class="fu-faultmore" data-rulesmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: it.length - 7 }))}</summary><ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul></details>` : ''}</details></li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
     },
-    group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
+    // SOG-0539 (l'ergonome) : sous « Non vérifiable », une ligne fermée par terrain du vol dont des règles du RAD le citent avec un espace
+    // non lu ; elle s'ouvre comme la ligne d'un État : une référence par ligne (esc : elles viennent du RAD), 40 au plus, puis « et {n}
+    // autres » ; hors du compte du verdict
+    terrainLi = x => `<li data-reason="terrain_rules" data-role="${esc(x.role)}"><details class="fu-faultmore" data-terrainrules><summary>${esc(tt(x.total === 1 ? RR.ROWS.terrainRules1 : RR.ROWS.terrainRules, { ad: x.ad, n: x.total }))}</summary><ul class="fu-faultlist">${x.rules.slice(0, 40).map(r => `<li data-rule>${esc(r)}</li>`).join('')}${x.total > 40 ? `<li class="f-muted" data-terrainmore>${esc(tt(RR.ROWS.more, { n: x.total - 40 }))}</li>` : ''}</ul></details></li>`,
+    group = (list, kind, title, cls, extra = '') => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}${extra}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
     R = a.reasons || {
       violates: [],
       unverifiable: []
@@ -6851,7 +6855,7 @@ function verdictsHtml(a, open = false) {
   // SOG-0554 : sur une carte, le verdict est dit en gras au-dessus — le pli dit ce qu'il ouvre ; dans la boîte « Contrôler » (open, sans
   // ligne de verdict), le titre du pli EST le verdict
   return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', open ? unverifTitle(R
-    .unverifiable) : tt(TX.rSeeWhy), 'f-warn') + level + levelNote + note;
+    .unverifiable) : tt(TX.rSeeWhy), 'f-warn', (terrain || []).map(terrainLi).join('')) + level + levelNote + note;
 }
 /** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
  *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */
