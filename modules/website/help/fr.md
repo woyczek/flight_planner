@@ -19,7 +19,7 @@ tout comme avant.
 
 **Lire depuis le lanceur.** Sur un poste où l'appli est servie par le lanceur, « Lire depuis le lanceur » va chercher la
 page du site pour vous, sans collage, puis montre le même aperçu. Là où le site n'est pas joignable (téléphone sans
-lanceur), le bouton s'efface et le collage reste la porte.
+lanceur), le bouton s'efface et le collage reste le seul moyen.
 
 **La compagnie.** La carte Compagnie donne le nom, l'adresse du site et le chemin de ses pages (« Enregistrer mon vol »,
 journal, flotte, page d'un appareil). Elle se modifie sur un écran d'ordinateur et s'affiche en lecture sur un
