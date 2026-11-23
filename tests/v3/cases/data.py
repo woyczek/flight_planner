@@ -11932,7 +11932,7 @@ def l181(c):
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone"), 'ok', 'a country that can receive something is still « ok » (green): the map never paints it as to do', what='tone ok')
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').getAttribute('aria-label')").split(' : ')[1].startswith(W['redo']), True, 'the label of the map path says « à jour · relecture possible »', what='map label')
     # ---- 2. ONE « Relire tous les pays (n) » above every list; two countries at least (here three); no grey
-    c.eq([c.count('[data-reread-all] button'), norm(c.text('[data-reread-all] button')), c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-groups]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))"),
+    c.eq([c.count('[data-reread-all] button'), norm(c.text('[data-reread-all] button')), c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-cw-groups]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))"),
          c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-todo-state]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))")],
          [1, norm(W['all']), True, True], 'ONE « Relire tous les pays (3) » above the list of the month and the packs, with the number of countries to reread', what='reread all')
     c.eq(c.js("document.querySelector('[data-reread-all] button').disabled"), False, 'and it is never grey', what='not grey')
