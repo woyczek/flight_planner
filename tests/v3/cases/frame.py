@@ -11919,3 +11919,33 @@ def a371(c):
     c.ok(any(norm(x) for x in rows), rows, 'the status block has its lines')
     c.eq([x for x in rows if word.lower() in x.lower()], [], f'no line of the status block names « {word} » (it is the screen it is shown on)', what='no self-reference')
     c.eq(sum(1 for x in rows if c.lang == 'fr' and 'Touchez pour régler l’accès' in x), 1 if c.lang == 'fr' else 0, 'the access line says « Touchez pour régler l’accès » (French run)', what='access hint')
+
+
+@case('A372', "Maintenance › Administration › Folders of this computer: a long Windows path breaks into lines instead of making the page scroll sideways (SOG-0585, found reading the captures of the frame texts lot 1): at 390 px the page is no wider than the screen and the whole path is read", 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0585 (bug of layout, no new text): a path such as C:\\Users\\p\\AppData\\Roaming\\ABarthel\\little_navmap_db has no break opportunity: its line pushed the page to 496 px on a 390 px screen; `overflow-wrap: anywhere` on the folder lines')
+def a372(c):
+    B = chr(92)
+    long_path = B.join(['C:', 'Users', 'pilote', 'AppData', 'Roaming', 'ABarthel', 'little_navmap_db'])
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    rows = [{'id': 'suite', 'path': 'C:' + B + 'SOG', 'exists': True, 'from': 'install'}, {'id': 'lnmdb', 'path': long_path, 'exists': False, 'from': 'lnm'}]
+
+    def launcher(route):
+        url = route.request.url
+        body = status if url.endswith('/__setup/status') else {'folders': rows} if url.endswith('/__setup/folders') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings?card=admin', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-act=\"adminPanel\"][data-panel=\"folders\"]')", what='the « Dossiers du poste » entry')
+    c.tap('[data-act="adminPanel"][data-panel="folders"]')
+    c.until("document.querySelectorAll('[data-folder]').length === 2", what='the two folders listed')
+    c.wait(300)
+    c.eq(c.text('[data-folder="lnmdb"] [data-folder-path]'), long_path, 'the whole path is in the page, read-only', what='path text')
+    sc = c.js("(() => { const s = document.scrollingElement; return [s.scrollWidth, s.clientWidth] })()")
+    c.ok(sc[0] <= sc[1] + 1, sc, 'the page is no wider than the screen (scrollWidth <= clientWidth): a long path breaks into lines')
+    c.ok(c.js("[...document.querySelectorAll('[data-folder]')].every(li => li.getBoundingClientRect().right <= innerWidth + 1)"), 'a folder line sticks out of the screen', 'every folder line ends inside the screen')
+    c.js("document.querySelector('[data-folder=lnmdb]').scrollIntoView({block: 'center'})")      # the shot shows the whole line of the long path, between the bars
+    c.wait(200)
+    c.shot(f'A372_dossiers_{c.width}.png')
+    c.check_errors()

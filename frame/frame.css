@@ -1849,6 +1849,10 @@ p.f-back {
 .f-status>h2 {
   margin: 0 14px 8px
 }
+/* « Dossiers du poste » (Maintenance › Administration) : un chemin Windows long n'a aucun point de coupure (« C:\Users\p\AppData\… ») : il passe à la ligne où il faut au lieu de faire défiler la page (SOG-0585) */
+[data-card="folders"] [data-folder] {
+  overflow-wrap: anywhere
+}
 .f-status-list {
   list-style: none;
   margin: 0;
