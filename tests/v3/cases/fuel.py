@@ -11215,7 +11215,7 @@ def f318(c):
 
 # SOG-0563: the words of the progress of « Auto », written in clear (the ergonomist, 23 Nov)
 _AP_WORDS = {'fr': 'Auto : calcul en cours, niveau {n} sur {t}.', 'en': 'Auto: computing, level {n} of {t}.',
-             'de': 'Auto: Berechnung läuft, Fläche {n} von {t}.', 'es': 'Auto: calculando, nivel {n} de {t}.'}
+             'de': 'Auto: Berechnung läuft, Flugfläche {n} von {t}.', 'es': 'Auto: calculando, nivel {n} de {t}.'}
 
 
 @case('F317', '« Auto » level: while the route engine judges the levels, the line under the Level field says WHERE it is — « Auto : calcul '

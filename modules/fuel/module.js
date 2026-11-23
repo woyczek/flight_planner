@@ -1469,7 +1469,7 @@ const TX = {
   ],
   // SOG-0563 (l'ergonome) : la recherche d'« Auto » dit où elle en est ; « route valide » n'est jamais affirmé
   levelAutoBusy: ['Auto : calcul en cours, niveau {n} sur {t}.', 'Auto: computing, level {n} of {t}.',
-    'Auto: Berechnung läuft, Fläche {n} von {t}.',
+    'Auto: Berechnung läuft, Flugfläche {n} von {t}.',
     'Auto: calculando, nivel {n} de {t}.'
   ],
   levelAutoUnchecked: ['{fl} (auto) · {t} — route non vérifiée ({why})', '{fl} (auto) · {t} — route not checked ({why})',
