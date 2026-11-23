@@ -2599,8 +2599,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **23 Nov 2026 — a connector beyond its limit for want of a procedure read says so and offers the reading** (SOG-0548, the
   ergonomist). On the line « enfreint » of a `connector_limit`, when Fuel holds no arrival (or no departure) for that terrain (the base's
   procedures, doubtful ones left out; `procHave`, kept per terrain): « — aucune arrivée lue pour {terrain} » (« aucun départ lu pour… »)
-  and the reading gesture of the Procedures block (`S.P.readButtonFor`, SOG-0527: the same words, the same call, nothing when the State
-  is not read). Nothing for a terrain whose procedures are read. Once a reading has brought the procedure of such a connector, the list
+  and the reading gesture of the Procedures block (`S.P.readButtonFor`, SOG-0527: the same call, nothing when the State is not read);
+  out of its block the label says the action and its object, « Lire les procédures de {terrain} » (`action`), never the mode « Lire à
+  la demande » (the ergonomist's retouch; the block keeps its words). Nothing for a terrain whose procedures are read. Once a reading has brought the procedure of such a connector, the list
   is said stale (`procStale`: « Périmé » with « Recalculer ») — the next computation takes the procedure; never a computation by itself.
   No new host. Case F311, red before. Found on the way: `TX.rStale` was defined twice — the row of SOG-0533 (157133661, « Route
   calculée pour le FL{c} — à recalculer ») overrode the row of the stale list, which said that sentence with its raw « {c} » and « {f} »;

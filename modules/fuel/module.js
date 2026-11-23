@@ -6842,7 +6842,7 @@ function noProcHtml(v) {
   if (!['dep', 'arr'].includes(end)) return '';
   const h = procHave(ad);
   if (!h || h[end === 'dep' ? 'SID' : 'STAR']) return '';
-  const b = typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(ad) : '';
+  const b = typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(ad, false, true) : ''; // l'action et son objet (l'ergonome)
   return `<span class="f-warn" data-noproc> — ${esc(tt(end === 'dep' ? TX.rNoDepRead : TX.rNoArrRead, { ad }))}</span>${b ? ` ${b}` : ''}`;
 }
 /** SOG-0548 : une lecture de procédures finie pour `k` — ce que Carburant en tient relu ; si elle a apporté la procédure d'un raccord

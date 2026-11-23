@@ -736,12 +736,14 @@ export function createProcedures(host) {
   /** SOG-0527 (1) : le bouton de lecture d'un terrain HORS de la carte (la ligne du dégagement) — le même geste et les mêmes mots que la
    *  ligne du terrain : « Relire » pour une lecture qui existe (again), sinon « Lire les procédures de … » (« Lire à la demande » quand
    *  l'État se lit ainsi) ; rien quand les procédures de son État ne se lisent pas (le bouton échouerait). */
-  function readButtonFor(icao, again = false) {
+  // SOG-0548 (l'ergonome) : `action` — hors du bloc, le libellé dit l'action et son objet (« Lire les procédures de {ad} »), jamais le mode
+  // « Lire à la demande » ; le même geste, le même appel
+  function readButtonFor(icao, again = false, action = false) {
     const k = String(icao || '').toUpperCase();
     if (!/^[A-Z]{4}$/.test(k)) return '';
     const ps = again ? null : host.procState?.(k);
     if (ps && !ps.readable) return '';
-    return readButton(k, again ? tt(TX.procReread) : ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
+    return readButton(k, again ? tt(TX.procReread) : ps?.demand && !action ? tt(TX.procReadDemand) : tt(TX.procRead, {
       icao: k
     }), !!again);
   }
