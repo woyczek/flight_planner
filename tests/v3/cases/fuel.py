@@ -10694,3 +10694,69 @@ def f309(c):
     c.eq(norm(c.text(f'{B} details[data-reasons=unverifiable] > summary') or ''), norm(W['unv']), 'in « Contrôler », the fold IS the '
          'verdict: « Non vérifiable : 1 point »', what='check')
     c.check_errors()
+
+
+# SOG-0539: the words of the line of a terrain, written in clear (fr: the ergonomist's sentence; the verb agreed with the number)
+_TR_WORDS = {
+    'fr': {'many': 'LFRS : 45 règles du RAD citent ce terrain et un espace que nous ne lisons pas',
+           'one': 'LFML : 1 règle du RAD cite ce terrain et un espace que nous ne lisons pas', 'more': 'et 5 autres'},
+    'en': {'many': 'LFRS: 45 RAD rules name this aerodrome and an airspace we do not read',
+           'one': 'LFML: 1 RAD rule names this aerodrome and an airspace we do not read', 'more': 'and 5 others'},
+    'de': {'many': 'LFRS: 45 RAD-Regeln nennen diesen Flugplatz und einen Luftraum, den wir nicht lesen',
+           'one': 'LFML: 1 RAD-Regel nennt diesen Flugplatz und einen Luftraum, den wir nicht lesen', 'more': 'und 5 weitere'},
+    'es': {'many': 'LFRS: 45 reglas del RAD citan este aeródromo y un espacio que no leemos',
+           'one': 'LFML: 1 regla del RAD cita este aeródromo y un espacio que no leemos', 'more': 'y 5 otros'},
+}
+
+
+@case('F310', 'Route step: under « Non vérifiable », ONE closed line per terrain of the flight whose RAD rules name it and aim at an '
+      'airspace we do not read — « LFRS : 45 règles du RAD citent ce terrain et un espace que nous ne lisons pas » — which opens like the '
+      'line of a State: one reference per line, sorted, 40 at most, then « et 5 autres »; no line for a terrain without such a rule; the '
+      'verdict and its count unchanged; a reference is written as text, never as markup',
+      'F', tags=('fuel', 'aerodb', 'security'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0539 (the ergonomist, fiche in BACKLOG.md; AeroDB K500: rad.terrain_rules [{ role, ad, rules, total, cut }]; Sécurisation: '
+      'the ids come from the RAD, written with esc or textContent); a fake launcher, invented aerodromes rules (XX9xxx)')
+def f310(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _TR_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    gap = {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}
+    refs = [f'XX9{i:03d}' for i in range(1, 45)] + ['<img src=x onerror=alert(1)>']
+    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[], unverifiable=[gap])]
+    st['extra'] = {'rad': {'title': 'RAD test', 'start': '2026-10-29', 'terrain_rules': [
+        {'role': 'dep', 'ad': 'LFRS', 'rules': sorted(refs), 'total': 45, 'cut': False},
+        {'role': 'arr', 'ad': 'LFML', 'rules': ['XX9500'], 'total': 1, 'cut': False},
+        {'role': 'arr', 'ad': 'XQZZ', 'rules': [], 'total': 0, 'cut': False}]}}
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    G = f'{A} [data-alt] details[data-reasons=unverifiable]'
+    c.until(f"!!document.querySelector('{G}')", timeout=10000, what='the fold of « Non vérifiable »')
+    c.js(f"document.querySelector('{G}').open = true")
+    T = f'{G} li[data-reason=terrain_rules]'
+    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{T} > details > summary')].map(e => e.textContent)")],
+         [norm(W['many']), norm(W['one'])], 'one line per terrain, the departure first, none for a terrain without such a rule (red before: '
+         'no line)', what='lines')
+    c.eq(norm(c.text(f'{A} [data-alt] [data-verdict=unverifiable]') or ''), norm({'fr': 'Non vérifiable : 1 point', 'en': 'Cannot be verified: 1 point',
+         'de': 'Nicht prüfbar: 1 Punkt', 'es': 'No verificable: 1 punto'}[c.lang]), 'the verdict and its count unchanged', what='count')
+    c.ok(c.js(f"[...document.querySelectorAll('{T} > details')].every(d => !d.open)"), 'open', 'each line closed')
+    c.js(f"document.querySelector('{T} > details').open = true")
+    got = c.js(f"[...document.querySelector('{T} > details').querySelectorAll('li[data-rule]')].map(e => e.textContent)")
+    c.eq(len(got), 40, '40 references at most', what='40')
+    c.eq(got, sorted(refs)[:40], 'one reference per line, sorted', what='refs')
+    c.eq(norm(c.text(f'{T} > details [data-terrainmore]') or ''), norm(W['more']), 'then « et 5 autres »', what='more')
+    c.eq(c.count(f'{G} img'), 0, 'a reference is text, never markup', what='esc')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{G}').open = true; document.querySelector('{T} > details').open = true")
+        c.js(f"document.querySelector('{T}').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F310_{c.design}_{w}_{c.lang}_terrain.png')
+    c.check_errors()
