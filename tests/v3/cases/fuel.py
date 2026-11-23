@@ -10367,3 +10367,133 @@ def f306(c):
         c.js(f"document.querySelector('{A} li[data-reason=stale_cycle]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F306_{c.design}_{w}_{c.lang}_belgian.png')
     c.check_errors()
+
+
+# SOG-0545 « Auto »: the words of the list, written in clear (never read from the texts of the module)
+_RA_WORDS = {
+    'fr': {'unv': 'Non vérifiable : 2 points', 'chosen': 'choisie', 'review': 'Revoir les propositions'},
+    'en': {'unv': 'Cannot be verified: 2 points', 'chosen': 'chosen', 'review': 'Review the proposals'},
+    'de': {'unv': 'Nicht prüfbar: 2 Punkte', 'chosen': 'gewählt', 'review': 'Vorschläge erneut ansehen'},
+    'es': {'unv': 'No verificable: 2 puntos', 'chosen': 'elegida', 'review': 'Volver a ver las propuestas'},
+}
+
+
+def _ra_answer(lv):
+    """route/levels for F307: every level has a route of its own (an invented point XQA<fl> between LFRS and XQNE, a distance that grows
+    with the level), the first odd level « non vérifiable » (2 points), the second odd one in breach (1 rule), the others « conforme »;
+    the point XQX<fl> of each route comes from the X-Plane of the workstation (local: 'xplane')."""
+    res = _ne_answer(lv)
+    odd = [x for x in lv if x // 10 % 2 == 1]
+    for x in res['levels']:
+        f = x['fl']
+        x.update(route=f'LFRS XQA{f} XQX{f} XQNE', distance_nm=330.0 + (f - 200) / 5,
+                 points=[{'id': 'LFRS', 'lat': 47.15, 'lon': -1.61}, {'id': f'XQA{f}', 'lat': 48.3, 'lon': 0.9},
+                         {'id': f'XQX{f}', 'lat': 49.412345, 'lon': 3.123456, 'local': 'xplane'}, dict(_XQNE)],
+                 verdict='unverifiable' if odd[:1] == [f] else 'violates' if odd[1:2] == [f] else 'conform',
+                 unverifiable_count=2 if odd[:1] == [f] else 0, violations_count=1 if odd[1:2] == [f] else 0)
+        if x['verdict'] == 'violates':
+            x['valid'] = False
+    return res
+
+
+@case('F307', '« Auto » level, route step: « Calculer A → B » shows the route of EACH LEVEL judged (five at most) instead of the '
+      'variants of one level, with its verdict and its count; the line « Auto » keeps comes first with the pill « Auto » and « Choisir »; '
+      '« Choisir » sets that level (« Auto » removed) and writes its route, and the list gives way to « Itinéraire choisi », which offers '
+      '« Revoir les propositions »: the same list again, without a call to the engine, « choisie » on the line taken and no button there; '
+      '« Choisir » another line changes the route and the level and closes; « Auto » again sets the level, never the route; a point placed '
+      'from X-Plane is never written',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0545 « Auto » (the ergonomist, 21 Nov: the list per level replaces the variants of compute, « Calculé à » the time of that '
+      'answer; « Choisir » sets the level and removes « Auto », the kept line included; never the pill « choisie » and « Choisir » together; '
+      'the relay: « Revoir les propositions », the pendant of « Fermer les propositions », in both modes, no engine call while the flight is '
+      'unchanged); AeroDB route/levels points, unverifiable_count, violations_count (K499, K504); mock-up v2 #auto; a fake launcher, an '
+      'invented sheet, arrival and routes')
+def f307(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    W = _RA_WORDS[c.lang]
+    fl = f'{FUEL} input[data-k="fl"]'
+    A = f'{FUEL} [data-altlist]'
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    lv = _auto_ne(c, st, _ra_answer, 20000)
+    c.until(f"(document.querySelector('{FUEL} [data-lvlwhy] [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000,
+            what='« Auto » has kept a level')
+    kept = int(c.js(f"document.querySelector('{fl}').value"))
+    c.ok(kept in lv, [kept, lv], 'the level kept is one of the levels asked')
+    to_step(c, 1)
+    n_lv = sum(1 for p in st['posts'] if 'levels' in (p.get('args') or {}))
+    _compute_now(c, st)
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-altfl]').length === {min(5, len(lv))}", timeout=10000,
+            what='the route of each level judged, five at most (red before: the three variants of route/compute)')
+    rows = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ fl: e.querySelector('[data-altfl]')?.textContent || '',
+        route: e.querySelector('.fu-raltroute')?.textContent || '', verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '',
+        vtext: e.querySelector('[data-verdict]')?.textContent || '', auto: e.querySelector('[data-autokept]')?.textContent || '',
+        take: !!e.querySelector('[data-do=rtake]'), chosen: !!e.querySelector('[data-chosen]'), figs: !!e.querySelector('[data-figs]') }}))""")
+    fls = [int(re.sub(r'\D', '', r['fl']) or 0) for r in rows]
+    c.ok(set(fls) <= set(lv) and len(set(fls)) == len(fls), [fls, lv], 'one line per level judged, never a variant of route/compute')
+    c.eq(fls[0], kept, 'the line « Auto » keeps comes first', what='head')
+    c.eq(norm(rows[0]['auto']), 'Auto', 'the pill « Auto » on the line kept', what='pill')
+    c.ok(rows[0]['take'] and not rows[0]['chosen'], rows[0], '« Choisir » on the line kept, never with « choisie »')
+    c.ok(all(not r['auto'] for r in rows[1:]) and all(r['take'] and not r['chosen'] for r in rows), rows, 'the pill on that line only; '
+         '« Choisir » on every line, « choisie » on none before a choice')
+    c.ok(all(r['figs'] for r in rows), rows, 'each line with its distance, time and trip fuel')
+    tier = {'conform': 0, 'unverifiable': 1, 'violates': 2}
+    tiers = [tier.get(r['verdict'], 1) for r in rows[1:]]
+    c.eq(tiers, sorted(tiers), 'after the line kept: « conforme », then « non vérifiable », then « enfreint »', what='order')
+    unv = [r for r in rows if r['verdict'] == 'unverifiable']
+    if unv:
+        c.eq(norm(unv[0]['vtext']), norm(W['unv']), 'the count of the level said on its line (unverifiable_count)', what='count')
+    c.ok(not c.text(f'{A} [data-alt]') or 'UN10' not in (c.text(A) or ''), 'UN10', 'no variant of route/compute in the list')
+    c.ok(bool(c.text(f'{FUEL} [data-rage]')), 'age', '« Calculé à » said')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F307_{c.design}_{w}_{c.lang}_auto.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 1. « Choisir » on the line kept: its level set, « Auto » removed, its route written; the list gives way
+    c.tap(f'{A} [data-alt] [data-do=rtake]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rtaken]')", timeout=8000, what='the list gives way')
+    c.eq(c.js(f"document.querySelector('{fl}').value"), str(kept), 'the level of the line', what='level')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-do=levelauto]').getAttribute('aria-pressed')"), 'false', '« Auto » removed', what='auto off')
+    c.eq(norm(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), f'LFRS XQA{kept} XQX{kept} XQNE', 'its route written',
+         what='route')
+    d = cf_doc(c, lambda d: any(p.get('id') == f'XQX{kept}' for p in (d.get('route') or {}).get('points') or []), 'the route written',
+               timeout=12000)
+    z = {p.get('id'): p for p in (d.get('route') or {}).get('points') or []}.get(f'XQX{kept}') or {}
+    c.ok('lat' not in z and 'lon' not in z and '3.12345' not in json.dumps(d), z, 'the point from X-Plane written by name only')
+    # 2. « Revoir les propositions »: the same list, no call to the engine, « choisie » on the line taken, no button there
+    posts = len(st['posts'])
+    c.eq(norm(c.text(f'{FUEL} [data-routealts] [data-do=rreview]') or ''), norm(W['review']), 'the pendant of « Fermer les propositions »',
+         what='review')
+    c.tap(f'{FUEL} [data-routealts] [data-do=rreview]')
+    c.until(f"document.querySelectorAll('{A} [data-alt]').length === {len(rows)}", timeout=8000, what='the same list again')
+    c.eq(len(st['posts']), posts, 'no call to the engine', what='no call')
+    again = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ fl: e.querySelector('[data-altfl]')?.textContent || '',
+        chosen: e.querySelector('[data-chosen]')?.textContent || '', take: !!e.querySelector('[data-do=rtake]'),
+        auto: !!e.querySelector('[data-autokept]'), i: e.dataset.alt }}))""")
+    c.eq(sorted(norm(r['fl']) for r in again), sorted(norm(r['fl']) for r in rows), 'the same lines', what='same')
+    taken = [r for r in again if r['chosen']]
+    c.eq([(norm(r['fl']), norm(r['chosen']), r['take']) for r in taken], [(f'FL{kept:03d}', norm(W['chosen']), False)],
+         '« choisie » on the line taken, without « Choisir »', what='chosen')
+    c.ok(not any(r['auto'] for r in again), again, 'no pill « Auto » once « Auto » is removed')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F307_{c.design}_{w}_{c.lang}_review.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 3. « Choisir » another line: its route and its level, the list closes
+    pick = next(r for r in again if not r['chosen'])
+    other = int(re.sub(r'\D', '', pick['fl']))
+    c.tap(f'{A} [data-alt="{pick["i"]}"] [data-do=rtake]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rtaken]')", timeout=8000, what='the list closes')
+    c.eq(norm(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), f'LFRS XQA{other} XQX{other} XQNE', 'the other route',
+         what='other route')
+    c.eq(c.js(f"document.querySelector('{fl}').value"), str(other), 'the other level', what='other level')
+    # 4. « Auto » again: the level comes back to the one kept, the route stays (« Auto » writes the level, never the route)
+    to_step(c, 0)
+    c.tap(f'{FUEL} [data-do="levelauto"]')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(kept), timeout=10000, what='« Auto » sets the level kept again')
+    c.eq(norm(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), f'LFRS XQA{other} XQX{other} XQNE',
+         '« Auto » never writes the route', what='route kept')
+    c.check_errors()
