@@ -1386,7 +1386,7 @@ in the launcher; `resume` finds it again.
   `GIT_LITERAL_PATHSPECS=1`), the page's trigram as author (no trigram: no commit; never a workstation author), no push. Nothing changed, no repository, git failing: `commit: None` and the reason.
 - **A job does not wait for the send** (17 Nov 2026, SOG-0400): before a job the frame sends what waits in `data/` (`before`, SOG-0279) so the job does not read a copy
   five minutes old. A job that only READS what the launcher built — the `READ_ONLY` table of `tools/regen_jobs.py` minus a named list of exclusions (`READ_ONLY_EXCLUDED` = `stats/output`, which may read what a page wrote): `base/status|coverage|cycle|last`, `aircraft/registry`,
-  `route/compute`, `route/fra-points`, `ground/state`, `proc/lnm`; the bench A250 compares the table, the exclusions and the launcher's list — starts at once; any other waits at most `BEFORE_MAX_MS`
+  `route/compute`, `route/levels`, `route/fra-points`, `ground/state`, `proc/lnm`, `signalement/lister|detail`; the bench A250 compares the table, the exclusions and the launcher's list — starts at once; any other waits at most `BEFORE_MAX_MS`
   (4 s), then starts with what `data/` holds and the frame says so (notification « the send of your data is slow »). `onWait` gives `{ set, verb, ms, skipped, late }` to the
   frame, which keeps the last ten in the diagnostic (`timing.jobs`). Measured before: « Calculer » started 38 746 ms after the click behind a send of 40 s.
 - **The author**: the frame adds the device's trigram to the body of a job's start (`author`, from `ctx.launcher.job` and

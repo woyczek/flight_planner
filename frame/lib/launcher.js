@@ -90,8 +90,8 @@ const sleep = (ms, signal) => new Promise(r => {
 // BEFORE_MAX_MS : passé ce délai le travail part avec ce que data/ porte et le cadre le dit (onWait). Mesuré : « Calculer » attendait toute la passe en cours (38,7 s
 // pour un envoi de 40 s) alors que le calcul de route ne lit que la base, les procédures et les performances construites.
 const LAUNCHER_READ_ONLY = ['base/status', 'base/coverage', 'base/cycle', 'base/last', 'aircraft/registry', 'route/compute',
-  'route/fra-points', 'ground/state', 'stats/output',
-  'proc/lnm'
+  'route/levels', 'route/fra-points', 'ground/state', 'stats/output',
+  'proc/lnm', 'signalement/lister', 'signalement/detail'
 ];
 // les travaux en lecture seule du lanceur qui PEUVENT lire ce que des pages écrivent : ils gardent l'attente bornée (liste nommée, retirée de la table « sans attente » ; A250 la compare)
 export const READ_ONLY_EXCLUDED = ['stats/output'];
