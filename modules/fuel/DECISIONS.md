@@ -2634,3 +2634,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the flight differs, « Périmé (calculé à {t}) » with
   « Recalculer » (the gesture that proposes, `altnpropose`) above the list — as for the routes; never a computation by itself. Case F315,
   red before.
+- **23 Nov 2026 — a level above the aircraft's ceiling is said, never refused** (SOG-0562; the user's first real validation, a BE9L
+  filed at FL330, refused by the IFPS: ROUTE179). The ceiling was in the catalogue (AircraftDB/aircraft_perf.js: EUROCONTROL
+  `cruise.ceilingFL` 290, SimBrief 30 000 ft) and Fuel's performance model read it (`perf.ceiling`), but « Auto » bounded its levels with the
+  sheet's `cruise.ceilingFt` only (else FL200) and a typed level was said nowhere. `ceilOf(C)`: the lowest of the sheet's ceiling and
+  `perf.ceiling`. « Auto » never proposes a level above it. Under the Level field, always visible when the level of the flight (typed, from
+  an OFP, from the sheet) is above it: « Au-dessus du plafond du {type} (FL{plafond}). » (`lvlCeil`); on the card of a route at such a
+  level, in the line of its reasons: « au-dessus du plafond (FL{plafond}) ». The computation is never refused. aerodb.estimate (AeroDB's
+  file) still reads only the Airframe DB ceiling: asked of AeroDB through the relay. Case F314, red before.

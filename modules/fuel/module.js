@@ -1373,6 +1373,14 @@ const TX = {
   ],
   // les niveaux des points et celui du plan différents (SOG-0020 : « 5 min de vol » — la montée vers le plan mangeait la route)
   lvlMix: ['Points à {p}, plan à {l}', 'Points at {p}, plan at {l}', 'Punkte auf {p}, Plan auf {l}', 'Puntos a {p}, plan a {l}'],
+  // SOG-0562 (l'ergonome) : un niveau au-dessus du plafond de l'aéronef — dit, jamais refusé
+  lvlCeil: ['Au-dessus du plafond du {type} (FL{c}).', 'Above the ceiling of the {type} (FL{c}).',
+    'Über der Dienstgipfelhöhe der {type} (FL{c}).',
+    'Por encima del techo del {type} (FL{c}).'
+  ],
+  rAboveCeil: ['au-dessus du plafond (FL{c})', 'above the ceiling (FL{c})', 'über der Dienstgipfelhöhe (FL{c})',
+    'por encima del techo (FL{c})'
+  ],
   lvlMixTimes: [' : {c} de montée pour {k} de croisière', ': {c} of climb for {k} of cruise', ': {c} Steigflug für {k} Reiseflug',
     ': {c} de ascenso para {k} de crucero'
   ],
@@ -3188,7 +3196,7 @@ function renderPlanBody() {
       </div>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="fu-altnchk" data-altnchk aria-live="polite"></div>
-      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
+      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><p class="f-warn fu-lvlceil" data-lvlceil hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
       <div class="fu-lvlwhy" data-lvlwhy hidden><p class="f-muted" data-lvlmain></p><details class="fu-altnfold" data-lvlfold hidden><summary class="f-muted">${esc(tt(TX.levelAutoWhyFold))}</summary><p class="f-muted" data-lvlreason></p></details></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div class="f-grid fu-themes" data-themes></div>
@@ -6301,12 +6309,15 @@ function routeAltsDraw() {
   // « Auto », avant un choix, aucune (seul le niveau est appliqué, la pastille « Auto » le dit)
   const applied = i => i === A.chosen;
   // les motifs d'une ligne (pourquoi une meilleure n'est pas gardée), sur leur ligne, en orange, séparés par « · »
-  const motifs = a => {
-    const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
-      a.connector === 'direct' ? `<span data-direct>${esc(tt(TX.rDirect))}</span>` : ''
-    ].filter(Boolean);
-    return parts.length ? `<span class="f-warn fu-rh3" data-motifs>${parts.join(' · ')}</span>` : '';
-  };
+  const ceil = ceilOf(S.C),
+    motifs = a => {
+      const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
+        a.connector === 'direct' ? `<span data-direct>${esc(tt(TX.rDirect))}</span>` : '',
+        // SOG-0562 : une route à un niveau au-dessus du plafond de l'aéronef
+        ceil && Number.isInteger(a.fl) && a.fl * 100 > ceil ? `<span data-ceil>${esc(tt(TX.rAboveCeil, { c: flTxt3(Math.floor(ceil / 100)) }))}</span>` : ''
+      ].filter(Boolean);
+      return parts.length ? `<span class="f-warn fu-rh3" data-motifs>${parts.join(' · ')}</span>` : '';
+    };
   // le geste d'une ligne (SOG-0545, l'ergonome) : « choisie » sans bouton sur la ligne prise (la liste revue) ; en « Auto », la ligne
   // qu'« Auto » garde : la pastille « Auto » et « Choisir », tant que sa route n'est pas dans le champ Route ; sinon « Choisir »
   const gest = (a, i) => {
@@ -7071,7 +7082,7 @@ function levelAuto(C) {
   const cons = Object.values(f.route?.constraints || {}).map(Number).filter(v => v > 0),
     lim = {
       minFt: Math.max(3000, ...cons),
-      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000
+      maxFt: ceilOf(C) ?? 20000 // SOG-0562 : le plus bas du plafond de la fiche et de celui du modèle (EUROCONTROL)
     },
     cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
       ...lim,
@@ -7321,6 +7332,26 @@ function setConstraint(input) {
   else delete r.constraints;
   saveFlight();
   refresh();
+}
+/** SOG-0562 : le plafond de l'aéronef, en pieds — le plus bas de celui de la fiche (cruise.ceilingFt) et de celui du modèle de
+ *  performance (perf.ceiling : il lit le plafond EUROCONTROL du type) ; null sans l'un ni l'autre. */
+function ceilOf(C = S.C) {
+  const v = [+C?.sheet?.cruise?.ceilingFt, +C?.perf?.ceiling].filter(x => x > 0);
+  return v.length ? Math.min(...v) : null;
+}
+/** SOG-0562 (l'ergonome) : sous le champ Niveau, toujours visible quand le niveau du vol (tapé, d'un OFP, de la fiche) dépasse le
+ *  plafond de l'aéronef : « Au-dessus du plafond du {type} (FL{plafond}). » — dit, jamais refusé ; masquée sinon. */
+function lvlCeil(C) {
+  const el = S.body?.querySelector('[data-lvlceil]');
+  if (!el) return;
+  const ceil = ceilOf(C),
+    lv = +C?.levelFt || 0,
+    type = String(C?.sheet?.icao || C?.sheet?.type || S.flight?.aircraft?.type || '').toUpperCase().slice(0, 12);
+  el.hidden = !(ceil && lv > ceil);
+  el.textContent = el.hidden ? '' : tt(TX.lvlCeil, {
+    type,
+    c: String(Math.floor(ceil / 100)).padStart(3, '0')
+  });
 }
 /** Les niveaux posés sur les points de la route (hors départ et arrivée) qui ne sont pas celui du plan : une ligne près du niveau, avec
  *  ce que la montée et la croisière durent alors, et un geste (SOG-0020 ; rien de modal) ; masquée sinon. */
@@ -9079,6 +9110,7 @@ function refresh() {
   if (levelAuto(C)) return; // SOG-0056 : un nouveau niveau « Auto » posé, le dessin est refait à ce niveau
   shareProfile(C);
   lvlMix(C);
+  lvlCeil(C); // SOG-0562
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
   staleDraw(C); // SOG-0533 : la route calculée pour un autre niveau
