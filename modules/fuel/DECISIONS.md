@@ -2568,12 +2568,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   removed — more than closing the list. (1) No route name on a level line: accepted by the ergonomist (no `name` asked of AeroDB).
 - **23 Nov 2026 — « Aucune infraction trouvée » replaces « conforme »** (SOG-0552, the ergonomist: « conforme » claimed what the
   engine does not know). The engine and its code `conform` do not change; the screen's label of that level is « Aucune infraction
-  trouvée » (en « No violation found », de « Keine Verstöße gefunden », es « No se encontró ninguna infracción »). Under it, ALWAYS and
-  once, the line « Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. »; under « non vérifiable » and
-  « enfreint », the same line when the route crosses such rules (spacesOnly > 0, as before) — the sentence of SOG-0538 and its calque
-  « portent » are gone. Above the list, « Seul Eurocontrol valide un plan. » alone (the existing row onlyEurocontrol; the explanation of
-  « conforme » left with the word; ROWS.conform, no longer read, removed). `no_conforming_route` says the computed route alone, always
+  trouvée » (en « No violation found », de « Keine Verstöße gefunden », es « No se encontró ninguna infracción »). Above the list, once,
+  in one paragraph, as soon as it shows routes and whatever their verdicts: « Seul Eurocontrol valide un plan. Les règles du RAD qui
+  visent un espace aérien entier ne sont pas examinées. » (the ergonomist's retouch: never in the cards; the condition spacesOnly of
+  SOG-0538 has no object on the list any more — the check of a typed route, not a list, keeps the line under its verdict); the sentence of
+  SOG-0538 and its calque « portent » are gone; the explanation of « conforme » left with the word (ROWS.conform, no longer read,
+  removed). `no_conforming_route` says the computed route alone, always
   true: « La route calculée au FL{fl} enfreint {n} règle(s) connue(s). » — the old « Aucune route conforme trouvée » could sit above a
   variant at the same level that breaks nothing known (the engine sets the review on the head and its RAD retries, then searches
-  variants at the same level). Note: the engine puts that code in `issues` (a review), never in `violations`, so the list shows it only
-  if a later lot reads it there. Case F308 red before; F295, F296, F305 changed on purpose.
+  variants at the same level). The engine puts that code in `issues` (a review), never in `violations`: the list does not show it, and
+  the ergonomist keeps it so (no lot); the corrected words stay in the code. Case F308 red before; F295, F296, F297, F305 changed on
+  purpose.

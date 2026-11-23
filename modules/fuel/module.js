@@ -6247,8 +6247,9 @@ function routeAltsDraw() {
     shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || (j === lead) - (i === lead) || tier(a) - tier(b) ||
       figCmp(fig0(fig.get(i)), fig0(fig.get(j))) || i - j),
     cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
-    // SOG-0552 : « Seul Eurocontrol valide un plan. » seul, une fois (l'explication de « conforme » partie avec le mot)
-    conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(RR.ROWS.onlyEurocontrol))}</p>` : '';
+    // SOG-0552 (l'ergonome, 23/11) : une fois, au-dessus de la liste, dès qu'elle montre des routes, quel que soit le verdict : « Seul
+    // Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. » — plus rien dans les cartes
+    conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(`${tt(RR.ROWS.onlyEurocontrol)} ${tt(RR.ROWS.spacesOnly)}`)}</p>` : '';
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
@@ -6833,9 +6834,9 @@ function verdictsHtml(a, open = false) {
       violates: [],
       unverifiable: []
     };
-  // la ligne des règles qui visent un espace aérien entier : hors compte, sans nombre (SOG-0538) ; SOG-0552 (l'ergonome) : toujours
-  // sous « Aucune infraction trouvée » (une fois), sous les deux autres verdicts quand la route en croise
-  const note = a.spacesOnly > 0 || (a.verdict === 'conform' && !a.faulty) ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly))}</p>` : '',
+  // la ligne des règles qui visent un espace aérien entier (SOG-0538, sans nombre) : SOG-0552 (l'ergonome, 23/11) — jamais dans les cartes
+  // de la liste (dite une fois au-dessus) ; le contrôle d'une route tapée (open, pas une liste) la garde sous son verdict
+  const note = open && (a.spacesOnly > 0 || (a.verdict === 'conform' && !a.faulty)) ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly))}</p>` : '',
     // SOG-0530 (l'ergonome, 21/11) : le niveau de croisière, le moins grave en dernier, ton d'avertissement — il ne change JAMAIS le
     // verdict ; {n} ne compte que les niveaux hors règle (sans eux, le titre sans compte) ; sa note hors compte dessous, ou seule
     lw = a.levelWarn || [],

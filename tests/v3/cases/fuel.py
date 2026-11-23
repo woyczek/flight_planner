@@ -9617,14 +9617,13 @@ def f296(c):
     rest = [norm(x) for x in c.js(f"[...document.querySelectorAll('{G} [data-rulesmore] li')].map(e => e.textContent)")]
     c.eq(rest[-1:], [norm(want['unknown'])], 'an unknown reason: « règle que nous ne savons pas lire »', what='unknown')
     c.ok(not any('Annexe' in x for x in rules + rest), rules, 'neither sheet nor row of the workbook')
-    # 3. the spaces only: one note under the group, out of the count — SOG-0538: without a number (expectation changed on purpose)
-    c.eq(norm(c.text(f'{R0} [data-spacesonly]') or ''), norm(want['note']), 'one note under the group, out of the count, without a number',
-         what='note')
+    # 3. the spaces only: out of the count, without a number (SOG-0538) — SOG-0552 (the ergonomist, 23 Nov): the RAD line out of the cards, once above the list with « Seul Eurocontrol » — changed on purpose
+    c.eq(c.count(f'{A} [data-spacesonly]'), 0, 'no RAD line in the cards', what='note')
+    c.ok(norm(want['note']) in norm(c.text(f'{FUEL} [data-conformline]') or ''), c.text(f'{FUEL} [data-conformline]'), 'once, above the list')
     # 4. spaces only: never « non vérifiable » by itself — « conforme », the note under it; at 100 %, no share
     c.eq(norm(c.text(f'{R1} [data-verdict]') or ''), norm(want['conform']), 'the spaces alone never make the route unverifiable',
          what='conform')
-    c.eq(norm(c.text(f'{R1} [data-spacesonly]') or ''), norm(want['note']), 'the note under « conforme » too, without a number',
-         what='note conform')
+    c.eq(c.count(f'{R1} [data-spacesonly]'), 0, 'none under « Aucune infraction trouvée » either (said above the list)', what='note conform')
     c.eq(c.count(f'{R1} [data-share]'), 0, 'at 100 %: no share', what='100 %')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -9690,7 +9689,13 @@ def f297(c):
     heads = [norm(x) for x in c.js(f"""[0, 1, 2].map(i => {{ const e = document.querySelector('{A} [data-alt="' + i + '"]');
         return (e.querySelector('[data-altfl]')?.textContent || '') + ' · ' + (e.querySelector('[data-altname]')?.textContent || '') }})""")]
     c.eq(heads, ['FL270 · Via UN10', 'FL250 · Direct', 'FL190 · Direct'], 'the level once, at the head of the line', what='heads')
-    c.ok(norm(want) in norm(c.text(f'{FUEL} [data-conformline]') or ''), c.text(f'{FUEL} [data-conformline]'), 'once, above the list')
+    # SOG-0552 (the ergonomist, 23 Nov): the RAD line out of the cards, once above the list with « Seul Eurocontrol » — changed on purpose
+    both = {'fr': 'Seul Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
+            'en': 'Only Eurocontrol validates a plan. The RAD rules that target a whole airspace are not examined.',
+            'de': 'Nur Eurocontrol validiert einen Plan. Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
+            'es': 'Solo Eurocontrol valida un plan. Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.'}[c.lang]
+    c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(both), 'the two sentences once, above the list', what='above')
+    c.eq(c.count(f'{FUEL} [data-conformline]'), 1, 'one paragraph', what='once')
     c.ok(c.js(f"""(() => {{ const e = document.querySelector('{FUEL} [data-conformline]');
         return !!e && !e.closest('details') && e.getBoundingClientRect().height > 0 }})()"""), 'folded', 'visible, never in a fold')
     c.eq(c.count(f'{FUEL} [data-radline]'), 0, 'no line « Contrôle de simulation » any more', what='removed')
@@ -10215,13 +10220,16 @@ def f304(c):
 # SOG-0545: the words of the list of routes, written in clear (never read from the texts of the module)
 _RT_WORDS = {
     # SOG-0552 (the ergonomist, 23 Nov): the label of the level `conform` and « Seul Eurocontrol » alone — changed on purpose
-    'fr': {'cols': ['Distance', 'Temps', 'Étape'], 'line': 'Seul Eurocontrol valide un plan.',
+    'fr': {'cols': ['Distance', 'Temps', 'Étape'],
+           'line': 'Seul Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
            'conform': 'Aucune infraction trouvée', 'fast': 'la plus rapide', 'eco': 'la plus économe', 'chosen': 'choisie', 'take': 'Choisir'},
-    'en': {'cols': ['Distance', 'Time', 'Trip'], 'line': 'Only Eurocontrol validates a plan.',
+    'en': {'cols': ['Distance', 'Time', 'Trip'], 'line': 'Only Eurocontrol validates a plan. The RAD rules that target a whole airspace are not examined.',
            'conform': 'No violation found', 'fast': 'fastest', 'eco': 'most economical', 'chosen': 'chosen', 'take': 'Choose'},
-    'de': {'cols': ['Entfernung', 'Zeit', 'Reise'], 'line': 'Nur Eurocontrol validiert einen Plan.',
+    'de': {'cols': ['Entfernung', 'Zeit', 'Reise'],
+           'line': 'Nur Eurocontrol validiert einen Plan. Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
            'conform': 'Keine Verstöße gefunden', 'fast': 'die schnellste', 'eco': 'die sparsamste', 'chosen': 'gewählt', 'take': 'Auswählen'},
-    'es': {'cols': ['Distancia', 'Tiempo', 'Etapa'], 'line': 'Solo Eurocontrol valida un plan.',
+    'es': {'cols': ['Distancia', 'Tiempo', 'Etapa'],
+           'line': 'Solo Eurocontrol valida un plan. Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.',
            'conform': 'No se encontró ninguna infracción', 'fast': 'la más rápida', 'eco': 'la más económica', 'chosen': 'elegida', 'take': 'Elegir'},
 }
 # invented positions of the points of the three routes (the engine's `points`, view.points_of)
@@ -10592,14 +10600,13 @@ def f308(c):
     for n in ('Via UN10', 'Via UM728'):
         c.eq((by[n]['verdict'], norm(by[n]['word'])), ('conform', norm(W['label'])), f'{n}: « Aucune infraction trouvée » (red before: '
              '« conforme »)', what='label')
-    # 2. under it, always ONE fixed line, never twice (Via UM728 crosses rules that target a whole airspace)
-    for n in ('Via UN10', 'Via UM728'):
-        c.eq([norm(x) for x in by[n]['spaces']], [norm(W['spaces'])], f'{n}: the fixed line once', what='fixed')
-    # 3. under « Non vérifiable »: the same line, because this route crosses such rules
+    # 2.-3. (the ergonomist, 23 Nov, retouch) no RAD line in any card, whatever the verdict (Via UM728 and Direct cross such rules)
+    c.eq({n: r['spaces'] for n, r in by.items()}, {n: [] for n in by}, 'no RAD line in the cards', what='cards')
     c.eq(by['Direct']['verdict'], 'unverifiable', 'Direct stays « non vérifiable »', what='unv')
-    c.eq([norm(x) for x in by['Direct']['spaces']], [norm(W['spaces'])], 'the same line under « Non vérifiable »', what='unv line')
-    # 4. above the list, « Seul Eurocontrol valide un plan. » alone (the explanation of « conforme » gone with the word)
-    c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(W['euro']), '« Seul Eurocontrol valide un plan. » alone', what='euro')
+    # 4. above the list, once, the two sentences in one paragraph (the explanation of « conforme » gone with the word)
+    c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(f"{W['euro']} {W['spaces']}"), 'the two sentences once, above the list',
+         what='euro')
+    c.eq(c.count(f'{FUEL} [data-conformline]'), 1, 'one paragraph', what='once')
     c.ok(not any(norm(r['word']) == norm(W['old']) for r in rows), rows, 'the word « conforme » nowhere as a verdict')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
