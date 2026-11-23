@@ -2515,11 +2515,14 @@ def a67(c):
     day = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
     c.eq(c.attr(f'{box} [data-apsteps] ol a', 'href'), 'https://gitlab.com/acme/data/-/settings/access_tokens', 'the direct link of the project\u2019s access tokens page', what='access tokens link')
     c.eq([c.count(f'{box} [data-apsteps] details'), c.count(f'{box} [data-aptoken]')], [0, 0], 'no launcher: the steps by hand are open and there is no link to the tokens screen', what='no launcher')
-    for key in ('apS3', 'apS4', 'apS5', 'apS6'):
+    for key in ('apS3', 'apS6'):
         c.ok(norm(tx(_AP_FILE, key, c.lang)) in norm(steps), steps, f'the step {key} is said')
+    # the branch and the revocation are the help's now (SOG-0579): ONE line says its object and links to the paragraph
+    c.eq([norm(c.text(f'{box} [data-apsteps] [data-aphelp]')), c.attr(f'{box} [data-apsteps] [data-aphelp] a[data-help-link]', 'href')],
+         [norm(tx(_AP_FILE, 'apHelp', c.lang) + ' : ' + tx(_AP_FILE, 'seeHelp', c.lang)), '#help?m=settings&a=settings-gitlab-pilot-token'], 'the branch and the revocation: one line and its link to the help', what='help line')
     values = norm(steps)
     c.ok(all(v in values for v in ('ABC', day, 'api', 'Developer')), values, 'the values to type: the trigram, the date today + 90 days, the scope api, the role Developer')
-    c.ok('365' in values and 'Protected branches' in values and 'Allowed to push and merge' in values and 'Revoke' in values, values, 'the 365-day limit, the protected branch and the revocation are said')
+    c.ok('365' in values and 'Protected branches' not in values and 'Revoke' not in values, values, 'the 365-day limit is said; the protected branch and the revocation are in the help, not here')
     # the message: the chosen language (the screen\u2019s by default), the greeting, the link; never a token
     sel = c.js(f"document.querySelector('{box} select[data-f=\"apLang\"]').value")
     c.eq(sel, c.lang, 'the message language defaults to the screen language', what='language default')
@@ -2533,6 +2536,9 @@ def a67(c):
     c.ok(msg2 != msg, msg2[:80], 'and it is another text')
     c.page.fill(f'{box} input[data-f="apName"]', '')
     c.eq(c.js(f"document.querySelector('{box} [data-apmsg]').value"), _ap_msg(other, '', link), 'without a name, the greeting has none', what='no name')
+    # the link of the help line opens the help of Settings at the paragraph of the GitLab token (SOG-0579)
+    c.tap(f'{box} [data-apsteps] [data-aphelp] a[data-help-link]')
+    c.until("location.hash === '#help?m=settings&a=settings-gitlab-pilot-token' && !!document.getElementById('settings-gitlab-pilot-token')", timeout=15000, what='the help opens on the GitLab token paragraph')
     c.check_errors()
 
 

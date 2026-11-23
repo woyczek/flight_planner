@@ -111,17 +111,12 @@
       'Klicken Sie „Create project access token“ und kopieren Sie das Token sofort: GitLab zeigt es nur einmal.',
       'Pulse «Create project access token» y copie el token enseguida: GitLab lo muestra solo una vez.'
     ],
-    apS4: [
-      'Vérifiez que la branche des données laisse pousser les Developers (Settings › Repository › Protected branches : « Allowed to push and merge » = « Developers + Maintainers », force push désactivé), sinon les écritures échouent avec une erreur 403.',
-      'Check that the data branch lets Developers push (Settings › Repository › Protected branches: “Allowed to push and merge” = “Developers + Maintainers”, force push off), otherwise writes fail with a 403 error.',
-      'Prüfen Sie, dass der Datenzweig Developers pushen lässt (Settings › Repository › Protected branches: „Allowed to push and merge“ = „Developers + Maintainers“, Force-Push aus), sonst schlagen Schreibvorgänge mit einem 403-Fehler fehl.',
-      'Compruebe que la rama de datos deja enviar a los Developers (Settings › Repository › Protected branches: «Allowed to push and merge» = «Developers + Maintainers», force push desactivado); si no, las escrituras fallan con un error 403.'
+    // la branche protégée et la révocation : dans l'aide (settings-gitlab-pilot-token) ; l'écran garde le lien direct, les valeurs à saisir et la mise en garde du jeton
+    apHelp: ['Vérifier la branche et retirer l’accès d’un pilote', 'Check the branch and withdraw a pilot’s access',
+      'Zweig prüfen und den Zugriff eines Piloten entziehen',
+      'Comprobar la rama y retirar el acceso de un piloto'
     ],
-    apS5: ['Pour révoquer l’accès : Settings › Access tokens › Revoke, sur la ligne du trigramme.',
-      'To revoke access: Settings › Access tokens › Revoke, on the trigram’s line.',
-      'Zum Widerrufen des Zugriffs: Settings › Access tokens › Revoke, in der Zeile des Kürzels.',
-      'Para revocar el acceso: Settings › Access tokens › Revoke, en la línea del trigrama.'
-    ],
+    seeHelp: ['voir l’aide', 'see the help', 'siehe Hilfe', 'ver la ayuda'],
     apS6: ['Envoyez le jeton à part du message ci-dessous (un autre canal, ou collez-le devant le pilote), jamais avec le lien.',
       'Send the token apart from the message below (another channel, or paste it in front of the pilot), never with the link.',
       'Senden Sie das Token getrennt von der Nachricht unten (anderer Kanal, oder fügen Sie es vor dem Piloten ein), nie mit dem Link.',
@@ -405,7 +400,7 @@
     if (SogConfig.kind(xsrc) !== 'gitlab') return exportSteps(t, xsrc);
     const day = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10), // la date d'expiration conseillée : aujourd'hui + 90 jours
       url = `${SogConfig.webUrl(xsrc)}/-/settings/access_tokens`,
-      manual = `<ol class="f-join-steps"><li>${fill(t(T.apS1), { u: link(url) })}</li><li>${fill(t(T.apS2), { tri: `<b>${esc(tri)}</b>`, d: `<b>${esc(day)}</b>` })}</li><li>${esc(t(T.apS3))}</li><li>${esc(t(T.apS4))}</li><li>${esc(t(T.apS5))}</li><li>${esc(t(T.apS6))}</li></ol>`;
+      manual = `<ol class="f-join-steps"><li>${fill(t(T.apS1), { u: link(url) })}</li><li>${fill(t(T.apS2), { tri: `<b>${esc(tri)}</b>`, d: `<b>${esc(day)}</b>` })}</li><li>${esc(t(T.apS3))}</li><li data-aphelp>${esc(t(T.apHelp))} : <a href="#help?m=settings&amp;a=settings-gitlab-pilot-token" data-help-link>${esc(t(T.seeHelp))}</a></li><li>${esc(t(T.apS6))}</li></ol>`;
     return `<h3>${esc(t(T.cfgSteps))}</h3>${L ? `<p><a class="f-btn primary" href="?app=maintenance#pilot-tokens?tri=${esc(tri)}" data-aptoken>${esc(t(T.apTokenLink))}</a></p><p class="f-muted">${esc(t(T.apTokenHint))}</p><p class="f-muted">${esc(t(T.apS6))}</p>
       <details data-apmanual><summary>${esc(t(T.apManual))}</summary>${manual}</details>` : manual}`;
   }
