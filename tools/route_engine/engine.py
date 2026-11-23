@@ -687,7 +687,7 @@ class Nav:
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
         strict=bool(terminal.get('_level_lock'))      # SOG-0532 : niveau constant (le défaut ; des paliers seulement si l'utilisateur les demande) : le graphe garde TOUTES les voies, la recherche exclut celles dont l'étendue ne contient pas le niveau (sauf montée et descente, avec marge)
-        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
+        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid','_no_dep_restrict']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
         cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,strict,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
@@ -767,12 +767,17 @@ class Nav:
                 for ad,kind,rwy in [(dep,'SID',terminal.get('dep_runway','')),(arr,'STAR',terminal.get('arr_runway',''))]:
                     used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False),fl*100)
             # DCT fallback is explicit when no complete, connected procedure is available.
+            restricted=False
             for airport,isdep in [(a,True),(b,False)]:
                 if used_procs.get(dep if isdep else arr):continue
                 near=sorted((nm(self.nodes[airport],self.nodes[k]),k) for k in set(g)|set(incoming) if k not in [a,b] and '|FRA|' not in k)
                 near=[(d,k) for d,k in near if d<=radius]
                 gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
                 near=[(d,k) for d,k in near if k not in unreachable]+gates
+                if isdep and getattr(self,'departure_zero',False) and not terminal.get('_no_dep_restrict') and terminal.get('use_procedures',False) and getattr(self,'procedures',None):      # SOG-0547 : limite de raccord de 0 NM au départ (RAD) : la route doit commencer au dernier point d'une SID (dct_limits.check) ; les raccords DCT ne vont QU'à ces points (les SID lues en partie comprises), jamais au point le plus proche qui n'est le dernier d'aucune SID ; aucun de ces points dans le graphe : les raccords d'avant ; une recherche sans route avec eux est refaite avec ceux d'avant (`generate`)
+                    present=set(g)|{v for es in g.values() for v,_ in es}
+                    ends=sorted(k for k in self.procedures.end_points(dep,'SID',terminal.get('dep_runway',''),terminal.get('unable_rnav',False),fl*100) if k in present and k in self.nodes and k!=airport)
+                    if ends:near=[(nm(self.nodes[airport],self.nodes[k]),k) for k in ends];restricted=True
                 fallback=False
                 if not near:      # SOG-0474 : la base n'a PAS le réseau de cet État (la Bosnie : ni point ni voie) : jamais une route perdue ; le dernier point connu, dans la partie principale du réseau à ce niveau, et UN direct jusqu'au terrain, DIT
                     far=self.no_network_anchor(airport,isdep,g,incoming,fl,a,b)
@@ -785,6 +790,7 @@ class Nav:
                     else: g.setdefault(k,[]).append((airport,e))
             flight0=dict(profile_options or {},departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,strict=strict) if strict and profile_options else None
             link=self.bridge_gap(g,a,b,fl,allow_steps,flight0)      # SOG-0476 : l'arrivée n'est PAS atteignable depuis le départ AU NIVEAU DEMANDÉ (un réseau isolé ou plafonné : l'Islande, à 452 NM de celui du Royaume-Uni, ses voies s'arrêtent à FL285) : jamais une route perdue ; UN direct entre les deux parties, dit
+            if restricted and link:return self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal,_no_dep_restrict=True))      # SOG-0547 : l'arrivée n'est pas atteignable depuis les derniers points des SID : ce n'est pas une route (un direct de liaison de 200 NM n'en est pas une) ; le graphe est refait avec les raccords d'avant
             if link:
                 gap,u,v=link
                 g.setdefault(u,[]).append((v,dict(route='DCT',nm=gap,connector=True,no_network='gap')))
@@ -802,10 +808,10 @@ class Nav:
                     g.setdefault(waypoint,[]).append((key,edge))
                     g.setdefault(key,[]).append((waypoint,edge))
             g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
-            base=(g,used_procs,a,b)
+            base=(g,used_procs,a,b,restricted)
             self._routing_base[base_key]=base
             if len(self._routing_base)>1:self._routing_base.popitem(last=False)
-        g,used_procs,a,b=base
+        g,used_procs,a,b,restricted=base
         # Apply RAD after SID/STAR and all connectors have been inserted. A rule
         # on a procedure point must affect path finding, not only final checking.
         out={}
@@ -825,6 +831,7 @@ class Nav:
                 allowed.extend((v,dict(e,lower=lower,upper=upper)) if relevant else (v,e) for lower,upper in bands)
             out[u]=allowed
         graph=RoutingGraph(out)
+        graph.restricted=restricted      # SOG-0547 : les raccords de départ ont été restreints aux derniers points des SID
         graph.rad_avoid=frozenset(r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='point')      # SOG-0354 L5 (4) défaut 4 : les points qu'une règle RAD fait éviter (repli) : ni entrée ni sortie de route NAT ou de route libre
         graph.rad_compel={r['before']:r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='compel'}      # { Y : X } : Y s'atteint (se quitte) par X (la route libre)
         if profile_options:
@@ -853,6 +860,10 @@ class Nav:
             from . import sections
             path=sections.solve(self,g,a,b)
         if path is None:path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra'))) if self.connected(g,a,b) else None   # SOG-0161 : sans liaison, même sans contrainte d'altitude, la recherche de niveaux ne cherche pas 6 s dans le vide
+        if path is None and getattr(g,'restricted',False):      # SOG-0547 : aucune route avec les raccords de départ restreints : refaite UNE fois avec les raccords d'avant (le contrôle dit alors la limite dépassée, comme avant : une route qui enfreint ne devient jamais « aucune route »)
+            del g
+            self.release_graph_caches()
+            return self.generate(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal or {},_no_dep_restrict=True))
         if path is None and enable_fra and getattr(self,'last_search',{}).get('fra_reachable',True) and (terminal or {}).get('search_density','normal')=='normal':
             del g
             self.release_graph_caches()

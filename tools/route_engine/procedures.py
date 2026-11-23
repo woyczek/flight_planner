@@ -75,6 +75,17 @@ class Catalog:
         need=bounds((seq[0] if p['kind']=='STAR' else seq[-1]).get('alt'))[0]
         return not(isinstance(need,(int,float)) and need>ceiling_ft+.01)
 
+    def end_points(self,ad,kind,runway='',unable_rnav=False,ceiling_ft=None):
+        """SOG-0547 : les clés des points où les procédures lues de `ad` (`kind` : SID → le dernier point, STAR → le premier) VOLABLES de ce niveau (`flyable`) laissent la route, ou la rejoignent, avec le même filtre que `add_graph` (piste, RNAV) ; les procédures lues en partie comptent aussi."""
+        out=set()
+        for p in self.options(ad,kind,runway):
+            if unable_rnav:
+                from . import planning
+                if planning.procedure_rnav(p) is not False:continue
+            seq=p.get('sequence') or []
+            if seq and self.flyable(p,ceiling_ft):out.add(seq[-1]['key'] if kind=='SID' else seq[0]['key'])
+        return out
+
     def add_graph(self,g,ad,kind,runway='',speed=220,unable_rnav=False,ceiling_ft=None):
         available=self.options(ad,kind,runway);used=0;refused=0      # SOG-0529 (suite) : `refused` : le compte de CET appel (le niveau de la demande), jamais celui d'une demande précédente du même Nav
         connected=set(g)|{v for es in g.values() for v,e in es}

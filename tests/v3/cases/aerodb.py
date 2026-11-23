@@ -20501,3 +20501,54 @@ def k516(c):
     c.eq((errors, warn), ([], []), 'the engine reads its own text back with no error and no semicircular warning', what='round trip')
     plain, _e, _w = fly(False)
     c.eq(plain, 'ZZAA DCT A0 UH1 P2/F200 UF2 P3/F190 UC3 B0 DCT ZZBB', 'without the table (a doubt never refuses a level): the first level of the band, F200, as before', what='text without table')
+
+
+@case('K517', 'Route engine, SOG-0547 (commit 1): an aerodrome of DEPARTURE with a connector limit of 0 NM (RAD) is joined by a DCT only to the LAST POINT of a SID read (a SID read in part counts), never to the nearest point that is the last of no SID; when the search finds no route with these connectors it is redone once with the connectors of before; a last point that is not in the graph changes nothing',
+      'K', static=True,
+      rule='The ergonomist through the relay, 23 Nov 2026 (SOG-0547, decision (a) commit 1): EGLL → LQSA on the real base left EGLL by `DCT MATCH` (32 NM, the last point of no SID) for a limit of 0 NM (EG_LIM_AD): the last points of the 24 SIDs were in the graph, the direct won only because it was shorter. Rule: the connector goes only to the last points of the SIDs of the aerodrome that can be flown at the level, the SIDs read in part included (the route keeps the review « lue en partie » of today); no such point in the graph: the connectors of before; no route with the restricted connectors: the search is redone once with the connectors of before, the check says the limit as before — a route that violates never becomes « no route ». Invented bench: ZZAA with a limit of 0 NM (« ZZ** DEP DCT 10NM EXC (ZZAA, ZZCC) DEP DCT 0NM », the line of K331), a point NEAR 15 NM away (start of the lane UL1) and a SID read in part whose last point SIDEND is 45 NM away on the lane UL2')
+def k517(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    pts = {'NEAR': (50.0, 0.6), 'SIDEND': (50.4, 1.2), 'P2': (50.0, 4.0), 'P3': (50.0, 7.0), 'P4': (50.0, 10.0), 'ISLE': (58.0, 1.5)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 11.0)}
+
+    def way(route, chain):
+        return [{'route': route, 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': 5000, 'upper': 46000} for a, b in zip(chain, chain[1:])]
+    sid = {'icao': 'ZZAA', 'cycle': '2026-10-01', 'procedures': [{'kind': 'SID', 'name': 'EXIT1A', 'id': 'ZZAA.SID.EXIT1A', 'runways': ['09'], 'partial': True, 'status': 'check', 'points': [
+        {'id': 'SIDEND', 'lat': pts['SIDEND'][0], 'lon': pts['SIDEND'][1], 'alt': {'type': 'min', 'ft': 3000}}]}]}
+    pad = lambda row: row + [''] * (17 - len(row))
+    cond = [RF.RAD_HEAD, pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', 'ZZ** DEP DCT 10NM EXC (ZZAA, ZZCC) DEP DCT 0NM', 'H24', 'ZZ'])]
+    sheets = [(n, cond if n == 'Annex 3A Conditions' else rows) for n, rows in RF.rad_sheets()]
+
+    def fly(sid_end_joined):
+        ways = way('UL1', ['NEAR', 'P2', 'P3', 'P4']) + (way('UL2', ['SIDEND', 'P2']) if sid_end_joined else way('UL9', ['SIDEND', 'ISLE']))
+        files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+                 'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            os.makedirs(folder)
+            for k, v in files.items():
+                with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            os.makedirs(os.path.join(data, 'proc', 'manual'))
+            with open(os.path.join(data, 'proc', 'manual', 'ZZAA.json'), 'w', encoding='utf-8') as f:
+                json.dump(sid, f)
+            os.makedirs(os.path.join(data, 'route'))
+            book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(book, sheets)
+            rad = os.path.join(data, 'route', 'rad.json.gz')
+            I.write(rad, I.merge([], [I.read_book(book)[1]]))
+            p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'enable_fra': False, 'use_procedures': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+        first = (p.get('legs') or [{}])[0]
+        return (p.get('ok'), (first.get('end') or {}).get('id'), [x['state'] for x in (p.get('dct_limits') or {}).get('checked', []) if x['end'] == 'dep'], (p.get('procedure_coverage') or {}).get('ZZAA', {}).get('SID_partial'))
+    joined = fly(True)
+    c.eq(joined, (True, 'SIDEND', ['within'], 1), 'the limit of ZZAA is 0 NM and its SID read in part ends at SIDEND (on UL2): the first leg goes to SIDEND (the direct to NEAR, 15 NM away and shorter, is not offered any more: red before, NEAR « exceeded »), the check says « within », the SID read in part is counted', what='restricted')
+    isolated = fly(False)
+    c.eq(isolated[:3], (True, 'NEAR', ['exceeded']), 'SIDEND is in the graph but joined to nothing that leads to ZZBB: no route with the restricted connectors, the search is redone once with the connectors of before: the route is found as before (NEAR) and the check says the limit that is exceeded — a route that violates never becomes « no route »', what='fallback')
