@@ -465,7 +465,9 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atprof{order:1}
-[data-module="missions"] .ms-atitin{order:3;padding-left:0;padding-right:0} /* moins de retrait autour de la liste, comme la maquette : les libellés de la fiche tiennent à leur taille, sans rien rapetisser */
+[data-module="missions"] .ms-atitin{order:3;padding-left:0;padding-right:0;padding-bottom:0}
+[data-module="missions"] .ms-atitin>.ms-pladd{margin-top:0}
+[data-module="missions"] .ms-atitin>.ms-pladd>.f-linkbtn{display:inline-flex;align-items:center;padding-left:10px} /* lot 6 : le lien « Sur la carte » mène à la page Cartes de la suite pour cette mission ; son texte est centré dans sa cible de 44 px, sans blanc dessous */ /* moins de retrait autour de la liste, comme la maquette : les libellés de la fiche tiennent à leur taille, sans rien rapetisser */
 [data-module="missions"] .ms-atsheet{order:4}
 [data-module="missions"] .ms-atsheet[data-trial]{order:2}
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
@@ -3373,7 +3375,7 @@ function edTodoHtml(s, doc) {
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
     go = text => `<button type="button" class="f-linkbtn ms-todogo" data-do="edtodogo">${esc(text)}</button>`, // lot 6 : le point mène à SA place
-    lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} : ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(t.text)}</li>`)];
+    lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(dashed(t.text))}</li>`)];
   return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 
@@ -3437,7 +3439,7 @@ function edTodoBtnHtml(s, doc) {
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc),
     t = todo[0],
-    first = t ? `${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}` : drawers[0]?.text || '';
+    first = t ? `${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}` : dashed(drawers[0]?.text || '');
   const count = todo.length + drawers.length,
     label = esc(s.tt(EDTX.atTodo, {
       n: count
@@ -3445,8 +3447,11 @@ function edTodoBtnHtml(s, doc) {
   return `${count ? `<span class="ms-attodowarn">${label}</span>` : label}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
 }
 
-/** Le texte d'un point après « : » : sans majuscule, sauf quand la deuxième lettre n'est pas une minuscule (un code comme « XTST » reste tel quel). */
-const lowerFirst = x => /^\p{Lu}\p{Ll}/u.test(x) ? x[0].toLowerCase() + x.slice(1) : x;
+/** Le texte d'un point après « — » : sans majuscule (« L'objet » aussi), sauf devant un code (« XTST » reste tel quel). */
+const lowerFirst = x => /^\p{Lu}['’]?\p{Ll}/u.test(x) ? x[0].toLowerCase() + x.slice(1) : x;
+
+/** « Tiroir 4 : clé sans heure de repli » → « Tiroir 4 — clé sans heure de repli » : la même forme « place — point » que les autres points (le texte source ne change pas). */
+const dashed = x => String(x).replace(/\s*:\s+/, ' — ');
 
 /** Où se complète un point de « À compléter » : le Cadre, l'étape ; le départ et l'arrivée se complètent dans LEUR LIGNE de l'itinéraire (lot 5 : ils ne sont plus des champs du Cadre) — le point la nomme. */
 const todoWhere = (s, names, t) => t.step === 'places' && !['origin', 'destination'].includes(t.key) ? s.tt(String(t.key).startsWith(

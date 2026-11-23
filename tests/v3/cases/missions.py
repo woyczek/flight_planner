@@ -6183,8 +6183,8 @@ def n78(c):
     c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
     lines = c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-dtodo]')].map(x => [x.dataset.dtodo, x.textContent.trim()])")
     c.eq([x[0] for x in lines], ['1', '3', '4', '5'], 'one line per drawer that has something to complete (drawer 2 has nothing left)', what='the drawers to complete')
-    c.ok(norm(lines[0][1]) == T('dwTodoOf', name=1, what=T('dwTodo_noBrief')) and T('dwTodo_noFallback') in norm(lines[1][1]), lines,
-         'each line names the drawer by its rank and says what is missing')
+    c.ok(norm(lines[0][1]) == 'Tiroir 1 — sans briefing' and norm(lines[1][1]).startswith('Tiroir 3 — ') and 'clé sans heure de repli' in norm(lines[1][1]), lines,
+         'each line names the drawer by its rank and says what is missing (SOG-0482 lot 6: « Tiroir 1 — … », the dash between the place and the point)')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N78_390_todo.png')
     c.tap(f'{E} [data-do="edtodo"]')
@@ -8173,10 +8173,10 @@ def n107(c):
     c.eq(said(), [], 'every place of the mission is cited (the route, a drawer): nothing is said', what='at the opening')
     # a rendez-vous nothing cites, then an object that is the key of no drawer
     rdv = add('rdv', 7)
-    c.ok(len(said()) == 1 and said()[0].startswith(f"Hors itinéraire : le rendez-vous {rdv} n'est cité nulle part") and rdv != '', [rdv, said()],
-         'a rendez-vous that nothing cites is NAMED in « À compléter », by its identifier and by its place on the screen (« Hors itinéraire : le rendez-vous… », SOG-0482 lot 6): the pilot will never see it')
+    c.ok(len(said()) == 1 and said()[0].startswith(f"Hors itinéraire — le rendez-vous {rdv} n'est cité nulle part") and rdv != '', [rdv, said()],
+         'a rendez-vous that nothing cites is NAMED in « À compléter », by its identifier and by its place on the screen (« Hors itinéraire — le rendez-vous… », SOG-0482 lot 6): the pilot will never see it')
     obj = add('object', 9)
-    c.ok(len(said()) == 2 and said()[1].startswith(f"Hors itinéraire : L'objet {obj} n'est cité nulle part"), [obj, said()], 'an object that is the key of no drawer is said too (the capital stays before an apostrophe: « L\'objet »)')
+    c.ok(len(said()) == 2 and said()[1].startswith(f"Hors itinéraire — l'objet {obj} n'est cité nulle part"), [obj, said()], 'an object that is the key of no drawer is said too (no capital after the dash, before an apostrophe too: « l\'objet »)')
     c.tap(f'{E} [data-do="edtodo"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N107_1280_uncited.png')
@@ -8185,13 +8185,13 @@ def n107(c):
     _n20_pick(c, f"out:{c.js(_PLACE_AT, rdv)}")  # the rendez-vous, under « Hors itinéraire », is chosen: no strip, so the « ＋ » above the Arrival is the one in view
     _plus_out(c, rdv)  # SOG-0482 lot 4: it enters the route by the menu of the « ＋ »
     c.until(f"({_UNCITED}).length === 1", timeout=8000, what='the rendez-vous cited by the route')
-    c.ok(said()[0].startswith(f"Hors itinéraire : L'objet {obj} n'est cité nulle part") and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
+    c.ok(said()[0].startswith(f"Hors itinéraire — l'objet {obj} n'est cité nulle part") and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
     # a zone that nothing cites is named too (the ergonomist, 18 Nov: « cette zone n'est citée nulle part : le pilote ne la verra pas »)
     zone = add('zone', 10)
-    c.ok(len(said()) == 2 and any(x.startswith(f"Hors itinéraire : la zone {zone} n'est citée nulle part") for x in said()), [zone, said()], 'a zone that neither a map nor a drawer cites is named: the pilot will never see it')
+    c.ok(len(said()) == 2 and any(x.startswith(f"Hors itinéraire — la zone {zone} n'est citée nulle part") for x in said()), [zone, said()], 'a zone that neither a map nor a drawer cites is named: the pilot will never see it')
     # three at most
     pt = add('pt', 11)
-    c.ok(len(said()) == 3 and any(x.startswith(f"Hors itinéraire : le point {pt} n'est cité nulle part") for x in said()), [pt, said()], 'a turning point that nothing cites is named with its own word: « le point … »')
+    c.ok(len(said()) == 3 and any(x.startswith(f"Hors itinéraire — le point {pt} n'est cité nulle part") for x in said()), [pt, said()], 'a turning point that nothing cites is named with its own word: « le point … »')
     more = [pt, add('rdv', 12)]
     c.ok(len(said()) == 3 and len(set(ids())) == 10, [said(), more, ids()], 'four places nothing cites: three are named, not more (the list stays short; ZONE-1 and OBJ-1, keys of drawers, have no line: twelve places, ten lines)')
     ed_leave(c)
@@ -15252,7 +15252,7 @@ def n238(c):
 
 
 @case('N239', 'Missions › the list « À compléter » in rows (SOG-0482, lot 6, the mock-up itin_completer): no bullet, a row of 44 px at least per point (the whole row is the target, underlined text); at 390 the list sits right above the foot and its last row is in view above it after the inner scroll; '
-      'at 1280 it opens in the column of the right, beside the map and not over it; a point of a place nobody cites says « Hors itinéraire : le point PT4 n\'est cité nulle part : le pilote ne le verra pas » (the group « Lieux » is gone; no capital after the colon)', 'N',
+      'at 1280 it opens in the column of the right, beside the map and not over it; a point of a place nobody cites says « Hors itinéraire — le point PT4 n\'est cité nulle part : le pilote ne le verra pas » (the group « Lieux » is gone; « — » between the place and the point, no capital after it); the Cadre says « Cadre — théâtre » and a drawer « Tiroir 1 — sans message, sans briefing »; at 390 the text of the link « Sur la carte » ends at 24 px at most from the bottom of the card of the itinerary', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0482 lot 6 (the ergonomist, 23 Nov): editor_view.js `edTodoHtml`, `todoWhere` (`atOut`, `atItin`), `lowerFirst`, the style of `.ms-attodo` and `.ms-todogo`')
 def n239(c):
@@ -15264,7 +15264,8 @@ def n239(c):
                    f" return [getComputedStyle(ul).listStyleType, lis.map(x => getComputedStyle(x).listStyleType), Math.min(...lis.map(x => Math.round(x.getBoundingClientRect().height))), lis.every(x => getComputedStyle(x.querySelector('.ms-todogo')).textDecorationLine === 'underline')] }})()")
         c.eq([geo[0], set(geo[1]), geo[2] >= 44, geo[3]], ['none', {'none'}, True, True], f'{width}: no bullet, every row at least 44 px high (the smallest is {geo[2]} px), the text underlined', what='rows')
         pt4 = norm(c.text(f'{E} [data-edtodo] [data-todo="uncited_pt"]'))
-        c.ok(pt4.startswith("Hors itinéraire : le point PT4 n'est cité nulle part"), pt4, f'{width}: the point of PT4 says « Hors itinéraire : le point PT4… » (no « Lieux », no capital after the colon)')
+        c.ok(pt4.startswith("Hors itinéraire — le point PT4 n'est cité nulle part"), pt4, f'{width}: the point of PT4 says « Hors itinéraire — le point PT4… » (no « Lieux », « — » and no capital after it)')
+        c.eq([norm(c.text(f'{E} [data-edtodo] [data-todo="theatre"]')), norm(c.text(f'{E} [data-edtodo] [data-dtodo]'))[:34]], ['Cadre — théâtre', 'Tiroir 1 — sans message, sans brie'], f'{width}: the points of the Cadre and of a drawer have the same form « place — point »', what='dash form')
         c.js(f"{{ const l = document.querySelector('{E} [data-edtodo]'); l.scrollTop = l.scrollHeight }}")
         c.wait(200)
         geo = c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]').getBoundingClientRect(), last = [...document.querySelectorAll('{E} [data-edtodo] li')].pop().getBoundingClientRect(), bar = document.querySelector('{E} .ms-atbar').getBoundingClientRect(), map = document.querySelector('{E} .ms-atmain').getBoundingClientRect();"
@@ -15274,5 +15275,11 @@ def n239(c):
             c.ok(geo[2] >= geo[4], geo, f'1280: the list (left {geo[2]}) is at the right of the map (right {geo[4]}), not over it')
         else:
             c.ok(geo[6] <= 0.6 * geo[7] + 2, geo, f'390: the list is {geo[6]} px high, 60 % of the screen at most ({geo[7]} px)')
+        if width < 768:  # the blank under the link « Sur la carte » is gone: its text ends at 24 px at most from the bottom of the card of the itinerary
+            c.tap(f'{E} [data-edtodobtn]')
+            c.js("window.scrollTo(0, document.body.scrollHeight)")
+            c.wait(300)
+            gap = c.js(f"(() => {{ const l = document.querySelector('{E} [data-plmap]'), r = document.createRange(); r.selectNodeContents(l); return Math.round(document.querySelector('{E} [data-atitin]').getBoundingClientRect().bottom - r.getBoundingClientRect().bottom) }})()")
+            c.ok(0 <= gap <= 24, gap, f'390: the text of « Sur la carte » ends {gap} px from the bottom of the card of the itinerary (24 at most)')
         ed_leave(c)
         c.js(_REG_CLEAR)
