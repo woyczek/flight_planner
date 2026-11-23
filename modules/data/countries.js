@@ -889,7 +889,7 @@ function gainsBlockHtml(id) {
   if (!g || !(g.redo.length || g.update.length)) return '';
   const list = a => a.map(x => x.label[li()]).join(', ');
   return `<div class="d-upd d-gains" data-sheet-update data-gains>
-    ${g.redo.length ? `<div class="d-gain" data-gain="redo"><p><b>${esc(tt(T.redoLine, { list: list(g.redo) }))}</b></p><p class="f-muted">${esc(tt(T.redoNote))}</p><p class="d-verbs"><button type="button" class="primary" data-act="sheet-reread" data-zone="${esc(id)}">${esc(tt(T.btnRedo))}</button></p><p class="f-muted" data-keep>${esc(tt(T.keepRedo))}</p></div>` : ''}
+    ${g.redo.length ? `<div class="d-gain" data-gain="redo"><p><b>${esc(tt(T.redoLine, { list: list(g.redo) }))}</b></p><p class="f-muted">${esc(tt(T.redoNote))}</p><p class="d-verbs"><button type="button" class="primary" data-act="sheet-reread" data-zone="${esc(id)}">${esc(tt(T.btnRedo))}</button></p></div>` : ''}
     ${g.update.length ? `<div class="d-gain" data-gain="update"><p><b>${esc(tt(T.updLine, { list: list(g.update) }))}</b></p><p class="f-muted">${esc(tt(T.updNote))}</p><p class="d-verbs"><button type="button"${g.redo.length ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}" data-gain="1">${esc(tt(TX.cwb.update))}</button></p><p class="f-muted" data-keep>${esc(tt(T.keep))}</p></div>` : ''}</div>`;
 }
 /** Le téléchargement de ce pays qui vient d'échouer (la fin de « Mettre à jour » le dit) : ce que le site a répondu ; le fichier choisi à la main reste le chemin (la FAA : l'abonnement du cycle, UN fichier). '' sans échec. */
@@ -1051,7 +1051,14 @@ export function countriesHtml() {
 function rereadAllHtml() {
   const ids = S.status && statusKnown() ? M.rereadIds(S.status, S.d?.cov?.ids || []) : [];
   if (ids.length < 2 || S.run || S.zop || S.asking) return '';
-  return `<p class="d-rereadall" data-reread-all><button type="button" data-act="reread-all">${esc(tt(TX.gn.rereadAll, { n: ids.length }))}</button> <span class="f-muted">${esc(tt(TX.gn.redoNote))}</span></p>`;
+  // la durée : une ESTIMATION d'après la taille des pays (1,4 s par Mo, mesuré sur la France : 11,9 s pour 8,3 Mo), dite « environ » ; sans taille connue, la phrase n'en dit pas
+  const kb = M.sizeKb(ids, S.d?.zones),
+    secs = kb.known === kb.total && kb.total > 0 ? kb.kb / 1024 * 1.4 : 0,
+    time = secs >= 90 ? `${Math.round(secs / 60)} min` : secs > 0 ? `${Math.max(10, Math.round(secs / 10) * 10)} s` : '',
+    note = time ? tt(TX.gn.allNote, {
+      t: time
+    }) : tt(TX.gn.allNoteBare);
+  return `<p class="d-rereadall" data-reread-all><button type="button" data-act="reread-all">${esc(tt(TX.gn.rereadAll, { n: ids.length }))}</button> <span class="f-muted" data-reread-note>${esc(note)}</span></p>`;
 }
 /** Le sélecteur qui retrouve l'élément touché après un redessin (le focus lui revient à la fermeture de la fiche). */
 function selectorOf(el, zone) {

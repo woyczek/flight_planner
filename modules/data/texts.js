@@ -2345,7 +2345,16 @@ export const TX = {
     redoLine: ['Une relecture apporte : {list}.', 'A reread brings: {list}.', 'Ein erneutes Einlesen bringt: {list}.',
       'Una relectura aporta: {list}.'
     ],
-    redoNote: ['Sans téléchargement.', 'No download.', 'Ohne Download.', 'Sin descarga.'],
+    redoNote: ['Sans téléchargement. La lecture actuelle est remplacée.', 'No download. The current reading is replaced.',
+      'Ohne Download. Die aktuelle Lesung wird ersetzt.', 'Sin descarga. La lectura actual se reemplaza.'
+    ],
+    allNote: ['Sans téléchargement · environ {t} · la lecture actuelle est remplacée',
+      'No download · about {t} · the current reading is replaced', 'Ohne Download · etwa {t} · die aktuelle Lesung wird ersetzt',
+      'Sin descarga · unos {t} · la lectura actual se reemplaza'
+    ],
+    allNoteBare: ['Sans téléchargement · la lecture actuelle est remplacée', 'No download · the current reading is replaced',
+      'Ohne Download · die aktuelle Lesung wird ersetzt', 'Sin descarga · la lectura actual se reemplaza'
+    ],
     updLine: ['Une mise à jour apporte : {list}.', 'An update brings: {list}.', 'Eine Aktualisierung bringt: {list}.',
       'Una actualización aporta: {list}.'
     ],
@@ -2354,10 +2363,6 @@ export const TX = {
     ],
     keep: ['Les données d’avant sont gardées.', 'The previous data are kept.', 'Die bisherigen Daten bleiben erhalten.',
       'Los datos anteriores se conservan.'
-    ],
-    // sous la RELECTURE : les fichiers du cycle en cours sont remplacés, seuls les cycles précédents restent (la phrase est tranchée par l'ergonome avant le push)
-    keepRedo: ['Les cycles précédents sont gardés.', 'The previous cycles are kept.', 'Die vorherigen Zyklen bleiben erhalten.',
-      'Los ciclos anteriores se conservan.'
     ],
     btnRedo: ['Relire ce pays', 'Reread this country', 'Dieses Land erneut einlesen', 'Releer este país'],
     rereadAll: ['Relire tous les pays ({n})', 'Reread all countries ({n})', 'Alle Länder erneut einlesen ({n})',

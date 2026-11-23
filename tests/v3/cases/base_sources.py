@@ -4081,3 +4081,72 @@ def k518(c):
             sys.modules.pop('sia_enr17', None)
         else:
             sys.modules['sia_enr17'] = kept[1]
+
+
+@case('K519', 'A reread is ALL OR NOTHING per country: the files of the country are written beside, then replace the folder of the cycle at once — a failure or a stop before the end leaves the country wholly in its previous reading, never a mix of two reader versions (SOG-0568)', 'K', static=True,
+      rule='SOG-0568 (the ergonomist, 23 Nov 2026: « une relecture est TOUT OU RIEN PAR PAYS… un échec en cours de pays laisse ce pays entièrement dans sa lecture d\'avant »): base.install wrote the 12 files of a zone one by one into data/sia/base/<zone>/<cycle>/ (each atomic, the zone not): a failure between two files mixed an old and a new reading. Now install writes them all into <cycle>.new-… and swaps the folder (two renames); a failure before the swap removes the staging folder and touches nothing; a swap that cannot be done puts the old folder back; the leftovers of an interrupted swap are healed (an <cycle>.old-… whose <cycle> is missing comes back); a file the new reading no longer has is gone with the old folder; identical files replace nothing')
+def k519(c):
+    RJ, BS, AF, DS = _mods()
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    kinds = [k for k in BA.KINDS]
+    cycle = '2026-10-29'
+
+    def texts(tag):
+        return {f'{k}.json': json.dumps({'schema': 2, 'zone': 'xx', 'cycle': cycle, 'kind': k, 'tag': tag, 'data': []}) for k in kinds}
+    entry = {'inForce': cycle, 'cycles': {cycle: {'parserVersion': 31}}}
+
+    def state(folder):
+        return {n: (folder / n).read_text(encoding='utf-8') for n in sorted(os.listdir(folder))}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td)
+        zdir = data / 'sia' / 'base' / 'xx'
+        folder = zdir / cycle
+        (data / 'sia' / 'base').mkdir(parents=True)
+        # the previous reading, with a file the new reading no longer has
+        BA.install(str(data), 'xx', cycle, texts('old'), entry)
+        (folder / 'legacy.json').write_text('{"schema":2}', encoding='utf-8')
+        before = state(folder)
+        c.eq(sorted(before), sorted([f'{k}.json' for k in kinds] + ['legacy.json']), 'the previous reading is there', what='setup')
+        # ---- 1. a failure in the middle of the writing (the 8th file cannot be written): nothing of the country moved, nothing is left beside it
+        bad = texts('new')
+        bad['points.json'] = 12345      # not a text: the write fails after the earlier files of the staging folder were written
+        try:
+            BA.install(str(data), 'xx', cycle, bad, entry)
+            raised = False
+        except Exception:
+            raised = True
+        c.eq((raised, state(folder), sorted(os.listdir(zdir))), (True, before, [cycle]), 'a failure before the end: the country is wholly in its previous reading, byte for byte, and no staging folder is left', what='failure')
+        # ---- 2. a swap that cannot be done: the old folder comes back
+        real = os.replace
+        calls = []
+
+        def flaky(a, b, *x, **k):
+            calls.append((os.path.basename(str(a)), os.path.basename(str(b))))
+            if '.new-' in str(a):
+                raise PermissionError('simulated: a file of the folder is open elsewhere')
+            return real(a, b, *x, **k)
+        BA.os.replace = flaky
+        try:
+            try:
+                BA.install(str(data), 'xx', cycle, texts('new'), entry)
+                raised = False
+            except OSError:
+                raised = True
+        finally:
+            BA.os.replace = real
+        c.eq((raised, state(folder), sorted(os.listdir(zdir))), (True, before, [cycle]), 'the replacement refused (a file open elsewhere): the previous reading is put back, nothing is left beside', what='swap refused')
+        # ---- 3. identical files replace nothing
+        BA.install(str(data), 'xx', cycle, {n: t for n, t in state(folder).items() if n != 'legacy.json'}, entry)
+        ino = os.stat(folder).st_ino   # (the file the reading does not have was removed by that very replacement)
+        paths, written = BA.install(str(data), 'xx', cycle, texts('old'), entry)
+        c.eq((written, os.stat(folder).st_ino == ino), (0, True), 'the same reading again: no file written, the folder is not replaced', what='identical')
+        # ---- 4. a new reading replaces the whole folder: all new, the file it no longer has is gone, nothing beside
+        (folder / 'legacy.json').write_text('{"schema":2}', encoding='utf-8')
+        paths, written = BA.install(str(data), 'xx', cycle, texts('new'), entry)
+        after = state(folder)
+        c.eq((sorted(after), {json.loads(t)['tag'] for t in after.values()}, sorted(os.listdir(zdir))), (sorted(f'{k}.json' for k in kinds), {'new'}, [cycle]), 'the whole reading is the new one (no old file mixed in), the file the new reading no longer has is gone', what='replaced')
+        # ---- 5. the leftovers of an interrupted swap: <cycle> missing and <cycle>.old-… there: the previous reading comes back; a staging folder is removed
+        os.replace(folder, zdir / f'{cycle}.old-1-1')
+        (zdir / f'{cycle}.new-2-2').mkdir()
+        BA.recover_swaps(str(zdir))
+        c.eq((sorted(os.listdir(zdir)), {json.loads(t)['tag'] for t in state(folder).values()}), ([cycle], {'new'}), 'an interrupted swap is healed: the folder of the cycle is back in its previous reading, the staging folder is gone', what='recover')

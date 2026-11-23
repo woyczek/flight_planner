@@ -11876,18 +11876,14 @@ def l180(c):
 
 
 _L181 = {
-    'fr': {'redo': 'à jour · relecture possible', 'upd': 'à jour · mise à jour possible', 'redoLine': 'Une relecture apporte : noms usuels des zones R, D et P (absents aujourd’hui), horaires des zones mieux lus.', 'redoNote': 'Sans téléchargement.',
-           'updLine': 'Une mise à jour apporte : règle semi-circulaire (absente aujourd’hui).', 'updNote': 'Avec téléchargement d’une page.', 'keep': 'Les données d’avant sont gardées.', 'keepRedo': 'Les cycles précédents sont gardés.',
-           'btnRedo': 'Relire ce pays', 'btnUpd': 'Mettre à jour ce pays', 'all': 'Relire tous les pays (3)', 'fresh': 'Rien à faire : cycle en cours, lu par la version actuelle.'},
-    'en': {'redo': 'up to date · reread possible', 'upd': 'up to date · update possible', 'redoLine': 'A reread brings: usual names of the R, D and P areas (not there today), hours of the areas better read.', 'redoNote': 'No download.',
-           'updLine': 'An update brings: semicircular rule (not there today).', 'updNote': 'With the download of one page.', 'keep': 'The previous data are kept.', 'keepRedo': 'The previous cycles are kept.',
-           'btnRedo': 'Reread this country', 'btnUpd': 'Update this country', 'all': 'Reread all countries (3)', 'fresh': 'Nothing to do: cycle in force, read by the current version.'},
-    'de': {'redo': 'aktuell · erneutes Einlesen möglich', 'upd': 'aktuell · Aktualisierung möglich', 'redoLine': 'Ein erneutes Einlesen bringt: Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden), Zeiten der Gebiete besser gelesen.', 'redoNote': 'Ohne Download.',
-           'updLine': 'Eine Aktualisierung bringt: Halbkreisregel (heute nicht vorhanden).', 'updNote': 'Mit dem Download einer Seite.', 'keep': 'Die bisherigen Daten bleiben erhalten.', 'keepRedo': 'Die vorherigen Zyklen bleiben erhalten.',
-           'btnRedo': 'Dieses Land erneut einlesen', 'btnUpd': 'Dieses Land aktualisieren', 'all': 'Alle Länder erneut einlesen (3)', 'fresh': 'Nichts zu tun: gültiger Zyklus, von der aktuellen Version gelesen.'},
-    'es': {'redo': 'al día · relectura posible', 'upd': 'al día · actualización posible', 'redoLine': 'Una relectura aporta: nombres de uso de las zonas R, D y P (hoy ausentes), horarios de las zonas mejor leídos.', 'redoNote': 'Sin descarga.',
-           'updLine': 'Una actualización aporta: regla semicircular (hoy ausente).', 'updNote': 'Con la descarga de una página.', 'keep': 'Los datos anteriores se conservan.', 'keepRedo': 'Los ciclos anteriores se conservan.',
-           'btnRedo': 'Releer este país', 'btnUpd': 'Actualizar este país', 'all': 'Releer todos los países (3)', 'fresh': 'Nada que hacer: ciclo vigente, leído por la versión actual.'},
+    'fr': {'redo': 'à jour · relecture possible', 'upd': 'à jour · mise à jour possible', 'redoLine': 'Une relecture apporte : noms usuels des zones R, D et P (absents aujourd’hui), horaires des zones mieux lus.', 'redoNote': 'Sans téléchargement. La lecture actuelle est remplacée.',
+           'updLine': 'Une mise à jour apporte : règle semi-circulaire (absente aujourd’hui).', 'updNote': 'Avec téléchargement d’une page.', 'keep': 'Les données d’avant sont gardées.', 'btnRedo': 'Relire ce pays', 'btnUpd': 'Mettre à jour ce pays', 'all': 'Relire tous les pays (3)', 'fresh': 'Rien à faire : cycle en cours, lu par la version actuelle.'},
+    'en': {'redo': 'up to date · reread possible', 'upd': 'up to date · update possible', 'redoLine': 'A reread brings: usual names of the R, D and P areas (not there today), hours of the areas better read.', 'redoNote': 'No download. The current reading is replaced.',
+           'updLine': 'An update brings: semicircular rule (not there today).', 'updNote': 'With the download of one page.', 'keep': 'The previous data are kept.', 'btnRedo': 'Reread this country', 'btnUpd': 'Update this country', 'all': 'Reread all countries (3)', 'fresh': 'Nothing to do: cycle in force, read by the current version.'},
+    'de': {'redo': 'aktuell · erneutes Einlesen möglich', 'upd': 'aktuell · Aktualisierung möglich', 'redoLine': 'Ein erneutes Einlesen bringt: Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden), Zeiten der Gebiete besser gelesen.', 'redoNote': 'Ohne Download. Die aktuelle Lesung wird ersetzt.',
+           'updLine': 'Eine Aktualisierung bringt: Halbkreisregel (heute nicht vorhanden).', 'updNote': 'Mit dem Download einer Seite.', 'keep': 'Die bisherigen Daten bleiben erhalten.', 'btnRedo': 'Dieses Land erneut einlesen', 'btnUpd': 'Dieses Land aktualisieren', 'all': 'Alle Länder erneut einlesen (3)', 'fresh': 'Nichts zu tun: gültiger Zyklus, von der aktuellen Version gelesen.'},
+    'es': {'redo': 'al día · relectura posible', 'upd': 'al día · actualización posible', 'redoLine': 'Una relectura aporta: nombres de uso de las zonas R, D y P (hoy ausentes), horarios de las zonas mejor leídos.', 'redoNote': 'Sin descarga. La lectura actual se reemplaza.',
+           'updLine': 'Una actualización aporta: regla semicircular (hoy ausente).', 'updNote': 'Con la descarga de una página.', 'keep': 'Los datos anteriores se conservan.', 'btnRedo': 'Releer este país', 'btnUpd': 'Actualizar este país', 'all': 'Releer todos los países (3)', 'fresh': 'Nada que hacer: ciclo vigente, leído por la versión actual.'},
 }
 _L181_GAINS = {
     'names': {'id': 'v29-fr-usual-names', 'kind': 'absent', 'label': ['noms usuels des zones R, D et P (absents aujourd’hui)', 'usual names of the R, D and P areas (not there today)', 'Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden)', 'nombres de uso de las zonas R, D y P (hoy ausentes)']},
@@ -11938,6 +11934,10 @@ def l181(c):
          c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-todo-state]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))")],
          [1, norm(W['all']), True, True], 'ONE « Relire tous les pays (3) » above the list of the month and the packs, with the number of countries to reread', what='reread all')
     c.eq(c.js("document.querySelector('[data-reread-all] button').disabled"), False, 'and it is never grey', what='not grey')
+    note = norm(c.text('[data-reread-note]'))
+    ends = {'fr': 'la lecture actuelle est remplacée', 'en': 'the current reading is replaced', 'de': 'die aktuelle Lesung wird ersetzt', 'es': 'la lectura actual se reemplaza'}[lang]
+    begins = {'fr': 'Sans téléchargement', 'en': 'No download', 'de': 'Ohne Download', 'es': 'Sin descarga'}[lang]
+    c.ok(note.startswith(norm(begins)) and note.endswith(norm(ends)), note, 'under « Relire tous les pays » (the ergonomist): « Sans téléchargement · [environ 2 min ·] la lecture actuelle est remplacée » — the duration only when the sizes are known')
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-reread-all]').scrollIntoView({ block: 'start' })")
         c.shot(f'L181_{c.width}_{lang}_list_top.png')
@@ -11955,8 +11955,8 @@ def l181(c):
     open_sheet('fr')
     sh = '[data-sheet=fr]'
     c.eq(norm(c.text(f'{sh} [data-sheet-state]')).endswith(norm(W['redo'])) or norm(W['redo']) in norm(c.text(f'{sh} [data-sheet-state]')), True, 'the state cell says « à jour · relecture possible »', what='state cell')
-    c.eq([norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(1)')), norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(2)')), norm(c.text(f'{sh} [data-gain=redo] [data-keep]'))],
-         [norm(W['redoLine']), norm(W['redoNote']), norm(W['keepRedo'])], 'the reread: what it brings (the sentences of the gains table), « Sans téléchargement. », the sentence under the reread', what='reread lines')
+    c.eq([norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(1)')), norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(2)')), c.count(f'{sh} [data-gain=redo] [data-keep]')],
+         [norm(W['redoLine']), norm(W['redoNote']), 0], 'the reread: what it brings (the sentences of the gains table), then « Sans téléchargement. La lecture actuelle est remplacée. » (the ergonomist: the reading of the cycle is NOT kept)', what='reread lines')
     c.eq([norm(c.text(f'{sh} [data-gain=update] p:nth-of-type(1)')), norm(c.text(f'{sh} [data-gain=update] p:nth-of-type(2)')), norm(c.text(f'{sh} [data-gain=update] [data-keep]'))],
          [norm(W['updLine']), norm(W['updNote']), norm(W['keep'])], 'the update: the piece never read, « Avec téléchargement d\'une page. », « Les données d\'avant sont gardées. »', what='update lines')
     btns = c.js(f"[...document.querySelectorAll('{sh} .d-gains button')].map(b => [b.dataset.act, b.disabled, b.classList.contains('primary'), b.textContent.replace(/\\s+/g, ' ').trim()])")

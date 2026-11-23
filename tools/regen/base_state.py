@@ -49,9 +49,9 @@ def compat_version():
     au-dessus, ses données SERVENT : le pays est « à jour », la table des gains (tools/base_gains.py) dit ce qu'une relecture lui apporterait (SOG-0568)."""
     try:
         with open(os.path.join(ROOT, 'shared', 'sia_base.js'), encoding='utf-8') as f:
-            m = re.search(r'const COMPAT =\s*(\d+)', f.read())
+            m = re.search(r'const COMPAT =\s*(\d{1,4})', f.read())
         return int(m.group(1)) if m else 0
-    except OSError:
+    except (OSError, ValueError):
         return 0
 
 
@@ -273,6 +273,7 @@ def zone_states(data, zones, personal, ctx):
     sources = aero_cycles.report(inputs, today, root=os.path.join(data, 'sia'))
     used = aero_cycles.used_sources(sources, personal)
     parser = parser_version()
+    compat = compat_version() or parser      # SOG-0568 : lu UNE fois ; illisible, on retombe sur la version courante (échoue FERMÉ : une zone d'un autre lecteur est « à reconstruire », jamais « à jour » sans preuve)
     wait = waiting_pickups(data, zones, ctx, sources)
     latest = download_times(data, inputs, S) if S else {}
     absent = S.absent_load(ctx, current) if S else frozenset()
@@ -311,7 +312,7 @@ def zone_states(data, zones, personal, ctx):
                 if changed:
                     reasons.append({'code': 'inputs-changed', 'count': len(changed), 'names': changed[:3]})
             version = _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json'))
-            if parser and (version is None or version < max(compat_version(), 1)):      # SOG-0568 : SOUS le format que la page lit encore seulement ; au-dessus, les données servent (les gains, plus bas)
+            if parser and (version is None or version < max(compat, 1)):      # SOG-0568 : SOUS le format que la page lit encore seulement ; au-dessus, les données servent (les gains, plus bas)
                 reasons.append({'code': 'parser-old', 'built': version, 'current': parser})
             missing = [k for k in B.KINDS if not os.path.isfile(os.path.join(data, 'sia', 'base', z, built, f'{k}.json'))]
             if missing:

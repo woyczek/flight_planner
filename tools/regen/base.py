@@ -547,17 +547,82 @@ def target_of(data, rel, zone):
     return full
 
 
+def _same(path, text):
+    """Le fichier est-il déjà là avec ce contenu (la date updated_at mise à part) ?"""
+    try:
+        with open(path, encoding='utf-8') as f:
+            old = json.load(f)
+        return _without_date(old) == _without_date(json.loads(text))
+    except (OSError, ValueError):
+        return False
+
+
+def recover_swaps(zdir):
+    """SOG-0568 : les restes d'un remplacement interrompu dans data/sia/base/<zone>/ — un dossier `<cycle>.new-…` jamais installé est retiré ; un `<cycle>.old-…` dont le `<cycle>` manque est REMIS en place
+    (le pays retrouve sa lecture d'avant) ; sinon il est retiré. Jamais d'exception."""
+    try:
+        names = os.listdir(zdir)
+    except OSError:
+        return
+    for n in names:
+        m = re.fullmatch(r'(\d{4}-\d{2}-\d{2})\.(new|old)-[\w.-]+', n)
+        if not m:
+            continue
+        path, cyc = os.path.join(zdir, n), os.path.join(zdir, m.group(1))
+        try:
+            if m.group(2) == 'old' and not os.path.exists(cyc):
+                os.replace(path, cyc)
+            else:
+                shutil.rmtree(path, ignore_errors=True)
+        except OSError:
+            pass
+
+
 def install(data, zone, cycle, texts, entry):
     """Écrit la zone dans data/sia/base/<zone>/<cycle>/ (zone, cycle et noms contrôlés, chaque chemin par target_of : aucun chemin ne vient du
     navigateur), les grandes villes si elles changent, et l'entrée de la zone dans le manifeste sia/base/index.json (les autres zones gardées,
-    écrit comme la page l'écrit : JSON compact). Rend (chemins relatifs à data/ écrits ou inchangés pour le commit, nombre de fichiers écrits)."""
+    écrit comme la page l'écrit : JSON compact). Rend (chemins relatifs à data/ écrits ou inchangés pour le commit, nombre de fichiers écrits).
+    TOUT OU RIEN PAR PAYS (SOG-0568) : les fichiers du pays sont d'abord écrits TOUS dans un dossier voisin `<cycle>.new-…`, puis ce dossier remplace celui du cycle d'un coup (deux renommages) ;
+    un échec ou un arrêt avant la fin laisse le pays entièrement dans sa lecture d'avant, jamais un mélange de deux versions du lecteur. Rien n'est remplacé quand tout est identique."""
     if not (ZONE_ID.match(zone) and CYCLE.match(cycle)):
         raise ValueError('bad zone or cycle')
     paths, written = [], 0
+    final = target_of(data, f'sia/base/{zone}/{cycle}/meta.json', zone)
+    folder = os.path.dirname(final)
+    recover_swaps(os.path.dirname(folder))
     for name in sorted(texts):
-        rel = f'sia/base/{MAJOR}' if name == MAJOR else f'sia/base/{zone}/{cycle}/{name}'
-        written += write_if_changed(target_of(data, rel, zone), texts[name])
-        paths.append(rel)
+        if name == MAJOR:
+            rel = f'sia/base/{MAJOR}'
+            written += write_if_changed(target_of(data, rel, zone), texts[name])      # les grandes villes : un fichier à part, pas du pays
+            paths.append(rel)
+    mine = sorted(n for n in texts if n != MAJOR)
+    for n in mine:
+        target_of(data, f'sia/base/{zone}/{cycle}/{n}', zone)      # chaque nom est contrôlé avant toute écriture
+        paths.append(f'sia/base/{zone}/{cycle}/{n}')
+    changed = sum(1 for n in mine if not _same(os.path.join(folder, n), texts[n]))
+    extra = sorted(set(os.listdir(folder)) - set(mine)) if os.path.isdir(folder) else []      # un fichier d'une ancienne lecture qui n'existe plus : le remplacement le retire
+    if changed or extra:
+        stage = f'{folder}.new-{os.getpid()}-{threading.get_ident()}'
+        old = f'{folder}.old-{os.getpid()}-{threading.get_ident()}'
+        shutil.rmtree(stage, ignore_errors=True)
+        try:
+            os.makedirs(stage)
+            for n in mine:      # tout est écrit ICI d'abord ; un échec lève, le pays n'a rien perdu
+                with open(os.path.join(stage, n), 'w', encoding='utf-8', newline='') as f:
+                    f.write(texts[n])
+            had = os.path.isdir(folder)
+            if had:
+                os.replace(folder, old)
+            try:
+                os.replace(stage, folder)
+            except OSError:
+                if had:
+                    os.replace(old, folder)      # le remplacement n'a pas pu avoir lieu : la lecture d'avant revient
+                raise
+            shutil.rmtree(old, ignore_errors=True)
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
+        written += changed + len(extra)
     # SOG-0143 : l'index ne déclare JAMAIS un cycle dont un fichier manque sur le disque (un fichier écrit puis perdu, ou jamais écrit) : contrôlé juste avant de l'écrire, la zone n'est pas publiée sinon
     gone = [n for n in sorted(texts) if n != MAJOR and not os.path.isfile(target_of(data, f'sia/base/{zone}/{cycle}/{n}', zone))]
     if gone:
