@@ -9,12 +9,12 @@ appairé, elle se lit seulement.
 
 ## Premier démarrage
 
-- **Les entrées.** Sur un téléphone, la barre du bas porte les modules de Maintenance : Données, et Fiches (de types de performances) au niveau
+- **Les entrées.** Sur un téléphone, la barre du bas affiche les modules de Maintenance : Données, et Fiches (de types de performances) au niveau
   qui l'ouvre. En haut à droite, comme dans Pilote, « ? » ouvre cette aide et ⚙ les Réglages, carte Administration
   comprise. Sur un écran, ce sont les entrées de la colonne de gauche, avec l'Administration et les pages de
   service du poste (jetons des pilotes, appareils, page de maintenance V2). Le nom de l'application, en haut à gauche,
   ouvre la liste des applications : un toucher passe à Pilote.
-- **L'aide.** Une seule porte, le « ? » : elle s'ouvre au chapitre de l'écran affiché, avec en tête le sommaire
+- **L'aide.** Un seul accès, le « ? » : elle s'ouvre au chapitre de l'écran affiché, avec en tête le sommaire
   et « Toute l'aide » (les manuels et les tutoriels) ; ce manuel ne parle que de Maintenance, celui de Pilote reste
   dans Pilote.
 - **L'état de l'appli.** La pastille du ⚙ (verte : une nouvelle ; orange : une chose demande votre attention) mène au
@@ -144,7 +144,7 @@ orange : de l'attention). Une ligne par chose, touchez-la pour agir : le vol en 
 pas prête (vers « Accès aux données »), l'état des données et le moyen d'échange (vers « Synchronisation », ou les conflits),
 le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
 
-**Un point a toujours sa phrase.** Quand un pli des Réglages porte un point (jaune : de l'attention ; rouge : urgent), son résumé dit ce qui est en défaut à la place de sa fréquence (« Accès aux données : le jeton expire dans 4 jours ») et la carte fautive porte le même point devant son titre ; le ⚙ de l'en-tête dit la même chose dans son titre. Un jeton n'alerte pas avant 5 jours de son expiration : jaune de 5 à 2 jours, rouge la veille ; une fois expiré, la phrase est rouge en tête des Réglages et sous l'en-tête, tant qu'il n'est pas renouvelé.
+**Un point a toujours sa phrase.** Quand un pli des Réglages affiche un point (jaune : de l'attention ; rouge : urgent), son résumé dit ce qui est en défaut à la place de sa fréquence (« Accès aux données : le jeton expire dans 4 jours ») et la carte fautive affiche le même point devant son titre ; le ⚙ de l'en-tête dit la même chose dans son titre. Un jeton n'alerte pas avant 5 jours de son expiration : jaune de 5 à 2 jours, rouge la veille ; une fois expiré, la phrase est rouge en tête des Réglages et sous l'en-tête, tant qu'il n'est pas renouvelé.
 
 **Les groupes.** Au niveau Découverte, l'écran montre sept cartes au plus, l'une sous l'autre : Identité, Accès aux
 données, Synchronisation (quand elle sert), Usages, Niveau, Design et À propos. La sauvegarde, les données hors ligne, la
@@ -176,7 +176,7 @@ du lanceur, même sans case cochée ; un usage d'échange le partage en plus par
 
 **L'accès aux données.** Sur un téléphone ou sur le site, réglez dans « Accès aux données » le dépôt (compte/dépôt), la
 branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, pas de jeton ;
-tant que `data/` n'est pas un dépôt git, la carte ouvre la porte pour le récupérer ou le reprendre ; son dépôt distant se
+tant que `data/` n'est pas un dépôt git, la carte ouvre l'accès pour le récupérer ou le reprendre ; son dépôt distant se
 règle dans la carte « Administration » (voir « Un dépôt git pour data/ »). Sur le poste du lanceur, la carte « Accès aux données » commence par une ligne « Dépôt des données : » qui donne l'adresse et la branche du dépôt distant : l'écran ne l'attend pas (le lanceur peut mettre plusieurs secondes à la lire), la ligne affiche « … » puis sa valeur, sans bouger ; ce qui dépend du dépôt (le volet « Dépôt distant » de l'Administration, par exemple) apparaît à son arrivée. Une limite de requêtes qui dure peut venir du jeton : le dépôt compte les requêtes par utilisateur du jeton, et un jeton de projet sert souvent plusieurs appareils. Un jeton par appareil, ou un jeton renouvelé, la lève.
 
 **L'expiration du jeton GitHub.** GitHub ne donne pas la date d'expiration à une page : une ligne du bloc « État » vous la demande, et le champ facultatif « Ce jeton expire le » de la carte « Accès » la garde. Elle reste sur cet appareil (jamais dans le dépôt) et vous êtes prévenu 5 jours avant, comme avec GitLab, la date étant dite « déclarée ». Un jeton sans expiration se dit avec la case « Ce jeton n'expire pas » : la ligne disparaît. « Couper l'accès » oublie la date.
@@ -269,10 +269,10 @@ seulement signalé.
 
 - **L'accès au dépôt** se règle sur l'ordinateur : clé SSH pour une adresse `git@…`, identifiants enregistrés dans Git
   pour une adresse `https://…`.
-- **Le fournisseur** d'une configuration se choisit (github ou gitlab), il ne se devine pas ; le volet ne fait que lire l'adresse du dépôt distant (GitHub, gitlab.com, framagit.org, ou un GitLab auto-hébergé que la configuration de l'appareil nomme avec le même hôte ; sinon « Fournisseur non reconnu »). En tête du volet, « Fournisseur : GitLab · projet groupe/projet » (le projet est un lien vers sa page) ; pour GitLab, le lien « Jetons des pilotes » mène à la création des jetons d'accueil ; pour GitHub, le volet propose de saisir l'adresse d'un projet GitLab, car l'accueil par jeton de projet le demande. La page ne fait que proposer : changer de dépôt passe, comme toujours, par la fenêtre Oui / Non du lanceur. La configuration exportée porte toujours le fournisseur (github ou gitlab ; un dépôt inconnu est refusé, jamais exporté comme « autre »), et le côté du pilote s'ouvre dessus. Une ancienne configuration sans fournisseur n'est acceptée que pour github.com. Sans lanceur, une configuration GitLab s'applique sur l'appareil comme une configuration GitHub.
+- **Le fournisseur** d'une configuration se choisit (github ou gitlab), il ne se devine pas ; le volet ne fait que lire l'adresse du dépôt distant (GitHub, gitlab.com, framagit.org, ou un GitLab auto-hébergé que la configuration de l'appareil nomme avec le même hôte ; sinon « Fournisseur non reconnu »). En tête du volet, « Fournisseur : GitLab · projet groupe/projet » (le projet est un lien vers sa page) ; pour GitLab, le lien « Jetons des pilotes » mène à la création des jetons d'accueil ; pour GitHub, le volet propose de saisir l'adresse d'un projet GitLab, car l'accueil par jeton de projet le demande. La page ne fait que proposer : changer de dépôt passe, comme toujours, par la fenêtre Oui / Non du lanceur. La configuration exportée contient toujours le fournisseur (github ou gitlab ; un dépôt inconnu est refusé, jamais exporté comme « autre »), et le côté du pilote s'ouvre dessus. Une ancienne configuration sans fournisseur n'est acceptée que pour github.com. Sans lanceur, une configuration GitLab s'applique sur l'appareil comme une configuration GitHub.
 - **À plusieurs par git**, ce dépôt distant est nécessaire : sans lui, la case « À plusieurs » ne mène nulle part, et
   la carte « Usages » le rappelle.
-- **data/ absent ou sans git** : la carte « Accès aux données » ouvre une porte, à tous les niveaux. `data/` est un dossier ignoré par le dépôt du code ; il
+- **data/ absent ou sans git** : la carte « Accès aux données » ouvre un accès, à tous les niveaux. `data/` est un dossier ignoré par le dépôt du code ; il
   devient son propre dépôt git, relié au dépôt des données (pas un sous-module). Tapez l'adresse du dépôt des données,
   et au besoin un identifiant et un mot de passe ou jeton (jamais gardés par la page ; « Se souvenir » les confie à Git
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
@@ -369,7 +369,7 @@ nommés sans lien) ; chemins relatifs à la racine de la suite : `frame/aerodb/b
   l'écran le vérifie, et « Ouvrir la branche aux Developers » le fait après une question, posée aussi avant le premier
   jeton. Un pilote dont le jeton est refusé à l'écriture lit « la branche main du projet n'est pas ouverte aux
   Developers ».
-- **Expiration des jetons (GitLab)** : la liste « Jetons existants » dit pour chaque jeton « expire le … · dans 12 jours » (rien avant 5 jours, orange de 5 à 2 jours, rouge la veille, « a expiré le … » une fois la date passée) ; la date est relue chez GitLab à chaque ouverture, rien n'en est gardé. Sur le poste du lanceur, le bloc « État » des Réglages dit « 2 jetons de pilote expirent bientôt (le plus proche : …) » : le nombre et la date la plus proche, relus au plus une fois par jour, jamais un nom. Pour son propre jeton, l'appareil garde seulement la date d'expiration que GitLab donne (jamais le jeton), la relit au plus une fois par jour, la dit dans le bloc « État » et, sous 5 jours (rouge la veille ; une fois expiré, la phrase est en tête des Réglages et sous l'en-tête), une fois par jour dans une notification. Un jeton refusé ne se dit « expiré le … » que si cette date connue est passée : GitLab répond de la même façon à un jeton expiré, révoqué ou inconnu. Avec GitHub, aucune date n'est lue (le navigateur ne peut pas lire l'en-tête qui la porte).
+- **Expiration des jetons (GitLab)** : la liste « Jetons existants » dit pour chaque jeton « expire le … · dans 12 jours » (rien avant 5 jours, orange de 5 à 2 jours, rouge la veille, « a expiré le … » une fois la date passée) ; la date est relue chez GitLab à chaque ouverture, rien n'en est gardé. Sur le poste du lanceur, le bloc « État » des Réglages dit « 2 jetons de pilote expirent bientôt (le plus proche : …) » : le nombre et la date la plus proche, relus au plus une fois par jour, jamais un nom. Pour son propre jeton, l'appareil garde seulement la date d'expiration que GitLab donne (jamais le jeton), la relit au plus une fois par jour, la dit dans le bloc « État » et, sous 5 jours (rouge la veille ; une fois expiré, la phrase est en tête des Réglages et sous l'en-tête), une fois par jour dans une notification. Un jeton refusé ne se dit « expiré le … » que si cette date connue est passée : GitLab répond de la même façon à un jeton expiré, révoqué ou inconnu. Avec GitHub, aucune date n'est lue (le navigateur ne peut pas lire l'en-tête qui la donne).
 - **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
   écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
   l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.

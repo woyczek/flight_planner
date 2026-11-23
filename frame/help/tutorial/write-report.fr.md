@@ -54,7 +54,7 @@ dit comment l'ajouter une fois), vérifiez, puis validez sur le site.
 ![Mes vols : le nouveau vol en tête](img/write-report-5.fr.png)
 
 **Retrouvez-le.** Ouvrez Mes vols depuis le menu : votre vol est en tête, avec son temps bloc. Un vol qui attend encore
-son compte rendu porte un point orange : touchez-le, puis « Écrire le CR ».
+son compte rendu a un point orange : touchez-le, puis « Écrire le CR ».
 
 **Pour aller plus loin.** Les chapitres [Compte rendu](#help?m=report) et [Mes vols](#help?m=flightlog) du manuel.
 

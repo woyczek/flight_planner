@@ -17,7 +17,7 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   Un outil caché reste joignable par son adresse.
 - **L'aide.** Chaque outil a, sous son contenu, un volet replié « Comment s'en servir » ; le bouton ? de l'en-tête (sur un téléphone
   comme sur un écran) ouvre ce manuel au chapitre de l'écran où vous êtes.
-- **L'état, sur le bouton ⚙.** Dans l'en-tête, le bouton ⚙ porte une pastille : verte quand quelque chose vous attend (un
+- **L'état, sur le bouton ⚙.** Dans l'en-tête, le bouton ⚙ affiche une pastille : verte quand quelque chose vous attend (un
   vol démarré, un compte rendu à écrire), orange (sur un téléphone) quand il faut y prêter attention : pas de trigramme,
   écritures en attente, conflits, erreur de synchronisation, hors ligne. Les Réglages s'ouvrent sur le bloc « État », qui dit
   le détail : le vol en cours (touchez pour aller à la Carte), les comptes rendus à écrire pour vos vols passés (touchez pour
