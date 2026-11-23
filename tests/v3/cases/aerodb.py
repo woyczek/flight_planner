@@ -20406,3 +20406,98 @@ def k514(c):
          'index of the hand-read records at 23 Nov 2026 (cycle in force 29 Oct): the cycle in force and the NEXT one (26 Nov) are not outdated (red before: the next one was), the previous one (1 Oct) is, a value that is no date stays outdated', what='index')
     c.eq(r['proc'], {'LFAA': [False], 'LFBB': [False], 'LFCC': [True], 'LFDD': [True]},
          'the procedure of a hand-read record follows the same rule (the hourglass of the option « via IAF1⌛ » of D66)', what='procedures')
+
+
+@case('K515', 'Route engine, SOG-0517 (the IFPS of EGLL → LFRN, class 2): a descent that ends at a level which is NOT a multiple of ten (19 500 ft: the ceiling of one lane AND the floor of the lane crossed) is written with TWO level groups — the multiple of ten ABOVE where the descent begins (F200), the multiple of ten below where it ends (F190) — so the route the engine writes is accepted by its own check (before: ONE group, F190, at the start of the lane with the floor F195: the check refused the engine\'s own text; the IFPS said PROF195)',
+      'K', static=True,
+      rule='SOG-0517 (the relay, 19 Nov: « le palier adapté descend à F190, puis reprend une voie HAUTE : incohérent » and « le moteur n\'écrit JAMAIS un texte que son propre contrôle refuse »). Reproduced by AeroDB without the route of the user: EGLL → LFRN FL270 gave DOMOK/F190 UT260 UPALO V20; UT260 has the band F195–F315 and V20 the ceiling F195; the profile descends INSIDE UT260 (27 000 → 19 500 ft) but the text had one group, F190 (19 500 ft written down to a multiple of ten), at the start of UT260; the check refused it and accepted DOMOK/F200 UT260 UPALO/F190 V20. The bench: an invented base (two aerodromes, six points, a high lane F105–F460, a lane F195–F315, a lane with the ceiling F195); a flight at FL270 and at FL250; the written route is checked by the engine.')
+def k515(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    pts = {'A0': (50.0, 0.6), 'B0': (50.0, 11.6), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 7.5), 'P4': (50.0, 10.0)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
+
+    def way(route, chain, lower, upper):
+        return [{'route': route, 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': lower, 'upper': upper} for a, b in zip(chain, chain[1:])]
+    ways = way('UH1', ['A0', 'P1', 'P2'], 10500, 46000) + way('UF2', ['P2', 'P3'], 19500, 31500) + way('UC3', ['P3', 'P4', 'B0'], 6500, 19500)
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(folder)
+        for k, v in files.items():
+            with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        os.makedirs(os.path.join(data, 'route'))
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        out = {}
+        for fl in (270, 250):
+            primary = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'enable_fra': False, 'allow_levels': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+            back = P.compute(V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'route': primary['route'], 'enable_fra': False, 'alternatives': False}), data, rad, None)['primary']
+            out[fl] = (primary['route'], [i['text'][:100] for i in back['issues'] if i['level'] == 'ERREUR'], [i['text'][:60] for i in primary['issues'] if i['text'].startswith('Niveau écrit ramené')])
+    want = 'ZZAA DCT A0 UH1 P2/F200 UF2 P3/F190 UC3 B0 DCT ZZBB'
+    c.eq({fl: v[0] for fl, v in out.items()}, {270: want, 250: want}, 'the descent from the cruise level to the ceiling of the last lane (19 500 ft) is written P2/F200 (the lane with the floor F195 is flown at F200) then P3/F190 (the lane with the ceiling F195): two groups, not P2/F190', what='text')
+    c.eq({fl: v[1] for fl, v in out.items()}, {270: [], 250: []}, 'the engine accepts the route it wrote (no ERREUR of the check; red before: « niveau FL190 sous le plancher FL195 »)', what='round trip')
+    c.ok(all(v[2] and 'P3/F190' in v[2][0] for v in out.values()), str(out), 'the answer still says that a written level is a multiple of ten under the ceiling (P3/F190, the ceiling being F195)')
+
+
+@case('K516', 'Route engine, SOG-0517 (2): the level written at the START of a descent that ends at 19 500 ft is the first level ABOVE the target that follows the semicircular rule of France (ENR 1.7.5) on the lanes of the descent, not the first multiple of ten: a lane flown at a track of about 120° is written F210 (odd, upper table 090-269), never F200; the level of the end follows the rule too (F190); the check of the engine finds nothing to say',
+      'K', static=True,
+      rule='The relay, 21 Nov 2026 (SOG-0517 (2), after SOG-0530): « F200 puis F190 : deux parités, donc non conforme pour un sens donné ; il faut le faire AVEC le tableau (choisir le niveau conforme au-dessus de la cible : F210 vers l\'est) » and « le moteur n\'écrit JAMAIS un texte que son propre contrôle refuse ». Invented base (zone fr, a lane at 120°) and an invented table of levels with the shape of data/route/levels_fr.json; a doubt (a track near a cut, no table, another State) never refuses a level (case K515 has no table and keeps F200)')
+def k516(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+
+    def at(k):
+        return (round(50.0 - 0.5 * k, 4), round(0.6 + 1.347 * k, 4))
+    pts = {'A0': at(0), 'B0': at(10.5), 'P1': at(2), 'P2': at(4.5), 'P3': at(6), 'P4': at(8)}
+    airports = {'ZZAA': (pts['A0'][0] + 0.1, pts['A0'][1] - 0.3), 'ZZBB': (pts['B0'][0] - 0.1, pts['B0'][1] + 0.3)}
+
+    def way(route, chain, lower, upper):
+        return [{'route': route, 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': lower, 'upper': upper} for a, b in zip(chain, chain[1:])]
+    ways = way('UH1', ['A0', 'P1', 'P2'], 10500, 46000) + way('UF2', ['P2', 'P3'], 19500, 31500) + way('UC3', ['P3', 'P4', 'B0'], 6500, 19500)
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    table = {'schema': 1, 'zone': 'fr', 'cycle': '2026-10-29', 'tracks': {'lower': ['000-179', '180-359'], 'upper': ['090-269', '270-089']},
+             'lower': {'ifr': [list(range(10, 191, 20)), list(range(20, 181, 20))]}, 'upper': [list(range(210, 391, 20)), list(range(200, 401, 20))]}
+
+    def fly(with_table):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            folder = os.path.join(data, 'sia', 'base', 'fr', '2026-10-29')
+            os.makedirs(folder)
+            for k, v in files.items():
+                with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'fr', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            os.makedirs(os.path.join(data, 'route'))
+            if with_table:
+                with open(os.path.join(data, 'route', 'levels_fr.json'), 'w', encoding='utf-8') as f:
+                    json.dump(table, f)
+            book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(book, RF.rad_sheets())
+            rad = os.path.join(data, 'route', 'rad.json.gz')
+            I.write(rad, I.merge([], [I.read_book(book)[1]]))
+            primary = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 270, 'date': '2026-11-09T12:00', 'enable_fra': False, 'allow_levels': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+            back = P.compute(V.to_request({'action': 'check', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 270, 'date': '2026-11-09T12:00', 'route': primary['route'], 'enable_fra': False, 'alternatives': False}), data, rad, None)['primary']
+            return primary['route'], [i['text'][:100] for i in back['issues'] if i['level'] == 'ERREUR'], [w['code'] for w in back.get('warnings') or [] if w.get('code') == 'level_semicircular']
+    route, errors, warn = fly(True)
+    c.eq(route, 'ZZAA DCT A0 UH1 P2/F210 UF2 P3/F190 UC3 B0 DCT ZZBB', 'with the table of France: the lane UF2 (about 120°, upper table 090-269: 210, 230 …) is written F210, not F200, and the end F190 (lower table 000-179: odd)', what='text with table')
+    c.eq((errors, warn), ([], []), 'the engine reads its own text back with no error and no semicircular warning', what='round trip')
+    plain, _e, _w = fly(False)
+    c.eq(plain, 'ZZAA DCT A0 UH1 P2/F200 UF2 P3/F190 UC3 B0 DCT ZZBB', 'without the table (a doubt never refuses a level): the first level of the band, F200, as before', what='text without table')

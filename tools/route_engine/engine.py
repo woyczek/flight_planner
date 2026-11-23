@@ -119,13 +119,25 @@ def written_route(dep,legs,via=(),marks=None):
         last=name
     return ' '.join(w+(f'/F{l:03d}' if l else '') for w,l in words)
 
-def level_marks(legs,changes,lowered=None,filed=None):
+def level_marks(legs,changes,lowered=None,filed=None,fit=None):
     """SOG-0401 : les changements de palier du profil (`profile.changes`, dans l'ordre de la route) → { indice du tronçon où le changement COMMENCE : nouveau niveau en centaines de pieds } ; un changement qui commence au départ, ou dont le point n'est le départ d'aucun tronçon, n'a pas de groupe ; deux changements au même point : le dernier."""
     marks={}; cursor=0; current=filed      # SOG-0532 (2) : `filed` : le niveau DÉPOSÉ ; un groupe n'est écrit que s'il CHANGE le niveau (jamais « POINT/F330 » quand le vol est déjà au FL330 : le niveau écrit est le niveau demandé)
     for change in changes:
         k=next((j for j in range(cursor,len(legs)) if legs[j]['start']['id']==change['point']),None)
         level=int(change['to_ft']//1000)*10      # SOG-0431 : un niveau écrit dans une route est un niveau de CROISIÈRE utilisable : un multiple de dix, au plus égal à l'altitude (le plafond de la voie : 20 500 ft s'écrit F200, jamais F205 : « SYN101: INVALID LEVEL DESIGNATOR (ROUTE) » d'Eurocontrol)
         if k is None or k==0 or not 10<=level<=660 or level==current:continue
+        if k is not None and k>0 and isinstance(change.get('from_ft'),(int,float)) and change['to_ft']<change['from_ft'] and level*100!=round(change['to_ft']/100)*100:      # SOG-0517 (2) : une DESCENTE dont la cible (19 500 ft : le plafond d'une voie ET le plancher de la voie qu'on traverse) n'est pas un multiple de dix ; le multiple de dix dessous (F190) fait voler les tronçons du changement SOUS leur plancher quand l'un d'eux a un plancher plus haut : UN seul groupe, et le contrôle du moteur refuserait son propre texte (l'IFPS : PROF19x) ; le moteur n'écrit jamais un texte que son contrôle refuse : alors DEUX groupes, le niveau au-dessus de la cible que les tronçons de la descente permettent au début, le multiple de dix sous la cible à la fin (sinon : un seul groupe, comme avant)
+            e=next((j for j in range(k+1,len(legs)) if legs[j]['start']['id']==change.get('end_point')),None)
+            if e is not None and not all((legs[j].get('lower') is None or legs[j]['lower']<=level*100) and (legs[j].get('upper') is None or legs[j]['upper']>=level*100) for j in range(k,e)):
+                inside=lambda v:all((legs[j].get('upper') is None or legs[j]['upper']>=v*100) and (legs[j].get('lower') is None or legs[j]['lower']<=v*100) for j in range(k,e))
+                ups=[v for v in range(level+10,int(change['from_ft']//100)+1,10) if inside(v)]
+                up=next((v for v in ups if fit is None or all(fit(j,v) for j in range(k,e))),ups[0] if ups else None)      # le premier niveau conforme à la règle semi-circulaire (le doute ne refuse rien), à défaut le premier de la bande
+                if up is not None:
+                    down=next((v for v in range(level,0,-10) if (legs[e].get('lower') is None or legs[e]['lower']<=v*100) and (fit is None or fit(e,v))),level)      # le plus haut multiple de dix sous la cible que la règle admet au tronçon suivant, jamais sous son plancher
+                    if up!=current:marks[k]=up
+                    marks[e]=down; cursor=e; current=down
+                    if lowered is not None:lowered.append((change['end_point'],round(change['to_ft']/100),down))
+                    continue
         if lowered is not None and level*100!=round(change['to_ft']/100)*100:lowered.append((change['point'],round(change['to_ft']/100),level))
         marks[k]=level; cursor=k; current=level
     return marks
@@ -1147,7 +1159,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     written=False
     if (generated or _path is not None) and not marks:
         lowered=[]
-        level_changes=level_marks(legs,profile.get('changes') or [],lowered,fl)
+        level_changes=level_marks(legs,profile.get('changes') or [],lowered,fl,level_rule.fitter(legs,nav.ads,level_table))
         jump=yoyo([(None,fl)]+[(legs[k]['start']['id'],level_changes[k]) for k in sorted(level_changes)])
         if jump:issue('ERREUR',f'Yoyo de niveau : descente au FL{jump["down_fl"]:03d} à {jump["down_point"]}, puis remontée au FL{jump["up_fl"]:03d} à {jump["up_point"]} (Eurocontrol : PROF326) ; le niveau déposé est FL{fl:03d}.','level_yoyo',filed_fl=fl,**jump)      # SOG-0532 lot 2 bis : les DEUX points (la descente, puis la remontée)
         if level_changes:

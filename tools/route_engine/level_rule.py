@@ -158,6 +158,31 @@ def caps(legs, ads, table, cruise_ft):
     return out
 
 
+def fitter(legs, ads, table):
+    """SOG-0517 (2) : `fit(i, level)` dit si `level` (FL entier) suit la règle semi-circulaire sur le tronçon `i` de `legs` : False SEULEMENT quand le tronçon est en France, que sa route magnétique est décidée (hors marge d'une coupure) et que le niveau n'est pas dans la liste du tableau ; True dans tous les autres cas (pas de tableau, autre État, route proche d'une coupure, niveau 195) : le doute ne refuse jamais un niveau. Sert à choisir, entre deux niveaux possibles, celui que le contrôle de `check` ne signalera pas."""
+    zones = _zones(legs)
+    cells = {}
+
+    def fit(i, level):
+        leg = legs[i]
+        if (table is None or zones[i] != 'fr' or leg.get('kind') in CRUISE_SKIP or leg.get('data_gap') or level == 195 or not 10 <= level <= 660 or not isinstance(leg.get('start'), dict) or not isinstance(leg.get('end'), dict)
+                or not all(_number(leg[k].get(c), 180) for k in ('start', 'end') for c in ('lat', 'lon'))):
+            return True
+        found = _track(leg, ads, cells)
+        if found is None:
+            return True
+        track, margin = found
+        upper = level > 195
+        limits = (90, 270) if upper else (0, 180)
+        if min(abs((track - x + 180) % 360 - 180) for x in limits) < margin:
+            return True
+        half = (0 if 90 <= track < 270 else 1) if upper else (0 if track < 180 else 1)
+        if upper and level > max(max(x) for x in table['upper']):
+            return True
+        return level in (table['upper'] if upper else table['lower'])[half]
+    return fit
+
+
 def check(legs, ads, table):
     """Les avertissements, les non-vérifiables et les notes du contrôle du niveau de croisière de la route `legs` : trois listes de { code, values, text } et les chiffres { cycle, checked } ; voir l'en-tête du module pour les codes et leurs valeurs."""
     zones = _zones(legs)
