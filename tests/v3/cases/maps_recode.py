@@ -7399,7 +7399,7 @@ def d216(c):
     c.js(_CONT_SPY_JS)
     c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
     c.until("() => window.__mp.S.topoDown === true", timeout=30000, what='after three errors without a tile the base falls back')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", tx(M, 'topoDown', c.lang), timeout=4000, what='the Map says in one line that the topographic base is unavailable')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s  ]+/g, ' ').includes(w))", tx(M, 'topoDown', c.lang), timeout=4000, what='the Map says in one line that the topographic base is unavailable')
     c.until("() => !window.__mp.S.map.getStyle().sources.otm", timeout=15000, what='the style is the fallback one')
     c.js("() => { window.__mpMap.jumpTo({ center: [2.81, 45.61], zoom: 12.1 }); return true }")
     c.until("() => window.__ct.length > 0", timeout=15000, what='our own contour lines are drawn again on the fallback base')
@@ -7448,7 +7448,7 @@ def d218(c):
     c.js("() => { window.__mp.S.ctx.aerodb.ground = async () => null; return true }")      # a published ground file that does not exist for this aerodrome
     _ground_at(c, 15, 1500)
     want = tx(M, 'gAbsent', c.lang).replace('{icao}', 'LFPO')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want), timeout=8000, what='the screen says that the aerodrome has no ground data')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want), timeout=8000, what='the screen says that the aerodrome has no ground data')
     n = c.js("(w) => (window.__notes || []).filter(n => n.includes(w)).length", want.split(' ')[0])
     c.eq(n, 1, 'once for this aerodrome', what='notes')
     # with a ground file the line is not said
@@ -7603,7 +7603,7 @@ def d223(c):
 def d224(c):
     lnm = dict(_CH_FILE, procedures=[dict(p, status='lnm') if i == 0 else p for i, p in enumerate(_CH_PROCS)])
     _ch_open(c, {}, file=lnm)
-    line = "() => { const e = document.querySelector('.mp-ch-lnm'); return e ? e.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim() : null }"
+    line = "() => { const e = document.querySelector('.mp-ch-lnm'); return e ? e.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() : null }"
     c.eq(c.js(line), norm(tx(M, 'procLnmWarn', c.lang)), 'the choose pane says that a procedure comes from Little Navmap (source, personal use)', what='warning')
     _ch_open(c, {}, file=_CH_FILE)
     c.eq(c.js(line), None, 'no line when no row comes from Little Navmap', what='warning')
@@ -7773,7 +7773,7 @@ def d229(c):
     c.tap('.mp-choice[data-mode="vfr"]')
     c.wait(1500)
     want = tx(M, 'contoursFar', c.lang).split('{z}')[0]
-    has = "(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))"
+    has = "(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))"
     c.eq(c.js(has, norm(want)), False, 'no note about the contour lines before anyone touched the box', what='note')
     c.tap('[data-mp="layers"]')
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=contours]'))", what='the Layers content')
@@ -8311,7 +8311,7 @@ def d_atc_lines(c):
     chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
     _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length > 2 }", 'the touch on the chips opens the bubble, one position per line')
     r = c.js("""() => { const t = window.__mp.S.tipEl, d = [...t.querySelectorAll(':scope > div')];
-      return { rows: d.slice(1).map(x => x.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim()), cut: d.filter(x => x.scrollWidth > x.clientWidth + 1).length, markup: t.querySelectorAll('img,script,a').length } }""")
+      return { rows: d.slice(1).map(x => x.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim()), cut: d.filter(x => x.scrollWidth > x.clientWidth + 1).length, markup: t.querySelectorAll('img,script,a').length } }""")
     rows = r['rows']
     c.eq(len(rows), 9, 'the title, then eight lines, then the rest counted: nine rows after the title', what=str(r))
     c.ok(re.fullmatch(r'\+ ?2 .+', rows[-1]) or re.search(r'2', rows[-1]), str(rows), 'beyond eight lines: the count of the others (« + 2 autres »)')
@@ -9292,7 +9292,7 @@ def d265(c):
 def d266(c):
     _me_open(c)
     r = c.js("""() => { const M = window.__me, F = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { id: 'Z1', tone: 'warn' }, geometry: { type: 'Polygon', coordinates: [[[1, 41], [3, 41], [3, 43], [1, 43], [1, 41]]] } }] };
-      const mk = o => { const z = M.zonesLayer(M.map, F, { colors: { ok: '#0a0', warn: '#fa0', err: '#a00', muted: '#888', line: '#000' }, ...o }); const ids = M.map.getStyle().layers.map(l => l.id).filter(id => /^mb-zones-\d+-fill$/.test(id)); return { z, id: ids[ids.length - 1] } };
+      const mk = o => { const z = M.zonesLayer(M.map, F, { colors: { ok: '#0a0', warn: '#fa0', err: '#a00', muted: '#888', line: '#000' }, ...o }); const ids = M.map.getStyle().layers.map(l => l.id).filter(id => /^mb-zones-\\d+-fill$/.test(id)); return { z, id: ids[ids.length - 1] } };
       const out = {}, a = mk({}), b = mk({ fill: 0.04 }), d = mk({ fill: 7 }), e = mk({ fill: 0 });
       for (const [k, v] of Object.entries({ none: a, small: b, bad: d, zero: e })) out[k] = M.map.getPaintProperty(v.id, 'fill-opacity');
       for (const v of [a, b, d, e]) v.z.remove();
@@ -9457,7 +9457,7 @@ def d270(c):
     _me_open(c)
     r = c.js("""async () => { const m = await import('/modules/maps/lib/map_base.js'), t = await (await fetch('/modules/maps/data.js')).text(), i = t.indexOf('function fitOf');
       const body = t.slice(i, t.indexOf('export function refit', i));
-      return { v: { ...m.START_VIEW }, frozen: Object.isFrozen(m.START_VIEW), uses: /START_VIEW/.test(body), copy: /w: -5|s: 41|n: 51\.5/.test(body) } }""")
+      return { v: { ...m.START_VIEW }, frozen: Object.isFrozen(m.START_VIEW), uses: /START_VIEW/.test(body), copy: /w: -5|s: 41|n: 51\\.5/.test(body) } }""")
     c.eq(r['v'], {'w': -5, 's': 41, 'e': 10, 'n': 51.5}, 'START_VIEW is the Western-Europe box the Map has always started on', what=str(r))
     c.ok(r['frozen'] and r['uses'] and not r['copy'], str(r), 'it is frozen, the Map’s fallback reads it, and no second copy of the box is written in fitOf')
 
@@ -9918,13 +9918,13 @@ def d288(c):
     c.open('maps', flight=True)
     c.ready('maps', sheet=True)
     word = tx(M, 'plain', c.lang)
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word, timeout=20000, what='the notice: the base map is unavailable')
-    c.eq(c.js("(w) => window.__notes.filter(n => n.replace(/[\s  ]+/g, ' ').includes(w)).length", word), 1, 'said once', what='notes')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s  ]+/g, ' ').includes(w))", word, timeout=20000, what='the notice: the base map is unavailable')
+    c.eq(c.js("(w) => window.__notes.filter(n => n.replace(/[\\s  ]+/g, ' ').includes(w)).length", word), 1, 'said once', what='notes')
     c.page.add_init_script("Object.defineProperty(navigator, 'onLine', { get: () => false })")
     c.open('maps', flight=True)
     c.ready('maps', sheet=True)
     c.wait(2500)
-    c.ok(not c.js("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word), 'offline', 'offline: no floating notice (the plain background is expected)')
+    c.ok(not c.js("(w) => (window.__notes || []).some(n => n.replace(/[\\s  ]+/g, ' ').includes(w))", word), 'offline', 'offline: no floating notice (the plain background is expected)')
 
 
 @case('D289', 'A library of the Map that does not come: the Map says it in a floating notice (module.js asked a translator that does not exist there, tt, and threw)', 'D',
@@ -9934,7 +9934,7 @@ def d289(c):
     c.context.route(re.compile(r'/modules/maps/lib/aero_symbols\.js'), lambda route: route.fulfill(status=404, body='gone'))
     c.open('maps', flight=True, wait=False)
     word = tx(M, 'libsFailed', c.lang).split('{')[0]
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word.replace(' ', ' ').strip(), timeout=20000, what='the notice: a library of the Map does not come')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s  ]+/g, ' ').includes(w))", word.replace(' ', ' ').strip(), timeout=20000, what='the notice: a library of the Map does not come')
     c.eq([e for e in c.errors if 'aero_symbols' not in e], [], 'the missing file is the only error: no ReferenceError in the failure path', what='errors')
     c.errors[:] = [e for e in c.errors if 'aero_symbols' not in e]
 _UNDER_JS = r"""() => {

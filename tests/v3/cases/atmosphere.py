@@ -655,7 +655,7 @@ def e19(c):
     c.ok(not any(norm(row(c, 'mapUnreachable').split('{')[0]) in norm(n) for n in c.notes()), str(c.notes()), 'and it is not a notification')
     c.ok(log[0] <= 24 and len(log) >= 2 and log[1] > 24, str(log), 'the route’s call went out first, the grid’s after it')
     gate['grid'] = 'go'
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(row(c, 'whyBusy')), timeout=10000, what='the failure is told once the grid answered')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", norm(row(c, 'whyBusy')), timeout=10000, what='the failure is told once the grid answered')
     notes = ' | '.join(c.js("() => window.__notes"))
     c.ok(norm(row(c, 'whyBusy')) in norm(notes), notes, 'the failure says the launcher is busy')
     c.ok(norm(row(c, 'offline')) not in norm(notes), notes, 'and never « offline »')
@@ -739,4 +739,4 @@ def e99(c):
     c.open('atmosphere', flight=True, aero=True, wait=False)
     c.until("() => Array.isArray(window.MAPS_OUTLINES) && window.MAPS_OUTLINES.length > 100", timeout=20000, what='the countries of the plain background')
     c.ok((c.js('window.__zoCalls') or 0) >= 1, f"{c.js('window.__zoCalls')}", 'read through aerodb.zoneOutlines()')
-    c.eq(c.js("() => performance.getEntriesByType('resource').some(e => /maps\/lib\/outlines\.js/.test(e.name))"), False, 'the copy (lib/outlines.js) is not loaded', what='outlines.js')
+    c.eq(c.js("() => performance.getEntriesByType('resource').some(e => /maps\\/lib\\/outlines\\.js/.test(e.name))"), False, 'the copy (lib/outlines.js) is not loaded', what='outlines.js')

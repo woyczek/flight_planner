@@ -1550,7 +1550,7 @@ def k96(c):
 
 
 @case('K470', 'roadmap_build reports: a key with a trailing newline and a fiche in non-ASCII digits are dropped, a valid entry stays', 'K',
-      static=True, rule='SOG-0410: SIGNALEMENTS_FICHES.json is untrusted (10.36): keys ^SIG-[0-9a-f]{10}$ and fiches ^SOG-\d{4}$ match whole and in ASCII only (`$` accepts a final newline, `\d` accepts Arabic-Indic digits)')
+      static=True, rule='SOG-0410: SIGNALEMENTS_FICHES.json is untrusted (10.36): keys ^SIG-[0-9a-f]{10}$ and fiches ^SOG-\\d{4}$ match whole and in ASCII only (`$` accepts a final newline, `\\d` accepts Arabic-Indic digits)')
 def k470(c):
     sys.path.insert(0, str(c.root / 'tools'))
     import roadmap_build as RB

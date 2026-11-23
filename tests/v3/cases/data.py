@@ -957,7 +957,7 @@ def l7(c):
     c.eq([e['set'], e['verb'], e['zones'], e['result'], e['built'], e['failed']], ['base', 'build', ['fr', 'gb'], 'partial', ['fr'], [{'zone': 'gb', 'error': 'invalid-output'}]],
          'the journal entry: set, verb, zones, result, built, failed', what='journal entry')
     c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']) and isinstance(e['seconds'], int), e, 'UTC ISO time and whole seconds')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.eq(len(ops), 1, 'one entry in the journal fold', what='journal entries')
     c.ok(re.search(r'\d{2}:\d{2}Z', ops[0][1]) and norm(_trow('build', lang, 'opVerb: {')) in norm(ops[0][1]) and norm(_trow('partial', lang, 'opResult: {')) in norm(ops[0][1]), ops[0], 'time with Z, the verb, the result')
     _screen_ok(c, 'at the end')
@@ -980,7 +980,7 @@ def l7(c):
     nm = {'fr': ('SIA France', 'France'), 'en': ('SIA France', 'France'), 'de': ('SIA Frankreich', 'Frankreich'), 'es': ('SIA Francia', 'Francia')}[lang]
     gb_name = {'fr': 'Royaume-Uni', 'en': 'United Kingdom', 'de': 'Vereinigtes Königreich', 'es': 'Reino Unido'}[lang]
     items = f'{nm[0]} {_name(_p)} ({nm[1]}), NATS UK {_name(_p)} ({gb_name})'
-    got = c.js("[...document.querySelectorAll('[data-build-result] [data-blocking]')].map(p => [p.textContent.replace(/\s+/g, ' ').trim(), [...p.querySelectorAll('a')].map(a => [a.href, a.title])])")
+    got = c.js("[...document.querySelectorAll('[data-build-result] [data-blocking]')].map(p => [p.textContent.replace(/\\s+/g, ' ').trim(), [...p.querySelectorAll('a')].map(a => [a.href, a.title])])")
     sia_url = c.js("(d) => window.AeroCatalogue.byId('sia').url(d)", _cur_day)
     c.eq(got, [[norm(_trow('srcBlocking', lang).replace('{a}', items).replace('{n}', _name(_c))), [[sia_url, f'export_xml_bd_SIA_{_cur_day}-v<nn>.zip'],
                  ['https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/', 'EG_…_DS_…_XML.zip']]]],
@@ -1258,7 +1258,7 @@ def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None, hol
 
 def _publish_state(c):
     """What the Publier panel shows: the button, the reason, the lines."""
-    return c.js("""() => { const b = document.querySelector('[data-publish]'); const t = e => e ? e.textContent.replace(/\s+/g, ' ').trim() : null;
+    return c.js("""() => { const b = document.querySelector('[data-publish]'); const t = e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null;
       return { disabled: b.querySelector('[data-verb=publish]').disabled, reason: b.querySelector('[data-reason]')?.dataset.reason || null, reasonText: t(b.querySelector('[data-reason]')),
         reasons: b.querySelectorAll('[data-reason]').length, state: t(b.querySelector('[data-publish-state]')), merge: t(b.querySelector('[data-publish-merge]')), last: t(b.querySelector('[data-publish-last]')),
         running: !!b.querySelector('[data-publishing]'), result: b.querySelector('[data-publish-result]')?.dataset.result || null,
@@ -1270,10 +1270,10 @@ def _publish_state(c):
 def _ask_text(c):
     """The question of the frame's window: { text, ok, no } (the texts of the two buttons)."""
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question is asked')
-    return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
+    return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
       no: !!document.querySelector('.f-modal [data-no]'),
-      sections: [...document.querySelectorAll('.f-modal [data-ask-section]')].map(g => [g.dataset.askSection, g.querySelector('h4').textContent.replace(/\s+/g, ' ').trim(), [...g.querySelectorAll('li')].map(li => li.textContent.replace(/\s+/g, ' ').trim())]),
-      note: (document.querySelector('.f-modal > div > p.f-muted') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim() })""")
+      sections: [...document.querySelectorAll('.f-modal [data-ask-section]')].map(g => [g.dataset.askSection, g.querySelector('h4').textContent.replace(/\\s+/g, ' ').trim(), [...g.querySelectorAll('li')].map(li => li.textContent.replace(/\\s+/g, ' ').trim())]),
+      note: (document.querySelector('.f-modal > div > p.f-muted') || { textContent: '' }).textContent.replace(/\\s+/g, ' ').trim() })""")
 
 
 @case('L12', 'Données: Publier against a fake launcher and a fake frame sync (state, one question, the gesture, result, notification, journal, grey reasons)', 'L',
@@ -1340,7 +1340,7 @@ def l12(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['result'], e['committed'], e['received'], e['held'], e['conflicts']], ['base', 'publish', 'done', 3, 1, 0, 0], 'the journal entry', what='journal entry')
     c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']), e['at'], 'UTC ISO time')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(len(ops) == 1 and ops[0][0] == 'publish' and re.search(r'\d{2}:\d{2}Z', ops[0][2]) and f'3 {fl[1]}' in ops[0][2], ops, 'the journal line says the verb, the time and the files')
     _pub_ok(c, 'after')
 
@@ -1695,7 +1695,7 @@ def l15(c):
     outside = _trow('fetchOutside', lang, row=1).replace('{n}', '3')
     c.eq(norm(c.text('[data-build-result] [data-outside]')), norm(outside), 'files outside the synchronised data: said (3)', what='outside')
     c.eq(norm(c.text('[data-build-result] [data-manual-hint]')), norm(_trow('fetchManual', lang)), '« à déposer à la main »', what='manual hint')
-    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\s+/g, ' ').trim(), li.querySelector('a')?.getAttribute('href') || null, li.querySelector('a')?.rel || null])")
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim(), li.querySelector('a')?.getAttribute('href') || null, li.querySelector('a')?.rel || null])")
     c.eq(items, [['fr:sia', norm(f"{fr_name} : {man_names['sia'][li]}"), 'https://www.sia.example/aip', 'noopener noreferrer'],
                  ['gb:nats', norm(f"{gb_name} : {man_names['nats'][li]}"), None, None], ['gb:z', norm(f"{gb_name} : {man_names['z'][li]}"), None, None]],
          'the manual sources by name in the language: a link only for the https:// address, the http:// and javascript: ones are names alone', what='manual sources')
@@ -1711,7 +1711,7 @@ def l15(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['zones'], e['result'], e['fetched'], e['unchanged'], e['failed']],
          ['base', 'download', ['fr', 'gb'], 'partial', ['fr'], [], [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}]], 'the journal entry of the download', what='journal entry')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(len(ops) == 1 and ops[0][0] == 'download' and norm(_trow('download', lang, 'opVerb: {')) in norm(ops[0][2]), ops, 'the journal line says the verb')
     _screen_ok(c, 'at the end of the download')
     # ---- C: ENAIRE only when ticked; nothing to fetch says so
@@ -1771,7 +1771,7 @@ def l15(c):
     c.until("!!document.querySelector('[data-build-result][data-op=purge][data-result=done]')", timeout=10000, what='the end of the purge')
     done = _trow('purgeDone', lang).replace('{n}', f'15 {FILES[lang][1]}').replace('{s}', _size(14994636, lang))
     c.eq(norm(c.text('[data-build-result] b')), norm(done), 'the end: « Purgé : 15 fichiers, 14,3 Mo »', what='summary')
-    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent.replace(/\s+/g, ' ').trim())"),
+    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())"),
          [norm(_trow('purgeShared', lang)), norm(_trow('purgeKept', lang, row=1).replace('{n}', '2')), norm(_trow('purgeUnsafe', lang, row=0).replace('{n}', '1'))],
          'the sentences of the warnings: SIA shared, files kept, one path refused and left in place', what='warning lines')
     es_name = c.text('[data-build-result] [data-zone-state=es] b')
@@ -2292,7 +2292,7 @@ def l17(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['items'], e['result'], e['built'], e['failed']], ['proc', 'build', ORDER, 'partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]],
          'the journal entry carries set and verb, the States under `items`', what='journal entry')
-    op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\s+/g, ' ').trim()])")
+    op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(len(op) == 1 and op[0][:2] == ['proc', 'build'] and norm(label('proc')) in norm(op[0][2]) and name('K') in op[0][2], op, 'the journal line says the set, the verb and the States')
     # ---- B: purge: dry first, ONE question with the plan, the real run says dry false; nothing committed is said in the help
     rem0 = {'K': {'files': 3, 'bytes': 1024}, 'LF': {'files': 2, 'bytes': 2048}}
@@ -2533,7 +2533,7 @@ def l17(c):
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-set-panel=vfr] [data-build-result][data-op=purge]')", timeout=10000, what='the purge ends')
     c.eq(st3['posts'][-1]['args'], {'dry': False}, 'the real run says dry false', what='vfr real purge')
-    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.js("[...document.querySelectorAll('[data-set-panel=vfr] [data-build-result] [data-line]')].map(p => p.textContent.replace(/\s+/g, ' ').trim())")],
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.js("[...document.querySelectorAll('[data-set-panel=vfr] [data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())")],
          [norm(T('purgeDone').replace('{n}', f'6 {FILES[lang][1]}').replace('{s}', _size(3072, lang))), [norm(_trow('purgeUnsafe', lang, row=1).replace('{n}', '2'))]],
          'the end, and « 2 chemins refusés, laissés en place »', what='vfr purge end')
     # a State read by EAD one aerodrome at a time: the launcher's error is a sentence, never a bulk read
@@ -2885,7 +2885,7 @@ def l19(c):
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'pickup' for o in d.get('ops', []))), what='the pickup is journaled')
     pks = [o for o in doc['ops'] if o['verb'] == 'pickup']
     c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(any(o[0] == 'pickup' and norm(T('pickup', 'opVerb: {')) in norm(o[1]) for o in ops), ops, 'the journal line says the verb')
     _screen_ok(c, 'at the end')
     # ---- D: nothing in Downloads: no question, the missing files said with their pattern
@@ -2923,7 +2923,7 @@ def l19(c):
     st['views'], st['i'], st['start'] = [fend], 0, (200, {'job': 'f1'})
     c.tap('[data-build] [data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-op=fetch]')", timeout=10000, what='the download ends')
-    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\s+/g, ' ').trim()])")
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim()])")
     c.eq([i[0] for i in items], ['fr:sia', 'gb:nats', 'fr:dircam'], 'the three manual sources', what='manual')
     c.eq(['export_xml_bd_SIA_*.zip' in items[0][1], 'EG_*_DS_*_XML.zip' in items[1][1], '*' in items[2][1]], [True, True, False], 'the expected name is shown for the sources the launcher can take, not for the others', what='expected')
     rb = "[data-build-result] [data-verb=pickup]"
@@ -4478,7 +4478,7 @@ def l44(c):
     c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone-no-source', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
     # ---- SOG-0165: regions and themes in ONE block with two tabs; a theme is a grid of ticks (box, name, state) like the zones list, no button in a row
     c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => [b.dataset.packTab, b.getAttribute('aria-pressed')])"), [['regions', 'true'], ['themes', 'false']], 'one block, two tabs: Régions first', what='tabs')
-    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => b.textContent.replace(/\s+/g, ' ').trim())"), [norm(PT('regions')) + ' (3)', norm(PT('themes')) + ' (1)'], 'named in the language of the run, with their counts', what='tab names')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => b.textContent.replace(/\\s+/g, ' ').trim())"), [norm(PT('regions')) + ' (3)', norm(PT('themes')) + ' (1)'], 'named in the language of the run, with their counts', what='tab names')
     c.eq(c.js("document.querySelector('[data-pack-themes-box]').hidden"), True, 'the themes are behind their tab', what='hidden themes')
     c.tap('[data-pack-tab=themes]')
     c.eq([c.js("document.querySelector('[data-pack-regions]').hidden"), c.js("document.querySelector('[data-pack-themes-box]').hidden")], [True, False], 'the Thèmes tab shows the themes and hides the regions', what='tab switch')
@@ -4560,7 +4560,7 @@ def l47(c):
     _open(c, cfg)
     _all_open(c)
     c.until("!!document.querySelector('[data-set=dfs]') || !!document.querySelector('[data-more] [data-set=dfs]')", timeout=8000, what='the DFS row')
-    lic = c.js("(() => { const r = document.querySelector('[data-set=dfs]'); const dt = [...r.querySelectorAll('dt')].find(d => d.nextElementSibling && /DFS/.test(d.nextElementSibling.textContent)); return r.textContent.replace(/\s+/g, ' ') })()")
+    lic = c.js("(() => { const r = document.querySelector('[data-set=dfs]'); const dt = [...r.querySelectorAll('dt')].find(d => d.nextElementSibling && /DFS/.test(d.nextElementSibling.textContent)); return r.textContent.replace(/\\s+/g, ' ') })()")
     c.ok('DFS' in lic and 'CC BY 4.0' in lic, lic[:300], 'the row of the DFS source carries its licence and its credit: CC BY 4.0, DFS')
     c.check_errors()
 
@@ -4765,7 +4765,7 @@ def l176(c):
     c.until("() => !!document.querySelector('[data-module=atmosphere] [data-at=wnote] [data-at=wbReread]')", timeout=15000, what='the line says a read has just taken place and offers Relire')
     c.settle()
     c.shot(f'L176_meteo_apres_lecture_{c.width}.png')
-    t = c.js("() => document.querySelector('[data-module=atmosphere] [data-at=wnote]').textContent.replace(/\s+/g, ' ').trim()")
+    t = c.js("() => document.querySelector('[data-module=atmosphere] [data-at=wnote]').textContent.replace(/\\s+/g, ' ').trim()")
     c.ok(len(t) > 10, t, 'the line of the Meteo screen, with its button « Relire »')
 
 
@@ -5149,7 +5149,7 @@ def l60(c):
     c.page.add_init_script("""(() => { window.__sh = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) { if (!e.hadRecentInput) window.__sh.push([Math.round(e.startTime), +e.value.toFixed(3), (e.sources || []).map(x => { const n = x.node && (x.node.nodeType === 1 ? x.node : x.node.parentElement); return n ? (n.dataset.set || n.dataset.group || n.className || n.nodeName) : '?' }).slice(0, 3)]) } }).observe({ type: 'layout-shift', buffered: true }) } catch (e) {} })()""")
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
-    state = c.js("""() => ({ zones: document.querySelectorAll('[data-wmap] path[data-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
+    state = c.js("""() => ({ zones: document.querySelectorAll('[data-wmap] path[data-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
       lib: performance.getEntriesByType('resource').some(e => /maplibre|openfreemap/.test(e.name)), ih: innerHeight })""")
     c.ok(state['zones'] == 4 and state['pending'] > 0, state, 'the world map (its four zones) is drawn while sync-status is still being read')
     c.ok(state['reading'] and not state['unread'], state, 'the Publier line says « reading », never « could not be read » while it waits')
@@ -6018,7 +6018,7 @@ def l79(c):
       rule='V3 Frame (11 Nov): c.open(‘data’, app=‘maintenance’, docs=LEVEL3, wait=False) then check_errors showed a pageerror at follow (modules/data/follow.js:412) from mount (module.js:399): mount went on after an await although the module had been unmounted (the state S is null), and follow() read S.ctx')
 def l80(c):
     # the cache reads of the screen are slow (900 ms): the pilot leaves for another module while the screen is still loading — the state is gone when mount goes on
-    c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get; IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key); if (!/^(pilot|cache)\//.test(String(key))) return q;
+    c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get; IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key); if (!/^(pilot|cache)\\//.test(String(key))) return q;
       const late = { get result() { return q.result }, get error() { return q.error } }; q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 900); q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 900); return late } })()""")
     c.open('data', app='maintenance', docs=LEVEL3, wait=False)
     c.until("!!document.querySelector('[data-module=data]')", timeout=20000, what='the module is mounted (still loading)')
@@ -6737,14 +6737,14 @@ def l88(c):
     # content: name, state, built, procedures, ticks, inventory
     c.eq(norm(c.text('[data-sheet-name]')), norm(_L88_NAMES['fr'][li]), 'the name of the country', what='name')
     c.eq(c.js("document.querySelector('[data-sheet] [data-zstate]').dataset.zstate"), 'stale', 'its state', what='state')
-    facts = lambda key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-facts] [data-tick={key}]'), n = document.querySelector('[data-sheet] [data-cell-note={key}]'); return e ? [e.dataset.ok, (e.textContent + ' ' + (n ? n.textContent : '')).replace(/[\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    facts = lambda key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-facts] [data-tick={key}]'), n = document.querySelector('[data-sheet] [data-cell-note={key}]'); return e ? [e.dataset.ok, (e.textContent + ' ' + (n ? n.textContent : '')).replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
     built = facts('build')
     c.ok(built[0] == 'todo' and _date_text(datetime.date(2026, 10, 5), lang) in built[1] and '2610' in built[1], built, 'built (a fact of the COUNTRY, once, at the top): ○ to do (not a failure: nothing failed), the reason, then the date and the cycle of the last build')
     c.ok('eAIP' in c.text('[data-sheet-proc]'), c.text('[data-sheet-proc]'), 'procedures: yes, from the eAIP (procSources)')
     c.eq(c.js("[...document.querySelectorAll('[data-sheet] [data-sheet-source]:not([data-unavailable])')].map(e => e.dataset.sheetSource)"), ['sia', 'openaip'], 'the sources that feed France, in the order the launcher gives', what='sources')
-    gone = c.js("(() => { const e = document.querySelector('[data-sheet] [data-sheet-source][data-unavailable]'); return e ? [e.dataset.sheetSource, e.textContent.replace(/\s+/g, ' '), e.querySelectorAll('[data-tick], [data-inventory]').length, document.querySelector('[data-unavailable-title]').compareDocumentPosition(e) & 4] : null })()")
+    gone = c.js("(() => { const e = document.querySelector('[data-sheet] [data-sheet-source][data-unavailable]'); return e ? [e.dataset.sheetSource, e.textContent.replace(/\\s+/g, ' '), e.querySelectorAll('[data-tick], [data-inventory]').length, document.querySelector('[data-unavailable-title]').compareDocumentPosition(e) & 4] : null })()")
     c.ok(gone and gone[0] == 'dircam' and f'unavailable note {lang}' in gone[1] and '2025-11' in gone[1] and gone[2] == 0 and gone[3] == 4, gone, 'a source its publisher no longer offers is said APART, under its own title, with the note of the catalogue and since when: no tick, no inventory, neither « en retard » nor « à faire »')
-    tk = lambda src, key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-source={src}] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    tk = lambda src, key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-source={src}] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
     c.eq(c.count('[data-sheet-source] [data-tick=build], [data-sheet-source] [data-tick=publish]'), 0, 'under each source ONLY « téléchargé »: « construit » and « publié » are facts of the country, never repeated per source (no more « construit : pas à jour : Source SIA… » under openAIP)', what='no per-source build tick')
     d1 = tk('sia', 'download')
     c.ok(d1[0] == 'yes' and _date_text(datetime.date(2026, 11, 2), lang) in d1[1] and 'AIRAC 2611' in d1[1], d1, 'SIA downloaded: ticked with the date and the edition the launcher gives')
@@ -7078,7 +7078,7 @@ def l90(c):
     c.until("document.querySelector('[data-todo-done]').open", timeout=3000, what='the fold opens')
     c.eq(c.js("[...document.querySelectorAll('[data-todo-done] [data-todo-item]')].map(l => l.dataset.todoItem).sort()"), ['dircam', 'enaire', 'openaip'], 'the three done sources (MORA is computed here: not a line)', what='done list')
     gone = c.js("""(() => { const g = document.querySelector('[data-todo-gone] [data-todo-unavailable=ukmil]'), t = document.querySelector('[data-todo-unavailable-title]');
-      return g ? [g.textContent.replace(/\s+/g, ' '), !!(t.compareDocumentPosition(g) & 4), g.querySelectorAll('[data-tick]').length, document.querySelector('[data-todo-list] [data-todo-item=ukmil]') !== null] : null })()""")
+      return g ? [g.textContent.replace(/\\s+/g, ' '), !!(t.compareDocumentPosition(g) & 4), g.querySelectorAll('[data-tick]').length, document.querySelector('[data-todo-list] [data-todo-item=ukmil]') !== null] : null })()""")
     c.ok(gone and f'unavailable note {lang}' in gone[0] and '2025-11' in gone[0] and gone[1] and gone[2] == 0 and not gone[3], gone, 'UK Mil is shelved APART under its muted title with the note of the catalogue: no tick, not « late », not in the list')
     # ---- 5. the button leads to the sheet
     c.tap('[data-todo-list] [data-todo-item=nats] [data-act=open-country]')
@@ -8476,7 +8476,7 @@ def l106(c):
     world = {'sia_seen': True}
     st, _x4 = _l89_open(c, world)
     pre = norm(_UT('updateN', lang)).split('{n}')[0].rstrip(' (')
-    btns = c.js("(p => [...document.querySelectorAll('[data-module=data] button')].filter(b => b.offsetParent !== null && b.textContent.replace(/\s+/g, ' ').trim().startsWith(p)).map(b => !!b.closest('[data-state-head]')))", pre)
+    btns = c.js("(p => [...document.querySelectorAll('[data-module=data] button')].filter(b => b.offsetParent !== null && b.textContent.replace(/\\s+/g, ' ').trim().startsWith(p)).map(b => !!b.closest('[data-state-head]')))", pre)
     c.eq([btns, c.count('[data-state-head] [data-update-row] button')], [[True], 1], 'one button « Tout mettre à jour », and it is the one of the cycle header (the older card and its second button are gone)', what='one button')
     c.eq(c.count('[data-update-all] h2, [data-update-all-caption], [data-body] > [data-update-all]'), 0, 'no card, no title, no caption of the older chain', what='no old card')
     order = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -8709,7 +8709,7 @@ def l116(c):
     lab = lambda i: _L116_LABEL[i][{'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]]
     todo = lambda w: D5('dsTodo').replace('{w}', w)
     named = lambda why, i: D5(why) + f' ({lab(i)})'
-    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
+    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
     got = {g: line(g) for g in ('proc', 'vfr', 'aircraft', 'weather')}
     exp = {'proc': ['todo', 'older-than-cycle', f"{todo(D5('dsWhyOlder'))} · {on('2026-10-05')}"],
            'aircraft': ['todo', 'absent', todo(named('dsWhyAbsent', 'sheets'))]}
@@ -9501,7 +9501,7 @@ def l131(c):
         'aircraft': {'ok': True, 'state': 'up-to-date', 'reasons': [], 'files': {'db': True, 'perf': True}, 'published': 'same'}}
     st = _l102_open(c, extra_verbs=['proc/status', 'vfr/status', 'aircraft/status', 'proc/fetch', 'proc/build', 'vfr/fetch', 'vfr/build', 'aircraft/fetch', 'aircraft/build'], setstate=setstate)
     c.until("document.querySelectorAll('details.d-fold [data-fold-why=not-built], details.d-fold [data-fold-why=partial]').length === 2", timeout=15000, what='the lines of the sets say what the launcher says')
-    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
+    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
     todo = _trow('dsTodo', lang, after='    dsTodo:')
     ok_w = _trow('stOk', lang, after='    stOk:')
     pr, vf, ac = line('proc'), line('vfr'), line('aircraft')
@@ -9540,7 +9540,7 @@ def l132(c):
     c.tap('[data-group-body] [data-zone=pt]')
     c.until("!!document.querySelector('[data-sheet=pt] [data-sheet-source]')", timeout=10000, what='the sheet of Portugal')
     c.wait(800)
-    head = c.js("(e => e ? [e.dataset.now, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-now]'))")
+    head = c.js("(e => e ? [e.dataset.now, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-now]'))")
     c.eq([head[0], norm(head[1])] if head else None, ['pick', norm(N('pickEdition'))], 'the head line says what to do now: take the newer edition that is in Downloads', what='head line')
     reg = c.js("document.querySelector('[data-sheet=pt] [data-sheet-source=navpt]')?.dataset.regime")
     c.eq(reg, 'hand', 'NAV Portugal is a hand-taken source on the sheet (its ISO is taken by hand), whatever the launcher calls its site reading', what='regime')
@@ -9592,7 +9592,7 @@ def l134(c):
     c.until("!!document.querySelector('[data-lc-fold=tours]')", timeout=12000, what='the fold of the circuits')
     c.js("document.querySelector('[data-lc-fold=tours]').open = true")
     c.eq(norm(c.text('[data-lc-fold=tours] > summary .d-lct')), norm(N('title')), 'the fold carries its name', what='title')
-    msg = lambda: c.js("(e => e ? [e.dataset.level, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-lc-fold=tours] [data-trk-msg]'))")
+    msg = lambda: c.js("(e => e ? [e.dataset.level, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-lc-fold=tours] [data-trk-msg]'))")
 
     def deposit(name, data):
         sent.clear()
@@ -9952,7 +9952,7 @@ def l144(c):
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-source=openaip]') && !document.querySelector('[data-sheet=gb] [data-inventory-state]')", timeout=12000, what='the sheet of the United Kingdom, the view read')
     c.wait(400)
     card = '[data-sheet=gb] [data-sheet-source=openaip]'
-    tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")
+    tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")
     c.ok(tk and tk[0] == 'yes' and '40' in tk[1], tk, 'the tick of openAIP is neutral-good with its date and its age (40 days), not « en retard »')
     c.eq(c.attr(card, 'data-src-tone'), 'ok', 'and the card is calm', what='tone')
     stc = norm(c.js("(e => e ? (k => { k.querySelectorAll('[data-why-hint]').forEach(x => x.remove()); return k.textContent })(e.cloneNode(true)) : '')(document.querySelector('[data-sheet=gb] [data-sheet-state] .d-st'))"))
@@ -10053,7 +10053,7 @@ def l146(c):
     suffix = CW('builtOnDeposit').split('{d}')[1]
     c.ok(b and b[0] == 'yes' and norm(suffix) in norm(b[1]) and '16' in b[1], b, 'BUILT: ✓ the date · on a deposit of 16/11, edition not known')
     c.eq(sh('[data-sheet-update-reason]'), norm(_trow('depositReason', lang, after='  cwb: {')), 'and the button below does not say « Ce pays est à jour »: it says the country is built on a hand deposit', what='update reason')
-    pb = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=is] [data-sheet-facts] [data-tick=publish]'))")
+    pb = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=is] [data-sheet-facts] [data-tick=publish]'))")
     c.ok(pb and pb[0] != 'yes' and norm(CW('pubBeforeBuild').split('{d}')[1]) in norm(pb[1]), pb, 'PUBLISHED (30/10) is older than the build (16/11): the cell says « avant cette construction » and is not green')
     up = c.js("(b => b ? [b.disabled, b.dataset.retake] : null)(document.querySelector('[data-sheet=is] [data-act=sheet-update]'))")
     c.eq(up, [False, '1'], 'the button stays ACTIVE: it is the gesture to retake from the site and get a real edition', what='retake button')
@@ -10096,7 +10096,7 @@ def l148(c):
     c.tap('[data-group-body] [data-zone=fr]')
     c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source=openaip] .d-cells1 li[data-ok]')", timeout=15000, what='the sheet of France, the view read')
     c.wait(400)
-    ages = c.js("['dircam', 'openaip'].map(i => (e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector(`[data-sheet=fr] [data-sheet-source=${i}] .d-cells1 li`)))")
+    ages = c.js("['dircam', 'openaip'].map(i => (e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector(`[data-sheet=fr] [data-sheet-source=${i}] .d-cells1 li`)))")
     c.ok(ages[0] and ages[0][0] == 'yes' and '3' in ages[0][1] and ages[1] and ages[1][0] == 'yes' and '40' in ages[1][1], ages, 'DIRCAM (3 days) and openAIP (40 days): a date and an age, neither « pas à jour » nor « en retard »')
     c.eq(c.count('[data-sheet=fr] [data-contents]'), 0, 'and no content is written: all are up to date', what='contents')
     c.eq(norm(c.text('[data-sheet=fr] [data-sheet-source=openaip] [data-regime-line]')), norm(_trow('autoFallback', lang, after='  cw: {')), 'openAIP (handMode fallback) is « prise par le lanceur — dépôt à la main possible si elle échoue »', what='regime')
