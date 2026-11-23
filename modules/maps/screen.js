@@ -286,10 +286,10 @@ export function showBox(on) {
 
 // ---------------------------------------------------------------- notes, notifications, état vide
 /** Notification flottante dite une fois par montage ; la ligne reste lisible dans les notes de la feuille. */
-export function noteOnce(k, text, kind = 'warn') {
+export function noteOnce(k, text, kind = 'warn', o = undefined) {
   if (S.noted[k]) return;
   S.noted[k] = true;
-  S.ctx.notify?.(text, kind);
+  S.ctx.notify?.(text, kind, o);
 }
 /** Notes de la feuille (SPEC § 7.6) : la progression du vol, puis les manques, puis l'information ; écrites seulement si elles
  *  changent. */

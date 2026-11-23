@@ -141,6 +141,31 @@ export function followAsked(ctx) {
   };
   return got.follow === '1' && !ctx.query?.mission && !ctx.query?.tune;
 }
+/** « Pas de position réelle » (SOG-0600, règle de l'ergonome) : une position connue, d'où qu'elle vienne, interdit la notification ; elle ne se lève que si AUCUNE
+ *  source ne donne de position. À l'ouverture les sources (le GPS de l'appareil, un simulateur, IVAO, VATSIM) n'ont pas encore répondu : la première lecture sans position
+ *  n'est donc pas un constat, la notification attend un court délai (une seule minuterie, annulée dès qu'une position est connue, et seulement si le cadre ne dit pas
+ *  « tracking »), puis se lève UNE fois, sous une clé ; quand la position arrive après elle, le cadre la retire (ctx.dismissNote, quand il existe : sinon elle s'efface
+ *  seule, comme toute notification) ; le bouton « Activer la position » des notes reste. */
+const NOPOS_KEY = 'maps-no-position',
+  NOPOS_GRACE = 2500;
+
+export function noPositionNote(known, f) {
+  if (known) {
+    clearTimeout(S.noPosTimer);
+    S.noPosTimer = 0;
+    if (S.noted.gps) S.ctx.dismissNote?.(NOPOS_KEY);
+    return;
+  }
+  if (S.noPosTimer || S.noted.gps || isArrived(f)) return;
+  const me = S;
+  S.noPosTimer = setTimeout(() => {
+    if (S !== me) return;
+    S.noPosTimer = 0;
+    if (!S.hasPos && S.ctx.live?.status !== 'tracking') noteOnce('gps', tt(TX.progNoPos), 'warn', {
+      key: NOPOS_KEY
+    });
+  }, NOPOS_GRACE);
+}
 /** Trace gardée en mémoire, ligne de progression, Suivre ; hors d'un vol démarré, tout s'efface. */
 export function progressUpdate() {
   const f = S.route.flight,
@@ -184,7 +209,7 @@ export function progressUpdate() {
   const st = progressState();
   S.progHtml = progressHtml(st);
   writeNotes();
-  if (!st.actual && !isArrived(f)) noteOnce('gps', tt(TX.progNoPos)); // une fois par montage ; la ligne et son bouton restent
+  noPositionNote(!!st.actual, f); // une fois par montage, et jamais quand une position est connue ; la ligne et son bouton restent
   followRender(); // le suivi du vol (SOG-0304) : la ligne et ce qu'elle dit se refont avec la progression
   if (S.follow && st.actual && S.map) {
     // un mouvement en cours (le cadrage d'ouverture, un défilement de la feuille) est arrêté AVANT : son « moveend » ne doit pas vider selfMove

@@ -192,7 +192,8 @@ def j2(c):
     nopos = norm(tx(MP, 'progNoPos', c.lang))
     c.until("!!document.querySelector('.f-sheet-head .f-sheet-title')", timeout=10000, what='Carte is drawn after the start')
     c.until("window.__notes.length > 0", what='Carte says something at mount', timeout=6000)
-    c.wait(800)
+    # SOG-0600: the notification is a verdict, said once the sources had their moment to answer (a short grace), never at the first look
+    c.until(f"(window.__notes || []).filter(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(nopos)})).length === 1", timeout=10000, what='the no-position notification, said once')
     c.eq(sum(1 for n in c.note_log() if norm(n) == nopos), 1, 'no GPS, no network: the notification is said once at the mount of Carte', what='no-position notifications after the start')
 
     c.step(P, 4, 'gear badge green, Status row "Vol en cours › Carte"')
@@ -211,7 +212,7 @@ def j2(c):
     flying = tx(MP, 'stFlying', c.lang)
     c.ok(norm(flying) in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'contains "{flying}"')
     c.ok(not c.shown('[data-mp="follow"]'), 'the Follow button is displayed without a position', 'Follow not shown without a position (SOG-0207)')
-    c.wait(1500)
+    c.until(f"(window.__notes || []).filter(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(nopos)})).length === 2", timeout=10000, what='the notification of the second mount')
     c.eq(sum(1 for n in c.note_log() if norm(n) == nopos), 2, 'once per mount of Carte: the start mounted it, the tap on the row mounted it again', what='no-position notifications after the second mount')
 
     c.step(P, 6, 'sheet notes: the planned progress')

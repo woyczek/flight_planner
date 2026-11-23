@@ -10530,3 +10530,51 @@ def d314(c):
     c.wait(600)
     if c.width in (390, 1280):
         c.shot(f'D314_{c.width}_choix.png')
+
+
+@case('D315', 'A known position forbids « pas de position réelle » (SOG-0600): a flight that has a position when the Map opens never says it, whatever the source', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0600 (ergonomist, 23 Nov): the notification says that NO source gives a position, so a position known from anywhere (the GPS of the device, a simulator, IVAO, VATSIM: progress.actual) forbids it; without a position it is said once, after a short grace (NOPOS_GRACE, the sources have not answered at the first look), under a key; D8 covers the case without a position')
+def d315(c):
+    t0 = now() - datetime.timedelta(minutes=60)
+    f = flight(started={'at': iso(t0)}, progress={'phase': 'cruise', 'at': iso(now()),
+                                                   'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now())}})
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.hasPos", timeout=12000, what='the position is known')
+    c.wait(4000)                                       # longer than the grace of the notification (2.5 s): an absence can only be proved by waiting
+    text = norm(row(c, 'progNoPos'))
+    c.eq(sum(1 for n in c.note_log() if norm(n) == text), 0, 'a position is known: the notification « pas de position réelle » is never said', what='no notification')
+    c.ok(not c.js("() => window.__mp.S.noPosTimer"), '', 'and no timer waits to say it')
+    # what the old code did and this one does not: a first look WITHOUT a position schedules the notification, and a position that becomes known before the grace ends
+    # cancels it (deterministic: driven here, no race with the clock) ; the old code said it at once, at the first look
+    r = c.js("""async () => { const F = await import('/modules/maps/flight_time.js'), S = window.__mp.S; S.noted = {}; S.hasPos = false;
+      F.noPositionNote(false, S.route.flight); const pending = !!S.noPosTimer, said = Object.keys(S.noted).length; F.noPositionNote(true, S.route.flight);
+      return { pending, said, after: !!S.noPosTimer } }""")
+    c.eq([r['pending'], r['said'], r['after']], [True, 0, False], 'a look without a position only SCHEDULES the notification (nothing said yet), and a position known before the grace ends cancels it', what='scheduled then cancelled')
+    c.wait(3200)                                       # longer than the grace: what was cancelled must not come back
+    c.eq(sum(1 for n in c.note_log() if norm(n) == text), 0, 'the cancelled notification is never said', what='cancelled')
+
+
+@case('D316', 'SOG-0600 (captures): without a position the notification says so once; the position arrives and the note is gone', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0600 (ergonomist, 23 Nov): D316_390_sansposition (the notification « pas de position réelle », said once after the grace, when no source gives a position) and D316_390_position (the position has arrived: the note is absent from #fNotes; it fades by itself, or at once through ctx.dismissNote of the frame when it is pushed)')
+def d316(c):
+    t0 = now() - datetime.timedelta(minutes=60)
+    f = flight(started={'at': iso(t0)}, progress={'phase': 'cruise', 'at': iso(now())})
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    text = norm(row(c, 'progNoPos'))
+    c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(text)}))", timeout=15000, what='the notification, once the grace is over')
+    if c.width == 390:
+        c.shot('D316_390_sansposition.png')
+    g = c.doc(PATH)
+    g['progress']['actual'] = {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now())}
+    base = datetime.datetime.fromisoformat(g['updated_at'].replace('Z', '+00:00'))
+    g['updated_at'] = iso(max(now(), base) + datetime.timedelta(seconds=1))
+    c.js("""(a) => window.FrameData.adapter({ id: 't-pos', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
+    c.until("!document.querySelector('#fNotes .f-note')", timeout=15000, what='the position has arrived and the note is gone (faded by itself, or withdrawn by the frame)')
+    c.ok(not c.notes(), str(c.notes()), 'no notification left on the screen')
+    if c.width == 390:
+        c.shot('D316_390_position.png')
