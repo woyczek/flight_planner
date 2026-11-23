@@ -10792,7 +10792,7 @@ def f310(c):
 
 # SOG-0548: the words, written in clear
 _NP_WORDS = {
-    'fr': {'arr': 'aucune arrivée lue pour LFML', 'dep': 'aucun départ lu pour LFRS', 'read': 'Lire les procédures de LFML',
+    'fr': {'arr': 'aucune arrivée lue pour LFML', 'dep': 'aucun départ lu pour LFRS', 'read': 'Lire à la demande',  # France: read on demand
            'stale': 'Périmé'},
     'en': {'arr': 'no arrival read for LFML', 'dep': 'no departure read for LFRS', 'read': None, 'stale': 'Stale'},
     'de': {'arr': 'keine Ankunft für LFML gelesen', 'dep': 'kein Abflug für LFRS gelesen', 'read': None, 'stale': 'Veraltet'},
@@ -10802,7 +10802,7 @@ _NP_WORDS = {
 
 @case('F311', 'Route step: the line « enfreint » of a connector beyond its RAD limit, for a terrain whose arrival (or departure) Fuel has '
       'not read, says « aucune arrivée lue pour LFML » and offers the reading gesture of the Procedures block (« Lire les procédures de '
-      'LFML »); nothing for a terrain whose procedures are read; once the reading has brought the procedures, the list asks to compute '
+      'LFML », « Lire à la demande » for a State read on demand); nothing for a terrain whose procedures are read; once the reading has brought the procedures, the list asks to compute '
       'again (« Périmé » with « Recalculer »): the next computation takes the procedure',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0548 (the ergonomist: the connector line says what is missing and offers the existing gesture — reuse SOG-0527; after '

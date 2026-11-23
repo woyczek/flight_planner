@@ -535,6 +535,13 @@ const TX = {
   rConformShort: ['Aucune infraction trouvée', 'No violation found', 'Keine Verstöße gefunden', 'No se encontró ninguna infracción'],
   // SOG-0554 (l'ergonome) : le pli « Non vérifiable » d'une carte dit ce qu'il ouvre (le verdict est déjà dit en gras au-dessus)
   rSeeWhy: ['Voir pourquoi', 'See why', 'Gründe anzeigen', 'Ver por qué'],
+  // SOG-0548 (l'ergonome) : sur la ligne « enfreint » d'un raccord au-delà de sa limite, ce qui manque pour le terrain
+  rNoArrRead: ['aucune arrivée lue pour {ad}', 'no arrival read for {ad}', 'keine Ankunft für {ad} gelesen',
+    'ninguna llegada leída para {ad}'
+  ],
+  rNoDepRead: ['aucun départ lu pour {ad}', 'no departure read for {ad}', 'kein Abflug für {ad} gelesen',
+    'ninguna salida leída para {ad}'
+  ],
   // insécable : jamais « 0 » en fin de ligne et « écart » sur la suivante (capture F241 à 390 px)
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -657,8 +664,9 @@ const TX = {
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
   // SOG-0402 : « Copier pour Eurocontrol » et son pli de relecture
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
-  // SOG-0533 : le niveau changé après le calcul de la route prise — sous la route, puis au-dessus de « Copier pour Eurocontrol »
-  rStale: ['Route calculée pour le FL{c} — à recalculer : le vol est au FL{f}',
+  // SOG-0533 : le niveau changé après le calcul de la route prise — sous la route, puis au-dessus de « Copier pour Eurocontrol » ;
+  // SOG-0548 : son propre nom (« rStale » deux fois : celle-ci écrasait la ligne de la liste périmée, « Périmé (calculé à {t}) … »)
+  rFlStale: ['Route calculée pour le FL{c} — à recalculer : le vol est au FL{f}',
     'Route computed for FL{c} — compute again: the flight is at FL{f}',
     'Route für FL{c} berechnet — neu berechnen: der Flug ist auf FL{f}',
     'Ruta calculada para el FL{c} — volver a calcular: el vuelo está en el FL{f}'
@@ -3681,6 +3689,7 @@ function onPlanClick(e) {
         S.altnData = null;
         altnChkDraw(S.C);
       }
+      routeReadDone(k); // SOG-0548 : la ligne d'un raccord faute de procédure suit la lecture ; la liste périmée si elle l'a apportée
       return arrInfoKeep();
     });
   }
@@ -6452,7 +6461,7 @@ async function proposalsAge() {
   if (!R?.computed_at) return;
   const now = await baseStamp();
   if (gone(s) || S.ralts !== R) return;
-  const stale = RA.isStale(R, now);
+  const stale = RA.isStale(R, now) || !!R.procStale; // SOG-0548 : une procédure lue depuis le calcul (routeReadDone)
   if (stale !== !!R.stale) {
     R.stale = stale;
     routeAltsDraw();
@@ -6804,6 +6813,58 @@ function routeStale(C = S.C) {
     f: String(f).padStart(3, '0')
   } : null;
 }
+/** SOG-0548 : ce que Carburant tient des procédures d'un terrain — { SID, STAR } (vrai : au moins une lue dans la base) ; null tant que
+ *  la base n'a pas répondu (la liste est redessinée à la réponse). Gardé par terrain (S.procHave), relu après une lecture. */
+function procHave(icao) {
+  const k = String(icao || '').toUpperCase();
+  if (!/^[A-Z]{4}$/.test(k) || typeof S?.ctx?.aerodb?.procedures !== 'function') return null;
+  S.procHave ||= new Map();
+  if (S.procHave.has(k)) return S.procHave.get(k);
+  S.procHave.set(k, null);
+  const s = S;
+  Promise.resolve().then(() => s.ctx.aerodb.procedures(k)).catch(() => []).then(list => {
+    if (gone(s)) return;
+    const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p));
+    s.procHave.set(k, {
+      SID: l.some(p => p.kind === 'SID'),
+      STAR: l.some(p => p.kind === 'STAR')
+    });
+    if (s.ralts?.list?.length) routeAltsDraw();
+  });
+  return null;
+}
+/** SOG-0548 (l'ergonome) : sur la ligne « enfreint » d'un raccord au-delà de sa limite, quand Carburant ne tient aucune arrivée (ou aucun
+ *  départ) pour ce terrain : « aucune arrivée lue pour {terrain} » et le geste de lecture du bloc Procédures (mêmes mots, même appel :
+ *  S.P.readButtonFor, SOG-0527 ; rien quand l'État ne se lit pas) ; '' sinon. */
+function noProcHtml(v) {
+  const ad = String(v?.ad || '').toUpperCase(),
+    end = v?.end;
+  if (!['dep', 'arr'].includes(end)) return '';
+  const h = procHave(ad);
+  if (!h || h[end === 'dep' ? 'SID' : 'STAR']) return '';
+  const b = typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(ad) : '';
+  return `<span class="f-warn" data-noproc> — ${esc(tt(end === 'dep' ? TX.rNoDepRead : TX.rNoArrRead, { ad }))}</span>${b ? ` ${b}` : ''}`;
+}
+/** SOG-0548 : une lecture de procédures finie pour `k` — ce que Carburant en tient relu ; si elle a apporté la procédure d'un raccord
+ *  que la liste dit enfreint, la liste est périmée (« Recalculer » : le calcul suivant la prend, jamais un calcul tout seul). */
+async function routeReadDone(k) {
+  if (!S?.procHave?.has(k)) return;
+  const s = S;
+  s.procHave.delete(k);
+  const list = await Promise.resolve().then(() => s.ctx.aerodb.procedures(k)).catch(() => []);
+  if (gone(s)) return;
+  const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p)),
+    h = {
+      SID: l.some(p => p.kind === 'SID'),
+      STAR: l.some(p => p.kind === 'STAR')
+    },
+    R = s.ralts;
+  s.procHave.set(k, h);
+  if (R?.list?.some(a => (a.reasons?.violates || []).some(r => r.code === 'connector_limit' && String(r.values?.ad || '')
+      .toUpperCase() === k &&
+      h[r.values?.end === 'dep' ? 'SID' : 'STAR']))) R.procStale = R.stale = true;
+  if (R?.list?.length) routeAltsDraw();
+}
 /** SOG-0532 (3) : le mot du verdict sur la ligne d'un itinéraire qui n'enfreint rien de connu — « conforme à ce que nous savons lire »
  *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
 function verdictWord(a, good = null) {
@@ -6839,6 +6900,7 @@ function verdictsHtml(a, open = false) {
         nv = r.code === 'rad_unread' ? (a.notVerified || []).find(x => x.state === String(r.values?.state || '').toUpperCase()) : null,
         it = nv?.items || [],
         li = x => `<li data-rule>${esc(RR.ruleLine(x, tt))}</li>`;
+      if (!it.length && r.code === 'connector_limit') return `<li data-reason="${esc(r.code)}">${text}${noProcHtml(r.values)}</li>`;
       return it.length ? `<li data-reason="${esc(r.code)}"><details class="fu-faultmore" data-staterules><summary>${text}</summary><ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? `<details class="fu-faultmore" data-rulesmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: it.length - 7 }))}</summary><ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul></details>` : ''}</details></li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
     },
     group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
@@ -6877,7 +6939,7 @@ function staleDraw(C) {
     x = routeStale(C);
   if (!p) return;
   p.hidden = !x;
-  p.querySelector('[data-rstaletext]').textContent = x ? tt(TX.rStale, x) : '';
+  p.querySelector('[data-rstaletext]').textContent = x ? tt(TX.rFlStale, x) : '';
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
