@@ -429,10 +429,10 @@
     folderAbsent: ['absent de ce poste', 'missing on this computer', 'auf diesem Rechner nicht vorhanden', 'ausente en este equipo'],
     folderOpen: ['Ouvrir', 'Open', 'Öffnen', 'Abrir'],
     folderHint: [
-      'Lecture seule : un chemin se change là où il est dit (au lancement, dans Little Navmap, dans Réglages), jamais ici. « Ouvrir » montre le dossier dans l’explorateur de ce poste.',
-      'Read only: a path is changed where it says (at start, in Little Navmap, in Settings), never here. “Open” shows the folder in this computer’s file explorer.',
-      'Nur lesbar: Ein Pfad wird dort geändert, wo es angegeben ist (beim Start, in Little Navmap, in den Einstellungen), nie hier. „Öffnen“ zeigt den Ordner im Dateiexplorer dieses Rechners.',
-      'Solo lectura: una ruta se cambia donde se indica (al iniciar, en Little Navmap, en Ajustes), nunca aquí. «Abrir» muestra la carpeta en el explorador de archivos de este equipo.'
+      'Lecture seule : un chemin se change là où il est dit (au lancement, dans Little Navmap, ou dans Réglages › Fiches Little Navmap), jamais dans cette carte. « Ouvrir » montre le dossier dans l’explorateur de ce poste.',
+      'Read only: a path is changed where it says (at start, in Little Navmap, or in Settings › Little Navmap sheets), never in this card. “Open” shows the folder in this computer’s file explorer.',
+      'Nur lesbar: Ein Pfad wird dort geändert, wo es angegeben ist (beim Start, in Little Navmap oder unter Einstellungen › Little-Navmap-Blätter), nie in dieser Karte. „Öffnen“ zeigt den Ordner im Dateiexplorer dieses Rechners.',
+      'Solo lectura: una ruta se cambia donde se indica (al iniciar, en Little Navmap o en Ajustes › Fichas de Little Navmap), nunca en esta tarjeta. «Abrir» muestra la carpeta en el explorador de archivos de este equipo.'
     ],
     folderFail: ['Ouverture refusée : {m}', 'Opening refused: {m}', 'Öffnen abgelehnt: {m}', 'Apertura rechazada: {m}'],
     // volet « Mise à jour de la suite » (A3) : canal, plan, mise à jour ; le lanceur à relancer à la main ensuite

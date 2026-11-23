@@ -11904,3 +11904,18 @@ def a370(c):
     _bench(c, 'frame/lib/test/markdown_images.html', '__mdBench')
     c.wait(500)
     c.eq(asked, [], 'the page asked no host outside while it rendered every hostile image address', what='requests outside')
+
+
+
+
+@case('A371', "The lines of the status block at the head of Settings never send the user to the screen they are shown on (SOG-0578, lot 1 of the frame texts, the ergonomist, 23 Nov 2026): « Touchez pour régler l'accès » (not « …dans les Réglages »), in the four languages", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0578: a phrase that says « in Settings » shown IN Settings is false where it is shown (the status block is the head of Settings): the hint of the line leads to its card, it does not name the screen')
+def a371(c):
+    c.open('settings', docs=LEVEL3)
+    c.until("document.querySelectorAll('[data-card=\"status\"] .f-status-row').length >= 2", timeout=15000, what='the status lines')
+    word = {'fr': 'Réglages', 'en': 'Settings', 'de': 'Einstellungen', 'es': 'Ajustes'}[c.lang]
+    rows = c.js("[...document.querySelectorAll('[data-card=\"status\"] .f-status-row')].map(r => r.textContent.replace(/\s+/g, ' ').trim())")
+    c.ok(any(norm(x) for x in rows), rows, 'the status block has its lines')
+    c.eq([x for x in rows if word.lower() in x.lower()], [], f'no line of the status block names « {word} » (it is the screen it is shown on)', what='no self-reference')
+    c.eq(sum(1 for x in rows if c.lang == 'fr' and 'Touchez pour régler l’accès' in x), 1 if c.lang == 'fr' else 0, 'the access line says « Touchez pour régler l’accès » (French run)', what='access hint')

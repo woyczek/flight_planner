@@ -797,9 +797,9 @@
         'Kürzel nicht eingestellt: Ihre Dokumente bleiben auf diesem Gerät',
         'Trigrama no definido: sus documentos se quedan en este dispositivo'
       ],
-      whoSub: ['Touchez pour le régler dans les Réglages', 'Touch to set it in Settings',
-        'Tippen, um es in den Einstellungen zu setzen',
-        'Toque para definirlo en Ajustes'
+      whoSub: ['Touchez pour le régler', 'Tap to set it',
+        'Tippen, um es zu setzen',
+        'Toque para definirlo'
       ],
       // état de la base aéronautique (ligne ajoutée tant qu'elle charge, qu'aucun accès n'est réglé ou que rien n'est publié)
       base: {
@@ -813,8 +813,8 @@
           'Aeronautical database not published in the data repository',
           'Luftfahrtdatenbank nicht im Datenrepository veröffentlicht', 'Base aeronáutica no publicada en el repositorio de datos'
         ],
-        sub: ['Touchez pour régler l’accès dans les Réglages', 'Touch to set the access in Settings',
-          'Tippen, um den Zugriff in den Einstellungen einzurichten', 'Toque para configurar el acceso en Ajustes'
+        sub: ['Touchez pour régler l’accès', 'Tap to set the access',
+          'Tippen, um den Zugriff einzurichten', 'Toque para configurar el acceso'
         ]
       },
       error: ['Données : erreur de synchronisation{e}', 'Data: synchronisation error{e}', 'Daten: Synchronisationsfehler{e}',
@@ -870,10 +870,11 @@
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
     host: ['Lanceur de {h}', 'Launcher on {h}', 'Starter auf {h}', 'Lanzador de {h}'],
     who: ['Trigramme ?', 'Trigram?', 'Kürzel?', '¿Trigrama?'],
-    whoTitle: ['Indiquez votre trigramme dans Réglages : jusque-là, vos documents restent sur cet appareil et rien n’est envoyé.',
-      'Set your trigram in Settings: until then, your documents stay on this device and nothing is sent.',
-      'Geben Sie Ihr Kürzel in den Einstellungen an: bis dahin bleiben Ihre Dokumente auf diesem Gerät und nichts wird gesendet.',
-      'Indique su trigrama en Ajustes: hasta entonces, sus documentos se quedan en este dispositivo y no se envía nada.'
+    whoTitle: [
+      'Indiquez votre trigramme (Réglages › Identité) : jusque-là, vos documents restent sur cet appareil et rien n’est envoyé.',
+      'Set your trigram (Settings › Identity): until then, your documents stay on this device and nothing is sent.',
+      'Geben Sie Ihr Kürzel an (Einstellungen › Identität): bis dahin bleiben Ihre Dokumente auf diesem Gerät und nichts wird gesendet.',
+      'Indique su trigrama (Ajustes › Identidad): hasta entonces, sus documentos se quedan en este dispositivo y no se envía nada.'
     ],
     anonAdopted: ['{n} document(s) écrit(s) sans trigramme repris sous {tri}.',
       '{n} document(s) written without a trigram taken over under {tri}.',

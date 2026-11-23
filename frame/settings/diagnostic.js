@@ -40,7 +40,7 @@
       'Registrar lo que hace la página durante un bloqueo'
     ],
     profHint: [
-      'Quand la page reste figée plus d’une seconde, les quinze fonctions les plus sollicitées (leurs noms seulement) sont gardées dans ce diagnostic, sur cet appareil ; aucune valeur, rien n’est envoyé. « Copier » les emporte avec le reste : à vous de voir où vous collez le diagnostic.',
+      'Quand la page reste figée plus d’une seconde, les quinze fonctions les plus sollicitées (leurs noms seulement) sont gardées dans ce diagnostic, sur cet appareil ; aucune valeur, rien n’est envoyé. « Copier » les inclut avec le reste : à vous de voir où vous collez le diagnostic.',
       'When the page stays frozen for more than a second, the fifteen busiest functions (their names only) are kept in this diagnostic, on this device; no values, nothing is sent. “Copy” takes them along with the rest: mind where you paste the diagnostic.',
       'Bleibt die Seite länger als eine Sekunde eingefroren, werden die fünfzehn am stärksten beanspruchten Funktionen (nur ihre Namen) in dieser Diagnose auf diesem Gerät gespeichert; keine Werte, nichts wird gesendet. „Kopieren“ nimmt sie mit dem Rest mit: Achten Sie darauf, wo Sie die Diagnose einfügen.',
       'Cuando la página se queda bloqueada más de un segundo, las quince funciones más solicitadas (solo sus nombres) se guardan en este diagnóstico, en este dispositivo; ningún valor, no se envía nada. «Copiar» se las lleva con el resto: tenga cuidado de dónde pega el diagnóstico.'
