@@ -4861,7 +4861,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
     list: lvl.list,
     answer: null,
     computed_at: lvl.at || S.ralts.computed_at,
-    cache: null,
+    cache: lvl.cache,
     more: '',
     mode: 'levels',
     kept: lvl.kept
@@ -6925,6 +6925,7 @@ function autoList(n) {
   return {
     list,
     at: L.at,
+    cache: L.cache || null, // SOG-0563 : « Du cache, calculé à … », la phrase de route/compute
     kept: list.findIndex(a => a.fl === kept)
   };
 }
@@ -7266,14 +7267,17 @@ function autoJudge(cands, blind = cands[0]) {
     }).then(raw => {
       if (gone(s) || s.autoLv?.key !== key) return;
       xpNoteAnswer(raw); // SOG-0545 : un point placé d'après X-Plane sert au calcul, jamais écrit
+      const res = RE.levelsRead(raw) || {
+        ok: false,
+        reason: 'failed'
+      };
       s.autoLv = {
         key,
         busy: false,
-        at: new Date().toISOString(), // SOG-0545 : « Calculé à » de la liste par niveau
-        res: RE.levelsRead(raw) || {
-          ok: false,
-          reason: 'failed'
-        }
+        // SOG-0545 : « Calculé à » de la liste par niveau ; SOG-0563 : un résultat du cache du poste garde l'heure de SON calcul
+        at: res.cache?.at || new Date().toISOString(),
+        cache: res.cache || null,
+        res
       };
       refresh(); // le dessin refait choisit sur la réponse
     });

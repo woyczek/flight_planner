@@ -247,7 +247,7 @@ export async function levels(launcher, args, {
 }
 /** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason,
  *  semicircular, verdict }], conformingTried, firstValidConforming, noConformingValid, stopped,
- *  asked } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
+ *  asked, cache } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
 export function levelsRead(res) {
   if (!res || typeof res !== 'object') return null;
   if (res.ok !== true) return {
@@ -282,7 +282,9 @@ export function levelsRead(res) {
     firstValidConforming: flIn(res.first_valid_conforming) ? res.first_valid_conforming : null,
     noConformingValid: res.no_conforming_valid === true,
     stopped: STOPS.includes(res.stopped) ? res.stopped : 'end',
-    asked: Number.isInteger(res.asked) && res.asked >= 0 && res.asked <= LEVELS_MAX ? res.asked : list.length
+    asked: Number.isInteger(res.asked) && res.asked >= 0 && res.asked <= LEVELS_MAX ? res.asked : list.length,
+    // SOG-0563 (AeroDB, cache des résultats) : comme route/compute, { hit: true, at } quand la réponse vient du cache du poste, sinon null
+    cache: cacheOf(res.cache)
   };
 }
 

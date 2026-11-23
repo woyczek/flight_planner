@@ -2665,3 +2665,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   is gone (the suite never claims it). The sentence goes when the search ends (the result is said) or when « Calculer » cancels it; the list
   of routes stays empty until the end. Needs AeroDB's step per level (`on_level` in plan.levels, `job.step` in tools/regen/route.py): pushed
   only after it, so the sentence never shows without its data. Case F317, red before.
+  The cache (the relay and the ergonomist, 23 Nov; AeroDB caches the results of route/levels): its answer has `cache: { hit, computedAt }`
+  like route/compute; `RE.levelsRead` reads it by the same `cacheOf`. A list per level served by the cache keeps on screen the time of its
+  ORIGINAL computation, never the time of the tap, in the sentence of route/compute, « Du cache, calculé à … » (`rCache`, no new sentence).
+  Case F319, red before.
