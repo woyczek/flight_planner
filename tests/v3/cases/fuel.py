@@ -10180,8 +10180,22 @@ def f303(c):
     c.ok(all(x['state'] == 'warn' and x['why'][-1] == 'wx-notime' for x in d['list']), d['list'],
          'no date: every terrain « warn » with « wx-notime » (red before: « ok », « wx-unread »)')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
-    row = norm(c.text(f'{B} [data-altnprop] li[data-cand]') or '')
-    c.ok(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in row, row, 'the existing sentence of a missing date')
+    # SOG-0559 (the ergonomist, 23 Nov) — changed on purpose: every one « ? » for the same cause (no date): the cause said ONCE above the
+    # list, the rows keep « ? » without the sentence
+    once = {'fr': 'Sans date de vol, la météo des dégagements n’est pas jugée.', 'en': 'Without a flight date, the weather of the alternates is not judged.',
+            'de': 'Ohne Flugdatum wird das Wetter der Ausweichflugplätze nicht beurteilt.',
+            'es': 'Sin fecha de vuelo, la meteorología de los alternativos no se evalúa.'}[L]
+    c.eq(norm(c.text(f'{B} [data-altnprop] [data-altnwxall]') or ''), norm(once), 'the cause once, above the list', what='once')
+    rows = [norm(x) for x in c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.textContent)")]
+    c.ok(not any(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in r for r in rows), rows, 'no row repeats it')
+    c.eq(c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.dataset.state)"), ['warn'] * 3,
+         'the rows keep their sign', what='signs')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.wait(400)
+        c.shot(f'F303_{c.design}_{w}_{L}_nodate.png')
     c.check_errors()
 
 
