@@ -11149,3 +11149,66 @@ def f316(c):
     c.until(f"/1015/.test(document.querySelector('{A} [data-terrain]')?.textContent || '')", timeout=15000, what='the QNH of the METAR said')
     c.eq(c.count(f'{A} [data-terrain] [data-do=wx]'), 0, 'the gesture goes once the QNH is known', what='gone')
     c.check_errors()
+
+
+# SOG-0572: the words, written in clear (the ergonomist, 23 Nov)
+_RS_WORDS = {
+    'fr': ('Route calculée pour le FL270, BE9L : le vol a changé.', 'Route calculée pour le FL270 : le vol est au FL250.', 'Recalculer'),
+    'en': ('Route computed for FL270, BE9L: the flight has changed.', 'Route computed for FL270: the flight is at FL250.', 'Compute again'),
+    'de': ('Route für FL270, BE9L berechnet: der Flug hat sich geändert.', 'Route für FL270 berechnet: der Flug ist auf FL250.', 'Neu berechnen'),
+    'es': ('Ruta calculada para el FL270, BE9L: el vuelo ha cambiado.', 'Ruta calculada para el FL270: el vuelo está en el FL250.', 'Recalcular'),
+}
+
+
+@case('F318', 'Route step: a route TAKEN from the engine is stale as soon as the flight is no longer the one of its computation (aircraft, '
+      'level, aerodromes, date, imposed points): « Copier pour Eurocontrol » is NOT offered — in its place « Route calculée pour le FL270, '
+      'BE9L : le vol a changé. » with « Recalculer » (the level alone: « Route calculée pour le FL270 : le vol est au FL250. »); computed '
+      'again and taken, the copy is back',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0572 (the ergonomist, 23 Nov, changing SOG-0533: a warning passed with one touch does not protect — the sixteen errors of '
+      'the IFPS came from a route computed for the Beech and copied with the level of another aircraft); a fake launcher, an invented '
+      'route taken for a BE9L on a flight now flown by a C-130J')
+def f318(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _RS_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs)]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+            # a route taken earlier, computed for a BE9L at FL270 (the fingerprint of its computation)
+            d[1]['route'].update(text='LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', **{'from': 'engine'}, calcFl=270, typed=[],
+                                 calc={'fl': 270, 'type': 'BE9L', 'sheet': 'BE9L', 'reg': '', 'tas': 220, 'ceil': 29000})
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    P = f'{FUEL} [data-fpl]'
+    # 1. the aircraft changed: no copy, the state and « Recalculer »
+    c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=10000, what='the state of a stale route (red before: a warning above an offered copy)')
+    c.eq(c.count(f'{P} [data-do=fplcopy]'), 0, 'the copy is NOT offered', what='no copy')
+    c.eq(norm(c.text(f'{P} [data-fplstale] > span') or ''), norm(W[0]), 'the level and the aircraft of the computation', what='state')
+    c.eq(norm(c.text(f'{P} [data-fplstale] [data-do=rcompute]') or ''), norm(W[2]), '« Recalculer »', what='gesture')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{P}').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F318_{c.design}_{w}_{c.lang}_stale.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 2. computed again and taken: the copy is back, nothing said
+    _compute_now(c, st)
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    c.until(f"!!document.querySelector('{P} [data-do=fplcopy]')", timeout=10000, what='the copy back after a computation taken')
+    c.eq(c.count(f'{P} [data-fplstale]'), 0, 'nothing stale', what='fresh')
+    # 3. the level alone changed: the shorter sentence, no copy
+    to_step(c, 0)
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
+    c.page.locator(f'{FUEL} input[data-k="fl"]').dispatch_event('change')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=8000, what='stale by the level')
+    c.eq(norm(c.text(f'{P} [data-fplstale] > span') or ''), norm(W[1]), 'the level alone', what='level')
+    c.eq(c.count(f'{P} [data-do=fplcopy]'), 0, 'no copy', what='no copy 2')
+    c.check_errors()
