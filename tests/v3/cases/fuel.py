@@ -11298,7 +11298,8 @@ def f319(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
-        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        # la ligne « Du cache, calculé à … » au milieu de l'écran : en haut, la barre fixe la couvrait
+        c.js(f"document.querySelector('{H}').scrollIntoView({{block: 'center'}})")
         c.wait(300)
         c.shot(f'F319_{c.design}_{w}_{c.lang}_cache.png')
     c.check_errors()
