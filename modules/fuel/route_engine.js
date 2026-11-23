@@ -251,7 +251,14 @@ export function levelsRead(res) {
     // SOG-0530 (lot B) : warning | undecided | ok | no_table, null sans contrôle ; jamais un blocage (valid ne le lit pas)
     semicircular: SEMICIRCULAR.includes(x?.semicircular) ? x.semicircular : null,
     // SOG-0540 : le verdict du niveau (violates | unverifiable | conform, le mot de route/compute) ; null d'une réponse plus ancienne
-    verdict: VERDICTS.includes(x?.verdict) ? x.verdict : null
+    verdict: VERDICTS.includes(x?.verdict) ? x.verdict : null,
+    // SOG-0545 « Auto » (AeroDB K499, K504) : la route du niveau, sa distance, ses points (bornés comme ceux de route/compute) et les
+    // comptes de ses deux listes (« Non vérifiable : N points », « enfreint N règles connues »)
+    route: routeWords(text(x?.route, 800)),
+    distanceNm: num(x?.distance_nm, 0, 19999),
+    points: pointsOf(x?.points),
+    unverifiableCount: count(x?.unverifiable_count),
+    violationsCount: count(x?.violations_count)
   })).filter(x => x.fl !== null);
   const flIn = v => Number.isInteger(v) && v >= 10 && v <= 660;
   return {
@@ -264,6 +271,30 @@ export function levelsRead(res) {
     noConformingValid: res.no_conforming_valid === true,
     stopped: STOPS.includes(res.stopped) ? res.stopped : 'end',
     asked: Number.isInteger(res.asked) && res.asked >= 0 && res.asked <= LEVELS_MAX ? res.asked : list.length
+  };
+}
+
+/** Un compte entier de 0 à 999, sinon 0 (une entrée non fiable). */
+const count = v => Number.isInteger(v) && v >= 0 && v <= 999 ? v : 0;
+/** SOG-0545 « Auto » : la ligne d'un niveau de route/levels (lue par levelsRead) dans la forme d'un itinéraire de route/compute (altOf),
+ *  pour la liste des routes : son verdict et ses comptes (uCount : les points non vérifiables ; violations : les règles enfreintes), la
+ *  règle semi-circulaire (semiOut), son raccord ; sans nom (route/levels n'en donne pas) ni tronçons. */
+export function levelPlan(x) {
+  const p = altOf({
+    route: x?.route,
+    distanceNm: x?.distanceNm,
+    fl: x?.fl,
+    verdict: x?.verdict,
+    points: x?.points
+  }, 'level', []);
+  return {
+    ...p,
+    accepted: p.accepted && x?.valid === true,
+    violations: p.faulty ? Math.max(1, count(x?.violationsCount)) : 0,
+    uCount: p.verdict === 'unverifiable' ? Math.max(1, count(x?.unverifiableCount)) : 0,
+    // le niveau hors de la règle semi-circulaire (dit sur la ligne ; route/levels n'en donne pas le détail : pas de pli)
+    semiOut: x?.semicircular === 'warning',
+    connector: CONNECTORS.includes(x?.connector) ? x.connector : 'none'
   };
 }
 

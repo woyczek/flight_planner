@@ -982,6 +982,10 @@ const TX = {
     'Nivel del vuelo fijado en FL{fl}, el del cálculo de la ruta: el presupuesto y el plan de vuelo lo llevan.'
   ],
   rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
+  // SOG-0545 : le pendant de « Fermer les propositions », sur la ligne « Itinéraire choisi » (la même liste, sans recalcul)
+  rReview: ['Revoir les propositions', 'Review the proposals', 'Vorschläge erneut ansehen', 'Volver a ver las propuestas'],
+  // SOG-0545 (l'ergonome) : sur la ligne d'un niveau d'« Auto » dont l'arrivée (ou le départ) se fait par un raccord direct
+  rDirect: ['raccord direct', 'direct connector', 'Direktanschluss', 'enlace directo'],
   // SOG-0296 : deux demandes — la route de tête tout de suite, les variantes ensuite ; le cache du poste dit
   rMoreBusy: ['Variantes en recherche…', 'Searching for variants…', 'Varianten werden gesucht…', 'Buscando variantes…'],
   rMoreNone: ['Pas d’autre variante trouvée.', 'No other variant found.', 'Keine andere Variante gefunden.',
@@ -2087,8 +2091,8 @@ function saveFlight() {
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
   // les écritures de Carburant à la file : une écriture relit l'enregistrement après la fin de la précédente (deux écritures qui se
   // chevauchaient relisaient le même état d'avant, et la seconde reprenait un niveau périmé : F7 avec des lectures lentes)
-  s.flightTimer = setTimeout(() => s.saving = (s.saving || Promise.resolve()).then(() => writeFlight(s)).then(() => S === s &&
-      altsMoreCheck())
+  s.flightTimer = setTimeout(() => s.saving = (s.saving || Promise.resolve()).then(() => writeFlight(s)).then(() => S === s && (
+      altsMoreCheck(), reviewSync()))
     .catch(() => {}), 300); // SOG-0296 (c) : une entrée changée pendant la recherche des variantes
 }
 // ---------------------------------------------------------------- SOG-0375 : une position lue dans X-Plane n'est jamais écrite avec le vol
@@ -2149,6 +2153,7 @@ function xpNoteAnswer(res) {
       xpNote(p.id, r5(p.lat), r5(p.lon));
     };
   for (const a of list(res?.alternatives).slice(0, 8)) list(a?.points).forEach(note);
+  for (const l of list(res?.levels).slice(0, 12)) list(l?.points).forEach(note); // SOG-0545 : les points de route/levels
   list(res?.sections?.taken?.points).forEach(note);
   for (const l of list(res?.primary?.legs)) {
     note(l?.start);
@@ -2856,6 +2861,8 @@ const STYLE = `
 [data-module="fuel"] .fu-ralts .f-item.fu-ralt{align-items:start}
 [data-module="fuel"] .fu-ralt>.fu-rmarks,[data-module="fuel"] .fu-ralt>.fu-rhead{grid-column:1}
 [data-module="fuel"] .fu-ralt>.fu-ract{grid-column:2;grid-row:1;align-self:center}
+/* SOG-0545 : la ligne qu'« Auto » garde — la pastille « Auto » au-dessus de « Choisir » */
+[data-module="fuel"] .fu-ralt>.fu-rgest{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 [data-module="fuel"] .fu-ralt.fu-raltmark>.fu-ract{grid-row:1 / span 2}
 [data-module="fuel"] .fu-ralt>.fu-rfigs,[data-module="fuel"] .fu-ralt>.fu-rrest{grid-column:1 / -1;min-width:0}
 [data-module="fuel"] .fu-rmarks{display:flex;flex-wrap:wrap;gap:6px}
@@ -3738,6 +3745,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="acgo"]')) return acGo();
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
+  if (e.target.closest('[data-do="rreview"]')) return reviewOpen(); // SOG-0545 : « Revoir les propositions »
   if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
   const limits = e.target.closest('details[data-rlimits] > summary');
   if (limits) radListFill(limits.parentElement); // SOG-0401 : le détail du RAD, écrit à l'ouverture du pli
@@ -4717,7 +4725,10 @@ async function routeAsk(action) {
 }
 /** La demande elle-même (routeAsk), mesurée : appui (t0), départ de la demande au lanceur (t1), réponse (t2), liste dessinée (t3). */
 async function routeAskRun(s, act, r, o, box, retry) {
-  autoStop(); // SOG-0529 (Sécurisation) : le geste de l'utilisateur passe avant la recherche d'« Auto » (la place unique du lanceur)
+  // SOG-0529 (Sécurisation) : le geste de l'utilisateur passe avant la recherche d'« Auto » en cours (la place unique du lanceur) ;
+  // SOG-0545 : une réponse déjà là reste (elle fait la liste des routes par niveau)
+  if (S.autoLv?.busy) autoStop();
+  S.rkeep = null; // SOG-0545 : un nouveau calcul, plus de « Revoir les propositions »
   await altsMoreStop(); // SOG-0296 : une nouvelle demande arrête la recherche des variantes de la précédente
   if (!(await RE.answers(S.ctx.launcher))) {
     if (!gone(s) && box) box.innerHTML = `<p class="f-warn" data-rnolauncher>${esc(tt(TX.rNoLauncher))} ${retry}</p>`;
@@ -4786,8 +4797,20 @@ async function routeAskRun(s, act, r, o, box, retry) {
     base: await baseStamp()
   };
   if (gone(s) || !S.body) return;
+  // SOG-0545 (l'ergonome) : en « Auto », la route de chaque niveau jugé (cinq au plus) remplace les variantes, « Calculé à » prend
+  // l'heure de cette réponse ; pas de recherche de variantes, pas de réponse gardée sur l'appareil (le schéma 1 du document)
+  const lvl = autoList(n);
+  if (lvl) Object.assign(S.ralts, {
+    list: lvl.list,
+    answer: null,
+    computed_at: lvl.at || S.ralts.computed_at,
+    cache: null,
+    more: '',
+    mode: 'levels',
+    kept: lvl.kept
+  });
   routeAltsDraw();
-  altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
+  altsPublish('compute', S.ralts.list); // pour la Carte (INTEGRATION § 3 bis)
   // SOG-0517 : un vol sans niveau prend celui du calcul — écrit dans le vol (page 1), le devis, le profil et le plan de vol le portent, et
   // dit. Refus de recette (l'utilisateur : « j'ai vidé le niveau de vol. j'ai calculé. … le niveau de vol n'est pas renseigné dans la
   // page 1 ») : c'est le niveau ENVOYÉ (celui de la fiche, routeFl), sinon celui que le moteur a pris (« default » : FL180) ; la seconde
@@ -6131,7 +6154,9 @@ function routeAltsDraw() {
     A = S.ralts;
   if (!box || !A) return;
   if (A.taken !== undefined && !A.list?.length) { // SOG-0224 : un itinéraire pris, les autres disparus ; une ligne le dit
-    box.innerHTML = `<p class="f-muted" data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</p>`;
+    // SOG-0545 : « Revoir les propositions » rouvre la même liste, tant que le vol n'a pas changé
+    const back = S.rkeep && S.rkeep.sig === tripKey() ? `<button type="button" class="fu-linkbtn" data-do="rreview">${esc(tt(TX.rReview))}</button>` : '';
+    box.innerHTML = `<p class="f-row fu-rage f-muted"><span data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</span>${back}</p>`;
     return;
   }
   // SOG-0372 (b) : des propositions par des routes NAT d'un autre jour retirées : dit, avec « Recalculer »
@@ -6153,7 +6178,8 @@ function routeAltsDraw() {
     flOf = a => a.fl === null ? '' : L?.basis === 'default' && !flightLevel && a.fl === L.fl ? tt(TX.rFlDefault, {
       fl: flTxt3(a.fl)
     }) : `FL${flTxt3(a.fl)}`;
-  const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
+  // SOG-0545 : une ligne de niveau d'« Auto » n'a pas de nom (route/levels n'en donne pas) : son FL et sa route écrite la disent
+  const name = (a, i) => a.name || (a.role === 'level' ? '' : a.proposal ? tt(TX.rProposal, {
     n: A.list.slice(0, i + 1).filter(x => x.proposal).length
   }) : a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
@@ -6173,6 +6199,15 @@ function routeAltsDraw() {
   // les nombres et les mentions, posés plus bas quand la liste des routes est connue (fig, marks)
   let fig = new Map(),
     marks = new Map();
+  // le geste d'une ligne (SOG-0545, l'ergonome) : « choisie » sans bouton sur la ligne prise (la liste revue) ; en « Auto », la ligne
+  // qu'« Auto » garde : la pastille « Auto » et « Choisir », tant que sa route n'est pas dans le champ Route ; sinon « Choisir »
+  const gest = (a, i) => {
+    if (i === A.chosen) return `<span class="f-badge fu-ract" data-kind="ok" data-chosen>${esc(tt(TX.rTaken))}</span>`;
+    if (!a.route) return '';
+    const btn = cls => `<button type="button"${cls} data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>`;
+    if (!(A.mode === 'levels' && i === A.kept && S.flight?.level?.auto)) return btn(' class="fu-ract"');
+    return `<span class="fu-ract fu-rgest"><span class="f-badge" data-kind="accent" data-autokept>${esc(tt(TX.levelAuto))}</span>${sameRoute(a.route, S.flight?.route?.text) ? '' : btn('')}</span>`;
+  };
   const unit = S.C?.sheet?.unit || 'kg',
     row = (a, i) => {
       const g = a.proposal ? null : fig.get(i),
@@ -6186,7 +6221,7 @@ function routeAltsDraw() {
         muted = [g || a.distanceNm === null ? '' : distTxt(a.distanceNm), a.verdict || a.faulty || RE.faultLines(a).length || a
           .incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''
         ].filter(Boolean).join(' · ');
-      return `<div class="f-item fu-ralt${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}${chips ? ' fu-raltmark' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}>${chips ? `<span class="fu-rmarks" data-marks>${chips}</span>` : ''}<span class="fu-rhead">${fl ? `<b data-altfl>${esc(fl)}</b> · ` : ''}<b data-altname>${esc(nm)}</b>${(a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''}${muted ? ` <span class="f-muted">${esc(muted)}</span>` : ''}${a.faulty ? ` <b class="f-err" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${i === A.chosen ? `<span class="f-badge fu-ract" data-kind="ok" data-chosen>${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" class="fu-ract" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}${g ? `<span class="fu-rfigs" data-figs><span data-fignm>${esc(distTxt(g.nm))}</span><span${m.fast ? ' class="fu-rhi"' : ''} data-figmin>${esc(spanTxt(g.min, durTxt))}</span><span${m.eco ? ' class="fu-rhi"' : ''} data-figtrip>${esc(spanTxt(g.trip, v => fuelTxt(v, unit).replace(/ (kg|lb)$/, '')) + ' ' + fuelUnitOf(unit))}</span></span>` : ''}<span class="fu-rrest">${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span></div>`;
+      return `<div class="f-item fu-ralt${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}${chips ? ' fu-raltmark' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}>${chips ? `<span class="fu-rmarks" data-marks>${chips}</span>` : ''}<span class="fu-rhead">${fl ? `<b data-altfl>${esc(fl)}</b>${nm ? ' · ' : ''}` : ''}<b data-altname>${esc(nm)}</b>${a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''}${a.connector === 'direct' ? ` <span class="f-warn" data-direct>${esc(tt(TX.rDirect))}</span>` : ''}${muted ? ` <span class="f-muted">${esc(muted)}</span>` : ''}${a.faulty ? ` <b class="f-err" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${gest(a, i)}${g ? `<span class="fu-rfigs" data-figs><span data-fignm>${esc(distTxt(g.nm))}</span><span${m.fast ? ' class="fu-rhi"' : ''} data-figmin>${esc(spanTxt(g.min, durTxt))}</span><span${m.eco ? ' class="fu-rhi"' : ''} data-figtrip>${esc(spanTxt(g.trip, v => fuelTxt(v, unit).replace(/ (kg|lb)$/, '')) + ' ' + fuelUnitOf(unit))}</span></span>` : ''}<span class="fu-rrest">${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span></div>`;
     };
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
@@ -6200,7 +6235,8 @@ function routeAltsDraw() {
   const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
     // la route calculée par le moteur (la tête) reste en tête quand son verdict est le meilleur de la liste (SOG-0296 : les variantes
     // s'ajoutent sous elle, la liste ne saute pas) ; sinon l'ordre de l'ergonome : la choisie, puis par verdict, puis par carburant
-    lead = routes.length && routes.every(([b]) => tier(routes[0][0]) <= tier(b)) ? routes[0][1] : -1,
+    // SOG-0545 : en « Auto », la ligne qu'« Auto » garde
+    lead = A.mode === 'levels' ? A.kept : routes.length && routes.every(([b]) => tier(routes[0][0]) <= tier(b)) ? routes[0][1] : -1,
     shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || (j === lead) - (i === lead) || tier(a) - tier(b) ||
       figCmp(fig.get(i)?.trip, fig.get(j)?.trip) || i - j),
     cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
@@ -6607,7 +6643,8 @@ function mapAltOfDoc(a, i) {
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
 function routeTake(i) {
-  const a = S.ralts?.list?.[i],
+  const R0 = S.ralts,
+    a = S.ralts?.list?.[i],
     ta = S.body?.querySelector('[data-k="rtext"]');
   if (!a?.route || !ta) return;
   // SOG-0400 (cause prouvée par V3 Frame : un choix fait pendant la recherche des variantes relançait un calcul) : un itinéraire pris
@@ -6644,6 +6681,13 @@ function routeTake(i) {
     star: a.star.id
   });
   S.rcheck = null;
+  // SOG-0545 : la liste gardée en mémoire pour « Revoir les propositions », avec la clé du vol (sans route ni niveau : ceux que le choix
+  // vient d'écrire) ; un vol changé ensuite retire le lien
+  S.rkeep = R0?.list?.length ? {
+    R: R0,
+    i,
+    sig: tripKey()
+  } : null;
   // SOG-0224 (l'utilisateur : « faire disparaitre les alternatives ») : la route est prise, les autres partent tout de suite, ici
   // (une ligne dit ce qui a été pris) et sur la Carte (alternatives [] publiées : couche et mini-légende vidées), sans changer d'écran
   S.ralts = {
@@ -6663,6 +6707,67 @@ function routeTake(i) {
     'warn'); // SOG-0161 : la confirmation redit le partage ; SOG-0532 (3) : une route non vérifiable n'est jamais « contrôlé » en vert
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
   altsClear(true); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis), même pour une liste venue du document (SOG-0224)
+  // SOG-0545 (l'ergonome) : en « Auto », « Choisir » fixe le niveau de la ligne et retire « Auto », la ligne gardée comprise
+  if (R0?.mode === 'levels' && flOk(a.fl)) setLevel(a.fl * 100);
+}
+/** SOG-0545 : la clé du vol pour « Revoir les propositions » — la demande de « Calculer » sans le niveau, les passages imposés ni les
+ *  vitesses (le choix vient de les écrire), et l'aéronef. */
+function tripKey() {
+  const {
+    fl,
+    via,
+    speed_kt,
+    climb_fpm,
+    descent_fpm,
+    terminal_speed_kt,
+    ...rest
+  } = routeArgs('compute');
+  return JSON.stringify([argsKey(rest), acKey()]);
+}
+/** SOG-0545 (le relais) : « Revoir les propositions » — la même liste, sans appel au moteur, « choisie » sur la ligne prise ; un vol
+ *  changé depuis : rien (le lien part). */
+function reviewOpen() {
+  const K = S?.rkeep;
+  if (!K || K.sig !== tripKey()) return reviewSync();
+  S.ralts = {
+    ...K.R,
+    chosen: K.i
+  };
+  routeAltsDraw();
+  altsPublish('compute', S.ralts.list);
+}
+/** SOG-0545 : le vol a changé depuis le choix — plus de « Revoir les propositions ». */
+function reviewSync() {
+  if (!S?.rkeep || S.rkeep.sig === tripKey()) return;
+  S.rkeep = null;
+  S.body?.querySelector('[data-routealts] [data-do="rreview"]')?.remove();
+}
+/** SOG-0545 (l'ergonome) : en « Auto », la liste des routes par niveau — la ligne de chaque niveau qui a une route (route/levels, la
+ *  réponse de la recherche d'« Auto »), cinq au plus : la ligne gardée, puis par verdict, puis par carburant d'étape ; la route de tête
+ *  du calcul remplace la ligne de son niveau quand c'est la même (ses plis). null hors « Auto » ou sans réponse. */
+function autoList(n) {
+  const L = S.autoLv;
+  if (!S.flight?.level?.auto || !L || L.busy || !L.res?.ok) return null;
+  const head = n?.plans?.[0],
+    rows = L.res.levels.filter(x => x.ok && x.route).map(x => {
+      const p = RE.levelPlan(x);
+      return head && !head.proposal && head.route === p.route && (head.fl === x.fl || head.fl === null) ? {
+        ...head,
+        fl: x.fl,
+        connector: p.connector
+      } : p;
+    });
+  if (!rows.length) return null;
+  const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
+    fuel = a => routeFigures(a.points, a.distanceNm, a.fl)?.trip ?? null,
+    kept = L.pickFl,
+    list = rows.map(a => [a, fuel(a)]).sort(([a, x], [b, y]) => (b.fl === kept) - (a.fl === kept) || tier(a) - tier(b) || figCmp(x, y) ||
+      a.fl - b.fl).slice(0, 5).map(([a]) => a);
+  return {
+    list,
+    at: L.at,
+    kept: list.findIndex(a => a.fl === kept)
+  };
 }
 /** Un niveau de vol en centaines de pieds, entier, de FL010 à FL660 (une entrée de data/ : jamais pris sans cette borne). */
 const flOk = v => Number.isInteger(v) && v >= 10 && v <= 660;
@@ -6685,14 +6790,14 @@ function verdictWord(a) {
   // SOG-0545 (l'ergonome, maquette v2) : « conforme » en un mot sur la route ; son sens et « Seul Eurocontrol valide un plan. » une fois,
   // sous « Calculé à … » (rConformLine)
   if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(TX.rConformShort))}</span>`;
-  if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable))}</b>`;
+  if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable, a.uCount))}</b>`;
   return '';
 }
 /** SOG-0532 (l'ergonome) : le titre « Non vérifiable : N point(s) » — UN compte, celui des lignes du groupe, quelle que soit leur nature
  *  (une ligne d'État ou de cycle périmé est un point) ; une liste vide : un point (un verdict sans raison donnée). */
-function unverifTitle(list) {
+function unverifTitle(list, n = 0) {
   return tt(RR.ROWS.groupUnverifiable, {
-    n: list.length || 1
+    n: n || list.length || 1 // SOG-0545 : une ligne de route/levels donne son compte (unverifiable_count), pas sa liste
   });
 }
 /** SOG-0532 (3) : les deux groupes, montrés s'ils ont des lignes — « Règles connues enfreintes », « Non vérifiable : N point(s) » ;
@@ -6887,9 +6992,11 @@ function autoJudge(cands, blind = cands[0]) {
       signal: ctrl.signal
     }).then(raw => {
       if (gone(s) || s.autoLv?.key !== key) return;
+      xpNoteAnswer(raw); // SOG-0545 : un point placé d'après X-Plane sert au calcul, jamais écrit
       s.autoLv = {
         key,
         busy: false,
+        at: new Date().toISOString(), // SOG-0545 : « Calculé à » de la liste par niveau
         res: RE.levelsRead(raw) || {
           ok: false,
           reason: 'failed'
@@ -6909,7 +7016,17 @@ function autoJudge(cands, blind = cands[0]) {
   const by = new Map(L.res.levels.map(x => [x.fl, x])),
     valid = cands.filter(c => by.get(flOf(c))?.valid && by.get(flOf(c)).verdict !== 'violates'),
     conf = new Set(L.res.conformingTried || []),
-    pref = list => list.find(c => by.get(flOf(c)).connector !== 'direct') || list[0] || null,
+    // SOG-0545 (l'ergonome, critère a) : le DERNIER critère est le carburant d'étape chiffré de la route du niveau (ses points, à son
+    // niveau) ; sans points (une réponse plus ancienne), l'ordre des préférences
+    fuelOf = c => {
+      const x = by.get(flOf(c));
+      return x?.points?.length >= 2 && x.distanceNm > 0 ? routeFigures(x.points, x.distanceNm, x.fl)?.trip ?? null : null;
+    },
+    byFuel = list => list.map((c, k) => [c, k, fuelOf(c)]).sort((p, q) => figCmp(p[2], q[2]) || p[1] - q[1]).map(([c]) => c),
+    pref = list => {
+      const l = byFuel(list);
+      return l.find(c => by.get(flOf(c)).connector !== 'direct') || l[0] || null;
+    },
     within = list => pref(list.filter(c => conf.has(flOf(c)))) || pref(list),
     pick = within(valid.filter(c => by.get(flOf(c)).verdict !== 'unverifiable')) || within(valid.filter(c => by.get(flOf(c))
       .verdict === 'unverifiable')),
@@ -6917,6 +7034,7 @@ function autoJudge(cands, blind = cands[0]) {
       n: L.res.levels.length,
       m: cands.length
     }) : '';
+  L.pickFl = pick ? flOf(pick) : null; // SOG-0545 : la ligne qu'« Auto » garde dans la liste par niveau
   if (!pick) {
     const fls = cands.map(flOf),
       first = cands.map(c => by.get(flOf(c))).find(Boolean);

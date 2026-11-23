@@ -2541,3 +2541,19 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `stale_cycle` carries `deposited` for zone `be`). With a readable `deposited` (AAAA-MM-JJ, year 2000-2100, a real day) the reason
   reads the ergonomist's words « Routes belges d’un cycle passé (déposées le {date}). », the date through `dayOf` like the other dates of
   the reasons; without it, or unreadable, the generic `stale_cycle` sentence is unchanged (never the raw value). Case F306, red before.
+- **23 Nov 2026 — « Auto »: the route of each level judged replaces the variants** (SOG-0545, « Auto » part; the ergonomist's
+  rules of 21 Nov, mock-up v2 #auto; AeroDB route/levels `points`, `unverifiable_count`, `violations_count`). With the level on
+  « Auto » and the answer of route/levels there, « Calculer A → B » shows one line per level that has a route, five at most: the line
+  « Auto » keeps first, then by verdict, then by trip fuel; « Calculé à » is the time of that answer; no search of variants and no
+  answer kept on the device for it (the document of the Map is written in schema 1). Each line is priced by the quote on ITS points
+  at ITS level (`routeFigures`); its verdict says the count of route/levels; it has no name (route/levels gives none: the level and
+  the route written say the line — never « Variante N »); « hors règle semi-circulaire » and « raccord direct » are said on the line
+  (the reason a better line is not kept). The route computed at the level kept takes the place of its line when it is the same
+  route (its folds). **Auto's choice**: the last criterion is now the trip fuel of each level's route (after verdict, semicircular
+  rule and published connector); without points (an older answer) the order of the preferences, as before. **The gestures**: the
+  line kept shows the pill « Auto » and « Choisir » (never « choisie » with a button); « Choisir » on any line writes its route,
+  sets its level and removes « Auto »; the list gives way to « Itinéraire choisi », which offers « Revoir les propositions » (both
+  modes): the same list from memory, no call to the engine, « choisie » on the line taken; the link goes when the flight changes
+  (the request of « Calculer » without level, imposed points and speeds, plus the aircraft). A search of « Auto » already answered
+  is no longer cancelled by « Calculer » (only one still running). Points placed from X-Plane in route/levels are noted like those
+  of route/compute: priced, never written. Case F307, red before.

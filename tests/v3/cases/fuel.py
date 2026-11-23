@@ -10371,18 +10371,20 @@ def f306(c):
 
 # SOG-0545 « Auto »: the words of the list, written in clear (never read from the texts of the module)
 _RA_WORDS = {
-    'fr': {'unv': 'Non vérifiable : 2 points', 'chosen': 'choisie', 'review': 'Revoir les propositions'},
-    'en': {'unv': 'Cannot be verified: 2 points', 'chosen': 'chosen', 'review': 'Review the proposals'},
-    'de': {'unv': 'Nicht prüfbar: 2 Punkte', 'chosen': 'gewählt', 'review': 'Vorschläge erneut ansehen'},
-    'es': {'unv': 'No verificable: 2 puntos', 'chosen': 'elegida', 'review': 'Volver a ver las propuestas'},
+    'fr': {'unv': 'Non vérifiable : 2 points', 'chosen': 'choisie', 'review': 'Revoir les propositions', 'direct': 'raccord direct'},
+    'en': {'unv': 'Cannot be verified: 2 points', 'chosen': 'chosen', 'review': 'Review the proposals', 'direct': 'direct connector'},
+    'de': {'unv': 'Nicht prüfbar: 2 Punkte', 'chosen': 'gewählt', 'review': 'Vorschläge erneut ansehen', 'direct': 'Direktanschluss'},
+    'es': {'unv': 'No verificable: 2 puntos', 'chosen': 'elegida', 'review': 'Volver a ver las propuestas', 'direct': 'enlace directo'},
 }
 
 
 def _ra_answer(lv):
     """route/levels for F307: every level has a route of its own (an invented point XQA<fl> between LFRS and XQNE, a distance that grows
     with the level), the first odd level « non vérifiable » (2 points), the second odd one in breach (1 rule), the others « conforme »;
-    the point XQX<fl> of each route comes from the X-Plane of the workstation (local: 'xplane')."""
-    res = _ne_answer(lv)
+    the last even level arrives by a direct connector; the point XQX<fl> of each route comes from the X-Plane of the workstation
+    (local: 'xplane')."""
+    even = [x for x in lv if x // 10 % 2 == 0]
+    res = _ne_answer(lv, connector=lambda x: 'direct' if even[-1:] == [x] else 'procedure')
     odd = [x for x in lv if x // 10 % 2 == 1]
     for x in res['levels']:
         f = x['fl']
@@ -10427,6 +10429,8 @@ def f307(c):
     rows = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ fl: e.querySelector('[data-altfl]')?.textContent || '',
         route: e.querySelector('.fu-raltroute')?.textContent || '', verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '',
         vtext: e.querySelector('[data-verdict]')?.textContent || '', auto: e.querySelector('[data-autokept]')?.textContent || '',
+        name: e.querySelector('[data-altname]')?.textContent || '', direct: e.querySelector('[data-direct]')?.textContent || '',
+        folds: e.querySelectorAll('details').length,
         take: !!e.querySelector('[data-do=rtake]'), chosen: !!e.querySelector('[data-chosen]'), figs: !!e.querySelector('[data-figs]') }}))""")
     fls = [int(re.sub(r'\D', '', r['fl']) or 0) for r in rows]
     c.ok(set(fls) <= set(lv) and len(set(fls)) == len(fls), [fls, lv], 'one line per level judged, never a variant of route/compute')
@@ -10436,6 +10440,11 @@ def f307(c):
     c.ok(all(not r['auto'] for r in rows[1:]) and all(r['take'] and not r['chosen'] for r in rows), rows, 'the pill on that line only; '
          '« Choisir » on every line, « choisie » on none before a choice')
     c.ok(all(r['figs'] for r in rows), rows, 'each line with its distance, time and trip fuel')
+    # route/levels gives no name: the level and the route written say the line — never an invented « Variante N », never an empty fold
+    c.ok(all(not r['name'] and not r['folds'] for r in rows), rows, 'no invented name, no empty fold')
+    dl = [r for r in rows if int(re.sub(r'\D', '', r['fl']) or 0) == [x for x in lv if x // 10 % 2 == 0][-1]]
+    if dl:
+        c.eq(norm(dl[0]['direct']), norm(W['direct']), 'a direct connector said on its line', what='direct')
     tier = {'conform': 0, 'unverifiable': 1, 'violates': 2}
     tiers = [tier.get(r['verdict'], 1) for r in rows[1:]]
     c.eq(tiers, sorted(tiers), 'after the line kept: « conforme », then « non vérifiable », then « enfreint »', what='order')
