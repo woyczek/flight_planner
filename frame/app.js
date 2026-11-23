@@ -659,14 +659,7 @@
         'Ohne Speichern verlassen? Die Änderungen gehen verloren.', '¿Salir sin guardar? Los cambios se perderán.'
       ],
       ok: ['Quitter sans enregistrer', 'Leave without saving', 'Ohne Speichern verlassen', 'Salir sin guardar'],
-      stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse'],
-      // SOG-0486 : le module garde un BROUILLON sur l'appareil (ctx.unsaved(fn, { kept: true }), ctx.askLeave({ kept: true })) : rien n'est perdu, la question le dit
-      keptAsk: ['Quitter ? Vos changements restent en brouillon sur cet appareil.',
-        'Leave? Your changes stay as a draft on this device.',
-        'Verlassen? Ihre Änderungen bleiben als Entwurf auf diesem Gerät.',
-        '¿Salir? Sus cambios se conservan como borrador en este dispositivo.'
-      ],
-      keptOk: ['Quitter', 'Leave', 'Verlassen', 'Salir']
+      stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse']
     },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
     jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste contient déjà.',
@@ -3981,7 +3974,7 @@
   // démonter (menu, « Retour », précédent du navigateur : tout passe par route()), et le navigateur avertit à la fermeture de l'onglet.
   // Rien n'est demandé quand rien n'a changé ; la déclaration tombe avec le démontage du module (life), il n'y a rien à désarmer.
   const unsavedBy =
-    new Map(); // clé du module (id, ou id#pane) → { fn: () => booléen, kept: le module garde un brouillon : rien n'est perdu }
+    new Map(); // clé du module (id, ou id#pane) → { fn: () => booléen }
   let leaving = false, // la question de sortie est posée : une autre adresse arrivée entre-temps n'en pose pas une seconde
     cameFrom = null, // l'entrée de l'historique que le dernier changement d'adresse a quittée (API Navigation, quand le navigateur l'a)
     restoring =
@@ -4002,8 +3995,8 @@
    *  traversant l'historique jusqu'à l'entrée quittée (API Navigation : « précédent » refusé rend l'entrée, la pile ne change pas, un second
    *  « précédent » repose la question) ; sans cette API, par replaceState (l'entrée où le navigateur était allé est réécrite). */
   /** La question de sortie, les mots du cadre (SOG-0458) : vraie si l'utilisateur quitte ; aussi donnée aux modules (ctx.askLeave) pour que leur propre « Annuler » dise les mêmes. */
-  const leaveQuestion = (o = {}) => ask(t(o?.kept === true ? T.leave.keptAsk : T.leave.ask), {
-    ok: t(o?.kept === true ? T.leave.keptOk : T.leave.ok),
+  const leaveQuestion = () => ask(t(T.leave.ask), {
+    ok: t(T.leave.ok),
     cancel: t(T.leave.stay)
   });
   async function askLeave() {
@@ -4011,10 +4004,7 @@
     leaving = true;
     let yes = false;
     try {
-      yes = await leaveQuestion({
-        kept: unsavedEntry()?.kept ===
-          true // un module qui garde un brouillon : « vos changements restent en brouillon » (SOG-0486)
-      });
+      yes = await leaveQuestion();
     } finally {
       leaving = false;
     }
@@ -4703,13 +4693,11 @@
       // SOG-0458 : ctx.unsaved(() => booléen) — la fonction que le cadre interroge au moment de quitter (changement d'écran, « Retour », fermeture de l'onglet) ;
       // vrai : le cadre pose sa question avant de démonter le module et le navigateur avertit à la fermeture de l'onglet ; ctx.unsaved(null) retire la déclaration
       askLeave: leaveQuestion, // la question de sortie du cadre (vraie : on quitte), pour le « Annuler » d'un module : les mêmes mots que le menu
-      unsaved: (fn, o) => {
+      unsaved: fn => {
         const key = entry.id + (inPane ? '#pane' : '');
         if (typeof fn !== 'function') return void unsavedBy.delete(key);
         const mine = {
-          fn,
-          kept: o?.kept ===
-            true // SOG-0486 : le module garde un brouillon sur l'appareil : la question du cadre le dit (rien n'est perdu)
+          fn
         };
         unsavedBy.set(key, mine);
         life?.addEventListener('abort', () => unsavedBy.get(key) === mine && unsavedBy.delete(key), {

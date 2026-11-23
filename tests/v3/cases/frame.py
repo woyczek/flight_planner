@@ -5667,9 +5667,9 @@ def a326(c):
     _bench(c, 'frame/lib/test/clipboard.html', '__clipboardBench')
 
 
-@case('A313', 'A module that keeps a DRAFT says so to the frame (SOG-0486): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) ask « Quitter ? Vos changements restent en brouillon sur cet appareil. » — « Quitter » / « Rester », in four languages — instead of « les changements seront perdus »', 'A',
+@case('A313', 'The option `kept` of the question before leaving is gone (SOG-0486 withdrawn, 23 Nov 2026): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) are ignored — the frame asks the ordinary question « Quitter sans enregistrer ? Les changements seront perdus. » (« Quitter sans enregistrer » / « Rester », four languages), never « vos changements restent en brouillon »', 'A',
       designs=('standard',), screens=False, night=False, langs4=True,
-      rule='SOG-0486 (« Création de missions »: the workshop now keeps a draft on the device at every change, so leaving loses nothing and « Les changements seront perdus » is false there): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) give the frame\'s question another text, in four languages: « Quitter ? Vos changements restent en brouillon sur cet appareil. », buttons « Quitter » and « Rester »; without the option the question and its words are those of A264 / A301')
+      rule='the workshop of the missions no longer says the draft is kept in the question of the frame (decision of the ergonomist, 19 Nov: the draft is written at once, the question is asked only when it cannot be); the `kept` option and its two sentences are removed from the frame: a module that still passes it gets the ordinary words, a draft is never promised by the frame')
 def a313(c):
     full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
     c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
@@ -5681,19 +5681,19 @@ def a313(c):
     c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
     c.open('hello', wait=False)
     c.until("!!document.querySelector('[data-module=hello]') && !!window.__ctx", timeout=20000, what='the module mounted')
-    want = {'fr': ('Quitter ? Vos changements restent en brouillon sur cet appareil.', 'Quitter', 'Rester'), 'en': ('Leave? Your changes stay as a draft on this device.', 'Leave', 'Stay'),
-            'de': ('Verlassen? Ihre Änderungen bleiben als Entwurf auf diesem Gerät.', 'Verlassen', 'Bleiben'), 'es': ('¿Salir? Sus cambios se conservan como borrador en este dispositivo.', 'Salir', 'Quedarse')}[c.lang]
+    want = {'fr': ('Quitter sans enregistrer ? Les changements seront perdus.', 'Quitter sans enregistrer', 'Rester'), 'en': ('Leave without saving? The changes will be lost.', 'Leave without saving', 'Stay'),
+            'de': ('Ohne Speichern verlassen? Die Änderungen gehen verloren.', 'Ohne Speichern verlassen', 'Bleiben'), 'es': ('¿Salir sin guardar? Los cambios se perderán.', 'Salir sin guardar', 'Quedarse')}[c.lang]
     c.js("() => { location.hash = '#fuel' }")
     c.until("!!document.querySelector('.f-modal [data-no]')", timeout=20000, what='the frame asks before leaving')
     got = c.js("() => [(document.querySelector('.f-modal p') || {}).textContent, document.querySelector('.f-modal [data-ok]').textContent, document.querySelector('.f-modal [data-no]').textContent]")
-    c.eq([norm(x) for x in got], [norm(x) for x in want], 'the question of a module that keeps a draft: nothing is lost, the words say so', what='kept via unsaved')
+    c.eq([norm(x) for x in got], [norm(x) for x in want], 'a module that still passes { kept: true } to ctx.unsaved gets the ordinary question: the frame promises no draft', what='kept ignored by unsaved')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal') && location.hash === '#hello'", timeout=10000, what='stayed')
     # the module\'s own « Annuler »: ctx.askLeave({ kept: true }) gives the same words
     c.js("() => { window.__q = window.__ctx.askLeave({ kept: true }) }")
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='askLeave asks')
     got = c.js("() => [(document.querySelector('.f-modal p') || {}).textContent, document.querySelector('.f-modal [data-ok]').textContent]")
-    c.eq([norm(x) for x in got], [norm(want[0]), norm(want[1])], 'ctx.askLeave({ kept: true }): the same words', what='kept via askLeave')
+    c.eq([norm(x) for x in got], [norm(want[0]), norm(want[1])], 'ctx.askLeave({ kept: true }): the same ordinary words', what='kept ignored by askLeave')
     c.tap('.f-modal [data-ok]')
     c.eq(c.js("() => window.__q"), True, 'askLeave gives true when the user leaves', what='true')
     # without the option the words are the ordinary ones (A264 / A301)
