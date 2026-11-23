@@ -596,7 +596,8 @@ _LAYOUT_JS = """() => { const ctx = document.createElement('canvas').getContext(
   return L && { segs: L.segs.map(s => [!!s.dash, !!s.arc]), names: L.names.map(n => n.text), dots: L.dots.length,
                 legs: L.segs.map(s => ({ dash: !!s.dash, arc: !!s.arc, o: s.o, a: s.a.src ? s.a.src.id || '' : '·', b: s.b.src ? s.b.src.id || '' : '·',
                   ph: s.b.src ? s.b.src.phase || '' : '' })),
-                kinds: L.segs.map(s => s.o), hues: L.segs.map(s => window.__pr.colOf(s.o)),
+                kinds: L.segs.map(s => s.o), hues: L.segs.map(s => s.col), dotted: L.segs.map(s => !!s.dot),
+                route: window.MapsRender.palette(!!window.__mp.S.theme.dark).route, muted: window.__mp.S.theme.muted,
                 legend: ['sid', 'star', 'app', 'missed'].map(o => window.__pr.colOf(o)),
                 lines: window.__pr.routeLines().map(r => r.length) } }"""
 
@@ -825,18 +826,30 @@ def d41(c):
     c.ok(d and d['dash'], f'{d}', 'the STAR joins the route by a dashed direct from NEPIX (no common point)')
     main = [g for g in legs if g['o'] in ('star', 'app') and g['a'] != 'NEPIX' and g['ph'] != 'missed']
     c.ok(main and not any(g['dash'] for g in main), f'{main}', 'the STAR and the approach themselves are solid')
-    mi = [g for g in legs if g['o'] == 'missed']
-    c.ok(mi and all(g['dash'] for g in mi), f'{mi}', 'the missed approach is dashed')
+    # SOG-0569: the STAR ends at XT02, the approach starts at XF01 (no common point): NO segment from one to the other
+    c.ok(by('XT01', 'XT02') and by('XF01', 'RW31') and not by('XT02', 'XF01'), f'{[(g["a"], g["b"]) for g in legs if g["o"] in ("star", "app")]}',
+         'no segment between the end of the STAR (A) and the start of the approach (B): a break, not an invented line')
+    # SOG-0569: the missed approach comes with the zoom, as the fixes' names do (procCons): far, it is NOT drawn (the path still holds it)
+    far = c.js("""() => { const ctx = document.createElement('canvas').getContext('2d'),
+      L = window.__pr.layout(ctx, (lat, lon) => ({ x: (lon + 2) * 100, y: (48 - lat) * 100 }), 100); return { segs: L.segs.filter(s => s.o === 'missed').length, names: L.names.map(n => n.text) } }""")
+    c.eq(far['segs'], 0, 'far (100 px per degree, below the threshold of the fixes\' names): no missed approach drawn', what='missed approach, far')
+    det = lay
+    mi = [g for g in det['legs'] if g['o'] == 'missed']
+    c.ok(mi and all(g['dash'] for g in mi), f'{mi}', 'close (the zoom of the fixes\' names) the missed approach is drawn, dashed')
+    c.ok(all(d for k, d in zip(det['kinds'], det['dotted']) if k == 'missed') and not any(d for k, d in zip(det['kinds'], det['dotted']) if k != 'missed'),
+         str(det['dotted']), 'dotted (grey) for the missed approach only')
+    c.eq(sorted({h for k, h in zip(det['kinds'], det['hues']) if k == 'missed'}), [det['muted']], 'the missed approach is grey (the muted token)', what='missed colour')
+    c.ok(row(c, 'procMissed') in det['names'], str(det['names']), 'and its name is « approche interrompue » (the one word, in the language of the page)')
     c.eq(lay['lines'], [2], 'the route draws only LUGEN → NEPIX (the SID and the STAR draw the rest of the way)', what='route polylines')
-    # user 29 Oct: "des couleurs de contraste autres que violet (vert ? orange ? bleu ?)"
+    # SOG-0569 (the validated mock-up): the procedures OF THE FLIGHT take the colour of the route; the three procedure tokens stay for the alternates
     sid, star, app, missed = lay['legend']
-    c.eq(len({sid, star, app}), 3, 'SID, STAR and approach each have their own hue', what=f'hues {lay["legend"]}')
-    c.eq(missed, app, 'the missed approach takes the approach hue', what='missed hue')
-    c.ok(not ({sid, star, app} & {'#7c3aed', '#8e24aa', '#6a3fa0', '#1f6fb2'}), f'{lay["legend"]}', 'none is the violet of the route and of the high airways, nor the blue of the low ones')
-    c.eq([h for k, h in zip(lay['kinds'], lay['hues']) if k == 'sid'][:1], [sid], 'a SID leg is drawn in the SID hue', what='SID leg hue')
+    c.eq(sorted({h for k, h in zip(lay['kinds'], lay['hues']) if k != 'missed'}), [lay['route']], 'every leg of the flight\'s SID, STAR and approach is drawn in the colour of the route (the missed approach is grey)', what='flight hues')
+    c.eq(len({sid, star, app}), 3, 'the SID, STAR and approach tokens (--sog-map-*) are still three hues: the alternates keep them (alts.js)', what=f'tokens {lay["legend"]}')
+    c.eq(missed, app, 'the missed approach token is the approach one (alternates)', what='missed token')
+    c.ok(not ({sid, star, app} & {'#7c3aed', '#8e24aa', '#6a3fa0', '#1f6fb2'}), f'{lay["legend"]}', 'none of the three tokens is the violet of the route and of the high airways, nor the blue of the low ones')
     # une procédure périmée : le seul symbole « ⌛ », jamais le mot (29 Oct)
     # named as the choose pane and Fuel name them, no kind before (the hue is the family; sixth reading, gap 5)
-    want = ['XX1A ⌛', f'XX2B · {row(c, "procX")}', f'I31 · {row(c, "procX")}']
+    want = ['XX1A ⌛', f'XX2B · {row(c, "procX")}', f'I31 · {row(c, "procX")}', row(c, 'procMissed')]   # the missed approach\'s name comes last, close
     c.eq(lay['names'], want, 'labelled by their names (displayName), with the state of the source', what='procedure labels')
     c.until("(window.__mpTexts || []).some(t => /^XX1A/.test(t))", timeout=6000, what='the SID label drawn')
     c.wait(400)
@@ -10282,12 +10295,17 @@ def d312(c):
         return {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now())}
 
     def write(g):
-        base = datetime.datetime.strptime(g['updated_at'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+        base = datetime.datetime.fromisoformat(g['updated_at'].replace('Z', '+00:00'))   # the page may have written it with milliseconds (toISOString)
         g['updated_at'] = iso(max(now(), base) + datetime.timedelta(seconds=1))   # strictly newer: the Map rereads only a newer record
         c.js("""(a) => window.FrameData.adapter({ id: 't-follow', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
 
     def shown(on, what):
         c.until(f"{'' if on else '!'}window.__t.shown(document.querySelector('{FOLLOW}'))", timeout=12000, what=what)
+
+    def calm():
+        # the notification « no actual position » is raised once at mount, before the position the case writes: closed before a capture that shows one
+        c.js("() => { document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click()); return true }")
+        c.wait(300)
 
     def pressed():
         return c.js(f"document.querySelector('{FOLLOW}')?.getAttribute('aria-pressed')")
@@ -10314,13 +10332,15 @@ def d312(c):
     c.eq(pressed(), 'false', 'the button arrives not pressed', what='aria-pressed on arrival')
     c.eq(cam(), before, 'the map does not move by itself when the position appears', what='camera on arrival')
     if c.width in (390, 1280):
+        calm()
         c.shot(f'D312_{c.width}_position.png')
     # the pilot presses it, then moves the map by hand: the follow is released, the button comes back not pressed
     c.tap(FOLLOW)
     c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'true'", what='Follow becomes pressed when tapped')
     if c.width in (390, 1280):
+        calm()
         c.shot(f'D312_{c.width}_pressed.png')
-    c.js("() => { window.__mp.S.map.jumpTo({ center: [-1.4, 46.0] }) }")
+    c.js("() => { const S = window.__mp.S; S.mapEl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); S.map.jumpTo({ center: [-1.4, 46.0] }) }")
     c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'false'", what='a hand on the map releases the follow')
     c.ok(c.shown(FOLLOW), 'Follow gone after a move of the map', 'the button stays, not pressed')
     # pressed, then the position is lost and comes back with nothing moved: the button returns PRESSED
@@ -10342,7 +10362,7 @@ def d312(c):
     g['progress'].pop('actual', None)
     write(g)
     shown(False, 'Follow goes again')
-    c.js("() => { window.__mp.S.map.jumpTo({ center: [-0.2, 46.9] }) }")
+    c.js("() => { const S = window.__mp.S; S.mapEl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); S.map.jumpTo({ center: [-0.2, 46.9] }) }")
     c.wait(300)
     g = c.doc(PATH)
     g['progress']['actual'] = pos()
@@ -10360,6 +10380,9 @@ def d312(c):
         c.until("!!(window.__mp.S && window.__mp.S.map)", timeout=12000, what='the map is there')
         c.until("!!document.querySelector('.mp-notes [data-live]')", timeout=12000, what='the progress line asks for the position')
         c.ok(not c.shown(FOLLOW), 'Follow shown without a position', 'no Follow without a position, whatever the address says')
+        # a probe (diagnostic of the replay of 24 Nov): every move of the map that starts, with the state of the follow and where it comes from
+        c.js("""() => { const S = window.__mp.S; window.__ms = []; S.map.on('movestart', e => window.__ms.push({ self: S.selfMove, follow: S.follow, ask: S.followAsk, ev: e.originalEvent && e.originalEvent.type,
+          st: (new Error().stack || '').split('\\n').slice(2, 8).map(x => x.trim().slice(0, 100)) })); return true }""")
 
     for url, want, why in (('maps?follow=1', 'true', 'follow=1: the follow is set when the position appears (pressed at once)'),
                            ('maps?follow=true', 'false', 'only the value 1 counts: another value is ignored'),
@@ -10371,14 +10394,25 @@ def d312(c):
         write(g)
         shown(True, f'{url}: Follow arrives with the position')
         c.wait(800)
-        c.eq(pressed(), want, why, what=f'aria-pressed for {url}')
+        c.eq(pressed(), want, why, what=f'aria-pressed for {url} ' + str(c.js("() => { const S = window.__mp.S; return { ask: S.followAsk, follow: S.follow, pos: S.hasPos, back: S.followBack, moved: S.userMoved, self: S.selfMove, ms: window.__ms } }")))
         if url == 'maps?follow=1':
             c.ok('follow' not in c.js('location.hash'), c.js('location.hash'), 'the parameter is CONSUMED: the address no longer carries it (a reload or a return does not set it again)')
             if c.width in (390, 1280):
+                calm()
                 c.shot(f'D312_{c.width}_asked.png')
+    # the double view: #maps?with=fuel&follow=1 — the Map is the main module there and its address is its own: follow is consumed, with stays
+    open_asked('maps?with=fuel&follow=1')
+    g = c.doc(PATH)
+    g['progress']['actual'] = pos()
+    write(g)
+    shown(True, 'double view: Follow arrives with the position')
+    c.wait(800)
+    c.eq(pressed(), 'true', 'in the double view too, follow=1 sets the follow once the position is known', what='aria-pressed in the double view')
+    c.eq([('follow' in c.js('location.hash')), ('with=fuel' in c.js('location.hash'))], [False, True],
+         'the parameter is consumed (a reload does not set it again) and the frame\'s own key `with` is kept', what='address of the double view')
     # the pilot moves the map before the position appears: the request is dropped, the map does not jump
     open_asked('maps?follow=1')
-    c.js("() => { window.__mp.S.map.jumpTo({ center: [-1.4, 46.0] }) }")
+    c.js("() => { const S = window.__mp.S; S.mapEl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); S.map.jumpTo({ center: [-1.4, 46.0] }) }")
     c.wait(300)
     g = c.doc(PATH)
     g['progress']['actual'] = pos()
@@ -10386,3 +10420,92 @@ def d312(c):
     shown(True, 'Follow arrives after a move of the map')
     c.wait(800)
     c.eq(pressed(), 'false', 'the pilot moved the map before the position: the request of the address is dropped, not pressed', what='aria-pressed after a move')
+
+
+@case('D313', 'The drawing of the flight\'s procedures (SOG-0569): the route\'s colour and thickness, no line from A to B, the sentence, an unordered record as points alone', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0569 (the validated mock-up of 23 Nov): the procedures of the flight are drawn like the route (its colour, its thickness); the end of an arrival (A) and the start of an approach that is not attached (B) are joined by NO segment and the notes say « Aucune liaison publiée entre A (fin de la STAR) et B (début de l\'approche). » (the sentence of Carburant, word for word); a record whose point order is unknown (rec.unordered) is drawn as its points alone (hollow rings with their code), no line; the eight comparison tokens --sog-proc-1…8 are the hues of the choose mode')
+def d313(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 100, y: -la * 100 }), cv = document.createElement('canvas').getContext('2d'), out = {};
+      const star = { id: 'LFML.STAR.XX2B', name: 'XX2B', status: 'ok', points: [{ id: 'XT01', lat: 44.0, lon: 4.0 }, { id: 'XT02', lat: 43.8, lon: 4.5 }] },
+        appr = (first, extra = {}) => ({ id: 'LFML.APP.ILS31', name: 'ILS 31', status: 'ok', points: [{ id: first[0], lat: first[1], lon: first[2] }, { id: 'XF02', lat: 43.5, lon: 5.1 }], ...extra });
+      const run = (apr, path, procs) => { S.route.path = path; S.procs = procs;
+        S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { star: star.id, app: apr.id } } } };
+        const L = P.layout(cv, toC, 300), has = (a, b) => L.segs.some(s => s.a.src?.id === a && s.b.src?.id === b);
+        return { ab: has('XT02', 'XF01'), star: has('XT01', 'XT02'), app: has('XF01', 'XF02'), cols: [...new Set(L.segs.map(s => s.col))], route: window.MapsRender.palette(!!S.theme.dark).route,
+          gap: P.procGap(S.route.path) && [P.procGap(S.route.path).a.id, P.procGap(S.route.path).b.id], dots: L.dots.length, labels: L.pts.length } };
+      const base = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, { origin: 'star', id: 'XT01', lat: 44.0, lon: 4.0 }, { origin: 'star', id: 'XT02', lat: 43.8, lon: 4.5 }];
+      const tail = [{ origin: 'route', id: 'LFML', lat: 43.43, lon: 5.2 }];
+      // A (XT02) and B (XF01) apart: a break
+      const apart = appr(['XF01', 43.6, 4.9]);
+      out.apart = run(apart, [...base, { origin: 'app', id: 'XF01', lat: 43.6, lon: 4.9 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail], { star, app: apart });
+      // the approach starts at the end of the STAR: flight_path.js melts them into one point, nothing to say, the legs go through
+      const joined = appr(['XT02', 43.8, 4.5]);
+      out.joined = run(joined, [...base.slice(0, 2), { origin: 'app', id: 'XT02', lat: 43.8, lon: 4.5 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail], { star, app: joined });
+      // a record of unknown order: its points alone
+      const unord = appr(['XF01', 43.6, 4.9], { unordered: true });
+      out.unord = run(unord, [...base, { origin: 'app', id: 'XF01', lat: 43.6, lon: 4.9 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail], { star, app: unord });
+      // the tokens
+      out.hues = window.MapsRender.palette(false).procHues; out.night = window.MapsRender.palette(true).procHues;
+      out.tok = [1, 2, 3, 4, 5, 6, 7, 8].map(i => getComputedStyle(document.documentElement).getPropertyValue('--sog-proc-' + i).trim());
+      // the note (the arrival's name, the two points)
+      S.route.path = [...base, { origin: 'app', id: 'XF01', lat: 43.6, lon: 4.9 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail]; S.procs = { star, app: apart };
+      const box = document.createElement('div'); box.innerHTML = P.gapNote(); out.note = box.textContent.trim();
+      return out }""")
+    ap, jo, un = r['apart'], r['joined'], r['unord']
+    c.ok(ap['star'] and ap['app'] and not ap['ab'], str(ap), 'the legs of the STAR and of the approach are drawn, and NO segment from A (XT02) to B (XF01)')
+    c.eq(ap['gap'], ['XT02', 'XF01'], 'the gap is A = the last point of the STAR, B = the first of the approach', what='procGap')
+    c.eq(ap['cols'], [ap['route']], 'the legs of the flight are drawn in the colour of the route', what='colours')
+    c.ok(jo['gap'] is None and jo['star'], str(jo), 'an approach that starts at the end of the STAR: nothing to say, the STAR\'s legs stay')
+    want = norm(row(c, 'procNoLink').replace('{fin}', 'XT02').replace('{arrivee}', 'XX2B').replace('{debut}', 'XF01'))
+    c.eq(norm(r['note']), want, 'the note says the fact in the sentence of Carburant, with the two points and the name of the arrival', what='gap sentence')
+    c.ok(not un['app'] and not un['ab'] and un['dots'] >= 2 and un['labels'] >= 2, str(un), 'a record of unknown order: its points are drawn (rings with their code), no leg between them')
+    c.eq(len(set(r['hues'])), 8, 'eight comparison hues by day', what='day hues')
+    c.eq(len(set(r['night'])), 8, 'eight comparison hues by night', what='night hues')
+    c.eq(r['tok'], r['hues'] if not c.js("() => !!window.__mp.S.theme.dark") else r['night'], 'the hues are the eight tokens --sog-proc-1 … 8 of the theme in force', what='tokens')
+
+
+@case('D314', 'SOG-0569 (captures): the flight\'s procedures in the route\'s colour, the break A–B and its sentence, a record of unknown order as hollow points, the choose mode with the eight named hues', 'D',
+      tags=('maps',), screens=True, designs=('standard',), langs4=False,
+      rule='SOG-0569, to be read against the mock-up v2 (modules/maps/maquette/procedures_*.png): D314_<w>_vol (the SID, STAR and approach look like the route, the transition dashed), D314_<w>_ecart (no line from the end of the STAR to the start of the approach, the sentence in the notes), D314_<w>_ordre (a record of unknown order: its points alone, hollow, with their code), D314_<w>_choix (the choose mode, its eight hues = the tokens --sog-proc-1…8)')
+def d314(c):
+    arrival = 'maps?view=3.5,43.3,5.5,44.1'
+    _open_proc(c, _proc_flight(), view=arrival)
+    redraw = "async () => { const D = await import('/modules/maps/draw.js'); D.schedule(); return true }"
+    c.js(redraw)
+    c.wait(900)
+    # the fixture's STAR ends at XT02 and its approach starts at XF01, with no common point: a break, and the sentence in the notes
+    c.until("!!document.querySelector('.mp-notes [data-proc-gap]')", timeout=10000, what='the sentence of the missing link in the notes')
+    if c.width in (390, 1280):
+        c.shot(f'D314_{c.width}_ecart.png')
+    # the same state with the sheet open on its notes: the sentence of the missing link, to be read in French
+    c.js("() => { window.__mp.S.sh.set('expanded', true); return true }")
+    c.wait(500)
+    c.js("() => { document.querySelector('.mp-notes [data-proc-gap]').scrollIntoView({ block: 'center' }); return true }")
+    c.wait(300)
+    if c.width in (390, 1280):
+        c.shot(f'D314_{c.width}_ecart_phrase.png')
+    c.js("() => { window.__mp.S.sh.set('default', true); return true }")
+    c.wait(300)
+    # the STAR ends where the approach starts: nothing to say, the legs run through (the flight\'s procedures, as the route)
+    c.js("""() => { const S = window.__mp.S, st = S.procs.star, a = (S.route.path.find(p => p.origin === 'app') || {});
+      S.procs = { ...S.procs, star: { ...st, points: [...st.points, { id: a.id, lat: a.lat, lon: a.lon }] } } }""")
+    c.js(redraw)
+    c.js("async () => { const V = await import('/modules/maps/screen.js'); V.writeNotes(); return true }")
+    c.wait(700)
+    c.ok(not c.js("() => !!document.querySelector('.mp-notes [data-proc-gap]')"), 'the sentence is still there', 'no sentence when the approach starts where the STAR ends')
+    if c.width in (390, 1280):
+        c.shot(f'D314_{c.width}_vol.png')
+    # a record of unknown order: its points alone
+    c.js("""() => { const S = window.__mp.S; S.procs = { ...S.procs, app: { ...S.procs.app, unordered: true } } }""")
+    c.js(redraw)
+    c.wait(700)
+    if c.width in (390, 1280):
+        c.shot(f'D314_{c.width}_ordre.png')
+    # the choose mode, its eight hues
+    _ch_open(c, {}, side='arr', icao='LFML')
+    c.wait(600)
+    if c.width in (390, 1280):
+        c.shot(f'D314_{c.width}_choix.png')

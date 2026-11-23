@@ -12,7 +12,8 @@ import {
   need,
   onMission,
   level,
-  setHtml
+  setHtml,
+  MODULE_MOVE
 } from './state.js';
 import {
   svg
@@ -69,6 +70,9 @@ import {
 import {
   viewSave
 } from './view_state.js';
+import {
+  gapNote
+} from './procs.js';
 
 /** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale (chemin pointé), fichier]. */
 const LIBS = [
@@ -290,7 +294,7 @@ export function noteOnce(k, text, kind = 'warn') {
 /** Notes de la feuille (SPEC § 7.6) : la progression du vol, puis les manques, puis l'information ; écrites seulement si elles
  *  changent. */
 export function writeNotes() {
-  const html = [S.progHtml, S.warnHtml, S.softHtml].filter(Boolean).join('');
+  const html = [S.progHtml, S.warnHtml, S.softHtml, gapNote()].filter(Boolean).join('');
   setHtml(S.notesEl, html);
 }
 /** Ligne de l'état de la base aéronautique « en lecture » (les zones lues entre parenthèses). */
@@ -454,7 +458,7 @@ export function frameFlight(animate) {
     S.map.jumpTo({
       center: c.center,
       zoom: c.zoom
-    });
+    }, MODULE_MOVE);
     S.selfMove = false;
     return;
   }
@@ -512,7 +516,7 @@ function fitMap(animate) {
   ], {
     padding: fitPad(),
     animate
-  });
+  }, MODULE_MOVE);
   if (!animate) S.selfMove = false;
 }
 /** Fond MapLibre sur l'emprise du vol (lib/map_base.js) ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte
@@ -595,14 +599,21 @@ export async function startTiles() {
         linger('map');
         previewAd(null);
       });
-      map.on('movestart', () => {
+      // un geste du pilote SUR la carte (le doigt, la souris, la molette, le clavier : pas un mouvement du module, ni la remise à taille de la
+      // carte) : le suivi ne reprendra pas seul au retour de la position, ni sur la demande de l'adresse (la carte ne bouge jamais seule sous son doigt)
+      for (const ev of ['pointerdown', 'touchstart', 'wheel', 'keydown']) S.mapEl.addEventListener(ev, () => {
+        if (!S) return;
+        S.followBack = false;
+        S.followAsk = false;
+      }, {
+        passive: true
+      });
+      map.on('movestart', e => {
         hideTips();
-        // un mouvement qui n'est ni un cadrage du module ni la remise à taille : celui de l'utilisateur, sa caméra est gardée
-        if (S && !S.selfMove && !isOwnResize(map)) {
+        // un mouvement qui n'est ni un cadrage du module (MODULE_MOVE) ni la remise à taille : celui de l'utilisateur, sa caméra est gardée
+        if (S && !e.module && !S.selfMove && !isOwnResize(map)) {
           S.userMoved = true;
           S.gesture = true;
-          S.followBack = false; // un geste du pilote : le suivi ne reprendra pas seul au retour de la position
-          S.followAsk = false; // ni sur la demande de l'adresse : la carte ne bouge jamais seule sous son doigt
           if (S.follow) setFollow(false);
         }
       });

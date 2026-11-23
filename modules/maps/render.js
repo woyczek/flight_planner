@@ -65,7 +65,9 @@
         map: {
           sid: v('--sog-map-sid', ''),
           star: v('--sog-map-star', ''),
-          app: v('--sog-map-app', '')
+          app: v('--sog-map-app', ''),
+          // les huit teintes des procédures à comparer (SOG-0569), huit jetons nommés du thème en cours
+          proc: [1, 2, 3, 4, 5, 6, 7, 8].map(i => v(`--sog-proc-${i}`, ''))
         }
       },
       rgb = rgbOf(t.bg) || [255, 255, 255];
@@ -283,7 +285,7 @@
       app: '#0a86c4',
       // mode « choisir sur la carte » (V3 § 10.23) : huit teintes, reprises en cycle, une par procédure (ligne de la liste, cartouche et
       // tracé la même) ; toutes lisibles sur le fond du jour sans que le dessin ait à les foncer
-      procHues: ['#c2185b', '#1565c0', '#d84315', '#00796b', '#827717', '#2e7d32', '#7b1fa2', '#795548'],
+      procHues: ['#1565c0', '#d84315', '#2e7d32', '#00838f', '#8f6a00', '#6d4c41', '#4f7500', '#c62828'],
       actual: '#c62828',
       wind: '#1a237e',
       missionSearch: ['#d0106a', 'rgba(208,16,106,.10)'],
@@ -297,7 +299,7 @@
     direct: '#ffd54f',
     star: '#ff9a4d',
     app: '#5cc4f5',
-    procHues: ['#f48fb1', '#64b5f6', '#ff8a65', '#4db6ac', '#dce775', '#81c784', '#ce93d8', '#bcaaa4'],
+    procHues: ['#64b5f6', '#ffa65c', '#7bd88a', '#4dd0e1', '#f0c24b', '#c8a38f', '#b4e04a', '#ff7b72'],
     wind: '#b3c7ff'
   };
   Object.freeze(PALETTE.day);
@@ -317,7 +319,8 @@
       ...base,
       sid: ok(m.sid) ? m.sid : base.sid,
       star: ok(m.star) ? m.star : base.star,
-      app: ok(m.app) ? m.app : base.app
+      app: ok(m.app) ? m.app : base.app,
+      procHues: m.proc?.length === 8 && m.proc.every(ok) ? m.proc : base.procHues
     });
   };
 

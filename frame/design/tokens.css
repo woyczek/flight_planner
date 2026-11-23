@@ -25,7 +25,18 @@
      mêmes dans tous les designs */
   --sog-map-sid: #1b8a3a;
   --sog-map-star: #d95500;
-  --sog-map-app: #0a86c4
+  --sog-map-app: #0a86c4;
+  /* les huit teintes des procédures à comparer (SOG-0569, maquette v2 validée) : bleu, orange, vert, sarcelle, or, brun, olive, rouge (le
+     rouge en dernier : il dit déjà les zones interdites) ; contraste sur le fond de carte ≥ 3,4 : 1 de jour, ≥ 5,8 : 1 de nuit ; le numéro dans
+     la pastille fait l'identité, jamais la teinte seule */
+  --sog-proc-1: #1565c0;
+  --sog-proc-2: #d84315;
+  --sog-proc-3: #2e7d32;
+  --sog-proc-4: #00838f;
+  --sog-proc-5: #8f6a00;
+  --sog-proc-6: #6d4c41;
+  --sog-proc-7: #4f7500;
+  --sog-proc-8: #c62828
 }
 
 /* ---- leurs valeurs de nuit, à l'écran seulement (forcée, ou demandée par le système sauf data-tone="day") */
@@ -33,14 +44,30 @@
   [data-tone="night"] {
     --sog-map-sid: #5cd27a;
     --sog-map-star: #ff9a4d;
-    --sog-map-app: #5cc4f5
+    --sog-map-app: #5cc4f5;
+    --sog-proc-1: #64b5f6;
+    --sog-proc-2: #ffa65c;
+    --sog-proc-3: #7bd88a;
+    --sog-proc-4: #4dd0e1;
+    --sog-proc-5: #f0c24b;
+    --sog-proc-6: #c8a38f;
+    --sog-proc-7: #b4e04a;
+    --sog-proc-8: #ff7b72
   }
 }
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-tone="day"]) {
     --sog-map-sid: #5cd27a;
     --sog-map-star: #ff9a4d;
-    --sog-map-app: #5cc4f5
+    --sog-map-app: #5cc4f5;
+    --sog-proc-1: #64b5f6;
+    --sog-proc-2: #ffa65c;
+    --sog-proc-3: #7bd88a;
+    --sog-proc-4: #4dd0e1;
+    --sog-proc-5: #f0c24b;
+    --sog-proc-6: #c8a38f;
+    --sog-proc-7: #b4e04a;
+    --sog-proc-8: #ff7b72
   }
 }
 

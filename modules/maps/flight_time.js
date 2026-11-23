@@ -11,7 +11,8 @@ import {
   level,
   nmTxt,
   flownPts,
-  keep
+  keep,
+  MODULE_MOVE
 } from './state.js';
 import {
   nearLon,
@@ -186,6 +187,9 @@ export function progressUpdate() {
   if (!st.actual && !isArrived(f)) noteOnce('gps', tt(TX.progNoPos)); // une fois par montage ; la ligne et son bouton restent
   followRender(); // le suivi du vol (SOG-0304) : la ligne et ce qu'elle dit se refont avec la progression
   if (S.follow && st.actual && S.map) {
+    // un mouvement en cours (le cadrage d'ouverture, un défilement de la feuille) est arrêté AVANT : son « moveend » ne doit pas vider selfMove
+    // entre ce point et le « movestart » de l'easeTo, sinon le propre mouvement du suivi passerait pour celui du pilote et relâcherait le suivi
+    S.map.stop();
     S.selfMove = true;
     S.map.once('moveend', () => {
       if (S) S.selfMove = false;
@@ -193,7 +197,7 @@ export function progressUpdate() {
     S.map.easeTo({
       center: [nearLon(st.actual.lon, S.map.getCenter().lng), st.actual.lat], // la copie du monde de la vue
       duration: 400
-    });
+    }, MODULE_MOVE);
   }
 }
 /** Projection d'une position sur la route : { nm (depuis le départ), xtk (écart latéral, NM, positif à droite), total }. Mesurée sur la loxodromie de chaque tronçon (le

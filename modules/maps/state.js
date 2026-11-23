@@ -178,3 +178,10 @@ export function need(name) {
     throw e;
   });
 }
+
+/** Les données d'événement que porte un mouvement de caméra DU MODULE (cadrage, suivi) : MapLibre les remet à ses « movestart » et « moveend »,
+ *  qui ne passent alors jamais pour un geste du pilote, quel que soit l'ordre de deux mouvements du module (un cadrage animé qui en arrête un
+ *  autre fait tirer le « moveend » du premier avant le « movestart » du second : le drapeau selfMove serait vidé entre les deux). */
+export const MODULE_MOVE = Object.freeze({
+  module: true
+});

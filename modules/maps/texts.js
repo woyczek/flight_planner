@@ -517,6 +517,15 @@ export const TX = {
   ],
   // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
   procDoubt: ['à vérifier', 'to be checked', 'zu prüfen', 'por verificar'],
+  // l'approche interrompue (le seul mot, partout : SOG-0569), écrite sur son tracé quand la carte est assez proche (avec les noms de points)
+  procMissed: ['approche interrompue', 'missed approach', 'Fehlanflug', 'aproximación frustrada'],
+  // la phrase du trou entre la fin d'une arrivée et le début d'une approche non rattachée ; la même, mot pour mot, que celle de Carburant et
+  // du choix de l'approche (SOG-0569, arbitrage du 23 nov.) : {fin} et {debut} les points, {arrivee} le nom de l'arrivée
+  procNoLink: ['Aucune liaison publiée entre {fin} (fin de {arrivee}) et {debut} (début de l\'approche).',
+    'No published link between {fin} (end of {arrivee}) and {debut} (start of the approach).',
+    'Keine veröffentlichte Verbindung zwischen {fin} (Ende von {arrivee}) und {debut} (Beginn des Anflugs).',
+    'Ningún enlace publicado entre {fin} (final de {arrivee}) y {debut} (inicio de la aproximación).'
+  ],
   procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
   procLnmWarn: ['Une procédure de la liste est lue de Little Navmap : source locale, usage personnel.',
     'A procedure of the list is read from Little Navmap: local source, personal use.',

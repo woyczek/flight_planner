@@ -13,7 +13,8 @@ import {
   FT_NM
 } from './state.js';
 import {
-  nearLon
+  nearLon,
+  gcNm
 } from '../../frame/lib/geo.js';
 import {
   proceduresOf
@@ -35,6 +36,12 @@ import {
 /** Teintes des procédures, de jour puis de nuit (utilisateur, 29 octobre : « des couleurs de contraste autres que violet (vert ?
  *  orange ? bleu ?) ») : SID en vert, STAR en orange, approche (et son approche interrompue) en bleu ciel — ni le violet de la
  *  route et des voies hautes, ni le bleu foncé des voies basses. */
+/** La teinte des procédures DU VOL (SOG-0569, contrat de la maquette v2) : celle de la route, tracée de la même épaisseur ; seuls les
+ *  dégagements (alts.js) gardent les jetons --sog-map-* de colOf. */
+export const flightCol = () => MapsRender.palette(!!S?.theme?.dark).route;
+/** L'épaisseur de la route (render_route.js : le liseré 7,5 puis le trait 4, à l'échelle 1) : les procédures du vol la prennent. */
+const ROUTE_HALO = 7.5,
+  ROUTE_W = 4;
 export const colOf = origin => {
   const P = MapsRender.palette(!!S?.theme?.dark),
     k = origin === 'missed' ? 'app' : origin;
@@ -128,6 +135,38 @@ const ahead = (a, crs, nm) => ({
   lat: a.lat + nm / 60 * Math.cos(crs * RAD),
   lon: a.lon + nm / 60 * Math.sin(crs * RAD) / Math.max(.2, Math.cos(a.lat * RAD))
 });
+/** Le trou entre la fin d'une arrivée (A) et le début d'une approche qui n'y est pas rattachée (B) : { a, b } deux points du chemin, ou
+ *  null. Rattachée (un point commun), l'approche reprend la fin de la STAR et rien ne les sépare (flight_path.js) ; sinon AUCUN
+ *  tronçon n'est dessiné de A à B (une coupure, jamais un trait inventé) et la Carte dit le fait en une phrase (SOG-0569). */
+export function procGap(path) {
+  const at = p => p && p.lat !== null && p.lon !== null && Number.isFinite(+p.lat) && Number.isFinite(+p.lon),
+    pts = (path || []).filter(at),
+    P = S.procs || {},
+    // la fin de la STAR telle que l'enregistrement la donne : quand l'approche commence par ce point, flight_path.js les fond en un seul
+    // (de l'origine de l'approche), et rien ne les sépare ; même règle que le sien (même nom à moins de 3 NM, sinon à moins de 0,3 NM)
+    e = [...((P.star || P.starTrans)?.points || [])].reverse().find(at),
+    same = (x, y) => !!x && !!y && gcNm(x, y) < (x.id && y.id && String(x.id).toUpperCase() === String(y.id).toUpperCase() ? 3 : .3);
+  for (let i = 1; i < pts.length; i++)
+    if (pts[i - 1].origin === 'star' && pts[i].origin === 'app' && !same(e, pts[i])) return {
+      a: pts[i - 1],
+      b: pts[i]
+    };
+  return null;
+}
+/** La note du trou A – B (SOG-0569) : « Aucune liaison publiée entre A (fin de la STAR) et B (début de l'approche). », en HTML pour les
+ *  notes de la feuille ; vide sans trou. La phrase est celle de Carburant et du choix de l'approche (TX.procNoLink, mot pour mot). */
+export function gapNote() {
+  const g = procGap(S.route?.path);
+  if (!g?.a.id || !g.b.id) return '';
+  const f = proceduresOf(S.route.flight),
+    P = S.procs || {},
+    arrivee = nameOf(P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans');
+  return `<p class="f-muted" data-proc-gap>${esc(tt(TX.procNoLink, {
+    fin: g.a.id,
+    arrivee,
+    debut: g.b.id
+  }))}</p>`;
+}
 /** Polylignes de la route : les suites de points « route » du chemin (le tronçon que la SID ou la STAR dessine n'est pas
  *  redessiné par la route) ; null sans procédure dessinée, la route est alors tout le chemin (SPEC § 5). Longitudes continues. */
 export function routeLines() {
@@ -198,6 +237,13 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     last = routePts.at(-1),
     isEnd = p => p === path[0] || p === last,
     isRwy = p => !!p.rwy || /^RW\d{2}[LRC]?$/.test(p.id || ''),
+    detail =
+    near, // le détail vient avec le zoom, sans bouton : l'approche interrompue paraît avec les noms de points (seuil procCons), grise, en pointillé, son nom dessus
+    gap = procGap(path),
+    unord = new Set(['sid', 'star', 'app'].filter(o => (S.procs || {})[o]
+      ?.unordered)), // ordre des points inconnu : points seuls, sans tracé
+    flight = flightCol(),
+    missCol = S.theme.muted || flight,
     segs = [],
     dots = [],
     pts = [];
@@ -207,6 +253,8 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     anchor = null;
   for (const p of path) {
     const missed = p.origin === 'missed';
+    if (missed && !detail)
+      continue; // de loin, l'approche interrompue n'est pas dessinée (SOG-0569) ; de près, avec les noms de points, elle l'est
     if (missed && !inMissed) {
       // l'approche interrompue part de l'extrémité de l'approche (le seuil), non du terrain d'arrivée qui ferme le chemin
       inMissed = true;
@@ -223,10 +271,12 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
             lon: e.lon,
             src: p
           };
-        segs.push({
+        if (!unord.has(p.origin)) segs.push({
           a: cur,
           b,
           dash: missed,
+          dot: missed,
+          col: missed ? missCol : flight,
           o: p.origin
         });
         cur = b;
@@ -245,11 +295,15 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
         skip = (p.origin === 'route' && from?.origin === 'route') || (isRwy(p) && from?.origin === 'route' && isEnd(from)) ||
         (p.origin === 'route' && isEnd(p) && from && isRwy(from)),
         viaTrans = p.origin === 'route' && p.join === 'common' && p.joinPhase === 'trans';
-      if (!skip) {
+      // A – B : la fin de l'arrivée et le début d'une approche non rattachée ne sont reliés par AUCUN tronçon ; une procédure sans ordre n'en a pas
+      const cut = (gap && p === gap.b) || unord.has(p.origin) || unord.has(from?.origin);
+      if (!skip && !cut) {
         const seg = {
           a: cur,
           b: q,
           dash: vec || direct || viaTrans || p.phase === 'trans' || missed,
+          dot: missed,
+          col: missed ? missCol : flight,
           o: p.origin !== 'route' ? p.origin : from?.origin
         };
         if (p.arc?.centre && num(p.arc.centre.lat) && num(p.arc.centre.lon)) {
@@ -271,6 +325,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       continue;
     }
     if (p.origin !== 'route' && !isRwy(p)) dots.push(q);
+    if (unord.has(p.origin)) q.unord = true; // son code est toujours écrit
     if (p.origin !== 'route' || p.alt || p.kt) pts.push(q);
   }
   // les noms : « SID ROYAN6P » au point du milieu de la procédure
@@ -283,19 +338,9 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       if (s.o === 'app') s.dash = true;
   }
   roundTurns(segs, toC); // les virages de plus de 45° à rayon constant (SOG-0093)
-  for (const [origin, rec, id, key] of [
-      ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
-      ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
-      ['app', P.app || P.appTrans, f.arr?.app || f.arr?.appTrans, P.app ? null : 'appTrans']
-    ]) {
-    if (!showNames) break;
-    // ses points hors seuil, sinon (une approche donnée par son entrée : un ou deux points) tous ses points placés ; le nom au
-    // milieu de son plus long tronçon, jamais perdu
-    let own = path.filter(p => p.origin === origin && pos(p) && !isRwy(p));
-    if (own.length < 2) own = path.filter(p => (p.origin === origin || (origin === 'app' && p.origin === 'missed')) && pos(p));
-    if (!own.length) continue;
-    // les places du nom le long de la trace (SPEC § 3, rang procédure) : le milieu du plus long tronçon, puis glissé sur lui et sur
-    // les autres tronçons, du plus long au plus court ; sans place nulle part, le premier (le nom n'est jamais perdu)
+  // les places du nom le long de la trace (SPEC § 3, rang procédure) : le milieu du plus long tronçon, puis glissé sur lui et sur
+  // les autres tronçons, du plus long au plus court ; sans place nulle part, le premier (le nom n'est jamais perdu)
+  const placesOf = own => {
     const legs = [];
     for (let i = 1; i < own.length; i++) {
       const a = at(own[i - 1]),
@@ -315,6 +360,20 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       y: a.y + (b.y - a.y) * t
     })));
     if (!qs.length) qs.push(at(own[0]));
+    return qs;
+  };
+  for (const [origin, rec, id, key] of [
+      ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
+      ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
+      ['app', P.app || P.appTrans, f.arr?.app || f.arr?.appTrans, P.app ? null : 'appTrans']
+    ]) {
+    if (!showNames) break;
+    // ses points hors seuil, sinon (une approche donnée par son entrée : un ou deux points) tous ses points placés ; le nom au
+    // milieu de son plus long tronçon, jamais perdu
+    let own = path.filter(p => p.origin === origin && pos(p) && !isRwy(p));
+    if (own.length < 2) own = path.filter(p => (p.origin === origin || (detail && origin === 'app' && p.origin === 'missed')) && pos(p));
+    if (!own.length) continue;
+    const qs = placesOf(own);
     names.push({
       q: qs[0],
       qs,
@@ -323,8 +382,24 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       origin
     });
   }
+  // l'approche interrompue, de près seulement (avec les noms de points) : son nom est écrit sur son tracé, rien d'autre
+  if (showNames && detail) {
+    const own = path.filter(p => p.origin === 'missed' && pos(p));
+    if (own.length) {
+      const qs = placesOf(own);
+      names.push({
+        q: qs[0],
+        qs,
+        text: tt(TX.procMissed),
+        old: false,
+        origin: 'missed'
+      });
+    }
+  }
   S.lgOutdated = names.some(n => n.old); // la ligne « ⌛ » de la légende
   const L = {
+    flight,
+    missCol,
     segs,
     dots,
     names,
@@ -336,11 +411,25 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     reserve(pl) {
       L.labels.length = 0;
       ctx.save();
+      // les points du vol passent AVANT les noms de procédure (SOG-0569) : un nom qui n'a pas la place n'est pas écrit
+      if (near || pts.some(q => q.unord))
+        for (const q of pts) {
+          const lines = linesOf(q.src, near || q.unord);
+          if (!lines.length) continue;
+          const w = Math.max(...lines.map(l => widthOf(ctx, l))) + 2,
+            r = place(pl, q, w, lines.length * LINE_H, false);
+          if (r) L.labels.push({
+            r,
+            lines,
+            col: q.src?.origin === 'missed' ? missCol : flight
+          });
+        }
       for (const n of names) {
         ctx.font = '700 12px Arial,sans-serif';
         const w = ctx.measureText(n.text).width,
-          r = place(pl, n.qs, w + 2, LINE_H, true); // glissé le long de sa trace, forcé seulement sans aucune place
-        if (!r) continue; // toutes ses places hors de la vue (le débordement du dessin n'a pas d'étiquette) : pas écrit
+          r = place(pl, n.qs, w + 2, LINE_H,
+            false); // glissé le long de sa trace ; SOG-0569 : sans place, le nom n'est pas écrit (il reste dans la liste)
+        if (!r) continue; // aucune place libre, ou toutes hors de la vue : pas écrit
         // « ⌛ » en gris (jeton muted), le nom dans la couleur des procédures
         const tail = n.old ? ` ${OUTDATED}` : '';
         L.labels.push({
@@ -356,21 +445,9 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
             }] : [])]
           }],
           name: true,
-          col: colOf(n.origin)
+          col: n.origin === 'missed' ? missCol : flight
         });
       }
-      if (near)
-        for (const q of pts) {
-          const lines = linesOf(q.src, near);
-          if (!lines.length) continue;
-          const w = Math.max(...lines.map(l => widthOf(ctx, l))) + 2,
-            r = place(pl, q, w, lines.length * LINE_H, false);
-          if (r) L.labels.push({
-            r,
-            lines,
-            col: colOf(q.src?.origin)
-          });
-        }
       ctx.restore();
     }
   };
@@ -474,7 +551,7 @@ export function draw(ctx, L) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   const trace = s => {
-    ctx.setLineDash(s.dash ? [7, 5] : []);
+    ctx.setLineDash(s.dot ? [1, 7] : s.dash ? [7, 5] : []);
     ctx.beginPath();
     ctx.moveTo(s.a.x, s.a.y);
     const c = s.arc?.c;
@@ -496,12 +573,14 @@ export function draw(ctx, L) {
   };
   ctx.strokeStyle = S.theme.bg;
   ctx.globalAlpha = .8;
-  ctx.lineWidth = 6;
-  for (const s of L.segs) trace(s);
-  ctx.globalAlpha = 1;
-  ctx.lineWidth = 3;
   for (const s of L.segs) {
-    ctx.strokeStyle = colOf(s.o);
+    ctx.lineWidth = s.dot ? 5 : ROUTE_HALO; // l'approche interrompue, plus fine : pas la route
+    trace(s);
+  }
+  ctx.globalAlpha = 1;
+  for (const s of L.segs) {
+    ctx.lineWidth = s.dot ? 3 : ROUTE_W; // les procédures du vol : la couleur et l'épaisseur de la route
+    ctx.strokeStyle = s.col;
     trace(s);
   }
   ctx.setLineDash([]);
@@ -511,7 +590,7 @@ export function draw(ctx, L) {
     ctx.fillStyle = S.theme.bg;
     ctx.fill();
     ctx.lineWidth = 1.8;
-    ctx.strokeStyle = colOf(q.src?.origin);
+    ctx.strokeStyle = q.src?.origin === 'missed' ? L.missCol : L.flight;
     ctx.stroke();
   }
   ctx.restore();

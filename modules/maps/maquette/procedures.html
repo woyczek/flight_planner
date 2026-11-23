@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte : les procédures (maquette SOG-0569)</title>
+<link rel="stylesheet" href="../../../frame/design/tokens.css">
+<style>
+/* Maquette SOG-0569 (version 2, après les neuf retouches de l'ergonome) : les principes de dessin des procédures sur la carte. Données INVENTÉES
+   (deux terrains imaginaires, LFXA et LFXB), rien n'est lu ni écrit, aucun code de la carte : le contrat des écrans. Jour / nuit : les jetons du
+   cadre (tokens.css), la nuit suit le système sauf html[data-tone="day"] ; les boutons « Jour / Nuit » de la barre du haut forcent l'un ou l'autre.
+   Les huit teintes sont HUIT JETONS NOMMÉS (--sog-proc-1 … --sog-proc-8), jour et nuit, leur contraste vérifié sur le fond de carte
+   (≥ 3,4 : 1 de jour sur la terre et sur l'eau, ≥ 5,8 : 1 de nuit). */
+:root {
+  --route: #8e24aa;
+  --land: #eef0e6;
+  --water: #d6e6f2;
+  --grid: #00000012;
+  --halo: #fffffff0;
+  --sog-proc-1: #1565c0;
+  --sog-proc-2: #d84315;
+  --sog-proc-3: #2e7d32;
+  --sog-proc-4: #00838f;
+  --sog-proc-5: #8f6a00;
+  --sog-proc-6: #6d4c41;
+  --sog-proc-7: #4f7500;
+  --sog-proc-8: #c62828;
+  --badge-ink: #fff
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-tone="day"]) {
+    --route: #d68cf0;
+    --land: #1f2a2a;
+    --water: #14222f;
+    --grid: #ffffff14;
+    --halo: #101820e6;
+    --sog-proc-1: #64b5f6;
+    --sog-proc-2: #ffa65c;
+    --sog-proc-3: #7bd88a;
+    --sog-proc-4: #4dd0e1;
+    --sog-proc-5: #f0c24b;
+    --sog-proc-6: #c8a38f;
+    --sog-proc-7: #b4e04a;
+    --sog-proc-8: #ff7b72;
+    --badge-ink: #101820
+  }
+}
+[data-tone="night"] {
+  --route: #d68cf0;
+  --land: #1f2a2a;
+  --water: #14222f;
+  --grid: #ffffff14;
+  --halo: #101820e6;
+  --sog-proc-1: #64b5f6;
+  --sog-proc-2: #ffa65c;
+  --sog-proc-3: #7bd88a;
+  --sog-proc-4: #4dd0e1;
+  --sog-proc-5: #f0c24b;
+  --sog-proc-6: #c8a38f;
+  --sog-proc-7: #b4e04a;
+  --sog-proc-8: #ff7b72;
+  --badge-ink: #101820
+}
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  font: 15px/1.4 system-ui, sans-serif
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.top b {
+  font-size: 13px;
+  color: var(--sog-muted);
+  margin-right: 4px
+}
+.top button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 9px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  cursor: pointer;
+  border-radius: 0
+}
+.top button[aria-pressed="true"] {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+.principle {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--sog-muted);
+  border-bottom: 1px solid var(--sog-border)
+}
+.wrap {
+  display: flex;
+  flex-direction: column
+}
+@media (min-width: 1000px) {
+  .wrap {
+    flex-direction: row;
+    align-items: stretch
+  }
+  .panel {
+    width: 340px;
+    flex: none;
+    border-left: 1px solid var(--sog-border)
+  }
+}
+.mapbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--water)
+}
+svg.map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 78vh
+}
+.land {
+  fill: var(--land)
+}
+.gridl {
+  stroke: var(--grid);
+  stroke-width: 1;
+  fill: none
+}
+.rwy {
+  stroke: var(--sog-fg);
+  stroke-width: calc(7px * var(--k, 1));
+  stroke-linecap: butt;
+  opacity: .85
+}
+.rwyin {
+  stroke: var(--land);
+  stroke-width: 1.5
+}
+.ad {
+  font: 700 calc(13px * var(--k, 1)) system-ui, sans-serif;
+  fill: var(--sog-fg);
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 4px;
+  stroke-linejoin: round
+}
+.lab {
+  font: 600 calc(11.5px * var(--k, 1)) system-ui, sans-serif;
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 4px;
+  stroke-linejoin: round
+}
+.fix {
+  fill: var(--halo);
+  stroke-width: 2
+}
+.trace {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round
+}
+.badge circle {
+  stroke: var(--halo);
+  stroke-width: 1.5
+}
+.badge text {
+  font: 700 calc(11px * var(--k, 1)) system-ui, sans-serif;
+  fill: var(--badge-ink);
+  text-anchor: middle;
+  dominant-baseline: central
+}
+/* la notification flottante du cadre, à sa place habituelle (frame.css : .f-notes, .f-note[data-kind="warn"]) : en bas au centre de la fenêtre */
+.f-notes {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 24px));
+  z-index: 20;
+  display: none
+}
+.f-notes[data-on] {
+  display: block
+}
+.f-note {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--sog-radius);
+  background: var(--sog-warn);
+  color: var(--sog-on-status);
+  box-shadow: var(--sog-shadow)
+}
+.f-note span {
+  flex: 1
+}
+.f-note button {
+  min-width: var(--sog-touch);
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer
+}
+.panel {
+  background: var(--sog-surface);
+  padding: 10px 12px 14px
+}
+.panel h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--sog-muted);
+  margin: 10px 0 6px;
+  font-weight: 600
+}
+.panel h2:first-child {
+  margin-top: 0
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border-bottom: 1px solid var(--sog-border);
+  font-size: 14px
+}
+.row input {
+  width: 20px;
+  height: 20px;
+  flex: none
+}
+.row .sw {
+  width: 22px;
+  height: 0;
+  border-top: 4px solid var(--route);
+  flex: none
+}
+.row .nm {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 0
+}
+.row .nm small {
+  display: block;
+  color: var(--sog-muted);
+  font-size: 12px
+}
+.row .n {
+  font-size: 11px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c);
+  color: var(--badge-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none
+}
+.cnt {
+  float: right;
+  font-weight: 400
+}
+</style>
+</head>
+<body>
+<div class="top" role="toolbar" aria-label="Maquette">
+  <b>Maquette SOG-0569</b>
+  <button data-go="vol">Du vol</button>
+  <button data-go="compare">Comparer</button>
+  <button data-go="detail">Approche détaillée</button>
+  <button data-go="huit">Huit au plus</button>
+  <button data-go="ecart">Sans raccord</button>
+  <button data-go="ordre">Ordre inconnu</button>
+  <span style="flex:1"></span>
+  <button data-tone-btn="day">Jour</button>
+  <button data-tone-btn="night">Nuit</button>
+</div>
+<p class="principle" id="principle"></p>
+<div class="wrap">
+  <div class="mapbox" id="mapbox"><svg class="map" id="svg" role="img" aria-label="Carte : procédures"></svg></div>
+  <aside class="panel" id="panel"></aside>
+</div>
+<div class="f-notes" id="notes" role="status"><div class="f-note" data-kind="warn"><span id="noteText"></span><button type="button" aria-label="Fermer" id="noteX">×</button></div></div>
+<script>
+'use strict';
+/* ---------- données inventées (deux terrains imaginaires) ---------- */
+const FLIGHT = {
+  route: [
+    [350, 256],
+    [440, 232],
+    [480, 214]
+  ],
+  sid: {
+    name: 'ALFAX 1A',
+    pts: [
+      [110, 330],
+      [150, 330],
+      [190, 330],
+      [235, 300],
+      [260, 285]
+    ]
+  },
+  sidTrans: {
+    pts: [
+      [260, 285],
+      [300, 272],
+      [350, 256]
+    ],
+    name: 'transition BRAVO'
+  },
+  star: {
+    name: 'RIVET 2A',
+    pts: [
+      [440, 232],
+      [480, 214],
+      [520, 196]
+    ]
+  },
+  app: {
+    name: 'ILS 27',
+    pts: [
+      [520, 196],
+      [585, 192],
+      [640, 190],
+      [668, 190]
+    ]
+  },
+  missed: [
+    [668, 190],
+    [730, 190],
+    [760, 150],
+    [740, 100],
+    [700, 85]
+  ],
+  dep: {
+    id: 'LFXA',
+    name: 'Alpha',
+    up: true,
+    x: 110,
+    y: 330,
+    rwy: [
+      [110, 330],
+      [150, 330]
+    ]
+  },
+  arr: {
+    id: 'LFXB',
+    name: 'Bravo',
+    x: 690,
+    y: 190,
+    rwy: [
+      [668, 190],
+      [706, 190]
+    ]
+  }
+};
+/* les procédures à comparer : le NUMÉRO dans la pastille est leur identité (jamais la teinte seule) */
+const COMP = [{
+  id: 'c1',
+  name: 'ALFAX 2D',
+  kind: 'SID',
+  where: 'LFXA',
+  pts: [
+    [110, 330],
+    [170, 336],
+    [225, 378],
+    [300, 410]
+  ]
+}, {
+  id: 'c2',
+  name: 'NORTH 1B',
+  kind: 'STAR',
+  where: 'LFXB',
+  pts: [
+    [400, 90],
+    [470, 118],
+    [525, 168],
+    [560, 190]
+  ]
+}, {
+  id: 'c3',
+  name: 'RNP Y 27',
+  kind: 'APP',
+  where: 'LFXB',
+  pts: [
+    [505, 268],
+    [560, 236],
+    [605, 204],
+    [668, 190]
+  ]
+}, {
+  id: 'c4',
+  name: 'BRAVO 3A',
+  kind: 'STAR',
+  where: 'LFXB',
+  pts: [
+    [610, 380],
+    [600, 300],
+    [575, 240],
+    [545, 200]
+  ]
+}, {
+  id: 'c5',
+  name: 'ALFAX 4C',
+  kind: 'SID',
+  where: 'LFXA',
+  pts: [
+    [110, 330],
+    [150, 322],
+    [180, 270],
+    [215, 215]
+  ]
+}, {
+  id: 'c6',
+  name: 'LOC 27',
+  kind: 'APP',
+  where: 'LFXB',
+  pts: [
+    [430, 160],
+    [520, 162],
+    [600, 180],
+    [668, 190]
+  ]
+}, {
+  id: 'c7',
+  name: 'VOR Z 09',
+  kind: 'APP',
+  where: 'LFXB',
+  pts: [
+    [790, 250],
+    [740, 230],
+    [706, 190]
+  ]
+}, {
+  id: 'c8',
+  name: 'TANIK 1E',
+  kind: 'STAR',
+  where: 'LFXB',
+  pts: [
+    [330, 400],
+    [400, 330],
+    [455, 275],
+    [500, 232]
+  ]
+}];
+/* une procédure dont on ne sait pas ordonner les points : le même régime (teinte, numéro, case), ses points sans tracé */
+const UNORD = {
+  id: 'u1',
+  name: 'ALFAX 5Z',
+  kind: 'SID',
+  where: 'LFXA',
+  unord: true,
+  pts: [
+    [170, 400],
+    [240, 360],
+    [205, 445],
+    [300, 380]
+  ],
+  codes: ['AX01', 'AX02', 'AX03', 'AX04']
+};
+const TEXT = {
+  nine: 'Huit procédures à comparer au plus : décochez-en une.',
+  unord: 'Ordre des points inconnu : points dessinés sans tracé.',
+  gap: 'Aucune liaison publiée entre TANIK et LUMEN.'
+};
+const SCENES = {
+  vol: {
+    t: 'Les procédures du vol (SID, STAR, approche) sont dessinées comme la route : même couleur, même épaisseur ; la transition est en tirets. Le nom est écrit sur le tracé. L’approche interrompue n’est pas dessinée.',
+    comp: []
+  },
+  compare: {
+    t: 'Trois procédures à comparer, chacune dans sa teinte avec son numéro dans une pastille ; celles du vol restent en couleur de route et ne comptent pas dans les huit.',
+    comp: ['c1', 'c2', 'c3']
+  },
+  detail: {
+    t: 'L’approche ouverte en détail : ses points nommés, et seulement ici l’approche interrompue, en pointillé gris, son nom écrit dessus.',
+    comp: [],
+    detail: true
+  },
+  huit: {
+    t: 'Huit procédures à comparer au plus : la neuvième est refusée par la notification flottante du cadre, à sa place habituelle (le compteur « 8 / 8 » dit déjà l’état).',
+    comp: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'],
+    toast: true
+  },
+  ecart: {
+    t: 'Une STAR qui s’arrête en A et une approche qui commence en B : sur la carte, aucune annotation, les deux points de bout avec leur nom et le vide entre eux. La phrase est dans la liste.',
+    comp: [],
+    gap: true
+  },
+  ordre: {
+    t: 'Une procédure dont on ne sait pas ordonner les points garde le régime commun : sa teinte, son numéro, sa case. Ses points sont des ronds creux de sa teinte avec leur code, le nom seul sur la carte ; la phrase est dans la liste.',
+    comp: ['u1'],
+    unord: true
+  }
+};
+
+/* ---------- dessin ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+let scene = 'vol',
+  checked = new Set(),
+  hueOf = {},
+  K = 1;
+const $ = id => document.getElementById(id);
+const el = (p, n, a = {}, t) => {
+  const e = document.createElementNS(NS, n);
+  for (const k in a) e.setAttribute(k, a[k]);
+  if (t != null) e.textContent = t;
+  p.appendChild(e);
+  return e
+};
+const pl = pts => pts.map(p => p.join(',')).join(' ');
+const tok = n => `var(--sog-proc-${n})`;
+
+/* géométrie de placement : une pastille est TOUJOURS visible, jamais sur une autre pastille ni sur un autre tracé ; un nom n'est écrit que s'il a la place */
+const segD = (p, a, b) => {
+  const dx = b[0] - a[0],
+    dy = b[1] - a[1],
+    L2 = dx * dx + dy * dy || 1,
+    t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2));
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+};
+const lineD = (p, line) => {
+  let d = Infinity;
+  for (let i = 0; i < line.length - 1; i++) d = Math.min(d, segD(p, line[i], line[i + 1]));
+  return d
+};
+const along = (line, f) => {
+  const L = [];
+  let tot = 0;
+  for (let i = 0; i < line.length - 1; i++) {
+    const l = Math.hypot(line[i + 1][0] - line[i][0], line[i + 1][1] - line[i][1]);
+    L.push(l);
+    tot += l
+  }
+  let w = f * tot;
+  for (let i = 0; i < L.length; i++) {
+    if (w <= L[i]) {
+      const t = L[i] ? w / L[i] : 0;
+      return [line[i][0] + t * (line[i + 1][0] - line[i][0]), line[i][1] + t * (line[i + 1][1] - line[i][1])]
+    }
+    w -= L[i]
+  }
+  return line.at(-1)
+};
+const hit = (a, b, pad = 2) => a.x < b.x + b.width + pad && a.x + a.width + pad > b.x && a.y < b.y + b.height + pad && a.y + a.height +
+  pad > b.y;
+const boxHitsLine = (b, line) => {
+  for (let i = 0; i < line.length - 1; i++) {
+    const n = Math.ceil(Math.hypot(line[i + 1][0] - line[i][0], line[i + 1][1] - line[i][1]) / 4);
+    for (let k = 0; k <= n; k++) {
+      const x = line[i][0] + (line[i + 1][0] - line[i][0]) * k / n,
+        y = line[i][1] + (line[i + 1][1] - line[i][1]) * k / n;
+      if (x > b.x - 2 && x < b.x + b.width + 2 && y > b.y - 2 && y < b.y + b.height + 2) return true
+    }
+  }
+  return false
+};
+
+function trace(g, pts, color, w, dash) {
+  return el(g, 'polyline', {
+    class: 'trace',
+    points: pl(pts),
+    stroke: color,
+    'stroke-width': w * K,
+    'stroke-dasharray': dash ? dash.split(' ').map(x => x * K).join(' ') : ''
+  })
+}
+
+function label(g, text, x, y, color, boxes, anchor) {
+  const t = el(g, 'text', {
+    class: 'lab',
+    x,
+    y,
+    fill: color,
+    'text-anchor': anchor || 'start'
+  }, text);
+  boxes.push(t.getBBox());
+  return t
+}
+
+function fixPt(g, [n, x, y, dy = -7], color, boxes) {
+  el(g, 'circle', {
+    class: 'fix',
+    cx: x,
+    cy: y,
+    r: 4.5 * K,
+    stroke: color
+  });
+  label(g, n, x + 7, y + dy * K, 'var(--sog-fg)', boxes)
+}
+
+function airport(g, a, boxes) {
+  el(g, 'line', {
+    class: 'rwy',
+    x1: a.rwy[0][0],
+    y1: a.rwy[0][1],
+    x2: a.rwy[1][0],
+    y2: a.rwy[1][1]
+  });
+  el(g, 'line', {
+    class: 'rwyin',
+    x1: a.rwy[0][0] + 3,
+    y1: a.rwy[0][1],
+    x2: a.rwy[1][0] - 3,
+    y2: a.rwy[1][1],
+    'stroke-dasharray': '4 4'
+  });
+  const t = el(g, 'text', {
+    class: 'ad',
+    x: a.x - 6,
+    y: a.y + (a.up ? -14 : 24)
+  }, a.id + ' ' + a.name);
+  boxes.push(t.getBBox())
+}
+
+function draw() {
+  const S = SCENES[scene],
+    svg = $('svg'),
+    narrow = innerWidth < 700;
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', '70 50 740 430');
+  K = narrow ? 1.7 : 1;
+  svg.style.setProperty('--k', K);
+  el(svg, 'path', {
+    class: 'land',
+    d: 'M0 0H900V520H0Z'
+  });
+  for (let x = 0; x <= 900; x += 60) el(svg, 'line', {
+    class: 'gridl',
+    x1: x,
+    y1: 0,
+    x2: x,
+    y2: 520
+  });
+  for (let y = 0; y <= 520; y += 60) el(svg, 'line', {
+    class: 'gridl',
+    x1: 0,
+    y1: y,
+    x2: 900,
+    y2: y
+  });
+  el(svg, 'path', {
+    d: 'M0 470C160 450 260 500 420 485S700 440 900 470V520H0Z',
+    fill: 'var(--water)'
+  });
+  const gC = el(svg, 'g'),
+    gF = el(svg, 'g'),
+    gB = el(svg, 'g'); /* les comparées dessous, le vol dessus, les pastilles au-dessus de tout */
+  const RW = 4.5,
+    R = 'var(--route)',
+    boxes = [],
+    lines = [];
+  /* ---- le vol : la route, SID, transition, STAR, approche (couleur et épaisseur de la route) ; les noms du vol passent AVANT ceux des comparées */
+  trace(gF, FLIGHT.route, R, RW);
+  lines.push(FLIGHT.route);
+  trace(gF, FLIGHT.sid.pts, R, RW);
+  lines.push(FLIGHT.sid.pts);
+  trace(gF, FLIGHT.sidTrans.pts, R, RW, '9 7');
+  lines.push(FLIGHT.sidTrans.pts);
+  let ends = [];
+  if (S.gap) {
+    const star = [
+        [440, 232],
+        [470, 216]
+      ],
+      app = [
+        [560, 150],
+        [610, 170],
+        [640, 190],
+        [668, 190]
+      ];
+    trace(gF, star, R, RW);
+    trace(gF, app, R, RW);
+    lines.push(star, app);
+    ends = [
+      ['TANIK', 470, 216, 18],
+      ['LUMEN', 560, 150, -9]
+    ];
+    label(gF, 'RIVET 2A', 380, 262, R, boxes);
+    label(gF, 'ILS 27', 620, 156, R, boxes);
+  } else {
+    trace(gF, FLIGHT.star.pts, R, RW);
+    trace(gF, FLIGHT.app.pts, R, RW);
+    lines.push(FLIGHT.star.pts, FLIGHT.app.pts);
+    label(gF, 'RIVET 2A', 395, 262, R, boxes);
+    label(gF, 'ILS 27', S.detail ? 618 : 598, S.detail ? 214 : 178, R, boxes);
+  }
+  label(gF, FLIGHT.sid.name, 150, 352, R, boxes);
+  label(gF, 'transition BRAVO', 268, 306, R, boxes);
+  if (S.detail) {
+    trace(gF, FLIGHT.missed, 'var(--sog-muted)', 3, '1 7');
+    lines.push(FLIGHT.missed);
+    label(gF, 'approche interrompue', 726, 132, 'var(--sog-muted)', boxes, 'end');
+    ends = [
+      ['LUMEN IAF', 520, 196],
+      ['FAF', 585, 192, 18],
+      ['MAPt', 668, 190, -14]
+    ];
+  } else if (!S.gap) {
+    ends = [
+      ['ALFAX', 260, 285],
+      ['BRAVO', 350, 256],
+      ['RIVET', 440, 232]
+    ];
+  }
+  for (const f of ends) fixPt(gF, f, R, boxes);
+  airport(gF, FLIGHT.dep, boxes);
+  airport(gF, FLIGHT.arr, boxes);
+  /* ---- les comparées, dans l'ordre de leur numéro : la pastille d'abord (sa place sur la partie qui n'est qu'à elle), le nom ensuite s'il a la place */
+  const badges = [],
+    order = [...checked].sort((a, b) => hueOf[a] - hueOf[b]),
+    all = [...COMP, UNORD];
+  const mine = id => all.find(x => x.id === id);
+  const othersOf = id => [...lines, ...order.filter(o => o !== id && !mine(o).unord).map(o => mine(o).pts)];
+  for (const id of order) {
+    const c = mine(id),
+      col = tok(hueOf[id]),
+      n = hueOf[id];
+    if (c.unord) {
+      c.pts.forEach(([x, y], i) => {
+        el(gC, 'circle', {
+          cx: x,
+          cy: y,
+          r: 5 * K,
+          fill: 'none',
+          stroke: col,
+          'stroke-width': 2.4 * K
+        });
+        label(gC, c.codes[i], x + 8 * K, y - 6 * K, 'var(--sog-fg)', boxes)
+      });
+      const cx = c.pts.reduce((a, p) => a + p[0], 0) / c.pts.length,
+        cy = c.pts.reduce((a, p) => a + p[1], 0) / c.pts.length;
+      label(gC, c.name, cx - 30 * K, cy + 78 * K, col, boxes);
+      badges.push({
+        x: cx - 44 * K,
+        y: cy + 74 * K,
+        n,
+        col
+      });
+      continue;
+    }
+    const oth = othersOf(id);
+    let best = null,
+      bestScore = -Infinity;
+    for (const f of [.5, .35, .65, .2, .8, .1, .9, .05, .95]) {
+      const p = along(c.pts, f),
+        dl = Math.min(...oth.map(l => lineD(p, l))),
+        db = Math.min(Infinity, ...badges.map(b => Math.hypot(p[0] - b.x, p[1] - b.y))),
+        inBox = boxes.some(b => p[0] > b.x - 9 * K && p[0] < b.x + b.width + 9 * K && p[1] > b.y - 9 * K && p[1] < b.y + b.height + 9 * K);
+      const score = Math.min(dl / (14 * K), db / (24 * K)) - (inBox ? 5 : 0);
+      if (score > bestScore) {
+        bestScore = score;
+        best = p
+      }
+      if (score >= 1) break;
+    }
+    badges.push({
+      x: best[0],
+      y: best[1],
+      n,
+      col
+    });
+    /* le nom : à côté de la pastille, seulement s'il a la place (ni sur un nom ou un point du vol, ni sur un autre tracé, ni sur une pastille) */
+    const probe = el(gC, 'text', {
+        class: 'lab',
+        x: 0,
+        y: 0,
+        fill: col
+      }, c.name),
+      pb = probe.getBBox(),
+      w = pb.width,
+      h = pb.height;
+    probe.remove();
+    const d = 14 * K,
+      cands = [
+        [best[0] + d, best[1] - 4 * K],
+        [best[0] + d, best[1] + 14 * K],
+        [best[0] - d - w, best[1] - 4 * K],
+        [best[0] - d - w, best[1] + 14 * K],
+        [best[0] - w / 2, best[1] - d],
+        [best[0] - w / 2, best[1] + d + 8 * K]
+      ];
+    for (const [x, y] of cands) {
+      const b = {
+        x,
+        y: y - h * .8,
+        width: w,
+        height: h
+      };
+      if (b.x < 72 || b.x + b.width > 808 || b.y < 52 || b.y + b.height > 478) continue;
+      if (boxes.some(o => hit(b, o))) continue;
+      if (oth.some(l => boxHitsLine(b, l)) || boxHitsLine(b, c.pts)) continue;
+      if (badges.some(q => q.x > b.x - 10 * K && q.x < b.x + b.width + 10 * K && q.y > b.y - 10 * K && q.y < b.y + b.height + 10 * K && q
+          .n !== n)) continue;
+      boxes.push(b);
+      el(gC, 'text', {
+        class: 'lab',
+        x,
+        y,
+        fill: col
+      }, c.name);
+      break;
+    }
+    trace(gC, c.pts, col, 3.5);
+  }
+  for (const b of badges) {
+    const g = el(gB, 'g', {
+      class: 'badge'
+    });
+    el(g, 'circle', {
+      cx: b.x,
+      cy: b.y,
+      r: 9 * K,
+      fill: b.col
+    });
+    el(g, 'text', {
+      x: b.x,
+      y: b.y + .5
+    }, String(b.n))
+  }
+  const nt = $('notes');
+  if (S.toast) {
+    $('noteText').textContent = TEXT.nine;
+    nt.setAttribute('data-on', '')
+  } else nt.removeAttribute('data-on');
+  panel();
+}
+
+function panel() {
+  const S = SCENES[scene],
+    P = $('panel'),
+    n = checked.size;
+  const fl = (nm, kind, extra) => `<div class="row"><span class="sw"></span><span class="nm">${kind} ${nm}${extra ? `<small>${extra}</small>` : ''}</span></div>`;
+  let h = `<h2>Procédures du vol</h2>`;
+  h += fl('ALFAX 1A', 'SID', 'piste 09 · transition BRAVO (tirets)');
+  h += fl('RIVET 2A', 'STAR');
+  h += fl('ILS 27', 'APP', S.gap ? TEXT.gap : '');
+  h += `<h2>À comparer <span class="cnt">${n} / 8</span></h2>`;
+  for (const c of COMP.concat(S.unord ? [UNORD] : [])) {
+    const on = checked.has(c.id),
+      col = on ? tok(hueOf[c.id]) : 'var(--sog-border)';
+    h += `<label class="row"><input type="checkbox" data-c="${c.id}" ${on ? 'checked' : ''}><span class="n" style="--c:${col}">${on ? hueOf[c.id] : ''}</span><span class="nm">${c.kind} ${c.name}<small>${c.unord ? TEXT.unord : c.where}</small></span></label>`;
+  }
+  P.innerHTML = h;
+}
+
+/* un numéro (et sa teinte) tient tant que la procédure est cochée ; un numéro libéré est repris par la prochaine cochée, le plus petit libre */
+function setC(id, on) {
+  if (on) {
+    if (checked.size >= 8) {
+      const t = $('notes');
+      $('noteText').textContent = TEXT.nine;
+      t.setAttribute('data-on', '');
+      clearTimeout(setC.t);
+      setC.t = setTimeout(() => t.removeAttribute('data-on'), 5000);
+      return false
+    }
+    const used = new Set(Object.values(hueOf));
+    let h = 1;
+    while (used.has(h)) h++;
+    checked.add(id);
+    hueOf[id] = h;
+  } else {
+    checked.delete(id);
+    delete hueOf[id]
+  }
+  return true;
+}
+
+function go(name) {
+  scene = name;
+  checked = new Set();
+  hueOf = {};
+  for (const id of SCENES[name].comp) setC(id, true);
+  $('principle').textContent = SCENES[name].t;
+  document.querySelectorAll('[data-go]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === name)));
+  draw();
+}
+$('panel').addEventListener('change', e => {
+  const i = e.target.closest('[data-c]');
+  if (!i) return;
+  if (!setC(i.dataset.c, i.checked)) i.checked = false;
+  draw()
+});
+$('noteX').addEventListener('click', () => $('notes').removeAttribute('data-on'));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  location.hash = b.dataset.go
+}));
+document.querySelectorAll('[data-tone-btn]').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.tone = b.dataset.toneBtn;
+  document.querySelectorAll('[data-tone-btn]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  draw()
+}));
+addEventListener('hashchange', () => go(SCENES[location.hash.slice(1)] ? location.hash.slice(1) : 'vol'));
+addEventListener('resize', draw);
+go(SCENES[location.hash.slice(1)] ? location.hash.slice(1) : 'vol');
+</script>
+</body>
+</html>
