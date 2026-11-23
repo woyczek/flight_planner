@@ -10449,8 +10449,9 @@ def f307(c):
     c.ok(all(not r['auto'] for r in rows[1:]) and all(r['take'] and not r['chosen'] for r in rows), rows, 'the pill on that line only; '
          '« Choisir » on every line, « choisie » on none before a choice')
     c.ok(all(r['figs'] for r in rows), rows, 'each line with its distance, time and trip fuel')
-    # A. the line whose numbers are in the bar (the one « Auto » applies) is framed, the others not (the ergonomist, 23 Nov)
-    c.eq([r['framed'] for r in rows], [True] + [False] * (len(rows) - 1), 'the line kept framed', what='framed')
+    # A. (the ergonomist, 23 Nov, choice iii) the frame says « this route and this level are the flight's »: before a choice, no line
+    # is framed — « Auto » applies the level only, its pill says it
+    c.eq([r['framed'] for r in rows], [False] * len(rows), 'no line framed in « Auto » before a choice', what='framed')
     # B. never a reason between the level and the verdict: the level (and a good verdict), then the bad verdict, then the reasons
     c.ok(all((r['bad'] is None or r['bad'] > r['lvl']) and (r['why'] is None or r['why'] > max(r['lvl'], r['bad'] or 0)) for r in rows), rows,
          'the level, then the verdict that is not good, then the reasons, each on its line')
@@ -10504,12 +10505,13 @@ def f307(c):
     c.eq(len(st['posts']), posts, 'no call to the engine', what='no call')
     again = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ fl: e.querySelector('[data-altfl]')?.textContent || '',
         chosen: e.querySelector('[data-chosen]')?.textContent || '', take: !!e.querySelector('[data-do=rtake]'),
-        auto: !!e.querySelector('[data-autokept]'), i: e.dataset.alt }}))""")
+        auto: !!e.querySelector('[data-autokept]'), i: e.dataset.alt, framed: e.getAttribute('aria-current') === 'true' }}))""")
     c.eq(sorted(norm(r['fl']) for r in again), sorted(norm(r['fl']) for r in rows), 'the same lines', what='same')
     taken = [r for r in again if r['chosen']]
     c.eq([(norm(r['fl']), norm(r['chosen']), r['take']) for r in taken], [(f'FL{kept:03d}', norm(W['chosen']), False)],
          '« choisie » on the line taken, without « Choisir »', what='chosen')
     c.ok(not any(r['auto'] for r in again), again, 'no pill « Auto » once « Auto » is removed')
+    c.eq([r['framed'] for r in again], [bool(r['chosen']) for r in again], 'the line « choisie » framed, the others not', what='framed')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()

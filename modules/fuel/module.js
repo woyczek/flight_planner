@@ -6201,8 +6201,9 @@ function routeAltsDraw() {
   // les nombres et les mentions, posés plus bas quand la liste des routes est connue (fig, marks)
   let fig = new Map(),
     marks = new Map();
-  // SOG-0545 (l'ergonome) : la ligne dont les nombres sont dans la barre du bas est encadrée — la choisie, et en « Auto » la gardée
-  const applied = i => i === A.chosen || (A.chosen < 0 && A.mode === 'levels' && i === A.kept && !!S.flight?.level?.auto);
+  // SOG-0545 (l'ergonome, A choix iii) : le cadre dit « cette route et ce niveau sont ceux du vol » — la ligne « choisie » seule ; en
+  // « Auto », avant un choix, aucune (seul le niveau est appliqué, la pastille « Auto » le dit)
+  const applied = i => i === A.chosen;
   // les motifs d'une ligne (pourquoi une meilleure n'est pas gardée), sur leur ligne, en orange, séparés par « · »
   const motifs = a => {
     const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
