@@ -774,10 +774,13 @@ class Nav:
                 near=[(d,k) for d,k in near if d<=radius]
                 gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
                 near=[(d,k) for d,k in near if k not in unreachable]+gates
-                if isdep and getattr(self,'departure_zero',False) and not terminal.get('_no_dep_restrict') and terminal.get('use_procedures',False) and getattr(self,'procedures',None):      # SOG-0547 : limite de raccord de 0 NM au départ (RAD) : la route doit commencer au dernier point d'une SID (dct_limits.check) ; les raccords DCT ne vont QU'à ces points (les SID lues en partie comprises), jamais au point le plus proche qui n'est le dernier d'aucune SID ; aucun de ces points dans le graphe : les raccords d'avant ; une recherche sans route avec eux est refaite avec ceux d'avant (`generate`)
+                limit_dep=getattr(self,'departure_limit',None)
+                if isdep and limit_dep is not None and not terminal.get('_no_dep_restrict'):      # SOG-0547 : limite de raccord de départ CONNUE (RAD) : à 0 NM la route doit commencer au dernier point d'une SID (dct_limits.check) ; les raccords DCT ne vont QU'aux derniers points des SID lues (en partie comprises, volables au niveau) présents dans le graphe et, si la limite N n'est pas nulle, aux points à N NM au plus, jamais à un point plus loin (le plus proche qui n'est le dernier d'aucune SID, au-delà de N, est refusé) ; aucun de ces points : les raccords d'avant ; une recherche sans route avec eux est refaite avec ceux d'avant (`generate`)
                     present=set(g)|{v for es in g.values() for v,_ in es}
-                    ends=sorted(k for k in self.procedures.end_points(dep,'SID',terminal.get('dep_runway',''),terminal.get('unable_rnav',False),fl*100) if k in present and k in self.nodes and k!=airport)
-                    if ends:near=[(nm(self.nodes[airport],self.nodes[k]),k) for k in ends];restricted=True
+                    ends=set()
+                    if terminal.get('use_procedures',False) and getattr(self,'procedures',None):ends={k for k in self.procedures.end_points(dep,'SID',terminal.get('dep_runway',''),terminal.get('unable_rnav',False),fl*100) if k in present and k in self.nodes and k!=airport}
+                    allowed=ends|({k for d,k in near if d<=limit_dep} if limit_dep else set())
+                    if allowed:near=[(nm(self.nodes[airport],self.nodes[k]),k) for k in sorted(allowed)];restricted=True
                 fallback=False
                 if not near:      # SOG-0474 : la base n'a PAS le réseau de cet État (la Bosnie : ni point ni voie) : jamais une route perdue ; le dernier point connu, dans la partie principale du réseau à ce niveau, et UN direct jusqu'au terrain, DIT
                     far=self.no_network_anchor(airport,isdep,g,incoming,fl,a,b)

@@ -314,7 +314,7 @@ def plan(request, root):
     nav.fl_basis = request.get('fl_basis', 'request')      # SOG-0389 : d'où vient le niveau : `request` (la demande le donne) ou `default` (le défaut du moteur, FL180 : sans niveau) ; dit dans `sections.fl_basis`
     nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
     nav.arrival_limit_nm = arrival_limit(rad, request)      # SOG-0546 : la limite de raccord d'ARRIVÉE du terrain d'arrivée, quand elle est connue et non nulle (sinon None : l'ancienne règle des portes)
-    nav.departure_zero = departure_zero(rad, request)      # SOG-0547 : le terrain de départ a une limite de raccord de 0 NM connue : le raccord DCT ne va qu'aux derniers points de ses SID (engine.routing_graph)
+    nav.departure_limit = departure_limit(rad, request)      # SOG-0547 : la limite de raccord de DÉPART connue (NM, 0 comprise) : le raccord DCT ne va qu'aux derniers points des SID et, si elle n'est pas nulle, aux points à cette distance au plus (engine.routing_graph)
     nav._graph_cost = 0.0      # SOG-0475 : le coût du plus lent des graphes de CE calcul (engine.routing_graph)
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
     context_s = round(time.perf_counter() - context_began, 3)
@@ -644,13 +644,14 @@ def arrival_limit(rad, request):
     return float(nm) if limit['state'] == 'known' and isinstance(nm, int) and not isinstance(nm, bool) and 0 < nm <= MAX_ARRIVAL_LIMIT_NM else None
 
 
-def departure_zero(rad, request):
-    """SOG-0547 : vrai quand le RAD donne au terrain de DÉPART de la demande une limite de raccord de 0 NM CONNUE (`dct_limits.limit_of`, cellule sans partie barrée retirée : une limite douteuse ne change pas le choix du raccord) ; faux sinon (pas de RAD, limite inconnue, complexe ou non nulle, pas de départ)."""
+def departure_limit(rad, request):
+    """SOG-0547 : la limite du direct au raccord de DÉPART du terrain de départ de la demande, en NM (0 : la route doit commencer au dernier point d'une SID), quand le RAD la donne CONNUE (`dct_limits.limit_of`, entière, de 0 à MAX_ARRIVAL_LIMIT_NM, cellule sans partie barrée retirée : une limite douteuse ne change pas le choix du raccord) ; None sinon (pas de RAD, limite inconnue ou complexe, pas de départ)."""
     dep = str(request.get('dep') or '').upper()
     if not dep or not getattr(rad, 'book', None):
-        return False
+        return None
     limit = dct_limits.limit_of(rad, dep, 'dep')
-    return limit['state'] == 'known' and isinstance(limit['nm'], int) and not isinstance(limit['nm'], bool) and limit['nm'] == 0 and not limit.get('struck')
+    nm = limit['nm']
+    return nm if limit['state'] == 'known' and isinstance(nm, int) and not isinstance(nm, bool) and 0 <= nm <= MAX_ARRIVAL_LIMIT_NM and not limit.get('struck') else None
 
 
 def level_summary(level, res):
