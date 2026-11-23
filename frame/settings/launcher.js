@@ -149,12 +149,12 @@
     ivaoKey: ['Clé de l’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de la API IVAO'],
     // accès des appareils du réseau local (carte écrite par la session du cadre, lot 18)
     lan: ['Accès du poste', 'Computer access', 'Zugang des Rechners', 'Acceso del equipo'],
-    lanHint: [
-      'Ouvrez l’appli Pilote sur une tablette ou un téléphone du même réseau local : il voit les données de ce poste et la position du simulateur. L’accès se ferme avec le lanceur.',
-      'Open the Pilot application on a tablet or a phone of the same local network: it sees this computer’s data and the simulator’s position. Access closes with the launcher.',
-      'Öffnen Sie die Pilot-App auf einem Tablet oder Telefon im selben lokalen Netz: Es sieht die Daten dieses Rechners und die Position des Simulators. Der Zugang schließt sich mit dem Starter.',
-      'Abra la aplicación Piloto en una tableta o un teléfono de la misma red local: ve los datos de este equipo y la posición del simulador. El acceso se cierra con el lanzador.'
+    // l'accès d'un appareil du réseau local : la phrase d'explication est dans l'aide (settings-lan-access) ; l'écran dit son objet et mène au bon paragraphe
+    lanHelp: ['Accès d’un appareil du réseau local', 'Access from a device on the local network',
+      'Zugriff eines Geräts im lokalen Netz',
+      'Acceso de un dispositivo de la red local'
     ],
+    seeHelp: ['voir l’aide', 'see the help', 'siehe Hilfe', 'ver la ayuda'],
     lanWarn: [
       'Réseau local en http, sans chiffrement : à n’ouvrir que sur un réseau de confiance (à la maison), jamais sur un wifi public ou d’hôtel.',
       'Local network over http, unencrypted: open it only on a trusted network (at home), never on public or hotel wifi.',
@@ -315,26 +315,9 @@
       'Die Piloten melden sich über das Relais der Fluggesellschaft oder über diesen Rechner bei IVAO an; dafür registriert die Fluggesellschaft eine Anwendung bei IVAO. Ihr Geheimnis bleibt im Starter (Ordner secrets/), nie in der Seite oder in den Daten.',
       'Los pilotos se conectan a IVAO por el relé de la compañía o por este equipo; para ello, la compañía registra una aplicación en IVAO. Su secreto se queda en el lanzador (carpeta secrets/), nunca en la página ni en los datos.'
     ],
-    ivaoStep1: ['Ouvrez cette page d’IVAO (compte IVAO requis) :', 'Open this IVAO page (an IVAO account is required):',
-      'Öffnen Sie diese IVAO-Seite (IVAO-Konto erforderlich):', 'Abra esta página de IVAO (se necesita una cuenta IVAO):'
-    ],
-    ivaoStep2: [
-      'Remplissez le formulaire : Name = le nom de la compagnie ; App Type = Third Party ; Active = Enabled.',
-      'Fill in the form: Name = the airline’s name; App Type = Third Party; Active = Enabled.',
-      'Füllen Sie das Formular aus: Name = Name der Fluggesellschaft; App Type = Third Party; Active = Enabled.',
-      'Rellene el formulario: Name = el nombre de la compañía; App Type = Third Party; Active = Enabled.'
-    ],
-    ivaoStep3: [
-      'Cliquez « + Add Redirect URL » une fois par adresse de retour listée ci-dessous, en la collant telle quelle.',
-      'Click “+ Add Redirect URL” once for each return address listed below, pasting it exactly as it is.',
-      'Klicken Sie „+ Add Redirect URL“ einmal pro unten aufgeführter Rücksprungadresse und fügen Sie sie unverändert ein.',
-      'Pulse «+ Add Redirect URL» una vez por cada dirección de retorno de la lista de abajo, pegándola tal cual.'
-    ],
-    ivaoStep4: [
-      'Cliquez Submit, puis recopiez dans les champs ci-dessous le Client ID et le Client Secret qu’IVAO affiche.',
-      'Click Submit, then copy the Client ID and the Client Secret that IVAO shows into the fields below.',
-      'Klicken Sie Submit und übertragen Sie die von IVAO angezeigte Client ID und das Client Secret in die Felder unten.',
-      'Pulse Submit y copie en los campos de abajo el Client ID y el Client Secret que muestra IVAO.'
+    // la déclaration chez IVAO, pas à pas : dans l'aide (settings-ivao-app) ; l'écran dit son objet, mène au bon paragraphe et garde le lien de la page d'IVAO
+    ivaoHelp: ['Déclarer l’application chez IVAO', 'Register the application with IVAO', 'Anwendung bei IVAO registrieren',
+      'Registrar la aplicación en IVAO'
     ],
     ivaoRedirTitle: ['Adresses de retour', 'Return addresses', 'Rücksprungadressen', 'Direcciones de retorno'],
     ivaoRedirHint: [
@@ -678,8 +661,7 @@
       fld
     } = env;
     return `<div class="f-card" data-card="ivaoapp"><h2>${esc(t(T.ivaoAppTitle))}</h2><p class="f-muted">${esc(t(T.ivaoAppIntro))}</p>
-      <ol data-ivao-steps><li>${esc(t(T.ivaoStep1))} <a href="https://developers.ivao.aero/create" target="_blank" rel="noopener noreferrer">developers.ivao.aero/create</a></li>
-        <li>${esc(t(T.ivaoStep2))}</li><li>${esc(t(T.ivaoStep3))}</li><li>${esc(t(T.ivaoStep4))}</li></ol>
+      <p data-ivao-steps>${esc(t(T.ivaoHelp))} : <a href="#help?m=settings&amp;a=settings-ivao-app" data-help-link>${esc(t(T.seeHelp))}</a> · <a href="https://developers.ivao.aero/create" target="_blank" rel="noopener noreferrer">developers.ivao.aero/create</a></p>
       <h3>${esc(t(T.ivaoRedirTitle))}</h3><ul data-ivao-redirects><li class="f-muted">…</li></ul><p class="f-muted">${esc(t(T.ivaoRedirHint))}</p>
       <p><b data-ivaoapp>…</b></p>${fld('ivaoClientId', T.ivaoClientId, '')}${fld('ivaoClientSecret', T.ivaoClientSecret, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="ivaoAppSave">${esc(t(T.save))}</button><button type="button" data-act="ivaoAppTest">${esc(t(T.test))}</button><button type="button" data-act="ivaoAppErase">${esc(t(T.erase))}</button></div>
@@ -789,7 +771,7 @@
     } = env;
     const lanApi = c.lan?.() || null;
     env.lanApi = lanApi;
-    return lanApi ? `<div class="f-card" data-card="lan"><h2>${esc(t(T.lan))}</h2><p class="f-muted">${esc(t(T.lanHint))}</p>
+    return lanApi ? `<div class="f-card" data-card="lan"><h2>${esc(t(T.lan))}</h2><p class="f-muted" data-lan-help>${esc(t(T.lanHelp))} : <a href="#help?m=settings&amp;a=settings-lan-access" data-help-link>${esc(t(T.seeHelp))}</a></p>
       <div data-lanstate><p class="f-muted">…</p></div><p class="f-msg" data-kind="warn">${esc(t(T.lanWarn))}</p><p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="lanToggle">${esc(t(T.lanOpen))}</button><button type="button" data-act="lanCode" hidden>${esc(t(T.lanNewCode))}</button><button type="button" data-act="lanForget" disabled>${esc(t(T.lanForget))}</button></div></div>` : '';
   }

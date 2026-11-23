@@ -892,11 +892,18 @@ Fluggesellschaft (IVAO, EAD Basic)“ der Karte „Verwaltung“ die Einstellung
 
 Unter dem IVAO-Schlüssel nimmt der Block „EAD Basic (EUROCONTROL)“ Benutzername und Passwort Ihres EAD-Basic-Kontos auf: Sie geben sie einmal dem Starter dieses Rechners (Ordner `secrets/`), der sie verwahrt; die Seite zeigt sie nie wieder an, sie sagt nur, ob und wann sie gespeichert sind. Sie dienen zum „Flugplatz aus EAD lesen“ (ein Flugplatz pro Geste). EAD Basic ist ein Demonstrationswerkzeug mit nicht operativen Daten, nur für die Simulation zu verwenden (der Hinweis bleibt angezeigt). „Löschen“ entfernt sie aus dem Starter.
 
-<a id="settings-ivao-app"></a>Unter dem Block EAD Basic führt ein Link zum Assistenten „IVAO-Anwendung (Anmeldung der Piloten)“ (die gleichnamige Karte, Gruppe „Verwaltung“, oder `#settings?card=ivaoapp`). Er ermöglicht den Piloten, sich über das Relais der Fluggesellschaft oder über diesen Rechner bei IVAO anzumelden: Er führt Sie durch IVAO (`https://developers.ivao.aero/create`: Name = Name der Fluggesellschaft, App Type = Third Party, Active = Enabled), listet die mit „+ Add Redirect URL“ zu deklarierenden Rücksprungadressen auf (die dieses Rechners und, wenn seine öffentliche Adresse eingerichtet ist, die des Relais; „Kopieren“ liefert sie unverändert) und nimmt dann die von IVAO angezeigte Client ID und das Client Secret entgegen. Der Starter schreibt sie nach `secrets/ivao_oauth.json`: Sie bearbeiten keine Datei, und die Seite zeigt sie nie wieder an (sie sagt nur, ob und wann die Anwendung gespeichert ist). „Testen“ erreicht das OpenID-Discovery-Dokument von IVAO; „Löschen“ entfernt die Anwendung. Der API-Schlüssel der Anwendung (`secrets/ivao.json`) ist eine andere Einstellung: Der Schlüssel einer neuen Anwendung wird unter „IVAO-Schlüssel“ übernommen.
+<a id="settings-ivao-app"></a>Unter dem Block EAD Basic führt ein Link zum Assistenten „IVAO-Anwendung (Anmeldung der Piloten)“ (die gleichnamige Karte, Gruppe „Verwaltung“, oder `#settings?card=ivaoapp`). Er ermöglicht den Piloten, sich über das Relais der Fluggesellschaft oder über diesen Rechner bei IVAO anzumelden; sein Geheimnis bleibt im Starter (Ordner `secrets/`), nie in der Seite oder in den Daten.
+
+1. Öffnen Sie die IVAO-Seite, die der Assistent angibt (`https://developers.ivao.aero/create`; IVAO-Konto erforderlich).
+2. Füllen Sie das Formular aus: Name = Name der Fluggesellschaft; App Type = Third Party; Active = Enabled.
+3. Klicken Sie „+ Add Redirect URL“ einmal pro Rücksprungadresse, die der Assistent auflistet (die dieses Rechners und, wenn seine öffentliche Adresse eingerichtet ist, die des Relais; „Kopieren“ liefert sie unverändert), und fügen Sie sie unverändert ein.
+4. Klicken Sie Submit und übertragen Sie die von IVAO angezeigte Client ID und das Client Secret in den Assistenten.
+
+Der Starter schreibt Client ID und Client Secret nach `secrets/ivao_oauth.json`: Sie bearbeiten keine Datei, und die Seite zeigt sie nie wieder an (sie sagt nur, ob und wann die Anwendung gespeichert ist). „Testen“ erreicht das OpenID-Discovery-Dokument von IVAO; „Löschen“ entfernt die Anwendung. Der API-Schlüssel der Anwendung (`secrets/ivao.json`) ist eine andere Einstellung: Der Schlüssel einer neuen Anwendung wird unter „IVAO-Schlüssel“ übernommen.
 
 ## Das Tablet neben dem Simulator
 
-Sie fliegen am Rechner (X-Plane) und möchten die Karte auf einem Tablet oder Telefon: Auf dem Rechner, den der
+<a id="settings-lan-access"></a>Sie fliegen am Rechner (X-Plane) und möchten die Karte auf einem Tablet oder Telefon: Auf dem Rechner, den der
 Starter bedient, öffnet „Zugang des Rechners“ die Pilot-App für Geräte im selben lokalen Netz (oder starten Sie
 `lancer.cmd --lan`).
 
@@ -945,6 +952,52 @@ Repository, das nicht antwortet, wird nur gemeldet.
   übernehmen“ zuerst, was hinausgeht (Ihre Commits, die übertragenen Datendateien), fragt nach, bewahrt den alten Stand
   in einer lokalen Referenz, überträgt Ihre Datendateien auf die neue Historie und synchronisiert dann. Eine Datei
   außerhalb der synchronisierten Daten wird nie erneut gesendet.
+
+## Konto und Token erstellen
+
+<a id="settings-github-token"></a>**GitHub-Konto und Token (Pilot).** Noch kein GitHub-Konto? Erstellen Sie eines und dann Ihr Token für das Datenrepository.
+
+1. Gehen Sie auf https://github.com/signup, bestätigen Sie die E-Mail-Adresse, wählen Sie einen einfachen Benutzernamen.
+2. Geben Sie diesen Namen dem Administrator: Er lädt Sie zum Datenrepository ein.
+3. Nehmen Sie die per E-Mail erhaltene Einladung an (https://github.com/<Repository>/invitations).
+
+**Repository eines Benutzers** (GitHub erlaubt dafür kein feingranulares, auf dieses Repository beschränktes Token): ein „klassisches“ Token.
+
+1. Melden Sie sich bei GitHub mit dem zum Repository eingeladenen Konto an.
+2. Öffnen Sie https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote (ein „klassisches“ Token, bereits vorausgefüllt; oder: Ihr Avatar › „Settings“ › „Developer settings“ › „Personal access tokens“ › „Tokens (classic)“ › „Generate new token (classic)“).
+3. „Note“: SOG Pilot.
+4. „Expiration“: „Custom“, in einem Jahr.
+5. „Select scopes“: nur „repo“ (bereits angekreuzt).
+6. „Generate token“, dann sofort kopieren: GitHub zeigt es nur einmal.
+7. Fügen Sie es unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.
+
+Dieses klassische Token öffnet alle Repositorys Ihres Kontos: Hat dieses Konto weitere, erstellen Sie besser ein eigenes GitHub-Konto nur für das Fliegen.
+
+**Repository einer Organisation**: ein feingranulares Token.
+
+1. Melden Sie sich bei GitHub mit dem Konto an, das Zugriff auf das Repository hat.
+2. Öffnen Sie https://github.com/settings/personal-access-tokens/new.
+3. „Token name“: SOG Pilot.
+4. „Expiration“: „Custom“, in einem Jahr.
+5. „Resource owner“: die Organisation.
+6. „Repository access“: „Only select repositories“, dann das Repository.
+7. „Permissions“ › „Repository permissions“ › „Contents“: „Read and write“ („Metadata“ lesend kommt von selbst).
+8. „Generate token“, dann sofort kopieren: GitHub zeigt es nur einmal.
+9. Fügen Sie es unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.
+
+Erstellen Sie nach Ablauf auf dieselbe Weise ein neues. Die Organisation muss feingranulare Tokens akzeptieren (Organisationseinstellungen › Personal access tokens).
+
+<a id="settings-gitlab-pilot-token"></a>**Token eines Piloten auf GitLab, von Hand (Administrator).** Ein Projekt-Token pro Pilot; mit dem Starter erstellt „Token erstellen“ (Bildschirm „Token der Piloten“) es für Sie.
+
+1. Öffnen Sie die Seite der Zugriffstoken des Projekts (Settings › Access tokens).
+2. „Token name“: das Kürzel des Piloten.
+3. „Expiration date“: 90 Tage empfohlen, höchstens 365, nie ohne Datum.
+4. „Role“: Developer.
+5. „Scopes“: api, sonst nichts.
+6. Klicken Sie „Create project access token“ und kopieren Sie das Token sofort: GitLab zeigt es nur einmal.
+7. Prüfen Sie, dass der Datenzweig Developers pushen lässt (Settings › Repository › Protected branches: „Allowed to push and merge“ = „Developers + Maintainers“, Force-Push aus), sonst schlagen Schreibvorgänge mit einem 403-Fehler fehl.
+
+Zum Entziehen des Zugriffs eines Piloten: Settings › Access tokens › Revoke, in der Zeile seines Kürzels.
 
 ## Einen Piloten einrichten
 

@@ -1333,8 +1333,9 @@ def a43(c):
     card = '[data-card="ivaoapp"]'
     msg = f"document.querySelector('{card} [data-msg]').textContent.trim()"
     c.eq(norm(c.text(f'{card} h2')), norm(t('ivaoAppTitle')), 'the card is titled', what='title')
-    c.eq(c.count(f'{card} ol[data-ivao-steps] > li'), 4, 'four steps', what='steps')
-    link = f'{card} [data-ivao-steps] a'
+    c.eq(c.count(f'{card} p[data-ivao-steps]'), 1, 'the steps are in the help: one line says the object and leads to the help (SOG-0579)', what='steps line')
+    c.eq(c.attr(f'{card} [data-ivao-steps] a[data-help-link]', 'href'), '#help?m=settings&a=settings-ivao-app', 'the link opens the help at the paragraph of the IVAO application', what='help link')
+    link = f'{card} [data-ivao-steps] a[target="_blank"]'
     c.eq(c.attr(link, 'href'), 'https://developers.ivao.aero/create', "a real link to IVAO's application form", what='link')
     c.ok('noopener' in c.attr(link, 'rel') and c.attr(link, 'target') == '_blank', f"{c.attr(link, 'rel')} {c.attr(link, 'target')}", 'a new tab, noopener')
     # the return addresses, filled from the one read of the secrets
@@ -11948,4 +11949,41 @@ def a372(c):
     c.js("document.querySelector('[data-folder=lnmdb]').scrollIntoView({block: 'center'})")      # the shot shows the whole line of the long path, between the bars
     c.wait(200)
     c.shot(f'A372_dossiers_{c.width}.png')
+    c.check_errors()
+
+
+@case('A373', "The screens that explain a gesture say their object and lead to the help at the RIGHT paragraph (SOG-0579, lot 2, the ergonomist's decision of 23 Nov 2026): the IVAO application card (« Déclarer l'application chez IVAO : voir l'aide ») and the local-network access card (« Accès d'un appareil du réseau local : voir l'aide ») no longer carry the steps; each link opens the help of Settings scrolled to its paragraph (settings-ivao-app, settings-lan-access), and the help has the new numbered paragraphs for the GitHub token and the GitLab pilot token (settings-github-token, settings-gitlab-pilot-token) in the four languages", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0579: a text that explains a gesture belongs to the help (the screen says its object and links to it); the paragraphs are numbered lists, one action per line, in the four languages (the pilot of another language keeps the step-by-step); the link goes to the paragraph, not to the top of the chapter')
+def a373(c):
+    lang = c.lang
+    see = {'fr': 'voir l’aide', 'en': 'see the help', 'de': 'siehe Hilfe', 'es': 'ver la ayuda'}[lang]
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        url = route.request.url
+        body = status if url.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    anchors = [('[data-card="ivaoapp"] [data-ivao-steps] a[data-help-link]', 'settings-ivao-app', 'settings?card=admin'),
+               ('[data-card="lan"] [data-lan-help] a[data-help-link]', 'settings-lan-access', 'settings?card=lan')]
+    for link, anchor, where in anchors:
+        c.open(where, docs=LEVEL3)
+        c.until(f"!!document.querySelector('{link}')", timeout=15000, what=f'the line of {anchor}')
+        c.eq([norm(c.text(link)), c.attr(link, 'href')], [norm(see), f'#help?m=settings&a={anchor}'], f'the link says « {see} » and points at the paragraph {anchor}', what=f'link {anchor}')
+        c.tap(link)
+        c.until(f"location.hash === '#help?m=settings&a={anchor}' && !!document.getElementById('{anchor}')", timeout=15000, what=f'the help opens on {anchor}')
+        c.wait(900)
+        top = c.js(f"(() => {{ const r = document.getElementById('{anchor}').getBoundingClientRect(); return [Math.round(r.top), innerHeight] }})()")
+        c.ok(0 <= top[0] < top[1], top, f'the paragraph {anchor} is scrolled into view, not left at the top of the chapter')
+    c.shot(f'A373_aide_{c.width}_{lang}.png')
+    # the help has the numbered paragraphs, in this language (the file read by the frame: the assembled manual of the application)
+    c.open('help?m=settings', docs=LEVEL3)
+    c.until("!!document.getElementById('settings-github-token')", timeout=15000, what='the GitHub paragraph')
+    got = c.js("""(() => ['settings-github-token', 'settings-gitlab-pilot-token', 'settings-ivao-app', 'settings-lan-access'].map(id => {
+      const a = document.getElementById(id); if (!a) return [id, -1]; let n = a.closest('p, li, h2, h3') || a, c = 0;
+      for (let e = n.nextElementSibling; e && !/^H[23]$/.test(e.tagName) && c < 6; e = e.nextElementSibling) if (e.tagName === 'OL') { c = e.children.length; break }
+      return [id, c] }))()""")
+    c.eq([x[0] for x in got], ['settings-github-token', 'settings-gitlab-pilot-token', 'settings-ivao-app', 'settings-lan-access'], 'the four paragraphs are in the help of this language', what='anchors')
+    c.ok(all(x[1] != -1 for x in got) and got[1][1] == 7 and got[2][1] == 4, got, 'the GitLab token is a list of seven steps, the IVAO application a list of four (one action per line)')
     c.check_errors()
