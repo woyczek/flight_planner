@@ -344,11 +344,12 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   Paris-Orly », `adLine(rec, code)` → « LFPO — Paris-Orly », from an aerodb record (`coords`, `aerodromes`, `find`). One text rule
   for Fuel and the Map's pin; the base carries no city today, the rule adds it only when a record has one. Bench F71.
 - **The aerodrome field and the suggestion list** (`frame/lib/ad_field.js`, `frame/lib/suggest_list.js`, 18 Nov 2026, SOG-0465; writer:
-  Features SOG): `createAdField({ ctx, body, gone, keys, value?, idPrefix?, points?, near? })` — the completion of an aerodrome code
+  Features SOG): `createAdField({ ctx, body, gone, keys, value?, idPrefix?, points?, near?, texts? })` — the completion of an aerodrome code
   (with `points: true`, SOG-0480, also the base's navaids, network points and reporting points, homonyms by distance to `near()`, the
   choice keeping its position: `positionOf(key)`) (aerodb through
   `ctx.aerodb` only) and its name under the field (`adnames.js`); `createSuggestList(o)` — the list under any field. Out of Fuel, which
   keeps wrappers; the mission workshop uses the field. Benches F267, F268.
+  **`texts`** (23 Nov 2026, asked by the missions creation): `{ unknown: [fr, en, de, es], … }` — lines of text (the keys of the block's own table: `unknown`, `listLabel`, `navaid`, `point`, `vrp`) that replace the block's lines **for THIS mount only** (the workshop says « Terrain inconnu : indiquez sa position. », Fuel keeps « inconnu »); the shared table is never touched, a mount without the option keeps the common text before, during and after; a key that is not one of the block's, a line that is not exactly four texts, or a text that is empty once cleaned is ignored (the common text stays); each text loses its control characters and is cut at 200 signs; it is shown as text (never HTML). `api.texts` is the table of that mount. Bench `frame/lib/test/ad_field_texts.html` (A368).
   `isIcao(v)` (four signs A-Z0-9) and `isIcaoAlpha(v)` (four letters: a real ICAO indicator) are exported too, named rules instead of patterns written inline (SOG-0468 (2)).
   `isCode(v)` is also exported as a pure function (four signs or a helipad's list code `[A-Z]{2}[0-9]{3}`), for modules without a screen; a proposal may carry `text`, shown in the line instead of its value (a point's value is the internal key `CODE@lat,lon`, its line shows `CODE`).
 - **The callsign field** (`frame/lib/callsign_field.js`, 18 Nov 2026, SOG-0488; writer: Features SOG, V3 Frame's agreement): `createCallsignField({ ctx, body, gone, owns(el), typeOf(el)?, idPrefix? })` → `{ onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, stop }`.

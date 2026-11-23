@@ -14,6 +14,10 @@
 //     idPrefix,     facultatif : le préfixe des identifiants des propositions ('ad-sug')
 //     points,       facultatif (SOG-0480) : vrai, le champ propose AUSSI les points de la base (balises, points du réseau, points de
 //                   report : « LF485 », « REN »), après les terrains ; sans lui, des terrains seulement (Carburant)
+//     texts         facultatif : { unknown: [fr, en, de, es], … } — des lignes de texte (les clés de TX : unknown, listLabel, navaid, point, vrp)
+//                   qui remplacent celles du bloc POUR CE MONTAGE SEUL (l'atelier de Missions dit « Terrain inconnu : indiquez sa position. »,
+//                   Carburant garde « inconnu ») ; une clé inconnue, une ligne qui n'a pas quatre textes ou dont un texte est vide après
+//                   nettoyage est ignorée (le texte commun reste) ; chaque texte : sans caractère de commande, borné à 200 signes
 //     near()        facultatif, avec points : { lat, lon } de référence (le départ de la mission) — les homonymes d'un point sont
 //                   classés par distance, et le choix d'un point rend son identifiant AVEC sa position :
 //                   le champ reçoit l'identifiant, ses data-lat / data-lon / data-code reçoivent la position choisie (positionOf)
@@ -47,6 +51,20 @@ const TX = {
   point: ['point', 'waypoint', 'Wegpunkt', 'punto'],
   vrp: ['point de report', 'reporting point', 'Meldepunkt', 'punto de notificación']
 };
+/** Les textes d'UN montage : ceux du bloc (TX, jamais modifié), dont `over` (host.texts) remplace des lignes entières — voir l'en-tête. */
+function mountTexts(over) {
+  const out = {
+    ...TX
+  };
+  if (!over || typeof over !== 'object' || Array.isArray(over)) return out;
+  for (const k of Object.keys(TX)) {
+    const row = Object.hasOwn(over, k) ? over[k] : null;
+    if (!Array.isArray(row) || row.length !== 4 || !row.every(x => typeof x === 'string')) continue;
+    const clean = row.map(x => x.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200));
+    if (clean.every(Boolean)) out[k] = clean;
+  }
+  return out;
+}
 /** SOG-0480 : les genres de points proposés avec l'option `points`, et la forme de leur identifiant (deux à cinq signes). */
 const POINT_KINDS = ['navaid', 'point', 'vrp'],
   POINT_CODE = /^[A-Z0-9]{2,5}$/,
@@ -89,6 +107,7 @@ export function createAdField(host) {
   const ctx = host.ctx,
     KEYS = (Array.isArray(host.keys) ? host.keys : []).map(String), // les champs qui portent un terrain, donnés par l'écran
     tt = (row, v) => ctx.t(row, v),
+    TXT = mountTexts(host.texts), // les textes de CE montage : ceux du bloc, ou ceux que l'écran donne (host.texts)
     names = new Map(), // code → nom ('' si connu sans nom) ou null (aucune réponse d'aerodb) ; vidé à chaque changement de la base
     asked = new Map(); // code → promesse en cours (une seule demande par code)
   /** Corps de l'écran, ou null s'il est démonté. */
@@ -157,7 +176,7 @@ export function createAdField(host) {
         continue;
       }
       el.dataset.code = code;
-      const text = !code ? '' : n === null ? tt(TX.unknown) : adLine({
+      const text = !code ? '' : n === null ? tt(TXT.unknown) : adLine({
         name: n
       }, code);
       if (el.textContent !== text) el.textContent = text;
@@ -304,7 +323,7 @@ export function createAdField(host) {
           hits.push({
             value,
             text: code, // la ligne montre l'identifiant, jamais la clé interne « CODE@lat,lon » (retour de Création, 18/11)
-            label: [nm && nm.toUpperCase() !== code ? nm : '', `(${[tt(TX[x.kind]), far].filter(Boolean).join(' · ')})`].filter(Boolean)
+            label: [nm && nm.toUpperCase() !== code ? nm : '', `(${[tt(TXT[x.kind]), far].filter(Boolean).join(' · ')})`].filter(Boolean)
               .join(' ')
           });
         }
@@ -338,7 +357,7 @@ export function createAdField(host) {
     onFocusOut: list.onFocusOut,
     onPointerDown: list.onPointerDown,
     onClick: list.onClick,
-    texts: TX,
+    texts: TXT,
     /** Vrai pendant qu'un choix de la liste est rendu au champ (son code est connu d'aerodb : écrit sans autre contrôle). */
     isPicking: list.picking,
     /** Le code est-il un terrain qu'aerodb connaît ? Promesse de vrai ou faux (le nom demandé une fois, gardé comme pour la ligne). */

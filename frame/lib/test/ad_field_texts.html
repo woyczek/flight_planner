@@ -1,0 +1,201 @@
+<!doctype html>
+<!-- Banc de l'option `texts` du champ de terrain (frame/lib/ad_field.js, demande de Création pour l'atelier de Missions : « Terrain inconnu : indiquez sa position. » là où Carburant garde « inconnu ») :
+     des lignes de texte données par l'écran remplacent celles du bloc POUR CE MONTAGE SEUL — les quatre langues, un autre montage sans l'option qui garde le texte commun (avant, pendant et après), l'objet commun jamais touché,
+     ce qui n'est pas une ligne de quatre textes ignoré (clé inconnue, trois textes, un nombre, un texte vide), les caractères de commande ôtés, 200 signes au plus, le HTML resté du texte. Page nue, un aerodb inventé.
+     window.__adTextsBench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ad_field texts — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<div id="stage"></div>
+<script type="module">
+  import {
+    createAdField
+  } from '../ad_field.js?v=0';
+  const rows = [],
+    out = document.getElementById('out'),
+    stage = document.getElementById('stage');
+  window.__adTextsBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__adTextsBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  const eq = (name, got, want) => ck(name, J(got) === J(want), `got ${J(got)}, want ${J(want)}`);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const LANGS = ['fr', 'en', 'de', 'es'];
+  let LI = 0;
+  // un aerodb inventé : un seul terrain connu ; tout le reste est « inconnu »
+  const aerodb = {
+    coords: async code => code === 'XTST' ? {
+      name: 'BASE TEST',
+      lat: 45,
+      lon: 1
+    } : null,
+    suggest: async () => [],
+    find: async () => [],
+    coordsAll: async () => [],
+    on: () => () => {}
+  };
+  const ctx = {
+    aerodb,
+    lang: () => LANGS[LI],
+    t: row => Array.isArray(row) ? row[LI] : String(row)
+  };
+  const mounts = [];
+  /** Un écran (un champ « dep », sa ligne, sa liste) et son bloc, avec ou sans `texts`. */
+  const mount = (id, texts) => {
+    const host = document.createElement('div');
+    host.id = id;
+    host.innerHTML = '<input data-k="dep" autocomplete="off"><div data-adline="dep"></div><div data-adsug hidden></div>';
+    stage.append(host);
+    const F = createAdField({
+      ctx,
+      body: () => host,
+      gone: () => false,
+      keys: ['dep'],
+      ...(texts === undefined ? {} : {
+        texts
+      })
+    });
+    mounts.push(F);
+    const input = host.querySelector('[data-k=dep]'),
+      line = host.querySelector('[data-adline=dep]');
+    return {
+      F,
+      host,
+      input,
+      line,
+      /** Un code inconnu de la base : la ligne dit « inconnu » (ou le texte du montage). */
+      async unknownLine(code = 'XZZZ') {
+        input.value = code;
+        F.onInput({
+          type: 'change',
+          target: input
+        });
+        await wait(30);
+        F.paint();
+        return line.textContent;
+      }
+    };
+  };
+  const COMMON = ['inconnu', 'unknown', 'unbekannt', 'desconocido'];
+  const ATELIER = ['Terrain inconnu : indiquez sa position.', 'Unknown airfield: enter its position.',
+    'Unbekannter Flugplatz: Position angeben.', 'Aeródromo desconocido: indique su posición.'
+  ];
+
+  // ---- le texte commun, sans l'option -------------------------------------------------------------------
+  const A = mount('a');
+  eq('sans l\'option : la ligne dit le texte commun (français)', await A.unknownLine(), 'inconnu');
+  eq('sans l\'option : texts.unknown est la ligne commune', A.F.texts.unknown, COMMON);
+  const listLabelCommon = A.F.texts.listLabel;
+
+  // ---- avec l'option, quatre langues ----------------------------------------------------------------------
+  const given = {
+    unknown: ATELIER
+  };
+  const snapshot = J(given);
+  const B = mount('b', given);
+  const seen = [];
+  for (LI = 0; LI < 4; LI++) seen.push(await B.unknownLine());
+  LI = 0;
+  eq('avec l\'option : la ligne dit le texte de l\'atelier, dans chacune des quatre langues', seen, ATELIER);
+  eq('avec l\'option : l\'état de la ligne reste « unknown »', B.line.dataset.state, 'unknown');
+  eq('avec l\'option : texts.unknown est celui de l\'atelier', B.F.texts.unknown, ATELIER);
+  eq('les autres lignes restent celles du bloc (listLabel)', B.F.texts.listLabel, listLabelCommon);
+  eq('l\'objet donné par l\'écran n\'est pas modifié', J(given), snapshot);
+
+  // ---- l'autre montage garde le texte commun (pendant, et après) ------------------------------------------
+  eq('pendant : l\'autre montage dit encore « inconnu » (le texte du premier montage n\'a pas fui)', await A.unknownLine(), 'inconnu');
+  eq('pendant : son texts.unknown n\'a pas bougé', A.F.texts.unknown, COMMON);
+  const C = mount('c');
+  eq('après : un montage créé ensuite, sans l\'option, dit « inconnu » (l\'objet commun n\'a pas été touché)', [await C.unknownLine(), C.F
+    .texts.unknown
+  ], ['inconnu', COMMON]);
+  const D = mount('d', {
+    unknown: ['Autre', 'Other', 'Andere', 'Otro']
+  });
+  eq('deux montages avec des options différentes ne se mélangent pas', [await D.unknownLine(), await B.unknownLine()], ['Autre', ATELIER[
+    0]]);
+
+  // ---- ce qui n'est pas une ligne de quatre textes est ignoré (le texte commun reste) ------------------------
+  const bad = async (name, texts) => {
+    const M = mount('x' + rows.length, texts);
+    eq(name, [await M.unknownLine(), M.F.texts.unknown], ['inconnu', COMMON]);
+  };
+  await bad('une clé inconnue de TX est ignorée', {
+    nope: ATELIER
+  });
+  await bad('une ligne de trois textes est ignorée', {
+    unknown: ['a', 'b', 'c']
+  });
+  await bad('une ligne de cinq textes est ignorée', {
+    unknown: ['a', 'b', 'c', 'd', 'e']
+  });
+  await bad('un nombre dans la ligne : ignorée', {
+    unknown: ['a', 'b', 3, 'd']
+  });
+  await bad('un texte vide dans la ligne : ignorée', {
+    unknown: ['a', '', 'c', 'd']
+  });
+  await bad('un texte fait seulement de caractères de commande : ignorée', {
+    unknown: ['a', 'b', '\u0000\u0007', 'd']
+  });
+  await bad('une chaîne à la place de la ligne : ignorée', {
+    unknown: 'inconnu'
+  });
+  await bad('un objet à la place de la ligne : ignorée', {
+    unknown: {
+      0: 'a',
+      1: 'b',
+      2: 'c',
+      3: 'd',
+      length: 4
+    }
+  });
+  await bad('texts null : ignoré', null);
+  await bad('texts est un tableau : ignoré', ['a', 'b', 'c', 'd']);
+  await bad('texts est une chaîne : ignoré', 'unknown');
+  await bad('une clé héritée (__proto__) ne passe pas', JSON.parse('{"__proto__": {"unknown": ["x","x","x","x"]}}'));
+  const inherited = Object.create({
+    unknown: ['x', 'x', 'x', 'x']
+  });
+  await bad('une clé héritée du prototype ne passe pas', inherited);
+
+  // ---- les textes retenus sont nettoyés et bornés, le HTML reste du texte ----------------------------------
+  const E = mount('e', {
+    unknown: ['  Terrain\u0000\u0007 inconnu\n!  ', '<b>Unknown</b> & <i>x</i>', 'z'.repeat(500), 'Aeródromo ‮ desconocido']
+  });
+  const cleaned = E.F.texts.unknown;
+  eq('les caractères de commande sont remplacés et le texte rogné', cleaned[0], 'Terrain   inconnu !');
+  eq('un texte de 500 signes est borné à 200', cleaned[2].length, 200);
+  LI = 1;
+  await E.unknownLine();
+  eq('le HTML d\'un texte reste du texte (aucun élément dans la ligne)', [E.line.querySelectorAll('*').length, E.line.textContent], [0,
+    '<b>Unknown</b> & <i>x</i>'
+  ]);
+  LI = 0;
+
+  // ---- la liste des terrains et les genres de points prennent aussi la ligne du montage -----------------------
+  const G = mount('g', {
+    listLabel: ['Mes terrains', 'My aerodromes', 'Meine Plätze', 'Mis aeródromos']
+  });
+  eq('listLabel : une autre ligne se remplace de la même façon ; unknown reste commun', [G.F.texts.listLabel[0], G.F.texts.unknown, A.F
+    .texts.listLabel
+  ], ['Mes terrains', COMMON, listLabelCommon]);
+
+  mounts.forEach(F => F.stop());
+  window.__adTextsBench.done = true;
+  out.append(`\n${window.__adTextsBench.pass} passed, ${window.__adTextsBench.fail} failed\n`);
+</script>
+</body>
+</html>

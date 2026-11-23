@@ -11690,3 +11690,10 @@ def a367(c):
     c.wait(300)
     c.eq(sy(), s6, 'at release the scroll stops', what='release')
     c.check_errors()
+
+
+@case('A368', "The aerodrome field takes the texts of ITS mount (frame/lib/ad_field.js, option `texts`, asked by the missions creation: « Terrain inconnu : indiquez sa position. » where Fuel keeps « inconnu »): a line given by the screen replaces the common one for that mount only, in the four languages; another mount without the option keeps the common text before, during and after; the common object is never touched; what is not a line of four texts is ignored; control characters are replaced, 200 signs at most, HTML stays text", 'A',
+      tags=('launcher',), screens=False, night=False,
+      rule='Création (via the relay, 23 Nov 2026): the text of an unknown aerodrome differs between the Fuel screen and the missions workshop; the option is merged for ONE mount, the shared TX is left alone; no network, no storage')
+def a368(c):
+    _bench(c, 'frame/lib/test/ad_field_texts.html', '__adTextsBench')
