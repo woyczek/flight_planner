@@ -15435,3 +15435,19 @@ def n246(c):
             c.ok(abs(post[1] - want) <= 4 and not post[2], seen[-1], f'{width} {how}:{step}: the header was at {pre[1]}, scroll {pre[0]}, group closed above {pre[2]}: lack {lack}; it is at {post[1]} (expected {want}, 4 px) and `.ms-ed` has no min-height left ({post[2]!r})')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+@case('N247', 'Missions › « Terrain inconnu : indiquez sa position. » (SOG-0482, lot 7c): under the Departure and under the Arrival, a code that the base does not know says what to do — « Terrain inconnu : indiquez sa position. » (« Unknown airfield: enter its position. », « Unbekannter Flugplatz: Position angeben. », '
+      '« Aeródromo desconocido: indique su posición. ») instead of the common « inconnu »: the option `texts` of the common field, for the mount of the workshop only', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0482 lot 7c: editor_view.js `edAd` (`texts: { unknown: EDTX.itUnknownAd }`), frame/lib/ad_field.js (the option `texts`, 9bb514340)')
+def n247(c):
+    want = {'fr': 'Terrain inconnu : indiquez sa position.', 'en': 'Unknown airfield: enter its position.', 'de': 'Unbekannter Flugplatz: Position angeben.', 'es': 'Aeródromo desconocido: indique su posición.'}[c.lang]
+    for width in (390, 1280):
+        _l3_open(c, width)
+        for k in ('dep', 'arr'):
+            _end_open(c, k)
+            c.until(f"document.querySelector('{E} [data-adline=ed{k}]')?.dataset.state === 'unknown'", timeout=10000, what=f'the base answers: the code of the {k} is unknown')
+            c.eq(norm(c.text(f'{E} [data-adline=ed{k}]')), want, f'{width}: under the {k} the line says « {want} »', what=f'unknown line {k}')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

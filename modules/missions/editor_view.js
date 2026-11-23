@@ -2865,7 +2865,11 @@ function edAd(s) {
       body: () => state() === s && s.ed ? el : null,
       gone: () => state() !== s || !s.ed,
       keys: ['eddep', 'edarr'],
-      idPrefix: 'ed-sug'
+      idPrefix: 'ed-sug',
+      texts: {
+        unknown: EDTX
+          .itUnknownAd // lot 7c : sous Départ et Arrivée, un code que la base ne connaît pas dit quoi faire (cette seule monture ; Carburant garde « inconnu »)
+      }
     }),
     // SOG-0480 : le Nom d'un point tournant, d'une cible, d'un rendez-vous, le même champ commun avec les points de la base ; sa liste
     // est cherchée dans la fiche du lieu (data-adform), pas dans tout l'atelier : une liste par bloc, jamais celle du Cadre

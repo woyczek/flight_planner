@@ -918,6 +918,10 @@ export const EDTX = {
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
   itBadgeDrawer: ['TIROIR', 'DRAWER', 'SCHUBLADE', 'CAJÓN'],
   itTabMap: ['Carte', 'Map', 'Karte', 'Mapa'],
+  // lot 7c : la ligne sous Départ ou Arrivée dont le code est inconnu de la base (l'option `texts` du champ commun, une monture)
+  itUnknownAd: ['Terrain inconnu : indiquez sa position.', 'Unknown airfield: enter its position.',
+    'Unbekannter Flugplatz: Position angeben.', 'Aeródromo desconocido: indique su posición.'
+  ],
   itSeeItin: ["Voir dans l'itinéraire", 'See in the itinerary', 'In der Reiseroute zeigen', 'Ver en el itinerario'],
   itKeyToPlace: ['à placer', 'to place', 'zu platzieren', 'por colocar'],
   itKeyToDraw: ['à dessiner', 'to draw', 'zu zeichnen', 'por dibujar'],
