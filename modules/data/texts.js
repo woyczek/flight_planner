@@ -518,7 +518,9 @@ export const TX = {
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
-    updatePack: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
+    updatePack: ['Mettre à jour ce paquet ({n})', 'Update this pack ({n})', 'Dieses Paket aktualisieren ({n})',
+      'Actualizar este paquete ({n})'
+    ],
     // le bouton de la tête du panneau : tout ce que la base couvre, ou la sélection quand elle est partielle ; n : les zones à reconstruire, en échec ou sans état
     updateN: ['Tout mettre à jour ({n})', 'Update everything ({n})', 'Alles aktualisieren ({n})', 'Actualizar todo ({n})'],
     // sous le bouton : ce qu'il va faire, ce qu'il saute, ce qu'il laisse à l'utilisateur

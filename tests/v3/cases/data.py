@@ -5464,7 +5464,7 @@ def l68(c):
     open_pack('asie')
     c.eq([c.count(btn('asie')), c.count(btn('ouest')), c.count('[data-group-id=antarctique]')], [0, 0, 0], 'none on a pack that has none in the coverage (jp, de); one pack open at a time; an empty pack is not listed', what='buttons')
     open_pack('ouest')
-    c.eq(norm(c.text(btn('ouest'))), norm(UP('updatePack').replace('{n}', '2')), 'it says how many countries it will update: « Mettre à jour (2) »', what='label')
+    c.eq(norm(c.text(btn('ouest'))), norm(UP('updatePack').replace('{n}', '1')), 'it says how many countries it will really treat (France is to do, Great Britain is up to date): « Mettre à jour ce paquet (1) » (SOG-0589)', what='label')
     before = _cov_count(c)
     n0 = len(st['posts'])
     c.tap(btn('ouest'))
@@ -6709,13 +6709,7 @@ def l88(c):
     c.page.mouse.move(2, 2)
     # the pack's own « Mettre à jour » (SOG-0188) still works: its countries of the coverage only
     n0 = len(st['posts'])
-    c.tap('[data-group-id=amerique] [data-act=update-pack]')
-    c.until("document.querySelector('.f-modal') || true", timeout=6000)
-    c.wait(600)
-    c.eq([sorted(p['args'].get('zones', [])) for p in st['posts'][n0:] if p['verb'] == 'status'][:1], [['ca', 'us']], 'the pack\'s update reads the state of ITS countries of the coverage', what='pack update')
-    if c.count('.f-modal'):
-        c.tap('.f-modal [data-no]')
-        c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question closes')
+    c.eq([c.count('[data-group-id=amerique] [data-act=update-pack]'), c.count('[data-group-id=amerique] button[disabled][data-act=update-pack]'), len(st['posts']) - n0], [0, 0, 0], 'its two countries are up to date: « Mettre à jour ce paquet » is NOT shown (SOG-0589: at zero, never a grey button) and nothing is read (the gesture itself is covered by L68 and L183)', what='no pack update')
     # ---- 4. the sheet: wide, to the right of the map; phone, the whole screen with a back button
     c.tap('[data-group-id=amerique] [data-act=grp-toggle]')
     c.until("document.querySelectorAll('[data-group-body]').length === 0", timeout=4000, what='the pack closes')
@@ -12041,3 +12035,30 @@ def l182(c):
         c.shot(f'L182_{c.width}_{lang}_open.png')
     c.check_errors()
 
+
+@case('L183', 'Données: the button of an open pack says what the gesture will DO — « Mettre à jour ce paquet (n) », n = the countries it will really treat (counted as « Tout mettre à jour »), no button at zero (SOG-0589)', 'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0589 (the relay reading the captures of SOG-0568; packs.js › packUpdateHtml): « Mettre à jour (7) » counted the countries of the pack that are in the coverage while the gesture treats only those that are not up to date (the plan skips the others): seven countries, one to do, « Tout mettre à jour (2) » above. The ergonomist: the number says what the gesture will DO (`downloadPlan`, fetch + build, as « Tout mettre à jour »), the label is « Mettre à jour ce paquet ({n}) », and at zero the button is NOT shown (no grey button)')
+def l183(c):
+    lang = c.lang
+    word = {'fr': 'Mettre à jour ce paquet ({n})', 'en': 'Update this pack ({n})', 'de': 'Dieses Paket aktualisieren ({n})', 'es': 'Actualizar este paquete ({n})'}[lang]
+    st = _l102_open(c)
+    btn = lambda g: f'[data-group-id={g}] [data-act=update-pack]'
+
+    def open_group(g):
+        if not c.js(f"(e => !!e && e.offsetParent !== null)(document.querySelector('[data-group-id={g}] [data-group-body]'))"):
+            c.tap(f'[data-group-id={g}] [data-act=grp-toggle]')
+        c.until(f"!!document.querySelector('[data-group-id={g}] [data-group-body]')", timeout=8000, what=f'the pack {g} is open')
+        c.wait(200)
+    # ---- 1. Europe de l'Ouest: seven countries in the coverage (fr, lu, be, nl, de, ch, at), two to do (France, Germany) : « Tout mettre à jour (2) » above
+    open_group('europe-west')
+    c.eq([c.count(btn('europe-west')), norm(c.text(btn('europe-west')))], [1, norm(word.replace('{n}', '2'))], 'a pack of seven countries, two of them to do (France, Germany): the button says 2, the number of the countries the gesture treats', what='two of seven')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-group-id=europe-west]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L183_{c.width}_{lang}_pack.png')
+    # ---- 2. a pack with nothing to do (the countries of the east: all up to date): NO button, not even a grey one
+    open_group('europe-east')
+    c.eq([c.count('[data-group-id=europe-east] [data-group-body]'), c.count(btn('europe-east')), c.count('[data-group-id=europe-east] button[disabled][data-act=update-pack]')], [1, 0, 0], 'a pack whose countries are all up to date: no « Mettre à jour ce paquet » at all, no grey button', what='zero')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-group-id=europe-east]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L183_{c.width}_{lang}_pack_none.png')
+    c.check_errors()
