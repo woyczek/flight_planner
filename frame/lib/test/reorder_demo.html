@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- Démonstration du bloc des flèches « Plus tôt » / « Plus tard » (frame/lib/reorder.js, SOG-0482) monté comme un module le monterait : les TROIS listes de la maquette de l'itinéraire (la route de départ, la suite
      du tiroir 1, les tiroirs entre eux), des noms inventés. Une flèche déplace d'un cran dans SA liste et jamais plus loin ; celle d'un bord est grisée avec son titre ; un tiroir bouge avec sa suite ; le focus revient
-     sur la flèche. Adresse : ?lang=fr|en|de|es&design=standard|metro|swiss|…&tone=day|night. window.__demo = { ready, moves, order } pour un pilote (Playwright). -->
+     sur la flèche. 7b : chaque ligne porte aussi sa POIGNÉE (glisser, souris ou toucher) ; ?tall=1 ajoute une quatrième liste de 30 lignes, ?bars=1 un en-tête et une barre collés en haut et en bas (le bord réel
+     de la zone qui défile commence sous eux : cas du défilement à 390). Adresse : ?lang=fr|en|de|es&design=standard|metro|swiss|…&tone=day|night. window.__demo = { ready, moves, order } pour un pilote (Playwright). -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -36,6 +37,36 @@
     flex-direction: column;
     gap: 6px
   }
+  .demo li.row {
+    flex-direction: row;
+    align-items: center
+  }
+  .demo li.row>span:nth-child(2) {
+    flex: 1 1 auto;
+    min-width: 0
+  }
+  .bar {
+    position: sticky;
+    z-index: 5;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: var(--sog-surface);
+    border: 1px solid var(--sog-border)
+  }
+  .bar.top {
+    top: 0
+  }
+  .bar.bottom {
+    bottom: 0;
+    position: fixed;
+    left: 0;
+    right: 0
+  }
+  .demo li.row .f-reorder {
+    flex: 0 1 200px
+  }
   .demo li small {
     color: var(--sog-muted)
   }
@@ -46,7 +77,9 @@
 <script type="module">
   import {
     moveId,
+    moveIdTo,
     arrowsHtml,
+    handleHtml,
     bind,
     focusAfter
   } from '../reorder.js?v=0';
@@ -60,6 +93,11 @@
     suite: ['Suite de route du tiroir 1', 'Route continuation of drawer 1', 'Routenfortsetzung von Fach 1',
       'Continuación de ruta del cajón 1'
     ],
+    long: ['Une longue liste', 'A long list', 'Eine lange Liste', 'Una lista larga'],
+    bars: ['Rangée d’onglets (collée en haut)', 'Tab row (stuck at the top)', 'Tab-Leiste (oben fixiert)',
+      'Fila de pestañas (fija arriba)'
+    ],
+    barsBottom: ['Barre collée en bas', 'Bar stuck at the bottom', 'Unten fixierte Leiste', 'Barra fija abajo'],
     drawers: ['Les tiroirs', 'The drawers', 'Die Fächer', 'Los cajones'],
     limit: ['La limite du tiroir 1 : retirez de l’itinéraire, puis ＋ sous la ligne voulue',
       'The limit of drawer 1: remove it from the route, then ＋ under the line you want',
@@ -82,6 +120,8 @@
   const t = k => T[k][
     ['fr', 'en', 'de', 'es'].indexOf(lang)
   ];
+  const tall = q.get('tall') === '1',
+    bars = q.get('bars') === '1';
   const S = {
     route: [{
       id: 'PT1',
@@ -103,6 +143,17 @@
       suite: n === 1 ? ['PT2'] : []
     }))
   };
+  if (tall) S.long = Array.from({
+    length: 30
+  }, (_, k) => ({
+    id: `L${k + 1}`,
+    name: `Ligne ${k + 1}`
+  }));
+  if (bars) {
+    document.body.insertAdjacentHTML('afterbegin', `<div class="bar top" id="barTop">${t('bars')}</div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="bar bottom" id="barBottom">${t('barsBottom')}</div>`);
+    document.body.style.paddingBottom = '64px';
+  }
   const moves = [];
   const root = document.getElementById('root');
   const reasons = {
@@ -116,21 +167,39 @@
     drawers: {
       up: t('first'),
       down: t('last')
-    }
+    },
+    long: {}
   };
+  const lists = tall ? ['route', 'suite', 'drawers', 'long'] : ['route', 'suite', 'drawers'];
   const draw = () => {
-    root.innerHTML = ['route', 'suite', 'drawers'].map(list => `<h2>${t(list)}</h2><ul data-list="${list}">${S[list].map((x, i) => `<li data-id="${x.id}"><span><b>${x.name}</b>${x.suite && x.suite.length ? ` <small>${t('withSuite')} : ${x.suite.join(', ')}</small>` : ''}</span>${arrowsHtml({
+    root.innerHTML = lists.map(list => `<h2>${t(list)}</h2><ul data-list="${list}">${S[list].map((x, i) => `<li class="row" data-id="${x.id}" data-reorder-row>${handleHtml({
+      lang,
+      list,
+      id: x.id,
+      name: x.name
+    })}<span><b>${x.name}</b>${x.suite && x.suite.length ? ` <small>${t('withSuite')}${lang === 'fr' ? ' ' : ''}: ${x.suite.join(', ')}</small>` : ''}</span>${arrowsHtml({
       lang,
       list,
       id: x.id,
       n: S[list].length,
       i,
       name: x.name,
-      why: list === 'drawers' ? { up: i === 0 ? reasons.drawers.up : '', down: i === S.drawers.length - 1 ? reasons.drawers.down : '' } : reasons[list]
+      why: list === 'long' ? {} : list === 'drawers' ? { up: i === 0 ? reasons.drawers.up : '', down: i === S.drawers.length - 1 ? reasons.drawers.down : '' } : reasons[list]
     })}</li>`).join('')}</ul>`).join('');
   };
   draw();
   bind(root, {
+    onDrop: m => {
+      const r = moveIdTo(S[m.list], m.id, m.to);
+      if (!r) return;
+      S[m.list] = r.items;
+      moves.push(`${m.list}:${m.id}:drop:${m.from}>${m.to}`);
+      draw();
+      focusAfter(root, {
+        ...m,
+        dir: m.to < m.from ? 'up' : 'down'
+      });
+    },
     onMove: m => {
       const r = moveId(S[m.list], m.id, m.dir);
       if (!r) return;

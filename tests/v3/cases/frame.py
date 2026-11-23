@@ -11461,7 +11461,7 @@ def a312(c):
     c.check_errors()
 
 
-@case('A364', "The common block of the « ↑ Plus tôt » / « ↓ Plus tard » arrows (SOG-0482, frame/lib/reorder.js): the pure move (a NEW array, the edge refused, an unreadable index or direction refused, a drawer moves WITH its suite), the two arrows (the arrow at an edge GREYED with its title, never hidden; an element alone in its list: both greyed; hostile texts stay text; four languages), the delegated listener (an open arrow calls, a greyed arrow or an unknown direction does not) and the focus given back after the redraw", 'A',
+@case('A364', "The common block of the « ↑ Plus tôt » / « ↓ Plus tard » arrows (SOG-0482, frame/lib/reorder.js): the pure move (a NEW array, the edge refused, an unreadable index or direction refused, a drawer moves WITH its suite), the two arrows (the arrow at an edge GREYED with its title, never hidden; an element alone in its list: both greyed; hostile texts stay text; four languages), the delegated listener (an open arrow calls, a greyed arrow or an unknown direction does not) and the focus given back after the redraw; and (lot 7b) the handle and the drag: the pure plan (the insertion case, the 6 px threshold, the step of the automatic scroll bounded to the list), the pointer gesture (mark, drop, Esc, cancel, lost focus, a second finger, the right button, a list inside a list, never out of its list) and the scroll at the edge", 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0482 (Création, lot 3; mock-up modules/missions/maquette/atelier_itineraire_v2.html, point (a)): three simple lists (the departure route, the continuation of each drawer, the drawers among themselves), arrows first; no arrow ever crosses a boundary; a greyed arrow stays visible with a title that says why; the block draws no row and redraws nothing')
 def a364(c):
@@ -11516,4 +11516,170 @@ def a365(c):
     c.ok(sizes and all(h >= 43.5 and d <= 1 for h, d in sizes), sizes, 'every pair of arrows: 44 px high, the two buttons of the same width')
     c.ok(c.js("document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"), 'horizontal scroll', 'no horizontal scroll')
     c.shot(f'A365_fleches_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+def _grab(c):
+    """A pointer for the drag cases: a finger (Chrome's touch events, the way a phone sends them) on a phone, the mouse on a screen.
+    Returns (down, move, up) : down(x, y), move(x, y, steps), up()."""
+    if c.phone:
+        cdp = c.context.new_cdp_session(c.page)
+        last = {}
+
+        def touch(kind, x=None, y=None):
+            cdp.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': [] if kind == 'touchEnd' else [{'x': x, 'y': y, 'id': 1}]})
+            c.page.wait_for_timeout(16)
+
+        def down(x, y):
+            last.update(x=x, y=y)
+            touch('touchStart', x, y)
+
+        def move(x, y, steps=6):
+            x0, y0 = last['x'], last['y']
+            for k in range(1, steps + 1):
+                touch('touchMove', x0 + (x - x0) * k / steps, y0 + (y - y0) * k / steps)
+            last.update(x=x, y=y)
+
+        return down, move, lambda: touch('touchEnd')
+    m = c.page.mouse
+    last = {}
+
+    def down(x, y):
+        last.update(x=x, y=y)
+        m.move(x, y)
+        m.down()
+
+    def move(x, y, steps=6):
+        m.move(x, y, steps=steps)
+        last.update(x=x, y=y)
+
+    return down, move, m.up
+
+
+@case('A366', "The handle and the drag of the arrows block (SOG-0482 lot 7b, frame/lib/reorder.js, the three lists of the mock-up in frame/lib/test/reorder_demo.html): each line carries a 44 px handle, for the pointer only (hidden from a screen reader, not in the tab order, its title says what it does and the line's name); nothing moves under 6 px; past it the held line fades and an insertion bar shows between two lines; at release the line lands there (a drawer with its continuation); Esc cancels; the drag never leaves its list; four languages", 'A',
+      tags=('launcher',), designs=('standard',), langs4=True,
+      rule='SOG-0482 lot 7b (Création, review § 3): the gesture is in the frame block, not in the module; the pointer (mouse, touch) drags the handle; never past the limit of its list; an insertion mark during the gesture; Esc cancels; under 6 px nothing moves (a scroll is not a drag); no keyboard drag, the arrows stay the keyboard gesture')
+def a366(c):
+    lang = c.lang
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    title = ['Glisser pour changer la place : ', 'Drag to change the place: ', 'Ziehen, um die Position zu ändern: ', 'Arrastrar para cambiar el lugar: '][i]
+    c.page.goto(f'{c.base}/frame/lib/test/reorder_demo.html?lang={lang}&design={c.design}&tone={c.tone}', wait_until='load')
+    c.until('window.__demo && window.__demo.ready', timeout=15000, what='the demo is mounted')
+    down, move, up = _grab(c)
+    hand = lambda lst, id: f'ul[data-list="{lst}"] li[data-id="{id}"] .f-reorder-handle'
+    box = lambda sel: c.js(f"(() => {{ const r = document.querySelector('{sel}').getBoundingClientRect(); return [r.left, r.top, r.width, r.height] }})()")
+    mid = lambda sel: (lambda b: (b[0] + b[2] / 2, b[1] + b[3] / 2))(box(sel))
+    order = lambda: c.js('window.__demo.order()')
+    marks = lambda: c.js("[...document.querySelectorAll('[data-reorder-drop]')].map(e => e.dataset.id + ':' + e.dataset.reorderDrop)")
+    held = lambda: c.js("[...document.querySelectorAll('[data-reorder-dragging]')].map(e => e.dataset.id)")
+    start = {'route': ['PT1', 'ZONE-1', 'TARGET'], 'suite': ['PT2'], 'drawers': ['T1', 'T2', 'T3', 'T4', 'T5']}
+    # ---- the handle: 44 px, pointer only
+    info = c.js(f"(() => {{ const h = document.querySelector('{hand('drawers', 'T1')}'), r = h.getBoundingClientRect(); return [h.tagName, Math.round(r.width), Math.round(r.height), h.getAttribute('aria-hidden'), h.hasAttribute('tabindex'), h.title, getComputedStyle(h).touchAction, document.querySelectorAll('[data-reorder-handle]').length] }})()")
+    c.eq(info[:6], ['SPAN', 44, 44, 'true', False, title + 'Tiroir 1'], 'the handle: a 44 px zone, hidden from a screen reader, not in the tab order, its title names the line', what='handle')
+    c.eq(info[6:], ['none', 9], 'a finger on the handle does not scroll the page (touch-action: none); one handle per line (3 + 1 + 5)', what='touch-action')
+    # ---- under 6 px: nothing moves
+    x, y = mid(hand('drawers', 'T1'))
+    down(x, y)
+    move(x, y + 4, 2)
+    c.eq([held(), marks(), c.js("document.getElementById('root').hasAttribute('data-reorder-active')")], [[], [], False], 'under 6 px nothing is held and nothing is marked (a scroll or a tap is not a drag)', what='under 6 px')
+    up()
+    c.eq([order(), c.js('window.__demo.moves')], [start, []], 'a tap on the handle changes nothing', what='tap')
+    # ---- past 6 px: the line fades, the bar shows, the line lands there with its continuation
+    down(x, y)
+    t3 = box('ul[data-list="drawers"] li[data-id="T3"]')
+    move(x, t3[1] + t3[3] * 0.8, 8)
+    c.eq([held(), marks()], [['T1'], ['T4:before']], 'T1 is held; the insertion bar is before T4 (the pointer is in the lower half of T3)', what='mid gesture')
+    c.eq(c.js("[getComputedStyle(document.querySelector('[data-reorder-dragging]')).opacity, getComputedStyle(document.querySelector('[data-reorder-drop]')).boxShadow !== 'none']"), ['0.55', True], 'the held line is faded and the mark is drawn', what='look')
+    c.shot(f'A366_glisser_{c.width}_{lang}.png')
+    up()
+    c.eq(order()['drawers'], ['T2', 'T3', 'T1', 'T4', 'T5'], 'T1 landed after T3', what='drop')
+    c.eq(c.js('window.__demo.moves'), ['drawers:T1:drop:0>2'], 'one drop: list, line, from, to', what='moves')
+    c.ok('PT2' in c.text('ul[data-list="drawers"] li[data-id="T1"] small'), c.text('ul[data-list="drawers"] li[data-id="T1"] small'), 'the drawer moved WITH its continuation')
+    c.eq([held(), marks()], [[], []], 'the attributes are gone after the drop', what='clean')
+    # ---- Esc cancels
+    x, y = mid(hand('drawers', 'T5'))
+    down(x, y)
+    t2 = box('ul[data-list="drawers"] li[data-id="T2"]')
+    move(x, t2[1] + 4, 8)
+    c.eq(held(), ['T5'], 'T5 is held', what='held T5')
+    c.key('Escape')
+    c.eq([held(), marks(), c.js("document.getElementById('root').hasAttribute('data-reorder-active')")], [[], [], False], 'Esc: everything is put away', what='esc')
+    up()
+    c.eq(order()['drawers'], ['T2', 'T3', 'T1', 'T4', 'T5'], 'and nothing landed', what='esc order')
+    # ---- the drag never leaves its list
+    x, y = mid(hand('route', 'ZONE-1'))
+    down(x, y)
+    move(x, y + 30, 4)
+    move(x, c.height - 2, 8)
+    c.eq(marks(), ['TARGET:after'], 'far below everything (the drawers, the continuation): the bar is after the LAST LINE OF ITS OWN LIST', what='own list')
+    up()
+    c.eq(order(), {'route': ['PT1', 'TARGET', 'ZONE-1'], 'suite': ['PT2'], 'drawers': ['T2', 'T3', 'T1', 'T4', 'T5']}, 'ZONE-1 is last of the departure route; the other two lists are as they were: no line changed list', what='no crossing')
+    c.ok(c.js("document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"), 'horizontal scroll', 'no horizontal scroll')
+    c.check_errors()
+
+
+@case('A367', "The drag scrolls by itself at the edge of the scrolling zone (SOG-0482 lot 7b, a list taller than the screen under a sticky tab row and a bar stuck at the bottom, frame/lib/test/reorder_demo.html?tall=1&bars=1): the finger near the real bottom edge (above the stuck bar) scrolls the page down; near the real top edge (under the tab row) it scrolls up; away from the edges nothing scrolls; Esc stops it and cancels; the scroll stops at the end of the list (the space after it is not crossed); the line dropped at the end of the list lands last", 'A',
+      tags=('launcher',), designs=('standard',),
+      rule='SOG-0482 lot 7b (relay, 22-23 Nov): at 390 the route of the test model is taller than a screen (P27, P28 scroll): without the automatic scroll a drawer cannot be dragged from the top to the bottom by touch; the real top edge is under the tab row stuck at the top; the scroll stays bounded to the list and stops at release and at Esc')
+def a367(c):
+    c.page.goto(f'{c.base}/frame/lib/test/reorder_demo.html?lang={c.lang}&design={c.design}&tone={c.tone}&tall=1&bars=1', wait_until='load')
+    c.until('window.__demo && window.__demo.ready', timeout=15000, what='the demo is mounted')
+    down, move, up = _grab(c)
+    sy = lambda: c.js('Math.round(scrollY)')
+    bar_top = c.js("document.getElementById('barTop').getBoundingClientRect().bottom")
+    bar_bot = c.js("document.getElementById('barBottom').getBoundingClientRect().top")
+    sel = 'ul[data-list="long"] li[data-id="L1"] .f-reorder-handle'
+    c.js("(() => { const r = document.querySelector('ul[data-list=\"long\"] li[data-id=\"L1\"]').getBoundingClientRect(); scrollTo(0, scrollY + r.top - 130) })()")
+    c.wait(150)
+    s0 = sy()
+    b = c.js(f"(() => {{ const r = document.querySelector('{sel}').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }})()")
+    c.ok(c.js("document.scrollingElement.scrollHeight") > c.height * 2, c.js("document.scrollingElement.scrollHeight"), 'the page is taller than two screens (the list does not fit)')
+    down(b[0], b[1])
+    move(b[0], b[1] + 20, 4)
+    # ---- away from the edges: nothing scrolls
+    move(b[0], 300, 6)
+    c.wait(500)
+    c.eq(sy(), s0, 'the finger in the middle of the screen: the page does not scroll', what='middle')
+    # ---- the real bottom edge is ABOVE the stuck bar
+    move(b[0], bar_bot - 20, 6)
+    c.wait(1000)
+    s1 = sy()
+    c.ok(s1 > s0 + 300, [s0, s1], 'the finger 20 px above the bar stuck at the bottom: the page scrolls down by itself (> 300 px in a second)')
+    c.ok(c.js("document.querySelectorAll('[data-reorder-dragging]').length") == 1 and c.js("document.querySelectorAll('[data-reorder-drop]').length") == 1, 'held / marked', 'the line is held and the insertion bar follows the scroll')
+    # ---- the real top edge is UNDER the tab row
+    move(b[0], 300, 6)
+    c.wait(300)
+    s2 = sy()
+    move(b[0], bar_top + 20, 6)
+    c.wait(700)
+    s3 = sy()
+    c.ok(s3 < s2 - 100, [s2, s3], 'the finger 20 px under the tab row stuck at the top: the page scrolls up by itself (the real top edge is under the row, not the top of the screen)')
+    # ---- Esc stops the scroll and cancels
+    c.key('Escape')
+    s4 = sy()
+    c.wait(300)
+    c.eq([sy(), c.js("document.querySelectorAll('[data-reorder-dragging],[data-reorder-drop]').length")], [s4, 0], 'Esc: the scroll stops and everything is put away', what='esc')
+    up()
+    c.eq([c.js('window.__demo.moves'), c.js('window.__demo.order().long.slice(0, 3)')], [[], ['L1', 'L2', 'L3']], 'and nothing landed', what='esc order')
+    # ---- the scroll is bounded to the list; the line dropped at the end lands last
+    c.js("(() => { const r = document.querySelector('ul[data-list=\"long\"] li[data-id=\"L1\"]').getBoundingClientRect(); scrollTo(0, scrollY + r.top - 130) })()")
+    c.wait(150)
+    b = c.js(f"(() => {{ const r = document.querySelector('{sel}').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }})()")
+    down(b[0], b[1])
+    move(b[0], b[1] + 20, 4)
+    move(b[0], bar_bot - 20, 6)
+    c.wait(3500)
+    end = c.js("(() => { const l = document.querySelector('ul[data-list=\"long\"]').getBoundingClientRect(), o = document.getElementById('barBottom').getBoundingClientRect(); return [Math.round(l.bottom), Math.round(o.top), Math.round(document.scrollingElement.scrollHeight - innerHeight - scrollY)] })()")
+    c.ok(end[0] <= end[1] + 2 and end[2] >= 30, end, 'the scroll stopped when the list was fully in view above the bar: the space after the list (64 px) was not crossed')
+    s5 = sy()
+    c.wait(300)
+    c.eq(sy(), s5, 'it stays stopped while the finger stays there', what='stopped')
+    c.shot(f'A367_defilement_{c.width}_{c.lang}.png')
+    up()
+    c.wait(300)
+    order = c.js('window.__demo.order().long')
+    c.eq([order[-1], len(order), c.js('window.__demo.moves')], ['L1', 30, ['long:L1:drop:0>29']], 'released at the end: L1 is the last line of the long list, nothing lost', what='dropped last')
+    s6 = sy()
+    c.wait(300)
+    c.eq(sy(), s6, 'at release the scroll stops', what='release')
     c.check_errors()

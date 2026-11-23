@@ -485,6 +485,44 @@ th:is([aria-sort="ascending"], [aria-sort="descending"]):has(> .f-sortbtn) {
   min-height: var(--sog-touch)
 }
 
+/* poignée du glisser (reorder.js, 7b) : une zone de 44 px au pointeur seulement (touch-action: none : le doigt qui la tient ne fait pas défiler la page), six points dessinés (aucun glyphe de police) ;
+   pendant le geste : la ligne tenue (data-reorder-dragging) est pâle, le repère d'insertion (data-reorder-drop) est un trait de l'accent sur le bord de la ligne voisine, le texte n'est pas sélectionnable */
+.f-reorder-handle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sog-touch);
+  min-height: var(--sog-touch);
+  color: var(--sog-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none
+}
+.f-reorder-handle::before {
+  content: "";
+  width: 14px;
+  height: 21px;
+  background: radial-gradient(circle, currentColor 1.5px, transparent 2px) 0 0 / 7px 7px
+}
+[data-reorder-active],
+[data-reorder-active] .f-reorder-handle {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none
+}
+[data-reorder-dragging] {
+  opacity: .55
+}
+[data-reorder-drop="before"] {
+  box-shadow: 0 -3px 0 0 var(--sog-accent)
+}
+[data-reorder-drop="after"] {
+  box-shadow: 0 3px 0 0 var(--sog-accent)
+}
+
 /* ---- tuiles de chiffres */
 .f-tiles {
   display: grid;

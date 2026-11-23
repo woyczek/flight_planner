@@ -6,6 +6,22 @@
 <head>
 <meta charset="utf-8">
 <title>reorder — bench</title>
+<style>
+  /* la scène ne bouge pas quand le compte rendu s'allonge : les essais du glisser mesurent des positions */
+  #stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 340px;
+    max-height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    z-index: 2
+  }
+  #out {
+    margin-left: 360px
+  }
+</style>
 </head>
 <body>
 <pre id="out"></pre>
@@ -17,9 +33,18 @@
     canMove,
     move,
     moveId,
+    moveTo,
+    moveIdTo,
     arrowsHtml,
+    handleHtml,
     bind,
-    focusAfter
+    focusAfter,
+    DRAG_MIN,
+    pastThreshold,
+    slotAt,
+    dragPlan,
+    scrollStep,
+    limitStep
   } from '../reorder.js?v=0';
   const rows = [],
     out = document.getElementById('out'),
@@ -341,6 +366,437 @@
   });
   eq('le même identifiant dans deux listes : la liste choisit', [f.dataset.list, f.dataset.reorder], ['suite', 'down']);
   eq('DIRS est figé', [Object.isFrozen(DIRS), DIRS], [true, ['up', 'down']]);
+
+  {
+    // ======== 7b : la poignée et le glisser ==================================================================
+    // ---- moveTo / moveIdTo : le geste vers un indice d'arrivée -------------------------------------------
+    eq('moveTo : a de 0 à 2, c\'est ["b","c","a","d"] ; de 3 à 1 ["a","d","b","c"]', [moveTo(L, 0, 2), moveTo(L, 3, 1)], [
+      ['b', 'c', 'a', 'd'],
+      ['a', 'd', 'b', 'c']
+    ]);
+    eq('moveTo : la même place, un indice illisible, pas une liste → null ; la liste n\'est pas modifiée', [moveTo(L, 1, 1), moveTo(L, 1,
+      9), moveTo(L, -1, 0), moveTo(L, 1.5, 2), moveTo('abcd', 0, 1), moveTo(null, 0, 1), L], [null, null, null, null,
+      null, null, ['a', 'b', 'c', 'd']
+    ]);
+    const r2t = moveIdTo(drawers, 'T1', 2);
+    eq('moveIdTo : un tiroir glissé en dernier emporte sa suite ; from et to rendus', [r2t.items.map(x => x.id), r2t.items[2].suite, r2t
+      .from, r2t.to
+    ], [
+      ['T2', 'T3', 'T1'],
+      ['PT2'], 0, 2
+    ]);
+    eq('moveIdTo : l\'identifiant inconnu, la même place → null ; un data-id (texte) lu pour un identifiant numérique', [moveIdTo(drawers,
+      'T9', 1), moveIdTo(drawers, 'T2', 1), moveIdTo([{
+      n: 7
+    }, {
+      n: 8
+    }], '7', 1, x => x.n).items.map(x => x.n)], [null, null, [8, 7]]);
+
+    // ---- handleHtml : la poignée, au pointeur seulement --------------------------------------------------
+    const hd = parse(handleHtml({
+      lang: 'de',
+      list: 'drawers',
+      id: 'T1',
+      name: 'Fach <b>1</b>'
+    })).firstElementChild;
+    eq('la poignée : un span (pas un bouton, pas de tabulation), caché des lecteurs d\'écran, avec sa liste et son identifiant', [hd
+      .tagName, hd.className, hd.hasAttribute('data-reorder-handle'), hd.dataset.list, hd.dataset.id, hd.getAttribute('aria-hidden'), hd
+      .hasAttribute(
+        'tabindex'), hd.querySelector('b')
+    ], ['SPAN', 'f-reorder-handle', true, 'drawers', 'T1', 'true', false, null]);
+    eq('la poignée : le titre dit le nom, échappé, dans la langue', hd.title, 'Ziehen, um die Position zu ändern: Fach <b>1</b>');
+    eq('la poignée : le titre en quatre langues, sans nom → le texte général', ['fr', 'en', 'de', 'es'].map(l => parse(handleHtml({
+      lang: l,
+      list: 'a',
+      id: 'b'
+    })).firstElementChild.title), TEXTS.handleBare);
+    eq('la poignée : le titre avec nom en quatre langues', ['fr', 'en', 'de', 'es'].map(l => parse(handleHtml({
+      lang: l,
+      list: 'a',
+      id: 'b',
+      name: 'N'
+    })).firstElementChild.title), TEXTS.handle.map(x => x.replace('{n}', 'N')));
+    eq('la poignée : un identifiant qui casse l\'attribut reste du texte', parse(handleHtml({
+      list: 'a',
+      id: '"><img src=x onerror=alert(1)>'
+    })).querySelectorAll('img').length, 0);
+
+    // ---- les calculs purs du glisser ---------------------------------------------------------------------
+    eq('le seuil : 6 px (3-4 = 5 : pas encore ; 6-0, 4-5 : oui ; illisible : non)', [DRAG_MIN, pastThreshold(3, 4), pastThreshold(6, 0),
+      pastThreshold(-4, 5), pastThreshold(NaN, 9), pastThreshold(undefined, 9)
+    ], [6, false, true, true, false, false]);
+    const R = [0, 50, 100, 150].map(t => ({
+      top: t,
+      bottom: t + 50
+    }));
+    eq('la case d\'insertion : le nombre de lignes dont le milieu est au-dessus du pointeur', [-100, 10, 30, 60, 130, 190, 500].map(y =>
+      slotAt(R, y)), [0, 0, 1, 1, 3, 4, 4]);
+    eq('le plan, ligne 2 tenue (from 1) : au-dessus de la première → to 0, repère avant la ligne 0', dragPlan(R, 1, 10), {
+      slot: 0,
+      to: 0,
+      mark: {
+        index: 0,
+        side: 'before'
+      }
+    });
+    eq('le plan : sur sa propre place (cases 1 et 2) → to === from, aucun repère', [dragPlan(R, 1, 60).mark, dragPlan(R, 1, 60).to,
+      dragPlan(R, 1, 110).slot, dragPlan(R, 1, 110).mark
+    ], [null, 1, 2, null]);
+    eq('le plan : plus bas → to après retrait de la ligne tenue (slot 3 → to 2), repère avant la ligne 3', dragPlan(R, 1, 130), {
+      slot: 3,
+      to: 2,
+      mark: {
+        index: 3,
+        side: 'before'
+      }
+    });
+    eq('le plan : sous la dernière → to est la dernière place, repère APRÈS la dernière ligne', dragPlan(R, 1, 900), {
+      slot: 4,
+      to: 3,
+      mark: {
+        index: 3,
+        side: 'after'
+      }
+    });
+    eq('le plan : jamais hors de la liste, quel que soit le pointeur (to entre 0 et n-1)', [-1e9, -1, 0, 75, 175, 1e9].map(y => dragPlan(R,
+      2, y).to).every(v => v >= 0 && v <= 3), true);
+    eq('le plan : liste vide, indice illisible, hauteur illisible → null', [dragPlan([], 0, 10), dragPlan(R, 9, 10), dragPlan(R, 1, NaN),
+      dragPlan(null, 0, 1)
+    ], [null, null, null, null]);
+    eq('le pas de défilement : au milieu 0 ; au bord plein (±20) ; proportionnel à l\'approche ; au-delà du bord plein', [scrollStep(400,
+        100, 700), scrollStep(100, 100, 700), scrollStep(128, 100, 700), scrollStep(40, 100, 700), scrollStep(700, 100, 700),
+      scrollStep(672, 100, 700), scrollStep(900, 100, 700)
+    ], [0, -20, -10, -20, 20, 10, 20]);
+    eq('le pas de défilement : une zone minuscule (deux fois la bande à peine), des bornes illisibles → 0 ou borné', [scrollStep(30, 0, 60),
+      scrollStep(5, 0, 60), scrollStep(NaN, 0, 600), scrollStep(10, 600, 0), scrollStep(10, 5, 5)
+    ], [0, -17, 0, 0, 0]);
+    eq('le pas borné à la liste : plus haut seulement si la première ligne dépasse en haut, plus bas seulement si la dernière dépasse en bas',
+      [limitStep(-10, 120, 900, 100, 700), limitStep(-10, 50, 900, 100, 700), limitStep(10, 100, 600, 100, 700), limitStep(10, 100, 900,
+        100, 700), limitStep(0, 0, 9999, 100, 700), limitStep(10, 100, 705, 100, 700), limitStep(-10, 96, 900, 100, 700), limitStep(10,
+        100, 701, 100, 700)], [0, -10, 0, 10, 0, 5, -4, 0]);
+
+    // ---- le geste : les événements du pointeur sur une page nue -----------------------------------------
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const rowsHtml = (list, ids, extra = '') => ids.map(x => `<div data-reorder-row data-id="${x}" style="height:50px;box-sizing:border-box;border-bottom:1px solid #ccc">${handleHtml({
+    list,
+    id: x
+  }).replace('class="f-reorder-handle"', 'class="f-reorder-handle" style="display:inline-block;width:44px;height:44px;background:#ddd"')}${x}${extra}</div>`).join('');
+    stage.innerHTML = `<div id="g1" style="width:300px">${rowsHtml('a', ['a1', 'a2', 'a3', 'a4'])}</div>`;
+    const g1 = stage.querySelector('#g1'),
+      calls = [],
+      pe = (type, o = {}) => new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        pointerType: 'mouse',
+        ...o
+      });
+    let unbind = bind(g1, {
+      onDrop: m => calls.push(m)
+    });
+    const hand = id => g1.querySelector(`[data-reorder-handle][data-id="${id}"]`);
+    const rowOf = id => hand(id).closest('[data-reorder-row]');
+    const cy = id => {
+      const r = rowOf(id).getBoundingClientRect();
+      return r.top + r.height / 2;
+    };
+    const marks = () => [...g1.querySelectorAll('[data-reorder-drop]')].map(e => e.dataset.id + ':' + e.dataset.reorderDrop);
+    const dragging = () => [...g1.querySelectorAll('[data-reorder-dragging]')].map(e => e.dataset.id);
+    const start = (id, o = {}) => {
+      const r = hand(id).getBoundingClientRect();
+      X = r.left + 20;
+      hand(id).dispatchEvent(pe('pointerdown', {
+        clientX: r.left + 20,
+        clientY: r.top + 20,
+        ...o
+      }));
+      return r;
+    };
+    let X = 20;
+    const mv = (y, o = {}) => window.dispatchEvent(pe('pointermove', {
+      clientX: X,
+      clientY: y,
+      ...o
+    }));
+    const up = (y, o = {}) => window.dispatchEvent(pe('pointerup', {
+      clientX: X,
+      clientY: y,
+      ...o
+    }));
+    let r = start('a2');
+    mv(r.top + 20 + 5);
+    eq('sous 6 px : rien ne bouge (ni ligne tenue, ni repère, pas d\'attribut sur la racine)', [dragging(), marks(), g1.hasAttribute(
+      'data-reorder-active')], [
+      [],
+      [], false
+    ]);
+    up(r.top + 25);
+    eq('un toucher sans glisser (moins de 6 px) : onDrop n\'est pas appelé', calls.length, 0);
+    r = start('a2');
+    mv(cy('a2') + 8);
+    eq('à 6 px et plus : la ligne tenue porte son attribut, la racine aussi ; la même place : aucun repère', [dragging(), g1.hasAttribute(
+      'data-reorder-active'), marks()], [
+      ['a2'], true, []
+    ]);
+    mv(cy('a4') + 10);
+    eq('le pointeur sous la dernière ligne : le repère est APRÈS a4', marks(), ['a4:after']);
+    mv(cy('a3') + 20);
+    eq('entre a3 et a4 : le repère est avant a4 (un seul repère à la fois)', marks(), ['a4:before']);
+    mv(5);
+    eq('au-dessus de la première : le repère est avant a1', marks(), ['a1:before']);
+    mv(cy('a4') + 10);
+    up(cy('a4') + 10);
+    eq('au lâcher : onDrop({ list, id, from, to }) une fois ; attributs retirés', [calls.map(c => [c.list, c.id, c.from, c.to]), dragging(),
+      marks(), g1.hasAttribute('data-reorder-active')
+    ], [
+      [
+        ['a', 'a2', 1, 3]
+      ],
+      [],
+      [], false
+    ]);
+    calls.length = 0;
+    r = start('a2');
+    mv(cy('a2') + 20);
+    mv(cy('a2') + 10);
+    up(cy('a2') + 10);
+    eq('lâché sur sa propre place (to === from) : onDrop n\'est pas appelé', calls.length, 0);
+    r = start('a3');
+    mv(cy('a1') - 10);
+    const esc = [];
+    const spy = e => esc.push(e.key);
+    document.addEventListener('keydown', spy);
+    document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    }));
+    document.removeEventListener('keydown', spy);
+    up(cy('a1') - 10);
+    eq('Échap pendant le glisser : tout est retiré, rien n\'est déposé, l\'Échap n\'atteint pas le module (il fermerait un tiroir)', [
+      dragging(), marks(), g1.hasAttribute('data-reorder-active'), calls.length, esc.length
+    ], [
+      [],
+      [], false, 0, 0
+    ]);
+    r = start('a3');
+    mv(cy('a1') - 10);
+    window.dispatchEvent(pe('pointercancel'));
+    up(cy('a1') - 10);
+    eq('pointercancel (le navigateur reprend le geste) : annulé, rien n\'est déposé', [dragging(), marks(), calls.length], [
+      [],
+      [], 0
+    ]);
+    r = start('a3');
+    mv(cy('a1') - 10);
+    window.dispatchEvent(new Event('blur'));
+    up(cy('a1') - 10);
+    eq('la fenêtre perd le focus pendant le glisser : annulé', [dragging(), marks(), calls.length], [
+      [],
+      [], 0
+    ]);
+    r = start('a3');
+    mv(cy('a1') - 10, {
+      pointerId: 2
+    });
+    up(cy('a1') - 10, {
+      pointerId: 2
+    });
+    eq('un autre doigt (autre pointerId) : ignoré', [dragging(), calls.length], [
+      [], 0
+    ]);
+    up(cy('a1') - 10);
+    r = start('a3', {
+      button: 2
+    });
+    mv(cy('a1') - 10);
+    eq('le bouton droit de la souris : pas de glisser', [dragging(), calls.length], [
+      [], 0
+    ]);
+    up(cy('a1') - 10, {
+      button: 2
+    });
+    r = start('a3', {
+      isPrimary: false
+    });
+    mv(cy('a1') - 10);
+    eq('un second doigt (pas le pointeur principal) : pas de glisser', dragging(), []);
+    up(cy('a1') - 10);
+    r = start('a3', {
+      pointerType: 'touch'
+    });
+    mv(cy('a1') - 10, {
+      pointerType: 'touch'
+    });
+    up(cy('a1') - 10, {
+      pointerType: 'touch'
+    });
+    eq('au toucher : le même geste (a3 devant a1)', calls.map(c => [c.id, c.from, c.to]), [
+      ['a3', 2, 0]
+    ]);
+    calls.length = 0;
+    r = start('a3');
+    mv(cy('a1') - 10);
+    unbind();
+    eq('unbind pendant le glisser : le geste est annulé, attributs retirés', [dragging(), marks(), g1.hasAttribute('data-reorder-active')],
+      [
+        [],
+        [], false
+      ]);
+    up(cy('a1') - 10);
+    eq('et rien n\'est déposé après unbind', calls.length, 0);
+    unbind = bind(g1, {
+      onMove: () => {}
+    });
+    r = start('a2');
+    mv(cy('a1'));
+    eq('sans onDrop : la poignée ne fait rien (les flèches seules)', [dragging(), calls.length], [
+      [], 0
+    ]);
+    up(cy('a1'));
+    unbind();
+    stage.innerHTML = `<div id="g2">${rowsHtml('a', ['a1', 'a2', 'a3'])}<div data-id="x">x${handleHtml({
+    list: 'a',
+    id: 'x'
+  })}</div></div>`;
+    const g2 = stage.querySelector('#g2');
+    const calls2 = [];
+    bind(g2, {
+      onDrop: m => calls2.push(m)
+    });
+    const h2 = g2.querySelector('[data-reorder-handle][data-id="a1"]').getBoundingClientRect();
+    g2.querySelector('[data-reorder-handle][data-id="a1"]').dispatchEvent(pe('pointerdown', {
+      clientX: h2.left + 5,
+      clientY: h2.top + 5
+    }));
+    mv(h2.top + 120);
+    up(h2.top + 120);
+    eq('une ligne sans data-reorder-row dans la liste : le module n\'a pas fini son contrat, le geste est abandonné sans rien déposer', [
+      calls2.length, g2.querySelectorAll('[data-reorder-dragging],[data-reorder-drop]').length
+    ], [0, 0]);
+
+    // ---- une liste dans une liste : le tiroir contient sa suite ; le glisser ne franchit jamais sa liste --------
+    stage.innerHTML = `<div id="g3" style="width:300px"><div data-reorder-row data-id="T1" style="box-sizing:border-box;border-bottom:1px solid #ccc">${handleHtml({
+    list: 'drawers',
+    id: 'T1'
+  })}T1<div id="suiteBox">${rowsHtml('suite', ['PT2', 'PT3'])}</div></div>${rowsHtml('drawers', ['T2', 'T3'])}</div>`;
+    const g3 = stage.querySelector('#g3'),
+      calls3 = [];
+    bind(g3, {
+      onDrop: m => calls3.push(m)
+    });
+    const hh = (l, id) => g3.querySelector(`[data-reorder-handle][data-list="${l}"][data-id="${id}"]`);
+    let b3 = hh('drawers', 'T1').getBoundingClientRect();
+    hh('drawers', 'T1').dispatchEvent(pe('pointerdown', {
+      clientX: b3.left + 5,
+      clientY: b3.top + 5
+    }));
+    mv(b3.top + 30);
+    mv(5000);
+    up(5000);
+    eq('un tiroir glissé tout en bas : il passe en dernier DES TIROIRS (to 2), jamais dans la suite ; sa suite l\'accompagne (elle est dans sa ligne)',
+      [calls3.map(c => [c.list, c.id, c.from, c.to]), g3.querySelector('[data-id="T1"]').contains(g3.querySelector('#suiteBox'))], [
+        [
+          ['drawers', 'T1', 0, 2]
+        ], true
+      ]);
+    calls3.length = 0;
+    b3 = hh('suite', 'PT2').getBoundingClientRect();
+    hh('suite', 'PT2').dispatchEvent(pe('pointerdown', {
+      clientX: b3.left + 5,
+      clientY: b3.top + 5
+    }));
+    mv(b3.top + 30);
+    mv(5000);
+    up(5000);
+    eq('une ligne de la suite glissée loin sous les tiroirs : elle reste dans la suite (to 1), jamais dans la liste des tiroirs', calls3
+      .map(c => [c.list, c.id, c.from, c.to]), [
+        ['suite', 'PT2', 0, 1]
+      ]);
+    const bits = [];
+    stage.innerHTML = `<div id="g4">${rowsHtml('a', ['a1'])}</div>`;
+    bind(stage.querySelector('#g4'), {
+      onDrop: m => bits.push(m)
+    });
+    const h4 = stage.querySelector('[data-reorder-handle]');
+    const b4 = h4.getBoundingClientRect();
+    h4.dispatchEvent(pe('pointerdown', {
+      clientX: b4.left + 5,
+      clientY: b4.top + 5
+    }));
+    mv(b4.top + 200);
+    up(b4.top + 200);
+    eq('un élément seul dans sa liste : rien à déposer', bits.length, 0);
+
+    // ---- le défilement au bord : borné à la liste, jusqu'au lâcher ---------------------------------------
+    stage.innerHTML = `<div id="sc" style="height:300px;overflow:auto;position:relative;width:300px"><div id="g5">${rowsHtml('a', Array.from({
+    length: 12
+  }, (_, k) => 'r' + (k + 1)))}</div><div style="height:500px">après la liste</div></div>`;
+    const sc = stage.querySelector('#sc'),
+      g5 = stage.querySelector('#g5'),
+      calls5 = [];
+    bind(g5, {
+      onDrop: m => calls5.push(m),
+      edges: () => ({
+        top: 0,
+        bottom: 0
+      })
+    });
+    const scr = sc.getBoundingClientRect(),
+      hr1 = g5.querySelector('[data-reorder-handle][data-id="r1"]').getBoundingClientRect();
+    g5.querySelector('[data-reorder-handle][data-id="r1"]').dispatchEvent(pe('pointerdown', {
+      clientX: hr1.left + 5,
+      clientY: hr1.top + 5
+    }));
+    mv(hr1.top + 60);
+    mv(scr.bottom - 5);
+    await wait(250);
+    const s1 = sc.scrollTop;
+    ck('le doigt au bord bas de la zone qui défile : elle défile toute seule', s1 > 60, 'scrollTop ' + s1);
+    await wait(1500);
+    const s2 = sc.scrollTop,
+      listBottom = g5.getBoundingClientRect().bottom - scr.top;
+    ck('et s\'arrête quand la liste est entièrement visible : l\'espace après la liste n\'est pas parcouru', s2 >= s1 && g5
+      .getBoundingClientRect().bottom <= scr.bottom + 1 && sc.scrollHeight - sc.clientHeight - s2 > 100, `scrollTop ${s2}, bas de la liste ${listBottom}, max ${sc.scrollHeight - sc.clientHeight}`);
+    const s3 = sc.scrollTop;
+    await wait(250);
+    eq('arrivé au bout de la liste, il ne défile plus', sc.scrollTop, s3);
+    mv(scr.top + 3);
+    await wait(300);
+    ck('le doigt au bord haut : elle remonte', sc.scrollTop < s3, `${s3} → ${sc.scrollTop}`);
+    mv(scr.bottom - 5);
+    await wait(150);
+    const s4 = sc.scrollTop;
+    up(scr.bottom - 5);
+    await wait(250);
+    eq('au lâcher le défilement s\'arrête', sc.scrollTop, s4);
+    ck('la ligne tenue est déposée dans la liste (r1 loin vers le bas : to est un indice de la liste)', calls5.length === 1 && calls5[0]
+      .list === 'a' && calls5[0].from === 0 && calls5[0].to > 0 && calls5[0].to <= 11, J(calls5));
+    calls5.length = 0;
+    sc.scrollTop = 0;
+    const hr2 = g5.querySelector('[data-reorder-handle][data-id="r2"]').getBoundingClientRect();
+    g5.querySelector('[data-reorder-handle][data-id="r2"]').dispatchEvent(pe('pointerdown', {
+      clientX: hr2.left + 5,
+      clientY: hr2.top + 5
+    }));
+    mv(hr2.top + 60);
+    mv(scr.bottom - 5);
+    await wait(200);
+    const s5 = sc.scrollTop;
+    document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    }));
+    await wait(250);
+    eq('Échap arrête aussi le défilement', [sc.scrollTop, calls5.length], [s5, 0]);
+    up(scr.bottom - 5);
+    await wait(50);
+    stage.innerHTML = '';
+
+  }
 
   window.__reorderBench.done = true;
   out.append(`\n${window.__reorderBench.pass} passed, ${window.__reorderBench.fail} failed\n`);

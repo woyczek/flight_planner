@@ -1145,6 +1145,44 @@ const unbind = bind(root, { onMove: m => {            // m = { list: 'route', id
 | `focusAfter(root, { list, id, dir })` | after the redraw: the focus on the same-direction arrow of the moved element (matched by `list` AND `id`, so the same identifier in two lists is safe), or on the other one when that one closed (the element reached the edge); returns the focused button or `null` (alone in its list: nothing open) |
 | `TEXTS`, `DIRS` | the block's words in four languages (the two arrows, the group name, the `aria-label`s, the two edge titles); `['up', 'down']`, frozen |
 
+### The handle and the drag (SOG-0482 lot 7b)
+
+The same block also gives the pointer gesture, for a long list: a **handle** on each line, dragged with the mouse, a finger or a pen. **The keyboard and the screen readers keep the arrows** (no drag by keyboard); the handle is `aria-hidden` and out of the tab order. Same discipline as the arrows: the block draws no row and keeps nothing; the module redraws from `onDrop`.
+
+```js
+import { moveIdTo, handleHtml, bind, focusAfter } from '../../frame/lib/reorder.js';
+// draw: the module's line carries data-reorder-row (the line of a drawer CONTAINS its continuation), the handle is the module's to place
+`<li data-reorder-row>${handleHtml({ lang, list: 'drawers', id: x.id, name: x.name })} … ${arrowsHtml({ … })}</li>`
+bind(root, {
+  onMove: …,                                            // the arrows, as above
+  onDrop: m => {                                        // m = { list, id, from, to }: `to` is the index of arrival in the list AFTER the line is taken out; never called when to === from
+    const r = moveIdTo(S[m.list], m.id, m.to);          // { items, from, to } or null
+    if (!r) return;
+    S[m.list] = r.items; save(); draw();
+    focusAfter(root, { ...m, dir: m.to < m.from ? 'up' : 'down' });
+  },
+});
+```
+
+| Export | Gives |
+|---|---|
+| `handleHtml({ lang, list, id, name })` | `<span class="f-reorder-handle" data-reorder-handle data-list data-id aria-hidden="true" title>`: the title says « Glisser pour changer la place : {name} » (four languages, escaped, bounded); the zone is 44 px, `touch-action: none` (a finger held on it does not scroll the page), six dots drawn in CSS |
+| `moveTo(list, from, to)`, `moveIdTo(items, id, to, idOf)` | the drag's move: a NEW array / `{ items, from, to }`; `null` for the same place, an unreadable index, an unknown identifier |
+| `bind(root, { onMove, onDrop, edges })` | with `onDrop`: the drag of any handle under `root`. `edges()` (optional) gives `{ top, bottom }`, the px the page hides under a sticky header and a bottom bar, when the block's own probe is not enough |
+| `dragPlan(rects, from, y)`, `slotAt`, `pastThreshold`, `scrollStep`, `limitStep`, `DRAG_MIN`, `SCROLL_ZONE`, `SCROLL_MAX` | the pure calculations of the gesture (bench A364): the insertion case, the 6 px threshold, the step of the automatic scroll and its bound |
+
+The rules of the gesture:
+
+- **The lines of ONE list are found by their handles**: the block takes the handles with the same `data-list` under `root`, and the `data-reorder-row` line of each. A continuation nested inside a drawer's line is never mistaken for a drawer. A list whose lines are not all marked, or that is not found, is not dragged (nothing is dropped, nothing is left on the page).
+- **Never out of its list**: the insertion case is counted among the lines of that list only, wherever the pointer is; far below the page, the line lands last **of its list**.
+- **Nothing moves under 6 px** (`DRAG_MIN`): a tap, or the start of a scroll, is not a drag. Past it: the line held carries `data-reorder-dragging` (faded), the neighbour of the insertion carries `data-reorder-drop="before|after"` (a bar of the accent), `root` carries `data-reorder-active` (no text selection). Dropping where it started draws no mark and calls nothing.
+- **Esc, `pointercancel`, a window that loses the focus, `unbind()`**: the gesture is cancelled, the attributes are taken off, nothing is dropped; the Esc does not reach the module while a drag is on (it would close a drawer or a sheet).
+- **One pointer only**: another finger or a right click is ignored.
+- **The page scrolls by itself at the edge.** The finger within 56 px (`SCROLL_ZONE`) of the edge of the scrolling zone scrolls it, up to 20 px per frame at the edge (proportional to the approach, full beyond); it is **bounded to the list** (no scroll up once the first line is fully visible, none down once the last one is, never past what is left of the list) and stops at release and at Esc. The scrolling zone is the nearest scrolling ancestor of the line, else the page; **the real edges are under what is stuck**: the block probes the elements `fixed` or `sticky` at the very top and bottom of the window (the tab row, the head, a bar) and starts the edge under them; the module can give `edges()` instead.
+- **CSS** (`primitives.css`): `.f-reorder-handle`, `[data-reorder-dragging]`, `[data-reorder-drop]`, `[data-reorder-active]`, tokens only (`--sog-touch`, `--sog-muted`, `--sog-accent`).
+
+Bench A364 (the pure calculations and the gesture with synthetic pointer events, the scroll in a scrolling box), demonstration `reorder_demo.html` (`?tall=1` adds a list of 30 lines, `?bars=1` a head and a bar stuck at the top and the bottom), cases A366 (the gesture, a finger at 390 / the mouse at 1280, four languages) and A367 (the automatic scroll under the stuck bars).
+
 **The module declares** `'../../frame/lib/reorder.js'` in `meta.files` (I26). **CSS** (`frame/design/primitives.css`, tokens only): `.f-reorder` (a flex row, `--sog-gap-s`), `.f-reorder-btn` (equal width, `--sog-touch` = 44 px high); the greyed look is the common `button:disabled`. The module's own « ＋ » button sits in the same row if it wants (the mock-up's `.mv` bar); the block does not draw it. Bench `frame/lib/test/reorder.html` (A364), demonstration `frame/lib/test/reorder_demo.html` — the three lists of the mock-up (A365). The module's own cases (the Itinéraire list, the drawers' order in the file) are Création's.
 
 ## 13. Service screens (`APP.screens`)
