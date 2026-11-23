@@ -13,6 +13,9 @@
 //   derive(cites, steps) → { verdict: 'ok' | 'ko', comment? } | null : le verdict d'une fiche d'après les pas qui la citent (voir ci-dessous) ; null : rien à écrire.
 // La règle des verdicts (la même que le brief) : un pas MAUVAIS donne « ko » à SES fiches seulement, avec son commentaire ; une fiche reçoit « ok » quand tous les pas qui la citent et qui ne sont pas facultatifs sont bons et
 // qu'au moins un pas qui la cite est bon (un pas facultatif non joué ne bloque pas ; une fiche que citent seulement des pas facultatifs non joués reste en attente) ; « pas joué » n'écrit rien.
+import {
+  own
+} from './untrusted.js'; // la garde « clé propre » est celle du cadre (frame/lib/untrusted.js), jamais une copie
 export const ID = /^SOG-\d{4}$/;
 export const PID = /^C\d{1,3}$/;
 export const LIMITS = {
@@ -36,7 +39,6 @@ export const LIMITS = {
 /** Un texte : sans caractère de commande, rogné, borné ; '' si ce n'est pas un texte. */
 const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
 const ids = (a, n) => [...new Set((Array.isArray(a) ? a : []).filter(x => typeof x === 'string' && ID.test(x)))].slice(0, n);
-const own = (o, k) => o && typeof o === 'object' && Object.hasOwn(o, k) ? o[k] : undefined;
 /** Un titre : un texte, ou { fr, en, de, es } (la forme de recette.json) ; rendu tel quel pour row() de recette.js. */
 const titleOf = (o, n) => {
   if (typeof o === 'string') return text(o, n);
