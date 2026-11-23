@@ -46,6 +46,7 @@ import shutil
 import subprocess
 import sys
 import time
+import types
 import unicodedata
 import zipfile
 import zip_guard
@@ -540,6 +541,18 @@ def _dfs_procedures(job, ctx):
     return out
 
 
+def _pieces_only(data, zone, personal, ctx):
+    """SOG-0568 : les sources à rappeler pour un pays À JOUR dont il ne manque qu'une pièce jamais lue (France : la table des niveaux de l'ENR 1.7, source `enr51`) — ensemble de sources ; None sinon (le
+    pays n'est pas à jour, ou rien ne manque : tout ce que le pays télécharge est rappelé, comme avant). Le geste ne lit QUE ce qui manque : une lecture par cycle et par page. Jamais d'exception."""
+    try:
+        entry = regen_jobs.REGISTRY.get(('base', 'status'))
+        st = types.SimpleNamespace(**entry[0].__globals__).zone_states(data, [zone], sorted(personal), ctx)[zone] if entry else None
+        miss = [g for g in (st or {}).get('gains', {}).get('update', []) if g.get('source')]
+        return {g['source'] for g in miss} if st and st['state'] == 'up-to-date' and miss else None
+    except Exception:      # noqa: BLE001 — l'état d'un pays qui ne se lit pas ne fait pas échouer le téléchargement : tout est rappelé comme avant
+        return None
+
+
 def fetch(job, args, ctx):
     """Verbe base/fetch (voir l'en-tête du module pour la vue et le résultat)."""
     data = ctx['data']
@@ -555,6 +568,10 @@ def fetch(job, args, ctx):
                 (dl if not SOURCES[s]['personal'] or s in personal else skipped).append(s)
             elif k in ('manual', 'pdf'):
                 manual.append(s)  # local (xplane) et computed (mora) : pas de ce travail
+        only = _pieces_only(data, z, personal, ctx)
+        if only is not None:      # un pays à jour, il manque une pièce : seule sa source part (pas de relecture de ce qui est là)
+            dl = [s for s in dl if s in only]
+            manual = []
         plans[z] = (dl, skipped, manual)
         pre = {s: {'state': 'skipped', 'error': 'personal'} for s in skipped}
         pre.update({s: {'state': 'manual', 'error': 'manual'} for s in manual})

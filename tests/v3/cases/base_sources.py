@@ -996,7 +996,7 @@ def k109(c):
             built(z, cycle='2026-10-01')
             record(z)
         feed('se')
-        built('dk', cycle='2026-10-01', version=parser - 1)                      # an old parser
+        built('dk', cycle='2026-10-01', version=13)                      # a format the page no longer reads (below COMPAT 14 of shared/sia_base.js): to rebuild
         record('dk')
         feed('no', text='changed after the build')                                # the inputs changed
         built('se', cycle='2026-10-01', missing=('airways', 'vrp'))              # two files missing
@@ -1016,7 +1016,7 @@ def k109(c):
               'nl': ('failed', 'failed', True), 'fr': ('stale', 'source-newer', True), 'gb': ('stale', 'source-old', False)},
              'one state per zone: de (not dated: a cycle changing makes it nothing) up to date; it never built; dk old parser; no inputs changed; se files missing; nl failed; fr source newer than the build; gb dated source older than the cycle in force (nothing to build)', what='states')
         c.eq((z['dk']['reason'], z['no']['reason'], z['se']['reason'], z['fr']['reason'], z['gb']['reason'], z['nl']['reason']),
-             ({'code': 'parser-old', 'built': parser - 1, 'current': parser}, {'code': 'inputs-changed', 'count': 1, 'names': ['openaip/no_asp.geojson']}, {'code': 'files-missing', 'count': 2},
+             ({'code': 'parser-old', 'built': 13, 'current': parser}, {'code': 'inputs-changed', 'count': 1, 'names': ['openaip/no_asp.geojson']}, {'code': 'files-missing', 'count': 2},
               {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-10-29', 'built': '2026-10-01'}, {'code': 'source-old', 'source': 'nats', 'cycle': '2026-10-01', 'current': '2026-10-29'}, {'code': 'failed', 'error': 'page-error', 'message': 'AIXM4.5_all_FR_OM_2026-10-01.xml : HTTP 404'}),
              'the reasons are codes with their parameters (the page says them in four languages)', what='reasons')
         c.eq((r['counts'], r['current'], r['parserVersion']), ({'up-to-date': 1, 'never-built': 1, 'stale': 5, 'failed': 1}, '2026-10-29', parser), 'the counts, the cycle in force and the parser version', what='counts')
@@ -3951,3 +3951,133 @@ def k521(c):
                 sys.modules.pop(name, None)
             else:
                 sys.modules[name] = mod
+
+
+def _gain_zone(data, ST, BA, zone, version, cycle, inputs=()):
+    """Une zone construite sur un dossier inventé : ses fichiers compilés (`{}`), la version du lecteur qui l'a lue, les fichiers bruts donnés (chemins relatifs à data/sia)."""
+    d = data / 'sia' / 'base' / zone / cycle
+    d.mkdir(parents=True, exist_ok=True)
+    (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': 'meta', 'parserVersion': version, 'data': {}}), encoding='utf-8')
+    for k in BA.KINDS:
+        if k != 'meta':
+            (d / f'{k}.json').write_text('{}', encoding='utf-8')
+    for rel in inputs:
+        f = data / 'sia' / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text('x', encoding='utf-8')
+
+
+@case('K516', 'base/status: a country built by an OLDER reader is « up to date » (its data serve) and says in `gains` what a relecture (no download) or an update (one page) would bring — never « parser-old » above the format the page still reads; a piece the code expects and the country never read (France: route/levels_fr.json) is an `update` gain (SOG-0568)', 'K', static=True,
+      rule='SOG-0568 (the user, 23 Nov 2026: « tous les pays sont à mettre à jour. le souci, on ne va pas le faire, simplement pour une évolution mineure du parser »): every country built before the reader 31 was `stale` / `parser-old` (the brown of the out-of-date) although its data serve. Now: `parser-old` only BELOW the format shared/sia_base.js COMPAT still reads; otherwise the zone is up to date and `gains` { redo, update } lists, from tools/base_gains.py (one line per reader evolution, label in four languages, scope by country or by source), the gains the reader that built it does not have: `redo` = a relecture of the sources already on the workstation, no download; `update` = a piece never read (a page to download). A zone to rebuild offers no relecture')
+def k516(c):
+    RJ, BS, AF, DS = _mods()
+    AC = importlib.import_module('aero_cycles')
+    BG = importlib.import_module('base_gains')
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    cur = AC.airac_start()
+    parser = ST.parser_version()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        data.mkdir()
+        _gain_zone(data, ST, BA, 'fr', 28, cur, [f'zones/fr/enr51_fr_{cur}.json'])      # the French sources there, read by the reader 28
+        _gain_zone(data, ST, BA, 'gb', 30, cur, ['zones/gb/EG_AIP_DS_FULL_20261001.xml'])
+        _gain_zone(data, ST, BA, 'it', 30, cur, ['openaip/it_apt.geojson'])             # a country no line of the table names
+        _gain_zone(data, ST, BA, 'se', 28, cur, ['openaip/se_asp.geojson'])             # openAIP airspaces, read by the reader 28
+        _gain_zone(data, ST, BA, 'dk', 13, cur, ['openaip/dk_asp.geojson'])             # a format the page no longer reads
+        _gain_zone(data, ST, BA, 'no', 28, cur)                                         # no source file on the workstation
+        _gain_zone(data, ST, BA, 'nl', 28, cur, ['openaip/nl_asp.geojson'])
+        (data / 'sia' / 'base' / 'nl' / cur / 'navaids.json').unlink()                  # a file missing: a zone to rebuild
+        ctx = {'data': str(data), 'downloads': lambda: []}
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['fr', 'gb', 'it', 'se', 'dk', 'no', 'nl'], 'personal': []}), ctx)['zones']
+        ids = lambda k, key: [g['id'] for g in z[k]['gains'][key]]
+        c.eq({k: (v['state'], v['buildable']) for k, v in z.items()},
+             {'fr': ('up-to-date', False), 'gb': ('up-to-date', False), 'it': ('up-to-date', False), 'se': ('up-to-date', False), 'dk': ('stale', True), 'no': ('up-to-date', False), 'nl': ('stale', True)},
+             'built by an older reader (28, 30): up to date, nothing to rebuild; below the format the page reads (13): to rebuild, with its reason; a missing file: to rebuild', what='states')
+        c.eq([x['code'] for x in z['dk']['reasons']], ['parser-old'], '`parser-old` stays for the format the page no longer reads', what='parser-old')
+        c.eq((ids('fr', 'redo'), ids('fr', 'update')), (['v29-fr-usual-names'], ['fr-levels-table']), 'France read by 28: the usual names (a relecture), and the levels table never read (an update)', what='fr')
+        c.eq((ids('gb', 'redo'), ids('gb', 'update')), (['v31-gb-uir-fra'], []), 'the United Kingdom read by 30: the London UIR (a relecture)', what='gb')
+        c.eq((ids('it', 'redo'), ids('it', 'update')), ([], []), 'a country no line names: nothing to offer, plain green', what='it')
+        c.eq((ids('se', 'redo'), ids('se', 'update')), (['v29-openaip-hours'], []), 'by source: the openAIP airspaces on the workstation, read by 28', what='se')
+        c.eq((ids('no', 'redo'), ids('no', 'update')), ([], []), 'no gain for a country the scope does not reach', what='no')
+        c.eq((z['nl']['gains'], z['dk']['gains']), ({'redo': [], 'update': []}, {'redo': [], 'update': []}), 'a zone to rebuild offers no relecture', what='stale')
+        g = z['fr']['gains']['redo'][0]
+        c.eq((g['kind'], [isinstance(x, str) and bool(x.strip()) for x in g['label']], 'source' in g), ('absent', [True] * 4, False), 'a gain: its kind and one sentence per language', what='shape')
+        c.eq(z['fr']['gains']['update'][0]['source'], 'enr51', 'a piece to download says its source', what='piece source')
+        # the table of France read: the levels file of the cycle there, the update gain goes
+        (data / 'route').mkdir()
+        (data / 'route' / 'levels_fr.json').write_text(json.dumps({'schema': 1, 'zone': 'fr', 'cycle': cur}), encoding='utf-8')
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['fr'], 'personal': []}), ctx)['zones']
+        c.eq(ids('fr', 'update'), [], 'route/levels_fr.json read: the piece is no longer missing', what='piece read')
+        (data / 'route' / 'levels_fr.json').write_text('[' * 70000, encoding='utf-8')
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['fr'], 'personal': []}), ctx)['zones']
+        c.eq(ids('fr', 'update'), ['fr-levels-table'], 'an unreadable (or too large) file is not a piece', what='piece unreadable')
+        # built by the CURRENT reader: nothing missing for the versions
+        _gain_zone(data, ST, BA, 'gb', parser, cur, ['zones/gb/EG_AIP_DS_FULL_20261001.xml'])
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['gb'], 'personal': []}), ctx)['zones']
+        c.eq((z['gb']['state'], z['gb']['gains']), ('up-to-date', {'redo': [], 'update': []}), 'built by the current reader: plain green, nothing offered', what='current')
+
+
+@case('K517', 'The table of gains (tools/base_gains.py) is complete: every reader version above 28 up to the current one has its line (or a `nogain` line), one sentence per language, a known kind, unique ids — no version of the reader without its line (SOG-0568)', 'K', static=True,
+      rule='SOG-0568, the lasting rule (the ergonomist, 23 Nov 2026): every evolution of a reader that changes the compiled data declares its gain in the table, one line per evolution with its scope and its label in four languages; no rise of the reader version without its line; a version with no effect for the pilot has its line marked `nogain` and does NOT make a country « relecture possible ». This case reads VERSION (shared/sia_base.js) and PARSER_VERSION (frame/aerodb/catalogue.js) and compares them with the table')
+def k517(c):
+    sys.path.insert(0, str(c.root / 'tools'))
+    BG = importlib.import_module('base_gains')
+    sb = (c.root / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
+    cat = (c.root / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    version = int(re.search(r'const VERSION =\s*(\d+)', sb).group(1))
+    pv = int(re.search(r'const PARSER_VERSION = (\d+)', cat).group(1))
+    c.eq((version, BG.latest_version()), (pv, pv), 'the reader version of shared/sia_base.js, the one of the catalogue and the last line of the table are the same number: a rise of the reader without its line is refused', what='latest')
+    have = {g['since'] for g in BG.GAINS if 'since' in g}
+    c.eq(sorted(set(range(29, version + 1)) - have), [], 'every version from 29 to the current one has a line (or a nogain line)', what='versions')
+    bad = [g['id'] for g in BG.GAINS if not (isinstance(g.get('label'), list) and len(g['label']) == 4 and all(isinstance(x, str) and x.strip() for x in g['label']) or g.get('nogain'))]
+    c.eq(bad, [], 'each gain says one sentence per language [fr, en, de, es]', what='labels')
+    c.eq(sorted({g['kind'] for g in BG.GAINS if not g.get('nogain')} - set(BG.KINDS)), [], 'two kinds only: « absent » (a piece missing today) and « better »', what='kinds')
+    c.eq(len({g['id'] for g in BG.GAINS}), len(BG.GAINS), 'unique ids', what='ids')
+    c.eq([g['id'] for g in BG.GAINS if 'piece' in g and ('source' not in g or 'since' in g)], [], 'a piece gain names the source to download and carries no version', what='pieces')
+
+
+@case('K518', 'base/fetch of a country that is UP TO DATE and lacks only a piece (France: the ENR 1.7 levels table) asks that page alone: no other source of the country is called again (SOG-0568)', 'K', static=True,
+      rule='SOG-0568 (the ergonomist: « le geste ne lit QUE ce qui manque, pas tout le pays : une lecture par cycle et par page »): base/fetch called every downloadable source of the zone, whatever it lacked. For a zone `up-to-date` whose `gains.update` lists a piece with its source, only these sources are called (enr51 here, which asks the ENR 1.7 alone since the ENR 5.1 of the cycle is held); a zone to update keeps every source; the pages are simulated (no real network)')
+def k518(c):
+    RJ, BS, AF, DS = _mods()
+    AC = importlib.import_module('aero_cycles')
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    fetch, check_f = RJ.REGISTRY[('base', 'fetch')]
+    cur = AC.airac_start()
+    parser = ST.parser_version()
+    urls = []
+    kept = (AF.get, sys.modules.get('sia_enr17'))
+
+    class P17:
+        @staticmethod
+        def parse(page):
+            return {'lower': {'ifr': [1]}, 'upper': {'ifr': [2]}}
+
+    def get(url, *a, **k):
+        urls.append(url.rsplit('/', 1)[-1])
+        raise OSError('simulated: the real network is never reached')
+
+    AF.get = get
+    sys.modules['sia_enr17'] = P17
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = Path(td) / 'data'
+            data.mkdir()
+            _gain_zone(data, ST, BA, 'fr', parser, cur, [f'zones/fr/enr51_fr_{cur}.json'])
+            ctx = {'data': str(data), 'downloads': lambda: []}
+            r = fetch(RJ.Job('base', 'fetch', {}), check_f({'zones': ['fr'], 'personal': []}), ctx)
+            c.eq(sorted(set(urls)), ['FR-ENR-1.7-fr-FR.html'], 'France up to date, only the levels table missing: the ENR 1.7 page alone is asked (no ENR 5.1, no openAIP, no other source)', what='narrowed')
+            # the zone to update (a source of the cycle newer than the build: not up to date): every source is called again, as before
+            urls.clear()
+            (data / 'sia' / 'XML_SIA_2999-01-01.xml').write_text('<x/>', encoding='utf-8')
+            r = fetch(RJ.Job('base', 'fetch', {}), check_f({'zones': ['fr'], 'personal': []}), ctx)
+            c.ok(len(set(urls)) > 1, str(sorted(set(urls))), 'a zone that is not up to date keeps every source of the country')
+    finally:
+        AF.get = kept[0]
+        if kept[1] is None:
+            sys.modules.pop('sia_enr17', None)
+        else:
+            sys.modules['sia_enr17'] = kept[1]

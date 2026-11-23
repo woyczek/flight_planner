@@ -26,6 +26,8 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_cycles  # noqa: E402
+import base_gains  # noqa: E402  (SOG-0568 : ce qu'une relecture ou une mise à jour apporte à un pays)
+import safe_json  # noqa: E402
 import regen_jobs  # noqa: E402
 import zone_publish  # noqa: E402  (l'état de publication de chaque zone, SOG-0258)
 
@@ -40,6 +42,23 @@ def _ns(verb):
     """Les noms d'un autre jeu du lanceur (base.py, base_sources.py) : chargés par load_verbs, pas importables par leur nom."""
     entry = regen_jobs.REGISTRY.get(verb)
     return types.SimpleNamespace(**entry[0].__globals__) if entry else None
+
+
+def compat_version():
+    """La plus ancienne version du lecteur dont la page lit encore une base telle quelle (shared/sia_base.js › COMPAT) ; 0 si elle ne se lit pas. Sous elle, une zone est à reconstruire (`parser-old`) ;
+    au-dessus, ses données SERVENT : le pays est « à jour », la table des gains (tools/base_gains.py) dit ce qu'une relecture lui apporterait (SOG-0568)."""
+    try:
+        with open(os.path.join(ROOT, 'shared', 'sia_base.js'), encoding='utf-8') as f:
+            m = re.search(r'const COMPAT =\s*(\d+)', f.read())
+        return int(m.group(1)) if m else 0
+    except OSError:
+        return 0
+
+
+def piece_present(data, g):
+    """La pièce d'un gain (un fichier que le code attend, hors de data/sia : route/levels_fr.json) est-elle là et lisible ? Lue par safe_json (bornée, jamais d'exception)."""
+    held, why = safe_json.read(os.path.join(data, *g['piece']), 65536)
+    return not why and isinstance(held, dict)
 
 
 def parser_version():
@@ -292,7 +311,7 @@ def zone_states(data, zones, personal, ctx):
                 if changed:
                     reasons.append({'code': 'inputs-changed', 'count': len(changed), 'names': changed[:3]})
             version = _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json'))
-            if parser and (version is None or version < parser):
+            if parser and (version is None or version < max(compat_version(), 1)):      # SOG-0568 : SOUS le format que la page lit encore seulement ; au-dessus, les données servent (les gains, plus bas)
                 reasons.append({'code': 'parser-old', 'built': version, 'current': parser})
             missing = [k for k in B.KINDS if not os.path.isfile(os.path.join(data, 'sia', 'base', z, built, f'{k}.json'))]
             if missing:
@@ -313,11 +332,16 @@ def zone_states(data, zones, personal, ctx):
                     notices.append({'code': 'no-points', 'source': 'openaip'})
         reasons += wait.get(z, [])
         reasons.sort(key=lambda r: ORDER.index(r['code']))
+        gains = {'redo': [], 'update': []}
+        if not reasons and folders:      # SOG-0568 : un pays à jour dit ce qu'une relecture (sans téléchargement) ou une mise à jour (une page) lui apporterait ; un pays à refaire n'a pas de relecture à proposer
+            mine = [rel for rel in inputs if S and S.attributed_zone(rel) in (z, '*')]
+            srcs = {fs['source'] for rel in mine if S and (fs := S.file_source(rel))}
+            gains = base_gains.pending(z, _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')), srcs, lambda g: piece_present(data, g), has_inputs=bool(mine))
         first = reasons[0]['code'] if reasons else None
         state = 'up-to-date' if not reasons else 'never-built' if first == 'never-built' else 'failed' if first == 'failed' else 'stale'
         out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built, 'builtAt': (rec or {}).get('builtAt'),
                   'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None,
-                  'download': download_state(z, current, personal, latest, S, absent) if S else None}
+                  'download': download_state(z, current, personal, latest, S, absent) if S else None, 'gains': gains}
         dep = hand_deposit(z, rec, inputs, deposit_rx) if folders else ''
         if dep:          # SOG-0368 : la zone est construite sur un dépôt à la main (aucune édition) : la liste des pays le sait sans ouvrir la fiche
             out[z].update(datedBy='file', deposited=dep)
