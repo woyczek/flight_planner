@@ -1472,6 +1472,23 @@ const TX = {
     'Auto: Berechnung läuft, Flugfläche {n} von {t}.',
     'Auto: calculando, nivel {n} de {t}.'
   ],
+  // SOG-0586 (l'ergonome) : la ligne du second temps d'« Auto », sous la liste des routes par niveau — en cours, rien de mieux, mieux trouvé
+  autoMoreBusy: ['Calcul des {n} autres niveaux en cours…', 'Computing the {n} other levels…',
+    'Berechnung der {n} weiteren Flugflächen läuft…', 'Calculando los {n} otros niveles…'
+  ],
+  autoMoreBusy1: ['Calcul de l’autre niveau en cours…', 'Computing the other level…', 'Berechnung der weiteren Flugfläche läuft…',
+    'Calculando el otro nivel…'
+  ],
+  autoMoreNone: ['Les {n} autres niveaux n’apportent rien de mieux.', 'The {n} other levels bring nothing better.',
+    'Die {n} weiteren Flugflächen bringen nichts Besseres.', 'Los {n} otros niveles no aportan nada mejor.'
+  ],
+  autoMoreNone1: ['L’autre niveau n’apporte rien de mieux.', 'The other level brings nothing better.',
+    'Die weitere Flugfläche bringt nichts Besseres.', 'El otro nivel no aporta nada mejor.'
+  ],
+  autoMoreBetter: ['Un niveau plus économe a été trouvé : {fl}.', 'A more economical level was found: {fl}.',
+    'Eine sparsamere Flugfläche wurde gefunden: {fl}.', 'Se ha encontrado un nivel más económico: {fl}.'
+  ],
+  autoMoreSee: ['Voir', 'Show', 'Anzeigen', 'Ver'],
   levelAutoUnchecked: ['{fl} (auto) · {t} — route non vérifiée ({why})', '{fl} (auto) · {t} — route not checked ({why})',
     '{fl} (auto) · {t} — Route nicht geprüft ({why})', '{fl} (auto) · {t} — ruta no comprobada ({why})'
   ],
@@ -3800,6 +3817,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
   if (e.target.closest('[data-do="rreview"]')) return reviewOpen(); // SOG-0545 : « Revoir les propositions »
+  if (e.target.closest('[data-do="automore"]')) return autoMoreSee(); // SOG-0586 : « Voir » le niveau trouvé par le second temps
   if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
   const limits = e.target.closest('details[data-rlimits] > summary');
   if (limits) radListFill(limits.parentElement); // SOG-0401 : le détail du RAD, écrit à l'ouverture du pli
@@ -4785,6 +4803,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
     S.autoHeld = S.autoLv.key; // SOG-0563 : la recherche annulée par « Calculer » n'est pas relancée pour le même vol
     autoStop();
   }
+  await autoMorePause(); // SOG-0586 : le second temps d'« Auto » s'arrête (ce qu'il a reçu reste) ; relancé après la réponse
   S.rkeep = null; // SOG-0545 : un nouveau calcul, plus de « Revoir les propositions »
   await altsMoreStop(); // SOG-0296 : une nouvelle demande arrête la recherche des variantes de la précédente
   if (!(await RE.answers(S.ctx.launcher))) {
@@ -4866,6 +4885,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
     mode: 'levels',
     kept: lvl.kept
   });
+  if (lvl) autoMoreStart(); // SOG-0586 : la liste affichée, les autres niveaux se calculent derrière elle
   routeAltsDraw();
   altsPublish('compute', S.ralts.list); // pour la Carte (INTEGRATION § 3 bis)
   // SOG-0517 : un vol sans niveau prend celui du calcul — écrit dans le vol (page 1), le devis, le profil et le plan de vol le portent, et
@@ -6275,7 +6295,8 @@ function routeAltsDraw() {
   if (A.taken !== undefined && !A.list?.length) { // SOG-0224 : un itinéraire pris, les autres disparus ; une ligne le dit
     // SOG-0545 : « Revoir les propositions » rouvre la même liste, tant que le vol n'a pas changé
     const back = S.rkeep && S.rkeep.sig === tripKey() ? `<button type="button" class="fu-linkbtn" data-do="rreview">${esc(tt(TX.rReview))}</button>` : '';
-    box.innerHTML = `<p class="f-row fu-rage f-muted"><span data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</span>${back}</p>`;
+    box.innerHTML = `<p class="f-row fu-rage f-muted"><span data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</span>${back}</p>` +
+      (S.rkeep?.R?.mode === 'levels' ? autoMoreHtml() : ''); // SOG-0586 : le choix du pilote tient ; la ligne et « Voir » restent
     return;
   }
   // SOG-0372 (b) : des propositions par des routes NAT d'un autre jour retirées : dit, avec « Recalculer »
@@ -6376,7 +6397,7 @@ function routeAltsDraw() {
     // Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. » — plus rien dans les cartes
     conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(`${tt(RR.ROWS.onlyEurocontrol)} ${tt(RR.ROWS.spacesOnly)}`)}</p>` : '';
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
-    `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
+    `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (A.mode === 'levels' ? autoMoreHtml() : '') + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
     limitation: '',
@@ -6903,12 +6924,15 @@ function reviewSync() {
 }
 /** SOG-0545 (l'ergonome) : en « Auto », la liste des routes par niveau — la ligne de chaque niveau qui a une route (route/levels, la
  *  réponse de la recherche d'« Auto »), cinq au plus : la ligne gardée, puis par verdict, puis par carburant d'étape ; la route de tête
- *  du calcul remplace la ligne de son niveau quand c'est la même (ses plis). null hors « Auto » ou sans réponse. */
-function autoList(n) {
+ *  du calcul remplace la ligne de son niveau quand c'est la même (ses plis). null hors « Auto » (sauf `force` : « Voir » après un choix)
+ *  ou sans réponse. SOG-0586 : après « Voir », les niveaux des deux temps. */
+function autoList(n, force = false) {
   const L = S.autoLv;
-  if (!S.flight?.level?.auto || !L || L.busy || !L.res?.ok) return null;
-  const head = n?.plans?.[0],
-    rows = L.res.levels.filter(x => x.ok && x.route).map(x => {
+  if (!(force || S.flight?.level?.auto) || !L || L.busy || !L.res?.ok) return null;
+  const M = autoMoreOf(L),
+    head = n?.plans?.[0],
+    // SOG-0586 : après « Voir », les niveaux des deux temps
+    rows = (M?.seen && M.res ? M.res : L.res).levels.filter(x => x.ok && x.route).map(x => {
       const p = RE.levelPlan(x);
       return head && !head.proposal && head.route === p.route && (head.fl === x.fl || head.fl === null) ? {
         ...head,
@@ -7152,7 +7176,7 @@ function levelAuto(C) {
   }
   if (J?.busy) {
     // SOG-0563 : le niveau en cours (done + 1) sur le nombre demandé ; sans pas reçu, le premier
-    const t = S.autoLv?.total || cands.length,
+    const t = S.autoLv?.total || Math.min(cands.length, AUTO_FIRST),
       n = Math.min(t, (S.autoLv?.done || 0) + 1);
     lvlLines(line, '', {
       main: tt(TX.levelAutoBusy, {
@@ -7211,7 +7235,164 @@ function lvlLines(line, short, why) {
 /** SOG-0529 : arrête la recherche de « Auto » (un niveau saisi, un autre vol, le démontage) — le travail du lanceur est annulé. */
 function autoStop() {
   S?.autoLv?.ctrl?.abort();
-  if (S) S.autoLv = null;
+  S?.autoMore?.ctrl?.abort(); // SOG-0586 : le second temps avec elle
+  if (S) {
+    S.autoLv = null;
+    S.autoMore = null;
+  }
+}
+/** SOG-0586 (l'ergonome, mesure du 23/11 sur 10 vols × 2 appareils : K = 7 garde le choix final sur 9 vols sur 10 pour les deux) : le
+ *  premier temps d'« Auto » juge les sept premiers candidats ; les autres, après « Calculer », derrière la liste. */
+const AUTO_FIRST = 7;
+/** Le niveau qu'« Auto » garde parmi `pool` (candidats { h }) d'après la réponse `res` de route/levels (lue par RE.levelsRead), ou null.
+ *  L'ordre de l'ergonome (SOG-0540, SOG-0530 lot C point 4) : d'abord le VERDICT — « conforme » avant « non vérifiable », un niveau qui
+ *  enfreint une règle connue jamais gardé (ni valide, ni retenu) ; puis la règle semi-circulaire (les niveaux que le moteur dit conformes,
+ *  conforming_tried) ; puis le raccord publié (un raccord direct passe après une procédure, et reste dit) ; SOG-0545 (critère a) : le
+ *  DERNIER critère est le carburant d'étape chiffré de la route du niveau (ses points, à son niveau) ; sans points, l'ordre des
+ *  préférences. */
+function autoPick(res, pool) {
+  const flOf = c => Math.round(c.h / 100),
+    by = new Map((res?.levels || []).map(x => [x.fl, x])),
+    valid = pool.filter(c => by.get(flOf(c))?.valid && by.get(flOf(c)).verdict !== 'violates'),
+    conf = new Set(res?.conformingTried || []),
+    fuelOf = c => {
+      const x = by.get(flOf(c));
+      return x?.points?.length >= 2 && x.distanceNm > 0 ? fig0(routeFigures(x.points, x.distanceNm, x.fl)) : null;
+    },
+    byFuel = list => list.map((c, k) => [c, k, fuelOf(c)]).sort((p, q) => figCmp(p[2], q[2]) || p[1] - q[1]).map(([c]) => c),
+    pref = list => {
+      const l = byFuel(list);
+      return l.find(c => by.get(flOf(c)).connector !== 'direct') || l[0] || null;
+    },
+    within = list => pref(list.filter(c => conf.has(flOf(c)))) || pref(list);
+  return within(valid.filter(c => by.get(flOf(c)).verdict !== 'unverifiable')) || within(valid.filter(c => by.get(flOf(c)).verdict ===
+    'unverifiable'));
+}
+/** SOG-0586 : le second temps de la recherche `L` (S.autoMore, la même clé), ou null. */
+const autoMoreOf = L => L && S?.autoMore?.key === L.key ? S.autoMore : null;
+/** SOG-0586 (l'ergonome) : le second temps d'« Auto » — une fois la liste par niveau affichée (après « Calculer »), les candidats d'après les
+ *  sept premiers se calculent derrière elle, en un appel route/levels ; aucune ligne ne bouge. Les niveaux déjà reçus ne sont jamais
+ *  redemandés (un « Calculer » l'interrompt, il repart pour ceux qui manquent ; AeroDB garde aussi chaque niveau jugé). */
+function autoMoreStart() {
+  const L = S?.autoLv,
+    launcher = S?.ctx?.launcher;
+  if (!S.flight?.level?.auto || !L || L.busy || !L.res?.ok || !L.all || typeof launcher?.job !== 'function') return;
+  const flOf = c => Math.round(c.h / 100),
+    rest = L.all.slice(AUTO_FIRST).map(flOf);
+  if (!rest.length) return;
+  const M = autoMoreOf(L) || (S.autoMore = {
+    key: L.key,
+    n: rest.length,
+    got: new Map(),
+    conf: new Set()
+  });
+  if (M.busy || M.done) return;
+  const miss = rest.filter(fl => !M.got.has(fl));
+  if (!miss.length) return autoMoreDone(M, L);
+  const s = S,
+    ctrl = new AbortController();
+  Object.assign(M, {
+    busy: true,
+    ctrl
+  });
+  M.run = RE.levels(launcher, RE.levelsArgs(routeArgs('compute'), miss), {
+    signal: ctrl.signal
+  }).then(raw => {
+    if (gone(s) || s.autoMore !== M) return;
+    xpNoteAnswer(raw); // SOG-0545 : un point placé d'après X-Plane sert au calcul, jamais écrit
+    const r = RE.levelsRead(raw);
+    // une réponse interrompue rend les niveaux déjà jugés (stopped « cancelled ») : gardés, seuls les autres seront redemandés
+    if (r?.ok) {
+      for (const x of r.levels)
+        if (miss.includes(x.fl)) M.got.set(x.fl, x);
+      for (const fl of r.conformingTried || [])
+        if (miss.includes(fl)) M.conf.add(fl);
+    }
+    M.busy = false;
+    M.ctrl = null;
+    if (rest.every(fl => M.got.has(fl))) autoMoreDone(M, L);
+    routeAltsDraw(); // la ligne seule change ; la liste reste telle quelle jusqu'à « Voir »
+  });
+}
+/** SOG-0586 : arrête le second temps en cours (« Calculer » : le poste n'a qu'une place) et attend sa fin ; ce qu'il a reçu reste. */
+async function autoMorePause() {
+  const M = S?.autoMore;
+  if (!M?.busy) return;
+  M.ctrl?.abort();
+  await M.run;
+  M.busy = false;
+}
+/** SOG-0586 : la fin du second temps — la réponse des deux temps réunie, et le niveau qu'« Auto » garderait sur tous les candidats ;
+ *  « mieux trouvé » quand ce n'est pas celui du premier temps. */
+function autoMoreDone(M, L) {
+  const flOf = c => Math.round(c.h / 100),
+    levels = [...L.res.levels, ...M.got.values()],
+    conf = [...new Set([...(L.res.conformingTried || []), ...M.conf])],
+    byFl = new Map(levels.map(x => [x.fl, x])),
+    all = {
+      ...L.res,
+      levels,
+      conformingTried: conf,
+      noConformingValid: conf.length > 0 && !conf.some(fl => byFl.get(fl)?.valid && byFl.get(fl).verdict !== 'violates'),
+      stopped: 'end'
+    },
+    p1 = autoPick(L.res, L.all.slice(0, AUTO_FIRST)),
+    p2 = autoPick(all, L.all);
+  Object.assign(M, {
+    done: true,
+    res: all,
+    better: p2 && (!p1 || p2.h !== p1.h) ? flOf(p2) : null
+  });
+}
+/** SOG-0586 (l'ergonome) : la ligne du second temps, sous la liste par niveau (ou sous « Itinéraire choisi ») — en cours ; « rien de
+ *  mieux » ; « un niveau plus économe a été trouvé : FLxxx », avec « Voir » ; rien une fois vu, ni sans second temps. */
+function autoMoreHtml() {
+  const M = autoMoreOf(S?.autoLv);
+  if (!M || M.seen || !(M.busy || M.done)) return '';
+  const one = M.n === 1;
+  if (M.busy) return `<p class="f-muted" data-automore="busy">${esc(tt(one ? TX.autoMoreBusy1 : TX.autoMoreBusy, { n: M.n }))}</p>`;
+  if (!M.better) return `<p class="f-muted" data-automore="none">${esc(tt(one ? TX.autoMoreNone1 : TX.autoMoreNone, { n: M.n }))}</p>`;
+  return `<p class="f-row fu-rage f-muted" data-automore="better"><span>${esc(tt(TX.autoMoreBetter, { fl: flTxt(M.better * 100) }))}</span><button type="button" class="fu-linkbtn" data-do="automore">${esc(tt(TX.autoMoreSee))}</button></p>`;
+}
+/** SOG-0586 : « Voir » — le seul geste qui refait la liste (les niveaux des deux temps) et déplace la pastille « Auto » (et, en « Auto », le
+ *  niveau du vol) ; une route déjà choisie tient : la liste revue la montre « choisie », sans changer ni la route ni le niveau. */
+function autoMoreSee() {
+  const L = S?.autoLv,
+    M = autoMoreOf(L);
+  if (!M?.done || !M.better) return;
+  M.seen = true;
+  L.pickFl = M.better;
+  const A = S.ralts;
+  if (A?.mode === 'levels' && A.list?.length) {
+    const lvl = autoList(A.n, true);
+    if (lvl) Object.assign(A, {
+      list: lvl.list,
+      kept: lvl.kept,
+      chosen: -1
+    });
+    routeAltsDraw();
+    altsPublish('compute', A.list);
+  } else if (S.rkeep?.R?.mode === 'levels') {
+    const K = S.rkeep,
+      took = K.R.list[K.i],
+      lvl = autoList(K.R.n, true);
+    if (lvl) {
+      const list = [...lvl.list];
+      let i = list.findIndex(a => a.fl === took?.fl && a.route === took?.route);
+      if (i < 0 && took) list[i = list.length - 1] = took; // la route prise reste dans la liste revue
+      S.rkeep = {
+        ...K,
+        R: {
+          ...K.R,
+          list,
+          kept: list.findIndex(a => a.fl === M.better)
+        },
+        i
+      };
+    }
+    reviewOpen();
+  }
+  refresh(); // en « Auto », le niveau suit le choix fait sur tous les niveaux (levelAuto)
 }
 /** SOG-0529 (l'utilisateur : FL090 choisi par « Auto », plan de vol refusé par l'IFPS) : les candidats (FuelLevels.autoCandidates, dans
  *  l'ordre des préférences) jugés par le moteur de route — UN appel route/levels par clé du vol (les arguments de « Calculer » sans niveau,
@@ -7221,6 +7402,7 @@ function autoStop() {
 function autoJudge(cands, blind = cands[0]) {
   const launcher = S.ctx.launcher,
     flOf = c => Math.round(c.h / 100),
+    first = cands.slice(0, AUTO_FIRST), // SOG-0586 : le premier temps, les sept premiers candidats
     unchecked = cause => ({
       pick: blind,
       say: (fl, t) => ({
@@ -7241,7 +7423,7 @@ function autoJudge(cands, blind = cands[0]) {
     terminal_speed_kt,
     ...base
   } = RE.levelsArgs(routeArgs('compute'), []),
-    key = JSON.stringify([argsKey(base), cands.map(flOf).sort((x, y) => x - y)]);
+    key = JSON.stringify([argsKey(base), first.map(flOf).sort((x, y) => x - y)]);
   // SOG-0563 : annulée par « Calculer » pour ce vol — rien n'est relancé ni dit (un vol changé ou « Auto » touché la relancent)
   if (S.autoHeld === key && !S.autoLv) return {
     held: true
@@ -7253,9 +7435,10 @@ function autoJudge(cands, blind = cands[0]) {
     S.autoLv = {
       key,
       busy: true,
-      ctrl
+      ctrl,
+      all: cands // SOG-0586 : tous les candidats, dans l'ordre ; le second temps prend ceux d'après le premier
     };
-    RE.levels(launcher, RE.levelsArgs(routeArgs('compute'), cands.map(flOf)), {
+    RE.levels(launcher, RE.levelsArgs(routeArgs('compute'), first.map(flOf)), {
       signal: ctrl.signal,
       // SOG-0563 : le pas du travail redessine la ligne (« niveau {n} sur {total} ») tant que c'est la recherche en cours
       onProgress: (done, total) => {
@@ -7277,6 +7460,7 @@ function autoJudge(cands, blind = cands[0]) {
         // SOG-0545 : « Calculé à » de la liste par niveau ; SOG-0563 : un résultat du cache du poste garde l'heure de SON calcul
         at: res.cache?.at || new Date().toISOString(),
         cache: res.cache || null,
+        all: cands,
         res
       };
       refresh(); // le dessin refait choisit sur la réponse
@@ -7287,53 +7471,40 @@ function autoJudge(cands, blind = cands[0]) {
     busy: true
   };
   if (!L.res?.ok) return unchecked(L.res?.reason || 'failed');
-  // L'ordre de l'ergonome (SOG-0540, SOG-0530 lot C point 4) : d'abord le VERDICT — « conforme » avant « non vérifiable », un niveau
-  // qui enfreint une règle connue jamais gardé (ni valide, ni retenu) ; puis la règle semi-circulaire (les niveaux que le moteur dit
-  // conformes, conforming_tried) ; puis le raccord publié (un raccord direct passe après une procédure, et reste dit)
-  const by = new Map(L.res.levels.map(x => [x.fl, x])),
-    valid = cands.filter(c => by.get(flOf(c))?.valid && by.get(flOf(c)).verdict !== 'violates'),
-    conf = new Set(L.res.conformingTried || []),
-    // SOG-0545 (l'ergonome, critère a) : le DERNIER critère est le carburant d'étape chiffré de la route du niveau (ses points, à son
-    // niveau) ; sans points (une réponse plus ancienne), l'ordre des préférences
-    fuelOf = c => {
-      const x = by.get(flOf(c));
-      return x?.points?.length >= 2 && x.distanceNm > 0 ? fig0(routeFigures(x.points, x.distanceNm, x.fl)) : null;
-    },
-    byFuel = list => list.map((c, k) => [c, k, fuelOf(c)]).sort((p, q) => figCmp(p[2], q[2]) || p[1] - q[1]).map(([c]) => c),
-    pref = list => {
-      const l = byFuel(list);
-      return l.find(c => by.get(flOf(c)).connector !== 'direct') || l[0] || null;
-    },
-    within = list => pref(list.filter(c => conf.has(flOf(c)))) || pref(list),
-    pick = within(valid.filter(c => by.get(flOf(c)).verdict !== 'unverifiable')) || within(valid.filter(c => by.get(flOf(c))
-      .verdict === 'unverifiable')),
-    partial = L.res.stopped === 'time' || L.res.stopped === 'cancelled' ? tt(TX.levelAutoPartial, {
-      n: L.res.levels.length,
-      m: cands.length
+  // SOG-0586 : le choix porte sur le premier temps ; après « Voir », sur les niveaux des deux temps
+  const M = autoMoreOf(L),
+    seen = !!(M?.seen && M.res),
+    res = seen ? M.res : L.res,
+    pool = seen ? cands : first,
+    by = new Map(res.levels.map(x => [x.fl, x])),
+    pick = autoPick(res, pool),
+    partial = res.stopped === 'time' || res.stopped === 'cancelled' ? tt(TX.levelAutoPartial, {
+      n: res.levels.length,
+      m: pool.length
     }) : '';
   L.pickFl = pick ? flOf(pick) : null; // SOG-0545 : la ligne qu'« Auto » garde dans la liste par niveau
   if (!pick) {
-    const fls = cands.map(flOf),
-      first = cands.map(c => by.get(flOf(c))).find(Boolean);
+    const fls = pool.map(flOf),
+      head = pool.map(c => by.get(flOf(c))).find(Boolean);
     return {
       none: {
         main: tt(TX.levelAutoNone, {
           lo: flTxt(Math.min(...fls) * 100),
           hi: flTxt(Math.max(...fls) * 100)
         }) + partial,
-        reason: first?.reason || ''
+        reason: head?.reason || ''
       }
     };
   }
   // le premier candidat plus économique écarté par le moteur, et sa raison (celle du moteur, jamais réécrite)
-  const skipped = cands.slice(0, cands.indexOf(pick)).map(c => by.get(flOf(c))).find(x => x && !x.valid);
+  const skipped = pool.slice(0, pool.indexOf(pick)).map(c => by.get(flOf(c))).find(x => x && !x.valid);
   return {
     pick,
     say: (fl, t) => ({
       main: tt(TX.levelAutoValid, {
         fl,
         t
-      }) + (by.get(flOf(pick)).semicircular !== 'warning' ? '' : L.res.noConformingValid ? tt(TX.levelAutoNoConform) : tt(TX
+      }) + (by.get(flOf(pick)).semicircular !== 'warning' ? '' : res.noConformingValid ? tt(TX.levelAutoNoConform) : tt(TX
         .levelAutoSemi)) + (by.get(flOf(pick)).connector === 'direct' ? tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX
         .levelAutoSkip, {
           fl: flTxt(skipped.fl * 100)

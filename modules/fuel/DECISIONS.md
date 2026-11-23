@@ -2669,3 +2669,28 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   like route/compute; `RE.levelsRead` reads it by the same `cacheOf`. A list per level served by the cache keeps on screen the time of its
   ORIGINAL computation, never the time of the tap, in the sentence of route/compute, « Du cache, calculé à … » (`rCache`, no new sentence).
   Case F319, red before.
+- **23 Nov 2026 — « Auto » in two times: seven levels first, the others behind the list** (SOG-0586; the ergonomist's design after two
+  measurements; a first click of « Auto » took 70 to 106 s for twelve levels computed, five shown). (1) The first time judges the SEVEN
+  first candidates of `FuelLevels.autoCandidates` (one route/levels call); « Auto » keeps its choice among them, the progress says
+  « niveau {n} sur 7 ». (2) Once « Calculer A → B » has drawn the list per level, the other candidates are computed BEHIND it, in one
+  route/levels call, without a gesture; no line of the list moves; under the list one discreet line: « Calcul des {n} autres niveaux en
+  cours… ». (3) At the end: « Les {n} autres niveaux n'apportent rien de mieux. », or « Un niveau plus économe a été trouvé : FLxxx. »
+  with « Voir » — the only gesture that remakes the list (the levels of both times, five lines at most) and moves the pill « Auto » (and,
+  in « Auto », the level of the flight). A route the pilot has already chosen holds: the line and « Voir » stay under « Itinéraire
+  choisi », and « Voir » shows the list again with « choisie » on the line taken, the route and the level unchanged. (4) A new
+  « Calculer » during the second time stops it (the launcher runs one job at a time) and starts it again after its answer, for the
+  levels not received yet only; AeroDB also keeps each level judged (its « Auto 2 » lot): nothing computed is lost.
+  Why seven — measured with the module itself (a fake launcher answering the 219 levels AeroDB computed with the tools of v3, 10 flights,
+  the Caravelle S210 and the BE9L), the first time against the final choice on every candidate:
+
+  | First time | S210 same choice | S210 time | BE9L same choice | BE9L time |
+  |---|---|---|---|---|
+  | 5 levels | 9/10 | 44 % | 7/10 | 51 % |
+  | 6 levels | 9/10 | 57 % | 8/10 | 56 % |
+  | 7 levels | 9/10 | 64 % | 9/10 | 62 % |
+  | 12 (all) | 10/10 | 100 % | 10/10 | 100 % |
+
+  The misses are never a verdict: a level ranked 6th to 12th whose ROUTE is shorter (EDDF-LEBL: FL250 at 620 NM against 726 NM above).
+  Re-ranking on the distance of the first route computed changed no order on any of the 20 pairs: not kept. Limits: without « Calculer »,
+  no second time — « Auto » keeps the choice of its seven first levels; « plus économe » is the ergonomist's word for the better choice of
+  the same rule (verdict, semicircular rule, connector, then trip fuel). Cases F320, F321, F322, red before; F317 and F307 unchanged.
