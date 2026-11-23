@@ -9342,6 +9342,13 @@ def a197(c):
         (root / 'organisation' / 'images').mkdir(parents=True)
         f = root / 'organisation' / 'SIGNALEMENTS.json'
         _sg_launcher(c, root, data=False)
+        # the workstation's page KNOWS its launcher: the frame keeps the last state it saw (`sog.launcher.seen`, SOG-0133) and draws with it while the
+        # detection (GET /__setup/status) finishes behind. A page that has never seen the launcher (the two phone pages above had none) mounts the
+        # screen with « no launcher » when the answer is slower than the boot: measured with the status held 1 500 ms, only /status is ever asked, no job,
+        # the channel stays « pilote » and the pilots block stays hidden (1 run in about 25 under load). So the page is given the state a workstation
+        # keeps from its previous visit (the same record the frame writes), as it would have it: no other page is opened, which would start the
+        # base update of the aeronautical data against this fake launcher
+        c.js("(s) => localStorage.setItem('sog.launcher.seen', s)", json.dumps({'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': []}))
         c.open('signaler', docs=docs)
         c.until("!!document.querySelector('[data-p=\"XYZ/SIG-0123456789\"] [data-pimgs]')", timeout=25000, what='the photo of the pilot report')
         r = c.js("""() => { const li = document.querySelector('[data-p="XYZ/SIG-0123456789"]'); return { imgs: [...li.querySelectorAll('[data-pimgs] img')].map(i => i.src.slice(0, 5)), refused: !!li.querySelector('[data-pimg-refused]'), pwn: window.__pwn === undefined,
@@ -11923,7 +11930,7 @@ def a371(c):
     c.open('settings', docs=LEVEL3)
     c.until("document.querySelectorAll('[data-card=\"status\"] .f-status-row').length >= 2", timeout=15000, what='the status lines')
     word = {'fr': 'Réglages', 'en': 'Settings', 'de': 'Einstellungen', 'es': 'Ajustes'}[c.lang]
-    rows = c.js("[...document.querySelectorAll('[data-card=\"status\"] .f-status-row')].map(r => r.textContent.replace(/\s+/g, ' ').trim())")
+    rows = c.js("[...document.querySelectorAll('[data-card=\"status\"] .f-status-row')].map(r => r.textContent.replace(/\\s+/g, ' ').trim())")
     c.ok(any(norm(x) for x in rows), rows, 'the status block has its lines')
     c.eq([x for x in rows if word.lower() in x.lower()], [], f'no line of the status block names « {word} » (it is the screen it is shown on)', what='no self-reference')
     c.eq(sum(1 for x in rows if c.lang == 'fr' and 'Touchez pour régler l’accès' in x), 1 if c.lang == 'fr' else 0, 'the access line says « Touchez pour régler l’accès » (French run)', what='access hint')
