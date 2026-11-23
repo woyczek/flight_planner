@@ -1723,6 +1723,9 @@ def a49(c):
         return [['device/keys.json', {'schema': 1, 'github': github, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
 
     def access(github):
+        # a device whose launcher is gone KNOWS it: the frame keeps the last state it saw (`sog.launcher.seen`, SOG-0133) and draws with it at once. The panels above left « a launcher »:
+        # the screen was drawn WITH it, and the Access card (no launcher) came only at a SECOND drawing, after the detection answered « no » (4 000 ms of margin under load)
+        c.js("() => localStorage.setItem('sog.launcher.seen', JSON.stringify({ none: true }))")
         c.open('settings', docs=LEVEL3 + keys(github))
         c.until("!!document.querySelector('[data-card=\"access\"] input[data-f=\"repo\"]')", what='the Access card')
         return c.js("""() => { const k = document.querySelector('[data-card="access"]');
