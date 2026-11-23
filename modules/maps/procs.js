@@ -87,10 +87,10 @@ export function altParts(alt) {
 export const speedText = kt => num(kt) && +kt > 0 ? `≤ ${Math.round(+kt)} kt` : null;
 /** Lignes de texte d'un point [[morceaux]] : son nom (points de procédure seulement), sa contrainte d'altitude, sa vitesse ;
  *  vide si rien à dire. */
-function linesOf(p, near) {
+function linesOf(p, near, nameOnly = false) {
   const out = [],
     id = p.origin !== 'route' && p.id ? p.id : '';
-  if (near && id) out.push({
+  if ((near || nameOnly) && id) out.push({
     parts: [{
       t: id,
       b: true
@@ -110,6 +110,9 @@ function linesOf(p, near) {
 }
 
 // ---------------------------------------------------------------- libellés des procédures
+/** L'UN état d'une procédure écrit sur son tracé, après son nom (SOG-0569) : « à vérifier » (une approche en doute) l'emporte sur « périmé » (une donnée gardée
+ *  après son cycle : le mot, jamais « ⌛ », qui se lit « calcul en cours ») ; l'autre reste dans l'infobulle et la liste. Vide si rien n'est à dire. */
+export const stateOf = rec => rec && isDoubt(rec) ? tt(TX.procDoubt) : rec?.outdated ? tt(TX.procStale) : '';
 /** Nom d'une procédure, la règle du choix et de Carburant (displayName de frame/lib/procedures.js) : « AMOLO 7A », « ILS 06 »
  *  (une finale par son libellé court), une transition par sa transition ; jamais le nom brut de la base (« ILS CAT I or CAT II… »).
  *  key : 'trans' / 'appTrans' pour une transition. */
@@ -121,11 +124,12 @@ const nameOf = (rec, id, key = null) => displayName(rec, {
 export const OUTDATED = '⌛';
 /** « AMOLO 7A » sur la carte (sa teinte dit la famille), « SID AMOLO 7A » dans une liste (kind), suivi de l'état de la source :
  *  « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est périmée (SPEC § 5). */
-export function procLabel(kind, rec, id, key = null) {
+export function procLabel(kind, rec, id, key = null, withSource = true) {
   const tags = [];
   if (rec && isDoubt(rec)) tags.push(tt(TX.procDoubt)); // une approche en doute choisie à la main : son panonceau « à vérifier » (SOG-0232)
-  if (rec?.status === 'xplane') tags.push(tt(TX.procX));
-  else if (rec?.status === 'lnm') tags.push(tt(TX.procLnm));
+  // la source (X-Plane, Little Navmap) : dite par la fiche du terrain, l'infobulle d'un point et la liste du mode « choisir », jamais sur le tracé (SOG-0569)
+  if (withSource && rec?.status === 'xplane') tags.push(tt(TX.procX));
+  else if (withSource && rec?.status === 'lnm') tags.push(tt(TX.procLnm));
   return [`${kind || ''} ${nameOf(rec, id, key)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
 }
 
@@ -161,7 +165,7 @@ export function gapNote() {
   const f = proceduresOf(S.route.flight),
     P = S.procs || {},
     arrivee = nameOf(P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans');
-  return `<p class="f-muted" data-proc-gap>${esc(tt(TX.procNoLink, {
+  return `<p data-proc-gap>${esc(tt(TX.procNoLink, {
     fin: g.a.id,
     arrivee,
     debut: g.b.id
@@ -326,6 +330,8 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     }
     if (p.origin !== 'route' && !isRwy(p)) dots.push(q);
     if (unord.has(p.origin)) q.unord = true; // son code est toujours écrit
+    if (gap && (p === gap.a || p === gap.b)) q.gapEnd =
+      true; // les deux bouts d'une liaison manquante sont nommés à tout zoom : la phrase les cite
     if (p.origin !== 'route' || p.alt || p.kt) pts.push(q);
   }
   // les noms : « SID ROYAN6P » au point du milieu de la procédure
@@ -377,7 +383,8 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     names.push({
       q: qs[0],
       qs,
-      text: procLabel('', rec, id, key),
+      text: nameOf(rec, id, key), // le nom SEUL ; son état (un seul) vient après, stateOf
+      state: stateOf(rec),
       old: !!rec?.outdated,
       origin
     });
@@ -396,7 +403,8 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       });
     }
   }
-  S.lgOutdated = names.some(n => n.old); // la ligne « ⌛ » de la légende
+  S.lgOutdated =
+    false; // le tracé dit « périmé » en toutes lettres : la ligne « ⌛ » de la légende n'a plus de signe à expliquer sur lui (SOG-0569)
   const L = {
     flight,
     missCol,
@@ -412,9 +420,9 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       L.labels.length = 0;
       ctx.save();
       // les points du vol passent AVANT les noms de procédure (SOG-0569) : un nom qui n'a pas la place n'est pas écrit
-      if (near || pts.some(q => q.unord))
+      if (near || pts.some(q => q.unord || q.gapEnd))
         for (const q of pts) {
-          const lines = linesOf(q.src, near || q.unord);
+          const lines = linesOf(q.src, near || q.unord, q.gapEnd);
           if (!lines.length) continue;
           const w = Math.max(...lines.map(l => widthOf(ctx, l))) + 2,
             r = place(pl, q, w, lines.length * LINE_H, false);
@@ -426,17 +434,17 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
         }
       for (const n of names) {
         ctx.font = '700 12px Arial,sans-serif';
-        const w = ctx.measureText(n.text).width,
+        const tail = n.state ? ` · ${n.state}` : '', // l'état, en gris, après le nom
+          w = ctx.measureText(n.text + tail).width,
           r = place(pl, n.qs, w + 2, LINE_H,
             false); // glissé le long de sa trace ; SOG-0569 : sans place, le nom n'est pas écrit (il reste dans la liste)
         if (!r) continue; // aucune place libre, ou toutes hors de la vue : pas écrit
-        // « ⌛ » en gris (jeton muted), le nom dans la couleur des procédures
-        const tail = n.old ? ` ${OUTDATED}` : '';
+        // l'état en gris (jeton muted), le nom dans la couleur des procédures
         L.labels.push({
           r,
           lines: [{
             parts: [{
-              t: tail ? n.text.slice(0, -tail.length) : n.text,
+              t: n.text,
               b: true
             }, ...(tail ? [{
               t: tail,

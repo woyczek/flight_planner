@@ -491,7 +491,8 @@
     if (!(total < 1e6) || !(step > 0)) return [];
     for (let nm = step, i = 1; nm < total && out.length < 5000; nm += step) {
       while (i < d.length - 1 && d[i] < nm) i++;
-      if (points[i].gapBefore?.length) continue;
+      if (points[i].gapBefore?.length || points[i].noMarks)
+        continue; // ni une marque sur un tronçon de position inconnue, ni là où aucun trait n'est dessiné (SOG-0569)
       const a = points[i - 1],
         b = points[i],
         k = d[i] > d[i - 1] ? (nm - d[i - 1]) / (d[i] - d[i - 1]) : 0;

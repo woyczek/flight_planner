@@ -58,7 +58,8 @@ import {
   legendSync
 } from './sheet_view.js';
 import {
-  wantRunways
+  wantRunways,
+  procGap
 } from './procs.js';
 import {
   followMission,
@@ -298,6 +299,10 @@ export function buildPath() {
     dq = +f?.quote?.distanceNm, // borné à 25 000 NM : une valeur falsifiée ne donne pas des repères absurdes
     extra = dq > 0 && dq <= 25000 ? dq - last : 0;
   if (gapAt > 0 && S.route.flown.filter(p => p.gapBefore?.length).length === 1 && extra > 0) S.route.flown[gapAt].gapShift = extra;
+  // aucune marque là où aucun trait n'est dessiné : le premier point d'une approche non rattachée à la STAR (procGap) n'en reçoit pas sur le tronçon qui y mène ; la distance, elle, compte
+  const gap = procGap(S.route.path),
+    atB = gap && S.route.flown.find(p => p.id === gap.b.id && p.lat === gap.b.lat && p.lon === gap.b.lon);
+  if (atB) atB.noMarks = true;
   S.marksPts = flownPts(); // les marques NM sont refaites au dessin, au pas rond de ce qui est visible (viewMarks)
   S.marks = MapsRender.marks(S.marksPts);
 }

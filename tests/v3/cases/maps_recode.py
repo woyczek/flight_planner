@@ -596,6 +596,7 @@ _LAYOUT_JS = """() => { const ctx = document.createElement('canvas').getContext(
   return L && { segs: L.segs.map(s => [!!s.dash, !!s.arc]), names: L.names.map(n => n.text), dots: L.dots.length,
                 legs: L.segs.map(s => ({ dash: !!s.dash, arc: !!s.arc, o: s.o, a: s.a.src ? s.a.src.id || '' : '·', b: s.b.src ? s.b.src.id || '' : '·',
                   ph: s.b.src ? s.b.src.phase || '' : '' })),
+                states: L.names.map(n => n.state || ''),
                 kinds: L.segs.map(s => s.o), hues: L.segs.map(s => s.col), dotted: L.segs.map(s => !!s.dot),
                 route: window.MapsRender.palette(!!window.__mp.S.theme.dark).route, muted: window.__mp.S.theme.muted,
                 legend: ['sid', 'star', 'app', 'missed'].map(o => window.__pr.colOf(o)),
@@ -849,13 +850,15 @@ def d41(c):
     c.ok(not ({sid, star, app} & {'#7c3aed', '#8e24aa', '#6a3fa0', '#1f6fb2'}), f'{lay["legend"]}', 'none of the three tokens is the violet of the route and of the high airways, nor the blue of the low ones')
     # une procédure périmée : le seul symbole « ⌛ », jamais le mot (29 Oct)
     # named as the choose pane and Fuel name them, no kind before (the hue is the family; sixth reading, gap 5)
-    want = ['XX1A ⌛', f'XX2B · {row(c, "procX")}', f'I31 · {row(c, "procX")}', row(c, 'procMissed')]   # the missed approach\'s name comes last, close
+    want = ['XX1A', 'XX2B', 'I31', row(c, 'procMissed')]   # the name ALONE on the trace (the source is said by the card, SOG-0569); the missed approach\'s name comes last, close
     c.eq(lay['names'], want, 'labelled by their names (displayName), with the state of the source', what='procedure labels')
     c.until("(window.__mpTexts || []).some(t => /^XX1A/.test(t))", timeout=6000, what='the SID label drawn')
     c.wait(400)
     drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
-    c.ok('XX1A' in drawn and '⌛' in drawn and 'XX1A ⌛' not in drawn, f'{sorted(set(t for t in drawn if t.startswith(("XX", "I31", "⌛"))))}',
-         'the SID label is written on the map, its ⌛ written apart (in grey)')
+    stale = row(c, 'procStale')
+    c.ok('XX1A' in drawn and any(t.endswith(stale) for t in drawn) and '⌛' not in drawn, f'{sorted(set(t for t in drawn if t.startswith(("XX", "I31", "⌛", "·"))))}',
+         f'the SID label is written on the map, its state in WORDS apart, in grey (« {stale} »): never « ⌛ », which reads « calculation in progress » (SOG-0569)')
+    c.eq(lay['states'], [stale, '', '', ''], 'one state at most per name on the trace: the outdated SID says « périmé » (the word of Données, taken over), the others nothing', what='states on the trace')
     # the airline's transition altitude is 5,000 ft by default: up to it an altitude in feet, as in the AIP ("5000", not "FL050")
     c.ok('≤ 220 kt' in drawn and '3000' in drawn and '5000' in drawn and 'FL050' not in drawn and '–' in drawn, f'{sorted(set(drawn))[:30]}',
          'a close view writes the constraints in the AIP notation (3000–5000, ≤ 220 kt)')
@@ -881,15 +884,19 @@ def d42(c):
     _open_proc(c, f, view='maps?view=-1.5,46.35,-0.9,46.8')
     c.until("() => !!window.__mp.S.prof", timeout=10000, what='the profile is built')
     r = c.js("""() => { const S = window.__mp.S; return { path: !!S.prof.plan?.path, mid: S.prof.plan.alt[Math.round((S.prof.plan.alt.length - 1) / 2)],
-      names: S.prof.marks.map(m => m.name), total: S.prof.total / 1852, marks: S.marks.map(m => m.nm), step: S.marksStep, fromFlown: S.marksPts === undefined ? null : S.marksPts.length === S.route.flown.length, cons: !!S.lgCons } }""")
+      names: S.prof.marks.map(m => m.name), total: S.prof.total / 1852, marks: S.marks.map(m => m.nm), step: S.marksStep, fromFlown: S.marksPts === undefined ? null : S.marksPts.length === S.route.flown.length, cons: !!S.lgCons,
+      void: (g => g && (at => [at(g.a.id).nm, at(g.b.id).nm])(n => S.route.flown.find(p => p.id === n)))(window.__pr.procGap(S.route.path)) } }""")
     c.ok(r['path'], 'profile.path not used', 'profile.path drawn when it exists')
     c.eq(r['mid'], 27000, 'the planned altitude at the middle is the path\'s', what='plan altitude at mid distance')
     c.eq(r['names'], ['LFRS', 'LUGEN', 'NEPIX', 'LFML'], 'only the route points are named under the profile', what='profile marks')
     c.ok(abs(r['total'] - _FLOWN_NM) < 1, f'{r["total"]:.1f} NM against {_FLOWN_NM:.1f}', 'the profile is cut along the flown path')
     # the marks follow the flown path, at a round step that follows the visible length (SOG-0177: 5 NM in this close view, 50 on a long one): from the first step, regular, none past the end
-    mk = r['marks']
-    c.ok(mk and r['step'] and mk[0] == r['step'] and all(b - a == r['step'] for a, b in zip(mk, mk[1:])) and mk[-1] < _FLOWN_NM and r['fromFlown'] is True,
-         f'{mk[:6]}… step {r["step"]}', 'the NM marks follow the flown path (a round step, regular, none beyond its end)')
+    # SOG-0569: the STAR of this flight ends at XT02 and its approach starts at XF01 with no common point: no line is drawn from one to the other, so no mark stands in
+    # that void (the distance still counts): the marks are the regular sequence WITHOUT the ones that fall strictly inside it
+    mk, void, step = r['marks'], r['void'], r['step']
+    want = [k * step for k in range(1, int(_FLOWN_NM // step) + 1) if k * step < _FLOWN_NM and not (void and void[0] < k * step < void[1])] if step else []
+    c.ok(mk and step and mk[0] == step and mk == want and mk[-1] < _FLOWN_NM and r['fromFlown'] is True and void and void[0] < void[1],
+         f'{mk[:6]}… step {step}, void {void}', 'the NM marks follow the flown path (a round step, regular, none beyond its end, none in the void of the missing link)')
     c.ok(r['cons'], 'no constraint step drawn', 'the constraints are drawn as steps on the profile')
     # the ETA labels are etaOf(flight, { path: flown })
     want = c.js("""async () => { const CF = await import('/frame/lib/current_flight.js'), T = await import('/frame/lib/time.js'), S = window.__mp.S,
@@ -10448,6 +10455,10 @@ def d313(c):
       const unord = appr(['XF01', 43.6, 4.9], { unordered: true });
       out.unord = run(unord, [...base, { origin: 'app', id: 'XF01', lat: 43.6, lon: 4.9 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail], { star, app: unord });
       // the tokens
+      const stateOf = rec => { S.procs = { star, app: rec }; S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { star: star.id, app: rec.id } } } };
+        S.route.path = [...base, { origin: 'app', id: 'XF01', lat: 43.6, lon: 4.9 }, { origin: 'app', id: 'XF02', lat: 43.5, lon: 5.1 }, ...tail]; return P.layout(cv, toC, 300).names.find(n => n.origin === 'app').state };
+      out.doubt = window.MapsRender && S.ctx ? P.stateOf({ status: 'doubt' }) : '';
+      out.both = [stateOf({ ...apart, status: 'doubt', outdated: true }), P.stateOf({ status: 'doubt', outdated: true })];
       out.hues = window.MapsRender.palette(false).procHues; out.night = window.MapsRender.palette(true).procHues;
       out.tok = [1, 2, 3, 4, 5, 6, 7, 8].map(i => getComputedStyle(document.documentElement).getPropertyValue('--sog-proc-' + i).trim());
       // the note (the arrival's name, the two points)
@@ -10464,6 +10475,8 @@ def d313(c):
     c.ok(not un['app'] and not un['ab'] and un['dots'] >= 2 and un['labels'] >= 2, str(un), 'a record of unknown order: its points are drawn (rings with their code), no leg between them')
     c.eq(len(set(r['hues'])), 8, 'eight comparison hues by day', what='day hues')
     c.eq(len(set(r['night'])), 8, 'eight comparison hues by night', what='night hues')
+    # ONE state at a time on the trace: « à vérifier » (a doubtful approach) wins over « périmé » (kept after its cycle)
+    c.eq(r['both'], [r['doubt'], r['doubt']], 'a record that is doubtful AND outdated says « à vérifier » alone; a record only outdated says « périmé »', what='one state')
     c.eq(r['tok'], r['hues'] if not c.js("() => !!window.__mp.S.theme.dark") else r['night'], 'the hues are the eight tokens --sog-proc-1 … 8 of the theme in force', what='tokens')
 
 
@@ -10478,6 +10491,14 @@ def d314(c):
     c.wait(900)
     # the fixture's STAR ends at XT02 and its approach starts at XF01, with no common point: a break, and the sentence in the notes
     c.until("!!document.querySelector('.mp-notes [data-proc-gap]')", timeout=10000, what='the sentence of the missing link in the notes')
+    # SOG-0569, the ergonomist's retouches: the two ends of the missing link are NAMED at every zoom (390 included: the sentence cites them), the name of a
+    # procedure on its trace is the name alone, and no distance mark stands in the void between the two ends
+    c.until("(window.__mpTexts || []).some(t => t.trim() === 'XT02') && (window.__mpTexts || []).some(t => t.trim() === 'XF01')", timeout=8000, what='the two ends of the missing link are written on the map')
+    drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
+    c.ok(not any('X-Plane' in t or 'Little Navmap' in t for t in drawn), str([t for t in drawn if 'Plane' in t or 'Navmap' in t]), 'no source written on a trace: the name alone')
+    voids = c.js("""() => { const S = window.__mp.S, g = window.__pr.procGap(S.route.path), at = n => S.route.flown.find(p => p.id === n), a = at(g.a.id), b = at(g.b.id);
+      return { a: a.nm, b: b.nm, marks: S.marks.filter(m => m.nm > a.nm && m.nm < b.nm).map(m => m.nm) } }""")
+    c.eq(voids['marks'], [], f'no distance mark between the two ends ({voids["a"]:.0f} to {voids["b"]:.0f} NM): where no line is drawn there is no mark', what='marks in the void')
     if c.width in (390, 1280):
         c.shot(f'D314_{c.width}_ecart.png')
     # the same state with the sheet open on its notes: the sentence of the missing link, to be read in French

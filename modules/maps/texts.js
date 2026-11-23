@@ -518,6 +518,8 @@ export const TX = {
   // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
   procDoubt: ['à vérifier', 'to be checked', 'zu prüfen', 'por verificar'],
   // l'approche interrompue (le seul mot, partout : SOG-0569), écrite sur son tracé quand la carte est assez proche (avec les noms de points)
+  // UN mot, pas un signe, pour une donnée gardée après son cycle (« ⌛ » se lit « calcul en cours ») : le mot de Données, REPRIS tel quel (modules/data/texts.js, dsWhyOld), pas retraduit (SOG-0569)
+  procStale: ['périmé', 'out of date', 'veraltet', 'desactualizado'],
   procMissed: ['approche interrompue', 'missed approach', 'Fehlanflug', 'aproximación frustrada'],
   // la phrase du trou entre la fin d'une arrivée et le début d'une approche non rattachée ; la même, mot pour mot, que celle de Carburant et
   // du choix de l'approche (SOG-0569, arbitrage du 23 nov.) : {fin} et {debut} les points, {arrivee} le nom de l'arrivée
