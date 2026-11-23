@@ -4549,9 +4549,7 @@ function edLoadStep(e) {
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
 /** La commande touchée, retrouvée après le dessin (lot 6, plus de saut de page) : son sélecteur est fait de son `data-do` et de ses `data-*` d'identité. */
-let ED_ANCHOR = null,
-  ED_HOLD =
-  false; // lot 7a : un groupe de l'onglet Mission qui s'ouvre ou se ferme : la page garde sa position (pas d'ancre : ce qui est au-dessus change de hauteur)
+let ED_ANCHOR = null;
 const ANCHOR_KEYS = ['at', 'i', 'sel', 'part', 'step', 'grp', 'tab', 'n', 'id', 'rank', 'kind', 'k', 'f', 'dir', 'first', 'key', 'model',
   'brick'
 ];
@@ -4569,11 +4567,8 @@ export function edScrollKeep(s) {
     a = ED_ANCHOR;
   ED_ANCHOR = null;
   if (!was) return null;
-  const el = a ? s.el.querySelector(a) : null,
-    hold = ED_HOLD;
-  ED_HOLD = false;
+  const el = a ? s.el.querySelector(a) : null;
   return {
-    hold,
     y: window.scrollY,
     sel: a,
     top: el ? el.getBoundingClientRect().top : null
@@ -4589,16 +4584,6 @@ export function edScrollBack(s, keep) {
   if (e) delete e.tabGo;
   const apply = () => {
     window.scrollTo(0, tab !== undefined ? tab : keep.y);
-    if (keep.hold && tab ===
-      undefined) { // la page se raccourcit (le groupe d'au-dessus se referme) : sa hauteur d'avant est gardée, la page ne glisse pas
-      const need = keep.y + window.innerHeight - document.documentElement.scrollHeight,
-        ed = s.el.querySelector('.ms-ed');
-      if (need > 0 && ed) {
-        ed.style.minHeight = `${ed.offsetHeight + need}px`;
-        window.scrollTo(0, keep.y);
-      }
-      return;
-    }
     const el = tab === undefined && keep.sel ? s.el.querySelector(keep.sel) : null;
     if (el && keep.top !== null) {
       const d = el.getBoundingClientRect().top - keep.top;
@@ -4613,7 +4598,6 @@ export function edScrollBack(s, keep) {
 
 export function edClick(s, b) {
   ED_ANCHOR = s.ed ? anchorOf(b) : null;
-  ED_HOLD = !!s.ed && b?.dataset?.do === 'edstep';
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);

@@ -15400,23 +15400,34 @@ def n245(c):
         c.js(_REG_CLEAR)
 
 
-@case('N246', 'Missions › opening « Équipes » does not move the page (SOG-0482, lot 7a): the page keeps its position (4 px at most) when a group of the tab « Mission » opens — Équipes, Récit, back to the Cadre, Équipes — at 1280 and at 390', 'N',
+@case('N246', 'Missions › the header of a group touched keeps its place on the screen (SOG-0482, lot 7a): opening a group of the tab « Mission » — Cadre, Équipes, Récit, Risques, Chronologie, and Récit then Chronologie — the header touched stays where it was, 4 px at most, '
+      'when the page above has the room to make up for the group that closes; when it has not (the group closed above is taller than the scroll left), the page goes as far as it can and the header rises ONLY by the lack (the height closed minus the scroll available), 4 px more; '
+      'never behind the sticky row; no style left on `.ms-ed`', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0482 lot 7a § 8: editor_view.js `edScrollBack` (`hold`: the page keeps its height and its position when the group above closes)')
+      rule='SOG-0482 lot 7a § 8: editor_view.js `edScrollKeep` / `edScrollBack` with the anchor of the button `edstep` (`ED_ANCHOR`), `.ms-atsum` `scroll-margin-top`')
 def n246(c):
+    STICKY = 57 + 48 + 8  # the bar of the application, the row of the tabs, the margin: the line under which a header lands
     for width in (1280, 390):
         _l3_open(c, width)
         _tab(c, 'mission')
         c.wait(400)
-        moved = []
-        for step in ('teams', 'story', 'cadre', 'teams'):  # Récit, then Chronologie and Risques: the group that closes above is taller than the room under the sticky row — the page then moves just enough to show the header
+        seen = []
+        # (a) the header at 560 px from the top of the screen (the scroll above is the one of the page); (b) the header at the centre, from a page scrolled little (the statement of the ergonomist: « Équipes » at 1280)
+        for how, step in (('a', 'teams'), ('a', 'story'), ('a', 'risks'), ('a', 'timeline'), ('a', 'cadre'), ('a', 'teams'), ('a', 'story'), ('a', 'timeline'), ('b', 'cadre'), ('b', 'teams')):
             sel = f'{E} [data-grp={step}] [data-do=edstep]'
-            c.js(f"window.scrollTo(0, Math.max(0, document.querySelector('{sel}').getBoundingClientRect().top + scrollY - 560))")
+            if how == 'a':
+                c.js(f"window.scrollTo(0, Math.max(0, document.querySelector('{sel}').getBoundingClientRect().top + scrollY - 560))")
+            else:
+                c.js(f"document.querySelector('{sel}').scrollIntoView({{block: 'center'}})")
             c.wait(300)
-            y0 = c.js('Math.round(scrollY)')
+            pre = c.js(f"(() => {{ const open = document.querySelector('{E} [data-steps] .ms-atgrp[data-open=\"1\"]'), h = document.querySelector('{sel}'), b = open && open !== h.closest('.ms-atgrp') && open.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING ? open.querySelector('.ms-atbody') : null;"
+                       f" return [Math.round(scrollY), Math.round(h.getBoundingClientRect().top), b ? Math.round(b.getBoundingClientRect().height) : 0] }})()")
             c.tap(sel)
             c.wait(900)
-            moved.append([step, c.js('Math.round(scrollY)') - y0])
-        c.ok(all(abs(d) <= 4 for _, d in moved), moved, f'{width}: the page moved by {moved} px (4 at most each) when the groups opened')
+            post = c.js(f"[Math.round(scrollY), Math.round(document.querySelector('{sel}').getBoundingClientRect().top), document.querySelector('{E}').style.minHeight]")
+            lack = max(0, pre[2] - pre[0])  # the height closed above minus the scroll available
+            want = max(pre[1] - lack, STICKY)
+            seen.append([how + ':' + step, pre, post, lack])
+            c.ok(abs(post[1] - want) <= 4 and not post[2], seen[-1], f'{width} {how}:{step}: the header was at {pre[1]}, scroll {pre[0]}, group closed above {pre[2]}: lack {lack}; it is at {post[1]} (expected {want}, 4 px) and `.ms-ed` has no min-height left ({post[2]!r})')
         ed_leave(c)
         c.js(_REG_CLEAR)
