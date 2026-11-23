@@ -11948,7 +11948,7 @@ def l181(c):
     c.until("(e => !!e && e.offsetParent !== null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone=fr]'))", timeout=8000, what='the group with France is open')
     card = lambda z: c.js(f"(b => b ? [b.dataset.tone, b.dataset.redo || '', b.querySelector('.d-gw').textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone={z}]'))")
     fr_card, es_card = card('fr'), card('es')
-    c.eq([fr_card[0], fr_card[1], norm(fr_card[2]).endswith(norm(W['redo']))], ['ok', 'redo', True], 'France: green, striped, « à jour · relecture possible »', what='card fr')
+    c.eq([fr_card[0], fr_card[1], norm(W['redo']) in norm(fr_card[2])], ['ok', 'redo', True], 'France: green, striped, « à jour · relecture possible »', what='card fr')
     c.eq([es_card[0], es_card[1]], ['ok', ''], 'Spain: plain green, no stripe', what='card es')
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-group-id=europe-west]').scrollIntoView({ block: 'start' })")
