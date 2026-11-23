@@ -764,9 +764,7 @@ interfaces » — a text link at the far end of the foot, after « Enregistrer �
   form. At 390 the three stay on one line, on screen without scrolling.
 - **Leaving asks when something would be lost** (`edLeave`, `edDirty`): the document of the workshop (`edDoc`) is compared with
   the file read or last saved (`e.base`) — for a new mission or a copy, with the document of its opening (`e.start`). The same:
-  « Annuler » leaves at once, as before. Different: the question of the frame (`ctx.ask`) — since SOG-0486 the workshop keeps a draft, so it declares `{ kept: true }`
-  (`ctx.unsaved`, `ctx.askLeave`) and the frame says so: « Quitter ? Vos changements restent en brouillon sur cet appareil. »,
-  « Quitter » / « Rester ». Nothing is left without the yes.
+  « Annuler » leaves at once, as before. Different: the question of the frame (`ctx.ask`) — the workshop declares `ctx.unsaved(fn)` and asks with `ctx.askLeave()`, no option (SOG-0486 once passed `{ kept }`; V3 Frame's 4fd523481 removed it from the question), and the frame says its own words: « Quitter » / « Rester ». Nothing is left without the yes.
   **Before this lot « Annuler » dropped every change without a word.**
 - **Leaving by the frame** (SOG-0458, noreg N119; `edDeclare` in `editor_view.js`): the workshop declares its state to the frame
   with `ctx.unsaved(() => the workshop is open AND edDirty)` — at every opening (`edOpen`, the three modes; the function reads
@@ -1380,8 +1378,7 @@ The ergonomist: the workshop keeps the mission ON THE DEVICE at each change, nev
   no second detector) and the document differs from the last one written; once more when the workshop is left (`edLeave` after « Quitter »,
   and the unmount of the module, `edAfter(null)`). A workshop back to its starting point erases the draft THIS session wrote or resumed.
 - **« Enregistrer »** that wrote the mission erases the draft (its key before the save: `new` for a creation). « Quitter » keeps it: that is
-  its purpose. The question of the frame says so since the `kept` option (`ctx.unsaved(fn, { kept: true })`, `ctx.askLeave({ kept: true })`, V3 Frame's a7072f1e6):
-  « Quitter ? Vos changements restent en brouillon sur cet appareil. »
+  its purpose. The question of the frame is the frame's own, without option, since V3 Frame's 4fd523481 (the `kept` option of a7072f1e6 is gone).
 - **Reading** (`draft.js` `readDraft`, `listDrafts`): the file is on the device but read as untrusted — the size first (the file, then the text), the envelope
   (version 1, key and mode that go together), the text read by js-yaml with the CORE schema and refused with an alias or beyond `MS.NODES_MAX` (`shapeOf`), as
   the workshop reads a mission file. Not `readMission`: a draft of a new mission has no identifier nor family yet, and `readMission` refuses that. Anything

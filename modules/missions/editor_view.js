@@ -5242,10 +5242,8 @@ function edDeclare(s) {
   edYaml(); // le brouillon s'écrit tout de suite à la sortie : js-yaml est déjà là (jamais attendu au moment de quitter)
   // SOG-0486 + décision de l'ergonome (19 nov.) : un brouillon GARDÉ ne perd rien — la fonction dit FAUX quand tout ce qui a changé est dans le
   // brouillon (edDraftWrite l'écrit à l'instant, au besoin) ; sans brouillon (texte au-delà de la borne, clé hors forme, écrit refusé,
-  // « Enregistrer » en cours) elle dit vrai et le cadre pose sa question, qui ne parle pas d'un brouillon (kept: false)
-  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed) && (s.ed.busy || !edDraftWrite(s, s.ed)), {
-    kept: false
-  });
+  // « Enregistrer » en cours) elle dit vrai et le cadre pose sa question (sans option : elle ne parle pas d'un brouillon)
+  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed) && (s.ed.busy || !edDraftWrite(s, s.ed)));
 }
 
 /** Charge js-yaml (le texte du brouillon) sans l'attendre : l'atelier l'appelle à son ouverture. Jamais d'exception. */
@@ -5265,9 +5263,7 @@ async function edLeave(s) {
     if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).catch(() => 0);
     if (state() !== s || s.ed !== e) return;
     kept = !e.busy && edDraftWrite(s, e);
-    if (!kept && !(await s.ctx.askLeave({
-        kept: false
-      }))) return;
+    if (!kept && !(await s.ctx.askLeave())) return;
   }
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
