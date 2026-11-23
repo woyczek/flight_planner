@@ -461,7 +461,7 @@ async function edModelPick(s, id, own) {
 // étroite, même sur un grand écran), les lignes d'équipe et d'événement gardent leur forme étroite. Les règles des champs
 // de chaque étape (ms-edteam, ms-pl…) restent dans module.js. Module large : la carte et le déroulé à gauche, la fiche à droite.
 const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
-[data-module="missions"] .ms-atgrid{display:flex;flex-direction:column;padding-bottom:6rem}
+[data-module="missions"] .ms-atgrid{display:flex;flex-direction:column} /* lot 6 : la réserve de 6 rem du pied (il est collant, dans le flux, jamais par-dessus la fin de la page) est retirée */
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atprof{order:1}
@@ -682,14 +682,18 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
 [data-module="missions"] .ms-at :is(.ms-atbody,.ms-itin-sheet,.ms-plform) :is(input,select,textarea,button){scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 16px);scroll-margin-bottom:7rem} /* un champ amené à l'écran se place sous la rangée collante et au-dessus du pied */
-[data-module="missions"] .ms-todogo{display:block;width:100%;min-height:44px;padding:6px 0;text-align:left;font:inherit;border:0;background:none} /* lot 6 : un point de « À compléter » est un lien-bouton qui mène à sa place */
+[data-module="missions"] .ms-todogo{display:flex;align-items:center;width:100%;min-height:44px;padding:8px 12px;text-align:left;font:inherit;border:0;background:none;text-decoration:underline;color:var(--sog-accent,#1a73e8)} /* lot 6 : un point de « À compléter » est un lien-bouton qui mène à sa place */
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
 [data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
 [data-module="missions"] .ms-atbar>.ms-attodobtn{margin-left:auto} /* « Enregistrer » et « Annuler » collés, « À compléter » au bout (SOG-0454) */
 [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:none}
 [data-module="missions"] .ms-attodobtn:has(.ms-attodowarn){background:color-mix(in srgb,var(--sog-warn,#b06f00) 16%,var(--sog-surface,#fff));border-color:var(--sog-warn,#b06f00)} /* lot 5 : « À compléter (n) » en jaune quand n > 0, comme la maquette */
 [data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
-[data-module="missions"] .ms-attodo{margin:8px 0 0;max-height:40dvh;overflow:auto}
+[data-module="missions"] .ms-attodo{margin:0;padding:0;border-width:1px 0 0;border-radius:0;box-shadow:none;max-height:60dvh;overflow:auto;overscroll-behavior:contain} /* lot 6 : posée juste au-dessus du pied, sur toute sa largeur, bornée, elle défile en elle-même (la maquette itin_completer) */
+[data-module="missions"] .ms-attodo .ms-lines{list-style:none;margin:0;padding:0}
+[data-module="missions"] .ms-attodo .ms-lines>li{margin:0;padding:0;border-top:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-attodo .ms-lines>li:first-child{border-top:0}
+[data-module="missions"] .ms-attodo>.f-muted,[data-module="missions"] .ms-attodo>p{margin:0;padding:8px 12px}
 [data-module="missions"] .ms-attodo[hidden]{display:none}
 /* SOG-0482 : la fiche d'un lieu s'ouvre sous sa ligne, dans la colonne étroite de l'itinéraire, à toute largeur : la sorte y est toujours sur sa propre rangée */
 [data-module="missions"] .ms-itin-list .f-row>.f-field.ms-plkind{flex:1 1 100%}
@@ -713,6 +717,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
   /* la carte et le déroulé restent en vue pendant que la fiche défile (l'ergonome, 18 nov.) */
   [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start;max-height:calc(100dvh - var(--f-pane-top,70px) - 72px);overflow-y:auto;overscroll-behavior:contain} /* SOG-0464 : avec le profil, la colonne est plus haute que l'écran ; bornée, elle défile en elle-même et reste collée (sinon elle devenait la plus haute de la grille et ne collait plus) */
   [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
+  [data-module="missions"] .ms-attodo{position:absolute;right:0;bottom:100%;margin:0;width:min(26em,100%);max-height:50dvh;border-width:1px;background:var(--sog-surface,#fff)} /* la liste s'ouvre dans la colonne de droite, au-dessus du bouton : la carte reste découverte */
   /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
   [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:block}
   [data-module="missions"] .ms-dsum{pointer-events:none;min-height:0;padding:4px 0 8px}
@@ -3368,7 +3373,7 @@ function edTodoHtml(s, doc) {
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
     go = text => `<button type="button" class="f-linkbtn ms-todogo" data-do="edtodogo">${esc(text)}</button>`, // lot 6 : le point mène à SA place
-    lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} : ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(t.text)}</li>`)];
+    lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} : ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(t.text)}</li>`)];
   return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 
@@ -3432,7 +3437,7 @@ function edTodoBtnHtml(s, doc) {
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc),
     t = todo[0],
-    first = t ? `${todoWhere(s, names, t)} — ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}` : drawers[0]?.text || '';
+    first = t ? `${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}` : drawers[0]?.text || '';
   const count = todo.length + drawers.length,
     label = esc(s.tt(EDTX.atTodo, {
       n: count
@@ -3440,9 +3445,14 @@ function edTodoBtnHtml(s, doc) {
   return `${count ? `<span class="ms-attodowarn">${label}</span>` : label}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
 }
 
+/** Le texte d'un point après « : » : sans majuscule, sauf quand la deuxième lettre n'est pas une minuscule (un code comme « XTST » reste tel quel). */
+const lowerFirst = x => /^\p{Lu}\p{Ll}/u.test(x) ? x[0].toLowerCase() + x.slice(1) : x;
+
 /** Où se complète un point de « À compléter » : le Cadre, l'étape ; le départ et l'arrivée se complètent dans LEUR LIGNE de l'itinéraire (lot 5 : ils ne sont plus des champs du Cadre) — le point la nomme. */
-const todoWhere = (s, names, t) => t.key === 'origin' ? s.tt(EDTX.itNewDep) : t.key === 'destination' ? s.tt(EDTX.itNewArr) : s.tt(names[t
-  .step]);
+const todoWhere = (s, names, t) => t.step === 'places' && !['origin', 'destination'].includes(t.key) ? s.tt(String(t.key).startsWith(
+    'uncited_') ? EDTX.atOut : EDTX.atItin) : t.key === 'origin' ? s.tt(EDTX.itNewDep) : t.key === 'destination' ? s.tt(EDTX.itNewArr) : s
+  .tt(names[t
+    .step]);
 
 /** Les tiroirs de la séance en lignes (editor_drawers.js) : celles déjà retouchées, sinon celles du fichier. */
 const edDrawers = e => e.drawers || DR.drawerRowsOf(e.base);
