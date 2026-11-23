@@ -9260,14 +9260,13 @@ def f293(c):
     segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
     # the engine writes its level on the point where the cruise begins (« LUGEN/N0330F270 »)
     st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN/N0330F270 UN10 NEPIX MEN1A LFML', 370, 270, segs)]
-    stale = {'fr': ('Route calculée pour le FL270 — à recalculer : le vol est au FL250',
-                    'Plan de vol au FL250 sur une route calculée pour le FL270 : recalculez la route avant de copier'),
-             'en': ('Route computed for FL270 — compute again: the flight is at FL250',
-                    'Flight plan at FL250 on a route computed for FL270: compute the route again before copying'),
-             'de': ('Route für FL270 berechnet — neu berechnen: der Flug ist auf FL250',
-                    'Flugplan auf FL250 mit einer für FL270 berechneten Route: Route vor dem Kopieren neu berechnen'),
+    # SOG-0572 (the ergonomist, 23 Nov) — changed on purpose: the stale route is no longer copied after a warning; in place of the
+    # copy, the state and « Recalculer »
+    stale = {'fr': ('Route calculée pour le FL270 — à recalculer : le vol est au FL250', 'Route calculée pour le FL270 : le vol est au FL250.'),
+             'en': ('Route computed for FL270 — compute again: the flight is at FL250', 'Route computed for FL270: the flight is at FL250.'),
+             'de': ('Route für FL270 berechnet — neu berechnen: der Flug ist auf FL250', 'Route für FL270 berechnet: der Flug ist auf FL250.'),
              'es': ('Ruta calculada para el FL270 — volver a calcular: el vuelo está en el FL250',
-                    'Plan de vuelo en el FL250 con una ruta calculada para el FL270: vuelva a calcular la ruta antes de copiar')}[c.lang]
+                    'Ruta calculada para el FL270: el vuelo está en el FL250.')}[c.lang]
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):
@@ -9304,22 +9303,10 @@ def f293(c):
          what='route')
     c.eq(norm(c.text(f'{FUEL} [data-rstale] [data-do=rcompute]') or ''), norm({'fr': 'Recalculer', 'en': 'Compute again',
          'de': 'Neu berechnen', 'es': 'Recalcular'}[c.lang]), 'with « Recalculer »', what='button')
-    fpl = item15()
-    # the group of the engine written again with the quote's speed (the speed of the flight plan): its level, F270, is the engine's
-    c.ok('F250 ' in fpl[:12] and re.search(r'LUGEN/N\d{4}F270\b', fpl) is not None, fpl,
-         'reproduced: item 15 « F250 » at its head and « /F270 » further on')
-    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale]') or ''), norm(stale[1]), 'above « Copier pour Eurocontrol »: said before copying',
-         what='before')
-    c.ok(c.js(f"""(() => {{ const p = document.querySelector('{FUEL} [data-fpl] [data-fplstale]'),
-        b = document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]');
-        return !!(p.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) }})()"""), 'after', 'the line comes before the button')
-    c.eq(c.js(f"document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]').getAttribute('aria-disabled')"), None,
-         'the copy stays permitted', what='copy')
-    c.js("window.__n0 = (window.__notes || []).length")
-    c.tap(f'{FUEL} [data-fpl] [data-do="fplcopy"]')
-    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(stale[1]),
-            timeout=6000, what='the copy says it too')
-    c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = false")
+    # in place of the copy: the state and « Recalculer » — never a copy of « F250 » at its head with « /F270 » further on
+    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale] > span') or ''), norm(stale[1]), 'in place of « Copier pour Eurocontrol »',
+         what='state')
+    c.eq(c.count(f'{FUEL} [data-fpl] [data-do=fplcopy]'), 0, 'the copy is not offered', what='no copy')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()

@@ -671,10 +671,12 @@ const TX = {
     'Route für FL{c} berechnet — neu berechnen: der Flug ist auf FL{f}',
     'Ruta calculada para el FL{c} — volver a calcular: el vuelo está en el FL{f}'
   ],
-  fplStale: ['Plan de vol au FL{f} sur une route calculée pour le FL{c} : recalculez la route avant de copier',
-    'Flight plan at FL{f} on a route computed for FL{c}: compute the route again before copying',
-    'Flugplan auf FL{f} mit einer für FL{c} berechneten Route: Route vor dem Kopieren neu berechnen',
-    'Plan de vuelo en el FL{f} con una ruta calculada para el FL{c}: vuelva a calcular la ruta antes de copiar'
+  // SOG-0572 (l'ergonome) : à la place de « Copier pour Eurocontrol », l'état d'une route prise périmée (puis « Recalculer »)
+  fplStale: ['Route calculée pour le FL{c}, {type} : le vol a changé.', 'Route computed for FL{c}, {type}: the flight has changed.',
+    'Route für FL{c}, {type} berechnet: der Flug hat sich geändert.', 'Ruta calculada para el FL{c}, {type}: el vuelo ha cambiado.'
+  ],
+  fplStaleLevel: ['Route calculée pour le FL{c} : le vol est au FL{f}.', 'Route computed for FL{c}: the flight is at FL{f}.',
+    'Route für FL{c} berechnet: der Flug ist auf FL{f}.', 'Ruta calculada para el FL{c}: el vuelo está en el FL{f}.'
   ],
   // SOG-0529 (2) : une route qui n'est qu'un direct (case 15 « DCT ») — ce qu'il faut faire ; puis sa longueur
   fplDirect: ['Aucune route calculée entre {dep} et {arr} : calculez-en une ou saisissez-la (la case 15 porte « DCT »).',
@@ -5614,9 +5616,13 @@ function fplDraw(C, textOnly = false) {
     return;
   }
   const open = !!box.querySelector('details[data-fplfold]')?.open,
-    stale = routeStale(C), // SOG-0533 : dit AVANT de copier, au-dessus du bouton (la copie reste permise)
-    vio = routeViolations(); // SOG-0532 (4) : de même pour une route qui enfreint des règles connues
-  box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}${stale ? `<p class="f-warn" data-fplstale>${esc(tt(TX.fplStale, stale))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
+    stale = routeStale(C), // SOG-0572 : une route prise périmée — la copie n'est pas offerte, l'état et « Recalculer » à sa place
+    vio = routeViolations(); // SOG-0532 (4) : dit avant de copier, pour une route qui enfreint des règles connues
+  if (stale) {
+    box.innerHTML = `<p class="f-row fu-rage f-warn" data-fplstale><span>${esc(tt(stale.levelOnly ? TX.fplStaleLevel : TX.fplStale, stale))}</span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p>`;
+    return;
+  }
+  box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
 }
 /** SOG-0529 (2) : une route qui n'est qu'un direct — « aucune route calculée … : calculez-en une ou saisissez-la », puis : si le contrôle
  *  de route d'AeroDB a jugé CE texte (« Contrôler », S.rcheck) et y a trouvé des écarts, SES phrases (RE.faultLines, trois au plus) ;
@@ -5648,7 +5654,7 @@ function fplErrs(m) {
 async function fplCopy() {
   const F = fplOf(S.C),
     fold = S.body?.querySelector('details[data-fplfold]');
-  if (!F) return;
+  if (!F || routeStale(S.C)) return; // SOG-0572 : jamais la copie d'une route prise périmée
   if (F.m.errors.length) {
     if (fold) fold.open = true;
     return S.ctx.notify(tt(TX.fplBad, {
@@ -5662,13 +5668,12 @@ async function fplCopy() {
   // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
   // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
   // SOG-0529 (2) : une route qui n'est qu'un direct : la même notification dit quoi faire, et prévient d'un direct long
-  // SOG-0533 : une route calculée pour un autre niveau : la notification le redit
+  // SOG-0572 : une route périmée n'est jamais copiée (plus de rappel ici) ; les règles enfreintes restent dites
   const direct = fplDirectNotes(F.m).join(' '),
-    st = routeStale(S.C),
     nv = routeViolations(),
-    stale = [nv ? tt(TX.fplViolations, {
+    stale = nv ? tt(TX.fplViolations, {
       n: nv
-    }) : '', st ? tt(TX.fplStale, st) : ''].filter(Boolean).join(' ');
+    }) : '';
   S.ctx.notify(`${shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied)}${direct ? ` ${direct}` : ''}${stale ? ` ${stale}` : ''}`,
     shown || hf || direct || stale ? 'warn' : 'ok');
 }
@@ -6830,6 +6835,31 @@ function routeTake(i) {
   altsClear(true); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis), même pour une liste venue du document (SOG-0224)
   // SOG-0545 (l'ergonome) : en « Auto », « Choisir » fixe le niveau de la ligne et retire « Auto », la ligne gardée comprise
   if (R0?.mode === 'levels' && flOk(a.fl)) setLevel(a.fl * 100);
+  // SOG-0572 : l'empreinte du calcul de la route prise (son niveau, l'appareil, les terrains, la date, les passages imposés)
+  if (S.flight.route?.from === 'engine') {
+    S.flight.route.calc = routeCalcNow(S.flight.route.calcFl);
+    saveFlight();
+  }
+}
+/** SOG-0572 : l'empreinte d'un calcul de route pour le vol tel qu'il est — `fl` (centaines de pieds), le type, la fiche, l'immatriculation,
+ *  la vitesse de croisière et le plafond de l'aéronef, les terrains, la date et l'heure (en minutes), les passages imposés. */
+function routeCalcNow(fl) {
+  const r = S.flight.route || {},
+    sh = S.C?.sheet || currentSheet() || {},
+    ac = S.flight.aircraft || {},
+    when = Date.parse(S.flight.planned_at || '');
+  return {
+    fl: flOk(fl) ? fl : null,
+    type: String(sh.icao || sh.type || ac.type || '').toUpperCase().slice(0, 8),
+    sheet: String(sh.id || ac.sheetId || '').slice(0, 40),
+    reg: String(ac.registration || '').toUpperCase().slice(0, 12),
+    tas: Math.round(+sh.cruise?.tasKt || 0),
+    ceil: Math.round(ceilOf(S.C) || 0),
+    dep: String(r.dep || '').toUpperCase().slice(0, 8),
+    arr: String(r.arr || '').toUpperCase().slice(0, 8),
+    at: Number.isFinite(when) ? Math.round(when / 60000) : null,
+    via: imposedPoints(r).slice(1, -1).map(p => String(p?.id || '').toUpperCase().slice(0, 12)).slice(0, 40)
+  };
 }
 /** SOG-0545 : la clé du vol pour « Revoir les propositions » — la demande de « Calculer » sans le niveau, les passages imposés ni les
  *  vitesses (le choix vient de les écrire), et l'aéronef. */
@@ -6899,10 +6929,22 @@ function routeStale(C = S.C) {
   const r = S.flight?.route || {},
     c = flOk(r.calcFl) ? r.calcFl : null,
     f = +C?.levelFt > 0 ? Math.round(+C.levelFt / 100) : null;
-  return r.from === 'engine' && c && f && c !== f ? {
+  if (r.from !== 'engine' || !c || !f) return null; // SOG-0572 : une route tapée ou collée n'est jamais périmée
+  // SOG-0572 : l'empreinte gardée (une entrée de data/ : chaque valeur comparée, jamais écrite telle quelle) contre le vol d'aujourd'hui ;
+  // une route prise avant elle n'est jugée que sur son niveau (SOG-0533)
+  const was = r.calc && typeof r.calc === 'object' && !Array.isArray(r.calc) ? r.calc : null,
+    now = was ? routeCalcNow(f) : null,
+    keys = ['type', 'sheet', 'reg', 'tas', 'ceil', 'dep', 'arr', 'at'],
+    other = !!was && (keys.some(k => Object.hasOwn(was, k) && JSON.stringify(was[k] ?? null) !== JSON.stringify(now[k] ?? null)) ||
+      (Array.isArray(was.via) && JSON.stringify(was.via.map(x => String(x).toUpperCase())) !== JSON.stringify(now.via))),
+    level = c !== f;
+  if (!other && !level) return null;
+  return {
     c: String(c).padStart(3, '0'),
-    f: String(f).padStart(3, '0')
-  } : null;
+    f: String(f).padStart(3, '0'),
+    type: String(was?.type || now?.type || S.flight.aircraft?.type || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8),
+    levelOnly: !other
+  };
 }
 /** SOG-0556 : la table des préfixes OACI d'aerodb (EAD_STATES : préfixe → noms [fr, en, de, es]) — lue une fois ; null tant qu'elle ne
  *  l'est pas (la liste est redessinée à la réponse ; en attendant, le code). */
@@ -7047,8 +7089,8 @@ function staleDraw(C) {
   const p = S.body?.querySelector('[data-rstale]'),
     x = routeStale(C);
   if (!p) return;
-  p.hidden = !x;
-  p.querySelector('[data-rstaletext]').textContent = x ? tt(TX.rFlStale, x) : '';
+  p.hidden = !x || x.c === x.f; // SOG-0572 : cette ligne ne dit que le niveau ; le reste est dit à la place de la copie
+  p.querySelector('[data-rstaletext]').textContent = p.hidden ? '' : tt(TX.rFlStale, x);
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {

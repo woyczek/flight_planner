@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel: « Copier pour Eurocontrol » is no longer offered for a route computed for another flight** (SOG-0572; case F318) — another aircraft, level, aerodrome, date or imposed point than the computation's: « Route calculée pour le FL270, BE9L : le vol a changé. » with « Recalculer » instead; a route typed or pasted is always copiable.
 - **Fuel: « QNH inconnu » offers « Lire la météo des terrains » on the spot** (SOG-0325; case F316) — on the arrival's « Terrain » line of the Procedures block; no need to go to the Weather step.
 - **Fuel: the proposed alternates can be computed again after the flight changed** (SOG-0566; case F315) — a new date, time, duration or aerodrome marks the list « Périmé (calculé à …) » with « Recalculer »; nothing is computed by itself.
 - **Fuel: a level above the aircraft's ceiling is said** (SOG-0562; case F314) — under the Level field « Au-dessus du plafond du BE9L (FL290). », on the card of a route at that level « au-dessus du plafond (FL290) »; « Auto » never proposes a level above the ceiling of the sheet or of the type's performance (EUROCONTROL); the computation is never refused.
