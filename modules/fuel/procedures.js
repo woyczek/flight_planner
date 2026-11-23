@@ -1247,7 +1247,9 @@ export function createProcedures(host) {
       }));
     }
     if (!seen.size) parts.push(tt(TX.procQnhUnknown));
-    return esc(parts.join(' · '));
+    // SOG-0325 (l'ergonome) : sans QNH, le geste de l'étape Météo offert sur place (le pilote ne change pas d'écran pour remplir la ligne)
+    const wx = !seen.size ? host.wxReadHtml?.() || '' : '';
+    return esc(parts.join(' · ')) + (wx ? ` ${wx}` : '');
   }
   // SOG-0325 : l'altitude d'un terrain dans la base (aerodb.aerodromes, ft) : null (inconnue), absente tant que la réponse n'est pas venue
   const elevs = new Map();

@@ -9500,6 +9500,9 @@ export async function mount(el, ctx) {
       Boolean),
     // SOG-0325 : au-delà de la piste, la lettre, le QNH et le vent de l'ATIS de chaque réseau du vol (jamais son texte)
     atisInfo: (icao, side) => (self.atis?.nets || []).map(n => ATIS.atisInfo(n, self.atis.feeds?.[n], icao, side)).filter(Boolean),
+    // SOG-0325 (rouverte) : le geste « Lire la météo des terrains » de l'étape Météo (même data-do=wx, mêmes mots), pour la ligne
+    // « Terrain » qui dit « QNH inconnu »
+    wxReadHtml: () => `<button type="button" class="fu-linkbtn" data-do="wx">${esc(tt(TX.wxRead))}</button>`,
     // SOG-0325 : le QNH du METAR connu (hPa) et son heure (« 1425 ») ; null sans METAR
     metarQnh: icao => {
       const st = WX.station(self.wx?.metar?.[icao], null),

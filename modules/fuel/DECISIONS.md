@@ -2642,3 +2642,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   an OFP, from the sheet) is above it: « Au-dessus du plafond du {type} (FL{plafond}). » (`lvlCeil`); on the card of a route at such a
   level, in the line of its reasons: « au-dessus du plafond (FL{plafond}) ». The computation is never refused. aerodb.estimate (AeroDB's
   file) still reads only the Airframe DB ceiling: asked of AeroDB through the relay. Case F314, red before.
+- **23 Nov 2026 — « QNH inconnu » offers the reading in place** (SOG-0325 reopened; the user: « lire la météo des terrains est dans
+  l'écran 3, on est sur l'écran 1 »; the ergonomist: the pilot never changes screen to fill a line of screen 1). On the arrival's « Terrain »
+  line of the Procedures block, when no QNH is known (no METAR, no ATIS), the gesture of the Weather step is offered after « QNH inconnu »:
+  the same `data-do=wx`, the same words « Lire la météo des terrains », given by the host (`wxReadHtml`: the texts of procedures.js are
+  apart); once read, the QNH is said and the gesture goes. Case F316, red before.

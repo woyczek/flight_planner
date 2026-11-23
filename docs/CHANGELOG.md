@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel: « QNH inconnu » offers « Lire la météo des terrains » on the spot** (SOG-0325; case F316) — on the arrival's « Terrain » line of the Procedures block; no need to go to the Weather step.
 - **Fuel: the proposed alternates can be computed again after the flight changed** (SOG-0566; case F315) — a new date, time, duration or aerodrome marks the list « Périmé (calculé à …) » with « Recalculer »; nothing is computed by itself.
 - **Fuel: a level above the aircraft's ceiling is said** (SOG-0562; case F314) — under the Level field « Au-dessus du plafond du BE9L (FL290). », on the card of a route at that level « au-dessus du plafond (FL290) »; « Auto » never proposes a level above the ceiling of the sheet or of the type's performance (EUROCONTROL); the computation is never refused.
 - **Fuel: an alternate whose weather is not judged says why on its line** (SOG-0559; case F313) — « LQTZ : pas de TAF. METAR de 14:20Z : VFR. »: the « ? » stays (the alternate is judged on the TAF at the arrival time, never on a METAR), its cause no longer hidden in the fold.
