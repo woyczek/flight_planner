@@ -3712,3 +3712,25 @@ def i52(c):
     c.eq([h for h in tiles if h in img], [], 'and none of them is in img-src', what='tile hosts in img-src')
     general, mine = L.csp_policy(), L.csp_policy(page)
     c.eq(mine.replace(' https://server.arcgisonline.com', '', 1), general, 'a page of the table differs from the general policy by its connect-src host only', what='page vs general')
+
+
+@case('I55', 'Tool: a wait that gives up says the state of the page, bounded (SOG-0594): the address, readyState, five errors at most, the visible text and the notifications, each cut; never the browser storage', 'I',
+      screens=False, designs=('standard',), night=False,
+      rule='SOG-0594 (the closed list of the unstable cases, 24 Nov): « never true within N ms » said nothing of the page, so D183, L55 and L179 could not be read; c.until now adds `snapshot()`, bounded by the ergonomist (every piece cut, no localStorage, sessionStorage or IndexedDB, no header of a request)')
+def i55(c):
+    c.open('fuel', flight=True)
+    # a secret in the three browser stores, a long text in the page, eight errors already captured: none of it may come out whole
+    c.js("""async () => { localStorage.setItem('probe', 'SECRET-LOCAL-123'); sessionStorage.setItem('probe', 'SECRET-SESSION-456');
+      const d = document.createElement('p'); d.id = 'probe-text'; d.textContent = 'TEXT-' + 'x'.repeat(3000) + '-END'; document.body.prepend(d); return true }""")
+    c.errors.extend(f'console.error: probe {i} ' + 'e' * 400 for i in range(8))
+    try:
+        c.until('() => false', timeout=300, what='the wait that gives up on purpose')
+    except Fail as f:
+        say = str(f.measured)
+    else:
+        raise Fail('the wait that cannot hold did not fail', 'a Fail')
+    c.errors.clear()                                    # the probes are not errors of the page
+    c.ok('the wait that gives up on purpose' in say and 'readyState' in say and 'page ' in say, say[:200], 'the failure keeps its own words and adds the state of the page')
+    c.ok('SECRET-LOCAL-123' not in say and 'SECRET-SESSION-456' not in say, say[:200], 'never the content of localStorage or sessionStorage')
+    c.ok(say.count('console.error: probe') <= 5 and '(+3 more)' in say, say[:300], 'five errors at most, the others counted')
+    c.ok('x' * 201 not in say and 'e' * 121 not in say and len(say) < 1500, f'{len(say)} characters', 'every piece is cut: the visible text (200), each error (120), the whole under 1 500 characters')

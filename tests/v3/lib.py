@@ -676,12 +676,29 @@ class Ctx(Asserts):
     def wait(self, ms=200):
         self.page.wait_for_timeout(ms)
 
+    # What a wait that gives up says of the page (SOG-0594, « instable sous charge » is not a cause): the bounds are the ergonomist's: the address, readyState,
+    # at most five of the errors already captured, the visible text and the frame's notifications, EACH CUT; never the content of localStorage, sessionStorage
+    # or IndexedDB, never a header of a request.
+    SNAP_TEXT, SNAP_ERRORS, SNAP_NOTES = 200, 5, 3
+
+    def snapshot(self):
+        """One bounded line on the state of the page, for the failure of a wait; never raises."""
+        try:
+            s = self.page.evaluate(r"""([n, k]) => { const cut = (x, m) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().slice(0, m);
+              return { url: cut(location.href, 160), ready: document.readyState, text: cut(document.body ? document.body.innerText : '', n),
+                       notes: [...document.querySelectorAll('#fNotes .f-note')].slice(0, k).map(e => cut(e.textContent, 100)) } }""", [self.SNAP_TEXT, self.SNAP_NOTES])
+        except Exception as e:
+            return f'page unreadable ({type(e).__name__})'
+        errs = [e[:120] for e in self.errors[:self.SNAP_ERRORS]]
+        more = f' (+{len(self.errors) - self.SNAP_ERRORS} more)' if len(self.errors) > self.SNAP_ERRORS else ''
+        return f"page {s['url']} · readyState {s['ready']} · errors {errs}{more} · notes {s['notes']} · text «{s['text']}»"
+
     def until(self, expr, arg=None, timeout=4000, what=''):
-        """Waits for a JavaScript predicate; Fail if it never holds."""
+        """Waits for a JavaScript predicate; Fail if it never holds (the failure carries a bounded snapshot of the page, `snapshot()`)."""
         try:
             self.page.wait_for_function(expr, arg=arg, timeout=timeout)
         except Exception:
-            raise Fail(f'never true within {timeout} ms: {what or expr[:80]}', 'it becomes true') from None
+            raise Fail(f'never true within {timeout} ms: {what or expr[:80]} — {self.snapshot()}', 'it becomes true') from None
 
     def quiet(self, expr, arg=None, quiet=500, timeout=8000):
         """Waits until the value of a JavaScript expression stops changing for `quiet` ms (it is read every 50 ms, compared as JSON)
