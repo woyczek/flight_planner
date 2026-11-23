@@ -4,7 +4,7 @@
 //
 // API :
 //   init(tools) : une fois, au chargement de module.js — ce que l'écran emploie du module et qui y reste (partagé avec la liste, la
-//     fiche et le registre) : REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, mapHref, regLoad,
+//     fiche et le registre) : REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, regLoad,
 //     subChoices, yamlFile ; et state() → l'état du module en cours (réaffecté à chaque montage).
 //   edClick, edHtml, edInput : l'écran (s.ed), une saisie, un clic « ed… » — appelés par l'aiguillage de module.js.
 //   edAfter(s | null) : après chaque dessin, et au démontage — la carte du socle (voir « La carte ») ; le brouillon (voir « Le brouillon »).
@@ -168,7 +168,7 @@ import {
   todoText
 } from './editor_texts.js';
 
-let REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, mapHref, regLoad, subChoices, yamlFile, state;
+let REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, regLoad, subChoices, yamlFile, state;
 
 /** Reçoit de module.js ce que l'écran en emploie (voir l'en-tête). */
 export function init(tools) {
@@ -183,7 +183,6 @@ export function init(tools) {
     famChoices,
     famHtml,
     famLetter,
-    mapHref,
     regLoad,
     subChoices,
     yamlFile,
@@ -272,7 +271,7 @@ function edModelLine(s) {
 function edModelHtml(s) {
   const e = s.ed;
   if (e.veil) return '';
-  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><span aria-hidden="true"> · </span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button><span aria-hidden="true"> · </span><button type="button" class="f-linkbtn" data-do="edmodelsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(EDTX.mdSave))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
+  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span> <span class="ms-nowrap"><span aria-hidden="true">· </span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button></span> <span class="ms-nowrap"><span aria-hidden="true">· </span><button type="button" class="f-linkbtn" data-do="edmodelsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(EDTX.mdSave))}</button></span></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
 }
 
 /** La liste des modèles du type de la mission : un modèle sans type va à toute famille ; sans famille choisie, ceux-là seuls et une
@@ -604,9 +603,10 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 @media (max-width:760px){.f-modal.ms-brickdlg{padding:0;place-items:stretch}.f-modal.ms-brickdlg>div{width:100%;height:100dvh;max-height:none;border-radius:0;box-sizing:border-box}}
 [data-module="missions"] .ms-kindchg{color:var(--sog-link,var(--sog-accent,#1a73e8));font-size:.9em}
 [data-module="missions"] .ms-atmodel{margin:0 0 10px} /* le modèle de la mission, sous le titre (lot « modèles de mission ») */
+[data-module="missions"] .ms-nowrap{white-space:nowrap} /* lot 7a : le point médian et le lien qui le suit ne se coupent pas */
 [data-module="missions"] .ms-atmodelline{display:block;margin:0} /* lot 6 (la maquette #cadre) : une phrase, ses deux liens EN LIGNE */
-[data-module="missions"] .ms-atmodelline>.f-linkbtn{display:inline;min-height:0;min-width:0;padding:0;margin:0;border:0;background:none;font:inherit;text-align:left;text-decoration:underline}
-  [data-module="missions"] .ms-atmodelline>.f-linkbtn{padding-left:0;padding-right:0} /* retouche de l'ergonome : sans le retrait latéral du lien (le bord gauche reste aligné sur « Modèle : … »), mais gardant les 44 px de haut de la cible tactile */
+[data-module="missions"] .ms-atmodelline .f-linkbtn{display:inline;min-height:0;min-width:0;padding:0;margin:0;border:0;background:none;font:inherit;text-align:left;text-decoration:underline}
+  [data-module="missions"] .ms-atmodelline .f-linkbtn{padding-left:0;padding-right:0} /* retouche de l'ergonome : sans le retrait latéral du lien (le bord gauche reste aligné sur « Modèle : … »), mais gardant les 44 px de haut de la cible tactile */
 [data-module="missions"] .ms-models{margin:4px 0 0 0;max-width:40em}
 [data-module="missions"] .ms-models>p{margin:4px 0}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
@@ -647,6 +647,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atsum>b{white-space:nowrap}
 [data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
 [data-module="missions"] :is(.ms-atgrp, .ms-dgrp)[data-open="1"]>.ms-atsum>.ms-atline{display:none} /* déplié, le groupe montre son contenu : sa ligne se tait */
+[data-module="missions"] .ms-atgrp>.ms-atsum{scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 8px)} /* lot 7a : un groupe qui s'ouvre sous la rangée collante vient se placer sous elle, jamais derrière */
 [data-module="missions"] .ms-atgrp>.ms-atsum{grid-template-columns:auto minmax(0,1fr);column-gap:0;row-gap:0;align-content:center} /* lot 5 (la maquette #cadre) : le résumé sous le titre */
 [data-module="missions"] .ms-atgrp>.ms-atsum>.ms-stepmark{grid-column:1;grid-row:1 / span 2;margin-right:8px}
 [data-module="missions"] .ms-atgrp>.ms-atsum>b{grid-column:2;grid-row:1}
@@ -688,10 +689,9 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
 [data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
 [data-module="missions"] .ms-atbar>.ms-attodobtn{margin-left:auto} /* « Enregistrer » et « Annuler » collés, « À compléter » au bout (SOG-0454) */
-[data-module="missions"] .ms-attodobtn .ms-attodofirst{display:none}
 [data-module="missions"] .ms-attodobtn:has(.ms-attodowarn){background:color-mix(in srgb,var(--sog-warn,#b06f00) 16%,var(--sog-surface,#fff));border-color:var(--sog-warn,#b06f00)} /* lot 5 : « À compléter (n) » en jaune quand n > 0, comme la maquette */
 [data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
-[data-module="missions"] .ms-attodo{margin:0;padding:0;border-width:1px 0 0;border-radius:0;box-shadow:none;max-height:60dvh;overflow:auto;overscroll-behavior:contain} /* lot 6 : posée juste au-dessus du pied, sur toute sa largeur, bornée, elle défile en elle-même (la maquette itin_completer) */
+[data-module="missions"] .ms-attodo{margin:0;padding:0;border:1px solid var(--sog-border,var(--sog-line,#ddd));border-width:1px 0 0;border-radius:0;box-shadow:var(--sog-shadow-up,var(--sog-shadow-card,none));max-height:60dvh;overflow:auto;overscroll-behavior:contain} /* lot 6 : posée juste au-dessus du pied, sur toute sa largeur, bornée, elle défile en elle-même (la maquette itin_completer) */
 [data-module="missions"] .ms-attodo .ms-lines{list-style:none;margin:0;padding:0}
 [data-module="missions"] .ms-attodo .ms-lines>li{margin:0;padding:0;border-top:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-attodo .ms-lines>li:first-child{border-top:0}
@@ -718,7 +718,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
   [data-module="missions"] .ms-atmapframe{height:min(46dvh,440px)}
   /* la carte et le déroulé restent en vue pendant que la fiche défile (l'ergonome, 18 nov.) */
   [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start;max-height:calc(100dvh - var(--f-pane-top,70px) - 72px);overflow-y:auto;overscroll-behavior:contain} /* SOG-0464 : avec le profil, la colonne est plus haute que l'écran ; bornée, elle défile en elle-même et reste collée (sinon elle devenait la plus haute de la grille et ne collait plus) */
-  [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
   [data-module="missions"] .ms-attodo{position:absolute;right:0;bottom:100%;margin:0;width:min(26em,100%);max-height:50dvh;border-width:1px;background:var(--sog-surface,#fff)} /* la liste s'ouvre dans la colonne de droite, au-dessus du bouton : la carte reste découverte */
   /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
   [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:block}
@@ -1090,7 +1089,8 @@ function edPlaceTexts(s, rows, doc) {
       const who = e.veil ? [] : ED.citedBy(doc, rows, i).map(cite).filter(Boolean);
       return {
         bad: !who.length,
-        text: [r.kind === 'zone' ? zk(r.zkind) : r.kind === 'object' ? ok(r.okind) : r.role, ...(who.length ? who : [s.tt(EDTX.itNoCite)])]
+        text: [r.kind === 'zone' ? zk(r.zkind) : r.kind === 'object' ? ok(r.okind) : r.role, ...(who.length ? who : [s.tt(EDTX[
+            `itNoCite_${['zone', 'object', 'rdv', 'target'].includes(r.kind) ? r.kind : 'pt'}`])])]
           .filter(Boolean).join(' · ')
       };
     };
@@ -1627,7 +1627,7 @@ function edItinHtml(s, doc, run = null) {
   });
   return `<section class="f-card ms-atitin" data-atitin data-atflow data-atplaces data-grp="places">${e.veil ? `<div class="ms-itin-veil"><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div>` : ''}
     <div class="f-list ms-itin-list" data-edplaces data-pllist>${html.join('')}</div>
-    ${e.mode === 'edit' && id ? `<div class="f-row ms-pladd"><a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a></div>` : ''}</section>`;
+</section>`;
 }
 
 /** Redessine l'itinéraire SEUL (un déplacement ou un retrait de route : la carte, le profil et les marques suivent par edRefresh) et rend le focus au
@@ -3376,7 +3376,10 @@ function edTodoHtml(s, doc) {
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
     go = text => `<button type="button" class="f-linkbtn ms-todogo" data-do="edtodogo">${esc(text)}</button>`, // lot 6 : le point mène à SA place
     lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(dashed(t.text))}</li>`)];
-  return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
+  // lot 7a : 8 points ou moins, tous ; au-delà, les 7 premiers puis une rangée « Voir les n autres » (jamais « Voir 1 autre ») qui déplie le reste
+  const all = lines.length <= 8 || s.ed.todoAll,
+    more = all ? '' : `<li class="ms-todomore"><button type="button" class="f-linkbtn ms-todogo" data-do="edtodomore">${esc(s.tt(EDTX.atTodoMore, { n: lines.length - 7 }))}</button></li>`;
+  return lines.length ? `<ul class="ms-lines">${(all ? lines : lines.slice(0, 7)).join('')}${more}</ul>` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 
 /** Où mène un point de « À compléter » (lot 6) : { tab, step?, sel?, group?, line?, focus? } ; null si rien ne le dit. */
@@ -3435,16 +3438,13 @@ function edTodoTarget(s, li) {
 /** Le bouton « À compléter (n) » du pied : son compte (les points du départ et les tiroirs qui en ont), et sur un module large le
  *  premier point. */
 function edTodoBtnHtml(s, doc) {
-  const names = edNames(),
-    todo = edTodos(s.ed, doc),
+  const todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc),
-    t = todo[0],
-    first = t ? `${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}` : dashed(drawers[0]?.text || '');
-  const count = todo.length + drawers.length,
+    count = todo.length + drawers.length,
     label = esc(s.tt(EDTX.atTodo, {
       n: count
     }));
-  return `${count ? `<span class="ms-attodowarn">${label}</span>` : label}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
+  return `${count ? `<span class="ms-attodowarn">${label}</span>` : label}`;
 }
 
 /** Le texte d'un point après « — » : sans majuscule (« L'objet » aussi), sauf devant un code (« XTST » reste tel quel). */
@@ -4549,7 +4549,9 @@ function edLoadStep(e) {
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
 /** La commande touchée, retrouvée après le dessin (lot 6, plus de saut de page) : son sélecteur est fait de son `data-do` et de ses `data-*` d'identité. */
-let ED_ANCHOR = null;
+let ED_ANCHOR = null,
+  ED_HOLD =
+  false; // lot 7a : un groupe de l'onglet Mission qui s'ouvre ou se ferme : la page garde sa position (pas d'ancre : ce qui est au-dessus change de hauteur)
 const ANCHOR_KEYS = ['at', 'i', 'sel', 'part', 'step', 'grp', 'tab', 'n', 'id', 'rank', 'kind', 'k', 'f', 'dir', 'first', 'key', 'model',
   'brick'
 ];
@@ -4567,8 +4569,11 @@ export function edScrollKeep(s) {
     a = ED_ANCHOR;
   ED_ANCHOR = null;
   if (!was) return null;
-  const el = a ? s.el.querySelector(a) : null;
+  const el = a ? s.el.querySelector(a) : null,
+    hold = ED_HOLD;
+  ED_HOLD = false;
   return {
+    hold,
     y: window.scrollY,
     sel: a,
     top: el ? el.getBoundingClientRect().top : null
@@ -4584,6 +4589,16 @@ export function edScrollBack(s, keep) {
   if (e) delete e.tabGo;
   const apply = () => {
     window.scrollTo(0, tab !== undefined ? tab : keep.y);
+    if (keep.hold && tab ===
+      undefined) { // la page se raccourcit (le groupe d'au-dessus se referme) : sa hauteur d'avant est gardée, la page ne glisse pas
+      const need = keep.y + window.innerHeight - document.documentElement.scrollHeight,
+        ed = s.el.querySelector('.ms-ed');
+      if (need > 0 && ed) {
+        ed.style.minHeight = `${ed.offsetHeight + need}px`;
+        window.scrollTo(0, keep.y);
+      }
+      return;
+    }
     const el = tab === undefined && keep.sel ? s.el.querySelector(keep.sel) : null;
     if (el && keep.top !== null) {
       const d = el.getBoundingClientRect().top - keep.top;
@@ -4598,6 +4613,7 @@ export function edScrollBack(s, keep) {
 
 export function edClick(s, b) {
   ED_ANCHOR = s.ed ? anchorOf(b) : null;
+  ED_HOLD = !!s.ed && b?.dataset?.do === 'edstep';
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);
@@ -4767,7 +4783,19 @@ export function edClick(s, b) {
     }
     case 'edtodo':
       s.ed.todoOpen = !s.ed.todoOpen;
+      if (!s.ed.todoOpen) s.ed.todoAll = false; // refermée, la liste reprend sa forme courte
       return draw(s);
+    case 'edtodomore': { // lot 7a : « Voir les n autres » déplie le reste dans le même panneau, puis disparaît ; le focus va au premier point déplié
+      s.ed.todoAll = true;
+      draw(s);
+      const first = s.el.querySelector('[data-edtodo] .ms-lines > li:nth-child(8) .ms-todogo');
+      first?.focus({
+        preventScroll: true
+      });
+      return first?.scrollIntoView?.({
+        block: 'nearest'
+      });
+    }
     case 'edtodogo': { // lot 6 : un point de « À compléter » mène à SA place — l'onglet, la ligne ou le groupe, le champ en main ; la liste se ferme
       const e = s.ed,
         li = b.closest('[data-todo], [data-dtodo]'),

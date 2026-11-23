@@ -3671,7 +3671,7 @@ def n214(c):
         c.js(_REG_CLEAR)
 
 
-@case('N215', 'Missions › the workshop, « Hors itinéraire » says what cites each place (SOG-0482, lot 3): « sur la carte 1 » without a mark for ZONE-2, « rien ne cite ce lieu : le pilote ne le verra pas » with « ! » '
+@case('N215', 'Missions › the workshop, « Hors itinéraire » says what cites each place (SOG-0482, lot 3): « sur la carte 1 » without a mark for ZONE-2, « cité nulle part : le pilote ne le verra pas » (lot 7a) with « ! » '
       'for PT4 and OBJ-2 only, no line at all for OBJ-1 (the key of a drawer, no step); a line says only the kind or role of the place and what cites it, no position, no range; the heading has no count; no handle and no arrows on these lines', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0482 lot 3 (RELECTURE_MAQUETTE_ITINERAIRE § 2.6): editor_view.js `edPlaceTexts` (`outDetail`), `edItinHtml`')
@@ -3682,8 +3682,8 @@ def n215(c):
         c.eq(head, 'Hors itinéraire', f'{width}: the heading says « Hors itinéraire », without a count', what='heading')
         out = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > [data-at^=\"out:\"]')].map(x => [x.querySelector('.ms-plbody b').textContent.trim(), x.querySelector('.ms-plbody .f-muted').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), "
                    f"x.hasAttribute('data-outbad'), x.querySelectorAll('.f-reorder, [data-reorder]').length])")
-        c.eq(out, [['ZONE-2 · Secteur sud', 'à éviter · sur la carte 1', False, 0], ['PT4 · Point quatre', 'rien ne cite ce lieu : le pilote ne le verra pas', True, 0],
-                   ['OBJ-2 · Barque', 'véhicule · rien ne cite ce lieu : le pilote ne le verra pas', True, 0]],
+        c.eq(out, [['ZONE-2 · Secteur sud', 'à éviter · sur la carte 1', False, 0], ['PT4 · Point quatre', 'cité nulle part : le pilote ne le verra pas', True, 0],
+                   ['OBJ-2 · Barque', 'véhicule · cité nulle part : le pilote ne le verra pas', True, 0]],
              f'{width}: what cites each place off the itinerary — « ! » only for what nothing cites; OBJ-1, the key of a drawer, is not there; no position and no range; no arrows on these lines', what='out lines')
         _n20_pick(c, 'out:4')
         c.wait(200)
@@ -4513,7 +4513,7 @@ def n73(c):
     _tab(c, 'map')
     # the foot: « À compléter (n) » alone on a phone, a button that opens the named list
     btn = c.text(f'{E} [data-edtodobtn]')
-    c.ok('(4)' in btn and c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") == 'none', btn,
+    c.ok(norm(btn) == 'À compléter (4)' and c.count(f'{E} [data-edtodobtn] .ms-attodofirst') == 0, btn,
          'the button says the count alone on a phone (never a cut text)')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodo]')).display") == 'none', 'shown', 'the list is closed')
     c.tap(f'{E} [data-do="edtodo"]')
@@ -4567,8 +4567,8 @@ def n73(c):
          c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display") != 'none' and
          c.js(f"getComputedStyle(document.querySelector('{E} .ms-attab[data-tab=map]')).display") == 'none', 'not side by side',
          'wide: the map (always shown, no tab « Carte ») and the unfolding on the left, the sheet on the right')
-    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") != 'none', 'hidden',
-         'wide: the foot also says the first point to complete')
+    c.ok(norm(c.text(f'{E} [data-edtodobtn]')) == 'À compléter (4)' and c.count(f'{E} [data-edtodobtn] .ms-attodofirst') == 0, c.text(f'{E} [data-edtodobtn]'),
+         'wide too (SOG-0482 lot 7a): the foot says « À compléter (4) » alone, the first point is no longer said there')
     row_w = c.js(f"(() => {{ const r = document.querySelector('{E} .ms-itin-list'); return [r.scrollWidth <= r.clientWidth, getComputedStyle(r).display] }})()")
     c.eq(row_w, [True, 'grid'], 'the unfolding is a vertical list, never a sideways scroll (SOG-0467 replaced the row of SOG-0444)', what='the list')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -5974,7 +5974,7 @@ def n77(c):
     c.eq(c.js(f"[...['name', 'okind'].map(f => document.querySelector('{F} [data-f=' + f + ']').value), document.querySelector('{sheet} [data-keyrow] [data-f=range]').value, document.querySelector('{sheet} [data-keynote]').textContent.trim()]"),
          ['Naufragé', 'person', '0,3', "L'objet OBJ-1, caché au pilote jusqu'à l'ouverture"], 'the sheet of the key of drawer 4: the name, the kind (« personne »), the range with a decimal comma, the identifier of the object said by the title of the block', what='the object in the sheet of its drawer')
     moving = c.js(_PLACE_LINE, c.js(_PLACE_AT, 'OBJ-2'))
-    c.eq([moving[0], norm(moving[3])], ['object', 'aéronef · rien ne cite ce lieu : le pilote ne le verra pas'], 'the moving target, nothing cites it: its line says its kind and « rien ne cite ce lieu : le pilote ne le verra pas » (SOG-0482 lot 3)',
+    c.eq([moving[0], norm(moving[3])], ['object', 'aéronef · cité nulle part : le pilote ne le verra pas'], 'the moving target, nothing cites it: its line says its kind and « cité nulle part : le pilote ne le verra pas » (SOG-0482 lot 7a)',
          what='the line of the moving target')
     c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -15252,7 +15252,7 @@ def n238(c):
 
 
 @case('N239', 'Missions › the list « À compléter » in rows (SOG-0482, lot 6, the mock-up itin_completer): no bullet, a row of 44 px at least per point (the whole row is the target, underlined text); at 390 the list sits right above the foot and its last row is in view above it after the inner scroll; '
-      'at 1280 it opens in the column of the right, beside the map and not over it; a point of a place nobody cites says « Hors itinéraire — le point PT4 n\'est cité nulle part : le pilote ne le verra pas » (the group « Lieux » is gone; « — » between the place and the point, no capital after it); the Cadre says « Cadre — théâtre » and a drawer « Tiroir 1 — sans message, sans briefing »; at 390 the text of the link « Sur la carte » ends at 24 px at most from the bottom of the card of the itinerary', 'N',
+      'at 1280 it opens in the column of the right, beside the map and not over it; a point of a place nobody cites says « Hors itinéraire — le point PT4 n\'est cité nulle part : le pilote ne le verra pas » (the group « Lieux » is gone; « — » between the place and the point, no capital after it); the Cadre says « Cadre — théâtre » and a drawer « Tiroir 1 — sans message, sans briefing »; at 390 the last element of the card of the itinerary ends at 24 px at most from its bottom (the link « Sur la carte » has left the workshop)', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0482 lot 6 (the ergonomist, 23 Nov): editor_view.js `edTodoHtml`, `todoWhere` (`atOut`, `atItin`), `lowerFirst`, the style of `.ms-attodo` and `.ms-todogo`')
 def n239(c):
@@ -15279,7 +15279,144 @@ def n239(c):
             c.tap(f'{E} [data-edtodobtn]')
             c.js("window.scrollTo(0, document.body.scrollHeight)")
             c.wait(300)
-            gap = c.js(f"(() => {{ const l = document.querySelector('{E} [data-plmap]'), r = document.createRange(); r.selectNodeContents(l); return Math.round(document.querySelector('{E} [data-atitin]').getBoundingClientRect().bottom - r.getBoundingClientRect().bottom) }})()")
-            c.ok(0 <= gap <= 24, gap, f'390: the text of « Sur la carte » ends {gap} px from the bottom of the card of the itinerary (24 at most)')
+            gap = c.js(f"(() => {{ const card = document.querySelector('{E} [data-atitin]'), last = [...card.children].pop(); return Math.round(card.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom) }})()")
+            c.ok(0 <= gap <= 24 and c.count(f'{E} [data-plmap]') == 0, gap, f'390: the last element of the card of the itinerary ends {gap} px from its bottom (24 at most), and there is no link « Sur la carte » in the workshop')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+def _todo_n(c, mission, width):
+    """Opens the workshop on `mission` at `width` and the list « À compléter »: [the number of points, the button of the rest (its text or None)]."""
+    c.page.set_viewport_size({'width': width, 'height': c.height})
+    _ed_open(c, mission)
+    ed_reveal(c)
+    c.wait(1500)
+    c.tap(f'{E} [data-edtodobtn]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
+    return c.js(f"[document.querySelectorAll('{E} [data-edtodo] .ms-lines > li:not(.ms-todomore)').length, document.querySelector('{E} [data-edtodo] .ms-todomore .ms-todogo')?.textContent.trim() ?? null]")
+
+
+_L7_FILLED = _LOT3_MISSION.replace('subtype: RECHERCHE }', 'subtype: RECHERCHE, theatre: Test }')
+_L7_8 = '\n'.join(x for x in _L7_FILLED.split('\n') if not x.lstrip().startswith(('- { id: PT4,', '- { id: OBJ-2,')))
+_L7_9 = '\n'.join(x for x in _L7_FILLED.split('\n') if not x.lstrip().startswith('- { id: OBJ-2,'))
+
+
+@case('N240', 'Missions › one way to say it, « cité nulle part » (SOG-0482, lot 7a): the subtitle of a line of « Hors itinéraire » that nothing cites says « cité nulle part : le pilote ne le verra pas » (a point, an object — « véhicule · cité nulle part : … » — a rendez-vous) '
+      'and « citée nulle part : le pilote ne la verra pas » for a zone; « rien ne cite ce lieu » is nowhere on the screen', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 1: editor_view.js `outDetail` (`itNoCite_<kind>`: the agreement of `todo_uncited_*`)')
+def n240(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        _plus_free(c, 'zone')
+        c.wait(500)
+        out = c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > [data-at^=\"out:\"]')].map(x => x.querySelector('.ms-plbody .f-muted').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
+        c.ok('cité nulle part : le pilote ne le verra pas' in out and 'véhicule · cité nulle part : le pilote ne le verra pas' in out and any(x.endswith('citée nulle part : le pilote ne la verra pas') for x in out), out,
+             f'{width}: PT4 « cité nulle part », OBJ-2 « véhicule · cité nulle part », the new zone « citée nulle part » (feminine)')
+        c.eq(c.js(f"document.querySelector('{E}').textContent.includes('rien ne cite')"), False, f'{width}: no « rien ne cite » anywhere in the workshop', what='no old wording')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N241', 'Missions › « Voir les n autres » (SOG-0482, lot 7a): 8 points or less are all shown, no button; more than 8: the first 7 and a row « Voir les n autres » (44 px at least, the form of the other rows; never « Voir 1 autre »); '
+      'touched, it unfolds the rest in the same panel and disappears, the focus goes to the first point unfolded, the panel keeps its bounds (60 % at 390, 50 % at 1280) and scrolls in itself', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 2: editor_view.js `edTodoHtml` (`todoAll`), the gesture `edtodomore`')
+def n241(c):
+    for width in (390, 1280):
+        c.eq(_todo_n(c, _L7_8, width), [8, None], f'{width}: exactly 8 points: all 8, no button', what='eight')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        c.eq(_todo_n(c, _L7_9, width), [7, 'Voir les 2 autres'], f'{width}: 9 points: 7 and « Voir les 2 autres » (never « Voir 1 autre »)', what='nine')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        r = _todo_n(c, _LOT3_MISSION, width)
+        c.eq(r, [7, 'Voir les 4 autres'], f'{width}: 11 points: 7 and « Voir les 4 autres »', what='eleven')
+        h = c.js(f"Math.round(document.querySelector('{E} [data-edtodo] .ms-todomore').getBoundingClientRect().height)")
+        c.ok(h >= 44, h, f'{width}: the row « Voir les n autres » is {h} px high (44 at least)')
+        c.tap(f'{E} [data-edtodo] .ms-todomore .ms-todogo')
+        c.wait(500)
+        st = c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]'), lis = [...l.querySelectorAll('.ms-lines > li')]; const a = document.activeElement; const R = l.getBoundingClientRect();"
+                  f" return [lis.length, !!l.querySelector('.ms-todomore'), lis.indexOf(a.closest('li')), Math.round(R.height) <= innerHeight * ({0.6 if width < 768 else 0.5}) + 2, getComputedStyle(l).overflowY] }})()")
+        c.eq(st, [11, False, 7, True, 'auto'], f'{width}: after the touch all 11 points are there, no button, the focus is on the 8th, the panel keeps its bound and scrolls in itself', what='unfolded')
+        c.js(f"{{ const l = document.querySelector('{E} [data-edtodo]'); l.scrollTop = l.scrollHeight }}")
+        c.wait(200)
+        c.ok(c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]').getBoundingClientRect(), x = [...document.querySelectorAll('{E} [data-edtodo] .ms-lines > li')].pop().getBoundingClientRect(); return x.top >= l.top - 1 && x.bottom <= l.bottom + 1 }})()"), 'cut', f'{width}: scrolled in itself, the last point is whole in the panel')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N242', 'Missions › the clean edge of the panel « À compléter » (SOG-0482, lot 7a): a top border of 1 px at least and a shadow of the frame (box-shadow other than none) at 390 and at 1280, from the tokens of the frame', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 3: editor_view.js the style of `.ms-attodo` (`--sog-border`, `--sog-shadow-up`)')
+def n242(c):
+    for width in (390, 1280):
+        _todo_n(c, _LOT3_MISSION, width)
+        st = c.js(f"(() => {{ const s = getComputedStyle(document.querySelector('{E} [data-edtodo]')); return [parseFloat(s.borderTopWidth) >= 1, s.borderTopStyle, s.boxShadow !== 'none'] }})()")
+        c.eq(st, [True, 'solid', True], f'{width}: the panel has a top border of 1 px at least and a box-shadow', what='edge')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N243', 'Missions › the foot says « À compléter (n) » only (SOG-0482, lot 7a): at 1280 too, no « : Cadre — théâtre » after it', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 4: editor_view.js `edTodoBtnHtml` (`.ms-attodofirst` removed)')
+def n243(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        c.eq([norm(c.text(f'{E} [data-edtodobtn]')), c.count(f'{E} .ms-attodofirst')], ['À compléter (11)', 0], f'{width}: the foot says exactly « À compléter (11) »', what='foot')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N244', 'Missions › the line « Modèle » at 390 (SOG-0482, lot 7a): no line of the sentence ends with « · » — the dot stays with the link that follows it', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 6: editor_view.js `edModelHtml` (`.ms-nowrap`)')
+def n244(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'mission')
+        lines = c.js(f"(() => {{ const p = document.querySelector('{E} .ms-atmodelline'), w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT), rows = []; let n;"
+                     f" while ((n = w.nextNode())) {{ for (let i = 0; i < n.length; i++) {{ if (!n.data[i].trim()) continue; const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1); const y = Math.round(r.getBoundingClientRect().top); const last = rows[rows.length - 1]; if (last && Math.abs(last.y - y) < 6) last.t += n.data[i]; else rows.push({{ y, t: n.data[i] }}) }} }}"
+                     f" return rows.map(x => x.t) }})()")
+        c.ok(lines and not any(x.endswith('·') for x in lines), lines, f'{width}: the lines of « Modèle » are {lines}: none ends with « · »')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N245', 'Missions › « Sur la carte » leaves the workshop (SOG-0482, lot 7a): no link `[data-plmap]` under « Hors itinéraire » at either width (it led to the page Cartes of the pilot application, which shows the SAVED mission, not the draft); '
+      'the last element of the card of the itinerary ends 24 px at most from its bottom', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 7: editor_view.js `edItinHtml` (the link and `mapHref` removed from the workshop; the sheet of the registry keeps its links)')
+def n245(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        gap = c.js(f"(() => {{ const card = document.querySelector('{E} [data-atitin]'), last = [...card.children].pop(); return Math.round(card.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom) }})()")
+        c.eq([c.count(f'{E} [data-plmap]'), c.count(f'{E} a[href*="#maps"]')], [0, 0], f'{width}: no link to the page Cartes in the workshop', what='no link')
+        c.ok(0 <= gap <= 24, gap, f'{width}: the last element of the card ends {gap} px from its bottom (24 at most)')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N246', 'Missions › opening « Équipes » does not move the page (SOG-0482, lot 7a): the page keeps its position (4 px at most) when a group of the tab « Mission » opens — Équipes, Récit, back to the Cadre, Équipes — at 1280 and at 390', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 7a § 8: editor_view.js `edScrollBack` (`hold`: the page keeps its height and its position when the group above closes)')
+def n246(c):
+    for width in (1280, 390):
+        _l3_open(c, width)
+        _tab(c, 'mission')
+        c.wait(400)
+        moved = []
+        for step in ('teams', 'story', 'cadre', 'teams'):  # Récit, then Chronologie and Risques: the group that closes above is taller than the room under the sticky row — the page then moves just enough to show the header
+            sel = f'{E} [data-grp={step}] [data-do=edstep]'
+            c.js(f"window.scrollTo(0, Math.max(0, document.querySelector('{sel}').getBoundingClientRect().top + scrollY - 560))")
+            c.wait(300)
+            y0 = c.js('Math.round(scrollY)')
+            c.tap(sel)
+            c.wait(900)
+            moved.append([step, c.js('Math.round(scrollY)') - y0])
+        c.ok(all(abs(d) <= 4 for _, d in moved), moved, f'{width}: the page moved by {moved} px (4 at most each) when the groups opened')
         ed_leave(c)
         c.js(_REG_CLEAR)

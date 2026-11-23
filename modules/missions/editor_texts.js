@@ -72,10 +72,23 @@ export const EDTX = {
     '{name}: Karte berühren, um es zu platzieren.',
     '{name}: toque el mapa para colocarlo.'
   ],
-  itNoCite: ['rien ne cite ce lieu : le pilote ne le verra pas', 'nothing cites this place: the pilot will not see it',
-    'nichts nennt diesen Ort: der Pilot sieht ihn nicht',
-    'nada cita este lugar: el piloto no lo verá'
+  // lot 7a : le sous-titre d'une ligne de « Hors itinéraire » que rien ne cite — une seule tournure, accordée à la sorte (la règle de todo_uncited_*)
+  itNoCite_pt: ['cité nulle part : le pilote ne le verra pas', 'cited nowhere: the pilot will not see it',
+    'nirgends genannt: der Pilot wird ihn nicht sehen', 'no se cita en ninguna parte: el piloto no lo verá'
   ],
+  itNoCite_rdv: ['cité nulle part : le pilote ne le verra pas', 'cited nowhere: the pilot will not see it',
+    'nirgends genannt: der Pilot wird ihn nicht sehen', 'no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  itNoCite_object: ['cité nulle part : le pilote ne le verra pas', 'cited nowhere: the pilot will not see it',
+    'nirgends genannt: der Pilot wird es nicht sehen', 'no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  itNoCite_zone: ['citée nulle part : le pilote ne la verra pas', 'cited nowhere: the pilot will not see it',
+    'nirgends genannt: der Pilot wird sie nicht sehen', 'no se cita en ninguna parte: el piloto no la verá'
+  ],
+  itNoCite_target: ['citée nulle part : le pilote ne la verra pas', 'cited nowhere: the pilot will not see it',
+    'nirgends genannt: der Pilot wird es nicht sehen', 'no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  atTodoMore: ['Voir les {n} autres', 'Show the other {n}', 'Die {n} weiteren anzeigen', 'Ver los {n} restantes'],
   plCited: ['{id} est encore cité par : {who}. « Supprimer quand même » le supprime avec ces citations.',
     '{id} is still cited by: {who}. “Delete anyway” deletes it with these citations.',
     '{id} wird noch genannt von: {who}. „Trotzdem löschen“ löscht den Ort mit diesen Nennungen.',
