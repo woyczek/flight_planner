@@ -620,7 +620,7 @@ html .f-head button.f-stale:focus-visible {
   padding: 0 14px;
   border: 1px solid var(--sog-border);
   background: var(--sog-surface);
-  color: var(--sog-text);
+  color: var(--sog-fg);
   font: inherit;
   cursor: pointer
 }
@@ -703,7 +703,7 @@ html .f-head button.f-stale:focus-visible {
   margin: 0 0 8px;
   border: 1px solid var(--sog-border);
   background: var(--sog-surface);
-  color: var(--sog-text);
+  color: var(--sog-fg);
   text-decoration: none;
   font-weight: 600;
   font-size: 1.1em
@@ -1937,7 +1937,7 @@ p.f-back {
 }
 /* le résumé d'un pli en défaut dit POURQUOI, à la place de sa fréquence */
 .f-group>summary .f-ghint[data-reason] {
-  color: var(--sog-text);
+  color: var(--sog-fg);
   font-weight: 600
 }
 /* la ligne « Position » remplace, sur téléphone, le bouton de position de l'en-tête : sur un écran l'en-tête le garde */

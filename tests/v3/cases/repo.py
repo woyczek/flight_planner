@@ -3850,3 +3850,35 @@ def i56(c):
             probe.rmdir()
         except OSError:
             pass
+
+
+@case('I53', 'No stylesheet of the frame reads, WITHOUT a fallback, a `--sog-` token that nothing defines (SOG-0577: `var(--sog-text)` does not exist, the frame’s token is `--sog-fg`): a read of an undefined token makes the declaration invalid and the colour falls back to whatever the parent has, so a card, a pill or a hint takes a colour the design never chose (a light card on a dark tone, dark text on dark)', 'I', static=True,
+      rule='SOG-0577 (Création found it on the card of the missions workshop, 23 Nov 2026): three reads of `--sog-text` in frame/frame.css (the pills of Settings, the « Retour » line, the reason of a fold), a token no design file defines; the names are the ones the designs define (tokens.css, metro.css, swiss.css, cupertino.css, material.css, aqua.css), a read with a fallback is a choice and is left alone')
+def i53(c):
+    root = c.root
+    exts = ('.css', '.js', '.html')
+    defined = set()
+    for top in ('frame', 'modules', 'shared', 'apps'):
+        for dirpath, dirs, files in os.walk(root / top):
+            dirs[:] = [d for d in dirs if d not in ('node_modules', '.git', 'shots')]
+            for f in files:
+                if not f.endswith(exts):
+                    continue
+                try:
+                    text = open(os.path.join(dirpath, f), encoding='utf-8').read()
+                except (OSError, UnicodeDecodeError):
+                    continue
+                defined.update(re.findall(r'(--sog-[a-z0-9-]+)\s*:', text))
+                defined.update(re.findall(r"""setProperty\(\s*['"](--sog-[a-z0-9-]+)""", text))
+    bare = {}
+    for dirpath, dirs, files in os.walk(root / 'frame'):
+        dirs[:] = [d for d in dirs if d not in ('test', 'maquette')]
+        for f in files:
+            if not f.endswith('.css'):
+                continue
+            path = os.path.join(dirpath, f)
+            text = open(path, encoding='utf-8').read()
+            for m in re.finditer(r'var\(\s*(--sog-[a-z0-9-]+)\s*\)', text):
+                if m.group(1) not in defined:
+                    bare.setdefault(os.path.relpath(path, root).replace(os.sep, '/'), []).append(f'{m.group(1)} (line {text.count(chr(10), 0, m.start()) + 1})')
+    c.eq(bare, {}, 'no frame stylesheet reads an undefined --sog- token without a fallback', what='undefined tokens read bare')
