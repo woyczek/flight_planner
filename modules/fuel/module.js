@@ -5934,7 +5934,7 @@ async function altnProposeRun() {
   const P = S.altnProp = {
       arr,
       key: altnPropKey(),
-      sig: altnPropSig(), // SOG-0566 : le vol de CETTE proposition (date, heure, durée, terrains)
+      sig: null, // SOG-0566 : le vol de CETTE proposition (date, heure, durée, terrains), pris à la fin (done)
       at: new Date().toISOString(),
       pending: true,
       msg: null,
@@ -5950,6 +5950,8 @@ async function altnProposeRun() {
       if (gone(s) || S.altnProp !== P) return;
       P.pending = false;
       P.msg = msg;
+      P.sig = altnPropSig(); // SOG-0566 : le vol tel que la proposition l'a vu, une fois posée
+      P.at = new Date().toISOString();
       altnDocWrite();
       altnChkDraw(S.C);
     };
@@ -6057,14 +6059,15 @@ function altnDocWrite() {
   }));
   Promise.resolve(S.ctx.data.put(ALTN_DOC, doc)).catch(() => {});
 }
-/** SOG-0566 : l'empreinte du vol qui fait la proposition — départ, arrivée, date et heure du vol, et ce qui fait sa durée (le niveau, la
- *  distance de la route : jamais le devis lui-même, que le vent lu ensuite fait bouger), aéronef ; changée, la proposition est dite
- *  périmée. */
+/** SOG-0566 : l'empreinte du vol qui fait la proposition — départ, arrivée, date et heure du vol (en minutes), niveau, aéronef ; changée,
+ *  la proposition est dite périmée. Ni le devis (le vent lu ensuite le fait bouger) ni la distance de la route (relue au montage) : les
+ *  dégagements et leur carburant se mesurent depuis l'arrivée. */
 function altnPropSig() {
   const r = S.flight.route || {};
-  return JSON.stringify([String(r.dep || '').toUpperCase(), String(r.arr || '').toUpperCase(), S.flight.planned_at || '', +S.flight.level
-    ?.ft || 0,
-    Math.round(+r.distanceNm || 0), altnPropKey()
+  const when = Date.parse(S.flight.planned_at || '');
+  return JSON.stringify([String(r.dep || '').toUpperCase(), String(r.arr || '').toUpperCase(), Number.isFinite(when) ? Math.round(when /
+      60000) :
+    null, +S.flight.level?.ft || 0, altnPropKey()
   ]);
 }
 /** Une proposition dont l'arrivée n'est plus celle du vol est retirée, et la Carte prévenue (liste vide). */

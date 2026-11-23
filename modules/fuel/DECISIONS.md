@@ -2628,7 +2628,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   de vol, la météo des dégagements n’est pas jugée. »), the rows keep their sign without it (F303 changed on purpose). Case F313, red
   before.
 - **23 Nov 2026 — the proposal of alternates is said stale when the flight changes** (SOG-0566, high priority: the user's recette,
-  « On met à jour l'horaire, mais on ne peut pas redemander un calcul. »). The proposal keeps the fingerprint of its flight (`altnPropSig`:
-  departure, arrival, date and time, the trip's duration, aircraft) and its time; once the flight differs, « Périmé (calculé à {t}) » with
+  « On met à jour l'horaire, mais on ne peut pas redemander un calcul. »). The proposal keeps the fingerprint of its flight (`altnPropSig`,
+  taken when the proposal ends: departure, arrival, date and time in minutes, level, aircraft — neither the quote, which the wind read later
+  moves, nor the route's distance, read again at the mount: the alternates and their fuel are measured from the arrival) and its time; once
+  the flight differs, « Périmé (calculé à {t}) » with
   « Recalculer » (the gesture that proposes, `altnpropose`) above the list — as for the routes; never a computation by itself. Case F315,
   red before.
