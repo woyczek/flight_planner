@@ -685,6 +685,9 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
 [data-module="missions"] .ms-at :is(.ms-atbody,.ms-itin-sheet,.ms-plform) :is(input,select,textarea,button){scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 16px);scroll-margin-bottom:7rem} /* un champ amené à l'écran se place sous la rangée collante et au-dessus du pied */
+[data-module="missions"] .ms-attodo .ms-lines>li.ms-todomore{border-top:0}
+[data-module="missions"] .ms-todofold{display:flex;align-items:center;gap:.5em;width:100%;min-height:44px;padding:8px 12px;text-align:left;font:inherit;color:inherit;border:0;background:none;text-decoration:none} /* lot 7c : « Voir les n autres » a l'allure d'un repli de la suite (« ▸ Voir les aperçus »), pas d'un point de plus : le même triangle que les replis du cadre, la couleur du texte */
+[data-module="missions"] .ms-todofold>[aria-hidden]{font-size:.9em}
 [data-module="missions"] .ms-todogo{display:flex;align-items:center;width:100%;min-height:44px;padding:8px 12px;text-align:left;font:inherit;border:0;background:none;text-decoration:underline;color:var(--sog-accent,#1a73e8)} /* lot 6 : un point de « À compléter » est un lien-bouton qui mène à sa place */
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
 [data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
@@ -3378,7 +3381,7 @@ function edTodoHtml(s, doc) {
     lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} — ${lowerFirst(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(dashed(t.text))}</li>`)];
   // lot 7a : 8 points ou moins, tous ; au-delà, les 7 premiers puis une rangée « Voir les n autres » (jamais « Voir 1 autre ») qui déplie le reste
   const all = lines.length <= 8 || s.ed.todoAll,
-    more = all ? '' : `<li class="ms-todomore"><button type="button" class="f-linkbtn ms-todogo" data-do="edtodomore">${esc(s.tt(EDTX.atTodoMore, { n: lines.length - 7 }))}</button></li>`;
+    more = all ? '' : `<li class="ms-todomore"><button type="button" class="ms-todofold" data-do="edtodomore" aria-expanded="false"><span aria-hidden="true">▸</span><span class="ms-todofoldtext">${esc(s.tt(EDTX.atTodoMore, { n: lines.length - 7 }))}</span></button></li>`;
   return lines.length ? `<ul class="ms-lines">${(all ? lines : lines.slice(0, 7)).join('')}${more}</ul>` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 

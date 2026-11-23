@@ -15260,7 +15260,7 @@ def n239(c):
         _l3_open(c, width)
         c.tap(f'{E} [data-edtodobtn]')
         c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
-        geo = c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]'), lis = [...l.querySelectorAll('li')], ul = l.querySelector('ul');"
+        geo = c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]'), lis = [...l.querySelectorAll('li:not(.ms-todomore)')], ul = l.querySelector('ul');"
                    f" return [getComputedStyle(ul).listStyleType, lis.map(x => getComputedStyle(x).listStyleType), Math.min(...lis.map(x => Math.round(x.getBoundingClientRect().height))), lis.every(x => getComputedStyle(x.querySelector('.ms-todogo')).textDecorationLine === 'underline')] }})()")
         c.eq([geo[0], set(geo[1]), geo[2] >= 44, geo[3]], ['none', {'none'}, True, True], f'{width}: no bullet, every row at least 44 px high (the smallest is {geo[2]} px), the text underlined', what='rows')
         pt4 = norm(c.text(f'{E} [data-edtodo] [data-todo="uncited_pt"]'))
@@ -15293,7 +15293,7 @@ def _todo_n(c, mission, width):
     c.wait(1500)
     c.tap(f'{E} [data-edtodobtn]')
     c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
-    return c.js(f"[document.querySelectorAll('{E} [data-edtodo] .ms-lines > li:not(.ms-todomore)').length, document.querySelector('{E} [data-edtodo] .ms-todomore .ms-todogo')?.textContent.trim() ?? null]")
+    return c.js(f"[document.querySelectorAll('{E} [data-edtodo] .ms-lines > li:not(.ms-todomore)').length, document.querySelector('{E} [data-edtodo] .ms-todomore .ms-todofoldtext')?.textContent.trim() ?? null]")
 
 
 _L7_FILLED = _LOT3_MISSION.replace('subtype: RECHERCHE }', 'subtype: RECHERCHE, theatre: Test }')
@@ -15335,7 +15335,11 @@ def n241(c):
         c.eq(r, [7, 'Voir les 4 autres'], f'{width}: 11 points: 7 and « Voir les 4 autres »', what='eleven')
         h = c.js(f"Math.round(document.querySelector('{E} [data-edtodo] .ms-todomore').getBoundingClientRect().height)")
         c.ok(h >= 44, h, f'{width}: the row « Voir les n autres » is {h} px high (44 at least)')
-        c.tap(f'{E} [data-edtodo] .ms-todomore .ms-todogo')
+        # lot 7c: it looks like a fold of the suite, not like one more point: a triangle, no underline, the colour of the ordinary text (not the accent of a point), no rule, `aria-expanded` false
+        look = c.js(f"(() => {{ const b = document.querySelector('{E} [data-edtodo] .ms-todomore button'), p = document.querySelector('{E} [data-edtodo] .ms-todogo'), plain = document.querySelector('{E} [data-atitin] .ms-plbody > b'), li = b.closest('li');"
+                    f" return [getComputedStyle(b).textDecorationLine, getComputedStyle(b).color === getComputedStyle(plain).color, getComputedStyle(b).color !== getComputedStyle(p).color, b.querySelector('[aria-hidden]')?.textContent, b.getAttribute('aria-expanded'), b.tagName + ':' + b.type, parseFloat(getComputedStyle(li).borderTopWidth)] }})()")
+        c.eq(look, ['none', True, True, '▸', 'false', 'BUTTON:button', 0], f'{width}: « Voir les n autres » looks like a fold: no underline, the colour of the ordinary text and not the one of a point, the triangle ▸, aria-expanded false, a button, no rule above it', what='fold look')
+        c.tap(f'{E} [data-edtodo] .ms-todomore button')
         c.wait(500)
         st = c.js(f"(() => {{ const l = document.querySelector('{E} [data-edtodo]'), lis = [...l.querySelectorAll('.ms-lines > li')]; const a = document.activeElement; const R = l.getBoundingClientRect();"
                   f" return [lis.length, !!l.querySelector('.ms-todomore'), lis.indexOf(a.closest('li')), Math.round(R.height) <= innerHeight * ({0.6 if width < 768 else 0.5}) + 2, getComputedStyle(l).overflowY] }})()")
