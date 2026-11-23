@@ -113,6 +113,24 @@ def i4(c):
     c.eq(int(m.group(1)), 0, 'build_help.py writes 0 files (the manuals are assembled)', what='files build_help.py would write')
 
 
+def _format_check(root, files, utf8=None):
+    """`tools/format_sources.py --check <files>` run in `root`: (number of files that would change, their names).
+    The output is read as UTF-8 whatever the encoding of the system (the script writes UTF-8, « à mettre en forme »
+    included) and a missing summary line is a failure, never « 0 file » (the check once passed on nothing when the
+    environment was not in UTF-8). `utf8` '0' / '1' sets PYTHONUTF8 for the run (None: the environment as it is)."""
+    env = {k: v for k, v in os.environ.items() if k not in ('PYTHONUTF8', 'PYTHONIOENCODING')}
+    if utf8 is not None:
+        env['PYTHONUTF8'] = utf8
+    p = subprocess.run([sys.executable, 'tools/format_sources.py', '--check', *files], capture_output=True, encoding='utf-8', errors='replace', env=env, cwd=str(root))
+    out = (p.stdout + p.stderr).strip()
+    lines = out.splitlines()
+    at = next((i for i, l in enumerate(lines) if re.search(r'\d+ fichier\(s\) à mettre en forme', l)), None)
+    if p.returncode != 0 or at is None:
+        raise Fail(f'format_sources.py --check printed no summary line (exit {p.returncode}): {out[-240:]}', 'the check ends with its summary line')
+    n = int(re.search(r'(\d+) fichier', lines[at]).group(1))
+    return n, ([l.strip() for l in lines[at + 1:]] if n else [])
+
+
 @case('I5', 'Format', 'I', static=True, rule='CLAUDE.md before commit 1: tools/format_sources.py leaves the sources unchanged')
 def i5(c):
     try:
@@ -135,13 +153,7 @@ def i5(c):
     files = [f for f in files if not generated(f)]
     if c.touched is not None and not files:
         raise Skip('the touched js / css / html files are all generated (docs_bundle.js…): nothing to format')
-    p = subprocess.run([sys.executable, 'tools/format_sources.py', '--check', *files], capture_output=True, text=True, cwd=str(c.root))
-    out = (p.stdout + p.stderr).strip()
-    m = re.search(r'(\d+) fichier\(s\) à mettre en forme', out)
-    if p.returncode not in (0,) and not m:
-        raise Fail(f'format_sources.py --check failed: {out[-240:]}', 'the check runs')
-    n = int(m.group(1)) if m else 0
-    names = [l.strip() for l in out.splitlines()[out.splitlines().index(next(l for l in out.splitlines() if 'à mettre en forme' in l)) + 1:]] if n else []
+    n, names = _format_check(c.root, files)
     c.ok(n == 0, f'{n} file(s) would change in {scope}: {names[:4]}', 'no file to reformat (generated files excluded)')
 
 
@@ -591,7 +603,6 @@ def i10(c):
         return any(k.startswith(r) for k in known) if r.endswith('/') else r in known or (r.endswith('/cancel') and r[:-7] in known)
     c.eq(sorted(r for r in declared if not covered(r)), [], 'every route a screen or a module declares is published', what='declared routes')
     c.ok(L.data_repo_url.__doc__ and 'jeton' in src[src.index('def data_repo_url'):src.index('def run(')], '', 'the data repository address never carries credentials')
-
 
 
 @case('I11', 'GitLab secret of the launcher', 'I', static=True,
@@ -2033,7 +2044,6 @@ def i28(c):
     c.eq(sorted((set(BENCH_ORPHANS) | set(MEASURES)) - set(benches)), [], 'the tables name existing pages', what='stale rows')
 
 
-
 @case('I30', 'The page’s connect-src holds the API of each known repository provider, exactly', 'I', static=True,
       rule='Simplification and Sécurisation 31 Oct (the user’s phone, served by github.io: the GitLab call blocked by the CSP before leaving): CONNECT of tools/csp_policy.py holds the API hosts of SogConfig.PROVIDER_TABLE (api.github.com for github.com; gitlab.com, framagit.org for GitLab), exact hosts, never a wildcard nor a bare https:')
 def i30(c):
@@ -2048,7 +2058,6 @@ def i30(c):
     connect = P.value(meta=True).split(';')[0]
     c.ok('https://gitlab.com' in connect and 'https://framagit.org' in connect and '*' not in connect and ' https: ' not in f'{connect} ',
          connect[:200], 'the built policy carries them, exact hosts, no wildcard')
-
 
 
 @case('I31', 'No line-ending warning in the launcher’s log: one policy for the files the suite writes', 'I', static=True,
@@ -2073,7 +2082,6 @@ def i31(c):
         c.ok(b'\r\n' not in blob, repr(blob[:40]), 'the repository keeps LF (the conversion is unchanged)')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-
 
 
 @case('I32', 'The administrator’s GitLab token: its refusals named, tested, saved from the screen', 'I', static=True,
@@ -2208,7 +2216,6 @@ def i32(c):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-
 @case('I33', 'The data branch of the GitLab project: said when closed to Developers, opened on demand, never left unprotected', 'I', static=True,
       rule='Simplification 1 Nov (the user: a pilot token gets « token without write access (GitLab 403) »: gitlab.com protects the default branch, push to Maintainers): the test of the administrator’s token reads the protection of the data branch; « Open the branch to Developers » sets push to Developer (30), merge and force push unchanged — PATCH, or the protection made again (the old one put back if refused)')
 def i33(c):
@@ -2317,7 +2324,6 @@ def i33(c):
     finally:
         L.SECRETS, L.NO_REDIRECT_OPEN = kept
         shutil.rmtree(tmp, ignore_errors=True)
-
 
 
 @case('I35', 'The sync status names the paths to send: changed here and in the commits waiting, names only, 200 at most', 'I', static=True,
@@ -2742,7 +2748,6 @@ def i40(c):
     c.ok("csp_policy(path if path in cspmod.PAGES else '')" in src, '', 'the header uses the page’s policy for a path of the table only')
 
 
-
 @case('K144', 'The folder of a page (« /frame/ ») is served with the same fingerprints as index.html: a forced reload no longer says « old version » (SOG-0204)', 'K', static=True,
       rule='SOG-0204 (the user: « shift + ctrl + r affiche le bouton « page pas à jour, recharger » »): a forced reload bypasses the service worker and asks the folder (/frame/), which the launcher served as a plain file (`app.js?v=0`): the page compared its stamp « 0 » with the launcher’s and said it was older; the folder is index.html, stamped the same way (the stamp of frame/app.js in /__setup/status is the one both give)')
 def k144(c):
@@ -2783,7 +2788,6 @@ def k144(c):
         srv.shutdown()
         srv.server_close()
         L.Setup.port = kept_port
-
 
 
 @case('K208', 'The « Old pages (V2) » menu holds every page of the V2 the repository carries: each page under apps/ (and the fuel phase monitor) is listed (an address stub apart); every listed page exists (SOG-0278, SOG-0249)', 'K', static=True,
@@ -3882,3 +3886,22 @@ def i53(c):
                 if m.group(1) not in defined:
                     bare.setdefault(os.path.relpath(path, root).replace(os.sep, '/'), []).append(f'{m.group(1)} (line {text.count(chr(10), 0, m.start()) + 1})')
     c.eq(bare, {}, 'no frame stylesheet reads an undefined --sog- token without a fallback', what='undefined tokens read bare')
+
+
+@case('I54', 'Format', 'I', static=True, rule='tools/format_sources.py --check gives the same answer with and without PYTHONUTF8 (I5 read its output in the system encoding and passed on nothing)')
+def i54(c):
+    try:
+        import cssbeautifier, jsbeautifier  # noqa: F401
+    except ImportError:
+        raise Skip('jsbeautifier / cssbeautifier are not installed: tools/format_sources.py cannot run') from None
+    tmp = Path(tempfile.mkdtemp(prefix='sog_fmt_'))
+    try:
+        (tmp / 'tools').mkdir()
+        shutil.copy(c.root / 'tools/format_sources.py', tmp / 'tools/format_sources.py')
+        (tmp / 'shared').mkdir()
+        (tmp / 'shared/unformatted.js').write_text('function a(){if(1){return "é"}}\n', encoding='utf-8', newline='\n')   # not formatted, with an accent
+        (tmp / 'shared/formatted.js').write_text('function a() {\n  return 1\n}\n', encoding='utf-8', newline='\n')
+        got = {u: _format_check(tmp, ['shared/unformatted.js', 'shared/formatted.js'], u) for u in ('0', '1', None)}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    c.eq(got, {u: (1, ['shared/unformatted.js']) for u in ('0', '1', None)}, 'one file to reformat, named, with PYTHONUTF8=0, =1 and unset', what='format_sources --check by encoding')
