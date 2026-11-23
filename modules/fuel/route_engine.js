@@ -209,17 +209,29 @@ export function levelsArgs(computeArgs, levels) {
 }
 /** Un appel de route/levels : le résultat BRUT ({ ok, … }), ou, sans résultat, { ok: false, reason } comme run ; null sans lanceur. */
 export async function levels(launcher, args, {
-  signal
+  signal,
+  onProgress
 } = {}) {
   if (typeof launcher?.job !== 'function') return null;
   try {
-    const r = await launcher.job('regen/job', {
-      set: 'route',
-      verb: 'levels',
-      args
-    }, signal ? {
-      signal
-    } : undefined);
+    // SOG-0563 : le pas du travail (done, total : un niveau jugé de plus), lu borné, rendu à l'appelant
+    const prog = typeof onProgress === 'function' ? st => {
+        const d = Number.isInteger(st?.done) && st.done >= 0 && st.done <= LEVELS_MAX ? st.done : null,
+          t = Number.isInteger(st?.total) && st.total > 0 && st.total <= LEVELS_MAX ? st.total : null;
+        if (d !== null && t !== null) onProgress(d, t);
+      } : undefined,
+      r = await launcher.job('regen/job', {
+        set: 'route',
+        verb: 'levels',
+        args
+      }, signal || prog ? {
+        ...(signal ? {
+          signal
+        } : {}),
+        ...(prog ? {
+          onProgress: prog
+        } : {})
+      } : undefined);
     if (r?.result && typeof r.result === 'object') return r.result;
     return {
       ok: false,

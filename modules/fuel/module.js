@@ -1467,8 +1467,10 @@ const TX = {
   levelAutoNone: ['Auto : aucun niveau avec une route valide de {lo} à {hi}', 'Auto: no level with a valid route from {lo} to {hi}',
     'Auto: keine Fläche mit gültiger Route von {lo} bis {hi}', 'Auto: ningún nivel con ruta válida de {lo} a {hi}'
   ],
-  levelAutoBusy: ['Auto : recherche d’un niveau avec une route valide…', 'Auto: looking for a level with a valid route…',
-    'Auto: Suche nach einer Fläche mit gültiger Route…', 'Auto: buscando un nivel con una ruta válida…'
+  // SOG-0563 (l'ergonome) : la recherche d'« Auto » dit où elle en est ; « route valide » n'est jamais affirmé
+  levelAutoBusy: ['Auto : calcul en cours, niveau {n} sur {t}.', 'Auto: computing, level {n} of {t}.',
+    'Auto: Berechnung läuft, Fläche {n} von {t}.',
+    'Auto: calculando, nivel {n} de {t}.'
   ],
   levelAutoUnchecked: ['{fl} (auto) · {t} — route non vérifiée ({why})', '{fl} (auto) · {t} — route not checked ({why})',
     '{fl} (auto) · {t} — Route nicht geprüft ({why})', '{fl} (auto) · {t} — ruta no comprobada ({why})'
@@ -4779,7 +4781,10 @@ async function routeAsk(action) {
 async function routeAskRun(s, act, r, o, box, retry) {
   // SOG-0529 (Sécurisation) : le geste de l'utilisateur passe avant la recherche d'« Auto » en cours (la place unique du lanceur) ;
   // SOG-0545 : une réponse déjà là reste (elle fait la liste des routes par niveau)
-  if (S.autoLv?.busy) autoStop();
+  if (S.autoLv?.busy) {
+    S.autoHeld = S.autoLv.key; // SOG-0563 : la recherche annulée par « Calculer » n'est pas relancée pour le même vol
+    autoStop();
+  }
   S.rkeep = null; // SOG-0545 : un nouveau calcul, plus de « Revoir les propositions »
   await altsMoreStop(); // SOG-0296 : une nouvelle demande arrête la recherche des variantes de la précédente
   if (!(await RE.answers(S.ctx.launcher))) {
@@ -7106,6 +7111,7 @@ function levelAutoOn() {
     auto: true
   };
   S.autoTries = 0;
+  S.autoHeld = null; // SOG-0563 : « Auto » touché relance la recherche annulée
   saveFlight();
   refresh();
 }
@@ -7139,9 +7145,19 @@ function levelAuto(C) {
     blind = cands.length ? window.FuelLevels.autoLevel?.(C.D, +f.route?.trackDeg || 0, lim) || cands[0] : null;
   // SOG-0529 : le moteur de route juge les candidats (route/levels, une demande par clé du vol) ; le choix se fait ici
   const J = cands.length ? autoJudge(cands, blind) : null;
+  if (J?.held) {
+    lvlLines(line, '', null);
+    return false;
+  }
   if (J?.busy) {
+    // SOG-0563 : le niveau en cours (done + 1) sur le nombre demandé ; sans pas reçu, le premier
+    const t = S.autoLv?.total || cands.length,
+      n = Math.min(t, (S.autoLv?.done || 0) + 1);
     lvlLines(line, '', {
-      main: tt(TX.levelAutoBusy)
+      main: tt(TX.levelAutoBusy, {
+        n,
+        t
+      })
     });
     return false;
   }
@@ -7225,6 +7241,10 @@ function autoJudge(cands, blind = cands[0]) {
     ...base
   } = RE.levelsArgs(routeArgs('compute'), []),
     key = JSON.stringify([argsKey(base), cands.map(flOf).sort((x, y) => x - y)]);
+  // SOG-0563 : annulée par « Calculer » pour ce vol — rien n'est relancé ni dit (un vol changé ou « Auto » touché la relancent)
+  if (S.autoHeld === key && !S.autoLv) return {
+    held: true
+  };
   if (S.autoLv?.key !== key) {
     autoStop();
     const s = S,
@@ -7235,7 +7255,14 @@ function autoJudge(cands, blind = cands[0]) {
       ctrl
     };
     RE.levels(launcher, RE.levelsArgs(routeArgs('compute'), cands.map(flOf)), {
-      signal: ctrl.signal
+      signal: ctrl.signal,
+      // SOG-0563 : le pas du travail redessine la ligne (« niveau {n} sur {total} ») tant que c'est la recherche en cours
+      onProgress: (done, total) => {
+        if (gone(s) || s.autoLv?.key !== key || !s.autoLv.busy) return;
+        s.autoLv.done = done;
+        s.autoLv.total = total;
+        refresh();
+      }
     }).then(raw => {
       if (gone(s) || s.autoLv?.key !== key) return;
       xpNoteAnswer(raw); // SOG-0545 : un point placé d'après X-Plane sert au calcul, jamais écrit

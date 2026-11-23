@@ -2659,3 +2659,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   box « Contrôler » says its verdict). The old warning above the button and its notification are gone; a route taken before the fingerprint
   is judged on its level only. Not the fingerprint of SOG-0566 (it has no speed, ceiling, sheet nor imposed points). Case F318, red before;
   F293 changed on purpose.
+- **23 Nov 2026 — « Auto » says where its search is** (SOG-0563; AeroDB measured 70 to 106 s for a « Calculer » in « Auto », SOG-0557; the
+  ergonomist). While route/levels runs, the line under the Level field reads « Auto : calcul en cours, niveau {n} sur {total}. » — n the
+  level being judged (done + 1), from the step of the job (the launcher client's `onProgress`, read bounded by `RE.levels`); « route valide »
+  is gone (the suite never claims it). The sentence goes when the search ends (the result is said) or when « Calculer » cancels it; the list
+  of routes stays empty until the end. Needs AeroDB's step per level (`on_level` in plan.levels, `job.step` in tools/regen/route.py): pushed
+  only after it, so the sentence never shows without its data. Case F317, red before.
