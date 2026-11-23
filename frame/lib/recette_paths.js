@@ -168,7 +168,14 @@ export function derive(cites, steps) {
     } : null;
   }
   const good = cites.some(c => st(c.key) === 'ok');
-  return good && cites.every(c => c.optional || st(c.key) === 'ok') ? {
+  if (!good || !cites.every(c => c.optional || st(c.key) === 'ok')) return null;
+  // les commentaires des pas bons qui citent la fiche (un pas a son champ, comme un test unitaire) : « Validé » avec ses mots
+  const comment = text([...new Set(cites.filter(c => st(c.key) === 'ok').map(c => steps[c.key].c).filter(Boolean))].join(' / '), LIMITS
+    .comment);
+  return comment ? {
+    verdict: 'ok',
+    comment
+  } : {
     verdict: 'ok'
-  } : null;
+  };
 }

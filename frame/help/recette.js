@@ -272,6 +272,16 @@
   T.stepCommentFor = ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt',
     '{p}, paso {n}: qué falla'
   ];
+  T.stepCommentAny = ['{p}, étape {n} : votre commentaire', '{p}, step {n}: your comment', '{p}, Schritt {n}: Ihr Kommentar',
+    '{p}, paso {n}: su comentario'
+  ];
+  T.stepCommentAdd = ['Ajouter un commentaire', 'Add a comment', 'Kommentar hinzufügen', 'Añadir un comentario'];
+  T.stepCommentEdit = ['Modifier le commentaire', 'Edit the comment', 'Kommentar ändern', 'Editar el comentario'];
+  T.stepCommentHint = ['Le commentaire est enregistré avec « Bon » ou « Mauvais ».', 'The comment is saved with “Good” or “Bad”.',
+    'Der Kommentar wird mit „Gut“ oder „Schlecht“ gespeichert.',
+    'El comentario se guarda con «Bien» o «Mal».'
+  ]; // sous le champ d'un pas pas encore joué : rien à enregistrer avant un verdict
+  T.stepCommentSave = ['Enregistrer le commentaire', 'Save the comment', 'Kommentar speichern', 'Guardar el comentario'];
   T.pathNoted = {
     ok: ['Chemin {p} : {n} fiche(s) validée(s)', 'Path {p}: {n} card(s) passed', 'Pfad {p}: {n} Karte(n) bestanden',
       'Ruta {p}: {n} ficha(s) válida(s)'
@@ -509,6 +519,7 @@
       // les chemins de test : les états de pas (clé « C1:3 »), le pas dont on écrit les mots, les chemins repliés ou dépliés, les replis ouverts (le temps de l'écran)
       steps: PA && P ? PA.stepsOf(saved.steps, P.paths) : {},
       sdraft: {},
+      sopen: {}, // les pas dont le champ de commentaire est ouvert par « Ajouter un commentaire » (le temps de l'écran)
       sko: '',
       sneed: '',
       popen: Object.fromEntries(Object.entries(saved.popen).filter(([k, v]) => PA?.PID.test(k) && typeof v === 'boolean').slice(0,
@@ -626,16 +637,20 @@
         st = stepState(k),
         e = ui.steps[k],
         asking = ui.sko === k,
-        who = t(T.stepCommentFor, {
+        open = asking || !!ui.sopen[
+          k
+        ], // le champ : ouvert de lui-même sur « Mauvais », ou par « Ajouter / Modifier le commentaire » (un pas a TOUJOURS son champ, comme un test unitaire)
+        who = t(st === 'ko' || asking ? T.stepCommentFor : T.stepCommentAny, {
           p: p.id,
           n: i + 1
         }),
+        draft = ui.sdraft[k] ?? e?.c ?? '',
         btn = (kind, label) => `<button type="button" data-sbtn="${kind}" data-skey="${esc(k)}" aria-pressed="${st === kind || (kind === 'skip' && !st)}">${esc(label)}</button>`;
       return `<li class="f-rc-item f-rc-step" data-step="${esc(k)}" data-state="${st || 'todo'}"${s.optional ? ' data-optional' : ''}>
         <p class="f-rc-gesture"><b class="f-rm-id">${i + 1}.</b> <span lang="fr" data-gesture>${esc(s.gesture)}</span>${s.optional ? ` <small class="f-muted" data-optional-tag>${esc(t(T.optional))}</small>` : ''}</p>
         ${s.expect ? `<p class="f-rc-test" lang="fr" data-expect>${esc(s.expect)}</p>` : ''}
-        ${st === 'ko' && e.c && !asking ? `<p data-step-note>${esc(e.c)}</p>` : ''}
-        ${asking ? `<label class="f-field"><span data-comment-for>${esc(who)}</span><textarea data-step-comment="${esc(k)}" aria-label="${esc(who)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.sdraft[k] ?? e?.c ?? '')}</textarea>${counter(ui.sdraft[k] ?? e?.c)}</label>${ui.sneed === k ? `<p class="f-warn" data-need>${esc(t(T.stepNeed))}</p>` : ''}` : ''}
+        ${!open && e?.c ? `<p data-step-note>${esc(e.c)}</p>` : ''}
+        ${open ? `<label class="f-field"><span data-comment-for>${esc(who)}</span><textarea data-step-comment="${esc(k)}" aria-label="${esc(who)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(draft)}</textarea>${counter(draft)}</label>${ui.sneed === k ? `<p class="f-warn" data-need>${esc(t(T.stepNeed))}</p>` : ''}${!st && !asking ? `<p class="f-muted" data-step-comment-hint>${esc(t(T.stepCommentHint))}</p>` : ''}${st || asking ? `<div class="f-row"><button type="button" data-step-comment-save="${esc(k)}">${esc(t(T.stepCommentSave))}</button></div>` : ''}` : `<div class="f-row"><button type="button" data-step-comment-open="${esc(k)}">${esc(t(e?.c ? T.stepCommentEdit : T.stepCommentAdd))}</button></div>`}
         <div class="f-row" role="group" aria-label="${esc(t(T.stepResult, { n: i + 1 }))}">${btn('ok', t(T.stepOk))}${btn('ko', t(T.stepKo))}${btn('skip', t(T.stepSkip))}</div></li>`;
     };
     const pathHtml = p => {
@@ -669,6 +684,7 @@
         };
         else delete ui.steps[ch.key];
         delete ui.sdraft[ch.key];
+        delete ui.sopen[ch.key];
       }
       ui.sko = '';
       ui.sneed = '';
@@ -678,7 +694,8 @@
         const x = tests.find(y => y.id === f),
           e = x && !known(x) ? PA.derive(cites.get(f), ui.steps) : null,
           cur = x ? verdictOf(x) : null;
-        if (!e || (cur && cur.verdict === e.verdict && (e.verdict === 'ok' || cur.comment === e.comment))) continue;
+        if (!e || (cur && cur.verdict === e.verdict && (e.verdict === 'ok' ? !e.comment || cur.comment === e.comment : cur
+            .comment === e.comment))) continue;
         const prev = snapshot(f),
           hist = keepHistory(prev);
         before.fich[f] = prev;
@@ -738,18 +755,22 @@
     /** Un toucher sur « Bon », « Mauvais » ou « Non jouée » d'un pas : « Mauvais » ouvre le champ des mots (obligatoires) puis enregistre ; « Non jouée » n'écrit rien. */
     const stepGesture = async (key, kind) => {
       if (!stepAt.has(key)) return;
-      const sel = `[data-skey="${CSS.escape(key)}"][data-sbtn="${kind}"]`;
+      const sel = `[data-skey="${CSS.escape(key)}"][data-sbtn="${kind}"]`,
+        ta = `[data-step-comment="${CSS.escape(key)}"]`,
+        typed = () => text(ui.sdraft[key] ?? view.querySelector(ta)?.value,
+          MAX_COMMENT); // ce qui est écrit dans le champ du pas (ouvert ou non)
       if (kind === 'ko') {
-        const ta = `[data-step-comment="${CSS.escape(key)}"]`;
-        if (ui.sko !==
-          key
-        ) { // premier toucher : le champ s'ouvre, et dit qu'il faut des mots (un pas déjà mauvais s'ouvre rempli, sans reproche)
+        const words = typed();
+        if (ui.sko !== key && !words && !ui.sopen[
+            key
+          ]) { // premier toucher : le champ s'ouvre, et dit qu'il faut des mots (un pas déjà mauvais s'ouvre rempli, sans reproche)
           ui.sko = key;
           ui.sneed = ui.steps[key]?.s === 'ko' ? '' : key;
           return draw(ta);
         }
-        const comment = text(ui.sdraft[key] ?? view.querySelector(ta)?.value ?? ui.steps[key]?.c, MAX_COMMENT);
+        const comment = words || text(ui.sdraft[key] === undefined ? ui.steps[key]?.c : '', MAX_COMMENT);
         if (!comment) {
+          ui.sko = key;
           ui.sneed = key;
           return draw(ta);
         }
@@ -764,14 +785,18 @@
         ui.sneed = '';
         delete ui.steps[key];
         delete ui.sdraft[key];
+        delete ui.sopen[key];
         await saveStore(c, {
           steps: ui.steps
         });
         return draw(sel);
       }
+      const comment = typed() || (ui.steps[key]?.s === 'ok' ? text(ui.steps[key].c, MAX_COMMENT) :
+        ''); // « Bon » emporte le commentaire écrit (celui d'un pas déjà bon est gardé)
       return applySteps([{
         key,
-        state: 'ok'
+        state: 'ok',
+        comment
       }], sel);
     };
     const pathAll = pid => {
@@ -1354,6 +1379,20 @@
         return commitDec(id, a);
       }
       if (b.dataset.sbtn && b.dataset.skey) return void stepGesture(b.dataset.skey, b.dataset.sbtn);
+      if (b.dataset.stepCommentOpen && stepAt.has(b.dataset
+          .stepCommentOpen)) { // « Ajouter / Modifier le commentaire » : le champ s'ouvre, rempli de ce que le pas garde
+        const key = b.dataset.stepCommentOpen;
+        ui.sopen[key] = true;
+        ui.sdraft[key] ??= ui.steps[key]?.c || '';
+        return draw(`[data-step-comment="${CSS.escape(key)}"]`);
+      }
+      if (b.dataset.stepCommentSave && stepAt.has(b.dataset
+          .stepCommentSave
+        )) { // « Enregistrer le commentaire » : avec le verdict du pas (celui qu'il a, ou « Mauvais » quand on vient de l'ouvrir)
+        const key = b.dataset.stepCommentSave,
+          kind = ui.sko === key ? 'ko' : stepState(key);
+        return kind ? void stepGesture(key, kind) : void 0;
+      }
       if (b.dataset.pathAll) return void pathAll(b.dataset.pathAll);
       if (b.dataset.app !== undefined) {
         ui.app = b.dataset.app;

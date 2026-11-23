@@ -11697,3 +11697,82 @@ def a367(c):
       rule='Création (via the relay, 23 Nov 2026): the text of an unknown aerodrome differs between the Fuel screen and the missions workshop; the option is merged for ONE mount, the shared TX is left alone; no network, no storage')
 def a368(c):
     _bench(c, 'frame/lib/test/ad_field_texts.html', '__adTextsBench')
+
+
+@case('A369', "Every step of a test path has its comment field, like a unit test (SOG-0558, the user in his recette: « je ne peux pas mettre de commentaires dans le chemin de test, même quand c'est demandé »; the ergonomist's decision): a link « Ajouter un commentaire » under each step opens the field; « Bon » takes what is written and writes it with the verdict of the fiche; « Mauvais » opens the field by itself and « Enregistrer le commentaire » saves it without a second touch on « Mauvais »; the comment is shown under the step, read again after a reload, and « Modifier le commentaire » changes it; four languages", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0558: a step had a field only after « Mauvais » (and a second touch on « Mauvais » to keep it): a good step could not carry a word, and the field of a bad one looked like it was not saved; the comment is written with the verdict of the step and of its fiche, and read with it (the same as a unit test: the field, the verdict buttons)")
+def a369(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    W = {k: v[i] for k, v in {
+        'add': ['Ajouter un commentaire', 'Add a comment', 'Kommentar hinzufügen', 'Añadir un comentario'],
+        'edit': ['Modifier le commentaire', 'Edit the comment', 'Kommentar ändern', 'Editar el comentario'],
+        'any': ['{p}, étape {n} : votre commentaire', '{p}, step {n}: your comment', '{p}, Schritt {n}: Ihr Kommentar', '{p}, paso {n}: su comentario'],
+        'hint': ['Le commentaire est enregistré avec « Bon » ou « Mauvais ».', 'The comment is saved with “Good” or “Bad”.', 'Der Kommentar wird mit „Gut“ oder „Schlecht“ gespeichert.', 'El comentario se guarda con «Bien» o «Mal».'],
+        'bad': ['{p}, étape {n} : ce qui ne va pas', '{p}, step {n}: what is wrong', '{p}, Schritt {n}: was nicht stimmt', '{p}, paso {n}: qué falla'],
+    }.items()}
+    fx = _paths_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': {}}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else {}
+
+        def until_written(pred, what):
+            got = None
+            for _ in range(40):
+                got = written()
+                if pred(got):
+                    return got
+                c.wait(250)
+            raise Fail(f'never written: {what} (the file holds {sorted(got)})', what, 'the launcher wrote the verdicts')
+        _prio_launcher(c, root, verb=('recette', 'verdict'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-paths]')", timeout=15000, what='the paths')
+        S = lambda k: f'[data-step="{k}"]'
+        # ---- every step has a link, no field yet; the optional step too
+        c.eq([c.count(f'{S(k)} [data-step-comment-open]') for k in ('C1:0', 'C1:1', 'C1:2', 'C1:3')] + [c.count('[data-step-comment]')], [1, 1, 1, 1, 0], 'each of the four steps has its « add a comment » link, no field is open', what='links')
+        c.eq(norm(c.text(f'{S("C1:0")} [data-step-comment-open]')), norm(W['add']), 'the link says « Add a comment »', what='link text')
+        # ---- the link opens the field (empty, labelled for this step), the focus goes in it
+        c.tap(f'{S("C1:0")} [data-step-comment-open]')
+        c.until("!!document.querySelector('[data-step=\"C1:0\"] [data-step-comment]')", what='the field opens')
+        c.eq([norm(c.text(f'{S("C1:0")} [data-comment-for]')), c.js("document.querySelector('[data-step=\"C1:0\"] [data-step-comment]').value"), c.js("document.activeElement?.dataset?.stepComment"), c.count(f'{S("C1:0")} [data-step-comment-open]')],
+             [norm(W['any'].replace('{p}', 'C1').replace('{n}', '1')), '', 'C1:0', 0], 'the field is for this step, empty, focused, and the link gave way to it', what='field')
+        c.eq([norm(c.text(f'{S("C1:0")} [data-step-comment-hint]')), c.count(f'{S("C1:0")} [data-step-comment-save]')], [norm(W['hint']), 0], 'a step not played yet says the comment is saved with « Good » or « Bad » (there is nothing to save before a verdict: no « Save » button yet)', what='hint')
+        c.shot(f'A369_champ_{c.width}_{lang}.png')
+        # ---- « good » takes what is written: the verdict of the fiche carries the words
+        c.page.fill(f'{S("C1:0")} [data-step-comment]', 'Le bandeau est orange')
+        c.tap(f'[data-skey="C1:0"][data-sbtn="ok"]')
+        got = until_written(lambda g: 'SOG-0301' in g, '301 ok')
+        c.eq([got['SOG-0301']['verdict'], got['SOG-0301'].get('comment')], ['ok', 'Le bandeau est orange'], 'a good step writes ok WITH its comment on the fiche it alone cites', what='ok with words')
+        c.eq([norm(c.text(f'{S("C1:0")} [data-step-note]')), c.count(f'{S("C1:0")} [data-step-comment]'), norm(c.text(f'{S("C1:0")} [data-step-comment-open]'))], ['Le bandeau est orange', 0, norm(W['edit'])], 'the comment is shown under the step, the field is closed, the link now says « Edit the comment »', what='note')
+        # ---- « bad » opens the field by itself; « Save the comment » keeps it WITHOUT a second touch on « bad »
+        c.tap(f'[data-skey="C1:1"][data-sbtn="ko"]')
+        c.until("!!document.querySelector('[data-step=\"C1:1\"] [data-step-comment]')", what='the field of the bad step opens by itself')
+        c.eq(norm(c.text(f'{S("C1:1")} [data-comment-for]')), norm(W['bad'].replace('{p}', 'C1').replace('{n}', '2')), 'the field of a bad step asks what is wrong', what='bad label')
+        c.page.fill(f'{S("C1:1")} [data-step-comment]', 'La liste reste vide')
+        c.tap(f'{S("C1:1")} [data-step-comment-save]')
+        got = until_written(lambda g: g.get('SOG-0302', {}).get('verdict') == 'ko', '302 ko')
+        c.eq([got['SOG-0302'].get('comment'), c.js("document.querySelector('[data-step=\"C1:1\"]').dataset.state"), norm(c.text(f'{S("C1:1")} [data-step-note]'))], ['La liste reste vide', 'ko', 'La liste reste vide'], '« Save the comment » writes ko with the words (no second touch on « bad »)', what='save bad')
+        c.shot(f'A369_commentaires_{c.width}_{lang}.png')
+        # ---- read again after a reload
+        c.until_doc('device/recette.json', lambda d: d and (d.get('steps') or {}).get('C1:0', {}).get('c') == 'Le bandeau est orange', what='the comment kept with the step on the device')
+        c.page.reload()
+        c.until("!!document.querySelector('[data-paths]')", timeout=15000, what='the page again')
+        c.eq([norm(c.text(f'{S("C1:0")} [data-step-note]')), norm(c.text(f'{S("C1:1")} [data-step-note]'))], ['Le bandeau est orange', 'La liste reste vide'], 'after a reload: both comments are read again with their steps', what='reload')
+        # ---- « Edit the comment » changes it, « Save the comment » keeps it with the verdict the step has
+        c.tap(f'{S("C1:0")} [data-step-comment-open]')
+        c.until("!!document.querySelector('[data-step=\"C1:0\"] [data-step-comment]')", what='the field opens filled')
+        c.eq(c.js("document.querySelector('[data-step=\"C1:0\"] [data-step-comment]').value"), 'Le bandeau est orange', 'the field opens with what the step keeps', what='filled')
+        c.page.fill(f'{S("C1:0")} [data-step-comment]', 'Le bandeau est rouge')
+        c.eq([c.count(f'{S("C1:0")} [data-step-comment-save]'), c.count(f'{S("C1:0")} [data-step-comment-hint]')], [1, 0], 'a step that has a verdict shows « Save the comment » and no hint', what='save shown')
+        c.tap(f'{S("C1:0")} [data-step-comment-save]')
+        got = until_written(lambda g: g.get('SOG-0301', {}).get('comment') == 'Le bandeau est rouge', '301 comment changed')
+        c.eq([got['SOG-0301']['verdict'], c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state"), norm(c.text(f'{S("C1:0")} [data-step-note]'))], ['ok', 'ok', 'Le bandeau est rouge'], 'the new comment is written with the same verdict (ok), shown under the step', what='edited')
+        c.ok(c.js("document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"), 'horizontal scroll', 'no horizontal scroll')
+    c.check_errors()
