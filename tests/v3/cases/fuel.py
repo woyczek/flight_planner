@@ -10771,9 +10771,11 @@ def f310(c):
         top = lambda sel: c.js(f"(() => {{ const e = document.querySelector('{sel}'); e.style.scrollMarginTop = '120px'; e.scrollIntoView({{block: 'start'}}) }})()")
         c.js(f"document.querySelector('{L}').open = true; document.querySelector('{T}').open = true")
         top(L)
+        c.wait(400)  # the chevron turns in 0.15 s (frame CSS): the capture shows the state reached, never the turn
         c.shot(f'F310_{c.design}_{w}_{c.lang}_limits.png')
         c.js(f"document.querySelector('{G}').open = true")
         top(f'{A} [data-alt]:has(details[data-reasons=unverifiable])')
+        c.wait(400)
         c.shot(f'F310_{c.design}_{w}_{c.lang}_card.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     # after « Contrôler » (a typed route): the same lines, once, in the same fold
