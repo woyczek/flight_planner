@@ -681,6 +681,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .ms-tlabel{display:block;font-size:var(--sog-size-s)} /* SOG-0467 : jamais plus petit que f-muted */
 [data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
+[data-module="missions"] .ms-at :is(.ms-atbody,.ms-itin-sheet,.ms-plform) :is(input,select,textarea,button){scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 16px);scroll-margin-bottom:7rem} /* un champ amené à l'écran se place sous la rangée collante et au-dessus du pied */
+[data-module="missions"] .ms-todogo{display:block;width:100%;min-height:44px;padding:6px 0;text-align:left;font:inherit;border:0;background:none} /* lot 6 : un point de « À compléter » est un lien-bouton qui mène à sa place */
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
 [data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
 [data-module="missions"] .ms-atbar>.ms-attodobtn{margin-left:auto} /* « Enregistrer » et « Annuler » collés, « À compléter » au bout (SOG-0454) */
@@ -1419,6 +1421,17 @@ function edItinDrawerMoveHtml(s, d, reader, plus) {
  *  l'ordre des tiroirs compris), le lieu ou le tiroir déplacé RESTE choisi, sa fiche ouverte ; après le redessin le focus revient sur la même flèche (RO.focusAfter). Aucune flèche ne franchit une limite :
  *  le déplacement se fait dans la liste des lignes MONTRÉES (un jeton que le lecteur ne résout pas reste où il est). */
 function edReorder(s, m) {
+  // lot 6 : la flèche touchée garde sa place à l'écran — la ligne a changé de rang, la page se décale d'autant (plus de saut)
+  const arrow = () => document.activeElement?.matches?.('button[data-reorder]') ? document.activeElement : s.el?.querySelector?.(
+      '.ms-itin-mv'),
+    top0 = arrow()?.getBoundingClientRect().top,
+    out = edReorderDo(s, m),
+    top1 = arrow()?.getBoundingClientRect().top;
+  if (Number.isFinite(top0) && Number.isFinite(top1) && Math.abs(top1 - top0) > 1) window.scrollBy(0, top1 - top0);
+  return out;
+}
+
+function edReorderDo(s, m) {
   const e = s.ed;
   if (!e || state() !== s || e.trial?.on || !['up', 'down'].includes(m.dir)) return;
   const doc = edDoc(e),
@@ -2956,7 +2969,7 @@ function edSheetShow(s) {
   if (!sheet) return;
   const top = sheet.getBoundingClientRect().top,
     foot = s.el.querySelector('.ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
-  if (top < 57 + 8 || top > foot - 44) sheet.scrollIntoView?.({
+  if (top < 57 + 48 + 8 || top > foot - 44) sheet.scrollIntoView?.({
     block: 'start'
   });
 }
@@ -3354,8 +3367,62 @@ function edTodoHtml(s, doc) {
   const names = edNames(),
     todo = edTodos(s.ed, doc),
     drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
-    lines = [...todo.map(t => `<li data-todo="${t.key}">${esc(todoWhere(s, names, t))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}">${esc(t.text)}</li>`)];
+    go = text => `<button type="button" class="f-linkbtn ms-todogo" data-do="edtodogo">${esc(text)}</button>`, // lot 6 : le point mène à SA place
+    lines = [...todo.map(t => `<li data-todo="${t.key}">${go(`${todoWhere(s, names, t)} : ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}`)}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}" data-dkey="${esc(t.key)}">${go(t.text)}</li>`)];
   return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
+}
+
+/** Où mène un point de « À compléter » (lot 6) : { tab, step?, sel?, group?, line?, focus? } ; null si rien ne le dit. */
+function edTodoTarget(s, li) {
+  const e = s.ed,
+    doc = edDoc(e);
+  if (li.dataset.dtodo !== undefined) { // un tiroir : la ligne du tiroir, le groupe concerné, le champ quand il y en a un
+    const x = (MS.readMission(doc)?.drawers || []).find(d => String(d.rank) === li.dataset.dtodo),
+      key = li.dataset.dkey;
+    if (!x) return null;
+    return {
+      tab: 'itin',
+      sel: x.id,
+      group: ['noMessage', 'noBrief'].includes(key) ? 'texts' : 'key',
+      focus: {
+        noFallback: '[data-drawer] [data-f=fallback]',
+        noMessage: '[data-drawer] textarea[data-f=message]',
+        noBrief: '[data-drawer] textarea[data-f=brief]'
+      } [key] || ''
+    };
+  }
+  const t = edTodos(e, doc).find(x => x.key === li.dataset.todo);
+  if (!t) return null;
+  const end = k => ({
+    tab: 'itin',
+    line: `[data-atflow] [data-at="${k}"] [data-do=edplace]`,
+    focus: `[data-plform] input[data-k=ed${k}]`
+  });
+  if (t.key === 'dep' || t.key === 'origin') return end('dep'); // le Départ : sa ligne, son champ commun
+  if (t.key === 'arr' || t.key === 'destination') return end('arr');
+  if (t.key === 'unplaced') { // un lieu « à placer » : sa ligne, sa fiche
+    const i = edPlaces(e).findIndex(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''));
+    return i < 0 ? {
+      tab: 'itin'
+    } : {
+      tab: 'itin',
+      line: `[data-atflow] [data-do=edplace][data-i="${i}"]`,
+      focus: '[data-plform] input[data-f=lat]'
+    };
+  }
+  if (t.step === 'places') return {
+    tab: 'itin'
+  };
+  const own = {
+    title: 'input[data-k=edtitle]',
+    theatre: '[data-k=edth]',
+    aircraft: '[data-k=edac]'
+  } [t.key];
+  return {
+    tab: 'mission',
+    step: t.step,
+    focus: `[data-steps] [data-grp="${t.step}"] ${own || 'input, select, textarea, button:not([data-do=edstep])'}`
+  };
 }
 
 /** Le bouton « À compléter (n) » du pied : son compte (les points du départ et les tiroirs qui en ont), et sur un module large le
@@ -3418,12 +3485,16 @@ function edSaid(s, r) {
 
 /** Ce que les tiroirs ont « à compléter », une ligne par tiroir : [{ name (le rang), text }]. */
 function edDrawerTodo(s, doc) {
-  const by = new Map();
+  const by = new Map(),
+    firstKey = new Map(); // la première chose qui manque d'un tiroir : là où le point de « À compléter » mène
+  for (const t of edDrawersTodo(doc))
+    if (!firstKey.has(t.name)) firstKey.set(t.name, t.key);
   for (const t of edDrawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread, {
     what: edMissText(s, t.what)
   })]);
   return [...by].map(([name, what]) => ({
     name,
+    key: firstKey.get(name),
     text: s.tt(EDTX.dwTodoOf, {
       name,
       what: what.join(', ')
@@ -3941,7 +4012,7 @@ export function edHtml(s) {
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}</div><div class="ms-atside">${edTabsHtml(s)}${run ? edTrialHtml(s, run) : ''}${edItinHtml(s, doc, run)}${edSheetHtml(s, doc)}</div></div>
-    <div class="ms-atfoot" data-f-foot><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
+    <div class="ms-atfoot" data-f-foot><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${e.lastTodo = edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(EDTX.dwWinClose))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
 
@@ -4462,7 +4533,56 @@ function edLoadStep(e) {
 }
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
+/** La commande touchée, retrouvée après le dessin (lot 6, plus de saut de page) : son sélecteur est fait de son `data-do` et de ses `data-*` d'identité. */
+let ED_ANCHOR = null;
+const ANCHOR_KEYS = ['at', 'i', 'sel', 'part', 'step', 'grp', 'tab', 'n', 'id', 'rank', 'kind', 'k', 'f', 'dir', 'first', 'key', 'model',
+  'brick'
+];
+
+function anchorOf(b) {
+  if (!b?.dataset?.do || b.closest('.ms-atfoot, .ms-attabs'))
+    return null; // une commande collante (le pied, la rangée des onglets) ne bouge pas avec la page
+  const q = v => String(v).replace(/["\\]/g, '\\$&');
+  return ANCHOR_KEYS.reduce((sel, k) => b.dataset[k] !== undefined ? `${sel}[data-${k}="${q(b.dataset[k])}"]` : sel, `[data-do="${q(b.dataset.do)}"]`);
+}
+
+/** Avant un dessin de l'atelier : où est la page, et où est la commande touchée (null hors de l'atelier : un autre écran ne garde rien). */
+export function edScrollKeep(s) {
+  const was = s.ed && s.el?.querySelector?.('.ms-ed[data-pane=editor]'),
+    a = ED_ANCHOR;
+  ED_ANCHOR = null;
+  if (!was) return null;
+  const el = a ? s.el.querySelector(a) : null;
+  return {
+    y: window.scrollY,
+    sel: a,
+    top: el ? el.getBoundingClientRect().top : null
+  };
+}
+
+/** Après le dessin : la page reprend sa place, puis se décale de ce que la commande touchée a bougé (la ligne touchée garde sa place à quelques pixels près) ;
+ *  un changement d'onglet reprend la position de l'onglet d'arrivée. */
+export function edScrollBack(s, keep) {
+  if (!keep) return;
+  const e = s.ed,
+    tab = e?.tabGo;
+  if (e) delete e.tabGo;
+  const apply = () => {
+    window.scrollTo(0, tab !== undefined ? tab : keep.y);
+    const el = tab === undefined && keep.sel ? s.el.querySelector(keep.sel) : null;
+    if (el && keep.top !== null) {
+      const d = el.getBoundingClientRect().top - keep.top;
+      if (Math.abs(d) > 1) window.scrollBy(0, d);
+    }
+  };
+  apply();
+  const y1 = window.scrollY;
+  // la carte et le profil prennent leur hauteur un instant après le dessin : si personne d'autre n'a défilé la page entre-temps, elle reprend sa place une fois encore
+  requestAnimationFrame(() => requestAnimationFrame(() => state() === s && s.ed === e && window.scrollY === y1 && apply()));
+}
+
 export function edClick(s, b) {
+  ED_ANCHOR = s.ed ? anchorOf(b) : null;
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);
@@ -4633,10 +4753,64 @@ export function edClick(s, b) {
     case 'edtodo':
       s.ed.todoOpen = !s.ed.todoOpen;
       return draw(s);
+    case 'edtodogo': { // lot 6 : un point de « À compléter » mène à SA place — l'onglet, la ligne ou le groupe, le champ en main ; la liste se ferme
+      const e = s.ed,
+        li = b.closest('[data-todo], [data-dtodo]'),
+        to = li ? edTodoTarget(s, li) : null;
+      ED_ANCHOR = null;
+      e.todoOpen = false;
+      if (!to) return draw(s);
+      e.tab = to.tab;
+      if (to.step) {
+        e.step = to.step;
+        edLoadStep(e);
+      }
+      if (to.sel) { // la fiche d'un tiroir, son groupe ouvert
+        Object.assign(e, {
+          sel: to.sel,
+          placeEdit: -1,
+          mapSel: -1,
+          itAt: '',
+          drawerAsk: '',
+          kinds: '',
+          dopen: {
+            [to.group]: true
+          }
+        });
+      } else if (to.line) { // la ligne d'un lieu (le Départ, l'Arrivée, un lieu à placer), sa fiche ouverte
+        const lb = s.el.querySelector(to.line);
+        if (lb) Object.assign(e, {
+          placeEdit: +lb.dataset.i,
+          itAt: String(lb.dataset.at || '').slice(0, 60),
+          sel: 'start',
+          mapSel: +lb.dataset.i,
+          mapVertex: -1
+        });
+      }
+      draw(s);
+      const el = to.focus ? s.el.querySelector(to.focus) : null;
+      if (el) { // le champ en main, UN seul défilement (preventScroll puis scrollIntoView sous la rangée collante)
+        el.focus({
+          preventScroll: true
+        });
+        el.scrollIntoView({
+          block: 'center'
+        });
+      } else if (to.sel) edSheetShow(s);
+      else s.el.querySelector('[data-plform]')?.scrollIntoView?.({
+        block: 'center'
+      });
+      return;
+    }
     case 'edtab': { // un onglet : sur place, rien n'est perdu (les sections restent dans la page, la carte reprend sa taille)
       const k = ['itin', 'map', 'mission'].includes(b.dataset.tab) ? b.dataset.tab : 'itin';
       if (s.ed.tab === k) return;
+      s.ed.tabY = {
+        ...s.ed.tabY,
+        [edTab(s.ed)]: window.scrollY
+      }; // la position de l'onglet quitté est gardée
       s.ed.tab = k;
+      s.ed.tabGo = s.ed.tabY[k] ?? 0; // et celle de l'onglet d'arrivée reprise (sa première visite : le haut)
       draw(s);
       return k === 'map' ? edMapShow(s) : undefined;
     }

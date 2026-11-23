@@ -21,6 +21,8 @@ import {
   init as edInit,
   edAfter,
   edClick,
+  edScrollBack,
+  edScrollKeep,
   edHtml,
   edInput
 } from './editor_view.js'; // l'éditeur de missions (SOG-0287) : son écran, sorti de ce fichier le 17 nov. 2026 (le calcul pur : editor.js)
@@ -1210,6 +1212,7 @@ function draw(s) {
   const was = s.open && !s.ed ? s.el.querySelector('.ms-sheet[data-id]') : null;
   if (was && was.dataset.id === s.open.row?.id) s.open.secs = new Set([...was.querySelectorAll('details.ms-sec[data-sec]')].filter(d => d
     .open).map(d => d.dataset.sec));
+  const keep = edScrollKeep(s); // lot 6 : la page garde sa place d'un dessin de l'atelier à l'autre
   s.el.innerHTML = `<style>${STYLE}</style>${s.ed ? '' : `<h1>${esc(s.tt(meta.title))}</h1>`}${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
   // SOG-0441 : la section « Tiroirs » de la fiche ouverte (repeinte dans l'élément neuf à chaque dessin), arrêtée hors de la fiche
@@ -1230,6 +1233,9 @@ function draw(s) {
       block: 'center'
     });
   }
+  edScrollBack(s,
+    keep
+  ); // lot 6 : la page reprend sa place ; une image plus tard, si personne n'a défilé, une dernière fois (la carte et le profil ont pris leur hauteur)
   edAfter(s); // SOG-0444, lot P2 : la carte de l'atelier, reposée après chaque dessin (retirée hors de l'atelier)
 }
 

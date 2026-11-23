@@ -15129,3 +15129,121 @@ def n234(c):
         c.eq(norm(c.text(f'{E} [data-atflow] [data-plform] [data-plid]')), 'OBJ-2', f'{width}: the sheet of an object of the list keeps its line of the identifier', what='list sheet')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+def _todo_state(c):
+    """After a touch on a point of « À compléter »: [the tab in view, the field in hand (data-k or data-f), the list hidden, the field under the sticky row and above the foot]."""
+    return c.js(f"(() => {{ const a = document.activeElement, r = a ? a.getBoundingClientRect() : null, foot = document.querySelector('{E} .ms-atfoot').getBoundingClientRect().top, tabs = document.querySelector('{E} [data-attabs]').getBoundingClientRect().bottom;"
+                f" return [document.querySelector('{E} .ms-attab[aria-selected=true]')?.dataset.tab, a?.dataset?.f || a?.dataset?.k || a?.tagName, document.querySelector('{E} [data-edtodo]').hidden, !!r && r.top >= tabs - 1 && r.bottom <= foot + 1] }})()")
+
+
+@case('N235', 'Missions › every point of « À compléter » leads to its place (SOG-0482, lot 6): a point of the Cadre — the tab « Mission », the group open, the field in hand; the Departure — the tab « Itinéraire », ITS line chosen, its sheet open, the common field in hand; '
+      'a drawer — the tab « Itinéraire », the line of the drawer chosen, its sheet open, the group concerned open (« Les textes »), the field in hand; the list closes; the field is in view, under the sticky row and above the foot', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 6 § 6 (RELECTURE § 4 lot 6): editor_view.js `edTodoHtml` (`.ms-todogo`), `edTodoTarget`, the gesture `edtodogo`')
+def n235(c):
+    for width in (390, 1280):
+        # a point of the Cadre (the theatre of the mission)
+        _l3_open(c, width)
+        c.tap(f'{E} [data-edtodobtn]')
+        c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
+        c.tap(f'{E} [data-edtodo] [data-todo="theatre"]')
+        c.wait(700)
+        c.eq(_todo_state(c), ['mission', 'edth', True, True], f'{width}: « Cadre — théâtre »: the tab Mission, the field Théâtre in hand and in view, the list closed', what='cadre point')
+        c.eq(c.js(f"document.querySelector('{E} [data-grp=cadre] [data-do=edstep]').getAttribute('aria-expanded')"), 'true', f'{width}: the group Cadre is open', what='cadre open')
+        # a point of a drawer (the message of the first drawer that has none): « Les textes »
+        _tab(c, 'itin')
+        c.tap(f'{E} [data-edtodobtn]')
+        c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list again')
+        c.tap(f'{E} [data-edtodo] [data-dtodo]')
+        c.wait(700)
+        c.eq(_todo_state(c), ['itin', 'message', True, True], f'{width}: a drawer: the tab Itinéraire, the field « Message » in hand and in view, the list closed', what='drawer point')
+        c.eq(c.js(f"[document.querySelector('{E} [data-drawer]')?.dataset.drawer, document.querySelector('{E} [data-drawer] [data-dgrp=texts] [data-do=eddrgrp]').getAttribute('aria-expanded'), document.querySelector('{E} [data-atflow] [data-do=edsel][aria-current=true]')?.dataset.sel]"),
+             ['B', 'true', 'B'], f'{width}: the line of drawer B is chosen, its sheet open, the group « Les textes » open', what='drawer sheet')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+        # the Departure of a new mission
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _ED_TEXTS)
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E} [data-atflow] [data-edplaces]')", timeout=10000, what='a new mission')
+        c.tap(f'{E} [data-edtodobtn]')
+        c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list of the new mission')
+        c.tap(f'{E} [data-edtodo] [data-todo="dep"]')
+        c.wait(900)
+        c.eq(_todo_state(c), ['itin', 'eddep', True, True], f'{width}: « Départ »: the tab Itinéraire, the common field of the Departure in hand and in view, the list closed', what='departure point')
+        c.eq(c.js(f"[!!document.querySelector('{E} [data-at=dep] + [data-plform] input[data-k=eddep], {E} [data-plform] input[data-k=eddep]'), document.querySelectorAll('{E} [data-plform]').length]"), [True, 1], f'{width}: the sheet of the Departure is open (and it is the only one)', what='departure sheet')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N236', 'Missions › no jump of the page: the line touched keeps its place (SOG-0482, lot 6): choosing a line in the middle of the list leaves its top where it was, a few pixels (a place line, a drawer line)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 6 § 7: module.js `draw` (`edScrollKeep`, `edScrollBack`), editor_view.js `anchorOf`')
+def n236(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        top = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return x ? Math.round(x.getBoundingClientRect().top) : null }})()")  # noqa: E731
+        L = f'{E} [data-atflow] '
+        c.js(f"document.querySelector('{L}[data-at=\"start:3\"]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        t0 = top(f'{L}[data-at="start:3"]')
+        c.tap(f'{L}[data-at="start:3"] [data-do=edplace]')
+        c.wait(900)
+        d1 = top(f'{L}[data-at="start:3"]') - t0
+        c.js(f"document.querySelector('{L}[data-do=edsel][data-part=\"3\"]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        t0 = top(f'{L}[data-do=edsel][data-part="3"]')
+        c.tap(f'{L}[data-do=edsel][data-part="3"]')
+        c.wait(900)
+        d2 = top(f'{L}[data-do=edsel][data-part="3"]') - t0
+        c.ok(abs(d1) <= 4 and abs(d2) <= 4, [d1, d2], f'{width}: the line touched keeps its place: a place line moved by {d1} px, a drawer line by {d2} px')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N237', 'Missions › no jump of the page: the arrow and « ↶ » keep their place (SOG-0482, lot 6): the arrow « ↓ Plus tard » touched stays under the finger (the line changes rank, the page follows); the sticky « ↶ » does not move', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 6 § 7: editor_view.js `edReorder` (the arrow in hand), `anchorOf` (a sticky control is no anchor)')
+def n237(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        top = lambda sel: c.js(f"(() => {{ const x = document.querySelector('{sel}'); return x ? Math.round(x.getBoundingClientRect().top) : null }})()")  # noqa: E731
+        L = f'{E} [data-atflow] '
+        c.js(f"document.querySelector('{L}[data-do=edsel][data-part=\"3\"]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.tap(f'{L}[data-do=edsel][data-part="3"]')
+        c.wait(900)
+        t0 = round(c.page.locator(f'{L}.ms-itin-mv button:has-text("Plus tard")').first.bounding_box()['y'])
+        c.tap(f'{L}.ms-itin-mv button:has-text("Plus tard")')
+        c.wait(900)
+        t1 = c.js("(() => { const a = document.activeElement; return a && a.matches('button[data-reorder]') ? Math.round(a.getBoundingClientRect().top) : null })()")
+        c.ok(t1 is not None and abs(t1 - t0) <= 4, [t0, t1], f'{width}: the arrow touched keeps its place: it was at {t0}, the arrow in hand is at {t1}')
+        u0 = top(f'{E} [data-athist] [data-do=edmapundo]')
+        c.tap(f'{E} [data-athist] [data-do=edmapundo]')
+        c.wait(700)
+        c.eq(top(f'{E} [data-athist] [data-do=edmapundo]'), u0, f'{width}: ↶ does not move under the finger', what='undo button')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N238', 'Missions › no jump of the page: each tab keeps its position (SOG-0482, lot 6): the tab Itinéraire left scrolled at 400 px comes back at 400 px after a visit to the tab Mission', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0482 lot 6 § 7: editor_view.js the gesture `edtab` (`tabY`, `tabGo`), `edScrollBack`')
+def n238(c):
+    for width in (390, 1280):
+        _l3_open(c, width)
+        _tab(c, 'itin')
+        c.js("window.scrollTo(0, 400)")
+        c.wait(300)
+        y_itin = c.js('Math.round(scrollY)')
+        c.tap(f'{E} .ms-attab[data-tab="mission"]')
+        c.wait(700)
+        c.tap(f'{E} .ms-attab[data-tab="itin"]')
+        c.wait(900)
+        y_back = c.js('Math.round(scrollY)')
+        c.ok(abs(y_back - y_itin) <= 2 and y_itin >= 300, [y_itin, y_back], f'{width}: the tab Itinéraire, left at {y_itin} px, comes back at {y_back}')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
