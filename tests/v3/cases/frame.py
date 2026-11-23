@@ -12077,3 +12077,25 @@ def a376(c):
         c.tap('#fNotes .f-note [data-act]')
         c.until("!!document.querySelector('[data-pilots]') && !document.querySelector('[data-pilots]').hidden", timeout=20000, what='after the reload the screen has the launcher channel')
         c.check_errors()
+
+
+@case('A377', "ctx.dismissNote(key) withdraws a floating note by its key (SOG-0600): the one shown AND the one waiting in a phone's queue, nothing when it is gone; the module ctx carries it", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0600 (BUGS SOG, the ergonomist's rule: « une position connue interdit la notification “pas de position réelle”, et elle se retire d'elle-même quand la position arrive après »): `notify(text, kind, { key })` replaced a note of the same key but nothing withdrew one without posting another, so a note that no longer holds stayed its 6 seconds; `dismissNote(key)` removes it from #fNotes and from the queue of a phone (one note at a time, SOG-0131), and does nothing when it is gone; it is in the ctx of the modules and in SogFrame")
+def a377(c):
+    c.open('fuel', wait=False)
+    c.until('!!window.SogFrame', timeout=15000, what='the frame')
+    c.wait(1500)
+    c.js("() => document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
+    texts = "() => [...document.querySelectorAll('#fNotes .f-note span')].map(s => s.textContent)"
+    c.js("() => { const n = window.SogFrame.notify; n('one', 'info', { key: 'k1' }); n('two', 'ok', { key: 'k2' }); n('three', 'warn', { key: 'k3' }) }")
+    c.eq(c.js(texts), ['one'] if c.phone else ['one', 'two', 'three'], 'three notes: one at a time on a phone, stacked on a screen', what='before')
+    c.js("() => window.SogFrame.dismissNote('k2')")
+    c.eq(c.js(texts), ['one'] if c.phone else ['one', 'three'], 'the note of k2 is withdrawn, shown (screen) or waiting in the queue (phone)', what='dismiss k2')
+    c.js("() => window.SogFrame.dismissNote('k1')")
+    c.eq(c.js(texts), ['three'], 'the shown note of k1 is withdrawn: the next one comes (on a phone the withdrawn k2 does not come back)', what='dismiss k1')
+    c.js("() => { window.SogFrame.dismissNote('k1'); window.SogFrame.dismissNote('nobody'); window.SogFrame.dismissNote() }")
+    c.eq(c.js(texts), ['three'], 'a key that no longer exists (or none) changes nothing and throws nothing', what='absent')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok(re.search(r'notify,\s*dismissNote,\s*ask,\s*askText', src), '', 'the ctx of the modules carries dismissNote (next to notify)')
+    c.check_errors()

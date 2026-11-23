@@ -7,7 +7,7 @@
   //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
   //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
-  //     unique), t, lang, notify, ask, askText, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
+  //     unique), t, lang, notify, dismissNote, ask, askText, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
   //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
   //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
   //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
@@ -1069,6 +1069,23 @@
       }
     }
     showNote(note);
+  }
+  /** Retire une note par sa clé (SOG-0600 : « pas de position réelle » se retire d'elle-même quand la position arrive) : celle qui est affichée et celle qui attend dans la file d'un téléphone ;
+   *  rien si elle n'existe plus. La minuterie de la note affichée s'éteint seule (la note n'est plus dans la page). */
+  function dismissNote(key) {
+    const k = String(key ?? '');
+    for (let i = noteQueue.length - 1; i >= 0; i--)
+      if (noteQueue[i].key === k) noteQueue.splice(i, 1);
+    let shown = false;
+    for (const n of $('fNotes').querySelectorAll('.f-note'))
+      if (n.dataset.key === k) {
+        n.remove();
+        shown = true;
+      }
+    if (shown) {
+      notesClear();
+      nextNote();
+    }
   }
   /** La note suivante de la file, quand plus aucune n'est affichée : une note sans action d'abord (une note à action attend, elle ne bloque pas les autres). */
   function nextNote() {
@@ -4646,6 +4663,7 @@
       t,
       lang,
       notify,
+      dismissNote,
       ask,
       askText,
       net,
@@ -6461,6 +6479,7 @@
     APP,
     t,
     notify,
+    dismissNote,
     ask,
     askText,
     net,
