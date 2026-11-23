@@ -13,13 +13,18 @@ et rien d'autre (ni comptes rendus, ni journal, ni flotte) :
   python tools/launch.py --port 8799 --no-browser --data <dossier de test>
 Identité d'essai : trigramme TST, aucun identifiant réseau. La météo est lue en direct (données publiques).
 
-« Rejoindre la compagnie » (--only join) se joue sans lanceur, contre le faux GitHub de frame/store/test/fake_github.py
-(dépôt en mémoire, vidé avant chaque langue ; le jeton d'essai n'est jamais un vrai jeton) :
-  python frame/store/test/fake_github.py 8781
+« Rejoindre la compagnie » (--only join) se joue sans lanceur, contre un faux hôte en mémoire, vidé avant chaque langue (le jeton d'essai n'est jamais un vrai jeton) :
+  · --kind gitlab (le chemin d'un projet GitLab : trois étapes, celui de la compagnie) : le faux GitLab de frame/store/test/fake_gitlab.py, en HTTPS (certificat jetable) ;
+    le navigateur d'essai résout l'hôte fictif gitlab.example.test vers 127.0.0.1:<port> (--host-resolver-rules) et ignore ce seul certificat :
+      python frame/store/test/fake_gitlab.py 8782
+      python frame/help/tutorial/capture.py --only join --kind gitlab --port 8782 [--lang en,fr]
+  · --kind github (par défaut : les sept étapes de GitHub) : le faux GitHub de frame/store/test/fake_github.py
+      python frame/store/test/fake_github.py 8781
 
 Usage : python frame/help/tutorial/capture.py --data <dossier de test> [--url http://127.0.0.1:8799] [--lang en,fr]
         [--chrome <chrome.exe>]
         python frame/help/tutorial/capture.py --only join --fake http://127.0.0.1:8781 [--lang en,fr]
+        python frame/help/tutorial/capture.py --only join --kind gitlab --port 8782 [--lang en,fr]
 """
 import base64
 import json
@@ -27,6 +32,7 @@ import re
 import os
 import shutil
 import socket
+import ssl
 import struct
 import subprocess
 import sys
@@ -104,10 +110,10 @@ def free_port():
 class Browser:
     """Chrome sans fenêtre, profil jetable, une page à 375 × 812 (téléphone, tactile)."""
 
-    def __init__(self, chrome):
+    def __init__(self, chrome, extra=()):
         self.port, self.prof = free_port(), tempfile.mkdtemp(prefix='sog-tut-')
         self.proc = subprocess.Popen([chrome, '--headless=new', f'--remote-debugging-port={self.port}', f'--user-data-dir={self.prof}',
-                                      f'--window-size={W},{H}', '--hide-scrollbars', '--no-first-run', 'about:blank'],
+                                      f'--window-size={W},{H}', '--hide-scrollbars', '--no-first-run', *extra, 'about:blank'],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(100):
             try:
@@ -246,6 +252,36 @@ def join_airline(b, lang, out, fake):
     b.shot(out('join-airline', 7))
 
 
+# le faux GitLab : l'hôte fictif que seul le navigateur d'essai résout (vers le port du faux), la compagnie et le jeton inventés de l'essai
+GITLAB_HOST = 'gitlab.example.test'
+GITLAB_AIRLINE = {'fr': "Compagnie d'essai", 'en': 'Test airline'}
+GITLAB_TOKEN = 'glpat-essai-invente-0000'  # inventé : jamais un vrai jeton ; il n'est pas montré (le champ est masqué, puis vidé au succès du test)
+
+
+def join_airline_gitlab(b, lang, out):
+    """Rejoindre la compagnie, le chemin d'un projet GitLab : trois étapes (la configuration, le jeton collé et testé, terminé), sur le faux GitLab."""
+    base = f'https://{GITLAB_HOST}'
+    b.go(f'{base}/frame/index.html#settings')
+    b.js(f"localStorage.setItem('sogFrame:lang', '{lang}'); location.reload();")
+    time.sleep(3)
+    link = b.js(f"""await until(() => window.SogConfig);
+      const c = SogConfig.build({{ airline: {{ name: {json.dumps(GITLAB_AIRLINE.get(lang, GITLAB_AIRLINE['en']))}, site: 'https://example.invalid', pages: {{}} }},
+        data: {{ host: '{GITLAB_HOST}', provider: 'gitlab', repo: 'test-airline/data', branch: 'main' }}, trigram: 'TST' }});
+      delete c.howto; return location.origin + location.pathname + '#settings?config=' + await SogConfig.pack(c);""")
+    b.go(link)
+    b.js("location.reload();")
+    time.sleep(3)
+    b.js("await until(() => $('[data-card=join][data-step=\"1\"]')); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 1))
+    b.js("$('[data-jact=next]').click(); await until(() => $('[data-card=join][data-step=\"5\"]')); await W(500); "
+         f"set($('[data-f=jToken]'), '{GITLAB_TOKEN}'); $('[data-jact=test]').click(); "
+         "await until(() => $('[data-card=join] [data-msg]')?.dataset.kind === 'ok', 20000); await W(500); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 2))
+    b.js("$('[data-jact=next]').click(); await until(() => $('[data-card=join][data-step=\"7\"]')); await W(500); "
+         "$('[data-jact=finish]').click(); await until(() => !$('[data-jact=finish]'), 20000); await W(800); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 3))
+
+
 def main(args):
     opt = dict(zip(args[::2], args[1::2]))
     url = opt.get('--url', 'http://127.0.0.1:8799').rstrip('/')
@@ -253,6 +289,20 @@ def main(args):
     chrome = opt.get('--chrome') or next((c for c in CHROME if os.path.isfile(c)), None)
     if not chrome:
         sys.exit('Chrome ou Edge introuvable : --chrome <chemin>')
+    if opt.get('--only') == 'join' and opt.get('--kind') == 'gitlab':
+        port = int(opt.get('--port', '8782'))
+        os.makedirs(os.path.join(HERE, 'img'), exist_ok=True)
+        ctx = ssl.create_default_context()  # le certificat jetable du faux, sur ce seul appel local
+        ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+        for lang in langs:
+            print(lang)
+            urllib.request.urlopen(urllib.request.Request(f'https://127.0.0.1:{port}/__test/reset', data=b'{}', method='POST'), context=ctx)  # projet vide
+            b = Browser(chrome, ['--ignore-certificate-errors', f'--host-resolver-rules=MAP {GITLAB_HOST} 127.0.0.1:{port}'])
+            try:
+                join_airline_gitlab(b, lang, lambda tut, n: os.path.join(HERE, 'img', f'{tut}-{n}.{lang}.png'))
+            finally:
+                b.close()
+        return
     if opt.get('--only') == 'join':
         fake = opt.get('--fake', 'http://127.0.0.1:8781').rstrip('/')
         if not re.match(r'^http://(127\.0\.0\.1|localhost):\d+$', fake):

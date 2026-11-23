@@ -14,7 +14,7 @@
   const L4 = (fr, en, de, es) => [fr, en, de, es];
   const T = {
     title: L4('Rejoindre la compagnie', 'Join the airline', 'Der Fluggesellschaft beitreten', 'Unirse a la aerolínea'),
-    stepOf: L4('Pas {n} sur {m}', 'Step {n} of {m}', 'Schritt {n} von {m}', 'Paso {n} de {m}'),
+    stepOf: L4('Étape {n} sur {m}', 'Step {n} of {m}', 'Schritt {n} von {m}', 'Paso {n} de {m}'),
     back: L4('← Retour', '← Back', '← Zurück', '← Atrás'),
     next: L4('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'),
     later: L4('Reprendre plus tard', 'Resume later', 'Später fortsetzen', 'Seguir más tarde'),
@@ -22,6 +22,11 @@
       'Your ticked boxes stay on this device: Settings › “Join the airline” resumes here.',
       'Ihre Häkchen bleiben auf diesem Gerät: Einstellungen › „Der Fluggesellschaft beitreten“ setzt hier fort.',
       'Sus casillas marcadas quedan en este dispositivo: Ajustes › «Unirse a la aerolínea» continúa aquí.'),
+    // le chemin GitLab n'a pas de case à cocher : la ligne dit ce qui reste sur l'appareil, sans parler de cases (SOG-0575)
+    laterHintGl: L4('Ce qui est fait reste sur cet appareil : Réglages › « Rejoindre la compagnie » reprend ici.',
+      'What is done stays on this device: Settings › “Join the airline” resumes here.',
+      'Was erledigt ist, bleibt auf diesem Gerät: Einstellungen › „Der Fluggesellschaft beitreten“ setzt hier fort.',
+      'Lo que ya está hecho queda en este dispositivo: Ajustes › «Unirse a la aerolínea» continúa aquí.'),
     quit: L4('Abandonner', 'Give up', 'Abbrechen', 'Abandonar'),
     quitAsk: L4('Abandonner l’assistant ? Rien de ce qui est déjà réglé n’est défait.',
       'Give up the assistant? Nothing already set is undone.',
@@ -206,6 +211,21 @@
       'Token ohne Rechte am Repository: klassisch muss „repo“ angekreuzt sein; feingranular muss „Contents“ „Read and write“ sein (Schritt 4).',
       'Token sin derechos sobre el repositorio: clásico, la casilla «repo» debe estar marcada; de grano fino, «Contents» debe ser «Read and write» (paso 4).'
     ),
+    // un projet GitLab (SOG-0575) : ni invitation, ni jeton à créer, l'administrateur envoie le jeton : les trois échecs du test le disent sans renvoyer aux pas de GitHub
+    e401Gl: L4('Jeton refusé : mal copié ou expiré. Recopiez-le, ou demandez-en un autre à l’administrateur.',
+      'Token refused: copied wrongly or expired. Copy it again, or ask the administrator for another one.',
+      'Token abgelehnt: falsch kopiert oder abgelaufen. Kopieren Sie es erneut oder bitten Sie den Administrator um ein anderes.',
+      'Token rechazado: mal copiado o caducado. Cópielo de nuevo, o pida otro al administrador.'),
+    e403Gl: L4('Jeton accepté, mais sans le droit de lire ce dépôt. Demandez à l’administrateur un jeton de projet qui a ce droit.',
+      'Token accepted, but without the right to read this repository. Ask the administrator for a project token that has this right.',
+      'Token akzeptiert, aber ohne das Recht, dieses Repository zu lesen. Bitten Sie den Administrator um ein Projekt-Token mit diesem Recht.',
+      'Token aceptado, pero sin derecho a leer este repositorio. Pida al administrador un token de proyecto que tenga este derecho.'),
+    e404Gl: L4(
+      'Dépôt introuvable avec ce jeton : il ne couvre pas ce dépôt, ou l’adresse de la configuration est fausse. Prévenez l’administrateur.',
+      'Repository not found with this token: it does not cover this repository, or the address in the configuration is wrong. Tell the administrator.',
+      'Repository mit diesem Token nicht gefunden: Es deckt dieses Repository nicht ab, oder die Adresse in der Konfiguration ist falsch. Informieren Sie den Administrator.',
+      'Repositorio no encontrado con este token: no cubre este repositorio, o la dirección de la configuración es incorrecta. Avise al administrador.'
+    ),
     offline: L4('Hors ligne : reconnectez l’appareil, puis « Tester ».', 'Offline: reconnect the device, then “Test”.',
       'Offline: Verbinden Sie das Gerät wieder, dann „Testen“.',
       'Sin conexión: vuelva a conectar el dispositivo y luego «Probar».'),
@@ -236,10 +256,10 @@
       'Your identity is set; the repository access is still to be done on a workstation with the launcher.',
       'Ihre Identität ist eingerichtet; der Repository-Zugang steht noch aus, auf einem Rechner mit Starter.',
       'Su identidad está configurada; falta el acceso al repositorio en un puesto con el lanzador.'),
-    nextOffline: L4('Gardez hors ligne la zone de vos vols : la carte et les terrains seront là même sans réseau.',
-      'Keep the area of your flights offline: the map and the airfields will be there even without network.',
-      'Halten Sie das Gebiet Ihrer Flüge offline bereit: Karte und Flugplätze sind dann auch ohne Netz da.',
-      'Guarde sin conexión la zona de sus vuelos: el mapa y los aeródromos estarán ahí incluso sin red.'),
+    nextOffline: L4('Téléchargez la zone de vos vols : la carte et les terrains seront là même sans réseau.',
+      'Download the area of your flights: the map and the airfields will be there even without network.',
+      'Laden Sie das Gebiet Ihrer Flüge herunter: Karte und Flugplätze sind dann auch ohne Netz da.',
+      'Descargue la zona de sus vuelos: el mapa y los aeródromos estarán ahí incluso sin red.'),
     goFuel: L4('Préparer un vol', 'Prepare a flight', 'Einen Flug vorbereiten', 'Preparar un vuelo'),
     tutorial: L4('Le tutoriel « Préparer un vol »', 'The “Prepare a flight” tutorial', 'Das Tutorial „Einen Flug vorbereiten“',
       'El tutorial «Preparar un vuelo»')
@@ -354,7 +374,7 @@
     const nav = step === 7 && s.finished ? '' : `<div class="f-row f-join-nav">${idx > 0 ? `<button type="button" data-jact="back">${esc(t(T.back))}</button>` : ''}${step < 7 ? `<button type="button" class="primary" data-jact="next">${esc(t(T.next))}</button>` : ''}</div>`;
     view.innerHTML = `${head}<div class="f-card" data-card="join" data-step="${step}"><p class="f-muted">${esc(t(T.stepOf, { n: idx + 1, m: steps.length }))}</p>
       <h2>${fill(t(titles[step]), V)}</h2>${body}${nav}</div>
-      ${s.finished ? '' : `<p class="f-muted">${esc(t(T.laterHint))}</p><div class="f-row"><button type="button" data-jact="quit">${esc(t(T.quit))}</button></div>`}`;
+      ${s.finished ? '' : `<p class="f-muted">${esc(t(kind === 'gitlab' ? T.laterHintGl : T.laterHint))}</p><div class="f-row"><button type="button" data-jact="quit">${esc(t(T.quit))}</button></div>`}`;
 
     const card = view.querySelector('[data-card="join"]'),
       say = (text, kind = 'err') => {
@@ -446,11 +466,13 @@
           token = f?.value.trim() || '';
         if (!token) return say(t(T.needTest), 'warn');
         say(t(T.testing), 'warn');
-        /** Le message d'un échec du test (hors ligne, 404, 401, 403, sinon le texte du transport) et sa gravité : celui de « Tester » depuis toujours. */
-        const failure = err => [err?.offline ? t(T.offline) : err?.status === 404 ? t(T.e404) : err?.status === 401 ? t(T.e401) :
-          err?.status === 403 ? t(T.e403) : err?.message || String(err),
-          err?.offline ? 'warn' : 'err'
-        ];
+        /** Le message d'un échec du test (hors ligne, 404, 401, 403, sinon le texte du transport) et sa gravité : celui de « Tester » depuis toujours ; pour un projet GitLab, les trois textes qui parlent de l'administrateur et du jeton de projet (SOG-0575). */
+        const gl = kind === 'gitlab',
+          failure = err => [err?.offline ? t(T.offline) : err?.status === 404 ? t(gl ? T.e404Gl : T.e404) : err?.status === 401 ? t(
+              gl ? T.e401Gl : T.e401) :
+            err?.status === 403 ? t(gl ? T.e403Gl : T.e403) : err?.message || String(err),
+            err?.offline ? 'warn' : 'err'
+          ];
         // GitLab : l'API de l'instance de la configuration (le transport ne connaît que github.com et les instances GitLab ; le jeton ne part que vers cet hôte) ;
         // GitHub : api.github.com (jamais une api reçue)
         const g = {

@@ -1,72 +1,35 @@
 # Rejoindre la compagnie
 
-*Dix minutes, une fois par appareil : de la configuration envoyée par votre compagnie à un appareil qui partage ses
-données, avec un assistant qui garde où vous en êtes si vous vous arrêtez en route.*
+*Cinq minutes, une fois par appareil : de la configuration envoyée par votre compagnie à un appareil qui partage ses données. Trois étapes, sans compte à créer.*
 
-**Avant de commencer.** L'administrateur de votre compagnie vous envoie un lien, un fichier sog-config ou un code QR à
-scanner avec l'appareil photo de votre téléphone. Ouvrez-le : l'assistant « Rejoindre la compagnie » démarre. Il
-démarre aussi depuis la carte d'accueil de la première ouverture, ou depuis ⚙ Réglages › « Rejoindre la compagnie… ».
+**Avant de commencer.** L'administrateur de votre compagnie vous envoie deux choses, séparément : un lien, un fichier sog-config ou un code QR à scanner avec l'appareil photo de votre téléphone ; et, à part, un jeton. Ouvrez le lien : l'assistant « Rejoindre la compagnie » démarre. Il démarre aussi depuis la carte d'accueil de la première ouverture, ou depuis ⚙ Réglages › « Rejoindre la compagnie… ». Vous n'avez ni compte à créer, ni invitation à accepter.
 
-## 1. La configuration
+## 1. La configuration reçue
 
 ![La configuration reçue : compagnie, dépôt, trigramme](img/join-airline-1.fr.png)
 
-**Vérifiez-la.** La compagnie, son dépôt des données et votre trigramme. Rien d'autre n'est changé sur l'appareil.
-Puis « Suivant → ».
+**Vérifiez-la.** La compagnie, son dépôt des données et votre trigramme. Rien d'autre n'est changé sur l'appareil. Puis « Suivant → ».
 
-## 2. Votre compte
+## 2. Coller le jeton
 
-![Créer le compte, puis le nom d'utilisateur](img/join-airline-2.fr.png)
+![Le jeton collé et testé : accès vérifié](img/join-airline-2.fr.png)
 
-**Un compte chez l'hôte du dépôt.** Le plus souvent GitHub. Vous en avez déjà un ? Cochez « Oui ». Sinon cochez « Non,
-je le crée » et suivez les trois lignes : s'inscrire, choisir un nom d'utilisateur simple, vérifier l'adresse mail. Si
-le dépôt de votre compagnie appartient à un utilisateur, le jeton ouvrira tous les dépôts de votre compte : si vous en
-avez déjà d'autres, créez un compte dédié au vol.
+**Collez le jeton reçu de l'administrateur**, celui qu'il vous a envoyé à part : il n'est jamais dans le lien. Votre trigramme vient de la configuration : il s'affiche, vous ne le tapez pas. Puis « Tester ».
 
-**Votre nom d'utilisateur.** Tapez-le : l'administrateur en a besoin. Puis « Suivant → ».
+**Ce que dit l'assistant.** Le jeton reste sur cet appareil seulement et n'est jamais réaffiché ; ne l'envoyez jamais dans un message. Si l'assistant dit « Jeton personnel : il vaut pour tous vos projets ; préférez un jeton de projet demandé à l'administrateur. Continuer quand même ? », répondez non et demandez à l'administrateur un jeton de projet. Une expiration absente ou à plus d'un an, ou des droits en trop, sont dits sur une ligne d'avertissement : ils ne bloquent pas, mais prévenez l'administrateur.
 
-## 3. L'invitation
+**Si le test échoue.** Hors ligne : reconnectez l'appareil, puis « Tester ». Jeton mal copié, expiré, ou sans droit sur ce dépôt : recopiez-le, ou demandez-en un autre à l'administrateur. Une fois « Accès vérifié : le dépôt répond… Enregistré sur cet appareil. », « Suivant → ».
 
-![Donner son nom, accepter l'invitation](img/join-airline-3.fr.png)
+## 3. Terminé
 
-**Donnez votre nom.** « Copier mon nom », puis envoyez-le à l'administrateur : il vous invite sur le dépôt.
+![L'appareil est réglé et synchronisé](img/join-airline-3.fr.png)
 
-**Acceptez.** GitHub vous écrit : ouvrez le mail et acceptez l'invitation (le lien de l'écran y mène aussi). Cochez
-« Invitation acceptée », puis « Suivant → ».
+**Terminez.** Sur le dernier écran, « Terminer et synchroniser » règle tout et fait la première synchronisation ; l'écran dit ensuite « Cet appareil est réglé et a fait sa première synchronisation » (l'image). Téléchargez la zone de vos vols : la carte et les terrains seront là même sans réseau (« Données hors ligne »). Enchaînez avec [Préparer un vol](#help?t=prepare-flight). L'assistant ne demande pas vos identifiants IVAO, VATSIM et SimBrief : ils se règlent dans ⚙ Réglages, carte « Identité » (rangée sous « Mise en route » aux niveaux Courant et Complet).
 
-## 4. Le jeton
+**Si vous vous arrêtez en route.** Ce qui est fait reste sur cet appareil : Réglages › « Rejoindre la compagnie » reprend ici ; « Abandonner » quitte l'assistant.
 
-![Créer le jeton sur GitHub, pas à pas](img/join-airline-4.fr.png)
+**Si votre compagnie utilise GitHub.** L'assistant est plus long (sept étapes : compte chez l'hôte du dépôt, nom d'utilisateur, invitation, jeton à créer vous-même, collage, identifiants réseau, fin) ; chaque étape est dite à l'écran.
 
-**Créez-le sur GitHub.** Suivez les lignes : le premier lien ouvre la page déjà remplie — un jeton « classique » avec la
-case « repo », auquel vous donnez un an de validité. Si le dépôt de votre compagnie appartient à une organisation,
-l'assistant montre plutôt un jeton à grain fin (ce seul dépôt, « Contents : Read and write »).
+**Pour aller plus loin.** Le chapitre Réglages du manuel, section « Configurer un pilote » ([Réglages](#help?m=settings)).
 
-**Copiez-le tout de suite.** GitHub ne le montre qu'une fois. Cochez « Jeton copié », puis « Suivant → ».
-
-## 5. Coller le jeton
-
-![Le jeton testé : accès vérifié](img/join-airline-5.fr.png)
-
-**Collez et testez.** Collez-le, puis « Tester ». Une phrase claire dit ce qui ne va pas : invitation pas encore
-acceptée, jeton mal copié ou expiré, ou sans droit sur le contenu. Une fois vérifié, le jeton reste sur cet appareil
-seulement. Puis « Suivant → ».
-
-## 6. Vos identifiants réseau
-
-![IVAO, VATSIM, SimBrief : facultatifs](img/join-airline-6.fr.png)
-
-**Facultatifs.** Votre VID IVAO, votre CID VATSIM et votre identifiant SimBrief permettent à l'appli de reprendre vos
-vols et votre dernier plan. Puis « Suivant → ».
-
-## 7. Terminé
-
-![L'appareil est réglé et synchronisé](img/join-airline-7.fr.png)
-
-**Terminez.** « Terminer et synchroniser » règle tout et fait la première synchronisation. Gardez ensuite la zone de
-vos vols hors ligne (« Données hors ligne »), et enchaînez avec [Préparer un vol](#help?t=prepare-flight).
-
-**Pour aller plus loin.** Le chapitre Réglages du manuel, section « Configurer un pilote »
-([Réglages](#help?m=settings)).
-
-<!-- en: c3a1f59e0eb3 -->
+<!-- en: ad0d9a29842e -->

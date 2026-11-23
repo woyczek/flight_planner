@@ -11776,3 +11776,108 @@ def a369(c):
         c.eq([got['SOG-0301']['verdict'], c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state"), norm(c.text(f'{S("C1:0")} [data-step-note]'))], ['ok', 'ok', 'Le bandeau est rouge'], 'the new comment is written with the same verdict (ok), shown under the step', what='edited')
         c.ok(c.js("document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"), 'horizontal scroll', 'no horizontal scroll')
     c.check_errors()
+
+
+# what the assistant says, written here by hand (never read from the module's texts): the three failures of the test for a GitLab project, and the counter
+_A345_FAIL = {
+    'fr': {401: 'Jeton refusé : mal copié ou expiré. Recopiez-le, ou demandez-en un autre à l’administrateur.',
+           403: 'Jeton accepté, mais sans le droit de lire ce dépôt. Demandez à l’administrateur un jeton de projet qui a ce droit.',
+           404: 'Dépôt introuvable avec ce jeton : il ne couvre pas ce dépôt, ou l’adresse de la configuration est fausse. Prévenez l’administrateur.'},
+    'en': {401: 'Token refused: copied wrongly or expired. Copy it again, or ask the administrator for another one.',
+           403: 'Token accepted, but without the right to read this repository. Ask the administrator for a project token that has this right.',
+           404: 'Repository not found with this token: it does not cover this repository, or the address in the configuration is wrong. Tell the administrator.'},
+    'de': {401: 'Token abgelehnt: falsch kopiert oder abgelaufen. Kopieren Sie es erneut oder bitten Sie den Administrator um ein anderes.',
+           403: 'Token akzeptiert, aber ohne das Recht, dieses Repository zu lesen. Bitten Sie den Administrator um ein Projekt-Token mit diesem Recht.',
+           404: 'Repository mit diesem Token nicht gefunden: Es deckt dieses Repository nicht ab, oder die Adresse in der Konfiguration ist falsch. Informieren Sie den Administrator.'},
+    'es': {401: 'Token rechazado: mal copiado o caducado. Cópielo de nuevo, o pida otro al administrador.',
+           403: 'Token aceptado, pero sin derecho a leer este repositorio. Pida al administrador un token de proyecto que tenga este derecho.',
+           404: 'Repositorio no encontrado con este token: no cubre este repositorio, o la dirección de la configuración es incorrecta. Avise al administrador.'},
+}
+_A345_STEP = {'fr': 'Étape {n} sur {m}', 'en': 'Step {n} of {m}', 'de': 'Schritt {n} von {m}', 'es': 'Paso {n} de {m}'}
+
+
+@case('A345', 'Join the airline, a GitLab project: the failures of the test (401, 403, 404) speak of the token and the administrator — no invitation, no step of the GitHub path — and the counter says « Étape n sur 3 » (SOG-0575)', 'A', langs4=True, designs=('standard',),
+      screens=False, night=False,
+      rule='SOG-0575 (the ergonomist): for a GitLab project the assistant has steps 1, 5, 7; the messages of the test were those of the GitHub path (« invitation… (pas 3) », « (pas 4) », the « repo » box), false here; three texts of their own (e401Gl, e403Gl, e404Gl) and « Étape n sur m » in French')
+def a345(c):
+    lang = c.lang
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    seen = {'status': 401, 'tokens': []}
+
+    def handler(route):
+        seen['tokens'].append(route.request.headers.get('private-token'))
+        route.fulfill(status=seen['status'], content_type='application/json', body=json.dumps({'message': 'refused'}))
+    c.context.route(re.compile(r'https://gitlab\.com/api/v4/'), handler)
+    _gl_join(c)
+    line = lambda: norm(c.text('[data-card="join"] > p.f-muted') or '')
+    step = lambda n, m: norm(_A345_STEP[lang].format(n=n, m=m))
+    c.eq(line(), step(1, 3), 'the counter of the first step says the step of three', what='step 1 of 3')
+    c.tap('[data-jact="next"]')
+    c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"5\"]')", what='step 1 leads to step 5')
+    c.eq(line(), step(2, 3), 'the second of three', what='step 2 of 3')
+    for code in (401, 403, 404):
+        seen['status'] = code
+        _gl_test(c, 'glpat-essai-invente-0000')
+        c.until("document.querySelector('[data-card=\"join\"] [data-msg]')?.dataset.kind === 'err'", timeout=15000, what=f'the test answers {code}')
+        c.eq(norm(c.text('[data-card="join"] [data-msg]')), norm(_A345_FAIL[lang][code]), f'{code}: the sentence of a GitLab project, about the token and the administrator', what=f'message {code}')
+        if lang == 'fr' and c.width == 390:
+            c.js("window.scrollTo(0, 0)")
+            c.shot(f'A345_390_fr_{code}.png')
+    c.ok(seen['tokens'] and all(t == 'glpat-essai-invente-0000' for t in seen['tokens']), seen['tokens'], 'the token went to gitlab.com only, in the header of the API')
+    c.eq(c.js('!FrameData.github.config()'), True, 'nothing is saved while the test fails', what='nothing saved')
+    c.check_errors()
+
+
+# the sentences of the ergonomist (SOG-0575), written in clear: the line under the steps of a GitLab project (no box to tick), the one of the GitHub path (boxes), the last step (both paths)
+_A346_LATER_GL = {
+    'fr': 'Ce qui est fait reste sur cet appareil : Réglages › « Rejoindre la compagnie » reprend ici.',
+    'en': 'What is done stays on this device: Settings › “Join the airline” resumes here.',
+    'de': 'Was erledigt ist, bleibt auf diesem Gerät: Einstellungen › „Der Fluggesellschaft beitreten“ setzt hier fort.',
+    'es': 'Lo que ya está hecho queda en este dispositivo: Ajustes › «Unirse a la aerolínea» continúa aquí.'}
+_A346_LATER_GH = {
+    'fr': 'Vos cases cochées restent sur cet appareil : Réglages › « Rejoindre la compagnie » reprend ici.',
+    'en': 'Your ticked boxes stay on this device: Settings › “Join the airline” resumes here.',
+    'de': 'Ihre Häkchen bleiben auf diesem Gerät: Einstellungen › „Der Fluggesellschaft beitreten“ setzt hier fort.',
+    'es': 'Sus casillas marcadas quedan en este dispositivo: Ajustes › «Unirse a la aerolínea» continúa aquí.'}
+_A346_OFFLINE = {
+    'fr': 'Téléchargez la zone de vos vols : la carte et les terrains seront là même sans réseau.',
+    'en': 'Download the area of your flights: the map and the airfields will be there even without network.',
+    'de': 'Laden Sie das Gebiet Ihrer Flüge herunter: Karte und Flugplätze sind dann auch ohne Netz da.',
+    'es': 'Descargue la zona de sus vuelos: el mapa y los aeródromos estarán ahí incluso sin red.'}
+
+
+def _a346_join(c, provider, step, finished=False):
+    """Opens « Rejoindre la compagnie » for a configuration of `provider` (github.com or gitlab.com, acme/data, trigram ABC) at `step`, finished or not."""
+    host = 'gitlab.com' if provider == 'gitlab' else 'github.com'
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogConfig && !!SogConfig.validate", what='the configuration helper is loaded')
+    cfg = c.js("(h) => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: h, repo: 'acme/data', branch: 'main', provider: h.split('.')[0] } }).cfg", host)
+    st = {'cfg': cfg, 'step': step, 'done': {}}
+    if finished:
+        st.update({'finished': '2026-11-23T10:00:00.000Z', 'result': 'ok'})
+    c.open('settings', docs=LEVEL3 + [['device/join.json', st, 'cache']], trigram='ZZZ')
+    c.page.evaluate("location.hash = '#settings?join=1'")
+    c.until(f"!!document.querySelector('[data-card=\"join\"][data-step=\"{step}\"]')", timeout=15000, what=f'the assistant is at step {step}')
+
+
+@case('A346', 'Join the airline: the line under the steps says what stays on the device without a box on a GitLab project (the GitHub path keeps its boxes), and the last step says « Téléchargez la zone de vos vols » on both', 'A', langs4=True, designs=('standard',),
+      screens=False, night=False,
+      rule='SOG-0575 (the ergonomist, two sentences added): a GitLab project has no box to tick, so the line under the steps does not speak of boxes; the last step uses the verb of the tutorial (download); the expectations are written in clear, not read from the texts')
+def a346(c):
+    lang = c.lang
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    line = lambda: norm(c.text('[data-card="join"] ~ p.f-muted') or '')
+    _a346_join(c, 'gitlab', 1)
+    c.eq(line(), norm(_A346_LATER_GL[lang]), 'GitLab: what stays on the device, no box', what='GitLab line')
+    if lang == 'fr' and c.width == 390:
+        c.js("window.scrollTo(0, 0)")
+        c.shot('A346_390_fr_gitlab_ligne.png')
+    _a346_join(c, 'github', 1)
+    c.eq(line(), norm(_A346_LATER_GH[lang]), 'GitHub: the boxes are still said, the sentence is unchanged', what='GitHub line')
+    for provider in ('gitlab', 'github'):
+        _a346_join(c, provider, 7, finished=True)
+        c.ok(norm(_A346_OFFLINE[lang]) in norm(c.text('[data-card="join"]') or ''), c.text('[data-card="join"]'), f'{provider}: the last step says to download the area of the flights')
+        if provider == 'gitlab' and lang == 'fr' and c.width == 390:
+            c.js("window.scrollTo(0, 0)")
+            c.shot('A346_390_fr_gitlab_fin.png')
+    c.check_errors()

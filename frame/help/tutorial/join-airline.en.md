@@ -1,69 +1,33 @@
 # Join the airline
 
-*Ten minutes, once per device: from the configuration your airline sent you to a device that shares its data, with
-an assistant that keeps your progress if you stop halfway.*
+*Five minutes, once per device: from the configuration your airline sent you to a device that shares its data. Three steps, no account to create.*
 
-**Before you start.** Your airline's administrator sends you a link, a sog-config file or a QR code to scan with your
-phone's camera. Open it: the “Join the airline” assistant starts. It also starts from the welcome card of the first
-opening, or from ⚙ Settings › “Join the airline…”.
+**Before you start.** Your airline's administrator sends you two things, separately: a link, a sog-config file or a QR code to scan with your phone's camera; and, apart, a token. Open the link: the “Join the airline” assistant starts. It also starts from the welcome card of the first opening, or from ⚙ Settings › “Join the airline…”. You have no account to create and no invitation to accept.
 
-## 1. The configuration
+## 1. The configuration received
 
 ![The configuration received: airline, repository, trigram](img/join-airline-1.en.png)
 
-**Check it.** The airline, its data repository and your trigram. Nothing else is changed on the device. Then
-“Next →”.
+**Check it.** The airline, its data repository and your trigram. Nothing else is changed on the device. Then “Next →”.
 
-## 2. Your account
+## 2. Paste the token
 
-![Creating the account, then the username](img/join-airline-2.en.png)
+![The token pasted and tested: access checked](img/join-airline-2.en.png)
 
-**An account on the repository's host.** Most often GitHub. Already have one? Tick “Yes”. Otherwise tick “No, I create
-one” and follow the three lines: sign up, choose a simple username, verify the email address. If your airline's
-repository belongs to a user, the token will open every repository of your account: if you already have others, create
-an account dedicated to flying.
+**Paste the token received from the administrator**, the one sent to you apart: it is never in the link. Your trigram comes from the configuration: it is shown, you do not type it. Then “Test”.
 
-**Your username.** Type it: the administrator needs it. Then “Next →”.
+**What the assistant says.** The token stays on this device only and is never shown again; never send it in a message. If the assistant says “Personal token: it works for all your projects; prefer a project token asked from the administrator. Continue anyway?”, answer no and ask the administrator for a project token. An expiry that is missing or more than a year away, or too many rights, are said on a warning line: they do not block, but tell the administrator.
 
-## 3. The invitation
+**If the test fails.** Offline: reconnect the device, then “Test”. Token copied wrongly, expired, or without the right on this repository: copy it again, or ask the administrator for another one. Once “Access checked: the repository answers… Saved on this device.” is there, “Next →”.
 
-![Give your name, accept the invitation](img/join-airline-3.en.png)
+## 3. Done
 
-**Give your name.** “Copy my name”, then send it to the administrator: they invite you to the repository.
+![The device is set up and synchronised](img/join-airline-3.en.png)
 
-**Accept.** GitHub emails you: open it and accept the invitation (the link on the screen leads there too). Tick
-“Invitation accepted”, then “Next →”.
+**Finish.** On the last screen, “Finish and synchronise” sets everything up and makes the first synchronisation; the screen then says “This device is set up and has run its first synchronisation” (the picture). Download the area of your flights: the map and the airfields will be there even without network (“Offline data”). Go on with [Prepare a flight](#help?t=prepare-flight). The assistant does not ask for your IVAO, VATSIM and SimBrief identifiers: they are set in ⚙ Settings, card “Identity” (filed under “Getting started” at the Everyday and Full levels).
 
-## 4. The token
+**If you stop halfway.** What is done stays on this device: Settings › “Join the airline” resumes here; “Give up” leaves the assistant.
 
-![Creating the token on GitHub, step by step](img/join-airline-4.en.png)
-
-**Create it on GitHub.** Follow the lines: the first link opens the page already filled in — a “classic” token with the
-“repo” box, to which you give one year of validity. If your airline's repository belongs to an organisation, the
-assistant shows a fine-grained token instead (that repository only, “Contents: Read and write”).
-
-**Copy it at once.** GitHub shows it only once. Tick “Token copied”, then “Next →”.
-
-## 5. Paste the token
-
-![The token tested: access checked](img/join-airline-5.en.png)
-
-**Paste and test.** Paste it, then “Test”. A clear sentence says what is wrong: invitation not accepted yet, token
-copied wrongly or expired, or without the right on the contents. Once it is checked, the token stays on this device
-only. Then “Next →”.
-
-## 6. Your network IDs
-
-![IVAO, VATSIM, SimBrief: optional](img/join-airline-6.en.png)
-
-**Optional.** Your IVAO VID, VATSIM CID and SimBrief ID let the app take your flights and your last plan. Then
-“Next →”.
-
-## 7. Done
-
-![The device is set up and synchronised](img/join-airline-7.en.png)
-
-**Finish.** “Finish and synchronise” sets everything and runs the first synchronisation. Then keep the area of your
-flights offline (“Offline data”), and go on with [Prepare a flight](#help?t=prepare-flight).
+**If your airline uses GitHub.** The assistant is longer (seven steps: an account with the host of the repository, username, invitation, a token to create yourself, pasting, network identifiers, end); each step is said on the screen.
 
 **To go further.** The Settings chapter of the manual, section “Configuring a pilot” ([Settings](#help?m=settings)).
