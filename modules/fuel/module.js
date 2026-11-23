@@ -666,10 +666,12 @@ const TX = {
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
   // SOG-0533 : le niveau changé après le calcul de la route prise — sous la route, puis au-dessus de « Copier pour Eurocontrol » ;
   // SOG-0548 : son propre nom (« rStale » deux fois : celle-ci écrasait la ligne de la liste périmée, « Périmé (calculé à {t}) … »)
-  rFlStale: ['Route calculée pour le FL{c} — à recalculer : le vol est au FL{f}',
-    'Route computed for FL{c} — compute again: the flight is at FL{f}',
-    'Route für FL{c} berechnet — neu berechnen: der Flug ist auf FL{f}',
-    'Ruta calculada para el FL{c} — volver a calcular: el vuelo está en el FL{f}'
+  // SOG-0572 (l'ergonome) : à la place de « Copier pour Eurocontrol » sur une route périmée — une ligne, sans bouton (le « Recalculer »
+  // de l'étape est sous la route)
+  fplStaleCopy: ['La copie pour Eurocontrol revient après le recalcul de la route.',
+    'The copy for Eurocontrol comes back once the route is computed again.',
+    'Die Kopie für Eurocontrol kommt nach der Neuberechnung der Route zurück.',
+    'La copia para Eurocontrol vuelve tras recalcular la ruta.'
   ],
   // SOG-0572 (l'ergonome) : à la place de « Copier pour Eurocontrol », l'état d'une route prise périmée (puis « Recalculer »)
   fplStale: ['Route calculée pour le FL{c}, {type} : le vol a changé.', 'Route computed for FL{c}, {type}: the flight has changed.',
@@ -5619,7 +5621,8 @@ function fplDraw(C, textOnly = false) {
     stale = routeStale(C), // SOG-0572 : une route prise périmée — la copie n'est pas offerte, l'état et « Recalculer » à sa place
     vio = routeViolations(); // SOG-0532 (4) : dit avant de copier, pour une route qui enfreint des règles connues
   if (stale) {
-    box.innerHTML = `<p class="f-row fu-rage f-warn" data-fplstale><span>${esc(tt(stale.levelOnly ? TX.fplStaleLevel : TX.fplStale, stale))}</span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p>`;
+    // SOG-0572 (l'ergonome) : l'état est dit sous la route (staleDraw) ; ici une ligne courte, sans bouton
+    box.innerHTML = `<p class="f-muted" data-fplstale>${esc(tt(TX.fplStaleCopy))}</p>`;
     return;
   }
   box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
@@ -7084,13 +7087,15 @@ function routeViolations() {
   if (r.from === 'engine') return n(r.violations);
   return S.rcheck && S.rcheck.text === String(r.text || '') ? n(S.rcheck.violations) : 0;
 }
-/** SOG-0533 : « Route calculée pour le FL… — à recalculer », avec « Recalculer », sous la liste des itinéraires ; cachée sinon. */
+/** SOG-0572 (après SOG-0533) : l'état d'une route prise périmée, avec « Recalculer », sous la liste des itinéraires ; cachée sinon. */
 function staleDraw(C) {
   const p = S.body?.querySelector('[data-rstale]'),
     x = routeStale(C);
   if (!p) return;
-  p.hidden = !x || x.c === x.f; // SOG-0572 : cette ligne ne dit que le niveau ; le reste est dit à la place de la copie
-  p.querySelector('[data-rstaletext]').textContent = p.hidden ? '' : tt(TX.rFlStale, x);
+  // SOG-0572 (l'ergonome) : l'état appartient à la ROUTE — dit ici, sous la liste (ou « Itinéraire choisi »), avec le seul « Recalculer »
+  // de l'étape : « Route calculée pour le FL{c}, {type} : le vol a changé. », ou le niveau seul
+  p.hidden = !x;
+  p.querySelector('[data-rstaletext]').textContent = x ? tt(x.levelOnly ? TX.fplStaleLevel : TX.fplStale, x) : '';
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {

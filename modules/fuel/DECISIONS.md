@@ -2651,9 +2651,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   a warning passed with one touch does not protect — the sixteen errors of the IFPS came from a route computed for the Beech, copied with the
   level of another aircraft). A route taken keeps the fingerprint of its computation (`route.calc`: level, aircraft type, sheet,
   registration, cruise speed and ceiling, aerodromes, date and time in minutes, imposed points; read back as an untrusted entry, each value
-  compared, never written as is). As soon as the flight differs, « Copier pour Eurocontrol » is NOT offered (no greyed button, no warning to
-  pass): in its place « Route calculée pour le FL{c}, {type} : le vol a changé. » with « Recalculer », or, the level alone, « Route calculée
-  pour le FL{c} : le vol est au FL{f}. »; the copy comes back once a computation is taken again. A route typed or pasted is never stale (the
+  compared, never written as is). As soon as the flight differs, the state belongs to the ROUTE: under the list of routes (or « Itinéraire
+  choisi »), in place of SOG-0533's line, « Route calculée pour le FL{c}, {type} : le vol a changé. », or, the level alone, « Route calculée
+  pour le FL{c} : le vol est au FL{f}. », with « Recalculer » — the only one of the step. « Copier pour Eurocontrol » is NOT offered (no greyed
+  button, no warning to pass): in its place one short line without a button, « La copie pour Eurocontrol revient après le recalcul de la
+  route. »; the copy comes back once a route of the new list is CHOSEN. A route typed or pasted is never stale (the
   box « Contrôler » says its verdict). The old warning above the button and its notification are gone; a route taken before the fingerprint
   is judged on its level only. Not the fingerprint of SOG-0566 (it has no speed, ceiling, sheet nor imposed points). Case F318, red before;
   F293 changed on purpose.

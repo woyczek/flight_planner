@@ -9262,11 +9262,10 @@ def f293(c):
     st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN/N0330F270 UN10 NEPIX MEN1A LFML', 370, 270, segs)]
     # SOG-0572 (the ergonomist, 23 Nov) — changed on purpose: the stale route is no longer copied after a warning; in place of the
     # copy, the state and « Recalculer »
-    stale = {'fr': ('Route calculée pour le FL270 — à recalculer : le vol est au FL250', 'Route calculée pour le FL270 : le vol est au FL250.'),
-             'en': ('Route computed for FL270 — compute again: the flight is at FL250', 'Route computed for FL270: the flight is at FL250.'),
-             'de': ('Route für FL270 berechnet — neu berechnen: der Flug ist auf FL250', 'Route für FL270 berechnet: der Flug ist auf FL250.'),
-             'es': ('Ruta calculada para el FL270 — volver a calcular: el vuelo está en el FL250',
-                    'Ruta calculada para el FL270: el vuelo está en el FL250.')}[c.lang]
+    stale = {'fr': ('Route calculée pour le FL270 : le vol est au FL250.', 'La copie pour Eurocontrol revient après le recalcul de la route.'),
+             'en': ('Route computed for FL270: the flight is at FL250.', 'The copy for Eurocontrol comes back once the route is computed again.'),
+             'de': ('Route für FL270 berechnet: der Flug ist auf FL250.', 'Die Kopie für Eurocontrol kommt nach der Neuberechnung der Route zurück.'),
+             'es': ('Ruta calculada para el FL270: el vuelo está en el FL250.', 'La copia para Eurocontrol vuelve tras recalcular la ruta.')}[c.lang]
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):
@@ -9304,7 +9303,7 @@ def f293(c):
     c.eq(norm(c.text(f'{FUEL} [data-rstale] [data-do=rcompute]') or ''), norm({'fr': 'Recalculer', 'en': 'Compute again',
          'de': 'Neu berechnen', 'es': 'Recalcular'}[c.lang]), 'with « Recalculer »', what='button')
     # in place of the copy: the state and « Recalculer » — never a copy of « F250 » at its head with « /F270 » further on
-    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale] > span') or ''), norm(stale[1]), 'in place of « Copier pour Eurocontrol »',
+    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-fplstale]') or ''), norm(stale[1]), 'in place of « Copier pour Eurocontrol », a short line',
          what='state')
     c.eq(c.count(f'{FUEL} [data-fpl] [data-do=fplcopy]'), 0, 'the copy is not offered', what='no copy')
     for w in (390, 1280):
@@ -11140,10 +11139,14 @@ def f316(c):
 
 # SOG-0572: the words, written in clear (the ergonomist, 23 Nov)
 _RS_WORDS = {
-    'fr': ('Route calculée pour le FL270, BE9L : le vol a changé.', 'Route calculée pour le FL270 : le vol est au FL250.', 'Recalculer'),
-    'en': ('Route computed for FL270, BE9L: the flight has changed.', 'Route computed for FL270: the flight is at FL250.', 'Compute again'),
-    'de': ('Route für FL270, BE9L berechnet: der Flug hat sich geändert.', 'Route für FL270 berechnet: der Flug ist auf FL250.', 'Neu berechnen'),
-    'es': ('Ruta calculada para el FL270, BE9L: el vuelo ha cambiado.', 'Ruta calculada para el FL270: el vuelo está en el FL250.', 'Recalcular'),
+    'fr': ('Route calculée pour le FL270, BE9L : le vol a changé.', 'Route calculée pour le FL270 : le vol est au FL250.', 'Recalculer',
+           'La copie pour Eurocontrol revient après le recalcul de la route.'),
+    'en': ('Route computed for FL270, BE9L: the flight has changed.', 'Route computed for FL270: the flight is at FL250.', 'Compute again',
+           'The copy for Eurocontrol comes back once the route is computed again.'),
+    'de': ('Route für FL270, BE9L berechnet: der Flug hat sich geändert.', 'Route für FL270 berechnet: der Flug ist auf FL250.', 'Neu berechnen',
+           'Die Kopie für Eurocontrol kommt nach der Neuberechnung der Route zurück.'),
+    'es': ('Ruta calculada para el FL270, BE9L: el vuelo ha cambiado.', 'Ruta calculada para el FL270: el vuelo está en el FL250.', 'Recalcular',
+           'La copia para Eurocontrol vuelve tras recalcular la ruta.'),
 }
 
 
@@ -11172,16 +11175,21 @@ def f318(c):
     wait_quote(c)
     to_step(c, 1)
     P = f'{FUEL} [data-fpl]'
-    # 1. the aircraft changed: no copy, the state and « Recalculer »
-    c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=10000, what='the state of a stale route (red before: a warning above an offered copy)')
+    S0 = f'{FUEL} [data-rstale]'
+    # 1. the aircraft changed: the state belongs to the ROUTE (under the list, the only « Recalculer » of the step); in place of the copy,
+    # one short line without a button (the ergonomist's correction)
+    c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=10000, what='the copy replaced (red before: a warning above an offered copy)')
     c.eq(c.count(f'{P} [data-do=fplcopy]'), 0, 'the copy is NOT offered', what='no copy')
-    c.eq(norm(c.text(f'{P} [data-fplstale] > span') or ''), norm(W[0]), 'the level and the aircraft of the computation', what='state')
-    c.eq(norm(c.text(f'{P} [data-fplstale] [data-do=rcompute]') or ''), norm(W[2]), '« Recalculer »', what='gesture')
+    c.eq(norm(c.text(f'{P} [data-fplstale]') or ''), norm(W[3]), 'a short line in place of the copy', what='copy line')
+    c.eq(c.count(f'{P} button'), 0, 'no button there', what='no button')
+    c.ok(c.shown(S0), 'hidden', 'the state under the route')
+    c.eq(norm(c.text(f'{S0} [data-rstaletext]') or ''), norm(W[0]), 'the level and the aircraft of the computation', what='state')
+    c.eq(norm(c.text(f'{S0} [data-do=rcompute]') or ''), norm(W[2]), '« Recalculer »', what='gesture')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
         c.js(_F281_NOTES_OFF)
-        c.js(f"document.querySelector('{P}').scrollIntoView({{block: 'center'}})")
+        c.js(f"(() => {{ const e = document.querySelector('{S0}'); e.style.scrollMarginTop = '140px'; e.scrollIntoView({{block: 'start'}}) }})()")
         c.wait(300)
         c.shot(f'F318_{c.design}_{w}_{c.lang}_stale.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
@@ -11190,12 +11198,13 @@ def f318(c):
     c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
     c.until(f"!!document.querySelector('{P} [data-do=fplcopy]')", timeout=10000, what='the copy back after a computation taken')
     c.eq(c.count(f'{P} [data-fplstale]'), 0, 'nothing stale', what='fresh')
+    c.ok(not c.shown(S0), 'shown', 'no state under the route')
     # 3. the level alone changed: the shorter sentence, no copy
     to_step(c, 0)
     c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
     c.page.locator(f'{FUEL} input[data-k="fl"]').dispatch_event('change')
     to_step(c, 1)
     c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=8000, what='stale by the level')
-    c.eq(norm(c.text(f'{P} [data-fplstale] > span') or ''), norm(W[1]), 'the level alone', what='level')
+    c.eq(norm(c.text(f'{S0} [data-rstaletext]') or ''), norm(W[1]), 'the level alone, under the route', what='level')
     c.eq(c.count(f'{P} [data-do=fplcopy]'), 0, 'no copy', what='no copy 2')
     c.check_errors()
