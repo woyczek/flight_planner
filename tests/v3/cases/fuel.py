@@ -1501,7 +1501,7 @@ def f43(c):
     c.page.fill(f'{FUEL} [data-k="wxdate"]', local)
     c.page.locator(f'{FUEL} [data-k="wxdate"]').blur()
     want = norm(row(c, 'pastDate').split('{d}')[0])
-    c.until("(w) => { const p = document.querySelector('[data-module=fuel] [data-pastdate]'); return !!p && !p.hidden && p.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim().startsWith(w) }",
+    c.until("(w) => { const p = document.querySelector('[data-module=fuel] [data-pastdate]'); return !!p && !p.hidden && p.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim().startsWith(w) }",
             want, timeout=6000, what='the Flight step says the date is in the past')
     c.ok(norm(c.text(f'{FUEL} [data-block="result"] .fu-pastdate') or '').startswith(want), 'no line', 'and the plan says it too')
     c.ok(c.js("!document.querySelector('[data-module=fuel] [data-block=result] .fu-big').closest('[inert]')"), 'blocked', 'nothing is blocked: the quote stays')
@@ -4150,7 +4150,7 @@ def f136(c):
         _route_typed(c, 'LFRS PAM LFML')
         d = cf_doc(c, lambda d: [q.get('id') for q in (d.get('route') or {}).get('points') or []] == ['LFRS', 'LFML'], f'{w} px: PAM not placed', timeout=10000)
         c.ok(0 < d['route']['distanceNm'] < 450, d['route']['distanceNm'], 'the distance is the route\'s, not a crossing of the ocean')
-        c.until(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('PAM') && /\d/.test(e.textContent))",
+        c.until(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('PAM') && /\\d/.test(e.textContent))",
                 what=f'{w} px: « PAM : le seul lieu connu est à … NM de la route — non placé »')
         c.js(f"document.querySelector('{FUEL} [data-rwarn]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F136_{c.design}_{w}_{c.lang}.png')
@@ -4329,7 +4329,7 @@ def f140(c):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         open_proc(c, procs=_ILS_PROCS, aero_extra=_aids_extra())
         to_step(c, 4)
-        c.until(f"/110\.30/.test(document.querySelector('{FUEL} [data-aids] [data-aidils]')?.textContent || '')", timeout=12000, what=f'{w} px: the ILS of the approach first')
+        c.until(f"/110\\.30/.test(document.querySelector('{FUEL} [data-aids] [data-aidils]')?.textContent || '')", timeout=12000, what=f'{w} px: the ILS of the approach first')
         ils = norm(c.text(f'{FUEL} [data-aids] [data-aidils]'))
         c.ok('13R' in ils and 'TST' in ils and '134' in ils and 'DME' in ils, ils, 'runway, ident, frequency, axis, DME')
         c.until(f"!!document.querySelector('{FUEL} [data-aids] [data-aidsroute] [data-aid=LUGEN]')", timeout=12000, what='the VOR of the route')
@@ -5021,7 +5021,7 @@ def f155(c):
     # a runway the aerodrome does not have: said, nothing chosen
     n0 = c.js("(window.__notes || []).length")
     _route_typed(c, 'LFRS/09 LUGEN NEPIX LFML')
-    c.until("(n) => (window.__notes || []).slice(n).some(x => /LFRS\/09/.test(x))", n0, timeout=8000, what='« LFRS/09 : piste inconnue »')
+    c.until("(n) => (window.__notes || []).slice(n).some(x => /LFRS\\/09/.test(x))", n0, timeout=8000, what='« LFRS/09 : piste inconnue »')
     c.settle()
     c.eq((procs_of(c.doc(path), 'dep') or {}).get('rwy'), '03', 'the runway chosen stays (09 is not a runway of LFRS)', what='rwy kept')
 
@@ -9041,7 +9041,7 @@ def f288(c):
          'the copy is offered (a direct is a route)', what='copy')
     c.js("window.__n0 = (window.__notes || []).length")
     c.tap(f'{FUEL} [data-fpl] [data-do="fplcopy"]')
-    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want[0]),
+    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want[0]),
             timeout=6000, what='the copy says what to do')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -11250,7 +11250,7 @@ def f317(c):
     # the search ends: the progress goes, the result is said
     answer['v'] = lambda lv: _ne_answer(lv)
     pre = norm(W.split('{n}')[0])
-    c.until(f"(p) => {{ const t = (document.querySelector('{M}')?.textContent || '').replace(/[\s\u00a0\u202f]+/g, ' '); return !t.includes(p) && t.includes('(auto)') }}",
+    c.until(f"(p) => {{ const t = (document.querySelector('{M}')?.textContent || '').replace(/[\\s\u00a0\u202f]+/g, ' '); return !t.includes(p) && t.includes('(auto)') }}",
             pre, timeout=10000, what='the progress gone at the end, the result said')
     # a new search, cancelled by « Calculer »: the progress goes
     answer['v'] = None
@@ -11262,7 +11262,7 @@ def f317(c):
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]:not([disabled])')", timeout=10000, what='« Calculer »')
     c.tap(f'{FUEL} [data-do="rcompute"]')
     to_step(c, 0)
-    c.until(f"(p) => !(document.querySelector('{M}')?.textContent || '').replace(/[\s\u00a0\u202f]+/g, ' ').includes(p) || document.querySelector('{FUEL} [data-lvlwhy]').hidden",
+    c.until(f"(p) => !(document.querySelector('{M}')?.textContent || '').replace(/[\\s\u00a0\u202f]+/g, ' ').includes(p) || document.querySelector('{FUEL} [data-lvlwhy]').hidden",
             pre, timeout=10000, what='the progress gone when « Calculer » cancels the search')
     c.check_errors()
 

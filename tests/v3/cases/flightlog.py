@@ -500,7 +500,7 @@ def g12(c):
         c.wait(900)
         c.eq(c.doc('cache/report/draft.json'), None, f'{w} px: no draft left after the save (a pending draft is not written back)', what='draft')
         c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
-        c.until("(() => { const e = document.getElementById('fCo'); return !!e && e.hasAttribute('data-differs') && /AAA\s*≠/.test(e.textContent) && /BBB/.test(e.title) })()", timeout=8000,
+        c.until("(() => { const e = document.getElementById('fCo'); return !!e && e.hasAttribute('data-differs') && /AAA\\s*≠/.test(e.textContent) && /BBB/.test(e.title) })()", timeout=8000,
                 what=f'{w} px: the header says « AAA ≠ BBB » (current ≠ the report\'s)')
         c.go('flightlog')
         c.until("(() => { const e = document.getElementById('fCo'); return !!e && !e.hasAttribute('data-differs') })()", timeout=8000, what='another screen: no longer said')
@@ -544,7 +544,7 @@ def g13(c):
 
 
 @case('G14', 'The V2 report ledgers file refused by the data guard (code after its literal) is repaired by tools/repair_ledger_defaults.py: the correction moved into the literal, the code removed, nothing written without --write, the original kept',
-      'G', static=True, rule='SOG-0219 (3) (the launcher wrote seven times « Fichier de données refusé … data\cr\mission_ledger_defaults.js — texte après le littéral »): '
+      'G', static=True, rule='SOG-0219 (3) (the launcher wrote seven times « Fichier de données refusé … data\\cr\\mission_ledger_defaults.js — texte après le littéral »): '
       'the V2 file of 23 Sep, migrated as it was, ends with a block of code fixing « 1:50 » → « 19:50 »; tools/data_guard.py refuses any code after the literal; '
       'invented ledger texts in a temporary folder, never the user\'s data')
 def g14(c):
