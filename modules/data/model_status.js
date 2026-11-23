@@ -84,6 +84,27 @@ function publishOf(p) {
     at: typeof p.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(p.at) ? p.at.slice(0, 30) : null
   };
 }
+/** Les gains d'un pays à jour (base/status, SOG-0568 ; tools/base_gains.py) : { redo: [gain], update: [gain] } ; `redo` : ce qu'une RELECTURE (sans téléchargement) apporterait, `update` : ce qu'une MISE À JOUR (une page à télécharger)
+ *  apporterait ; un gain : { id, kind ('absent' | 'better'), label ([fr, en, de, es] : une phrase entière chacune), source ('' sauf pour une pièce à télécharger) }. Lu comme une entrée non fiable : listes bornées, textes courts, jamais d'exception. */
+function gainsOf(g) {
+  const one = list => (Array.isArray(list) ? list : []).slice(0, 12).map(x => ({
+    id: text(x?.id, 40),
+    kind: x?.kind === 'absent' ? 'absent' : 'better',
+    label: Array.isArray(x?.label) && x.label.length === 4 && x.label.every(l => typeof l === 'string') ? x.label.map(l => text(l,
+      160)) : null,
+    source: text(x?.source, 20)
+  })).filter(x => x.id && x.label && x.label.every(Boolean));
+  return {
+    redo: one(g?.redo),
+    update: one(g?.update)
+  };
+}
+/** Ce qu'un pays À JOUR peut encore recevoir : 'redo' (une relecture : le lecteur de la suite lirait mieux ce que le poste détient), 'update' (une pièce à télécharger, sans relecture), null (rien, ou le pays n'est pas à jour). */
+export const gainLevel = z => z?.state === 'up-to-date' && z.gains ? z.gains.redo.length ? 'redo' : z.gains.update.length ? 'update' :
+  null : null;
+/** Les pays à relire : ceux de `ids` à jour dont une relecture apporterait quelque chose. */
+export const rereadIds = (status, ids) => (ids || []).filter(id => Object.hasOwn(status?.zones || {}, id) && status.zones[id].gains?.redo
+  .length > 0 && status.zones[id].state === 'up-to-date');
 /** L'état d'une zone lu (celui de base/status, ou le `state` de la vue par zone de base/cycle : ses raisons peuvent y être de simples codes) : { state, reasons, notices, buildable, builtCycle, expectedCycle, builtAt, publish, download } ; null si l'état est hors règle. */
 export function zoneStateOf(z) {
   if (z === null || typeof z !== 'object' || !ZONE_STATES.includes(z.state)) return null;
@@ -102,6 +123,7 @@ export function zoneStateOf(z) {
     builtAt: typeof z.builtAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(z.builtAt) ? z.builtAt.slice(0, 30) : null,
     publish: publishOf(z.publish),
     download: downloadOf(z.download),
+    gains: gainsOf(z.gains),
     datedBy: z.datedBy === 'file' ? 'file' :
     null, // la zone est construite sur un dépôt à la main, sans édition (SOG-0368 ; AeroDB 1e8ac887f) : la liste des pays le sait sans ouvrir la fiche
     deposited: day(z.deposited)
@@ -156,7 +178,8 @@ export function persistable(st) {
       sources: z.download.list
     } : null,
     datedBy: z.datedBy,
-    deposited: z.deposited
+    deposited: z.deposited,
+    gains: z.gains
   };
   return {
     current: st?.current || '',

@@ -160,13 +160,13 @@ function stepText(s, t) {
   if (s.st === 'done') return tt({
     pick: T.thPick,
     download: T.thDl,
-    build: T.thBuild
+    build: t?.reread ? TX.gn.thReread : T.thBuild // une relecture dit « relu à … », jamais « construit » (SOG-0568)
   } [s.k], {
     t: at
   });
   if (s.st === 'same') return s.k === 'download' ? tt(T.thDlSame, {
     t: at
-  }) : s.k === 'build' ? tt(T.thBuildSame, {
+  }) : s.k === 'build' ? tt(t?.reread ? TX.gn.thReread : T.thBuildSame, {
     t: at
   }) : tt(T.thPick, {
     t: at
@@ -252,8 +252,9 @@ export function progressHtml(zone) {
     step = (phase === 'status' ? tt(T.pgStatus) : phase === 'again' ? tt(T.pgAgain) : tt({
       pick: T.pgPick,
       download: T.pgDl,
-      build: T.pgBuild
-    } [phase] || T.pgStatus)) + view;
+      build: z.reread ? TX.gn.pgReread : T.pgBuild
+    } [phase] || T.pgStatus)) + (z.reread ? '' :
+      view); // la relecture ne reprend pas l'étape « Construction » du lanceur : elle dit son mot
     m = t.steps.length;
     n = m ? Math.min(sp.done + 1, m) : 0;
     pct = sp.pct;
@@ -325,10 +326,13 @@ export async function zoneUpdate(zone, opts = {}) {
   const personal = selectionOf([zone]).personal,
     prev = S.cw.thread.get(zone), // le fil d'avant : gardé si ce geste est refusé avant de rien faire
     t = newThread(zone, 'running');
+  t.reread = opts.reread ===
+    true; // SOG-0568 : une relecture (le lecteur de la suite relit ce que le poste détient : aucun téléchargement) ; ses étapes disent « relu », pas « construit »
   S.zop = {
     zone,
     phase: 'status',
-    stopped: false
+    stopped: false,
+    reread: t.reread
   };
   S.lastOp = null;
   S.busy = null;
@@ -348,12 +352,12 @@ export async function zoneUpdate(zone, opts = {}) {
   }
   const dp = M.downloadPlan(st0, [zone]),
     seen = (st0.zones?.[zone]?.reasons || []).some(r => r.code === 'pickup-waiting' && r.zip),
-    keys = M.stepsFor({
+    keys = opts.reread ? ['build'] : M.stepsFor({
       seen,
-      fetch: dp.fetch.includes(zone) || opts.retake ===
-        true // retenter la prise sur le site d'un pays construit sur un dépôt dont l'édition n'est pas connue (SOG-0368)
+      fetch: dp.fetch.includes(zone) || opts.retake === true || opts.gain ===
+        true // retenter la prise sur le site d'un pays construit sur un dépôt dont l'édition n'est pas connue (SOG-0368) ; ou lire la pièce qui manque à un pays à jour : une page, rien d'autre (SOG-0568)
     });
-  if (!seen && !dp.fetch.includes(zone) && !dp.build.includes(zone) && opts.retake !==
+  if (!opts.reread && !seen && !dp.fetch.includes(zone) && !dp.build.includes(zone) && opts.retake !== true && opts.gain !==
     true) { // rien que le lanceur puisse faire seul pour ce pays
     t.fixed = {
       level: 'warn',

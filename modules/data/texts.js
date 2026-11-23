@@ -2334,6 +2334,41 @@ export const TX = {
       'import-rad': ['Importer', 'Import', 'Importieren', 'Importar']
     }
   },
+  // SOG-0568 : les trois états d'un pays (à jour ; à jour, relecture possible ; à faire) — ce qu'une relecture (sans téléchargement) ou une mise à jour (une page) apporte, en mots du pilote ; les phrases des gains viennent du lanceur (tools/base_gains.py)
+  gn: {
+    stateRedo: ['à jour · relecture possible', 'up to date · reread possible', 'aktuell · erneutes Einlesen möglich',
+      'al día · relectura posible'
+    ],
+    stateUpd: ['à jour · mise à jour possible', 'up to date · update possible', 'aktuell · Aktualisierung möglich',
+      'al día · actualización posible'
+    ],
+    redoLine: ['Une relecture apporte : {list}.', 'A reread brings: {list}.', 'Ein erneutes Einlesen bringt: {list}.',
+      'Una relectura aporta: {list}.'
+    ],
+    redoNote: ['Sans téléchargement.', 'No download.', 'Ohne Download.', 'Sin descarga.'],
+    updLine: ['Une mise à jour apporte : {list}.', 'An update brings: {list}.', 'Eine Aktualisierung bringt: {list}.',
+      'Una actualización aporta: {list}.'
+    ],
+    updNote: ['Avec téléchargement d’une page.', 'With the download of one page.', 'Mit dem Download einer Seite.',
+      'Con la descarga de una página.'
+    ],
+    keep: ['Les données d’avant sont gardées.', 'The previous data are kept.', 'Die bisherigen Daten bleiben erhalten.',
+      'Los datos anteriores se conservan.'
+    ],
+    // sous la RELECTURE : les fichiers du cycle en cours sont remplacés, seuls les cycles précédents restent (la phrase est tranchée par l'ergonome avant le push)
+    keepRedo: ['Les cycles précédents sont gardés.', 'The previous cycles are kept.', 'Die vorherigen Zyklen bleiben erhalten.',
+      'Los ciclos anteriores se conservan.'
+    ],
+    btnRedo: ['Relire ce pays', 'Reread this country', 'Dieses Land erneut einlesen', 'Releer este país'],
+    rereadAll: ['Relire tous les pays ({n})', 'Reread all countries ({n})', 'Alle Länder erneut einlesen ({n})',
+      'Releer todos los países ({n})'
+    ],
+    run: ['Relecture', 'Reread', 'Erneutes Einlesen', 'Relectura'],
+    runStep: ['Sans téléchargement', 'No download', 'Ohne Download', 'Sin descarga'],
+    pgReread: ['Relecture du pays…', 'Rereading the country…', 'Das Land wird erneut eingelesen…', 'Releyendo el país…'],
+    thReread: ['relu à {t}', 'reread at {t}', 'um {t} erneut eingelesen', 'releído a las {t}'],
+    word: ['relecture', 'reread', 'erneutes Einlesen', 'relectura']
+  },
   // le lot B de SOG-0262 : les gestes de la fiche d'un pays, « ce qui reste à faire ce mois-ci », la fermeture de la fiche, la légende repliée, la lecture d'une archive DIRCAM
   cwb: {
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
@@ -3137,8 +3172,9 @@ export const TX = {
       'Nichts zu hinterlegen: „Dieses Land aktualisieren“ erledigt den Rest.',
       'Nada que depositar: «Actualizar este país» hace el resto.'
     ],
-    fresh: ['Rien à faire : ce pays est à jour.', 'Nothing to do: this country is up to date.', 'Nichts zu tun: dieses Land ist aktuell.',
-      'Nada que hacer: este país está al día.'
+    fresh: ['Rien à faire : cycle en cours, lu par la version actuelle.', 'Nothing to do: cycle in force, read by the current version.',
+      'Nichts zu tun: gültiger Zyklus, von der aktuellen Version gelesen.',
+      'Nada que hacer: ciclo vigente, leído por la versión actual.'
     ]
   },
   // SOG-0253 : « Tours de piste VFR » — le dépôt du XML de l'extracteur de l'utilisateur, un pli sous « Vu par le poste »

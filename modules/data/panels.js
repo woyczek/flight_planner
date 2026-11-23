@@ -335,8 +335,8 @@ function runningHtml() {
       .free
     ); // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 » ; la prise de fichiers compte des fichiers à la fin
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
-    <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
-      ${S.chunk ? `<span class="f-muted" data-chunk>${esc(tt(S.chunk.purge ? TX.chunkPurge : TX.chunk, { i: S.chunk.i, n: S.chunk.n, z: M.MAX_ZONES }))}</span>` : ''}<span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
+    <div class="d-runhead">${S.reread && set === 'base' && run.verb === 'build' ? `<b data-reread>${esc(tt(TX.gn.run))}</b> ` : ''}${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
+      ${S.chunk ? `<span class="f-muted" data-chunk>${esc(tt(S.chunk.purge ? TX.chunkPurge : TX.chunk, { i: S.chunk.i, n: S.chunk.n, z: M.MAX_ZONES }))}</span>` : ''}<span data-step>${esc(stopping ? tt(TX.stopping) : S.reread && set === 'base' && run.verb === 'build' ? tt(TX.gn.runStep) : S.view?.step || '')}</span>${inputsHtml(S.view)}
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
     ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}

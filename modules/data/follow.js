@@ -558,6 +558,23 @@ export async function runChunks(me, set, verb, sel) {
   renderBuild();
   return verdict;
 }
+/** « Relire tous les pays (n) » (SOG-0568) : les pays à jour dont une relecture apporterait quelque chose sont reconstruits d'un seul travail du lanceur (une seule instance de navigateur, aucun téléchargement), tranche par tranche au-delà
+ *  de 60 ; jamais lancé tout seul. La page dit « Relecture » en tête de la marche (S.reread). Rien si moins de deux pays, ou si une autre opération tient le lanceur. */
+export async function rereadAll() {
+  const me = S,
+    ids = M.rereadIds(S.status, S.d?.cov?.ids || []);
+  if (ids.length < 2 || gateOf('base', Math.min(ids.length, M.MAX_ZONES)).verbs.build.disabled) return;
+  S.reread = true;
+  try {
+    await runChunks(me, 'base', 'build', {
+      ids,
+      personal: selectionOf(ids).personal
+    });
+  } finally {
+    if (S === me) S.reread = false;
+  }
+  if (S === me) renderBuild();
+}
 /** La purge de la base sur plus de 60 zones (SOG-0071 temps 3) : le plan à blanc de chaque tranche de 60 au plus, l'un après l'autre (le lanceur tient UN travail à la fois), puis UNE question qui somme les
  *  plans (les fichiers, la taille, les zones, les avertissements) et, si oui, les purges réelles tranche par tranche (runChunks). Un plan qui ne finit pas bien (échec, arrêt) s'arrête là et se dit comme
  *  celui d'une purge simple ; rien n'est retiré sans la réponse. `sel` : la sélection (ids). */

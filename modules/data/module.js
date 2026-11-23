@@ -117,6 +117,7 @@ import {
   follow,
   startOp,
   retryZone,
+  rereadAll,
   startPickup,
   stopTimer
 } from './follow.js';
@@ -297,8 +298,19 @@ function onClick(e) {
     startGesture(su);
     return zoneUpdate(su.dataset
       .zone, {
-        retake: su.dataset.retake === '1'
+        retake: su.dataset.retake === '1',
+        gain: su.dataset.gain === '1'
       }); // un seul pays : prise du fichier vu, téléchargement, construction, enchaînés, l'avancement sur place (zoneop.js)
+  }
+  const rr = e.target.closest?.(
+    '[data-act="sheet-reread"], [data-act="reread-all"]'
+  ); // SOG-0568 : « Relire ce pays » (la fiche) et « Relire tous les pays (n) » (au-dessus des listes) : le lecteur de la suite relit ce que le poste détient, sans téléchargement
+  if (rr) {
+    if (rr.disabled) return;
+    startGesture(rr);
+    return rr.dataset.act === 'reread-all' ? rereadAll() : /^[a-z0-9_-]{2,12}$/.test(rr.dataset.zone || '') ? zoneUpdate(rr.dataset.zone, {
+      reread: true
+    }) : undefined;
   }
   const zs = e.target.closest?.('[data-act="zop-stop"], [data-act="zop-retry"]');
   if (zs) return zs.disabled ? undefined : zs.dataset.act === 'zop-stop' ? zopStop() : zopRetry(zs.dataset.zone);
@@ -567,6 +579,7 @@ export async function mount(el, ctx) {
     cw: cwInit(), // la carte du monde, les paquets et la fiche d'un pays (countries.js) : survol, paquet ouvert, fiche ouverte, vue, lectures du lanceur
     xp: xpInit(), // la ligne « X-Plane (personnel, local) » : état lu du lanceur et dernier message (xplane.js ; le chemin n'est jamais gardé)
     certified: false, // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
+    reread: false, // SOG-0568 : le travail en cours est une relecture (« Relire tous les pays ») : la marche dit « Relecture », sans téléchargement
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture

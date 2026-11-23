@@ -241,6 +241,10 @@ function drawn() {
 }
 /** Le nom d'un état en mot : celui de la teinte (à jour, à faire, en échec), « hors couverture » ou « état inconnu ». */
 const word = t => tt(TX.cw.word[M.own(TX.cw.word, t) ? t : 'none']);
+/** Ce qu'un pays À JOUR peut encore recevoir (SOG-0568) : 'redo' (une relecture, sans téléchargement), 'update' (une pièce à télécharger), null (rien : « à jour » plein). */
+const redoOf = id => Object.hasOwn(S.status?.zones || {}, id) ? M.gainLevel(S.status.zones[id]) : null;
+/** Le mot d'un pays à jour qui peut encore recevoir quelque chose : « à jour · relecture possible » ; '' sans. */
+const gainWord = id => redoOf(id) ? tt(TX.gn[redoOf(id) === 'redo' ? 'stateRedo' : 'stateUpd']) : '';
 /** La carte : un SVG cadré sur la couverture, un chemin par pays (la teinte de son état, ses procédures en hachure, la bordure bleue du paquet ouvert, le plein du pays survolé) puis la légende et « Voir le monde entier » ; '' sans contours. */
 function mapHtml() {
   loadOutlines();
@@ -269,8 +273,8 @@ function mapHtml() {
     const code = S.status?.zones?.[p.id]?.reasons?.[0]?.code,
       why = t === 'warn' || t === 'err' ? (M.own(TX.sn, `r_${code}`) ? tt(TX.sn[`r_${code}`]) : zoneReasons(p.id)[0]) :
       '', // l'infobulle dit pourquoi une zone n'est pas verte
-      label = `${nameOf(p.id)} : ${word(t)}${why ? ` (${why})` : ''}${procs[p.id] ? `, ${tt(TX.cw.procYes, { s: procs[p.id].map(procName).join(', ') })}` : ''}`;
-    return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}" data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}${S.cw.sel.has(p.id) ? ' data-sel' : ''}><title>${esc(label)}</title></path>`;
+      label = `${nameOf(p.id)} : ${t === 'ok' && redoOf(p.id) ? gainWord(p.id) : word(t)}${why ? ` (${why})` : ''}${procs[p.id] ? `, ${tt(TX.cw.procYes, { s: procs[p.id].map(procName).join(', ') })}` : ''}`;
+    return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}"${t === 'ok' && redoOf(p.id) ? ' data-redo' : ''} data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}${S.cw.sel.has(p.id) ? ' data-sel' : ''}><title>${esc(label)}</title></path>`;
   }).join('');
   const hatch = list.filter(p => procs[p.id]).map(p => `<path class="d-wh" d="${p.d}" data-proc="${esc(p.id)}"></path>`).join('');
   const sw = t => `<span class="d-sw" data-tone="${t}"></span>`,
@@ -279,9 +283,9 @@ function mapHtml() {
   return `<section class="d-wmapbox d-mapsec" data-world-map><h3 class="d-sh">${esc(tt(TX.d2.mapTitle))} <small>${esc(tt(TX.d2.mapHelp))}</small></h3>
     <div class="d-mapbar"><span class="d-maptitle" data-map-title>${gname ? esc(tt(TX.d2.mapOpen, { g: '\u0001' })).replace('\u0001', () => `<b>${esc(gname)}</b>`) : esc(tt(TX.d2.mapNone))}</span>
       <span class="d-maplinks" data-map-links><button type="button" class="d-link" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(TX.zx.mvWorld))}</button> <button type="button" class="d-link" data-act="map-home" aria-pressed="${!S.cw.world}">${esc(tt(TX.zx.mvHome))}</button></span></div>
-    <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
+    <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern><pattern id="d-redo" width="${(cell * 1.1).toFixed(2)}" height="${(cell * 1.1).toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="${(cell * .55).toFixed(2)}" height="${(cell * 1.1).toFixed(2)}" fill="var(--sog-ok)"></rect></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
 </div>
-    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}${busy ? `<span class="d-lgi">${sw('busy')}${esc(tt(TX.cw.word.busy))}</span>` : ''}${unread ? `<span class="d-lgi">${sw('unread')}${esc(tt(TX.cw.word.unread))}</span>` : ''}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
+    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>${t === 'ok' && list.some(p => redoOf(p.id)) ? `<span class="d-lgi"><span class="d-sw" data-redo></span>${esc(tt(TX.gn[list.some(p => redoOf(p.id) === 'redo') ? 'stateRedo' : 'stateUpd']))}</span>` : ''}`).join('')}${busy ? `<span class="d-lgi">${sw('busy')}${esc(tt(TX.cw.word.busy))}</span>` : ''}${unread ? `<span class="d-lgi">${sw('unread')}${esc(tt(TX.cw.word.unread))}</span>` : ''}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
     ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))} · ${esc(tt(TX.d4.selHelp))}</p>` : ''}${selBarHtml()}</section>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
@@ -369,7 +373,7 @@ function groupsHtml() {
       return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-zones="${esc(state.known.filter(z => ZONE_ID.test(z)).join(','))}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count(state.known.every(offCountry) ? 'zone' : 'country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
         <ul class="d-gc">${state.known.map(z => {
           const t = tone(z);
-          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(tileWord(z, t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
+          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${t === 'ok' && redoOf(z) ? ` data-redo="${redoOf(z)}"` : ''}${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${t === 'ok' && redoOf(z) ? '○' : M.own(SIGN_OF, t) || ''}</b> ${esc(tileWord(z, t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
         }).join('')}</ul>
         <p class="d-gup">${packUpdateHtml(pack, state)}</p>${opAreaHtml('base', 'group')}</div>` : ''}</li>`;
     });
@@ -712,6 +716,8 @@ function takingStepOf(id, z, cy, avail, split) {
 }
 /** Le mot court de la tuile d'un pays dans son groupe : l'ÉTAPE (« un fichier à prendre », « à reconstruire », « jamais construit ») quand la teinte est « à faire », sinon le mot de la teinte. */
 function tileWord(z, t) {
+  if (t === 'ok' && redoOf(z)) return gainWord(
+    z); // le vert de « à jour », strié : ses données servent, une relecture ou une mise à jour apporterait quelque chose (SOG-0568)
   const st = t === 'warn' && Object.hasOwn(S.status?.zones || {}, z) ? S.status.zones[z].state : '';
   if (t === 'warn' && st === 'up-to-date' && depositOnly(z)) return tt(TX.zst.editionUnknownShort);
   return st === 'stale' ? tt(waitingFileOf(z) ? TX.zst.waitingShort : needsFileOf(z) ? TX.zst.filesShort : TX.zst.staleShort) : st ===
@@ -800,7 +806,8 @@ function nowOf(id, seenAny, rename = '') {
     plan = S.status && statusKnown() ? M.downloadPlan(S.status, [id]) : null;
   if (gate.disabled || !plan) return null;
   if (plan.upToDate.includes(id)) return {
-    k: 'fresh'
+    k: redoOf(id) ? 'gain' :
+      'fresh' // un pays à jour qui peut encore recevoir quelque chose : pas « Rien à faire », le bloc des gains dit quoi (SOG-0568)
   };
   if (plan.waiting.includes(id)) return {
     k: rename ? 'rename' : seenAny ? 'pick' : 'file'
@@ -836,6 +843,7 @@ function nowHtml(id, seenAny, rename = '', step = null, cy = null, needs = []) {
     const w = needs[0];
     return `<p class="d-now" data-sheet-now data-now="hand"><b>${esc(tt(w.n > 1 ? TX.now.handFiles : TX.now.handFile, { s: srcName(w.sid, cy), n: w.n }))}</b></p>`;
   }
+  if (n?.k === 'gain') return '';
   return n ? `<p class="d-now" data-sheet-now data-now="${n.k}"><b>${esc(tt(n.k === 'rename' ? TX.now.rename : n.k === 'pick' && byEdition(id) ? TX.now.pickEdition : TX.now[n.k], { n: rename }))}</b></p>` : '';
 }
 /** Le geste « Mettre à jour ce pays » : TOUJOURS le bouton principal de la fiche quand il est actif (SOG-0509), posé sous la phrase d'état. Le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul : il prend le fichier vu dans Téléchargements, télécharge ce qui manque, puis construit le pays, sans question ; la ligne dessous dit ce qu'il va faire ;
@@ -858,7 +866,9 @@ function updateBlockHtml(id, seenAny = false, step = null) {
       ) { // construit sur un dépôt dont l'édition n'est pas connue : le bouton reste actif, c'est le geste pour retenter la prise sur le site (SOG-0368)
         retake = true;
         why = ['edition-unknown', tt(T.depositReason)];
-      } else [off, why] = [true, ['up-to-date', tt(T.upToDate)]];
+      } else return gainsBlockHtml(
+        id
+      ); // jamais un bouton grisé (SOG-0568) : un pays à jour sans rien à recevoir n'a pas de « Mettre à jour » ; sinon la relecture et la mise à jour, chacune avec son geste
     } else if (plan.waiting.includes(id) && seenAny) line = tt(T
       .doLine, { // un fichier est vu dans Téléchargements : le geste le prend, puis construit
         l: [tt(TX.zx.doPick), tt(T.doBuild)].join(', ')
@@ -870,6 +880,17 @@ function updateBlockHtml(id, seenAny = false, step = null) {
     });
   }
   return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${off ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}"${retake ? ' data-retake="1"' : ''}${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
+}
+/** Ce qu'une relecture et une mise à jour apporteraient à un pays à jour (SOG-0568) : une ligne par geste, chacune avec son verbe — « Relire ce pays » (sans téléchargement : le lecteur de la suite relit les sources déjà sur le
+ *  poste) et « Mettre à jour ce pays » (une pièce jamais lue : une page à télécharger). Les phrases des gains sont écrites dans la table du lanceur (tools/base_gains.py), une par langue ; '' sans gain. */
+function gainsBlockHtml(id) {
+  const g = Object.hasOwn(S.status?.zones || {}, id) ? S.status.zones[id].gains : null,
+    T = TX.gn;
+  if (!g || !(g.redo.length || g.update.length)) return '';
+  const list = a => a.map(x => x.label[li()]).join(', ');
+  return `<div class="d-upd d-gains" data-sheet-update data-gains>
+    ${g.redo.length ? `<div class="d-gain" data-gain="redo"><p><b>${esc(tt(T.redoLine, { list: list(g.redo) }))}</b></p><p class="f-muted">${esc(tt(T.redoNote))}</p><p class="d-verbs"><button type="button" class="primary" data-act="sheet-reread" data-zone="${esc(id)}">${esc(tt(T.btnRedo))}</button></p><p class="f-muted" data-keep>${esc(tt(T.keepRedo))}</p></div>` : ''}
+    ${g.update.length ? `<div class="d-gain" data-gain="update"><p><b>${esc(tt(T.updLine, { list: list(g.update) }))}</b></p><p class="f-muted">${esc(tt(T.updNote))}</p><p class="d-verbs"><button type="button"${g.redo.length ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}" data-gain="1">${esc(tt(TX.cwb.update))}</button></p><p class="f-muted" data-keep>${esc(tt(T.keep))}</p></div>` : ''}</div>`;
 }
 /** Le téléchargement de ce pays qui vient d'échouer (la fin de « Mettre à jour » le dit) : ce que le site a répondu ; le fichier choisi à la main reste le chemin (la FAA : l'abonnement du cycle, UN fichier). '' sans échec. */
 function failedHtml(id) {
@@ -1001,7 +1022,7 @@ function sheetHtml() {
     badgeTone = off && offSt.text ? offSt.tone : stepWord ? step.k === 'fetch-failed' ? 'err' : 'warn' : tn,
     badgeText = off ? offSt.text || tt(TX.cw.offUnread) : stepWord || (inCov && z?.state === 'stale' && needsFileOf(id) ? tt(waitingFileOf(
         id) ? TX.zst.waiting : TX.zst.files) : inCov && ['stale', 'never-built'].includes(z?.state) ? tt(TX.zst[z.state]) :
-      word( // la pastille dit le mot de la case ÉTAT (SOG-0370)
+      tn === 'ok' && redoOf(id) ? gainWord(id) : word( // la pastille dit le mot de la case ÉTAT (SOG-0370)
         tn));
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(badgeTone)}"${badgeText.length > 24 ? ' data-long' : ''} data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, badgeTone) || ''}</b> ${esc(badgeText)}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
@@ -1023,7 +1044,14 @@ export function countriesHtml() {
     todo = todoHtml(),
     groups = groupsHtml();
   if (!map && !sheet && !groups && !todo) return '';
-  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map}${sheet || (map ? `<aside class="d-sheetph" data-sheet-empty><b>${esc(tt(TX.d2.emptyTitle))}</b><p class="f-muted">${esc(tt(TX.d2.emptyHint))}</p></aside>` : '')}</div>${todo}${groups}</div>`;
+  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map}${sheet || (map ? `<aside class="d-sheetph" data-sheet-empty><b>${esc(tt(TX.d2.emptyTitle))}</b><p class="f-muted">${esc(tt(TX.d2.emptyHint))}</p></aside>` : '')}</div>${rereadAllHtml()}${todo}${groups}</div>`;
+}
+/** « Relire tous les pays (n) » (SOG-0568), UN SEUL geste au-dessus de toutes les listes : les pays à jour dont une relecture apporterait quelque chose, le lecteur de la suite relisant ce que le poste détient — aucun téléchargement, aucun hôte.
+ *  Offert à partir de deux pays seulement ; jamais lancé tout seul ; pas de bouton grisé : pendant une opération, il n'est pas montré (la marche parle). Il n'a pas d'équivalent pour « Mettre à jour » : les hôtes officiels se lisent un pays à la fois. */
+function rereadAllHtml() {
+  const ids = S.status && statusKnown() ? M.rereadIds(S.status, S.d?.cov?.ids || []) : [];
+  if (ids.length < 2 || S.run || S.zop || S.asking) return '';
+  return `<p class="d-rereadall" data-reread-all><button type="button" data-act="reread-all">${esc(tt(TX.gn.rereadAll, { n: ids.length }))}</button> <span class="f-muted">${esc(tt(TX.gn.redoNote))}</span></p>`;
 }
 /** Le sélecteur qui retrouve l'élément touché après un redessin (le focus lui revient à la fermeture de la fiche). */
 function selectorOf(el, zone) {
@@ -1431,6 +1459,12 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz{stroke-width:1.1px;vector-effect:non-scaling-stroke;fill-opacity:.3;cursor:pointer;stroke:var(--sog-muted);fill:var(--sog-muted);outline:none}
 [data-module="data"] .d-wz[data-tone=ok]{stroke:var(--sog-ok);fill:var(--sog-ok)}
 [data-module="data"] .d-wz[data-tone=warn]{stroke:var(--sog-warn);fill:var(--sog-warn)}
+[data-module="data"] .d-wz[data-redo]{fill:url(#d-redo);fill-opacity:1}
+[data-module="data"] .d-sw[data-redo]{background:repeating-linear-gradient(135deg,var(--sog-ok) 0 3px,var(--sog-surface) 3px 6px);border-color:var(--sog-ok)}
+[data-module="data"] .d-gcb[data-redo]{position:relative;border-left-color:transparent}
+[data-module="data"] .d-gcb[data-redo]::before{content:"";position:absolute;left:-6px;top:-1px;bottom:-1px;width:6px;background:repeating-linear-gradient(135deg,var(--sog-ok) 0 3px,var(--sog-surface) 3px 6px)}
+[data-module="data"] .d-gains .d-gain{border-left:3px solid var(--sog-border);padding:2px 0 2px 9px;margin:0 0 8px}
+[data-module="data"] .d-gains .d-gain p{margin:0 0 6px}
 [data-module="data"] .d-wz[data-tone=err]{stroke:var(--sog-err);fill:var(--sog-err)}
 [data-module="data"] .d-wz[data-tone=muted]{fill-opacity:.1}
 [data-module="data"] .d-wz[data-tone=unread]{fill-opacity:.12;stroke-dasharray:3 2}
