@@ -11947,9 +11947,9 @@ def l181(c):
     c.tap('[data-group-id=europe-west] [data-act=grp-toggle]')
     c.until("(e => !!e && e.offsetParent !== null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone=fr]'))", timeout=8000, what='the group with France is open')
     card = lambda z: c.js(f"(b => b ? [b.dataset.tone, b.dataset.redo || '', b.querySelector('.d-gw').textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone={z}]'))")
-    fr_card, es_card = card('fr'), card('lu')
+    fr_card, es_card = card('fr'), card('at')
     c.eq([fr_card[0], fr_card[1], norm(W['redo']) in norm(fr_card[2])], ['ok', 'redo', True], 'France: green, striped, « à jour · relecture possible »', what='card fr')
-    c.eq([es_card[0], es_card[1]], ['ok', ''], 'Luxembourg: plain green, no stripe (same pack as France)', what='card es')
+    c.eq([es_card[0], es_card[1]], ['ok', ''], 'Austria: plain green, no stripe (same pack as France)', what='card es')
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-group-id=europe-west]').scrollIntoView({ block: 'start' })")
         c.shot(f'L181_{c.width}_{lang}_list.png')
@@ -11977,8 +11977,9 @@ def l181(c):
     c.eq([len(builds), [(p.get('args') or {}).get('zones') for p in builds], len(_posts(st, 'fetch')) - n_fetch], [1, [['fr']], 0], 'a reread builds the country alone and downloads nothing', what='reread posts')
     close_sheet()
     # ---- 6. the sheet of Spain (nothing to receive): the sentence, no button at all
-    open_sheet('lu')
-    c.eq([norm(c.text('[data-sheet=lu] [data-sheet-now]')), c.count('[data-sheet=lu] [data-act=sheet-update]'), c.count('[data-sheet=lu] [data-act=sheet-reread]'), c.count('[data-sheet=lu] button[disabled][data-act]')], [norm(W['fresh']), 0, 0, 0],
+    open_sheet('at')
+    c.until("!!document.querySelector('[data-sheet=at] [data-sheet-now]')", timeout=15000, what='the head of the sheet of Austria (the state is read, the list of the cycle too)')
+    c.eq([norm(c.text('[data-sheet=at] [data-sheet-now]')), c.count('[data-sheet=at] [data-act=sheet-update]'), c.count('[data-sheet=at] [data-act=sheet-reread]'), c.count('[data-sheet=at] button[disabled][data-act]')], [norm(W['fresh']), 0, 0, 0],
          'a country with nothing to receive: « Rien à faire : cycle en cours, lu par la version actuelle. », no « Mettre à jour », no « Relire », no grey button', what='fresh sheet')
     if c.width in (390, 1280):
         c.shot(f'L181_{c.width}_{lang}_sheet_fresh.png')
