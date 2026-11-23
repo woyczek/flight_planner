@@ -10871,3 +10871,58 @@ def f311(c):
     c.js(f"document.querySelector('{G}').open = true")
     c.until(f"!document.querySelector('{G} [data-noproc]')", timeout=8000, what='the line no longer says the arrival is not read')
     c.check_errors()
+
+
+# SOG-0556: the State lines, written in clear (the names of aerodb's table of ICAO prefixes; the verb agreed)
+_ST_WORDS = {
+    'fr': ['Pays-Bas : 3 règles du RAD concernent cette route', 'Royaume-Uni : 1 règle du RAD concerne cette route',
+           'Tchéquie : 2 règles du RAD concernent cette route', 'YX : 4 règles du RAD concernent cette route'],
+    'en': ['Netherlands: 3 RAD rules apply to this route', 'United Kingdom: 1 RAD rule applies to this route',
+           'Czechia: 2 RAD rules apply to this route', 'YX: 4 RAD rules apply to this route'],
+    'de': ['Niederlande: 3 RAD-Regeln betreffen diese Route', 'Vereinigtes Königreich: 1 RAD-Regel betrifft diese Route',
+           'Tschechien: 2 RAD-Regeln betreffen diese Route', 'YX: 4 RAD-Regeln betreffen diese Route'],
+    'es': ['Países Bajos: 3 reglas del RAD se aplican a esta ruta', 'Reino Unido: 1 regla del RAD se aplica a esta ruta',
+           'Chequia: 2 reglas del RAD se aplican a esta ruta', 'YX: 4 reglas del RAD se aplican a esta ruta'],
+}
+# the names an ISO lookup gave to these ICAO prefixes (EH, EG, LK), in the four languages: never on the screen
+_ST_WRONG = ['Sahara', 'Égypte', 'Egypt', 'Ägypten', 'Egipto', 'Sri Lanka']
+
+
+@case('F312', 'Route step: the State of a line « {État} : {n} règles du RAD concernent cette route » is named from its ICAO PREFIX (the '
+      'table of aerodb), never as an ISO country — EH « Pays-Bas » (never « Sahara occidental »), EG « Royaume-Uni » (never « Égypte »), '
+      'LK « Tchéquie » (never « Sri Lanka »); a prefix outside the table (YX) shows its code; « 1 règle du RAD concerne cette route »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0556 (the user on EGGW → LQSA, the ergonomist: an ICAO prefix is never given to Intl; the names from aerodb\'s table '
+      'EAD_STATES; « portent sur » goes); a fake launcher, invented rules (XX9xxx) and counts')
+def f312(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _ST_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    unread = lambda s, n: {'code': 'rad_unread', 'values': {'state': s, 'flown': n, 'spaces_only': 0}, 'text': f'RAD, État {s}'}
+    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[],
+                       unverifiable=[unread('EH', 3), unread('EG', 1), unread('LK', 2), unread('YX', 4)])]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    G = f'{FUEL} [data-altlist] [data-alt] details[data-reasons=unverifiable]'
+    c.until(f"!!document.querySelector('{G}')", timeout=10000, what='the fold of « Non vérifiable »')
+    c.js(f"document.querySelector('{G}').open = true")
+    c.until(f"(w) => [...document.querySelectorAll('{G} li[data-reason=rad_unread]')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()).join('|') === w",
+            '|'.join(norm(x) for x in W), timeout=8000, what='each State named from its ICAO prefix (red before: Sahara occidental, Égypte, '
+            'Sri Lanka, « portent sur »)')
+    page = c.text(FUEL) or ''
+    c.ok(not any(w in page for w in _ST_WRONG), [w for w in _ST_WRONG if w in page], 'no name of a country an ISO lookup would give')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{G}').open = true")
+        c.js(f"(() => {{ const e = document.querySelector('{G}'); e.style.scrollMarginTop = '140px'; e.scrollIntoView({{block: 'start'}}) }})()")
+        c.wait(400)
+        c.shot(f'F312_{c.design}_{w}_{c.lang}_states.png')
+    c.check_errors()
