@@ -4,9 +4,9 @@
  "updated": "2026-11-23",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a20e4f5",
-  "fiches": 548,
-  "untranslated": 0,
+  "organisation": "c846e2a",
+  "fiches": 557,
+  "untranslated": 9,
   "priorities": 481,
   "capabilities_untranslated": 0
  },
@@ -995,6 +995,48 @@
    ]
   },
   {
+   "id": "pilote-carburant-rad-noms-d-etat",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; RAD ; noms d'État",
+    "en": "Carburant ; RAD ; noms d'État",
+    "de": "Carburant ; RAD ; noms d'État",
+    "es": "Carburant ; RAD ; noms d'État"
+   },
+   "items": [
+    {
+     "id": "SOG-0556",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
+     "en": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
+     "de": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
+     "es": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-barre-du-bas",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; barre du bas",
+    "en": "Carburant ; barre du bas",
+    "de": "Carburant ; barre du bas",
+    "es": "Carburant ; barre du bas"
+   },
+   "items": [
+    {
+     "id": "SOG-0553",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette",
+     "en": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette",
+     "de": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette",
+     "es": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-controle-de-route",
    "app": "pilote",
    "label": {
@@ -1078,6 +1120,49 @@
      "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
      "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-liste-des-routes",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; liste des routes",
+    "en": "Carburant ; liste des routes",
+    "de": "Carburant ; liste des routes",
+    "es": "Carburant ; liste des routes"
+   },
+   "items": [
+    {
+     "id": "SOG-0554",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
+     "en": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
+     "de": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
+     "es": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-liste-des-routes-typographie-francaise",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; liste des routes ; typographie française",
+    "en": "Carburant ; liste des routes ; typographie française",
+    "de": "Carburant ; liste des routes ; typographie française",
+    "es": "Carburant ; liste des routes ; typographie française"
+   },
+   "items": [
+    {
+     "id": "SOG-0555",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant : les motifs d'une route n'ont pas l'espace fine avant les deux-points (« NEPIX: direct de 61 NM »)",
+     "en": "Carburant : les motifs d'une route n'ont pas l'espace fine avant les deux-points (« NEPIX: direct de 61 NM »)",
+     "de": "Carburant : les motifs d'une route n'ont pas l'espace fine avant les deux-points (« NEPIX: direct de 61 NM »)",
+     "es": "Carburant : les motifs d'une route n'ont pas l'espace fine avant les deux-points (« NEPIX: direct de 61 NM »)"
     }
    ]
   },
@@ -1422,11 +1507,12 @@
     {
      "id": "SOG-0545",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : durée et carburant sur chaque route proposée, « la plus rapide », « la plus économe », cinq au plus",
      "en": "Routes: time and fuel on each proposed route, “the fastest”, “the most economical”, five at most",
      "de": "Routen: Dauer und Kraftstoff für jede vorgeschlagene Route, „die schnellste“, „die sparsamste“, höchstens fünf",
-     "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo"
+     "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo",
+     "test": true
     }
    ]
   },
@@ -3314,6 +3400,27 @@
    ]
   },
   {
+   "id": "pilote-recette-chemins-de-test",
+   "app": "pilote",
+   "label": {
+    "fr": "Recette ; chemins de test",
+    "en": "Recette ; chemins de test",
+    "de": "Recette ; chemins de test",
+    "es": "Recette ; chemins de test"
+   },
+   "items": [
+    {
+     "id": "SOG-0558",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
+     "en": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
+     "de": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
+     "es": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un"
+    }
+   ]
+  },
+  {
    "id": "pilote-route",
    "app": "pilote",
    "label": {
@@ -3466,8 +3573,7 @@
      "fr": "Routes : un direct de route libre dont la bande de niveaux exclut le niveau demandé est pris quand même ; le profil y descend sans que la route écrite le dise",
      "en": "Routes: a free-route direct whose level band excludes the requested level is used anyway; the profile descends there without the written route saying so",
      "de": "Routen: Eine Free-Route-Direktverbindung, deren Flugflächenband die angeforderte Flugfläche ausschließt, wird trotzdem genommen; das Profil sinkt dort, ohne dass die geschriebene Route es sagt",
-     "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga",
-     "test": true
+     "es": "Rutas: se toma un directo de ruta libre cuya banda de niveles excluye el nivel pedido; el perfil desciende allí sin que la ruta escrita lo diga"
     },
     {
      "id": "SOG-0537",
@@ -3519,8 +3625,7 @@
      "fr": "Routes : le moteur rend une route qu'il sait enfreindre des règles (yoyo de niveau, voie hors de son étendue, RAD) sous le libellé « contrôle partiel »",
      "en": "Routes: the engine returns a route it knows breaks rules (level yo-yo, airway outside its vertical extent, RAD) under the label “partial check”",
      "de": "Routen: Die Routenberechnung liefert eine Route, von der sie weiß, dass sie Regeln verletzt (Höhen-Jojo, Strecke außerhalb ihrer vertikalen Ausdehnung, RAD), unter der Bezeichnung „teilweise geprüft“",
-     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»",
-     "test": true
+     "es": "Rutas: el motor devuelve una ruta que sabe que infringe reglas (yoyó de nivel, aerovía fuera de su extensión vertical, RAD) con la etiqueta «control parcial»"
     }
    ]
   },
@@ -3577,6 +3682,49 @@
    ]
   },
   {
+   "id": "pilote-routes-rad-verdict",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; RAD ; verdict",
+    "en": "Routes ; RAD ; verdict",
+    "de": "Routes ; RAD ; verdict",
+    "es": "Routes ; RAD ; verdict"
+   },
+   "items": [
+    {
+     "id": "SOG-0552",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
+     "en": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
+     "de": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
+     "es": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-departs-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; départs ; procédures",
+    "en": "Routes ; départs ; procédures",
+    "de": "Routes ; départs ; procédures",
+    "es": "Routes ; départs ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0551",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : la montée après une SID lue en partie est libre à la recherche et stricte au contrôle — une seule règle, à lire chez Eurocontrol",
+     "en": "Routes : la montée après une SID lue en partie est libre à la recherche et stricte au contrôle — une seule règle, à lire chez Eurocontrol",
+     "de": "Routes : la montée après une SID lue en partie est libre à la recherche et stricte au contrôle — une seule règle, à lire chez Eurocontrol",
+     "es": "Routes : la montée après une SID lue en partie est libre à la recherche et stricte au contrôle — une seule règle, à lire chez Eurocontrol"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-moteur-departs",
    "app": "pilote",
    "label": {
@@ -3594,6 +3742,27 @@
      "en": "Routes: on departure, the search starts from a point that ends no SID (EGLL → MATCH, 32 NM for a limit of 0) although partly read SIDs exist",
      "de": "Routen: beim Abflug beginnt die Suche an einem Punkt, an dem keine SID endet (EGLL → MATCH, 32 NM bei Grenze 0), obwohl teilweise gelesene SIDs vorhanden sind",
      "es": "Rutas: en la salida, la búsqueda parte de un punto que no es el final de ninguna SID (EGLL → MATCH, 32 NM para un límite de 0) aunque existen SID leídas en parte"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-moteur-performance",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; moteur ; performance",
+    "en": "Routes ; moteur ; performance",
+    "de": "Routes ; moteur ; performance",
+    "es": "Routes ; moteur ; performance"
+   },
+   "items": [
+    {
+     "id": "SOG-0557",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : EGGW → LQSA au FL330 fait 1 009 NM pour 893 NM à vol d'oiseau et le calcul dure — mesure du temps, du graphe et d'une recherche bornée, AVANT tout code",
+     "en": "Routes : EGGW → LQSA au FL330 fait 1 009 NM pour 893 NM à vol d'oiseau et le calcul dure — mesure du temps, du graphe et d'une recherche bornée, AVANT tout code",
+     "de": "Routes : EGGW → LQSA au FL330 fait 1 009 NM pour 893 NM à vol d'oiseau et le calcul dure — mesure du temps, du graphe et d'une recherche bornée, AVANT tout code",
+     "es": "Routes : EGGW → LQSA au FL330 fait 1 009 NM pour 893 NM à vol d'oiseau et le calcul dure — mesure du temps, du graphe et d'une recherche bornée, AVANT tout code"
     }
    ]
   },
@@ -3641,6 +3810,27 @@
    ]
   },
   {
+   "id": "pilote-routes-procedures-departs",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; procédures ; départs",
+    "en": "Routes ; procédures ; départs",
+    "de": "Routes ; procédures ; départs",
+    "es": "Routes ; procédures ; départs"
+   },
+   "items": [
+    {
+     "id": "SOG-0550",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : les SID d'EDDF ne sont pas lues — ses départs à limite de raccord 0 restent « enfreint »",
+     "en": "Routes : les SID d'EDDF ne sont pas lues — ses départs à limite de raccord 0 restent « enfreint »",
+     "de": "Routes : les SID d'EDDF ne sont pas lues — ses départs à limite de raccord 0 restent « enfreint »",
+     "es": "Routes : les SID d'EDDF ne sont pas lues — ses départs à limite de raccord 0 restent « enfreint »"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-fiabilite-europe",
    "app": "pilote",
    "label": {
@@ -3658,8 +3848,7 @@
      "en": "Europe: a cold route calculation exceeds 5 s on a busy workstation (4.2 to 7.3 s)",
      "de": "Europa: eine kalte Routenberechnung überschreitet 5 s auf einem ausgelasteten Rechner (4,2 bis 7,3 s)",
      "es": "Europa: un cálculo de ruta en frío supera los 5 s en un puesto cargado (4,2 a 7,3 s)",
-     "rank": 428,
-     "test": true
+     "rank": 428
     },
     {
      "id": "SOG-0425",
@@ -6534,8 +6723,7 @@
      "en": "Fuel: check the alternate aerodrome (runway and aids, forecast weather, distance from departure) and propose one",
      "de": "Kraftstoff: den Ausweichflugplatz prüfen (Piste und Anflughilfen, Wettervorhersage, Entfernung vom Abflug) und einen vorschlagen",
      "es": "Combustible: comprobar el aeródromo alternativo (pista y ayudas, meteorología prevista, distancia a la salida) y proponer uno",
-     "rank": 469,
-     "test": true
+     "rank": 469
     }
    ]
   },
@@ -6701,8 +6889,7 @@
      "en": "Route engine: split a long route into legs known to be valid (beyond the coast: crossing the United States too)",
      "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
      "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)",
-     "rank": 354,
-     "test": true
+     "rank": 354
     }
    ]
   },

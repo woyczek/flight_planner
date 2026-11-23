@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-23",
-  "tests": 383,
-  "verdicts": 242
+  "tests": 386,
+  "verdicts": 247
  },
  "apps": [
   "pilote",
@@ -3499,8 +3499,9 @@
    },
    "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B » (les temps sont ceux mesurés par AeroDB sur ta base, dans le pire cas ; aucun vol transatlantique ne doit dépasser 5 secondes). (1) EIDW → KJFK, départ vers 12 h Z : une route en 2 secondes à froid, moins d'une seconde ensuite ; sous l'itinéraire, la preuve de chaque morceau (« calculée », « publiée, route NAT … »). (2) Le même vol, départ à 03 h Z : une ROUTE LIBRE créée (« route libre, créée »), en 1 à 2 secondes ; le pli « n routes NAT du jour écartées » dit pourquoi chacune est écartée. (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T22:05:22Z"
+   "state": "ok",
+   "delivered": "2026-11-16T22:05:22Z",
+   "at": "2026-11-23T10:16:46Z"
   },
   {
    "id": "SOG-0355",
@@ -4050,8 +4051,9 @@
    },
    "test": "Carburant, étape Vol, page rechargée. Saisis un terrain de dégagement. Attendu : (1) sous les trois champs, UNE ligne : un signe (✓ bon, ! réserve, ✕ échec, ? non vérifié), une phrase (« Dégagement XXXX : utilisable, avec réserve (moyens) ») et, quand tout n'est pas vert, le compte (« 2 bons, 1 non vérifié ») ; (2) le pli « Critères du dégagement » ouvre trois lignes : PISTE (la plus longue piste en dur contre la longueur de piste mini de ta fiche ; sans ce champ dans la fiche : « non vérifiée », jamais vert), MOYENS (le nombre d'approches aux instruments de la base ; aucune : « à vue seulement » ; terrain hors de ce que la base couvre : non vérifié), MÉTÉO (la catégorie du TAF une heure ava",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T15:54:44Z"
+   "state": "ok",
+   "delivered": "2026-11-17T15:54:44Z",
+   "at": "2026-11-23T10:23:07Z"
   },
   {
    "id": "SOG-0399",
@@ -4353,8 +4355,9 @@
    },
    "test": "Sur le poste (le moteur est relu à chaque calcul : pas besoin de relancer le lanceur). Carburant, étape Route : EDDF → LFMN, FL350, « Calculer A → B ». Attendu : (1) la même route et les mêmes remarques qu'avant ; (2) une réponse plus rapide — environ une seconde de moins au premier calcul (de l'ordre de 3 à 4 s au lieu de 4 à 5 s, selon la charge du poste) ; (3) un second calcul du même vol reste rapide (environ 2 s).",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:29:58Z"
+   "state": "ok",
+   "delivered": "2026-11-17T16:29:58Z",
+   "at": "2026-11-23T10:16:46Z"
   },
   {
    "id": "SOG-0427",
@@ -5566,8 +5569,9 @@
    },
    "test": "RELANCE le lanceur (sur ecaad3a50 ou plus récent), puis recharge la page. Carburant : EGGW → LQSA au FL330, « Calculer A → B ». (1) La route ne passe plus par L9 ni L607 en croisière et ne descend jamais pour remonter ; le niveau du plan est celui du calcul. (2) Chaque route dit UN verdict : « conforme à ce que nous savons lire » (avec « Seul Eurocontrol valide un plan. »), « Non vérifiable : N points » ou « enfreint N règles connues » ; les groupes « Règles connues enfreintes » et « Non vérifiable » s'ouvrent, chaque ligne commence par l'endroit de la route ; une ligne par État traversé (« {État} : N règles du RAD portent sur cette route ») ouvre sa liste. (3) Si la route enfreint des règle",
    "since": "2026-11-20",
-   "state": "todo",
-   "delivered": "2026-11-21T13:24:13Z"
+   "state": "ok",
+   "delivered": "2026-11-21T13:24:13Z",
+   "at": "2026-11-23T10:21:11Z"
   },
   {
    "id": "SOG-0533",
@@ -5594,8 +5598,9 @@
    },
    "test": "Relance le lanceur, puis recharge la page. Carburant, EGGW → LQSA au FL330, « Calculer A → B » : la route ne prend plus le direct REDFA–NOMKA (limité au FL315) ; toute la croisière reste au FL330 sur le profil, et la revue « profil adapté aux plafonds » n'apparaît plus. Dis si une route qui marchait hier ne se calcule plus.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T18:41:58Z"
+   "state": "ok",
+   "delivered": "2026-11-21T18:41:58Z",
+   "at": "2026-11-23T10:21:11Z"
   },
   {
    "id": "SOG-0537",
@@ -5698,6 +5703,20 @@
    "delivered": "2026-11-21T19:16:32Z"
   },
   {
+   "id": "SOG-0545",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : durée et carburant sur chaque route proposée, « la plus rapide », « la plus économe », cinq au plus",
+    "en": "Routes: time and fuel on each proposed route, “the fastest”, “the most economical”, five at most",
+    "de": "Routen: Dauer und Kraftstoff für jede vorgeschlagene Route, „die schnellste“, „die sparsamste“, höchstens fünf",
+    "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prends un vol avec un appareil, laisse le niveau sur « Auto » et touche « Calculer ». Ce qu'on doit voir : une ligne par niveau (cinq au plus) ; la ligne gardée par « Auto » est en tête avec la pastille « Auto » et un bouton « Choisir », et AUCUNE ligne n'est encadrée ; sur chaque ligne, le niveau puis le verdict, une ligne « Non vérifiable : … » en gras s'il y a lieu, puis les motifs en orange (« raccord direct », « hors règle semi-circulaire ») ; les pastilles « la plus rapide » / « la plus économe » seulement s'il y a une vraie différence à l'affichage. Touche « Choisir » sur une ligne : la route de la ligne va dans le champ Route",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T07:55:15Z"
+  },
+  {
    "id": "SOG-0546",
    "app": "pilote",
    "title": {
@@ -5724,6 +5743,28 @@
    "since": "2026-11-21",
    "state": "todo",
    "delivered": "2026-11-21T21:02:14Z"
+  },
+  {
+   "id": "SOG-0552",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour"
+   },
+   "test": "Recharge la page. Dans Carburant, calcule une route à un niveau fixé, par exemple au FL270. Ce qu'on doit voir : au-dessus de la liste des routes, une seule fois, « Seul Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. » ; dans les cartes de route, plus aucune ligne sur les règles du RAD ; le mot « conforme » n'apparaît plus comme verdict. (Une route « Aucune infraction trouvée » ne sort presque jamais sur les vraies données aujourd'hui : si tu en vois une, le libellé est celui-là, en gris sous le niveau.)",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T08:22:06Z"
+  },
+  {
+   "id": "SOG-0554",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre"
+   },
+   "test": "Recharge la page. Dans Carburant, calcule une route qui donne au moins une carte « Non vérifiable » (par exemple un vol avec un tronçon sans voie). Ce qu'on doit voir : sous le verdict en gras « Non vérifiable : N points », le repli dit « Voir pourquoi » et l'ouvre sur le motif ; le verdict n'est plus écrit deux fois. Puis tape une route et touche « Contrôler » : la boîte garde « Non vérifiable : N points » comme titre de son repli.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T08:51:37Z"
   }
  ],
  "decisions": [],
