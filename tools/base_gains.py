@@ -7,7 +7,7 @@ SEULE source de ces phrases.
 
 LA RÈGLE DURABLE (décision de l'ergonome, 23 nov. 2026) — toute évolution du lecteur qui change les données compilées déclare son gain ICI :
   · une ligne par évolution : { id, since (la version du lecteur qui l'apporte : VERSION de shared/sia_base.js), kind, portée, label }
-  · pas de montée de version du lecteur sans sa ligne (le cas K517 compare la dernière version de la table à VERSION et PARSER_VERSION) ;
+  · pas de montée de version du lecteur sans sa ligne (le cas K523 compare la dernière version de la table à VERSION et PARSER_VERSION) ;
   · une version sans effet pour le pilote a sa ligne marquée `nogain` (elle ne fait PAS passer un pays en « relecture possible ») ;
   · `kind` : 'absent' (une pièce qui manque aujourd'hui) ou 'better' (une lecture mieux faite) — jamais autre chose ;
   · la portée : `zones` (les pays nommés) ou `sources` (les pays dont le poste détient un fichier de l'une de ces sources) ; sans l'un ni l'autre, tous ;

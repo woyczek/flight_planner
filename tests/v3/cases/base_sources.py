@@ -3967,9 +3967,9 @@ def _gain_zone(data, ST, BA, zone, version, cycle, inputs=()):
         f.write_text('x', encoding='utf-8')
 
 
-@case('K516', 'base/status: a country built by an OLDER reader is « up to date » (its data serve) and says in `gains` what a relecture (no download) or an update (one page) would bring — never « parser-old » above the format the page still reads; a piece the code expects and the country never read (France: route/levels_fr.json) is an `update` gain (SOG-0568)', 'K', static=True,
+@case('K522', 'base/status: a country built by an OLDER reader is « up to date » (its data serve) and says in `gains` what a relecture (no download) or an update (one page) would bring — never « parser-old » above the format the page still reads; a piece the code expects and the country never read (France: route/levels_fr.json) is an `update` gain (SOG-0568)', 'K', static=True,
       rule='SOG-0568 (the user, 23 Nov 2026: « tous les pays sont à mettre à jour. le souci, on ne va pas le faire, simplement pour une évolution mineure du parser »): every country built before the reader 31 was `stale` / `parser-old` (the brown of the out-of-date) although its data serve. Now: `parser-old` only BELOW the format shared/sia_base.js COMPAT still reads; otherwise the zone is up to date and `gains` { redo, update } lists, from tools/base_gains.py (one line per reader evolution, label in four languages, scope by country or by source), the gains the reader that built it does not have: `redo` = a relecture of the sources already on the workstation, no download; `update` = a piece never read (a page to download). A zone to rebuild offers no relecture')
-def k516(c):
+def k522(c):
     RJ, BS, AF, DS = _mods()
     AC = importlib.import_module('aero_cycles')
     BG = importlib.import_module('base_gains')
@@ -4019,9 +4019,9 @@ def k516(c):
         c.eq((z['gb']['state'], z['gb']['gains']), ('up-to-date', {'redo': [], 'update': []}), 'built by the current reader: plain green, nothing offered', what='current')
 
 
-@case('K517', 'The table of gains (tools/base_gains.py) is complete: every reader version above 28 up to the current one has its line (or a `nogain` line), one sentence per language, a known kind, unique ids — no version of the reader without its line (SOG-0568)', 'K', static=True,
+@case('K523', 'The table of gains (tools/base_gains.py) is complete: every reader version above 28 up to the current one has its line (or a `nogain` line), one sentence per language, a known kind, unique ids — no version of the reader without its line (SOG-0568)', 'K', static=True,
       rule='SOG-0568, the lasting rule (the ergonomist, 23 Nov 2026): every evolution of a reader that changes the compiled data declares its gain in the table, one line per evolution with its scope and its label in four languages; no rise of the reader version without its line; a version with no effect for the pilot has its line marked `nogain` and does NOT make a country « relecture possible ». This case reads VERSION (shared/sia_base.js) and PARSER_VERSION (frame/aerodb/catalogue.js) and compares them with the table')
-def k517(c):
+def k523(c):
     sys.path.insert(0, str(c.root / 'tools'))
     BG = importlib.import_module('base_gains')
     sb = (c.root / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
@@ -4038,9 +4038,9 @@ def k517(c):
     c.eq([g['id'] for g in BG.GAINS if 'piece' in g and ('source' not in g or 'since' in g)], [], 'a piece gain names the source to download and carries no version', what='pieces')
 
 
-@case('K518', 'base/fetch of a country that is UP TO DATE and lacks only a piece (France: the ENR 1.7 levels table) asks that page alone: no other source of the country is called again (SOG-0568)', 'K', static=True,
+@case('K524', 'base/fetch of a country that is UP TO DATE and lacks only a piece (France: the ENR 1.7 levels table) asks that page alone: no other source of the country is called again (SOG-0568)', 'K', static=True,
       rule='SOG-0568 (the ergonomist: « le geste ne lit QUE ce qui manque, pas tout le pays : une lecture par cycle et par page »): base/fetch called every downloadable source of the zone, whatever it lacked. For a zone `up-to-date` whose `gains.update` lists a piece with its source, only these sources are called (enr51 here, which asks the ENR 1.7 alone since the ENR 5.1 of the cycle is held); a zone to update keeps every source; the pages are simulated (no real network)')
-def k518(c):
+def k524(c):
     RJ, BS, AF, DS = _mods()
     AC = importlib.import_module('aero_cycles')
     BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
@@ -4083,9 +4083,9 @@ def k518(c):
             sys.modules['sia_enr17'] = kept[1]
 
 
-@case('K519', 'A reread is ALL OR NOTHING per country: the files of the country are written beside, then replace the folder of the cycle at once — a failure or a stop before the end leaves the country wholly in its previous reading, never a mix of two reader versions (SOG-0568)', 'K', static=True,
+@case('K525', 'A reread is ALL OR NOTHING per country: the files of the country are written beside, then replace the folder of the cycle at once — a failure or a stop before the end leaves the country wholly in its previous reading, never a mix of two reader versions (SOG-0568)', 'K', static=True,
       rule='SOG-0568 (the ergonomist, 23 Nov 2026: « une relecture est TOUT OU RIEN PAR PAYS… un échec en cours de pays laisse ce pays entièrement dans sa lecture d\'avant »): base.install wrote the 12 files of a zone one by one into data/sia/base/<zone>/<cycle>/ (each atomic, the zone not): a failure between two files mixed an old and a new reading. Now install writes them all into <cycle>.new-… and swaps the folder (two renames); a failure before the swap removes the staging folder and touches nothing; a swap that cannot be done puts the old folder back; the leftovers of an interrupted swap are healed (an <cycle>.old-… whose <cycle> is missing comes back); a file the new reading no longer has is gone with the old folder; identical files replace nothing')
-def k519(c):
+def k525(c):
     RJ, BS, AF, DS = _mods()
     BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
     kinds = [k for k in BA.KINDS]
