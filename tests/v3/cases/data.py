@@ -11974,7 +11974,7 @@ def l181(c):
     c.tap(f'{sh} [data-act=sheet-reread]')
     c.wait(2500)
     builds = _posts(st, 'build')[n_build:]
-    c.eq([len(builds), [p.get('zones') for p in builds], len(_posts(st, 'fetch')) - n_fetch], [1, [['fr']], 0], 'a reread builds the country alone and downloads nothing', what='reread posts')
+    c.eq([len(builds), [(p.get('args') or {}).get('zones') for p in builds], len(_posts(st, 'fetch')) - n_fetch], [1, [['fr']], 0], 'a reread builds the country alone and downloads nothing', what='reread posts')
     close_sheet()
     # ---- 6. the sheet of Spain (nothing to receive): the sentence, no button at all
     open_sheet('lu')
@@ -11989,7 +11989,7 @@ def l181(c):
     c.tap('[data-sheet=fr] [data-act=sheet-update]')
     c.wait(2500)
     fetches = _posts(st, 'fetch')[n_fetch:]
-    c.eq([len(fetches), [p.get('zones') for p in fetches], len(_posts(st, 'build')) - n_build], [1, [['fr']], 0], 'the update of the piece downloads France (the launcher asks that one page) and builds nothing', what='update posts')
+    c.eq([len(fetches), [(p.get('args') or {}).get('zones') for p in fetches], len(_posts(st, 'build')) - n_build], [1, [['fr']], 0], 'the update of the piece downloads France (the launcher asks that one page) and builds nothing', what='update posts')
     close_sheet()
     # ---- 8. « Relire tous les pays (3) »: one base/build for the three, no download; never started by itself
     n_build, n_fetch = len(_posts(st, 'build')), len(_posts(st, 'fetch'))
@@ -11998,5 +11998,5 @@ def l181(c):
     c.tap('[data-reread-all] button')
     c.wait(2500)
     builds = _posts(st, 'build')[n_build:]
-    c.eq([len(builds), sorted(builds[0].get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['fr', 'gb', 'nl'], 0], 'one build of the three countries, no download', what='reread all posts')
+    c.eq([len(builds), sorted((builds[0].get('args') or {}).get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['fr', 'gb', 'nl'], 0], 'one build of the three countries, no download', what='reread all posts')
     c.check_errors()
