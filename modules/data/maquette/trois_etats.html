@@ -24,6 +24,7 @@ body[data-v="liste"] .v-liste, body[data-v="carte"] .v-carte, body[data-v="fiche
 .bar[data-st="ok"] { background: var(--sog-ok) }
 .bar[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px) }
 .bar[data-st="old"] { background: var(--sog-warn) }
+.bar[data-st="none"] { background: repeating-linear-gradient(0deg, var(--sog-muted) 0 3px, transparent 3px 6px); opacity: .55 }
 /* la pastille d'une ligne : pleine / anneau (creuse) / pleine marron */
 .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; flex: none }
 .dot[data-st="ok"] { background: var(--sog-ok) }
@@ -42,6 +43,8 @@ body[data-v="liste"] .v-liste, body[data-v="carte"] .v-carte, body[data-v="fiche
 .strip i[data-st="ok"] { background: var(--sog-ok) }
 .strip i[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px); outline: 1px solid var(--sog-ok); outline-offset: -1px }
 .strip i[data-st="old"] { background: var(--sog-warn) }
+.strip i[data-st="none"] { background: transparent; outline: 1px dashed var(--sog-muted); outline-offset: -1px }
+.bulk[hidden] { display: none }
 .bulk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px }
 .card { display: flex; background: var(--sog-surface); border: 1px solid var(--sog-border); min-height: 52px; color: inherit; text-align: left; font: inherit; padding: 0; cursor: pointer }
@@ -92,19 +95,20 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
 
 <!-- ============================ LISTE ============================ -->
 <section class="view v-liste">
-  <h2>Un paquet de pays : sa bande (un segment par pays), la relecture de tous, la liste</h2>
+  <h2>Au-dessus de toutes les listes : un seul geste « Relire tous les pays »</h2>
+  <div class="bulk">
+    <button type="button" class="btn" data-bulk>Relire tous les pays (5)</button>
+    <span class="muted" style="font-size:13px">Sans téléchargement · environ 1 min 30 · les données d'avant sont gardées</span>
+  </div>
+  <div class="prog" data-prog hidden>
+    <b>Relecture : pays 3 sur 5 · Belandie</b><div class="track"><i style="width:56%"></i></div>
+    <span class="muted">Sans téléchargement · il reste environ 40 s</span> · <button type="button" class="link">Arrêter</button>
+  </div>
+  <h2>Deux paquets : leur bande (un segment par pays, aucun chiffre), leurs pays</h2>
   <div class="group" data-g>
     <h3>Europe imaginaire <span class="muted" style="font-weight:400;font-size:14px">8 pays</span></h3>
     <p class="sub muted">6 sur 8 à jour · 1 périmé · 1 non défini</p>
-    <div class="strip" aria-hidden="true"><i data-st="ok"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="ok"></i><i data-st="redo"></i><i data-st="old"></i></div>
-    <div class="bulk">
-      <button type="button" class="btn" data-bulk>Relire tous les pays (4)</button>
-      <span class="muted" style="font-size:13px">Sans téléchargement · environ 2 min · les données d'avant sont gardées</span>
-    </div>
-    <div class="prog" data-prog hidden>
-      <b>Relecture : pays 3 sur 4 · Belandie</b><div class="track"><i style="width:62%"></i></div>
-      <span class="muted">Sans téléchargement · il reste environ 40 s</span> · <button type="button" class="link">Arrêter</button>
-    </div>
+    <div class="strip" aria-hidden="true"><i data-st="ok"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="ok"></i><i data-st="redo"></i><i data-st="old"></i><i data-st="none"></i></div>
     <div class="cards">
       <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Aronie</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
       <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Belandie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
@@ -113,6 +117,17 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
       <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Estovie</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
       <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Falmarie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
       <button type="button" class="card"><span class="bar" data-st="old"></span><div><b>Gorlande</b><small class="tx" data-st="old"><span class="dot" data-st="old"></span>périmé</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="none"></span><div><b>Hartanie</b><small class="muted">non défini</small></div></button>
+    </div>
+  </div>
+  <div class="group" data-g style="margin-top:8px">
+    <h3>Atlas du Nord <span class="muted" style="font-weight:400;font-size:14px">3 pays</span></h3>
+    <p class="sub muted">3 sur 3 à jour</p>
+    <div class="strip" aria-hidden="true"><i data-st="ok"></i><i data-st="redo"></i><i data-st="ok"></i></div>
+    <div class="cards">
+      <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Islanie</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Jorvik</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Kalmar</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
     </div>
   </div>
 </section>
@@ -149,6 +164,7 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
       <span><svg viewBox="0 0 22 14"><rect width="22" height="14" style="fill:var(--sog-ok)"/></svg>à jour</span>
       <span><svg viewBox="0 0 22 14"><defs><pattern id="hatch2" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" style="fill:var(--sog-surface)"/><rect width="4.5" height="9" style="fill:var(--sog-ok)"/></pattern></defs><rect width="22" height="14" fill="url(#hatch2)" style="stroke:var(--sog-ok)"/></svg>à jour · relecture possible</span>
       <span><svg viewBox="0 0 22 14"><rect width="22" height="14" style="fill:var(--sog-warn)"/></svg>périmé</span>
+      <span><svg viewBox="0 0 22 14"><rect x=".7" y=".7" width="20.6" height="12.6" style="fill:var(--sog-muted);fill-opacity:.12;stroke:var(--sog-muted);stroke-dasharray:3 2"/></svg>non défini</span>
     </div>
   </div>
 </section>
@@ -171,7 +187,7 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
         <p class="why">Avec téléchargement d'une page.</p>
         <button type="button" class="btn">Mettre à jour ce pays</button>
       </div>
-      <p class="notes">Les données d'avant sont gardées. Rien ne part sans votre geste.</p>
+      <p class="notes">Les données d'avant sont gardées.</p>
     </article>
 
     <article class="sheet" data-sheet="redo1">
@@ -182,15 +198,12 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
         <p class="why">Sans téléchargement.</p>
         <button type="button" class="btn primary">Relire ce pays</button>
       </div>
-      <button type="button" class="btn" disabled>Mettre à jour ce pays</button>
-      <p class="notes">Rien à télécharger : ce pays est au cycle en cours.</p>
     </article>
 
     <article class="sheet" data-sheet="ok">
       <div><div class="cap">Pays</div><h3>Aronie</h3></div>
       <div class="st tx" data-st="ok"><span class="dot" data-st="ok"></span>À jour</div>
-      <p class="notes" style="color:var(--sog-fg)"><b>Rien à faire.</b> Cycle en cours, lu par le lecteur actuel.</p>
-      <button type="button" class="btn" disabled>Mettre à jour ce pays</button>
+      <p class="notes" style="color:var(--sog-fg)"><b>Rien à faire :</b> cycle en cours, lu par la version actuelle.</p>
     </article>
 
     <article class="sheet" data-sheet="old">
@@ -201,7 +214,7 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
         <p class="why">Avec téléchargement.</p>
         <button type="button" class="btn primary">Mettre à jour ce pays</button>
       </div>
-      <p class="notes">Les données d'avant sont gardées jusqu'à la fin de la mise à jour.</p>
+      <p class="notes">Les données d'avant sont gardées.</p>
     </article>
 
   </div>
@@ -214,7 +227,7 @@ document.body.dataset.v = ['liste', 'carte', 'fiche'].includes(q.get('v')) ? q.g
 if (q.get('tone') === 'day') document.documentElement.dataset.tone = 'day';
 if (q.get('run') === '1') {
   document.querySelector('[data-prog]').hidden = false;
-  document.querySelector('[data-bulk]').disabled = true;
+  document.querySelector('.bulk').hidden = true; // le geste DEVIENT son avancement : jamais un bouton grisé
 }
 </script>
 </body>
