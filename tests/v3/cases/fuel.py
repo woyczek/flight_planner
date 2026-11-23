@@ -11061,3 +11061,58 @@ def f315(c):
     c.until(f"!document.querySelector('{B} [data-altnstale]') && document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3",
             timeout=20000, what='proposed again, no longer stale')
     c.check_errors()
+
+
+# SOG-0562: the words, written in clear (the ergonomist, 23 Nov)
+_CEIL_WORDS = {
+    'fr': {'line': 'Au-dessus du plafond du C30J (FL200).', 'card': 'au-dessus du plafond (FL200)'},
+    'en': {'line': 'Above the ceiling of the C30J (FL200).', 'card': 'above the ceiling (FL200)'},
+    'de': {'line': 'Über der Dienstgipfelhöhe der C30J (FL200).', 'card': 'über der Dienstgipfelhöhe (FL200)'},
+    'es': {'line': 'Por encima del techo del C30J (FL200).', 'card': 'por encima del techo (FL200)'},
+}
+
+
+@case('F314', 'A level above the CEILING of the aircraft is said, never refused: under the Level field « Au-dessus du plafond du C30J '
+      '(FL200). » (typed, from an OFP or from the sheet), on the card of a route at that level « au-dessus du plafond (FL200) » in the line '
+      'of its reasons, nothing on a route under it; the computation still goes at the level asked',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0562 (the user\'s first real validation: a BE9L filed at FL330, refused by the IFPS, ROUTE179 — the ceiling is in the '
+      'catalogue, ignored by « Auto » and by a typed level; the ergonomist, 23 Nov: signal, never refuse); an invented sheet (ceiling '
+      '20 000 ft), a fake launcher, invented routes')
+def f314(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _CEIL_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 330, segs), verdict='conform', violations=[], unverifiable=[]),
+                  dict(_alt(2, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 190, segs), verdict='conform', violations=[], unverifiable=[])]
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 20000}}
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J', 'sheetId': 'C30J'}
+            d[1]['level'] = {'ft': 33000}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs + [['aircraft/sheets/C30J.json', sheet, 'document']], airfields=True)
+    wait_quote(c)
+    to_step(c, 0)
+    c.until(f"!!document.querySelector('{FUEL} [data-lvlceil]:not([hidden])')", timeout=8000,
+            what='the level above the ceiling said under the Level field (red before: nothing)')
+    c.eq(norm(c.text(f'{FUEL} [data-lvlceil]') or ''), norm(W['line']), 'the type and its ceiling', what='line')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} input[data-k=fl]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F314_{c.design}_{w}_{c.lang}_level.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    to_step(c, 1)
+    args = _compute_now(c, st)
+    c.eq([a.get('fl') for a in args][:1], [330], 'never refused: the computation goes at the level asked', what='asked')
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt]').length === 2", timeout=10000, what='the two routes')
+    marks = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => [e.querySelector('[data-altfl]')?.textContent || '',
+        e.querySelector('[data-ceil]')?.textContent || ''])""")
+    by = {norm(f): norm(t) for f, t in marks}
+    c.eq((by.get('FL330'), by.get('FL190')), (norm(W['card']), ''), 'on the card of the route above the ceiling, nothing under it', what='card')
+    c.check_errors()
