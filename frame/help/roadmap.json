@@ -4,9 +4,9 @@
  "updated": "2026-11-23",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c846e2a",
-  "fiches": 557,
-  "untranslated": 9,
+  "organisation": "d063296",
+  "fiches": 566,
+  "untranslated": 18,
   "priorities": 481,
   "capabilities_untranslated": 0
  },
@@ -1102,6 +1102,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-degagements",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; dégagements",
+    "en": "Carburant ; dégagements",
+    "de": "Carburant ; dégagements",
+    "es": "Carburant ; dégagements"
+   },
+   "items": [
+    {
+     "id": "SOG-0566",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
+     "en": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
+     "de": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
+     "es": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-degagements-meteo",
    "app": "pilote",
    "label": {
@@ -1118,8 +1139,7 @@
      "fr": "Carburant : « Proposer un dégagement » ne lit la météo que de trois terrains sur sept, et « météo non lue » couvre des cas où elle a été lue",
      "en": "Fuel: “Suggest an alternate” reads the weather of only three airfields out of seven, and “weather not read” covers cases where it was read",
      "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
-     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó",
-     "test": true
+     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
     }
    ]
   },
@@ -1195,6 +1215,69 @@
      "de": "Automatische Routenberechnung: zwischen zwei fernen Plätzen der Orthodrome folgen",
      "es": "Cálculo automático de ruta: entre dos aeródromos lejanos, seguir la ortodrómica",
      "rank": 33
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-meteo-degagements",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; météo ; dégagements",
+    "en": "Carburant ; météo ; dégagements",
+    "de": "Carburant ; météo ; dégagements",
+    "es": "Carburant ; météo ; dégagements"
+   },
+   "items": [
+    {
+     "id": "SOG-0559",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
+     "en": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
+     "de": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
+     "es": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-niveau-auto",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; niveau « Auto »",
+    "en": "Carburant ; niveau « Auto »",
+    "de": "Carburant ; niveau « Auto »",
+    "es": "Carburant ; niveau « Auto »"
+   },
+   "items": [
+    {
+     "id": "SOG-0563",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
+     "en": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
+     "de": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
+     "es": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-niveaux-catalogue-des-aeronefs",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; niveaux ; catalogue des aéronefs",
+    "en": "Carburant ; niveaux ; catalogue des aéronefs",
+    "de": "Carburant ; niveaux ; catalogue des aéronefs",
+    "es": "Carburant ; niveaux ; catalogue des aéronefs"
+   },
+   "items": [
+    {
+     "id": "SOG-0562",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
+     "en": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
+     "de": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
+     "es": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil"
     }
    ]
   },
@@ -1379,8 +1462,7 @@
      "fr": "Carburant : un message « pas à jour » sans geste pour y remédier — procédures (« Relire » absent) et météo des terrains (la page sait ce qui lui manque et doit aller le chercher)",
      "en": "Fuel: an “out of date” message with no gesture to fix it — procedures (no “Re-read”) and airfield weather (the page knows what it lacks and should fetch it)",
      "de": "Kraftstoff: eine Meldung „nicht aktuell“ ohne Abhilfe — Verfahren (kein „Neu lesen“) und Platzwetter (die Seite weiß, was ihr fehlt, und soll es holen)",
-     "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)",
-     "test": true
+     "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)"
     }
    ]
   },
@@ -1600,8 +1682,7 @@
      "en": "Flight data: arrival QNH, the ATIS (letter, runway, QNH, wind) when the aerodrome is controlled, and the field elevation",
      "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
      "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo",
-     "rank": 326,
-     "test": true
+     "rank": 326
     }
    ]
   },
@@ -2711,8 +2792,7 @@
      "fr": "Carte, téléphone : la fenêtre d'un terrain passe sous la colonne des boutons d'outils et cache la fin de ses lignes",
      "en": "Map, phone: an airfield's window slides under the column of tool buttons and hides the end of its lines",
      "de": "Karte, Telefon: das Fenster eines Platzes rutscht unter die Spalte der Werkzeugknöpfe und verdeckt das Ende seiner Zeilen",
-     "es": "Mapa, teléfono: la ventana de un aeródromo pasa bajo la columna de botones de herramientas y oculta el final de sus líneas",
-     "test": true
+     "es": "Mapa, teléfono: la ventana de un aeródromo pasa bajo la columna de botones de herramientas y oculta el final de sus líneas"
     }
    ]
   },
@@ -3195,8 +3275,7 @@
      "fr": "Royaume-Uni : lire les SID conventionnelles (EGGW : 0 des 9 cartes lues, « table non reconnue »)",
      "en": "United Kingdom: read conventional SIDs (EGGW: 0 of 9 charts read, “table not recognised”)",
      "de": "Vereinigtes Königreich: konventionelle SIDs lesen (EGGW: 0 von 9 Karten gelesen, „Tabelle nicht erkannt“)",
-     "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)",
-     "test": true
+     "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)"
     }
    ]
   },
@@ -3412,11 +3491,12 @@
     {
      "id": "SOG-0558",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
      "en": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
      "de": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
-     "es": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un"
+     "es": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
+     "test": true
     }
    ]
   },
@@ -3678,6 +3758,57 @@
      "en": "Routes: the engine's EGGW → LQSA route is rejected by Eurocontrol's IFPS (24 errors: FRA, RAD, mandatory routes, STAR)",
      "de": "Routen: Die Route EGGW → LQSA des Rechners wird vom IFPS von Eurocontrol abgelehnt (24 Fehler: FRA, RAD, Pflichtrouten, STAR)",
      "es": "Rutas: la ruta EGGW → LQSA del motor es rechazada por el IFPS de Eurocontrol (24 errores: FRA, RAD, rutas obligatorias, STAR)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-rad",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; RAD",
+    "en": "Routes ; RAD",
+    "de": "Routes ; RAD",
+    "es": "Routes ; RAD"
+   },
+   "items": [
+    {
+     "id": "SOG-0564",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : le moteur ne connaît ni l'équipement ni le type de moteur de l'appareil — des règles du RAD qui en dépendent restent non jugées",
+     "en": "Routes : le moteur ne connaît ni l'équipement ni le type de moteur de l'appareil — des règles du RAD qui en dépendent restent non jugées",
+     "de": "Routes : le moteur ne connaît ni l'équipement ni le type de moteur de l'appareil — des règles du RAD qui en dépendent restent non jugées",
+     "es": "Routes : le moteur ne connaît ni l'équipement ni le type de moteur de l'appareil — des règles du RAD qui en dépendent restent non jugées"
+    },
+    {
+     "id": "SOG-0565",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : les règles du RAD de forme « tête + liste en lettres » ne sont pas lues",
+     "en": "Routes : les règles du RAD de forme « tête + liste en lettres » ne sont pas lues",
+     "de": "Routes : les règles du RAD de forme « tête + liste en lettres » ne sont pas lues",
+     "es": "Routes : les règles du RAD de forme « tête + liste en lettres » ne sont pas lues"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-rad-validation-eurocontrol",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; RAD ; validation Eurocontrol",
+    "en": "Routes ; RAD ; validation Eurocontrol",
+    "de": "Routes ; RAD ; validation Eurocontrol",
+    "es": "Routes ; RAD ; validation Eurocontrol"
+   },
+   "items": [
+    {
+     "id": "SOG-0561",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : la première validation Eurocontrol réelle (LFMT → EIDW, FL330) refuse la route neuf fois — mesure règle par règle, AVANT tout code",
+     "en": "Routes : la première validation Eurocontrol réelle (LFMT → EIDW, FL330) refuse la route neuf fois — mesure règle par règle, AVANT tout code",
+     "de": "Routes : la première validation Eurocontrol réelle (LFMT → EIDW, FL330) refuse la route neuf fois — mesure règle par règle, AVANT tout code",
+     "es": "Routes : la première validation Eurocontrol réelle (LFMT → EIDW, FL330) refuse la route neuf fois — mesure règle par règle, AVANT tout code"
     }
    ]
   },
@@ -4175,8 +4306,7 @@
      "en": "Missions (Company app): the right column flickers when the rail widens",
      "de": "Missionen (App Gesellschaft): die rechte Spalte flackert, wenn die Leiste breiter wird",
      "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha",
-     "rank": 337,
-     "test": true
+     "rank": 337
     },
     {
      "id": "SOG-0338",
@@ -4186,8 +4316,7 @@
      "en": "Missions: a click on « Register » does not update the left rail",
      "de": "Missionen: ein Klick auf « Register » aktualisiert die linke Leiste nicht",
      "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo",
-     "rank": 338,
-     "test": true
+     "rank": 338
     }
    ]
   },
@@ -5265,6 +5394,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-import-transfert",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; import ; transfert",
+    "en": "Missions ; import ; transfert",
+    "de": "Missions ; import ; transfert",
+    "es": "Missions ; import ; transfert"
+   },
+   "items": [
+    {
+     "id": "SOG-0567",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions : un identifiant de mission en double (import, transfert) — ne jamais perdre ni écraser une mission",
+     "en": "Missions : un identifiant de mission en double (import, transfert) — ne jamais perdre ni écraser une mission",
+     "de": "Missions : un identifiant de mission en double (import, transfert) — ne jamais perdre ni écraser une mission",
+     "es": "Missions : un identifiant de mission en double (import, transfert) — ne jamais perdre ni écraser une mission"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-lecture",
    "app": "compagnie",
    "label": {
@@ -6035,8 +6185,7 @@
      "en": "BLOCKING: “Recompute everything” fails in the build page, 46 zones at once, cause not said",
      "de": "BLOCKIEREND: „Alles neu berechnen“ scheitert auf der Aufbauseite, 46 Zonen auf einmal, Ursache nicht genannt",
      "es": "BLOQUEANTE: «Recalcular todo» falla en la página de construcción, 46 zonas de golpe, causa no dicha",
-     "rank": 192,
-     "test": true
+     "rank": 192
     },
     {
      "id": "SOG-0150",
@@ -6782,6 +6931,27 @@
    ]
   },
   {
+   "id": "maintenance-carburant-carte-couverture-des-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; carte ; couverture des données",
+    "en": "Carburant ; carte ; couverture des données",
+    "de": "Carburant ; carte ; couverture des données",
+    "es": "Carburant ; carte ; couverture des données"
+   },
+   "items": [
+    {
+     "id": "SOG-0560",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : la ligne de la carte « distance contrôlée : 26 % · données incomplètes : 71 % · sans réseau : 3 % » — d'où viennent ces pourcentages ?",
+     "en": "Carburant : la ligne de la carte « distance contrôlée : 26 % · données incomplètes : 71 % · sans réseau : 3 % » — d'où viennent ces pourcentages ?",
+     "de": "Carburant : la ligne de la carte « distance contrôlée : 26 % · données incomplètes : 71 % · sans réseau : 3 % » — d'où viennent ces pourcentages ?",
+     "es": "Carburant : la ligne de la carte « distance contrôlée : 26 % · données incomplètes : 71 % · sans réseau : 3 % » — d'où viennent ces pourcentages ?"
+    }
+   ]
+  },
+  {
    "id": "maintenance-carburant-degagement-donnees",
    "app": "maintenance",
    "label": {
@@ -6798,8 +6968,7 @@
      "fr": "Carburant : aucun dégagement proposé pour Sarajevo (LQSA) — « aucun terrain entre 30 et 300 NM ne passe la piste et les moyens »",
      "en": "Fuel: no alternate offered for Sarajevo (LQSA) — no aerodrome within 30–300 NM passes runway and aids",
      "de": "Kraftstoff: Kein Ausweichflugplatz für Sarajevo (LQSA) – keiner im Umkreis von 30–300 NM besteht Piste und Hilfen",
-     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas",
-     "test": true
+     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas"
     }
    ]
   },
@@ -7968,8 +8137,7 @@
      "en": "Workstation data repository changed by hand: say the gap and offer the ways out (including « discard everything and take the repository »)",
      "de": "Von Hand geändertes Daten-Repository des Rechners: die Abweichung nennen und Auswege anbieten (auch « alles verwerfen und das Repository übernehmen »)",
      "es": "Repositorio de datos del puesto modificado a mano: decir la diferencia y ofrecer las salidas (incluida « descartar todo y tomar el repositorio »)",
-     "rank": 361,
-     "test": true
+     "rank": 361
     }
    ]
   },

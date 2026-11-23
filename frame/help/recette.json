@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-23",
-  "tests": 386,
-  "verdicts": 247
+  "tests": 387,
+  "verdicts": 257
  },
  "apps": [
   "pilote",
@@ -670,7 +670,8 @@
    },
    "test": "Maintenance › Données › Plus › « Tout recalculer » sur toute la sélection (plus de 60 zones) : deux constructions de suite, « Tranche 1 sur 2 », toutes les zones construites ; en cas d'échec, la zone dit la phrase exacte.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-23T10:29:03Z"
   },
   {
    "id": "SOG-0145",
@@ -3135,8 +3136,10 @@
    },
    "test": "Recharge la page. Carburant, un vol vers un terrain contrôlé dont un ATIS est en ligne sur IVAO ou VATSIM, « Lire la météo des terrains » : côté arrivée du bloc « Procédures », la ligne de l'ATIS donne sa lettre, sa piste, son QNH et son vent ; dessous, une ligne « Terrain » donne l'altitude du terrain et le QNH (celui de l'ATIS d'abord, puis celui du METAR avec son heure). Un terrain sans ATIS : le QNH du METAR seul. Sans météo : « QNH inconnu ».",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T22:14:57Z"
+   "state": "ko",
+   "delivered": "2026-11-13T22:14:57Z",
+   "comment": "lire la météo des terrains est dans l’écran 3, on est sur l’écran 1.",
+   "at": "2026-11-23T10:27:04Z"
   },
   {
    "id": "SOG-0326",
@@ -3193,8 +3196,9 @@
    },
    "test": "Recharge la page. Compagnie › Missions, ouvre une mission ; agrandis lentement la fenêtre de 1 000 à 1 200 px de large : la colonne de droite (« Description ») reste là quand la barre de gauche passe du rail à la barre entière ; plus de disparition puis de retour.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T17:44:40Z"
+   "state": "ok",
+   "delivered": "2026-11-13T17:44:40Z",
+   "at": "2026-11-23T10:29:25Z"
   },
   {
    "id": "SOG-0332",
@@ -3267,8 +3271,9 @@
    },
    "test": "Recharge la page. Compagnie › Missions, bouton « Registre » de la page : dans le rail de gauche, c'est « Registre » qui est marqué, plus « Missions » ; le retour du navigateur ramène à Missions, marqué à son tour.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T10:35:21Z"
+   "state": "ok",
+   "delivered": "2026-11-14T10:35:21Z",
+   "at": "2026-11-23T10:29:31Z"
   },
   {
    "id": "SOG-0339",
@@ -3397,8 +3402,9 @@
    },
    "test": "D'abord RELANCE LE LANCEUR. Essai SANS RISQUE, sur l'ordinateur : dans E:\\DEFA\\data\\missions, RENOMME un fichier de mission (ajoute « -essai » à son nom) — pour git c'est une suppression. Dans l'appli, « Synchroniser ». Attendu : une fenêtre demande avant d'envoyer, dit qu'un passage porterait une suppression et liste le fichier, avec « Envoyer », « Remettre comme dans le dépôt » et « Plus tard » (le focus est sur « Plus tard »). Choisis « Remettre comme dans le dépôt » : le fichier d'origine revient sous son nom ; ton fichier « -essai », que git ne suit pas, reste là (supprime-le à la main). Rien n'est parti. Ensuite, sans rien confirmer : ouvre « Tout jeter et reprendre le dépôt » et lis s",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T14:42:49Z"
+   "state": "ok",
+   "delivered": "2026-11-16T14:42:49Z",
+   "at": "2026-11-23T10:29:12Z"
   },
   {
    "id": "SOG-0348",
@@ -4051,9 +4057,16 @@
    },
    "test": "Carburant, étape Vol, page rechargée. Saisis un terrain de dégagement. Attendu : (1) sous les trois champs, UNE ligne : un signe (✓ bon, ! réserve, ✕ échec, ? non vérifié), une phrase (« Dégagement XXXX : utilisable, avec réserve (moyens) ») et, quand tout n'est pas vert, le compte (« 2 bons, 1 non vérifié ») ; (2) le pli « Critères du dégagement » ouvre trois lignes : PISTE (la plus longue piste en dur contre la longueur de piste mini de ta fiche ; sans ce champ dans la fiche : « non vérifiée », jamais vert), MOYENS (le nombre d'approches aux instruments de la base ; aucune : « à vue seulement » ; terrain hors de ce que la base couvre : non vérifié), MÉTÉO (la catégorie du TAF une heure ava",
    "since": "2026-11-17",
-   "state": "ok",
+   "state": "ko",
    "delivered": "2026-11-17T15:54:44Z",
-   "at": "2026-11-23T10:23:07Z"
+   "comment": "oui, mais toujours pas de vérif de la meteo en amont, donc useless.",
+   "at": "2026-11-23T10:23:30Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-23T10:23:07Z"
+    }
+   ]
   },
   {
    "id": "SOG-0399",
@@ -5105,8 +5118,10 @@
    },
    "test": "Carburant, vol EGGW → LQSA, étape Vol : touche « Proposer un dégagement ». Attendu : des terrains proposés autour de Sarajevo, en orange, avec « Moyens : non vérifiés » (ou « Piste : non vérifiée ») ; les terrains vérifiés, s'il y en a, passent devant. Plus de ligne « Aucun terrain … ne passe la piste et les moyens ».",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T15:09:00Z"
+   "state": "ko",
+   "delivered": "2026-11-18T15:09:00Z",
+   "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul.",
+   "at": "2026-11-23T10:25:52Z"
   },
   {
    "id": "SOG-0495",
@@ -5161,8 +5176,16 @@
    },
    "test": "Après la relance du lanceur : Carburant, départ EGGW, « Source et cartes » › « Lire les départs dans le paquet du Royaume-Uni ». Attendu : les SID des cartes 6-2 à 6-9 sont lues, chacune avec son point de sortie, sa piste et ses niveaux (le tracé n'est PAS lu, « voir la carte ») ; la carte 6-1 est dite « carte sans table » ; plus de message en anglais. Le lien « Carte » vers NATS viendra avec le lot suivant.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T18:54:07Z"
+   "state": "ko",
+   "delivered": "2026-11-18T18:54:07Z",
+   "comment": "oui, mais /in fine/, une seule SID pour EGGW. c’est insuffisant.",
+   "at": "2026-11-23T10:35:41Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-23T10:28:44Z"
+    }
+   ]
   },
   {
    "id": "SOG-0502",
@@ -5510,8 +5533,9 @@
    },
    "test": "Recharge la page. Carburant, un vol avec un dégagement dont la base n'a pas les procédures (ton LFFI du signalement). Attendu : (1) sous le critère « Moyens » non vérifié, le lien « Lire les procédures de … » est offert sur place ; (2) la météo du départ, de l'arrivée et des dégagements est lue d'elle-même quand elle manque ou a vieilli, sans passer par une mise à jour globale ; si la lecture échoue, la ligne dit « Météo : non vérifiée — lecture impossible (cause) » ; (3) chaque valeur de vent ou de météo affichée dit sa source et son âge (alerte au-delà de 12 h).",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T21:18:41Z"
+   "state": "ok",
+   "delivered": "2026-11-19T21:18:41Z",
+   "at": "2026-11-23T10:26:20Z"
   },
   {
    "id": "SOG-0528",
@@ -5699,8 +5723,17 @@
    },
    "test": "Recharge la page. Carburant, vol EGGW → LQSA, étape Vol : touche « Proposer un dégagement ». La météo est lue pour tous les terrains proposés. Un terrain sans TAF indique « pas de TAF » (ou « hors validité du TAF »), jamais « météo non lue », et n'est jamais en vert ; « météo non lue » ne paraît que si la lecture a échoué, avec sa raison. Sur la Carte, un terrain dont la météo n'est pas connue est orange « À vérifier », après les terrains bons.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T19:16:32Z"
+   "state": "ko",
+   "delivered": "2026-11-21T19:16:32Z",
+   "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul. / tous les terrains proposés sont en « ? »",
+   "at": "2026-11-23T10:26:15Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul.",
+     "at": "2026-11-23T10:25:52Z"
+    }
+   ]
   },
   {
    "id": "SOG-0545",
@@ -5741,8 +5774,9 @@
    },
    "test": "Recharge la page. Au téléphone (ou fenêtre de 390 px), Carte d'un vol avec des dégagements proposés : touche un terrain orange ou vert. Sa fenêtre s'ouvre à côté de la colonne des boutons d'outils et tout son texte se lit ; la distance s'écrit avec une virgule (« 40,2 NM ») ; le carburant de dégagement est dans la même unité que Carburant (kg si Carburant affiche des kg).",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T21:02:14Z"
+   "state": "ok",
+   "delivered": "2026-11-21T21:02:14Z",
+   "at": "2026-11-23T10:29:42Z"
   },
   {
    "id": "SOG-0552",
@@ -5765,6 +5799,17 @@
    "since": "2026-11-23",
    "state": "todo",
    "delivered": "2026-11-23T08:51:37Z"
+  },
+  {
+   "id": "SOG-0558",
+   "app": "pilote",
+   "title": {
+    "fr": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un"
+   },
+   "test": "Recharge la page, puis ouvre Recette › Chemins de test et déplie un chemin. Ce qu'on doit voir : sous chaque étape, un lien « Ajouter un commentaire ». Ouvre-le sur une étape pas encore jouée : le champ s'ouvre, avec dessous « Le commentaire est enregistré avec « Bon » ou « Mauvais ». ». Écris un mot, touche « Bon » : le mot reste affiché sous l'étape et le lien devient « Modifier le commentaire ». Sur une autre étape, touche « Mauvais » : le champ s'ouvre de lui-même ; écris, puis « Enregistrer le commentaire » (un seul toucher, plus besoin de retoucher « Mauvais »). Recharge la page : les deux commentaires sont toujours là.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T10:45:41Z"
   }
  ],
  "decisions": [],
