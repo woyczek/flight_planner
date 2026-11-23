@@ -781,6 +781,27 @@ const TX = {
     dist: ['distance', 'distance', 'Entfernung', 'distancia'] // SOG-0528
   },
   altnFold: ['Critères du dégagement', 'Alternate criteria', 'Kriterien des Ausweichflugplatzes', 'Criterios del alternativo'],
+  // SOG-0559 (l'ergonome, 23/11) : la météo du dégagement non jugée — la cause sur la ligne, toujours visible ; puis l'observation du METAR
+  // (jamais un jugement : un METAR est une observation) ; le repli garde la règle
+  altnWxNoTaf: ['{ad} : pas de TAF.', '{ad}: no TAF.', '{ad}: kein TAF.', '{ad}: sin TAF.'],
+  altnWxNone: ['{ad} : ni TAF ni METAR.', '{ad}: neither TAF nor METAR.', '{ad}: weder TAF noch METAR.', '{ad}: ni TAF ni METAR.'],
+  altnWxNoTime: ['Sans date de vol, la météo du dégagement n’est pas jugée.',
+    'Without a flight date, the alternate’s weather is not judged.',
+    'Ohne Flugdatum wird das Wetter des Ausweichflugplatzes nicht beurteilt.',
+    'Sin fecha de vuelo, la meteorología del alternativo no se evalúa.'
+  ],
+  altnWxOutside: ['{ad} : l’arrivée ({at}) est hors de la validité du TAF.', '{ad}: the arrival ({at}) is outside the TAF’s validity.',
+    '{ad}: die Ankunft ({at}) liegt außerhalb der Gültigkeit des TAF.', '{ad}: la llegada ({at}) está fuera de la validez del TAF.'
+  ],
+  altnWxNoCat: ['{ad} : le TAF ne donne pas de catégorie à l’heure d’arrivée.', '{ad}: the TAF gives no category at the arrival time.',
+    '{ad}: der TAF gibt zur Ankunftszeit keine Kategorie an.', '{ad}: el TAF no da categoría a la hora de llegada.'
+  ],
+  altnWxObs: ['METAR de {t} : {c}.', 'METAR of {t}: {c}.', 'METAR von {t}: {c}.', 'METAR de las {t}: {c}.'],
+  altnWxRule: ['Météo : jugée sur le TAF, une heure avant et après l’arrivée.',
+    'Weather: judged on the TAF, one hour either side of the arrival.',
+    'Wetter: nach dem TAF beurteilt, eine Stunde vor und nach der Ankunft.',
+    'Meteorología: evaluada con el TAF, una hora antes y después de la llegada.'
+  ],
   altnHard: ['en dur', 'hard', 'befestigte', 'pavimentada'],
   altnAny: ['hors plan d’eau', 'other than water', 'außer Wasser', 'fuera de lámina de agua'],
   altnWhy: {
@@ -5737,9 +5758,40 @@ async function altnChkDraw(C) {
       s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
       t: String(sheet?.runwayType || '').slice(0, 12)
     }),
+    // SOG-0559 : la cause d'une météo non jugée, sur la ligne ; le repli garde la règle (sauf une lecture en cours ou en échec, dite là)
+    wxC = crits.find(c => c.k === 'wx'),
+    wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
+    whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
     open = !!box.querySelector('details[data-altnfold]')?.open,
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span>${altnReadHtml(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(whyOf(c))}</span>${altnReadHtml(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
+}
+/** SOG-0559 (l'ergonome, choix a) : la ligne d'une météo de dégagement non jugée — sa cause (pas de TAF ; sans date de vol ; arrivée
+ *  hors de la validité du TAF ; pas de catégorie à l'heure d'arrivée), puis, quand un METAR existe, son observation « METAR de 14:20Z :
+ *  VFR. » (la catégorie de l'observation, jamais celle du jugement : la pastille reste « ? ») ; sans METAR non plus : « ni TAF ni METAR ».
+ *  '' pour une lecture en cours ou en échec (le repli le dit, SOG-0527 (2)) et pour une cause hors de ces cas. */
+function altnWxLine(c, id) {
+  if (S.wxBusy || S.wxFail) return '';
+  const m = S.wx?.metar?.[id] || null,
+    st = m ? WX.station(m, null, null) : null,
+    t = +m?.obsTime > 0 ? `${new Date(+m.obsTime * 1000).toISOString().slice(11, 16)}Z` : '',
+    obs = st?.cat && t ? tt(TX.altnWxObs, {
+      t,
+      c: st.cat
+    }) : '',
+    row = {
+      wxNoTime: TX.altnWxNoTime,
+      wxOutside: TX.altnWxOutside,
+      wxNoCat: TX.altnWxNoCat,
+      wxNoTaf: obs ? TX.altnWxNoTaf : TX.altnWxNone,
+      wxNoKey: obs ? TX.altnWxNoTaf : TX.altnWxNone
+    } [c.code];
+  if (!row) return '';
+  const text = tt(row, {
+    ad: id,
+    at: c.v?.at || ''
+  }) + (row === TX.altnWxNone || !obs ? '' : ` ${obs}`);
+  return `<p class="f-muted fu-altnwx" data-altnwx>${esc(text)}</p>`;
 }
 /** SOG-0398 lot 2 : le document local des terrains proposés, pour la Carte (INTEGRATION § 3 ter) : cet appareil seulement (politique
  *  cache), jamais data/, écrit par Carburant seul, avec l'événement fuel-altn-candidates. */

@@ -10970,13 +10970,17 @@ def f313(c):
         return norm(c.text(f'{L} [data-altnwx]') or '')
 
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    # 1. no TAF, a METAR: « ? », the cause, the observation
+    # 1. neither TAF nor METAR (first: a METAR read later stays kept by the weather layer for 30 min)
+    _prop_net(c, tafs={}, metars={})
+    _prop_open(c, tafs={})
+    c.eq(line(), norm(W['none']), 'neither TAF nor METAR', what='none')
+    # 2. no TAF, a METAR: « ? », the cause, the observation
     _prop_net(c, tafs={}, metars={'LFMT': metar})
     _prop_open(c, tafs={})
     c.eq(line(), norm(f"{W['notaf']} {W['obs'].format(t=at)}"), 'the cause, then the observation of the METAR', what='no TAF')
     c.eq(c.js(f"document.querySelector('{L} .fu-altnline').dataset.state"), 'grey', 'the sign stays « ? »: not judged', what='sign')
     c.js(f"document.querySelector('{L} details[data-altnfold]').open = true")
-    c.eq(norm(c.text(f'{L} li[data-crit=wx]') or ''), norm(W['rule']), 'the fold keeps the rule, without the cause again', what='rule')
+    c.eq(norm(c.text(f'{L} li[data-crit=wx] > span:not(.fu-altnsign)') or ''), norm(W['rule']), 'the fold keeps the rule, without the cause again', what='rule')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
@@ -10984,10 +10988,6 @@ def f313(c):
         c.wait(400)
         c.shot(f'F313_{c.design}_{w}_{c.lang}_notaf.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    # 2. neither TAF nor METAR
-    _prop_net(c, tafs={}, metars={})
-    _prop_open(c, tafs={})
-    c.eq(line(), norm(W['none']), 'neither TAF nor METAR', what='none')
     # 3. no flight date: the sentence, then the observation
     _prop_net(c, tafs={}, metars={'LFMT': metar})
     _prop_open(c, tafs={}, planned=False)

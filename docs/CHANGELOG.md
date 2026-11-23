@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel: an alternate whose weather is not judged says why on its line** (SOG-0559; case F313) — « LQTZ : pas de TAF. METAR de 14:20Z : VFR. »: the « ? » stays (the alternate is judged on the TAF at the arrival time, never on a METAR), its cause no longer hidden in the fold.
 - **Fuel: the States of the RAD lines are named right** (SOG-0556; case F312) — « Pays-Bas », « Royaume-Uni », « Tchéquie » instead of « Sahara occidental », « Égypte », « Sri Lanka »: the RAD gives ICAO prefixes, no longer read as country codes; « 3 règles du RAD concernent cette route ».
 - **Fuel: a connector beyond its RAD limit for want of a procedure says « aucune arrivée lue pour LFML » and offers the reading** (SOG-0548; case F311) — the gesture of the Procedures block; once the procedure is read, the list asks to compute again. A stale list says « Périmé (calculé à …) » again: it showed the sentence of a changed level with raw « {c} » and « {f} » (two texts had the same name).
 - **Fuel: the RAD rules that name the departure or the arrival and an airspace we do not read** (SOG-0539; case F310) — once per screen, in « Ce que le contrôle ne couvre pas » (route list and « Contrôler »): one line per terrain, « LFRS : 12 règles du RAD citent ce terrain et un espace que nous ne lisons pas », which opens on its references one after the other (40 at most, then « et N autres »); the verdict and its count do not change.

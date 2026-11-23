@@ -2614,3 +2614,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   concernent cette route », agreed (« 1 règle du RAD concerne cette route »); « portent sur » goes. `zoneName` stays for the lower-case
   zones of the base in `stale_cycle` (« be »: a country code). Case F312 red before; F296 changed on purpose (its fixture said « be »
   where the engine gives « EB »).
+- **23 Nov 2026 — an alternate whose weather is not judged says why, on its line** (SOG-0559; the user: LQTZ has a METAR on the
+  Weather step, « ? » on page 1; the ergonomist chose (a)). Page 1 asks the alternate through the same weather layer as page 3; its check
+  judges only the TAF at the arrival time (`altn_check.weatherOf`), never the METAR — a METAR is an observation, it never judges an
+  alternate reached hours later. The sign stays « ? » (never a colour from the METAR). The cause is written ON the line, always visible
+  (`altnWxLine`): « {ad} : pas de TAF. », « Sans date de vol, la météo du dégagement n’est pas jugée. », « {ad} : l’arrivée ({at}) est hors de
+  la validité du TAF. », « {ad} : le TAF ne donne pas de catégorie à l’heure d’arrivée. »; when a METAR exists the line ends with its
+  observation « METAR de 14:20Z : VFR. » (`WX.station` on the METAR alone, the category written as on the Weather step); without one either:
+  « {ad} : ni TAF ni METAR. ». The fold keeps the rule (« Météo : jugée sur le TAF, une heure avant et après l’arrivée. ») without the cause
+  again; a reading in progress or failed stays said in the fold (SOG-0527 (2)). Case F313, red before.
