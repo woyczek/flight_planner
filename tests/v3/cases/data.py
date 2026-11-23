@@ -6955,8 +6955,7 @@ def l89(c):
     c.ge(len(_l89_reads(st)), 2, 'the list of the month is read again when the operation ends', what='todo re-read')
     # ---- 2. grey, with the reason written: up to date / waits for a file seen in Downloads
     _l89_sheet(c, 'es')
-    r = c.js("(() => { const b = document.querySelector('[data-sheet=es] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=es] [data-sheet-update-reason]'); return [b.disabled, w && w.dataset.sheetUpdateReason, w && w.textContent.trim()] })()")
-    c.eq([r[0], r[1], norm(r[2])], [True, 'up-to-date', norm(CWB('upToDate'))], 'up to date: the button is grey and says why', what='grey up to date')
+    c.eq([c.count('[data-sheet=es] [data-act=sheet-update]'), c.count('[data-sheet=es] [data-sheet-update-reason]'), c.count('[data-sheet=es] button[disabled][data-act]')], [0, 0, 0], 'up to date, nothing to receive: NO « Mettre à jour ce pays », no grey button (SOG-0568: the sheet says « Rien à faire », nothing else)', what='no button up to date')
     _l89_sheet(c, 'fr')
     r = c.js("(() => { const b = document.querySelector('[data-sheet=fr] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=fr] [data-sheet-update-plan]'); return [b.disabled, w && w.textContent.trim(), b.className] })()")
     c.eq([r[0], norm(r[1]), 'primary' in r[2]], [False, norm(CWB('doLine').replace('{l}', _trow('doPick', lang, after='  zx: {') + ', ' + CWB('doBuild'))), True],
@@ -11873,4 +11872,129 @@ def l180(c):
     for k in ('long', 'caps', 'space', 'object', 'number', 'empty'):
         c.eq(res[k], [keys, None], f'`code` is dropped when it is {k}', what=k)
     c.eq(res['none'], [keys, None, 'unrecognised', 'm', ['sia', 'aimbe']], 'a body without `code` gives the refusal it gave before', what='unchanged')
+    c.check_errors()
+
+
+_L181 = {
+    'fr': {'redo': 'à jour · relecture possible', 'upd': 'à jour · mise à jour possible', 'redoLine': 'Une relecture apporte : noms usuels des zones R, D et P (absents aujourd’hui), horaires des zones mieux lus.', 'redoNote': 'Sans téléchargement.',
+           'updLine': 'Une mise à jour apporte : règle semi-circulaire (absente aujourd’hui).', 'updNote': 'Avec téléchargement d’une page.', 'keep': 'Les données d’avant sont gardées.', 'keepRedo': 'Les cycles précédents sont gardés.',
+           'btnRedo': 'Relire ce pays', 'btnUpd': 'Mettre à jour ce pays', 'all': 'Relire tous les pays (3)', 'fresh': 'Rien à faire : cycle en cours, lu par la version actuelle.'},
+    'en': {'redo': 'up to date · reread possible', 'upd': 'up to date · update possible', 'redoLine': 'A reread brings: usual names of the R, D and P areas (not there today), hours of the areas better read.', 'redoNote': 'No download.',
+           'updLine': 'An update brings: semicircular rule (not there today).', 'updNote': 'With the download of one page.', 'keep': 'The previous data are kept.', 'keepRedo': 'The previous cycles are kept.',
+           'btnRedo': 'Reread this country', 'btnUpd': 'Update this country', 'all': 'Reread all countries (3)', 'fresh': 'Nothing to do: cycle in force, read by the current version.'},
+    'de': {'redo': 'aktuell · erneutes Einlesen möglich', 'upd': 'aktuell · Aktualisierung möglich', 'redoLine': 'Ein erneutes Einlesen bringt: Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden), Zeiten der Gebiete besser gelesen.', 'redoNote': 'Ohne Download.',
+           'updLine': 'Eine Aktualisierung bringt: Halbkreisregel (heute nicht vorhanden).', 'updNote': 'Mit dem Download einer Seite.', 'keep': 'Die bisherigen Daten bleiben erhalten.', 'keepRedo': 'Die vorherigen Zyklen bleiben erhalten.',
+           'btnRedo': 'Dieses Land erneut einlesen', 'btnUpd': 'Dieses Land aktualisieren', 'all': 'Alle Länder erneut einlesen (3)', 'fresh': 'Nichts zu tun: gültiger Zyklus, von der aktuellen Version gelesen.'},
+    'es': {'redo': 'al día · relectura posible', 'upd': 'al día · actualización posible', 'redoLine': 'Una relectura aporta: nombres de uso de las zonas R, D y P (hoy ausentes), horarios de las zonas mejor leídos.', 'redoNote': 'Sin descarga.',
+           'updLine': 'Una actualización aporta: regla semicircular (hoy ausente).', 'updNote': 'Con la descarga de una página.', 'keep': 'Los datos anteriores se conservan.', 'keepRedo': 'Los ciclos anteriores se conservan.',
+           'btnRedo': 'Releer este país', 'btnUpd': 'Actualizar este país', 'all': 'Releer todos los países (3)', 'fresh': 'Nada que hacer: ciclo vigente, leído por la versión actual.'},
+}
+_L181_GAINS = {
+    'names': {'id': 'v29-fr-usual-names', 'kind': 'absent', 'label': ['noms usuels des zones R, D et P (absents aujourd’hui)', 'usual names of the R, D and P areas (not there today)', 'Gebrauchsnamen der R-, D- und P-Gebiete (heute nicht vorhanden)', 'nombres de uso de las zonas R, D y P (hoy ausentes)']},
+    'hours': {'id': 'v29-openaip-hours', 'kind': 'better', 'label': ['horaires des zones mieux lus', 'hours of the areas better read', 'Zeiten der Gebiete besser gelesen', 'horarios de las zonas mejor leídos']},
+    'levels': {'id': 'fr-levels-table', 'kind': 'absent', 'source': 'enr51', 'label': ['règle semi-circulaire (absente aujourd’hui)', 'semicircular rule (not there today)', 'Halbkreisregel (heute nicht vorhanden)', 'regla semicircular (hoy ausente)']},
+}
+
+
+@case('L181', 'Données: the three states of a country (SOG-0568) — up to date (plain green), up to date with a reread possible (the same green STRIPED, a ring, « à jour · relecture possible »), to do (brown, unchanged); the sheet says what a reread (« Relire ce pays », no download) or an update (« Mettre à jour ce pays », one page) brings, in the words of the gains table; never a grey button; ONE « Relire tous les pays (n) » above the lists (two countries at least), never started by itself; a reread builds without any download', 'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0568 (the user: « tous les pays sont à mettre à jour. le souci, on ne va pas le faire, simplement pour une évolution mineure du parser… »; the ergonomist\'s three states and the mockup modules/data/maquette/trois_etats.html): base/status gives each up-to-date country its `gains` { redo, update } (tools/base_gains.py); the screen shows the state 2 as the green STRIPED (map, list card bar) with a ring, never the brown of the out of date, says « Une relecture apporte : … Sans téléchargement. » with « Relire ce pays » and « Une mise à jour apporte : … Avec téléchargement d\'une page. » with « Mettre à jour ce pays » (a country can have both), no « Mettre à jour » for a country with nothing to receive, one « Relire tous les pays (n) » above every list (offered from two countries), and the reread runs base/build alone: no base/fetch')
+def l181(c):
+    lang = c.lang
+    W = _L181[lang]
+    li = ['fr', 'en', 'de', 'es'].index(lang)
+    rd = lambda g: {'id': g['id'], 'kind': g['kind'], 'label': g['label'], **({'source': g['source']} if 'source' in g else {})}
+    holder = {}
+
+    def tweak(w):
+        holder['w'] = w
+        ok = lambda redo=(), update=(): {**_zst('up-to-date'), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}, 'gains': {'redo': [rd(g) for g in redo], 'update': [rd(g) for g in update]}}
+        w['zs']['fr'] = ok([_L181_GAINS['names'], _L181_GAINS['hours']], [_L181_GAINS['levels']])   # both: a reread AND an update
+        w['zs']['gb'] = ok([_L181_GAINS['hours']])                                                    # a reread only
+        w['zs']['ca'] = ok([_L181_GAINS['hours']])                                                    # a reread only
+        w['zs']['es'] = ok()                                                                          # nothing to receive: plain green
+    st = _l102_open(c, world_tweak=tweak)
+    group = '[data-group-body]'
+
+    def open_sheet(zone, grp='europe-west'):
+        shown = f"(e => !!e && e.offsetParent !== null && e.getBoundingClientRect().height > 0)(document.querySelector('[data-group-id={grp}] [data-group-body] [data-zone={zone}]'))"
+        if not c.js(shown):
+            c.tap(f'[data-group-id={grp}] [data-act=grp-toggle]')
+        c.until(shown, timeout=8000, what=f'the group with {zone} is open')
+        c.tap(f'[data-group-id={grp}] [data-group-body] [data-zone={zone}]')
+        c.until(f"!!document.querySelector('[data-sheet={zone}] [data-sheet-state]')", timeout=15000, what=f'the sheet of {zone}')
+        c.wait(250)
+
+    def close_sheet():
+        if c.js("!!document.querySelector('[data-act=sheet-close]') && document.querySelector('[data-act=sheet-close]').offsetParent !== null"):
+            c.tap('[data-act=sheet-close]')
+        c.wait(200)
+    # ---- 1. the map: the striped green for a country that can receive something; plain for the others
+    c.eq(c.js("(z => z.map(i => [i, !!document.querySelector(`[data-wmap] path[data-zone=${i}]`)?.hasAttribute('data-redo')]))(['fr', 'gb', 'ca', 'es', 'us'])"),
+         [['fr', True], ['gb', True], ['ca', True], ['es', False], ['us', False]], 'the map: the striped fill for the countries with a gain, the plain one for the others (the brown of « à faire » is for de, not for them)', what='map stripes')
+    c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone"), 'ok', 'a country that can receive something is still « ok » (green): the map never paints it as to do', what='tone ok')
+    c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').getAttribute('aria-label')").split(' : ')[1].startswith(W['redo']), True, 'the label of the map path says « à jour · relecture possible »', what='map label')
+    # ---- 2. ONE « Relire tous les pays (n) » above every list; two countries at least (here three); no grey
+    c.eq([c.count('[data-reread-all] button'), norm(c.text('[data-reread-all] button')), c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-groups]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))"),
+         c.js("(a => a ? !!(a.compareDocumentPosition(document.querySelector('[data-todo-state]')) & Node.DOCUMENT_POSITION_FOLLOWING) : false)(document.querySelector('[data-reread-all]'))")],
+         [1, norm(W['all']), True, True], 'ONE « Relire tous les pays (3) » above the list of the month and the packs, with the number of countries to reread', what='reread all')
+    c.eq(c.js("document.querySelector('[data-reread-all] button').disabled"), False, 'and it is never grey', what='not grey')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-reread-all]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L181_{c.width}_{lang}_list_top.png')
+    # ---- 3. the list: the card of fr (striped bar, ring, the word), of es (plain)
+    c.tap('[data-group-id=europe-west] [data-act=grp-toggle]')
+    c.until("(e => !!e && e.offsetParent !== null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone=fr]'))", timeout=8000, what='the group with France is open')
+    card = lambda z: c.js(f"(b => b ? [b.dataset.tone, b.dataset.redo || '', b.querySelector('.d-gw').textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-group-id=europe-west] [data-group-body] [data-zone={z}]'))")
+    fr_card, es_card = card('fr'), card('es')
+    c.eq([fr_card[0], fr_card[1], norm(fr_card[2]).endswith(norm(W['redo']))], ['ok', 'redo', True], 'France: green, striped, « à jour · relecture possible »', what='card fr')
+    c.eq([es_card[0], es_card[1]], ['ok', ''], 'Spain: plain green, no stripe', what='card es')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-group-id=europe-west]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L181_{c.width}_{lang}_list.png')
+    # ---- 4. the sheet of France: both gestures, each with its words; no grey button; no « Rien à faire »
+    open_sheet('fr')
+    sh = '[data-sheet=fr]'
+    c.eq(norm(c.text(f'{sh} [data-sheet-state]')).endswith(norm(W['redo'])) or norm(W['redo']) in norm(c.text(f'{sh} [data-sheet-state]')), True, 'the state cell says « à jour · relecture possible »', what='state cell')
+    c.eq([norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(1)')), norm(c.text(f'{sh} [data-gain=redo] p:nth-of-type(2)')), norm(c.text(f'{sh} [data-gain=redo] [data-keep]'))],
+         [norm(W['redoLine']), norm(W['redoNote']), norm(W['keepRedo'])], 'the reread: what it brings (the sentences of the gains table), « Sans téléchargement. », the sentence under the reread', what='reread lines')
+    c.eq([norm(c.text(f'{sh} [data-gain=update] p:nth-of-type(1)')), norm(c.text(f'{sh} [data-gain=update] p:nth-of-type(2)')), norm(c.text(f'{sh} [data-gain=update] [data-keep]'))],
+         [norm(W['updLine']), norm(W['updNote']), norm(W['keep'])], 'the update: the piece never read, « Avec téléchargement d\'une page. », « Les données d\'avant sont gardées. »', what='update lines')
+    btns = c.js(f"[...document.querySelectorAll('{sh} .d-gains button')].map(b => [b.dataset.act, b.disabled, b.classList.contains('primary'), b.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq([[b[0], b[1], b[2], norm(b[3])] for b in btns], [['sheet-reread', False, True, norm(W['btnRedo'])], ['sheet-update', False, False, norm(W['btnUpd'])]],
+         'two gestures, two verbs: « Relire ce pays » (primary) and « Mettre à jour ce pays »; none grey', what='buttons')
+    c.eq([c.count(f'{sh} [data-sheet-now]'), c.count(f'{sh} button[disabled][data-act]')], [0, 0], 'no « Rien à faire » next to something to receive, no grey button', what='no fresh head')
+    c.ok('Mettre à jour' not in c.text(f'{sh} [data-gain=redo]') and 'Update' not in c.text(f'{sh} [data-gain=redo]'), c.text(f'{sh} [data-gain=redo]'), 'the word « mise à jour » is never used for a reread')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{sh} [data-gains]').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L181_{c.width}_{lang}_sheet.png')
+    # ---- 5. « Relire ce pays » on France: base/build of France alone, NO download
+    n_build, n_fetch = len(_posts(st, 'build')), len(_posts(st, 'fetch'))
+    c.tap(f'{sh} [data-act=sheet-reread]')
+    c.wait(2500)
+    builds = _posts(st, 'build')[n_build:]
+    c.eq([len(builds), [p.get('zones') for p in builds], len(_posts(st, 'fetch')) - n_fetch], [1, [['fr']], 0], 'a reread builds the country alone and downloads nothing', what='reread posts')
+    close_sheet()
+    # ---- 6. the sheet of Spain (nothing to receive): the sentence, no button at all
+    open_sheet('es')
+    c.eq([norm(c.text('[data-sheet=es] [data-sheet-now]')), c.count('[data-sheet=es] [data-act=sheet-update]'), c.count('[data-sheet=es] [data-act=sheet-reread]'), c.count('[data-sheet=es] button[disabled][data-act]')], [norm(W['fresh']), 0, 0, 0],
+         'a country with nothing to receive: « Rien à faire : cycle en cours, lu par la version actuelle. », no « Mettre à jour », no « Relire », no grey button', what='fresh sheet')
+    if c.width in (390, 1280):
+        c.shot(f'L181_{c.width}_{lang}_sheet_fresh.png')
+    close_sheet()
+    # ---- 7. « Mettre à jour ce pays » for the missing piece on France: ONE download, no build (the country is up to date once the page is read)
+    open_sheet('fr')
+    n_build, n_fetch = len(_posts(st, 'build')), len(_posts(st, 'fetch'))
+    c.tap('[data-sheet=fr] [data-act=sheet-update]')
+    c.wait(2500)
+    fetches = _posts(st, 'fetch')[n_fetch:]
+    c.eq([len(fetches), [p.get('zones') for p in fetches], len(_posts(st, 'build')) - n_build], [1, [['fr']], 0], 'the update of the piece downloads France (the launcher asks that one page) and builds nothing', what='update posts')
+    close_sheet()
+    # ---- 8. « Relire tous les pays (3) »: one base/build for the three, no download; never started by itself
+    n_build, n_fetch = len(_posts(st, 'build')), len(_posts(st, 'fetch'))
+    c.wait(500)
+    c.eq([len(_posts(st, 'build')) - n_build, len(_posts(st, 'fetch')) - n_fetch], [0, 0], 'nothing starts by itself', what='by itself')
+    c.tap('[data-reread-all] button')
+    c.wait(2500)
+    builds = _posts(st, 'build')[n_build:]
+    c.eq([len(builds), sorted(builds[0].get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['ca', 'fr', 'gb'], 0], 'one build of the three countries, no download', what='reread all posts')
     c.check_errors()
