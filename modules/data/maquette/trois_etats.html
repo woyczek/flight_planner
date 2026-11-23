@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Données : les trois états d'un pays (maquette SOG-0568)</title>
+<link rel="stylesheet" href="../../../frame/design/tokens.css">
+<style>
+/* Maquette SOG-0568 : les trois états d'un pays (à jour ; à jour, relecture possible ; périmé), jour et nuit (les jetons du cadre, tokens.css :
+   la nuit suit le système sauf html[data-tone="day"]). Données INVENTÉES (pays imaginaires). Rien ici n'est du produit : le contrat des écrans. */
+* { box-sizing: border-box }
+body { margin: 0; background: var(--sog-bg); color: var(--sog-fg); font: 15px/1.4 system-ui, sans-serif }
+main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px }
+h1 { font-size: 15px; margin: 0 0 10px; color: var(--sog-muted); font-weight: 600 }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--sog-muted); margin: 18px 0 6px }
+.muted { color: var(--sog-muted) }
+.view { display: none }
+body[data-v="liste"] .v-liste, body[data-v="carte"] .v-carte, body[data-v="fiche"] .v-fiche { display: block }
+
+/* ---- les trois états : une teinte et UN motif, lisible sans la couleur
+   plein  = à jour ; strié = à jour, relecture possible (le vert de « à jour », jamais désaturé ni transparent) ; marron = périmé */
+:root { --stripe-a: var(--sog-ok); --stripe-b: color-mix(in srgb, var(--sog-surface) 100%, transparent) }
+.bar { display: block; width: 8px; align-self: stretch; border-radius: 0; flex: none }
+.bar[data-st="ok"] { background: var(--sog-ok) }
+.bar[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px) }
+.bar[data-st="old"] { background: var(--sog-warn) }
+/* la pastille d'une ligne : pleine / anneau (creuse) / pleine marron */
+.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; flex: none }
+.dot[data-st="ok"] { background: var(--sog-ok) }
+.dot[data-st="redo"] { border: 2px solid var(--sog-ok); background: transparent }
+.dot[data-st="old"] { background: var(--sog-warn) }
+.tx[data-st="ok"] { color: var(--sog-ok) }
+.tx[data-st="redo"] { color: var(--sog-ok) }
+.tx[data-st="old"] { color: var(--sog-warn) }
+
+/* ---- la liste : un paquet, sa bande (un segment par pays, aucun chiffre), ses pays */
+.group { background: var(--sog-surface); border: 1px solid var(--sog-border); padding: 10px 12px 12px; max-width: 760px }
+.group h3 { margin: 0 0 2px; font-size: 16px }
+.group .sub { margin: 0 0 8px; font-size: 13px }
+.strip { display: flex; gap: 2px; height: 10px; margin: 6px 0 10px }
+.strip i { flex: 1; display: block }
+.strip i[data-st="ok"] { background: var(--sog-ok) }
+.strip i[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px); outline: 1px solid var(--sog-ok); outline-offset: -1px }
+.strip i[data-st="old"] { background: var(--sog-warn) }
+.bulk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px }
+.card { display: flex; background: var(--sog-surface); border: 1px solid var(--sog-border); min-height: 52px; color: inherit; text-align: left; font: inherit; padding: 0; cursor: pointer }
+.card > div { padding: 6px 9px }
+.card b { display: block; font-size: 14px }
+.card small { font-size: 12.5px; display: block }
+button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog-border); background: var(--sog-surface); color: var(--sog-fg); cursor: pointer; border-radius: 0 }
+.btn.primary { background: var(--sog-accent); color: var(--sog-accent-ink); border-color: var(--sog-accent) }
+.btn[disabled] { opacity: .55; cursor: default }
+.link { background: none; border: 0; color: var(--sog-link); text-decoration: underline; font: inherit; padding: 0; cursor: pointer }
+.prog { border: 1px solid var(--sog-border); background: var(--sog-bg); padding: 8px 10px; margin: 0 0 10px; font-size: 14px }
+.prog .track { height: 6px; background: var(--sog-border); margin: 6px 0 }
+.prog .track i { display: block; height: 100%; width: 12%; background: var(--sog-accent) }
+
+/* ---- la carte : trois remplissages (aplat vert, vert strié, marron) */
+.mapbox { background: var(--sog-surface); border: 1px solid var(--sog-border); max-width: 760px; padding: 8px }
+.mapbox svg { display: block; width: 100%; height: auto }
+.z[data-st="ok"] { fill: var(--sog-ok) }
+.z[data-st="redo"] { fill: url(#hatch) }
+.z[data-st="old"] { fill: var(--sog-warn) }
+.z { stroke: var(--sog-ok); stroke-width: 1.4 }
+.z[data-st="old"] { stroke: var(--sog-warn) }
+.z[data-st="none"] { fill: var(--sog-muted); fill-opacity: .12; stroke: var(--sog-muted); stroke-dasharray: 3 2 }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 0; font-size: 13px }
+.legend span { display: inline-flex; align-items: center; gap: 6px }
+.legend svg { width: 22px; height: 14px; display: block }
+
+/* ---- la fiche d'un pays */
+.sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start }
+.sheet { background: var(--sog-surface); border: 1px solid var(--sog-border); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px }
+.sheet h3 { margin: 0; font-size: 17px }
+.sheet .cap { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--sog-muted) }
+.sheet .st { font-weight: 700; display: flex; align-items: center }
+.gain { border-left: 3px solid var(--sog-border); padding: 2px 0 2px 9px; font-size: 14px }
+.gain p { margin: 0 0 6px }
+.gain .why { color: var(--sog-muted); font-size: 13px }
+.cells { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.cell { border: 1px solid var(--sog-border); padding: 5px 8px; font-size: 13px }
+.cell b { display: block; font-size: 14px }
+.verbs { display: flex; flex-direction: column; gap: 6px }
+.notes { font-size: 13px; color: var(--sog-muted); margin: 0 }
+@media (max-width: 520px) { main { padding: 8px 10px 32px } .cards { grid-template-columns: 1fr 1fr } }
+</style>
+</head>
+<body data-v="liste">
+<main>
+<h1>Maquette SOG-0568 · les trois états d'un pays · données inventées</h1>
+
+<!-- ============================ LISTE ============================ -->
+<section class="view v-liste">
+  <h2>Un paquet de pays : sa bande (un segment par pays), la relecture de tous, la liste</h2>
+  <div class="group" data-g>
+    <h3>Europe imaginaire <span class="muted" style="font-weight:400;font-size:14px">8 pays</span></h3>
+    <p class="sub muted">6 sur 8 à jour · 1 périmé · 1 non défini</p>
+    <div class="strip" aria-hidden="true"><i data-st="ok"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="redo"></i><i data-st="ok"></i><i data-st="redo"></i><i data-st="old"></i></div>
+    <div class="bulk">
+      <button type="button" class="btn" data-bulk>Relire tous les pays (4)</button>
+      <span class="muted" style="font-size:13px">Sans téléchargement · environ 2 min · les données d'avant sont gardées</span>
+    </div>
+    <div class="prog" data-prog hidden>
+      <b>Relecture : pays 3 sur 4 · Belandie</b><div class="track"><i style="width:62%"></i></div>
+      <span class="muted">Sans téléchargement · il reste environ 40 s</span> · <button type="button" class="link">Arrêter</button>
+    </div>
+    <div class="cards">
+      <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Aronie</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Belandie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Corvanie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Dravie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="ok"></span><div><b>Estovie</b><small class="tx" data-st="ok"><span class="dot" data-st="ok"></span>à jour</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="redo"></span><div><b>Falmarie</b><small class="tx" data-st="redo"><span class="dot" data-st="redo"></span>à jour · relecture possible</small></div></button>
+      <button type="button" class="card"><span class="bar" data-st="old"></span><div><b>Gorlande</b><small class="tx" data-st="old"><span class="dot" data-st="old"></span>périmé</small></div></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CARTE ============================ -->
+<section class="view v-carte">
+  <h2>La carte : l'aplat vert, le vert strié, le marron</h2>
+  <div class="mapbox">
+    <svg viewBox="0 0 640 330" role="img" aria-label="Carte imaginaire de sept pays">
+      <defs>
+        <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="9" height="9" style="fill:var(--sog-surface)"/>
+          <rect width="4.5" height="9" style="fill:var(--sog-ok)"/>
+        </pattern>
+      </defs>
+      <path class="z" data-st="ok" d="M40 40 L190 28 L230 90 L200 150 L90 160 L40 110Z"/>
+      <path class="z" data-st="redo" d="M200 150 L230 90 L330 70 L370 130 L330 200 L240 210Z"/>
+      <path class="z" data-st="redo" d="M190 28 L330 20 L330 70 L230 90Z"/>
+      <path class="z" data-st="old" d="M330 70 L330 20 L470 36 L500 110 L430 150 L370 130Z"/>
+      <path class="z" data-st="redo" d="M90 160 L200 150 L240 210 L210 300 L110 290 L60 220Z"/>
+      <path class="z" data-st="ok" d="M240 210 L330 200 L430 150 L520 190 L480 290 L330 300 L210 300Z"/>
+      <path class="z" data-st="none" d="M500 110 L600 90 L610 200 L520 190 L430 150Z"/>
+      <g font-size="13" font-family="system-ui, sans-serif" font-weight="600" style="fill:var(--sog-fg);stroke:var(--sog-surface);stroke-width:3.5px;paint-order:stroke;stroke-linejoin:round">
+        <text x="75" y="105">Aronie</text>
+        <text x="245" y="150">Belandie</text>
+        <text x="235" y="58">Corvanie</text>
+        <text x="390" y="95">Gorlande</text>
+        <text x="105" y="235">Dravie</text>
+        <text x="320" y="255">Estovie</text>
+        <text x="515" y="160" style="font-weight:400">non défini</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><svg viewBox="0 0 22 14"><rect width="22" height="14" style="fill:var(--sog-ok)"/></svg>à jour</span>
+      <span><svg viewBox="0 0 22 14"><defs><pattern id="hatch2" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" style="fill:var(--sog-surface)"/><rect width="4.5" height="9" style="fill:var(--sog-ok)"/></pattern></defs><rect width="22" height="14" fill="url(#hatch2)" style="stroke:var(--sog-ok)"/></svg>à jour · relecture possible</span>
+      <span><svg viewBox="0 0 22 14"><rect width="22" height="14" style="fill:var(--sog-warn)"/></svg>périmé</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FICHE ============================ -->
+<section class="view v-fiche">
+  <h2>La fiche d'un pays : une ligne par geste, chacun avec son verbe</h2>
+  <div class="sheets">
+
+    <article class="sheet" data-sheet="redo2">
+      <div><div class="cap">Pays</div><h3>Belandie</h3></div>
+      <div class="st tx" data-st="redo"><span class="dot" data-st="redo"></span>À jour · relecture possible</div>
+      <div class="gain" data-gain="redo">
+        <p><b>Une relecture apporte :</b> SID mieux lues, horaires des zones R, D et P.</p>
+        <p class="why">Sans téléchargement.</p>
+        <button type="button" class="btn primary">Relire ce pays</button>
+      </div>
+      <div class="gain" data-gain="update">
+        <p><b>Une mise à jour apporte :</b> règle semi-circulaire (absente aujourd'hui).</p>
+        <p class="why">Avec téléchargement d'une page.</p>
+        <button type="button" class="btn">Mettre à jour ce pays</button>
+      </div>
+      <p class="notes">Les données d'avant sont gardées. Rien ne part sans votre geste.</p>
+    </article>
+
+    <article class="sheet" data-sheet="redo1">
+      <div><div class="cap">Pays</div><h3>Corvanie</h3></div>
+      <div class="st tx" data-st="redo"><span class="dot" data-st="redo"></span>À jour · relecture possible</div>
+      <div class="gain" data-gain="redo">
+        <p><b>Une relecture apporte :</b> SID mieux lues.</p>
+        <p class="why">Sans téléchargement.</p>
+        <button type="button" class="btn primary">Relire ce pays</button>
+      </div>
+      <button type="button" class="btn" disabled>Mettre à jour ce pays</button>
+      <p class="notes">Rien à télécharger : ce pays est au cycle en cours.</p>
+    </article>
+
+    <article class="sheet" data-sheet="ok">
+      <div><div class="cap">Pays</div><h3>Aronie</h3></div>
+      <div class="st tx" data-st="ok"><span class="dot" data-st="ok"></span>À jour</div>
+      <p class="notes" style="color:var(--sog-fg)"><b>Rien à faire.</b> Cycle en cours, lu par le lecteur actuel.</p>
+      <button type="button" class="btn" disabled>Mettre à jour ce pays</button>
+    </article>
+
+    <article class="sheet" data-sheet="old">
+      <div><div class="cap">Pays</div><h3>Gorlande</h3></div>
+      <div class="st tx" data-st="old"><span class="dot" data-st="old"></span>Périmé</div>
+      <div class="gain" data-gain="update" style="border-left-color:var(--sog-warn)">
+        <p><b>Une mise à jour apporte :</b> le cycle en cours.</p>
+        <p class="why">Avec téléchargement.</p>
+        <button type="button" class="btn primary">Mettre à jour ce pays</button>
+      </div>
+      <p class="notes">Les données d'avant sont gardées jusqu'à la fin de la mise à jour.</p>
+    </article>
+
+  </div>
+</section>
+</main>
+<script>
+// Maquette seulement : ?v=liste|carte|fiche choisit la vue ; &run=1 montre la relecture de tous en cours ; &tone=day force le jour.
+const q = new URLSearchParams(location.search);
+document.body.dataset.v = ['liste', 'carte', 'fiche'].includes(q.get('v')) ? q.get('v') : 'liste';
+if (q.get('tone') === 'day') document.documentElement.dataset.tone = 'day';
+if (q.get('run') === '1') {
+  document.querySelector('[data-prog]').hidden = false;
+  document.querySelector('[data-bulk]').disabled = true;
+}
+</script>
+</body>
+</html>
