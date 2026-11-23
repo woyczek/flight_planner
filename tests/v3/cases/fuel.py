@@ -10039,10 +10039,11 @@ def f301(c):
     c.check_errors()
 
 
-def _prop_net(c, tafs=None, fail=False):
+def _prop_net(c, tafs=None, fail=False, metars=None):
     """SOG-0544: a FAKE launcher (never a real one, no real network): /__setup/status says a launcher is here, and its relay /__setup/net
     answers the TAFs of aviationweather with `tafs` {ICAO: TAF} (an aerodrome left out: no TAF, the read took place) or, `fail`, a 500
-    (the read failed: W.taf rejects); everything else falls back to the fake launcher of the route. Returns the ids of each TAF call."""
+    (the read failed: W.taf rejects); SOG-0559: `metars` {ICAO: METAR} answers the METARs the same way (None: not answered here);
+    everything else falls back to the fake launcher of the route. Returns the ids of each TAF call."""
     import urllib.parse
     _route_launcher(c, [])
     calls = []
@@ -10053,6 +10054,9 @@ def _prop_net(c, tafs=None, fail=False):
         except ValueError:
             url = ''
         u = urllib.parse.urlparse(url)
+        if metars is not None and u.hostname == 'aviationweather.gov' and u.path.endswith('/metar'):
+            ids = [x for x in (urllib.parse.parse_qs(u.query).get('ids', [''])[0]).split(',') if x]
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps([dict(metars[i], icaoId=i) for i in ids if i in metars]))
         if u.hostname != 'aviationweather.gov' or not u.path.endswith('/taf'):
             return route.fallback()
         ids = [x for x in (urllib.parse.parse_qs(u.query).get('ids', [''])[0]).split(',') if x]
@@ -10926,4 +10930,66 @@ def f312(c):
         c.js(f"(() => {{ const e = document.querySelector('{G}'); e.style.scrollMarginTop = '140px'; e.scrollIntoView({{block: 'start'}}) }})()")
         c.wait(400)
         c.shot(f'F312_{c.design}_{w}_{c.lang}_states.png')
+    c.check_errors()
+
+
+# SOG-0559: the words of the line of an alternate not judged, written in clear (the ergonomist's sentences, 23 Nov)
+_AW_WORDS = {
+    'fr': {'notaf': 'LFMT : pas de TAF.', 'none': 'LFMT : ni TAF ni METAR.', 'notime': 'Sans date de vol, la météo du dégagement n’est pas jugée.',
+           'obs': 'METAR de {t} : VFR.', 'rule': 'Météo : jugée sur le TAF, une heure avant et après l’arrivée.'},
+    'en': {'notaf': 'LFMT: no TAF.', 'none': 'LFMT: neither TAF nor METAR.', 'notime': 'Without a flight date, the alternate’s weather is not judged.',
+           'obs': 'METAR of {t}: VFR.', 'rule': 'Weather: judged on the TAF, one hour either side of the arrival.'},
+    'de': {'notaf': 'LFMT: kein TAF.', 'none': 'LFMT: weder TAF noch METAR.',
+           'notime': 'Ohne Flugdatum wird das Wetter des Ausweichflugplatzes nicht beurteilt.',
+           'obs': 'METAR von {t}: VFR.', 'rule': 'Wetter: nach dem TAF beurteilt, eine Stunde vor und nach der Ankunft.'},
+    'es': {'notaf': 'LFMT: sin TAF.', 'none': 'LFMT: ni TAF ni METAR.', 'notime': 'Sin fecha de vuelo, la meteorología del alternativo no se evalúa.',
+           'obs': 'METAR de las {t}: VFR.', 'rule': 'Meteorología: evaluada con el TAF, una hora antes y después de la llegada.'},
+}
+
+
+@case('F313', 'Flight step, the alternate whose weather is not judged: the sign stays « ? » (never the colour of a category from the '
+      'METAR), and the line itself says why — « LFMT : pas de TAF. » —, then, when a METAR exists, the observation « METAR de 14:20Z : '
+      'VFR. »; without a METAR either: « LFMT : ni TAF ni METAR. »; without a flight date: « Sans date de vol, la météo du dégagement '
+      'n’est pas jugée. »; the fold keeps the rule without saying the cause again',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0559 (the user, EGGW → LQSA: « lqtz a bien un metar, il est lu en page 3. en page 1, il apparaît en « ? »; the ergonomist '
+      'chose (a), 23 Nov: a METAR is an observation, it never judges an alternate; the cause on the line, always visible); a fake '
+      'launcher and relay (no real network), an invented METAR')
+def f313(c):
+    import time as _t
+    W = _AW_WORDS[c.lang]
+    obs = int(_t.time()) - 600
+    metar = {'obsTime': obs, 'reportTime': obs, 'wdir': 270, 'wspd': 8, 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}], 'temp': 15, 'dewp': 10,
+             'altim': 1015, 'rawOb': 'LFMT TEST CAVOK', 'fltCat': 'VFR'}
+    at = _t.strftime('%H:%MZ', _t.gmtime(obs))
+    L = f'{FUEL} [data-altnchk]'
+
+    def line():
+        c.until(f"!!document.querySelector('{L} [data-altnwx]')", timeout=15000, what='the cause on the line of the alternate (red before: '
+                '« ? » alone, its cause in the fold)')
+        return norm(c.text(f'{L} [data-altnwx]') or '')
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 1. no TAF, a METAR: « ? », the cause, the observation
+    _prop_net(c, tafs={}, metars={'LFMT': metar})
+    _prop_open(c, tafs={})
+    c.eq(line(), norm(f"{W['notaf']} {W['obs'].format(t=at)}"), 'the cause, then the observation of the METAR', what='no TAF')
+    c.eq(c.js(f"document.querySelector('{L} .fu-altnline').dataset.state"), 'grey', 'the sign stays « ? »: not judged', what='sign')
+    c.js(f"document.querySelector('{L} details[data-altnfold]').open = true")
+    c.eq(norm(c.text(f'{L} li[data-crit=wx]') or ''), norm(W['rule']), 'the fold keeps the rule, without the cause again', what='rule')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")
+        c.wait(400)
+        c.shot(f'F313_{c.design}_{w}_{c.lang}_notaf.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 2. neither TAF nor METAR
+    _prop_net(c, tafs={}, metars={})
+    _prop_open(c, tafs={})
+    c.eq(line(), norm(W['none']), 'neither TAF nor METAR', what='none')
+    # 3. no flight date: the sentence, then the observation
+    _prop_net(c, tafs={}, metars={'LFMT': metar})
+    _prop_open(c, tafs={}, planned=False)
+    c.eq(line(), norm(f"{W['notime']} {W['obs'].format(t=at)}"), 'without a flight date, then the observation', what='no date')
     c.check_errors()
