@@ -276,7 +276,8 @@ function publishingHtml() {
 /** L'intérieur du panneau : l'état de data/, le bouton et sa raison (une fois), la marche ou la fin. */
 function publishInner() {
   const gate = publishGate(),
-    why = gate.reason && gate.reason !== 'reading' ? publishReason(gate.reason) : ''; // « reading » : la ligne de lecture de la tête le dit déjà (SOG-0511)
+    why = gate.reason && gate.reason !== 'reading' ? publishReason(gate.reason) :
+    ''; // « reading » : la ligne de lecture de la tête le dit déjà (SOG-0511)
   return `<h2>${esc(tt(TX.publishTitle))}</h2>
     ${planHtml()}${publishStateHtml()}${busyCardHtml('base', 'publish')}
     <p><button type="button" data-verb="publish"${gate.disabled ? ' disabled' : ''}>${esc(tt(planKnown() ? TX.lc.publishDots : TX.publish))}</button></p>
