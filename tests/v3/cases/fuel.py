@@ -9551,20 +9551,21 @@ def f296(c):
            'schedule_list', 'something_new']
     items = [dict({'id': f'XX{9100 + i}', 'sheet': 'Annexe X', 'row': 40 + i, 'reason': r}, **({'target': 'LUGEN–NEPIX'} if i == 0 else {}))
              for i, r in enumerate(why)]
-    unverif = [{'code': 'rad_unread', 'values': {'state': 'be', 'flown': 9, 'spaces_only': 5}, 'text': 'RAD non lu'},
+    # SOG-0556 — changed on purpose: the State is the ICAO PREFIX the engine gives (EB), never « be »; « concernent », never « portent sur »
+    unverif = [{'code': 'rad_unread', 'values': {'state': 'EB', 'flown': 9, 'spaces_only': 5}, 'text': 'RAD non lu'},
                {'code': 'stale_cycle', 'values': {'zone': 'be', 'cycle': '2026-10-01', 'routes': ['XQ1']}, 'text': 'cycle'},
                {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}]
-    spaces = [{'code': 'rad_unread', 'values': {'state': 'be', 'flown': 0, 'spaces_only': 4}, 'text': 'RAD non lu'}]
+    spaces = [{'code': 'rad_unread', 'values': {'state': 'EB', 'flown': 0, 'spaces_only': 4}, 'text': 'RAD non lu'}]
     # the relay (20 Nov): a share « en infraction » goes with a known rule broken — the route breaks one, its unverifiable lines stay
     st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True, verdict='violates',
                        violations=[{'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'}],
-                       unverifiable=unverif, notVerified=[{'state': 'BE', 'flown': 9, 'spaces_only': 5, 'items': items}],
+                       unverifiable=unverif, notVerified=[{'state': 'EB', 'flown': 9, 'spaces_only': 5, 'items': items}],
                        control={'controlledPct': 60, 'incompletePct': 30, 'fallbackPct': 0, 'errorPct': 10, 'sections': []}),
                   dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, segs), verdict='unverifiable', violations=[],
                        unverifiable=spaces, control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})]
     want = {
         # SOG-0545 (mock-up v2): « conforme » in one word on the route, explained once above the list — changed on purpose
-        'fr': {'title': 'Non vérifiable : 3 points', 'state': 'Belgique : 9 règles du RAD portent sur cette route',
+        'fr': {'title': 'Non vérifiable : 3 points', 'state': 'Belgique : 9 règles du RAD concernent cette route',
                'first': 'LUGEN–NEPIX — dépend de l’activité d’une zone — à vérifier le jour du vol (XX9100)',
                'second': 'XX9101 — horaire que nous ne savons pas lire', 'unknown': 'XX9108 — règle que nous ne savons pas lire',
                'more': 'et 2 autres', 'conform': 'Aucune infraction trouvée',

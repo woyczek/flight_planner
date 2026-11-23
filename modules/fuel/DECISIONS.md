@@ -2606,3 +2606,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   No new host. Case F311, red before. Found on the way: `TX.rStale` was defined twice — the row of SOG-0533 (157133661, « Route
   calculée pour le FL{c} — à recalculer ») overrode the row of the stale list, which said that sentence with its raw « {c} » and « {f} »;
   the row of SOG-0533 is now `rFlStale`.
+- **23 Nov 2026 — a State of the RAD is named from its ICAO PREFIX, never as a country** (SOG-0556, high priority; the user on
+  EGGW → LQSA, the ergonomist). `zoneName` gave every two-letter code to `Intl.DisplayNames` as an ISO country: the RAD's prefixes came
+  out wrong (EH « Sahara occidental », EG « Égypte », LK « Sri Lanka »), as if the engine tested routes all over the world. The line
+  `rad_unread` now names its State from aerodb's table of ICAO prefixes (`EAD_STATES` of the catalogue, read once by `eadStates`, passed
+  as `ctx.states`); a prefix outside it (YX, NM…) shows its code; nothing is copied by hand. The words: « {État} : {n} règles du RAD
+  concernent cette route », agreed (« 1 règle du RAD concerne cette route »); « portent sur » goes. `zoneName` stays for the lower-case
+  zones of the base in `stale_cycle` (« be »: a country code). Case F312 red before; F296 changed on purpose (its fixture said « be »
+  where the engine gives « EB »).

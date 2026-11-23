@@ -73,8 +73,12 @@ export const ROWS = {
     '{ad}: {n} RAD-Regel nennt diesen Flugplatz und einen Luftraum, den wir nicht lesen',
     '{ad}: {n} regla del RAD cita este aeródromo y un espacio que no leemos'
   ],
-  rad_unread: ['{zone} : {n} règle(s) du RAD portent sur cette route', '{zone}: {n} RAD rule(s) apply to this route',
-    '{zone}: {n} RAD-Regel(n) betreffen diese Route', '{zone}: {n} regla(s) del RAD se aplican a esta ruta'
+  // SOG-0556 (l'ergonome) : « concernent » (plus de « portent sur ») ; le verbe accordé — une ligne pour une règle, une pour plusieurs
+  rad_unread: ['{zone} : {n} règles du RAD concernent cette route', '{zone}: {n} RAD rules apply to this route',
+    '{zone}: {n} RAD-Regeln betreffen diese Route', '{zone}: {n} reglas del RAD se aplican a esta ruta'
+  ],
+  rad_unread1: ['{zone} : {n} règle du RAD concerne cette route', '{zone}: {n} RAD rule applies to this route',
+    '{zone}: {n} RAD-Regel betrifft diese Route', '{zone}: {n} regla del RAD se aplica a esta ruta'
   ],
   // les règles qui visent un espace aérien entier : UNE ligne, hors compte, sans nombre (SOG-0538 : le moteur compte des États que la
   // route ne traverse pas) ; SOG-0552 (l'ergonome, 23/11) : toujours sous « Aucune infraction trouvée », jamais deux fois ; sous
@@ -232,7 +236,8 @@ const flOf = v => String(Math.round(+v)).padStart(3, '0');
 /** SOG-0530 : un angle en degrés entiers de 0 à 359 (sinon faux) ; écrit sur trois chiffres (« 085 », l'ergonome : zéros de tête gardés). */
 const degOk = v => Number.isInteger(v) && v >= 0 && v <= 359,
   degOf = v => String(v).padStart(3, '0');
-/** Le nom d'un État dans la langue de l'écran (« be » → « Belgique ») ; un préfixe qui n'en est pas un : son code en capitales. */
+/** Le nom d'une ZONE de la base dans la langue de l'écran (« be » → « Belgique » : les zones sont des codes de pays, stale_cycle) ; jamais
+ *  pour un préfixe OACI du RAD (stateName, SOG-0556) ; un code qui n'en est pas un : son code en capitales. */
 function zoneName(z, lang) {
   const code = String(z).toUpperCase();
   try {
@@ -249,6 +254,14 @@ function isDay(d) {
   if (!m || +m[1] < 2000 || +m[1] > 2100) return false;
   const x = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   return x.getUTCMonth() === +m[2] - 1 && x.getUTCDate() === +m[3];
+}
+/** SOG-0556 : le nom de l'État d'un PRÉFIXE OACI du RAD (« EB » → « Belgique ») d'après la table d'aerodb (EAD_STATES : préfixe →
+ *  [fr, en, de, es], passée par l'appelant) — jamais Intl : un préfixe n'est pas un code de pays (EH n'est pas le Sahara occidental, EG
+ *  pas l'Égypte, LK pas le Sri Lanka) ; un préfixe hors de la table (YX, NM…) : son code en capitales. */
+function stateName(p, t, names) {
+  const code = String(p).toUpperCase(),
+    row = names && typeof names === 'object' && Object.hasOwn(names, code) ? names[code] : null;
+  return Array.isArray(row) && row.length === 4 && row.every(x => typeof x === 'string' && x) ? t(row) : code;
 }
 /** Une date ISO (AAAA-MM-JJ) en date courte de l'écran ; la chaîne telle quelle sinon. */
 function dayOf(d, lang) {
@@ -399,8 +412,9 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
     }
     case 'rad_unread':
       // une seule moitié : les règles qui portent sur la route (flown) ; flown = 0 : pas de ligne (route_engine.js l'écarte)
-      return has(v.state) && Number.isInteger(v.flown) && v.flown > 0 ? t(ROWS.rad_unread, {
-        zone: zoneName(v.state, lang),
+      // SOG-0556 : l'État d'après son préfixe OACI (ctx.states, la table d'aerodb), jamais Intl
+      return has(v.state) && Number.isInteger(v.flown) && v.flown > 0 ? t(v.flown === 1 ? ROWS.rad_unread1 : ROWS.rad_unread, {
+        zone: stateName(v.state, t, ctx?.states),
         n: v.flown
       }) : fallback;
     case 'network_gap':

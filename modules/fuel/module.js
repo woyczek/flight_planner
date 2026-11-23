@@ -6813,6 +6813,23 @@ function routeStale(C = S.C) {
     f: String(f).padStart(3, '0')
   } : null;
 }
+/** SOG-0556 : la table des préfixes OACI d'aerodb (EAD_STATES : préfixe → noms [fr, en, de, es]) — lue une fois ; null tant qu'elle ne
+ *  l'est pas (la liste est redessinée à la réponse ; en attendant, le code). */
+function eadStates() {
+  if (!S || S.eadStates !== undefined) return S?.eadStates ?? null;
+  S.eadStates = null;
+  const s = S;
+  Promise.resolve().then(() => s.ctx.aerodb?.sources?.()).catch(() => null).then(src => {
+    if (gone(s)) return;
+    const ead = src?.EAD_STATES && typeof src.EAD_STATES === 'object' ? src.EAD_STATES : {},
+      out = {};
+    for (const [k, v] of Object.entries(ead))
+      if (/^[A-Z]{2}$/.test(k) && Array.isArray(v?.names)) out[k] = v.names;
+    s.eadStates = out;
+    if (s.ralts?.list?.length) routeAltsDraw();
+  });
+  return null;
+}
 /** SOG-0548 : ce que Carburant tient des procédures d'un terrain — { SID, STAR } (vrai : au moins une lue dans la base) ; null tant que
  *  la base n'a pas répondu (la liste est redessinée à la réponse). Gardé par terrain (S.procHave), relu après une lecture. */
 function procHave(icao) {
@@ -6895,7 +6912,8 @@ function verdictsHtml(a, open = false) {
     // (sept, puis le reste) ; sans liste, une ligne simple
     line = r => {
       const text = esc(RR.compose(r, tt, lang, {
-          fl: a.fl
+          fl: a.fl,
+          states: eadStates() // SOG-0556 : le nom d'un État du RAD d'après son préfixe OACI
         }) || '—'),
         nv = r.code === 'rad_unread' ? (a.notVerified || []).find(x => x.state === String(r.values?.state || '').toUpperCase()) : null,
         it = nv?.items || [],
