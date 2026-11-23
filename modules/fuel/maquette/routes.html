@@ -8,66 +8,285 @@
 /* Maquette autonome (rien n'est lu ni écrit, nombres inventés) : la liste des routes de Carburant, une carte par route — mention, FL,
    distance, durée, carburant, verdict (fiche SOG-0545, décisions a à f de l'ergonome, 21 nov. ; relecture de l'ergonome, corrections a à f).
    Couleurs : celles du cadre (--sog-ok, --sog-warn, --sog-err, --sog-accent). */
-:root{
-  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
-  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#9a5b00; --err:#b3261e; --accent:#1d6fd8; --accent-bg:#eaf2fb;
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --card: #fff;
+  --bg: #f3f4f6;
+  --ok: #1e7d32;
+  --ok-bg: #e6f6ea;
+  --warn: #9a5b00;
+  --err: #b3261e;
+  --accent: #1d6fd8;
+  --accent-bg: #eaf2fb;
 }
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-.note{background:#fffbe6;border-bottom:1px solid #f0d78c;padding:8px 16px;font-size:14px;color:#5c4a00}
-.states{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.states a{font-size:13px;border:1px solid #e3c766;border-radius:14px;padding:3px 10px;color:#5c4a00;text-decoration:none;background:#fff}
-.states a[aria-current]{background:#5c4a00;color:#fff;border-color:#5c4a00}
-.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
-.wrap{display:flex;min-height:calc(100vh - 120px)}
-.col{flex:1;min-width:0;padding:12px 16px 40px}
-.map{display:none}
-@media (min-width:1024px){
-  .col{flex:0 0 520px;border-right:1px solid var(--line)}
-  .map{display:flex;flex:1;align-items:center;justify-content:center;color:var(--muted);background:#e8ecf1;font-size:14px}
+* {
+  box-sizing: border-box
 }
-.head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:14px;color:var(--muted);margin:4px 0 2px}
-.head a{color:var(--accent)}
-.euro{font-size:13px;color:var(--muted);margin:0 0 10px}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+.note {
+  background: #fffbe6;
+  border-bottom: 1px solid #f0d78c;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #5c4a00
+}
+.states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px
+}
+.states a {
+  font-size: 13px;
+  border: 1px solid #e3c766;
+  border-radius: 14px;
+  padding: 3px 10px;
+  color: #5c4a00;
+  text-decoration: none;
+  background: #fff
+}
+.states a[aria-current] {
+  background: #5c4a00;
+  color: #fff;
+  border-color: #5c4a00
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700
+}
+.wrap {
+  display: flex;
+  min-height: calc(100vh - 120px)
+}
+.col {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px 40px
+}
+.map {
+  display: none
+}
+@media (min-width:1024px) {
+  .col {
+    flex: 0 0 520px;
+    border-right: 1px solid var(--line)
+  }
+  .map {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    background: #e8ecf1;
+    font-size: 14px
+  }
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-size: 14px;
+  color: var(--muted);
+  margin: 4px 0 2px
+}
+.head a {
+  color: var(--accent)
+}
+.euro {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 10px
+}
 /* les trois nombres : mêmes colonnes dans l'en-tête et dans chaque carte (chiffres de même largeur) */
-.figs,.cols{display:grid;grid-template-columns:68px 112px minmax(0,1fr);gap:0 10px;font-variant-numeric:tabular-nums}
-.figs span{white-space:nowrap}
-.figs .hi{font-weight:700}
-.cols{font-size:13px;color:var(--muted);padding:0 13px;margin:6px 0 -2px}
+.figs,
+.cols {
+  display: grid;
+  grid-template-columns: 68px 112px minmax(0, 1fr);
+  gap: 0 10px;
+  font-variant-numeric: tabular-nums
+}
+.figs span {
+  white-space: nowrap
+}
+.figs .hi {
+  font-weight: 700
+}
+.cols {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 0 13px;
+  margin: 6px 0 -2px
+}
 /* une carte : en haut la mention et l'identité (FL, nom, verdict, la raison d'une route meilleure en chiffres non gardée), le geste à
    droite ; dessous les nombres, puis la route écrite */
-.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0}
-.it[aria-current]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.it .chips,.it .l1{grid-column:1}
-.it .act{grid-column:2;grid-row:1;align-self:center}
-.it.mention .act{grid-row:1 / span 2}
-.it .figs,.it .route{grid-column:1 / -1}
-@media (min-width:1024px){
-  /* à 1280 le geste tient sur la hauteur du titre ET des nombres : plus de vide sous le titre */
-  .it .figs{grid-column:1}
-  .it .act{grid-row:1 / span 2}
-  .it.mention .act{grid-row:1 / span 3}
+.it {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0
 }
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 2px}
-.chip{font-size:13px;font-weight:600;border-radius:12px;padding:1px 9px;white-space:nowrap}
-.chip.fast{background:var(--accent-bg);color:var(--accent)}
-.chip.eco{background:var(--ok-bg);color:var(--ok)}
-.l1{display:flex;flex-wrap:wrap;gap:0 6px;align-items:baseline}
-.l1 b,.l1 .n{white-space:nowrap}
-.l1 .n{font-weight:700}
-.sep{color:var(--muted)}
-.v-ok{color:var(--muted);white-space:nowrap}
-.v-warn{color:var(--warn);font-weight:700;white-space:nowrap}
-.v-err{color:var(--err);font-weight:700;white-space:nowrap}
-.why{color:var(--warn);font-size:14px;white-space:nowrap}
-.route{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (min-width:1024px){.route{white-space:normal}}
-button{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;flex:none}
-.badge{flex:none;font-size:13px;font-weight:600;color:var(--ok);background:var(--ok-bg);border-radius:12px;padding:2px 10px}
-.quote{background:#fff;border:1px solid var(--accent);border-radius:8px;padding:8px 12px;margin-top:16px;font-size:14px}
-.quote .t{display:flex;gap:18px;margin-top:4px}
-.quote .t span{color:var(--muted)}
-.quote .t b{display:block;color:var(--ink);font-size:16px}
+.it[aria-current] {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent)
+}
+.it .chips,
+.it .l1 {
+  grid-column: 1
+}
+.it .act {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center
+}
+.it.mention .act {
+  grid-row: 1 / span 2
+}
+.it .figs,
+.it .route {
+  grid-column: 1 / -1
+}
+@media (min-width:1024px) {
+  /* à 1280 le geste tient sur la hauteur du titre ET des nombres : plus de vide sous le titre */
+  .it .figs {
+    grid-column: 1
+  }
+  .it .act {
+    grid-row: 1 / span 2
+  }
+  .it.mention .act {
+    grid-row: 1 / span 3
+  }
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 2px
+}
+.chip {
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 1px 9px;
+  white-space: nowrap
+}
+.chip.fast {
+  background: var(--accent-bg);
+  color: var(--accent)
+}
+.chip.eco {
+  background: var(--ok-bg);
+  color: var(--ok)
+}
+.l1 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  align-items: baseline
+}
+.l1 b,
+.l1 .n {
+  white-space: nowrap
+}
+.l1 .n {
+  font-weight: 700
+}
+.sep {
+  color: var(--muted)
+}
+.v-ok {
+  color: var(--muted);
+  white-space: nowrap
+}
+.v-warn {
+  color: var(--warn);
+  font-weight: 700;
+  white-space: nowrap
+}
+.v-err {
+  color: var(--err);
+  font-weight: 700;
+  white-space: nowrap
+}
+.why {
+  color: var(--warn);
+  font-size: 14px;
+  white-space: nowrap
+}
+.route {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+@media (min-width:1024px) {
+  .route {
+    white-space: normal
+  }
+}
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  flex: none
+}
+.badge {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-radius: 12px;
+  padding: 2px 10px
+}
+.quote {
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 16px;
+  font-size: 14px
+}
+.quote .t {
+  display: flex;
+  gap: 18px;
+  margin-top: 4px
+}
+.quote .t span {
+  color: var(--muted)
+}
+.quote .t b {
+  display: block;
+  color: var(--ink);
+  font-size: 16px
+}
 </style>
 </head>
 <body>
@@ -96,39 +315,154 @@ button{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--line);
 // (verdict, puis règle semi-circulaire, puis raccord publié), puis le carburant de la ligne ; liste : la gardée, puis par verdict, puis
 // par carburant. Mentions : au meilleur temps et au moindre carburant parmi les routes qui n'enfreignent pas, s'il y en a deux au moins
 // et que les nombres diffèrent ; une route meilleure en chiffres non gardée dit pourquoi sur sa ligne.
-const R1 = 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', R2 = 'LFRS NTS1A NEPIX MEN1A LFML', R3 = 'LFRS NTS1A LUGEN UM728 BOSUP UM976 RIXUL MEN1A LFML';
+const R1 = 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML',
+  R2 = 'LFRS NTS1A NEPIX MEN1A LFML',
+  R3 = 'LFRS NTS1A LUGEN UM728 BOSUP UM976 RIXUL MEN1A LFML';
 const STATES = {
-  auto: { wind: '', rows: [
-    { name: 'Via UN10', fl: 270, nm: 370, min: 88, fuel: 3255, verdict: 'conform', route: R1 },
-    { name: 'Via UN10', fl: 280, nm: 370, min: 84, fuel: 3140, verdict: 'conform', route: R1, semi: false },
-    { name: 'Direct', fl: 250, nm: 365, min: 89, fuel: 3330, verdict: 'unverifiable', n: 2, route: R2, direct: true },
-    { name: 'Via UN10', fl: 310, nm: 370, min: 85, fuel: 3180, verdict: 'unverifiable', n: 1, route: R1 },
-    { name: 'Via UM728', fl: 230, nm: 382, min: 93, fuel: 3520, verdict: 'conform', route: R3 } ] },
-  nowind: { wind: 'vent inconnu', rows: [
-    { name: 'Via UN10', fl: 270, nm: 370, min: [84, 93], fuel: [3150, 3380], verdict: 'conform', route: R1 },
-    { name: 'Via UN10', fl: 310, nm: 370, min: [80, 89], fuel: [3100, 3300], verdict: 'unverifiable', n: 1, route: R1 },
-    { name: 'Via UN10', fl: 280, nm: 370, min: [81, 90], fuel: [3040, 3250], verdict: 'conform', route: R1, semi: false },
-    { name: 'Direct', fl: 250, nm: 365, min: [85, 94], fuel: [3220, 3450], verdict: 'unverifiable', n: 2, route: R2, direct: true } ] },
-  fixed: { wind: '', rows: [
-    { name: 'Via UN10', fl: 270, nm: 370, min: 86, fuel: 3190, verdict: 'violates', n: 4, route: R1 },
-    { name: 'Direct', fl: 270, nm: 365, min: 87, fuel: 3215, verdict: 'unverifiable', n: 9, route: R2 },
-    { name: 'Via UM728', fl: 270, nm: 382, min: 91, fuel: 3360, verdict: 'conform', route: R3 } ] }
+  auto: {
+    wind: '',
+    rows: [{
+      name: 'Via UN10',
+      fl: 270,
+      nm: 370,
+      min: 88,
+      fuel: 3255,
+      verdict: 'conform',
+      route: R1
+    }, {
+      name: 'Via UN10',
+      fl: 280,
+      nm: 370,
+      min: 84,
+      fuel: 3140,
+      verdict: 'conform',
+      route: R1,
+      semi: false
+    }, {
+      name: 'Direct',
+      fl: 250,
+      nm: 365,
+      min: 89,
+      fuel: 3330,
+      verdict: 'unverifiable',
+      n: 2,
+      route: R2,
+      direct: true
+    }, {
+      name: 'Via UN10',
+      fl: 310,
+      nm: 370,
+      min: 85,
+      fuel: 3180,
+      verdict: 'unverifiable',
+      n: 1,
+      route: R1
+    }, {
+      name: 'Via UM728',
+      fl: 230,
+      nm: 382,
+      min: 93,
+      fuel: 3520,
+      verdict: 'conform',
+      route: R3
+    }]
+  },
+  nowind: {
+    wind: 'vent inconnu',
+    rows: [{
+      name: 'Via UN10',
+      fl: 270,
+      nm: 370,
+      min: [84, 93],
+      fuel: [3150, 3380],
+      verdict: 'conform',
+      route: R1
+    }, {
+      name: 'Via UN10',
+      fl: 310,
+      nm: 370,
+      min: [80, 89],
+      fuel: [3100, 3300],
+      verdict: 'unverifiable',
+      n: 1,
+      route: R1
+    }, {
+      name: 'Via UN10',
+      fl: 280,
+      nm: 370,
+      min: [81, 90],
+      fuel: [3040, 3250],
+      verdict: 'conform',
+      route: R1,
+      semi: false
+    }, {
+      name: 'Direct',
+      fl: 250,
+      nm: 365,
+      min: [85, 94],
+      fuel: [3220, 3450],
+      verdict: 'unverifiable',
+      n: 2,
+      route: R2,
+      direct: true
+    }]
+  },
+  fixed: {
+    wind: '',
+    rows: [{
+      name: 'Via UN10',
+      fl: 270,
+      nm: 370,
+      min: 86,
+      fuel: 3190,
+      verdict: 'violates',
+      n: 4,
+      route: R1
+    }, {
+      name: 'Direct',
+      fl: 270,
+      nm: 365,
+      min: 87,
+      fuel: 3215,
+      verdict: 'unverifiable',
+      n: 9,
+      route: R2
+    }, {
+      name: 'Via UM728',
+      fl: 270,
+      nm: 382,
+      min: 91,
+      fuel: 3360,
+      verdict: 'conform',
+      route: R3
+    }]
+  }
 };
-const TIER = { conform: 0, unverifiable: 1, violates: 2 };
-const hi = v => Array.isArray(v) ? v[1] : v, lo = v => Array.isArray(v) ? v[0] : v;
+const TIER = {
+  conform: 0,
+  unverifiable: 1,
+  violates: 2
+};
+const hi = v => Array.isArray(v) ? v[1] : v,
+  lo = v => Array.isArray(v) ? v[0] : v;
 const cmp = (a, b) => hi(a) - hi(b) || lo(a) - lo(b); // une fourchette : le haut, puis le bas
 const nb = n => n.toLocaleString('fr-FR');
 const dur = m => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 const span = (v, f) => Array.isArray(v) ? `${f(v[0])}–${f(v[1])}` : f(v);
-const verdict = r => r.verdict === 'conform' ? '<span class="v-ok">conforme</span>' : r.verdict === 'unverifiable'
-  ? `<span class="v-warn">Non vérifiable : ${r.n} point${r.n > 1 ? 's' : ''}</span>` : `<span class="v-err">enfreint ${r.n} règles connues</span>`;
+const verdict = r => r.verdict === 'conform' ? '<span class="v-ok">conforme</span>' : r.verdict === 'unverifiable' ?
+  `<span class="v-warn">Non vérifiable : ${r.n} point${r.n > 1 ? 's' : ''}</span>` : `<span class="v-err">enfreint ${r.n} règles connues</span>`;
+
 function draw() {
-  const k = (location.hash || '#auto').slice(1), S = STATES[k] || STATES.auto;
+  const k = (location.hash || '#auto').slice(1),
+    S = STATES[k] || STATES.auto;
   document.querySelectorAll('#states a').forEach(a => a.toggleAttribute('aria-current', a.getAttribute('href') === '#' + k));
   document.getElementById('wind').textContent = S.wind;
-  const rows = S.rows.map(r => ({ ...r }));
+  const rows = S.rows.map(r => ({
+    ...r
+  }));
   // la route gardée : SOG-0540 (verdict, règle semi-circulaire, raccord publié), puis le carburant de sa ligne
-  const pref = [...rows].sort((a, b) => TIER[a.verdict] - TIER[b.verdict] || (a.semi === false) - (b.semi === false) || !!a.direct - !!b.direct || cmp(a.fuel, b.fuel));
+  const pref = [...rows].sort((a, b) => TIER[a.verdict] - TIER[b.verdict] || (a.semi === false) - (b.semi === false) || !!a.direct - !!b
+    .direct || cmp(a.fuel, b.fuel));
   const kept = pref[0];
   kept.taken = true;
   // l'ordre de la liste : la gardée, puis par verdict, puis par carburant
@@ -136,21 +470,24 @@ function draw() {
   // les mentions, parmi les routes qui n'enfreignent pas (deux au moins), seulement si les nombres diffèrent
   const ok = list.filter(r => r.verdict !== 'violates');
   if (ok.length >= 2) {
-    const fast = [...ok].sort((a, b) => cmp(a.min, b.min))[0], eco = [...ok].sort((a, b) => cmp(a.fuel, b.fuel))[0];
+    const fast = [...ok].sort((a, b) => cmp(a.min, b.min))[0],
+      eco = [...ok].sort((a, b) => cmp(a.fuel, b.fuel))[0];
     if (ok.some(r => cmp(r.min, fast.min))) fast.fast = true;
     if (ok.some(r => cmp(r.fuel, eco.fuel))) eco.eco = true;
   }
   const sep = '<span class="sep">·</span>';
   document.getElementById('list').innerHTML = list.map(r => {
-    const chips = [r.fast ? '<span class="chip fast">la plus rapide</span>' : '', r.eco ? '<span class="chip eco">la plus économe</span>' : ''].join('');
+    const chips = [r.fast ? '<span class="chip fast">la plus rapide</span>' : '', r.eco ?
+      '<span class="chip eco">la plus économe</span>' : ''
+    ].join('');
     // une route meilleure en chiffres que la gardée, et non gardée : sa raison sur sa ligne (le verdict la dit déjà quand il est moindre)
     const better = r !== kept && r.verdict === kept.verdict && (cmp(r.fuel, kept.fuel) < 0 || cmp(r.min, kept.min) < 0);
     const why = better ? [r.semi === false ? 'hors règle semi-circulaire' : '', r.direct ? 'raccord direct' : ''].filter(Boolean) : [];
-    return `<div class="it${chips ? ' mention' : ''}"${r.taken ? ' aria-current="true"' : ''}>${chips ? `<div class="chips">${chips}</div>` : ''}`
-      + `<div class="l1"><b>FL${r.fl}</b>${sep}<span class="n">${r.name}</span> ${verdict(r)}${why.map(w => ` <span class="why">${w}</span>`).join('')}</div>`
-      + (r.taken ? '<span class="badge act">pris</span>' : '<button type="button" class="act">Choisir</button>')
-      + `<div class="figs"><span>${r.nm} NM</span><span${r.fast ? ' class="hi"' : ''}>${span(r.min, dur)}</span><span${r.eco ? ' class="hi"' : ''}>${span(r.fuel, nb)} kg</span></div>`
-      + `<small class="route">${r.route}</small></div>`;
+    return `<div class="it${chips ? ' mention' : ''}"${r.taken ? ' aria-current="true"' : ''}>${chips ? `<div class="chips">${chips}</div>` : ''}` +
+      `<div class="l1"><b>FL${r.fl}</b>${sep}<span class="n">${r.name}</span> ${verdict(r)}${why.map(w => ` <span class="why">${w}</span>`).join('')}</div>` +
+      (r.taken ? '<span class="badge act">pris</span>' : '<button type="button" class="act">Choisir</button>') +
+      `<div class="figs"><span>${r.nm} NM</span><span${r.fast ? ' class="hi"' : ''}>${span(r.min, dur)}</span><span${r.eco ? ' class="hi"' : ''}>${span(r.fuel, nb)} kg</span></div>` +
+      `<small class="route">${r.route}</small></div>`;
   }).join('');
   document.getElementById('qfl').textContent = 'FL' + kept.fl;
   document.getElementById('qtrip').textContent = span(kept.fuel, nb) + ' kg';

@@ -209,7 +209,8 @@
     });
   same('status: one line per flight without a report, newest first', st.length, 2);
   same('status: four languages, network time in UTC', st[0].text, ['CR à écrire pour le vol du 22/10/2026 16:30Z LFRS→LFML',
-    'Report to write for the flight of 22/10/2026 16:30Z LFRS→LFML', 'Bericht zu schreiben für den Flug vom 22.10.2026 16:30Z LFRS→LFML',
+    'Report to write for the flight of 22/10/2026 16:30Z LFRS→LFML',
+    'Bericht zu schreiben für den Flug vom 22.10.2026 16:30Z LFRS→LFML',
     'Informe por escribir del vuelo del 22/10/2026 16:30Z LFRS→LFML'
   ]);
   same('status: the site log keeps its day, without conversion', st[1].text[0], 'CR à écrire pour le vol du 21/10/2026 LFOA→LFBO');

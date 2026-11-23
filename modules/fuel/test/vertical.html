@@ -220,9 +220,11 @@
     id: 'B',
     nm: 40
   }], q);
-  ck('un vol plus court que la montée et la descente (raccourcies en proportion) : le chemin tient dans la distance, sans saut', short.length >= 2 && short.at(-1)
+  ck('un vol plus court que la montée et la descente (raccourcies en proportion) : le chemin tient dans la distance, sans saut', short
+    .length >= 2 && short.at(-1)
     .nm === 40 && short.at(-1).ft === 0 &&
-    Math.max(...short.slice(1).map((p, i) => Math.abs(p.ft - short[i].ft) / (p.nm - short[i].nm))) <= 26000 / (60 * 40 / 138) * 1.05, JSON.stringify(
+    Math.max(...short.slice(1).map((p, i) => Math.abs(p.ft - short[i].ft) / (p.nm - short[i].nm))) <= 26000 / (60 * 40 / 138) * 1.05, JSON
+    .stringify(
       short));
 
   window.__bench = {
