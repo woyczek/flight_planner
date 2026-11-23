@@ -652,6 +652,12 @@ html .f-head button.f-stale:focus-visible {
   margin: 0 0 4px;
   font: inherit
 }
+/* à partir de 761 px : une liste n'a pas la largeur de la carte, celle d'un champ court (320 px au plus), alignée à gauche sous son étiquette ; sur téléphone elle garde toute la largeur */
+@media (min-width: 761px) {
+  .f-select {
+    max-width: 320px
+  }
+}
 .f-previews {
   margin: 4px 0 0
 }

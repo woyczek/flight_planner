@@ -9122,6 +9122,11 @@ def a185(c):
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] details')].map(d => [d.hasAttribute('data-previews'), d.open])"), [[True, False]], 'the previews are behind a closed fold', what='previews')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] select')].map(s => [s.hasAttribute('data-lang-select') ? 'language' : s.hasAttribute('data-design-select') ? 'appearance' : '?', Math.round(s.getBoundingClientRect().height)])"), [['language', 44], ['appearance', 44]],
          'the language and the appearance are two lists of ONE row each (18 buttons on four rows took the always-visible part past its bound in German): level and tone stay buttons', what='lists')
+    ws = c.js("[...document.querySelectorAll('[data-card=\"display\"] select')].map(s => Math.round(s.getBoundingClientRect().width))")
+    if c.width <= 760:
+        c.ok(all(w >= 250 for w in ws), ws, 'on a phone each list keeps the whole width of the card')
+    else:
+        c.ok(all(w <= 321 for w in ws), ws, 'on a screen each list has the width of a short field (320 px at most), left under its label')
     fiche = c.js("(f => f ? [f.tagName, f.open] : null)(document.querySelector('[data-card=\"company\"] details[data-fiche-fold]'))")
     c.eq(fiche, ['DETAILS', False], 'the airline sheet is one closed line', what='fiche fold')
     c.eq(c.count('details.f-group[data-group=start] + details, details.f-group[data-group=start] ~ details:not(.f-group)'), 1, '« Comment s’en servir » follows « Mise en route »', what='howto')
