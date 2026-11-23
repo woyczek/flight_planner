@@ -367,11 +367,11 @@ def condition(text,ctx,rad):
     if len(text)>MAX_CONDITION:return None      # SOG-0401 (Sécurisation) : un texte de cellule plus long est illisible, il n'est pas décidé (le coût de la lecture reste borné)
     text=' '.join(text.upper().split())
     if not text:return True
-    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',BTN_ATOM.sub(' ',AT_RUN_SEARCH.sub(' ',AT_LIST.sub(' ',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text)))))):return None      # les atomes de niveau lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
-    numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées
+    numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées      # SOG-0561 lot 2 : AVANT le garde-fou de niveau (chaque alternative repasse par `condition`, donc par son propre garde-fou) : un OU dont une alternative est VRAIE est vrai, même si une autre porte un niveau non lu (LF2272 : « 1. ARR (EI**, …) 2. ARR EG** EXC DEP LFBL & BLW FL265 IN LF », une erreur de la première validation réelle, était refusée en bloc)
     if numbered:
         results=[condition(a,ctx,rad) for a in numbered]
         return True if any(r is True for r in results) else False if all(r is False for r in results) else None
+    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',BTN_ATOM.sub(' ',AT_RUN_SEARCH.sub(' ',AT_LIST.sub(' ',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text)))))):return None      # les atomes de niveau lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
     if text.startswith('ALL '):text=text[4:]
     return exception(text,ctx,rad)
 

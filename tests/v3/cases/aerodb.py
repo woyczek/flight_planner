@@ -20625,3 +20625,24 @@ def k519(c):
     block = fly([row('ZZ5007', '(H1, UH1)', 'P2', 'P3', 'NOT AVBL FOR TFC')], lanes, {'Q2': (50.6, 4.5)})
     legs = [(l['via'], l['start']['id'], l['end']['id']) for l in block['legs']]
     c.ok(('UH1', 'P2', 'P3') not in legs and any(w == 'UH2' for w, _a, _b in legs), str(legs), 'a prohibition written « (H1, UH1) P2–P3, not available for traffic » is avoided by the SEARCH: the route takes UH2 by Q2 (red before: the shorter UH1 P2–P3, the rule silently dropped)')
+@case('K520', 'Route engine, SOG-0561 lot 2: a condition of the RAD written as numbered alternatives (an OR) is TRUE as soon as one alternative is true, even when another alternative carries a level that is not read ("2. ARR ZZCC & ABV FL100 IN ZZ") — before, the level guard refused the whole text (LF2272, one of the nine errors of a real validation: the arrival EIDW was listed in alternative 1 and the rule stayed « unread »)',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0561, lot 2: « le OU des alternatives numérotées avant le garde-fou de niveau »). `condition` looked for level words on the WHOLE text before it read the numbered alternatives; an alternative that is decided true makes an OR true whatever the others say, and an alternative that is not read stays « not decided » (it never makes a rule violated by itself). Invented base, rules written like LF2272',
+      )
+def k520(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    row = lambda rid, way, a, b, util: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, way, a, b, '', util, 'H24', 'S', 'invented', '', 'ZZACC', 'ZZ']
+    unread_alt = '2. ARR ZZCC & ABV FL100 IN ZZ'      # a level « in a space »: not read
+    rules = [row('ZZ6001', 'UH1', 'P1', 'P2', 'NOT AVBL FOR TFC' + chr(10) + '1. VIA P3' + chr(10) + unread_alt),      # alternative 1 true (the flight flies P3): violated, by the rule read on the route
+             row('ZZ6002', 'UH1', 'P2', 'P3', 'NOT AVBL FOR TFC' + chr(10) + '1. VIA N1' + chr(10) + unread_alt),      # alternative 1 false, alternative 2 not read: not decided, stays unread
+             row('ZZ6003', 'UH1', 'P3', 'P4', 'ONLY AVBL FOR TFC' + chr(10) + '1. VIA P3' + chr(10) + unread_alt),      # alternative 1 true: the traffic is allowed, nothing to report, decided
+             row('ZZ6004', 'UH1', 'A0', 'P1', 'NOT AVBL FOR TFC' + chr(10) + '1. ARR ZZBB' + chr(10) + unread_alt)]      # an airport-only alternative true: a static prohibition (the search knows it too)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, rules_2b=rules)
+        p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+    found = {i['values']['id']: i['code'] for i in p['violations'] if i.get('code') in ('rad_rule', 'rad_block')}
+    c.eq(found, {'ZZ6001': 'rad_rule', 'ZZ6004': 'rad_block'}, 'the rule whose alternative 1 is true (the flight flies P3; the arrival is ZZBB) is violated although alternative 2 carries a level that is not read (red before: nothing found, the rules « unread »); the rule whose alternative 1 is false is not decided; the rule « only available » whose alternative 1 is true is satisfied', what='violations')
+    c.eq(sorted(i['id'] for st in p.get('not_verified') or [] for i in st['items']), ['ZZ6002'], 'only the rule whose alternatives are not all decided stays unread (ZZ6003 is decided: allowed)', what='unread')
