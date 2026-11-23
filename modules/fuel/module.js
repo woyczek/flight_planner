@@ -2851,7 +2851,9 @@ function climbSvg(G, box) {
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
 /* SOG-0080 / 0081 : les itinéraires proposés, un segment fautif dans la liste des points */
-[data-module="fuel"] .fu-ralts .f-item[aria-current]{border-color:var(--sog-accent)}
+[data-module="fuel"] .fu-ralts .f-item[aria-current]{border-color:var(--sog-accent);box-shadow:inset 3px 0 0 var(--sog-accent)}
+/* SOG-0545 (l'ergonome) : le verdict qui n'est pas bon, puis les motifs, chacun sur sa ligne sous le niveau */
+[data-module="fuel"] .fu-rhead>.fu-rh2,[data-module="fuel"] .fu-rhead>.fu-rh3{display:block}
 [data-module="fuel"] .fu-ralts .f-item.fu-raltshown{box-shadow:inset 0 0 0 2px var(--sog-accent);cursor:default} /* la ligne montrée (SOG-0134) */
 [data-module="fuel"] .fu-ralts .f-item[data-alt]{cursor:pointer}
 [data-module="fuel"] .fu-ralts .fu-raltroute,[data-module="fuel"] .fu-ralts .fu-rproof{display:block;word-break:break-word}
@@ -6199,6 +6201,15 @@ function routeAltsDraw() {
   // les nombres et les mentions, posés plus bas quand la liste des routes est connue (fig, marks)
   let fig = new Map(),
     marks = new Map();
+  // SOG-0545 (l'ergonome) : la ligne dont les nombres sont dans la barre du bas est encadrée — la choisie, et en « Auto » la gardée
+  const applied = i => i === A.chosen || (A.chosen < 0 && A.mode === 'levels' && i === A.kept && !!S.flight?.level?.auto);
+  // les motifs d'une ligne (pourquoi une meilleure n'est pas gardée), sur leur ligne, en orange, séparés par « · »
+  const motifs = a => {
+    const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
+      a.connector === 'direct' ? `<span data-direct>${esc(tt(TX.rDirect))}</span>` : ''
+    ].filter(Boolean);
+    return parts.length ? `<span class="f-warn fu-rh3" data-motifs>${parts.join(' · ')}</span>` : '';
+  };
   // le geste d'une ligne (SOG-0545, l'ergonome) : « choisie » sans bouton sur la ligne prise (la liste revue) ; en « Auto », la ligne
   // qu'« Auto » garde : la pastille « Auto » et « Choisir », tant que sa route n'est pas dans le champ Route ; sinon « Choisir »
   const gest = (a, i) => {
@@ -6221,7 +6232,7 @@ function routeAltsDraw() {
         muted = [g || a.distanceNm === null ? '' : distTxt(a.distanceNm), a.verdict || a.faulty || RE.faultLines(a).length || a
           .incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''
         ].filter(Boolean).join(' · ');
-      return `<div class="f-item fu-ralt${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}${chips ? ' fu-raltmark' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}>${chips ? `<span class="fu-rmarks" data-marks>${chips}</span>` : ''}<span class="fu-rhead">${fl ? `<b data-altfl>${esc(fl)}</b>${nm ? ' · ' : ''}` : ''}<b data-altname>${esc(nm)}</b>${a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? ` <span class="f-warn" data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : ''}${a.connector === 'direct' ? ` <span class="f-warn" data-direct>${esc(tt(TX.rDirect))}</span>` : ''}${muted ? ` <span class="f-muted">${esc(muted)}</span>` : ''}${a.faulty ? ` <b class="f-err" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a)}${natHtml(a.nat)}</span>${gest(a, i)}${g ? `<span class="fu-rfigs" data-figs><span data-fignm>${esc(distTxt(g.nm))}</span><span${m.fast ? ' class="fu-rhi"' : ''} data-figmin>${esc(spanTxt(g.min, durTxt))}</span><span${m.eco ? ' class="fu-rhi"' : ''} data-figtrip>${esc(spanTxt(g.trip, v => fuelTxt(v, unit).replace(/ (kg|lb)$/, '')) + ' ' + fuelUnitOf(unit))}</span></span>` : ''}<span class="fu-rrest">${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span></div>`;
+      return `<div class="f-item fu-ralt${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}${chips ? ' fu-raltmark' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${applied(i) ? ' aria-current="true"' : ''}>${chips ? `<span class="fu-rmarks" data-marks>${chips}</span>` : ''}<span class="fu-rhead">${fl ? `<b data-altfl>${esc(fl)}</b>${nm ? ' · ' : ''}` : ''}<b data-altname>${esc(nm)}</b>${muted ? ` <span class="f-muted">${esc(muted)}</span>` : ''}${a.faulty ? '' : verdictWord(a, true)}${natHtml(a.nat)}${a.faulty ? `<b class="f-err fu-rh2" data-faulty data-verdict="violates">${esc(tt(TX.rFaulty, { n: a.violations }))}</b>` : verdictWord(a, false)}${motifs(a)}</span>${gest(a, i)}${g ? `<span class="fu-rfigs" data-figs><span data-fignm>${esc(distTxt(g.nm))}</span><span${m.fast ? ' class="fu-rhi"' : ''} data-figmin data-v0="${Math.round(g.min0)}">${esc(spanTxt(g.min, durTxt))}</span><span${m.eco ? ' class="fu-rhi"' : ''} data-figtrip data-v0="${Math.round(g.trip0)}">${esc(spanTxt(g.trip, v => fuelTxt(v, unit).replace(/ (kg|lb)$/, '')) + ' ' + fuelUnitOf(unit))}</span></span>` : ''}<span class="fu-rrest">${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.control && a.control.controlledPct < 100 ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, true))}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${verdictsHtml(a)}${sectionsHtml(a)}`, i)}</span></div>`;
     };
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
@@ -6238,7 +6249,7 @@ function routeAltsDraw() {
     // SOG-0545 : en « Auto », la ligne qu'« Auto » garde
     lead = A.mode === 'levels' ? A.kept : routes.length && routes.every(([b]) => tier(routes[0][0]) <= tier(b)) ? routes[0][1] : -1,
     shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || (j === lead) - (i === lead) || tier(a) - tier(b) ||
-      figCmp(fig.get(i)?.trip, fig.get(j)?.trip) || i - j),
+      figCmp(fig0(fig.get(i)), fig0(fig.get(j))) || i - j),
     cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
     conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(TX.rConformLine))}</p>` : '';
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
@@ -6759,7 +6770,7 @@ function autoList(n) {
     });
   if (!rows.length) return null;
   const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
-    fuel = a => routeFigures(a.points, a.distanceNm, a.fl)?.trip ?? null,
+    fuel = a => fig0(routeFigures(a.points, a.distanceNm, a.fl)),
     kept = L.pickFl,
     list = rows.map(a => [a, fuel(a)]).sort(([a, x], [b, y]) => (b.fl === kept) - (a.fl === kept) || tier(a) - tier(b) || figCmp(x, y) ||
       a.fl - b.fl).slice(0, 5).map(([a]) => a);
@@ -6785,12 +6796,16 @@ function routeStale(C = S.C) {
 }
 /** SOG-0532 (3) : le mot du verdict sur la ligne d'un itinéraire qui n'enfreint rien de connu — « conforme à ce que nous savons lire »
  *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
-function verdictWord(a) {
+function verdictWord(a, good = null) {
+  // SOG-0545 (l'ergonome) : good vrai, le seul verdict bon (« conforme », sur la ligne du niveau) ; faux, le seul qui ne l'est pas (sa
+  // ligne à lui, en gras) ; null, l'un ou l'autre
+  if (good === true && a.verdict !== 'conform') return '';
+  if (good === false && a.verdict === 'conform') return '';
   // SOG-0532 (l'ergonome) : sous le SEUL verdict « conforme », une ligne courte et visible — jamais dans un pli
   // SOG-0545 (l'ergonome, maquette v2) : « conforme » en un mot sur la route ; son sens et « Seul Eurocontrol valide un plan. » une fois,
   // sous « Calculé à … » (rConformLine)
   if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(TX.rConformShort))}</span>`;
-  if (a.verdict === 'unverifiable') return ` <b class="f-warn" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable, a.uCount))}</b>`;
+  if (a.verdict === 'unverifiable') return `<b class="f-warn fu-rh2" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable, a.uCount))}</b>`;
   return '';
 }
 /** SOG-0532 (l'ergonome) : le titre « Non vérifiable : N point(s) » — UN compte, celui des lignes du groupe, quelle que soit leur nature
@@ -7020,7 +7035,7 @@ function autoJudge(cands, blind = cands[0]) {
     // niveau) ; sans points (une réponse plus ancienne), l'ordre des préférences
     fuelOf = c => {
       const x = by.get(flOf(c));
-      return x?.points?.length >= 2 && x.distanceNm > 0 ? routeFigures(x.points, x.distanceNm, x.fl)?.trip ?? null : null;
+      return x?.points?.length >= 2 && x.distanceNm > 0 ? fig0(routeFigures(x.points, x.distanceNm, x.fl)) : null;
     },
     byFuel = list => list.map((c, k) => [c, k, fuelOf(c)]).sort((p, q) => figCmp(p[2], q[2]) || p[1] - q[1]).map(([c]) => c),
     pref = list => {
@@ -7628,24 +7643,28 @@ function figCmp(x, y) {
   return hi(x) - hi(y) || lo(x) - lo(y);
 }
 /** Les mentions (l'ergonome) : au meilleur temps et au moindre carburant d'étape parmi les routes chiffrées données (jamais une route qui
- *  enfreint : l'appelant les écarte), s'il y en a deux au moins et que les nombres montrés diffèrent ; une route peut avoir les deux.
- *  list : [[clé, { min, trip }]] → Map clé → { fast, eco }. */
+ *  enfreint : l'appelant les écarte), s'il y en a deux au moins ; une route peut avoir les deux. SOG-0545 (l'ergonome, 23/11) : la valeur
+ *  SANS VENT est comparée (min0, trip0 : la même hypothèse pour toutes les lignes), arrondie comme l'écran l'écrit ; la meilleure à égalité
+ *  avec une autre : pas de mention. list : [[clé, { min0, trip0 }]] → Map clé → { fast, eco }. */
 function figMarks(list) {
-  const ok = list.filter(([, g]) => g),
+  const ok = list.filter(([, g]) => g && Number.isFinite(g.min0) && Number.isFinite(g.trip0)),
     out = new Map();
   if (ok.length < 2) return out;
   for (const [k, w] of [
-      ['min', 'fast'],
-      ['trip', 'eco']
+      ['min0', 'fast'],
+      ['trip0', 'eco']
     ]) {
-    const best = [...ok].sort(([, a], [, b]) => figCmp(a[k], b[k]))[0];
-    if (ok.some(([, g]) => figCmp(g[k], best[1][k]))) out.set(best[0], {
-      ...out.get(best[0]),
+    const v = g => Math.round(g[k]),
+      sorted = [...ok].sort(([, a], [, b]) => v(a) - v(b));
+    if (v(sorted[0][1]) < v(sorted[1][1])) out.set(sorted[0][0], {
+      ...out.get(sorted[0][0]),
       [w]: true
     });
   }
   return out;
 }
+/** SOG-0545 : la valeur sans vent d'un chiffrage (le carburant d'étape trip0, ou le temps min0) ; null sans chiffrage. */
+const fig0 = (g, k = 'trip0') => Number.isFinite(g?.[k]) ? g[k] : null;
 /** Les tronçons d'une route donnée par ses points, ramenés à la distance D (comme quoteLegs) ; le vent par tronçon laissé au devis. */
 function legsFromPoints(P, D) {
   const raw = [0];
@@ -7688,10 +7707,14 @@ function routeFigures(points, nm, fl) {
     });
   let out = null;
   if (q?.hasFuel) {
+    // min0, trip0 : la valeur sans vent (SOG-0545, l'ergonome : la même hypothèse pour toutes les lignes, celle que la barre dit) ;
+    // les mentions et l'ordre la comparent, jamais une borne de la fourchette
     if (q.windKnown) out = {
       nm,
       min: q.minutes,
-      trip: q.trip
+      trip: q.trip,
+      min0: q.minutes,
+      trip0: q.trip
     };
     else {
       const band = Number.isFinite(+wind?.speedKt) ? Math.abs(+wind.speedKt) : +(qIn.sheet?.typicalWindKt ?? 25),
@@ -7707,11 +7730,15 @@ function routeFigures(points, nm, fl) {
       out = head?.hasFuel && tail?.hasFuel ? {
         nm,
         min: [Math.min(tail.minutes, head.minutes), Math.max(tail.minutes, head.minutes)],
-        trip: [Math.min(tail.trip, head.trip), Math.max(tail.trip, head.trip)]
+        trip: [Math.min(tail.trip, head.trip), Math.max(tail.trip, head.trip)],
+        min0: q.minutes,
+        trip0: q.trip
       } : {
         nm,
         min: q.minutes,
-        trip: q.trip
+        trip: q.trip,
+        min0: q.minutes,
+        trip0: q.trip
       };
     }
   }

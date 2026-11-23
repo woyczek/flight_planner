@@ -2557,3 +2557,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (the request of « Calculer » without level, imposed points and speeds, plus the aircraft). A search of « Auto » already answered
   is no longer cancelled by « Calculer » (only one still running). Points placed from X-Plane in route/levels are noted like those
   of route/compute: priced, never written. Case F307, red before.
+- **23 Nov 2026 — the route list after the ergonomist's reading of the « Auto » captures** (SOG-0545). (A) The line whose numbers are
+  in the bar (the one chosen; in « Auto », the one kept) is framed like the mock-up (border and left stroke). (B) A card's head: the
+  level (and a good verdict, grey), then the verdict that is not good on its own line (bold), then the reasons in orange joined by
+  « · » (« raccord direct · hors règle semi-circulaire ») — never a reason between the level and the verdict. (Q1) The mentions and
+  the order by fuel compare the value WITHOUT WIND (`min0`, `trip0`: the same hypothesis for every line, the one the bar's « Étape »
+  says), rounded as shown; the best tied with another: no mention — never an end of the range (F305 changed on purpose). (C) The
+  « Choisir » of the line kept stays: it writes that route in the Route field (« Auto » never does) and sets the level, « Auto »
+  removed — more than closing the list. (1) No route name on a level line: accepted by the ergonomist (no `name` asked of AeroDB).

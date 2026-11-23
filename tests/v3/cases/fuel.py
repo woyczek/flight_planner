@@ -10277,7 +10277,8 @@ def f305(c):
     rows = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ i: +e.dataset.alt, name: e.querySelector('[data-altname]').textContent,
         nm: e.querySelector('[data-fignm]')?.textContent || '', min: e.querySelector('[data-figmin]')?.textContent || '',
         trip: e.querySelector('[data-figtrip]')?.textContent || '', fast: !!e.querySelector('[data-fastest]'), eco: !!e.querySelector('[data-cheapest]'),
-        verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '', conform: e.querySelector('[data-verdict=conform]')?.textContent || '' }}))""")
+        verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '', conform: e.querySelector('[data-verdict=conform]')?.textContent || '',
+        min0: +(e.querySelector('[data-figmin]')?.dataset.v0 ?? NaN), trip0: +(e.querySelector('[data-figtrip]')?.dataset.v0 ?? NaN) }}))""")
     c.eq([r['name'] for r in rows], ['Via UM728', 'Direct', 'Via UN10'], 'the order: « conforme », « non vérifiable », « enfreint »', what='order')
     c.eq([norm(r['nm']) for r in rows], ['382 NM', '365 NM', '370 NM'], 'the distance of each route', what='distance')
     c.ok(all(re.fullmatch(r'\d+ h \d{2}(–\d+ h \d{2})?', norm(r['min'])) for r in rows), [r['min'] for r in rows], 'the time « 1 h 28 »')
@@ -10287,13 +10288,16 @@ def f305(c):
     c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(W['line']), '« conforme » explained once, under « Calculé à »', what='line')
     c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{FUEL} [data-figcols] span')].map(e => e.textContent)")],
          [norm(x) for x in W['cols']], 'the three figures named once, above the list', what='columns')
+    # SOG-0545 (the ergonomist, 23 Nov) — expectation changed on purpose: the mentions compare the value WITHOUT WIND (the same
+    # hypothesis for every line, the one the bar says; data-v0), never an end of the range; a tie at the value shown: no mention
     ok = [r for r in rows if r['verdict'] != 'violates']
-    best_t = min(_rt_mins(r['min']) for r in ok)
-    best_f = min(_rt_fuel(r['trip']) for r in ok)
-    c.eq([r['name'] for r in rows if r['fast']], [r['name'] for r in ok if _rt_mins(r['min']) == best_t][:1],
-         '« la plus rapide » on the best time of the routes that break nothing', what='fastest')
-    c.eq([r['name'] for r in rows if r['eco']], [r['name'] for r in ok if _rt_fuel(r['trip']) == best_f][:1],
-         '« la plus économe » on the least trip fuel', what='cheapest')
+
+    def best(k):
+        v = sorted(ok, key=lambda r: r[k])
+        return [v[0]['name']] if len(v) >= 2 and v[0][k] < v[1][k] else []
+    c.eq([r['name'] for r in rows if r['fast']], best('min0'), '« la plus rapide » on the best time without wind of the routes that break '
+         'nothing', what='fastest')
+    c.eq([r['name'] for r in rows if r['eco']], best('trip0'), '« la plus économe » on the least trip fuel without wind', what='cheapest')
     c.ok(not rows[2]['fast'] and not rows[2]['eco'], rows[2], 'never a mention on « enfreint »')
     marks = [norm(x) for x in c.js(f"[...document.querySelectorAll('{A} [data-fastest], {A} [data-cheapest]')].map(e => e.textContent)")]
     c.ok(set(marks) <= {norm(W['fast']), norm(W['eco'])} and marks, marks, 'the words of the mentions')
@@ -10430,7 +10434,12 @@ def f307(c):
         route: e.querySelector('.fu-raltroute')?.textContent || '', verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '',
         vtext: e.querySelector('[data-verdict]')?.textContent || '', auto: e.querySelector('[data-autokept]')?.textContent || '',
         name: e.querySelector('[data-altname]')?.textContent || '', direct: e.querySelector('[data-direct]')?.textContent || '',
-        folds: e.querySelectorAll('details').length,
+        folds: e.querySelectorAll('details').length, framed: e.getAttribute('aria-current') === 'true',
+        eco: !!e.querySelector('[data-cheapest]'), fast: !!e.querySelector('[data-fastest]'),
+        trip0: +(e.querySelector('[data-figtrip]')?.dataset.v0 ?? NaN), min0: +(e.querySelector('[data-figmin]')?.dataset.v0 ?? NaN),
+        lvl: e.querySelector('[data-altfl]')?.getBoundingClientRect().top ?? 0,
+        bad: e.querySelector('.fu-rh2')?.getBoundingClientRect().top ?? null,
+        why: e.querySelector('[data-motifs]')?.getBoundingClientRect().top ?? null,
         take: !!e.querySelector('[data-do=rtake]'), chosen: !!e.querySelector('[data-chosen]'), figs: !!e.querySelector('[data-figs]') }}))""")
     fls = [int(re.sub(r'\D', '', r['fl']) or 0) for r in rows]
     c.ok(set(fls) <= set(lv) and len(set(fls)) == len(fls), [fls, lv], 'one line per level judged, never a variant of route/compute')
@@ -10440,6 +10449,17 @@ def f307(c):
     c.ok(all(not r['auto'] for r in rows[1:]) and all(r['take'] and not r['chosen'] for r in rows), rows, 'the pill on that line only; '
          '« Choisir » on every line, « choisie » on none before a choice')
     c.ok(all(r['figs'] for r in rows), rows, 'each line with its distance, time and trip fuel')
+    # A. the line whose numbers are in the bar (the one « Auto » applies) is framed, the others not (the ergonomist, 23 Nov)
+    c.eq([r['framed'] for r in rows], [True] + [False] * (len(rows) - 1), 'the line kept framed', what='framed')
+    # B. never a reason between the level and the verdict: the level (and a good verdict), then the bad verdict, then the reasons
+    c.ok(all((r['bad'] is None or r['bad'] > r['lvl']) and (r['why'] is None or r['why'] > max(r['lvl'], r['bad'] or 0)) for r in rows), rows,
+         'the level, then the verdict that is not good, then the reasons, each on its line')
+    # Q1. the mentions on the value without wind, never an end of the range; a tie: none
+    okr = [r for r in rows if r['verdict'] != 'violates']
+    for k, m in (('trip0', 'eco'), ('min0', 'fast')):
+        v = sorted(okr, key=lambda r: r[k])
+        want = [v[0]['fl']] if len(v) >= 2 and v[0][k] < v[1][k] else []
+        c.eq([r['fl'] for r in rows if r[m]], want, f'« {m} » on the best value without wind', what=m)
     # route/levels gives no name: the level and the route written say the line — never an invented « Variante N », never an empty fold
     c.ok(all(not r['name'] and not r['folds'] for r in rows), rows, 'no invented name, no empty fold')
     dl = [r for r in rows if int(re.sub(r'\D', '', r['fl']) or 0) == [x for x in lv if x // 10 % 2 == 0][-1]]
@@ -10468,6 +10488,11 @@ def f307(c):
          what='route')
     d = cf_doc(c, lambda d: any(p.get('id') == f'XQX{kept}' for p in (d.get('route') or {}).get('points') or []), 'the route written',
                timeout=12000)
+    # Q2. the bar says the value without wind of the line chosen (the same route, the same level, the same hypothesis)
+    c.until(f"!!document.querySelector('{FUEL} .f-tiles > span b')", timeout=8000, what='the bar')
+    bar = c.js(f"document.querySelector('{FUEL} .f-tiles > span b').textContent")
+    c.eq(int(re.sub(r'\D', '', bar or '') or 0), int(rows[0]['trip0']), 'the trip fuel of the bar = the value without wind of the line chosen',
+         what='bar')
     z = {p.get('id'): p for p in (d.get('route') or {}).get('points') or []}.get(f'XQX{kept}') or {}
     c.ok('lat' not in z and 'lon' not in z and '3.12345' not in json.dumps(d), z, 'the point from X-Plane written by name only')
     # 2. « Revoir les propositions »: the same list, no call to the engine, « choisie » on the line taken, no button there
