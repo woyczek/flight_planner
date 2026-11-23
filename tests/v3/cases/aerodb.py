@@ -20646,3 +20646,137 @@ def k520(c):
     found = {i['values']['id']: i['code'] for i in p['violations'] if i.get('code') in ('rad_rule', 'rad_block')}
     c.eq(found, {'ZZ6001': 'rad_rule', 'ZZ6004': 'rad_block'}, 'the rule whose alternative 1 is true (the flight flies P3; the arrival is ZZBB) is violated although alternative 2 carries a level that is not read (red before: nothing found, the rules « unread »); the rule whose alternative 1 is false is not decided; the rule « only available » whose alternative 1 is true is satisfied', what='violations')
     c.eq(sorted(i['id'] for st in p.get('not_verified') or [] for i in st['items']), ['ZZ6002'], 'only the rule whose alternatives are not all decided stays unread (ZZ6003 is decided: allowed)', what='unread')
+@case('K526', 'Route engine and launcher, SOG-0563 + SOG-0557: `route/levels` reports its progress after EACH level (`job.step` done / total: before, one step at the beginning and one at the end, so the screen showed nothing for 70 to 106 s of the level « Auto ») and keeps the answer of an IDENTICAL request (same flight, date and levels, same state of the data and of the engine) in the cache of the results — the second call computes nothing; a changed file of the data, other levels, a cancelled call (partial) are never answered from it',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0557 « route/levels garde son résultat pour une demande identique, dans un cache BORNÉ ; une donnée qui change le périme » and SOG-0563 « plan.levels prend un rappel on_level(n_done, n_asked), appelé après chaque niveau ; route.py passe job.step(\'route : niveaux\', d, t, \'niveau\') »). The cache is the one of `route/compute` (`results_cache`: 64 files, 4 MB each, signature of the data and of the code of the engine); an entry expires at the end of the UTC day (the NAT tracks of the day). Invented base',
+      )
+def k526(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJX = _regen()
+    from route_engine import plan as P
+    levels_job = RJX.REGISTRY[('route', 'levels')][0]
+
+    class FakeJob:
+        def __init__(self, cancelled=False):
+            self.steps = []
+            self.stop = cancelled
+
+        def step(self, text, done=None, total=None, unit=None):
+            self.steps.append((text, done, total, unit))
+
+        def cancelled(self):
+            return self.stop
+    calls = []
+    real = P.levels
+
+    def counted(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+        ctx = {'data': data}
+        args = {'adep': 'ZZAA', 'adest': 'ZZBB', 'date': '2026-11-09T12:00', 'enable_fra': False, 'levels': [250, 260, 270], 'first_valid': False}
+        P.levels = counted
+        try:
+            j1 = FakeJob()
+            first = levels_job(j1, dict(args), ctx)
+            j2 = FakeJob()
+            second = levels_job(j2, dict(args), ctx)
+            after_two = len(calls)
+            other = levels_job(FakeJob(), dict(args, levels=[250, 260]), ctx)
+            after_other = len(calls)
+            os.utime(rad, (1_700_000_000, 1_700_000_000))      # a file of the data changes: the entry of the first call is no longer the answer
+            third = levels_job(FakeJob(), dict(args), ctx)
+            after_data = len(calls)
+            gone = FakeJob(cancelled=True)
+            partial = levels_job(gone, dict(args, levels=[250, 270]), ctx)
+            after_p = len(calls)
+            again = levels_job(FakeJob(), dict(args, levels=[250, 270]), ctx)
+            after_partial = len(calls)
+        finally:
+            P.levels = real
+    c.eq([s[1] for s in j1.steps], [0, 1, 2, 3, 3], 'the job reports 0, then 1, 2, 3 of 3 levels (one step after EACH level), then the end (red before: [0, 3], the screen showed nothing during the calculation)', what='steps')
+    c.eq([s[3] for s in j1.steps], ['niveau'] * 5, 'the unit of the progress is the level', what='unit')
+    c.eq(([r['fl'] for r in first['levels']], first['stopped'], first['cache']['hit']), ([250, 260, 270], 'end', False), 'the first answer is computed and written to the cache', what='first')
+    c.eq(({k: v for k, v in second.items() if k != 'cache'} == {k: v for k, v in first.items() if k != 'cache'}, second['cache']['hit'], after_two, [s[1] for s in j2.steps]), (True, True, 1, [3]), 'the identical request is answered from the cache: the SAME rows, `cache.hit`, the engine was called once, the job says 3 of 3 at once (red before: computed twice)', what='second')
+    c.eq(after_other, 2, 'other levels are another request: computed', what='other levels')
+    c.eq(after_data, 3, 'a file of the data that changes (the RAD workbook) makes the entry stale: computed again', what='data')
+    c.eq((partial['stopped'], partial['levels'], after_p, after_partial), ('cancelled', [], 4, 5), 'a cancelled call (partial) is answered but never kept: the next identical request is computed (the 5th call of the engine, not answered from a partial)', what='partial')
+    c.eq(again['stopped'], 'end', 'the next call after a cancelled one is complete', what='again')
+@case('K529', 'Route engine and launcher, SOG-0557 (the conditions of the cache of `route/levels`, the ergonomist 24 Nov): the entry is written under data/local/route-cache/ (never elsewhere), holds no callsign nor registration (the request is closed: such a field is refused), is BOUNDED in number, is expired by a change of the files of the base, a damaged or hand-modified entry is ignored (the calculation is redone), and an answer served from the cache keeps the time of its ORIGIN',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (conditions of the cache of `route/levels`): « sous data/local/, jamais dans le dépôt ; BORNÉ en nombre d\'entrées et en taille ; sa CLÉ contient l\'état des données ; il ne contient ni indicatif ni immatriculation ; un résultat servi par le cache garde son heure de calcul d\'ORIGINE ». Sécurisation (c): « fais vérifier que le texte du fichier gardé ne contient ni indicatif ni immatriculation ». Invented base',
+      )
+def k529(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJX = _regen()
+    from route_engine import plan as P, results_cache as RC
+    levels_job, check_levels = RJX.REGISTRY[('route', 'levels')]
+
+    class FakeJob:
+        def __init__(self):
+            self.steps = []
+
+        def step(self, text, done=None, total=None, unit=None):
+            self.steps.append((text, done, total, unit))
+
+        def cancelled(self):
+            return False
+    calls = []
+    real = P.levels
+
+    def counted(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+    kept = RC.MAX_FILES
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+        ctx = {'data': data}
+        args = {'adep': 'ZZAA', 'adest': 'ZZBB', 'date': '2026-11-09T12:00', 'enable_fra': False, 'levels': [250, 260], 'first_valid': False}
+        P.levels = counted
+        try:
+            first = levels_job(FakeJob(), dict(args), ctx)
+            folder = os.path.join(data, 'local', 'route-cache')
+            found = sorted(os.listdir(folder)) if os.path.isdir(folder) else []
+            elsewhere = [r for r, _d, fs in os.walk(data) for f in fs if len(f) == 69 and f.endswith('.json') and os.path.abspath(r) != os.path.abspath(folder)]
+            text = open(os.path.join(folder, found[0]), encoding='utf-8').read().lower() if found else ''
+            second = levels_job(FakeJob(), dict(args), ctx)
+            n_hit = len(calls)
+            # a damaged entry: cut in two, then the key and signature of the entry changed by hand
+            path = os.path.join(folder, found[0])
+            raw = open(path, 'rb').read()
+            open(path, 'wb').write(raw[:len(raw) // 2])
+            cut = levels_job(FakeJob(), dict(args), ctx)
+            n_cut = len(calls)
+            doc = json.loads(open(path, encoding='utf-8').read())
+            doc['sig'] = 'f' * 40
+            open(path, 'w', encoding='utf-8').write(json.dumps(doc))
+            hand = levels_job(FakeJob(), dict(args), ctx)
+            n_hand = len(calls)
+            # a file of the base changes (the cycle, the reader): the entry is stale
+            airways = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29', 'airways.json')
+            os.utime(airways, (1_700_000_000, 1_700_000_000))
+            stale = levels_job(FakeJob(), dict(args), ctx)
+            n_stale = len(calls)
+            # bounded: three entries at most
+            RC.MAX_FILES = 3
+            for extra in ([250], [260], [270], [280], [290]):
+                levels_job(FakeJob(), dict(args, levels=extra), ctx)
+            kept_files = len([f for f in os.listdir(folder) if f.endswith('.json')])
+        finally:
+            P.levels = real
+            RC.MAX_FILES = kept
+    c.eq((len(found), elsewhere), (1, []), 'the entry is written under data/local/route-cache/ and nowhere else in the data folder (red without the cache: no file)', what='where')
+    c.ok('callsign' not in text and 'registration' not in text and 'immatric' not in text, text[:120], 'the file kept holds no callsign nor registration (it holds the hashed key, the signature, the expiry and the answer)')
+    c.eq((check_levels(dict(args, callsign='AB123')) is None, check_levels(dict(args, registration='F-ABCD')) is None, check_levels(dict(args)) is not None), (True, True, True), 'the request is CLOSED: a callsign or a registration is refused before any key is made (so none can be in a key or in a file)', what='closed')
+    c.eq((second['cache']['hit'], second['cache']['computedAt'] == first['cache']['computedAt'], n_hit), (True, True, 1), 'an answer served from the cache carries the time of its ORIGIN (`computedAt` of the first calculation), never the time of the click', what='origin')
+    c.eq((cut['cache']['hit'], n_cut, hand['cache']['hit'], n_hand), (False, 2, False, 3), 'an entry cut in two, then one whose signature is changed by hand, are IGNORED: the calculation is redone each time (and a good entry is written again)', what='damaged')
+    c.eq((stale['cache']['hit'], n_stale), (False, 4), 'a file of the base that changes (its date) makes the entry stale: the answer is calculated again', what='stale')
+    c.ok(kept_files <= 3, str(kept_files), 'the cache is BOUNDED in number: with a limit of three entries, five different requests leave three files at most')

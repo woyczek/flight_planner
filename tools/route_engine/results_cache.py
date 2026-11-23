@@ -119,12 +119,18 @@ def load(data, k, sig, now=None):
     return doc['result'], {'computedAt': at, 'until': until}
 
 
-def store(data, k, sig, res, now=None):
+def day_end(now=None):
+    """SOG-0557 : la fin du jour UTC de `now` (l'échéance d'un résultat qui peut dépendre des routes NAT du jour sans le dire : route/levels)."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    return _iso((now + dt.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0))
+
+
+def store(data, k, sig, res, now=None, until=None):
     """Garde un résultat `ok` ; rend { computedAt, until } (rien d'écrit pour un échec, un résultat trop gros ou un dossier non inscriptible)."""
     now = now or dt.datetime.now(dt.timezone.utc)
     if not ENABLED or not isinstance(res, dict) or res.get('ok') is not True:
         return None
-    meta = {'computedAt': _iso(now), 'until': until_of(res, now)}
+    meta = {'computedAt': _iso(now), 'until': until if until is not None else until_of(res, now)}
     try:
         raw = json.dumps({'version': VERSION, 'key': k, 'sig': sig, **meta, 'result': res}, ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode('utf-8')
         if len(raw) > MAX_BYTES:

@@ -168,16 +168,32 @@ def levels(job, args, ctx):
     if not os.path.isfile(rad_file):
         return {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'}
     wanted = args['levels']
-    job.step('route : niveaux', 0, len(wanted), 'calcul')
+    from route_engine import results_cache as RC
+    k = sig = None
+    try:      # SOG-0557 : une demande identique (même vol, même date, mêmes niveaux, même état des données) rend le résultat gardé ; il s'éteint à la fin du jour UTC (les routes NAT du jour), à un changement de la base ou du code du moteur (la signature de results_cache), et seuls les appels COMPLETS sont gardés
+        k, sig = RC.key({'verb': 'levels', **args}), RC.signature(data, rad_file, fra_file if os.path.isfile(fra_file) else None)
+    except (OSError, ValueError, TypeError):
+        k = sig = None
+    if k:
+        hit = RC.load(data, k, sig)
+        if hit:
+            job.step('route : niveaux (résultat gardé)', len(wanted), len(wanted), 'niveau')
+            return {**hit[0], 'cache': {'hit': True, **hit[1]}}
+    job.step('route : niveaux', 0, len(wanted), 'niveau')
     try:
         template = view.to_request(_level_args(args, wanted[0]))
-        res = plan.levels(template, wanted, data, rad_file, fra_file if os.path.isfile(fra_file) else None, bool(args.get('first_valid')), stop=job.cancelled)
+        res = plan.levels(template, wanted, data, rad_file, fra_file if os.path.isfile(fra_file) else None, bool(args.get('first_valid')), stop=job.cancelled, on_level=lambda done, total: job.step('route : niveaux', done, total, 'niveau'))
     except ValueError as e:
         return {'ok': False, 'reason': 'invalid', 'message': regen_jobs.clean_error(str(e), ctx)[:300]}
     except (OSError, KeyError, TypeError, IndexError, ZeroDivisionError, AttributeError, RecursionError) as e:
         return {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
-    job.step('route : niveaux', len(res['levels']), len(wanted), 'calcul')
-    return dict(res, ok=True)
+    job.step('route : niveaux', len(res['levels']), len(wanted), 'niveau')
+    out = dict(res, ok=True)
+    if k and res.get('stopped') in ('end', 'first-valid') and not any(r.get('interrupted') for r in res['levels']):
+        meta = RC.store(data, k, sig, out, until=RC.day_end())
+        if meta:
+            out = {**out, 'cache': {'hit': False, **meta}}
+    return out
 
 
 # ----------------------------------------------------------------------------------------------------------------------- route/import-rad

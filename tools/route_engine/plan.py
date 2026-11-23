@@ -688,7 +688,7 @@ def level_summary(level, res):
 LEVELS_BUDGET_S = 300      # SOG-0529 (relecture de Sécurisation) : le temps de l'appel ENTIER (douze niveaux de 120 s au pire tiendraient le verrou des calculs pendant 24 minutes) ; testé AVANT chaque niveau
 
 
-def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=None, budget_s=LEVELS_BUDGET_S, clock=time.monotonic):
+def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=None, budget_s=LEVELS_BUDGET_S, clock=time.monotonic, on_level=None):
     """SOG-0529 : le calcul d'UNE demande à chaque niveau de `levels` (dans l'ordre de l'appelant), en un appel : { levels: [level_summary], first_valid: le premier niveau VALIDE ou None, stopped: 'first-valid' | 'end' | 'cancelled' | 'time', asked }.
     Chaque niveau est la route de TÊTE seule (ni alternatives ni propositions) avec le budget d'états de la tête (HEAD_STATES : `compute` le pose à chaque appel) ; `first_valid` : on s'arrête au premier niveau valide.
     `stop` (le `job.cancelled` du lanceur) et `budget_s` (le temps de l'appel entier) sont testés AVANT chaque niveau : l'arrêt rend les niveaux déjà calculés (`stopped` 'cancelled' ou 'time' ; `asked` dit combien étaient demandés)."""
@@ -705,6 +705,11 @@ def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=N
         res = compute(dict(template, fl=level, alternatives=False), data, rad_file, fra_file)
         row = level_summary(level, res)
         out.append(row)
+        if on_level is not None:      # SOG-0563 : l'avancement de l'appel (n niveaux faits sur n demandés), rendu au lanceur après CHAQUE niveau : le résultat ne change pas ; un rappel qui échoue n'arrête jamais le calcul
+            try:
+                on_level(len(out), len(wanted))
+            except Exception:
+                pass
         if row['valid'] and first is None:
             first = level
             if first_valid:
