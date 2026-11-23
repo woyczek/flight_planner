@@ -662,6 +662,10 @@
       stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse']
     },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
+    // SOG-0603 : le lanceur a répondu après la borne de démarrage (600 ms) alors que l'écran était déjà monté sans lui : la page ne se redessine pas seule, elle propose de recharger
+    launcherFound: ['Lanceur détecté : rechargez la page pour l’utiliser.', 'Launcher detected: reload the page to use it.',
+      'Starter erkannt: Laden Sie die Seite neu, um ihn zu verwenden.', 'Lanzador detectado: recargue la página para usarlo.'
+    ],
     jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste contient déjà.',
       'Sending your data is slow: the job starts with what this workstation already holds.',
       'Das Senden Ihrer Daten dauert lange: die Aufgabe startet mit dem, was dieser Rechner schon hat.',
@@ -5753,12 +5757,18 @@
       else syncNow();
     };
     LC = await import(new URL('frame/lib/launcher.js?v=0', ROOT).href).catch(e => (console.warn('launcher', e), null));
-    // SOG-0133 : le cadre se dessine TOUT DE SUITE avec le dernier état connu du lanceur (gardé sur l'appareil) pendant que la détection (GET /__setup/status, lente par un relais ou un téléphone) continue
-    // derrière ; seule une différence (lanceur arrêté, autre, plus à jour) rebranche le transport après coup. Jamais vu : au plus 600 ms d'attente (puis la détection finit derrière, comme au retour du lanceur).
+    // SOG-0133 : le cadre se dessine TOUT DE SUITE avec le dernier état connu du lanceur (gardé sur l'appareil) quand c'est un lanceur, pendant que la détection (GET /__setup/status, lente par un relais ou un téléphone)
+    // continue derrière ; seule une différence (lanceur arrêté, autre, plus à jour) rebranche le transport après coup.
+    // SOG-0603 : le cadre ne décide JAMAIS « sans lanceur » parce que le démarrage a fini le premier : sans lanceur connu (jamais vu, ou « aucun » gardé), il attend la RÉPONSE de la détection,
+    // au plus 600 ms. Un hôte statique répond non en une requête (quelques ms) ; en https il n'y en a aucune. Si le lanceur répond après la borne, l'écran ne se redessine pas sous les mains du pilote :
+    // une notification propose de recharger.
     const seen = readLauncherSeen(),
       detectP = FD.launcher.detect();
-    launcherHere = seen !== undefined ? seen : await Promise.race([detectP, new Promise(r => setTimeout(() => r(null),
-      DETECT_WAIT_MS))]);
+    let detectLate = false;
+    launcherHere = seen ? seen : await Promise.race([detectP, new Promise(r => setTimeout(() => {
+      detectLate = true;
+      r(null);
+    }, DETECT_WAIT_MS))]);
     let bootLoaded;
     const bootLoadedP = new Promise(r => bootLoaded = r);
     detectP.then(async found => {
@@ -5785,11 +5795,19 @@
         }
         return;
       }
+      const absent = !launcherHere; // l'écran a été monté sans lanceur : il ne le sait pas encore
       launcherHere = found;
       await loadDevice(); // le transport suit le lanceur trouvé
       readVersion();
       paintStatus();
       paintStale();
+      if (absent && found && detectLate) notify(t(T.launcherFound), 'info', {
+        key: 'launcher-found',
+        action: {
+          label: t(U.reload),
+          run: () => selfNavigate('reload: launcher found after the first screen', () => location.reload())
+        }
+      });
     }).catch(() => {});
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await textP; // le pliage des textes, prêt pour SogFrame.text avant le premier écran

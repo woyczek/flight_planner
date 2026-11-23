@@ -12023,3 +12023,57 @@ def a374(c):
     c.tap(row)
     c.until("window.__went.includes('#maps?follow=1') && location.hash.startsWith('#maps')", what='a tap on the line goes to #maps?follow=1 and lands on the map')
     c.check_errors()
+
+
+
+
+def _late_launcher(c, hold_ms):
+    """A page that remembers « no launcher » (`sog.launcher.seen` = none) meets a workstation launcher whose /__setup/status answers `hold_ms` late; the reports verbs are the real ones (see _sg_launcher).
+    The first page is loaded BEFORE the launcher is put in place (a module opened with it would start the base update against the fake launcher)."""
+    import tempfile
+    c.open('fuel', docs=LEVEL3)      # a page of a device that has no launcher yet: the frame keeps « none »
+    c.js("(s) => localStorage.setItem('sog.launcher.seen', s)", json.dumps({'none': True}))
+    td = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+    root = Path(td.name)
+    (root / 'organisation' / 'images').mkdir(parents=True)
+    _sg_launcher(c, root, data=False)
+
+    def held(route):
+        if route.request.url.split('?')[0].endswith('/__setup/status'):
+            c.page.wait_for_timeout(hold_ms)
+        route.fallback()
+    c.context.route(re.compile(r'/__setup/status'), held)
+    return td
+
+
+@case('A375', "The frame never decides « no launcher » because its start finished first (SOG-0603): a page that remembers « none » waits for the ANSWER of the detection (600 ms at most), so a workstation whose /__setup/status answers late still gets the launcher channel on the first screen — here the reports screen shows the pilots block of the workstation, not the pilot's channel", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0603 (the ergonomist's rule of 23 Nov 2026, from the cause of A197 read in SOG-0595): `boot()` took the remembered state at once (« none » = no launcher) and drew the first screen while the detection (GET /__setup/status) was still on its way; a module mounted in that window read `ctx.launcher()` as null and chose the pilot channel for good (only /__setup/status asked, no job, no pilots block; measured with the answer held 1.5 s). Now, with no launcher remembered (never seen, or « none »), the frame waits for the answer, 600 ms at most (a static host answers no in one request, https asks nothing)")
+def a375(c):
+    td = _late_launcher(c, 250)
+    with td:
+        c.open('signaler', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-pilots]') && !document.querySelector('[data-pilots]').hidden && !!document.querySelector('[data-pilots] [data-pnone], [data-pilots] [data-plist]')", timeout=15000, what='the pilots block of the workstation is shown (the launcher channel)')
+        c.eq(c.js("JSON.parse(localStorage.getItem('sog.launcher.seen')).host"), 'TEST', 'and the answer is kept for the next start', what='kept')
+        c.check_errors()
+
+
+@case('A376', "A launcher that answers AFTER the start wait (600 ms) does not redraw the screen under the pilot's hands: the frame says « Lanceur détecté : rechargez la page pour l'utiliser. » with a « Recharger » button (SOG-0603, four languages); the button reloads the page, and the reloaded screen has the launcher", 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0603 (b): the launcher answers after the bound while the screen was already mounted without it: nothing is redrawn by itself (the pilot may be typing); the normal notification of the frame offers the reload (`AppFramework` note with an action), once (key launcher-found); the reload keeps the remembered answer, so the next start has the launcher at once")
+def a376(c):
+    lang = c.lang
+    text = {'fr': 'Lanceur détecté : rechargez la page pour l’utiliser.', 'en': 'Launcher detected: reload the page to use it.',
+            'de': 'Starter erkannt: Laden Sie die Seite neu, um ihn zu verwenden.', 'es': 'Lanzador detectado: recargue la página para usarlo.'}[lang]
+    button = {'fr': 'Recharger', 'en': 'Reload', 'de': 'Neu laden', 'es': 'Recargar'}[lang]
+    c.eq(norm(tx('frame/app.js', 'launcherFound', lang)), norm(text), 'the text of the note is the one of the source', what='source')
+    td = _late_launcher(c, 1500)
+    with td:
+        c.open('signaler', docs=LEVEL3)
+        c.until("!!document.querySelector('#fNotes .f-note [data-act]')", timeout=20000, what='the note that offers the reload')
+        got = c.js("(() => { const n = document.querySelector('#fNotes .f-note'); return [n.querySelector('span').textContent.trim(), n.querySelector('[data-act]').textContent.trim(), !!document.querySelector('[data-pilots]') && !document.querySelector('[data-pilots]').hidden] })()")
+        c.eq([norm(got[0]), norm(got[1])], [norm(text), norm(button)], 'the note says the launcher is there and offers the reload', what='note')
+        c.eq(got[2], False, 'the screen was not redrawn by itself: still the pilot channel, no pilots block', what='no redraw')
+        c.tap('#fNotes .f-note [data-act]')
+        c.until("!!document.querySelector('[data-pilots]') && !document.querySelector('[data-pilots]').hidden", timeout=20000, what='after the reload the screen has the launcher channel')
+        c.check_errors()
