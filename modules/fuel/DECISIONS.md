@@ -2579,3 +2579,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   variants at the same level). The engine puts that code in `issues` (a review), never in `violations`: the list does not show it, and
   the ergonomist keeps it so (no lot); the corrected words stay in the code. Case F308 red before; F295, F296, F297, F305 changed on
   purpose.
+- **23 Nov 2026 — the fold « Non vérifiable » of a card says « Voir pourquoi »** (SOG-0554, the ergonomist on the captures of
+  SOG-0552: « Non vérifiable : 1 point » was said twice on a card, the verdict in bold and the title of its fold). On a card of the list
+  the fold says what it opens (« Voir pourquoi », en « See why », de « Gründe anzeigen », es « Ver por qué »); in the box of
+  « Contrôler » (a typed route, no verdict line) the title of the fold stays « Non vérifiable : N points »: there it is the verdict. The
+  RAD line stays under the verdict of that box (« once per screen »): the box and the list are never on screen together (« Contrôler »
+  replaces the list in the same place). Case F309, red before.

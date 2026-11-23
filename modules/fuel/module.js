@@ -533,6 +533,8 @@ const TX = {
   rFastest: ['la plus rapide', 'fastest', 'die schnellste', 'la más rápida'],
   rCheapest: ['la plus économe', 'most economical', 'die sparsamste', 'la más económica'],
   rConformShort: ['Aucune infraction trouvée', 'No violation found', 'Keine Verstöße gefunden', 'No se encontró ninguna infracción'],
+  // SOG-0554 (l'ergonome) : le pli « Non vérifiable » d'une carte dit ce qu'il ouvre (le verdict est déjà dit en gras au-dessus)
+  rSeeWhy: ['Voir pourquoi', 'See why', 'Gründe anzeigen', 'Ver por qué'],
   // insécable : jamais « 0 » en fin de ligne et « écart » sur la suivante (capture F241 à 390 px)
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -6846,8 +6848,10 @@ function verdictsHtml(a, open = false) {
       n
     }) : tt(RR.ROWS.groupLevel0), 'f-warn'),
     levelNote = lr.note ? `<p class="f-muted" data-levelnote="${esc(lr.note)}">${esc(tt(lr.note === 'table_missing' ? RR.ROWS.levelTableMissing : RR.ROWS.levelAbroad))}</p>` : '';
-  return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', unverifTitle(R
-    .unverifiable), 'f-warn') + level + levelNote + note;
+  // SOG-0554 : sur une carte, le verdict est dit en gras au-dessus — le pli dit ce qu'il ouvre ; dans la boîte « Contrôler » (open, sans
+  // ligne de verdict), le titre du pli EST le verdict
+  return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', open ? unverifTitle(R
+    .unverifiable) : tt(TX.rSeeWhy), 'f-warn') + level + levelNote + note;
 }
 /** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
  *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */

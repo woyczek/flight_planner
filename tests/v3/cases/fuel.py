@@ -9465,26 +9465,26 @@ def f295(c):
         # SOG-0545 (mock-up v2): « conforme » in one word on the route, explained once above the list — changed on purpose
         # SOG-0552 (the ergonomist, 23 Nov): the label of the level `conform` and the line of the airspace rules — changed on purpose
         'fr': {'v': 'enfreint 4 règles connues', 'u': 'Non vérifiable : 9 points', 'c': 'Aucune infraction trouvée',
-               'gv': 'Règles connues enfreintes', 'gu': 'Non vérifiable : 2 points', 'more': 'et 2 autres',
+               'gv': 'Règles connues enfreintes', 'gu': 'Voir pourquoi', 'more': 'et 2 autres',
                'lines': ['LUGEN–NEPIX : règle du RAD non respectée (XX9001)', 'Route interdite par le RAD (XX9002)',
                          'Arrivée à LFML : direct de 48,5 NM depuis NEPIX, limite 30 NM (RAD XX9003)', _F295_YOYO,
                          'Départ de LFRS : direct de 12 NM — limite du RAD non lue pour ce terrain',
                          'Aucune voie dans la base entre LUGEN et NEPIX : direct de 61 NM']},
         'en': {'v': 'breaks 4 known rules', 'u': 'Cannot be verified: 9 points', 'c': 'No violation found',
-               'gv': 'Known rules broken', 'gu': 'Cannot be verified: 2 points', 'more': 'and 2 others',
+               'gv': 'Known rules broken', 'gu': 'See why', 'more': 'and 2 others',
                'lines': ['LUGEN–NEPIX: RAD rule not met (XX9001)', 'Route prohibited by the RAD (XX9002)',
                          'Arrival at LFML: direct of 48.5 NM from NEPIX, limit 30 NM (RAD XX9003)', 'engine text, in French: ' + _F295_YOYO,
                          'Departure from LFRS: direct of 12 NM — RAD limit not read for this aerodrome',
                          'No airway in the base between LUGEN and NEPIX: direct of 61 NM']},
         'de': {'v': 'verletzt 4 bekannte Regeln', 'u': 'Nicht prüfbar: 9 Punkte', 'c': 'Keine Verstöße gefunden',
-               'gv': 'Verletzte bekannte Regeln', 'gu': 'Nicht prüfbar: 2 Punkte', 'more': 'und 2 weitere',
+               'gv': 'Verletzte bekannte Regeln', 'gu': 'Gründe anzeigen', 'more': 'und 2 weitere',
                'lines': ['LUGEN–NEPIX: RAD-Regel nicht eingehalten (XX9001)', 'Route durch das RAD verboten (XX9002)',
                          'Ankunft in LFML: Direktstrecke von 48,5 NM ab NEPIX, Grenze 30 NM (RAD XX9003)',
                          'Text der Routenberechnung, auf Französisch: ' + _F295_YOYO,
                          'Abflug von LFRS: Direktstrecke von 12 NM — RAD-Grenze für diesen Flugplatz nicht gelesen',
                          'Keine Luftstraße in der Basis zwischen LUGEN und NEPIX: Direktstrecke von 61 NM']},
         'es': {'v': 'infringe 4 reglas conocidas', 'u': 'No verificable: 9 puntos', 'c': 'No se encontró ninguna infracción',
-               'gv': 'Reglas conocidas infringidas', 'gu': 'No verificable: 2 puntos', 'more': 'y 2 otros',
+               'gv': 'Reglas conocidas infringidas', 'gu': 'Ver por qué', 'more': 'y 2 otros',
                'lines': ['LUGEN–NEPIX: regla del RAD no respetada (XX9001)', 'Ruta prohibida por el RAD (XX9002)',
                          'Llegada a LFML: directo de 48,5 NM desde NEPIX, límite 30 NM (RAD XX9003)', 'texto del motor, en francés: ' + _F295_YOYO,
                          'Salida de LFRS: directo de 12 NM — límite del RAD no leído para este aeródromo',
@@ -9508,6 +9508,8 @@ def f295(c):
     R0 = f'{A} [data-alt="0"]'
     c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
     heads = [norm(x) for x in c.js(f"[...document.querySelectorAll('{R0} details[data-reasons] > summary')].map(e => e.textContent)")]
+    # SOG-0554 (the ergonomist, 23 Nov): the fold of « Non vérifiable » on a card says « Voir pourquoi » (the verdict is in bold above) —
+    # expectation changed on purpose
     c.eq(heads, [norm(want['gv']), norm(want['gu'])], 'the two groups, each with its title', what='groups')
     got = [norm(x) for x in c.js(f"[...document.querySelectorAll('{R0} details[data-reasons] li')].map(e => e.textContent)")]
     c.eq(got, [norm(x) for x in want['lines']], 'each line in the language of the screen, from its code and values', what='lines')
@@ -9605,7 +9607,9 @@ def f296(c):
          what='share')
     c.js(f"document.querySelectorAll('{R0} details[data-reasons]').forEach(d => d.open = true)")
     G = f'{R0} details[data-reasons="unverifiable"]'
-    c.eq(norm(c.text(f'{G} > summary') or ''), norm(want['title']), 'the group says the same count', what='group')
+    # SOG-0554 (the ergonomist, 23 Nov): on a card the fold says what it opens, the count is the verdict's above it — changed on purpose
+    see = {'fr': 'Voir pourquoi', 'en': 'See why', 'de': 'Gründe anzeigen', 'es': 'Ver por qué'}[c.lang]
+    c.eq(norm(c.text(f'{G} > summary') or ''), norm(see), 'the fold says « Voir pourquoi »', what='group')
     # 2. the State line IS the button of its list
     c.eq(norm(c.text(f'{G} li[data-reason=rad_unread] > details[data-staterules] > summary') or ''), norm(want['state']),
          'one line for the State, which opens its list', what='state')
