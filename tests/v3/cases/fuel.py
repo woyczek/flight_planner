@@ -11265,3 +11265,40 @@ def f317(c):
     c.until(f"(p) => !(document.querySelector('{M}')?.textContent || '').replace(/[\s\u00a0\u202f]+/g, ' ').includes(p) || document.querySelector('{FUEL} [data-lvlwhy]').hidden",
             pre, timeout=10000, what='the progress gone when « Calculer » cancels the search')
     c.check_errors()
+
+
+_CACHE_WORDS = {'fr': 'Du cache, calculé à 13:32Z', 'en': 'From the cache, computed at 13:32Z', 'de': 'Aus dem Cache, berechnet um 13:32Z',
+                'es': 'De la caché, calculado a las 13:32Z'}
+
+
+@case('F319', '« Auto » level, route step: a list per level served by the cache of the workstation (route/levels: cache.hit, computedAt) '
+      'keeps on screen the time of its ORIGINAL computation, said by the sentence of route/compute — « Du cache, calculé à 13:32Z » — '
+      'never the time of the tap',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0563 (the relay, 23 Nov: AeroDB caches the results of route/levels, its answer has cache { hit, computedAt } like '
+      'route/compute; the ergonomist: a result from the cache keeps the time of its original computation; the same sentence as route/compute, '
+      'no new one); a fake launcher, an invented sheet, arrival and routes')
+def f319(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    A = f'{FUEL} [data-altlist]'
+    H = f'{FUEL} [data-routealts] [data-rage]'
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    lv = _auto_ne(c, st, lambda lv: dict(_ra_answer(lv), cache={'hit': True, 'computedAt': '2026-11-13T13:32:00Z', 'until': None}), 20000)
+    c.until(f"(document.querySelector('{FUEL} [data-lvlwhy] [data-lvlmain]')?.textContent || '').includes('(auto)')", timeout=8000,
+            what='« Auto » has kept a level')
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-altfl]').length === {min(5, len(lv))}", timeout=10000,
+            what='the route of each level judged')
+    c.until(f"!!document.querySelector('{H}')", timeout=8000, what='the time of the list said')
+    head = norm(c.text(f'{H} > span') or '')
+    c.ok(head.startswith(norm(_CACHE_WORDS[c.lang])), head,
+         f'« {_CACHE_WORDS[c.lang]} »: the original time of the cached result (red before: « Calculé à » with the time of the tap)')
+    c.ok(c.count(f'{H}[data-cache]') == 1, 'no data-cache', 'marked as coming from the cache')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        c.wait(300)
+        c.shot(f'F319_{c.design}_{w}_{c.lang}_cache.png')
+    c.check_errors()
