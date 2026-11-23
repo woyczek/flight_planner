@@ -20380,3 +20380,29 @@ def k512(c):
     finally:
         B.status = real
     c.eq(got, (None, {'inForce': None, 'next': None}), 'an `OverflowError` of the date of the following cycle is caught on its own, in `deposited_of` and in `sets_of` (the year bound alone would hide it): red without `except OverflowError`', what='overflow caught')
+
+
+@case('K514', 'Manual procedure records: only a cycle OLDER than the one in force is `outdated` (⌛) — a cycle published in advance is not (the seeded base of the cases carries it from 3 days before the change: D66 « via IAF1⌛ »); the index entry and the procedure follow the same rule',
+      'K', tags=('aerodb',), phone=False,
+      rule='BUGS SOG via the relay, 23 Nov 2026 (D66 red on the tip of v3): `outdated: !!e.cycle && e.cycle !== inForce` read a NEWER cycle as out of date; the fix is `cycle < inForce` (ISO dates, comparable as strings). Both places of aerodb.js (the merged index and the procedures of a hand-read record); a value that is not a date proves nothing and stays outdated')
+def k514(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const pt = (id, lat, lon) => ({ id, lat, lon, leg: 'TF', alt: null, seq: 1, phase: 'main' });
+      const rec = (icao, cycle) => ({ schema: 1, icao, cycle, updated_at: '2026-11-01T00:00:00Z', procedures: [
+        { id: icao + '.STAR.X1A', icao, kind: 'STAR', name: 'X 1A', runways: ['10'], transition: null, points: [pt('A', 48.6, 7.8), pt('B', 48.5, 7.7)], source: { kind: 'eaip', cycle, file: 'x.pdf' }, status: 'check' }] });
+      const cycles = { LFAA: '2026-10-29', LFBB: '2026-11-26', LFCC: '2026-10-01', LFDD: 'n/a' };
+      const files = { 'proc/manual/index.json': { schema: 1, aerodromes: Object.fromEntries(Object.entries(cycles).map(([k, cy]) => [k, { SID: 0, STAR: 1, APP: 0, status: 'check', cycle: cy }])) } };
+      for (const [k, cy] of Object.entries(cycles)) files['proc/manual/' + k + '.json'] = rec(k, cy);
+      const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-23T12:00:00Z') });
+      const idx = (await db.procedureIndex()).aerodromes, out = { index: {}, proc: {} };
+      for (const k of Object.keys(cycles)) {
+        out.index[k] = !!idx[k]?.outdated;
+        out.proc[k] = (await db.procedures(k, { doubt: true })).map(p => !!p.outdated);
+      }
+      return out;
+    }""")
+    c.eq(r['index'], {'LFAA': False, 'LFBB': False, 'LFCC': True, 'LFDD': True},
+         'index of the hand-read records at 23 Nov 2026 (cycle in force 29 Oct): the cycle in force and the NEXT one (26 Nov) are not outdated (red before: the next one was), the previous one (1 Oct) is, a value that is no date stays outdated', what='index')
+    c.eq(r['proc'], {'LFAA': [False], 'LFBB': [False], 'LFCC': [True], 'LFDD': [True]},
+         'the procedure of a hand-read record follows the same rule (the hourglass of the option « via IAF1⌛ » of D66)', what='procedures')

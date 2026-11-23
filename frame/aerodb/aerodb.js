@@ -414,6 +414,10 @@
       length: n
     }, (_, i) => new Date(cur - i * CYCLE).toISOString().slice(0, 10));
   }
+  /** Le cycle d'une fiche lue à la main est « périmé » quand il est PLUS ANCIEN que le cycle en vigueur : un cycle plus récent (publié en avance) ne l'est pas ; une valeur qui n'est pas une date « AAAA-MM-JJ » ne prouve rien et reste périmée. */
+  function cycleOlder(cycle, inForce) {
+    return !!cycle && (!/^\d{4}-\d{2}-\d{2}$/.test(cycle) || cycle < inForce);
+  }
   /** Littéral d'un fichier .js de données (« window.NOM = {…}; ») lu comme du JSON ; null s'il n'en est pas un. */
   function literal(text, name) {
     const m = new RegExp(`window\\.${name}\\s*=\\s*`).exec(String(text || ''));
@@ -1158,7 +1162,7 @@
         pub: (pv?.procedures || []).map(p => withSourceUrl(k, pv, p)),
         manual: (mv?.procedures || []).map(p => {
           const c = p.source?.cycle || mv.cycle || null,
-            q = withSourceUrl(k, mv, c && c !== inForce ? {
+            q = withSourceUrl(k, mv, cycleOlder(c, inForce) ? {
               ...p,
               outdated: true
             } : p);
@@ -2213,7 +2217,7 @@
         if (!out.aerodromes[k]) out.aerodromes[k] = {
           ...e,
           manual: true,
-          outdated: !!e.cycle && e.cycle !== inForce
+          outdated: cycleOlder(e.cycle, inForce)
         };
       for (const [k, e] of Object.entries(l?.aerodromes || {}))
         if (!out.aerodromes[k]) out.aerodromes[k] = {
