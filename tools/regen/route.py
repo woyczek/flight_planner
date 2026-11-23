@@ -157,6 +157,33 @@ def check_levels(a):
         return None
 
 
+def _level_key(args, level):
+    """La clé d'UN niveau : la demande de ce niveau (celle de route/compute : tous ses champs, `levels` et `first_valid` exclus)."""
+    from route_engine import results_cache as RC
+    return RC.key({'verb': 'level', **_level_args(args, level)})
+
+
+def _kept_level(data, args, level, sig):
+    """La ligne gardée de ce niveau, ou None : l'entrée est un fichier NON FIABLE (relu par results_cache.load : taille, version, clé, empreinte, échéance) et sa ligne doit avoir la forme d'une ligne de niveau (le bon niveau, `valid` booléen, jamais interrompue)."""
+    from route_engine import results_cache as RC
+    try:
+        hit = RC.load(data, _level_key(args, level), sig, kind=RC.LEVEL_KIND)
+    except (OSError, ValueError, TypeError):
+        return None
+    row = hit[0].get('summary') if hit else None
+    if isinstance(row, dict) and row.get('fl') == level and isinstance(row.get('valid'), bool) and not row.get('interrupted') and isinstance(row.get('points'), list):
+        return row
+    return None
+
+
+def _keep_level(data, args, level, sig, row):
+    """Garde la ligne d'un niveau JUGÉ, dès qu'il l'est (même si l'appel est interrompu ensuite) ; jamais un niveau interrompu (le poste était trop lent) ; échéance : la fin du jour UTC (les routes NAT du jour)."""
+    from route_engine import results_cache as RC
+    if row.get('interrupted'):
+        return
+    RC.store(data, _level_key(args, level), sig, {'ok': True, 'summary': row}, until=RC.day_end(), kind=RC.LEVEL_KIND)
+
+
 def levels(job, args, ctx):
     """route/levels : le calcul de tête à chaque niveau demandé, en un appel (voir route_engine/plan.py levels) : { ok: True, levels: [{ fl, points: [{ id, lat, lon }] (celui de route/compute), ok, valid, status, distance_nm, route, connector, reason, errors, states, interrupted }], first_valid, stopped, asked }
     ou { ok: False, reason: 'no-rad' | 'invalid' | 'failed', message } ; `levels` : de 1 à 12 entiers, dans l'ordre des préférences de l'appelant ; `first_valid` : on s'arrête au premier niveau valide (une route trouvée, un contrôle sans erreur, aucune limite de raccord dépassée)."""
@@ -178,17 +205,23 @@ def levels(job, args, ctx):
         hit = RC.load(data, k, sig)
         if hit:
             job.step('route : niveaux (résultat gardé)', len(wanted), len(wanted), 'niveau')
-            return {**hit[0], 'cache': {'hit': True, **hit[1]}}
+            return {**hit[0], 'kept': [], 'cache': {'hit': True, **hit[1]}}      # `kept` est celui de l'appel qui a écrit l'entrée : il ne dit rien de l'appel présent (aucun niveau relu un à un : l'appel entier est relu)
+    known = {}      # SOG-0586 (Auto 2) : les niveaux déjà jugés d'une demande qui ne diffère que par la liste des niveaux (une entrée PAR NIVEAU) : relus, jamais recalculés
+    if sig:
+        for level in wanted:
+            row = _kept_level(data, args, level, sig)
+            if row is not None:
+                known[level] = row
     job.step('route : niveaux', 0, len(wanted), 'niveau')
     try:
         template = view.to_request(_level_args(args, wanted[0]))
-        res = plan.levels(template, wanted, data, rad_file, fra_file if os.path.isfile(fra_file) else None, bool(args.get('first_valid')), stop=job.cancelled, on_level=lambda done, total: job.step('route : niveaux', done, total, 'niveau'))
+        res = plan.levels(template, wanted, data, rad_file, fra_file if os.path.isfile(fra_file) else None, bool(args.get('first_valid')), stop=job.cancelled, on_level=lambda done, total: job.step('route : niveaux', done, total, 'niveau'), known=known, judged=(lambda level, row: _keep_level(data, args, level, sig, row)) if sig else None)
     except ValueError as e:
         return {'ok': False, 'reason': 'invalid', 'message': regen_jobs.clean_error(str(e), ctx)[:300]}
     except (OSError, KeyError, TypeError, IndexError, ZeroDivisionError, AttributeError, RecursionError) as e:
         return {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
     job.step('route : niveaux', len(res['levels']), len(wanted), 'niveau')
-    out = dict(res, ok=True)
+    out = dict(res, ok=True, kept=[r['fl'] for r in res['levels'] if r['fl'] in known])
     if k and res.get('stopped') in ('end', 'first-valid') and not any(r.get('interrupted') for r in res['levels']):
         meta = RC.store(data, k, sig, out, until=RC.day_end())
         if meta:

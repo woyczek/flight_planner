@@ -26,12 +26,26 @@ MAX_BYTES = 4_000_000
 MAX_DEPTH = 32                     # un résultat honnête est peu imbriqué ; un fichier plus profond est refusé (audit 205)
 ENTRY = re.compile(r'[0-9a-f]{64}\.(?:json|tmp)')      # les seuls noms que ce dossier écrit : prune() ne touche à aucun autre fichier
 FOLDER = ('local', 'route-cache')
+LEVEL_KIND = 'levels'              # SOG-0586 (Auto 2) : les entrées PAR NIVEAU de route/levels : un dossier à part, borné à part (12 entrées par clic ne font jamais partir les entrées d'un calcul entier)
+LEVEL_LIMITS = (256, 200_000)      # (fichiers au plus, octets au plus chacun) d'une entrée par niveau
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _STAMP = {}
 
 
-def folder(data):
-    return os.path.join(str(data), *FOLDER)
+def _kind(kind):
+    """SOG-0586 : les deux seules sortes d'entrée (celle d'un appel entier, celle d'un niveau) ; toute autre est refusée (jamais un morceau de chemin venu d'ailleurs)."""
+    if kind not in (None, LEVEL_KIND):
+        raise ValueError("sorte d'entrée inconnue")
+    return kind
+
+
+def limits(kind=None):
+    """(fichiers au plus, octets au plus chacun) du dossier de cette sorte d'entrée (lus à chaque appel : les essais les changent)."""
+    return (MAX_FILES, MAX_BYTES) if _kind(kind) is None else LEVEL_LIMITS
+
+
+def folder(data, kind=None):
+    return os.path.join(str(data), *FOLDER, *([_kind(kind)] if kind else []))
 
 
 def code_stamp():
@@ -98,13 +112,13 @@ def _sound(doc):
     return True
 
 
-def load(data, k, sig, now=None):
+def load(data, k, sig, now=None, kind=None):
     """(résultat, { computedAt, until }) gardé pour cette demande, ou None : fichier absent, trop gros, illisible, d'une autre version, d'une autre empreinte, échu."""
     if not ENABLED:
         return None
     now = now or dt.datetime.now(dt.timezone.utc)
-    path = os.path.join(folder(data), k + '.json')
-    doc, why = safe_json.read(path, MAX_BYTES, encoding='utf-8')          # absent, trop gros, très imbriqué (audit 205), NaN / Infinity : un fichier illisible, le calcul est refait
+    path = os.path.join(folder(data, kind), k + '.json')
+    doc, why = safe_json.read(path, limits(kind)[1], encoding='utf-8')          # absent, trop gros, très imbriqué (audit 205), NaN / Infinity : un fichier illisible, le calcul est refait
     if why:
         return None
     if not _sound(doc) or not isinstance(doc, dict) or doc.get('version') != VERSION or doc.get('key') != k or doc.get('sig') != sig or not isinstance(doc.get('result'), dict) or doc['result'].get('ok') is not True:
@@ -125,7 +139,7 @@ def day_end(now=None):
     return _iso((now + dt.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0))
 
 
-def store(data, k, sig, res, now=None, until=None):
+def store(data, k, sig, res, now=None, until=None, kind=None):
     """Garde un résultat `ok` ; rend { computedAt, until } (rien d'écrit pour un échec, un résultat trop gros ou un dossier non inscriptible)."""
     now = now or dt.datetime.now(dt.timezone.utc)
     if not ENABLED or not isinstance(res, dict) or res.get('ok') is not True:
@@ -133,28 +147,28 @@ def store(data, k, sig, res, now=None, until=None):
     meta = {'computedAt': _iso(now), 'until': until if until is not None else until_of(res, now)}
     try:
         raw = json.dumps({'version': VERSION, 'key': k, 'sig': sig, **meta, 'result': res}, ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode('utf-8')
-        if len(raw) > MAX_BYTES:
+        if len(raw) > limits(kind)[1]:
             return meta
-        d = folder(data)
+        d = folder(data, kind)
         os.makedirs(d, exist_ok=True)
         tmp = os.path.join(d, k + '.tmp')
         with open(tmp, 'wb') as f:
             f.write(raw)
         os.replace(tmp, os.path.join(d, k + '.json'))
-        prune(d)
+        prune(d, limits(kind)[0])
     except (OSError, ValueError, TypeError):
         pass
     return meta
 
 
-def prune(d):
+def prune(d, limit=None):
     """Au plus MAX_FILES entrées : les moins récemment utilisées partent ; les restes d'écriture (.tmp) aussi."""
     try:
         files = sorted((e for e in os.scandir(d) if e.is_file(follow_symlinks=False) and ENTRY.fullmatch(e.name)), key=lambda e: e.stat().st_mtime)
     except OSError:
         return
     for e in files:
-        if e.name.endswith('.tmp') or len(files) > MAX_FILES:
+        if e.name.endswith('.tmp') or len(files) > (MAX_FILES if limit is None else limit):
             try:
                 os.remove(e.path)
             except OSError:

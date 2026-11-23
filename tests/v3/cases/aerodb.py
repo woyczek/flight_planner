@@ -20744,8 +20744,8 @@ def k529(c):
         try:
             first = levels_job(FakeJob(), dict(args), ctx)
             folder = os.path.join(data, 'local', 'route-cache')
-            found = sorted(os.listdir(folder)) if os.path.isdir(folder) else []
-            elsewhere = [r for r, _d, fs in os.walk(data) for f in fs if len(f) == 69 and f.endswith('.json') and os.path.abspath(r) != os.path.abspath(folder)]
+            found = sorted(f for f in os.listdir(folder) if f.endswith('.json')) if os.path.isdir(folder) else []      # SOG-0586 (Auto 2): the entries of the levels live in a folder of their own INSIDE route-cache (K534)
+            elsewhere = [r for r, _d, fs in os.walk(data) for f in fs if len(f) == 69 and f.endswith('.json') and os.path.commonpath([os.path.abspath(r), os.path.abspath(folder)]) != os.path.abspath(folder)]
             text = open(os.path.join(folder, found[0]), encoding='utf-8').read().lower() if found else ''
             second = levels_job(FakeJob(), dict(args), ctx)
             n_hit = len(calls)
@@ -20798,3 +20798,104 @@ def k530(c):
     row = lambda text: ['', '', '', 'ZZ1', '', '', '', '', text, 'H24']
     c.eq((RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + '1. DEP NAT_GROUP & ARR (LFPN, LFPO)' + chr(10) + '2. VIA LFRRN')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + '1. VIA BOKNO')), RF.reasons_of(row('NOT AVBL FOR TFC' + chr(10) + 'DEP LFBB VIA LFBBUBDX'))),
          (['space_unread'], ['unread'], ['space_unread']), 'a sector of a centre (« VIA LFRRN », « VIA LFBBUBDX ») is named « space without contour » like a FIR (red before: « unread »); a point (« VIA BOKNO ») stays « unread »', what='reason')
+
+@case('K534', 'Route engine / launcher, SOG-0586 (Auto 2): route/levels keeps ONE ENTRY PER LEVEL as soon as that level is judged — a call cancelled after its first level keeps it, a second call (the same flight, the same list or another one) re-reads the levels kept and computes only the others (`kept` names them), a change of the data or an expired day computes them all again, an interrupted level is never kept, a damaged entry is ignored; the entries of the levels live in a folder of their own bounded on its own: twelve levels per click never push out the entry of a whole call',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0586; Features SOG: « ce que le second temps a déjà calculé n\'est PAS perdu à l\'interruption »; the ergonomist\'s condition for Sécurisation: « une entrée par niveau ne doit pas faire sauter la borne. Un cas rouge sans la garde »): one entry per level, same conditions as K529 (under data/local/route-cache/, no callsign or registration, the request closed, expires with the day and with the data), the key = the request of ONE level (the fields of route/compute, `levels` and `first_valid` out); the entry is read as an untrusted file (size, version, key, signature, expiry, then the shape of a level row). Invented set of the bench of K526',
+      )
+def k534(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJX = _regen()
+    from route_engine import plan as P, results_cache as RC
+    levels_job = RJX.REGISTRY[('route', 'levels')][0]
+    paths = levels_job.__globals__['_paths']
+    keep = levels_job.__globals__['_keep_level']
+
+    class FakeJob:
+        def __init__(self, cancel_after=None):
+            self.steps = []
+            self.cancel_after = cancel_after
+            self.stop = False
+
+        def step(self, text, done=None, total=None, unit=None):
+            self.steps.append((text, done, total, unit))
+            if self.cancel_after is not None and unit == 'niveau' and done == self.cancel_after:
+                self.stop = True
+
+        def cancelled(self):
+            return self.stop
+    computed = []
+    real = P.compute
+
+    def counted(request, *a, **k):
+        computed.append(request['fl'])
+        return real(request, *a, **k)
+    rows = lambda res: [(r['fl'], r['route'], r['valid'], r['verdict']) for r in res['levels']]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+        ctx = {'data': data}
+        args = {'adep': 'ZZAA', 'adest': 'ZZBB', 'date': '2026-11-09T12:00', 'enable_fra': False, 'levels': [250, 260, 270], 'first_valid': False}
+        folder = os.path.join(data, 'local', 'route-cache')
+        sub = os.path.join(folder, RC.LEVEL_KIND)
+        count = lambda d: len([f for f in os.listdir(d) if f.endswith('.json')]) if os.path.isdir(d) else 0
+        P.compute = counted
+        try:
+            cut = levels_job(FakeJob(cancel_after=1), dict(args), ctx)
+            kept_after_cut = count(sub)
+            n_cut = list(computed)
+            del computed[:]
+            full = levels_job(FakeJob(), dict(args), ctx)
+            n_full = list(computed)
+            del computed[:]
+            again = levels_job(FakeJob(), dict(args), ctx)      # the entry of the WHOLE call: `kept` is that of the call that wrote it, it says nothing of this one
+            n_again = list(computed)
+            wider = levels_job(FakeJob(), dict(args, levels=[250, 260, 270, 280]), ctx)
+            n_wider = list(computed)
+            del computed[:]
+            os.utime(rad, (1_700_000_000, 1_700_000_000))      # a file of the data changes
+            fresh = levels_job(FakeJob(), dict(args), ctx)
+            n_fresh = list(computed)
+            del computed[:]
+            # the guard: the levels folder has its own bound; the entry of a whole call stays
+            before = count(folder)
+            saved = RC.LEVEL_LIMITS
+            RC.LEVEL_LIMITS = (2, 200_000)
+            try:
+                levels_job(FakeJob(), dict(args, levels=[310, 320, 330, 340, 350]), ctx)
+            finally:
+                RC.LEVEL_LIMITS = saved
+            bound = (count(sub), count(folder) >= before)
+            # an interrupted level is never kept; a damaged entry is ignored
+            rad_file, fra_file = paths(data)
+            sig = RC.signature(data, rad_file, fra_file if os.path.isfile(fra_file) else None)
+            gone = count(sub)
+            keep(data, dict(args), 400, sig, {'fl': 400, 'valid': True, 'points': [], 'interrupted': True})
+            interrupted_kept = count(sub) - gone
+            for f in (os.listdir(sub) if os.path.isdir(sub) else []):
+                with open(os.path.join(sub, f), 'wb') as h:
+                    h.write(b'{"version": 1, "key": "x"')
+            del computed[:]
+            damaged = levels_job(FakeJob(), dict(args, levels=[310, 320]), ctx)
+            n_damaged = list(computed)
+        finally:
+            P.compute = real
+    c.eq((cut['stopped'], [r['fl'] for r in cut['levels']], kept_after_cut, n_cut), ('cancelled', [250], 1, [250]), 'a call cancelled after its first level has judged it and kept it (red before: nothing kept for an interrupted call)', what='cut')
+    c.eq((n_full, full['kept'], rows(full)[0][0]), ([260, 270], [250], 250), 'the same call again re-reads FL250 and computes only FL260 and FL270', what='reread')
+    c.eq((n_again, again['cache']['hit'], again['kept']), ([], True, []), 'the entry of a whole call answers an identical call without computing, with `kept: []` (no level re-read one by one: red before, the `kept` of the call that wrote the entry)', what='whole call')
+
+    def refused(kind):
+        try:
+            RC.folder('x', kind)
+            return False
+        except ValueError:
+            return True
+    c.eq((refused('..'), refused('levels/../x'), refused(''), refused(None), refused(RC.LEVEL_KIND)), (True, True, False, False, False), 'only the two kinds of entry exist (a whole call, a level): any other kind is refused, never a piece of a path', what='kinds')
+    c.eq((n_wider, wider['kept']), ([280], [250, 260, 270]), 'another list of the same flight re-reads the three levels kept and computes the new one only (the key is the request of ONE level)', what='other list')
+    c.eq((n_fresh, fresh['kept']), ([250, 260, 270], []), 'a change of a file of the data: no level kept is the answer, all three are computed again', what='data')
+    c.eq(rows(fresh), rows(full), 'the levels re-read give the same rows as the levels computed (route, validity, verdict)', what='same rows')
+    c.eq(bound, (2, True), 'GUARD — five more levels with a bound of two: the levels folder holds two entries, and the entries of whole calls are still there (red without the folder of its own: the levels push the whole calls out)', what='bound')
+    c.eq(interrupted_kept, 0, 'an interrupted level is never kept', what='interrupted')
+    c.eq(n_damaged, [310, 320], 'a damaged entry is ignored: the levels are computed', what='damaged')
