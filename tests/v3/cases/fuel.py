@@ -10533,3 +10533,94 @@ def f307(c):
     c.eq(norm(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), f'LFRS XQA{other} XQX{other} XQNE',
          '« Auto » never writes the route', what='route kept')
     c.check_errors()
+
+
+# SOG-0552: the words decided by the ergonomist (23 Nov), written in clear (never read from the texts of the module)
+_NV_WORDS = {
+    'fr': {'label': 'Aucune infraction trouvée', 'spaces': 'Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
+           'euro': 'Seul Eurocontrol valide un plan.', 'old': 'conforme',
+           'none': 'La route calculée au FL270 enfreint 2 règle(s) connue(s).'},
+    'en': {'label': 'No violation found', 'spaces': 'The RAD rules that target a whole airspace are not examined.',
+           'euro': 'Only Eurocontrol validates a plan.', 'old': 'conforms',
+           'none': 'The computed route at FL270 breaks 2 known rule(s).'},
+    'de': {'label': 'Keine Verstöße gefunden', 'spaces': 'Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
+           'euro': 'Nur Eurocontrol validiert einen Plan.', 'old': 'konform',
+           'none': 'Die berechnete Route auf FL270 verletzt 2 bekannte Regel(n).'},
+    'es': {'label': 'No se encontró ninguna infracción', 'spaces': 'Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.',
+           'euro': 'Solo Eurocontrol valida un plan.', 'old': 'conforme',
+           'none': 'La ruta calculada en el FL270 infringe 2 regla(s) conocida(s).'},
+}
+
+
+@case('F308', 'Route step: the verdict of a route where nothing known is broken and nothing left unverified reads « Aucune infraction '
+      'trouvée » (never « conforme »), always followed by ONE fixed line « Les règles du RAD qui visent un espace aérien entier ne sont pas '
+      'examinées. » — never twice, even when the route crosses such rules; under « Non vérifiable » the same line only when the route '
+      'crosses such rules; above the list « Seul Eurocontrol valide un plan. » alone',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0552 (the ergonomist, 23 Nov: « conforme » claims what the engine does not know; the engine and its code `conform` '
+      'unchanged; the sentence of SOG-0538 replaced, the calque « portent » gone); a fake launcher, invented routes and rules')
+def f308(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _NV_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    spaces = {'code': 'rad_unread', 'values': {'state': 'be', 'flown': 0, 'spaces_only': 4}, 'text': 'RAD non lu'}
+    gap = {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}
+    st['alts'] = [
+        dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), verdict='conform', violations=[], unverifiable=[]),
+        dict(_alt(2, 'Via UM728', 'LFRS NTS1A LUGEN UM728 NEPIX MEN1A LFML', 375, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=[spaces]),
+        dict(_alt(3, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[],
+             unverifiable=[gap, spaces])]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt] [data-verdict]').length === 3", timeout=10000, what='the verdicts of the three routes')
+    rows = c.js(f"""[...document.querySelectorAll('{A} [data-alt]')].map(e => ({{ name: e.querySelector('[data-altname]')?.textContent || '',
+        verdict: e.querySelector('[data-verdict]')?.dataset.verdict || '', word: e.querySelector('[data-verdict]')?.textContent || '',
+        spaces: [...e.querySelectorAll('[data-spacesonly]')].map(x => x.textContent) }}))""")
+    by = {r['name']: r for r in rows}
+    # 1. the level of the engine's `conform`: the new label, never « conforme » (the route with only airspace rules is that level too)
+    for n in ('Via UN10', 'Via UM728'):
+        c.eq((by[n]['verdict'], norm(by[n]['word'])), ('conform', norm(W['label'])), f'{n}: « Aucune infraction trouvée » (red before: '
+             '« conforme »)', what='label')
+    # 2. under it, always ONE fixed line, never twice (Via UM728 crosses rules that target a whole airspace)
+    for n in ('Via UN10', 'Via UM728'):
+        c.eq([norm(x) for x in by[n]['spaces']], [norm(W['spaces'])], f'{n}: the fixed line once', what='fixed')
+    # 3. under « Non vérifiable »: the same line, because this route crosses such rules
+    c.eq(by['Direct']['verdict'], 'unverifiable', 'Direct stays « non vérifiable »', what='unv')
+    c.eq([norm(x) for x in by['Direct']['spaces']], [norm(W['spaces'])], 'the same line under « Non vérifiable »', what='unv line')
+    # 4. above the list, « Seul Eurocontrol valide un plan. » alone (the explanation of « conforme » gone with the word)
+    c.eq(norm(c.text(f'{FUEL} [data-conformline]') or ''), norm(W['euro']), '« Seul Eurocontrol valide un plan. » alone', what='euro')
+    c.ok(not any(norm(r['word']) == norm(W['old']) for r in rows), rows, 'the word « conforme » nowhere as a verdict')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F308_{c.design}_{w}_{c.lang}_noviolation.png')
+    # 5. (the ergonomist, 23 Nov, point 3) the engine's review « no conforming route »: a sentence always true, on the computed route
+    # alone — the verdicts of the other routes say the rest (never « Aucune route conforme trouvée »)
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    rad = {'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'}
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True,
+                       verdict='violates', unverifiable=[],
+                       violations=[{'code': 'no_conforming_route', 'values': {'violations': 2}, 'text': 'Aucune route sans infraction'}, rad,
+                                   dict(rad, values={'id': 'XX9002', 'target': 'NEPIX–LFML'}, text='Règle XX9002')])]
+    st['extra'] = {'status': 'faulty'}
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{A} li[data-reason=no_conforming_route]')", timeout=10000, what='the review of the engine')
+    c.eq(norm(c.text(f'{A} li[data-reason=no_conforming_route]') or ''), norm(W['none']), 'the computed route and its count, nothing '
+         'about the other routes', what='none')
+    c.js(f"document.querySelectorAll('{A} details[data-reasons]').forEach(d => d.open = true)")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{A} li[data-reason=no_conforming_route]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F308_{c.design}_{w}_{c.lang}_faulty.png')
+    c.check_errors()
