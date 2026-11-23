@@ -934,6 +934,12 @@ const TX = {
       'Ningún aeródromo entre 30 y 300 NM de la llegada tiene una pista lo bastante larga.'
     ]
   },
+  // SOG-0559 (l'ergonome) : tous les dégagements proposés non jugés faute de date de vol — la cause une fois, au-dessus de la liste
+  altnPropNoTime: ['Sans date de vol, la météo des dégagements n’est pas jugée.',
+    'Without a flight date, the weather of the alternates is not judged.',
+    'Ohne Flugdatum wird das Wetter der Ausweichflugplätze nicht beurteilt.',
+    'Sin fecha de vuelo, la meteorología de los alternativos no se evalúa.'
+  ],
   altnPropHead: ['Les plus proches de {arr} (piste et moyens vérifiés d’abord)', 'Closest to {arr} (runway and aids checked first)',
     'Am nächsten zu {arr} (geprüfte Piste und Navigationshilfen zuerst)',
     'Los más cercanos a {arr} (pista y medios comprobados primero)'
@@ -6066,11 +6072,14 @@ function altnPropHtml() {
   if (P.pending) return `<p class="fu-altnprop f-muted" data-altnprop role="status">${esc(tt(TX.altnPropBusy))}</p>`;
   // ce qui empêche de proposer, dit ; le geste reste là pour réessayer
   if (P.msg) return `<p class="fu-altnprop f-muted" data-altnprop data-msg="${esc(P.msg)}">${esc(tt(TX.altnPropMsg[P.msg]))}</p><p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
-  const unit = S.C?.sheet?.unit || 'kg',
+  // SOG-0559 (l'ergonome) : tous « ? » faute de date de vol — la cause une fois au-dessus de la liste, plus dans chaque ligne
+  const allNoTime = P.list.length > 0 && P.list.every(x => altnPropCrits(x).why.includes('wx-notime')),
+    unit = S.C?.sheet?.unit || 'kg',
     row = (x, proposed) => {
       // SOG-0544 : chaque réserve dite par son vrai mot, la météo inconnue comprise (plus de « météo non lue » caché)
       const p = altnPropCrits(x),
-        why = [...p.why, ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].flatMap(w => altnWhyBits(w, p)).map(([s, short]) =>
+        why = [...p.why.filter(w => !(allNoTime && w === 'wx-notime')), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].flatMap(w =>
+          altnWhyBits(w, p)).map(([s, short]) =>
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
@@ -6086,7 +6095,7 @@ function altnPropHtml() {
     was = S.body?.querySelector('[data-altnchk] details[data-altnprop]'),
     open = P.reopen || !was || was.open;
   P.reopen = false;
-  return `<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary><ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
+  return `<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary>${allNoTime ? `<p class="f-muted" data-altnwxall>${esc(tt(TX.altnPropNoTime))}</p>` : ''}<ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
 }
 /** « Prendre » : le terrain écrit dans le champ Dégagement (le seul geste qui l'écrit), la proposition fermée, la Carte prévenue. */
 function altnTake(icao) {

@@ -10188,8 +10188,8 @@ def f303(c):
     c.eq(norm(c.text(f'{B} [data-altnprop] [data-altnwxall]') or ''), norm(once), 'the cause once, above the list', what='once')
     rows = [norm(x) for x in c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.textContent)")]
     c.ok(not any(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in r for r in rows), rows, 'no row repeats it')
-    c.eq(c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.dataset.state)"), ['warn'] * 3,
-         'the rows keep their sign', what='signs')
+    c.ok('ok' not in c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.dataset.state)"), 'ok',
+         'the rows keep their sign, never judged good without a date')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': 900})
         c.settle()

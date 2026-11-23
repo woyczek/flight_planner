@@ -2623,4 +2623,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   observation « METAR de 14:20Z : VFR. » (`WX.station` on the METAR alone, the category written as on the Weather step); without one either:
   « {ad} : ni TAF ni METAR. ». The fold keeps the rule (« Météo : jugée sur le TAF, une heure avant et après l’arrivée. ») without the cause
   again; a reading in progress or failed stays said in the fold (SOG-0527 (2)). The rule of SOG-0548 applied to the alternate's line
-  « Moyens »: the reading gesture says « Lire les procédures de {ad} », never the mode « Lire à la demande ». Case F313, red before.
+  « Moyens »: the reading gesture says « Lire les procédures de {ad} », never the mode « Lire à la demande ». In the LIST of the
+  proposed alternates, when every one is « ? » for want of a flight date (`wx-notime`), the cause is said once above the list (« Sans date
+  de vol, la météo des dégagements n’est pas jugée. »), the rows keep their sign without it (F303 changed on purpose). Case F313, red
+  before.
