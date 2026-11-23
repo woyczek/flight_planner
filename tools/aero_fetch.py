@@ -522,6 +522,14 @@ def enr17(data, today=None):
     return [{'name': name, 'folder': 'route', 'bytes': len(body), 'unchanged': not changed}], []
 
 
+def enr51_pages(data, today=None):
+    """Les pages de l'eAIP de France d'un cycle que la suite lit (même hôte, une page chacune, une fois par cycle) : l'ENR 5.1 (enr51) puis l'ENR 1.7 (enr17, SOG-0530 : le tableau des niveaux de croisière). UN seul appel pour le dispatcher
+    (fetch) ET pour base/fetch (tools/regen/base_sources.py) : SOG-0568, base/fetch n'appelait que enr51 et ne lisait jamais l'ENR 1.7 (route/levels_fr.json restait absent). L'une qui échoue ne retient pas l'autre."""
+    files, errors = enr51(data, today)
+    more, more_errors = enr17(data, today)
+    return files + more, errors + more_errors
+
+
 def airnav(data):
     """eAIP d'Irlande (AirNav Ireland) : l'édition en vigueur (adresse lue sur la page AIM, contrôlée), ses pages ENR 4.4 et ENR 3.3 lues (tools/airnav_eaip.py) et rangées en GeoJSON dans zones/ie/
     (airnav_ie_enr_AAAAMMJJ.geojson : la date de l'édition est son cycle). L'édition déjà présente n'est pas relue ; les éditions précédentes du même jeu sont retirées."""
@@ -1016,9 +1024,7 @@ def fetch(data, provider, args=()):
     elif provider == 'dfs':
         files, errors = dfs(data)
     elif provider == 'enr51':
-        files, errors = enr51(data)
-        more, more_errors = enr17(data)      # SOG-0530 : la même source (l'eAIP du SIA, le même hôte), la page ENR 1.7 : le tableau des niveaux de croisière
-        files, errors = files + more, errors + more_errors
+        files, errors = enr51_pages(data)      # SOG-0530 : l'ENR 5.1 puis, du même hôte, la page ENR 1.7 (le tableau des niveaux de croisière)
     elif provider == 'nat':
         files, errors = nat(data)
     else:

@@ -3873,3 +3873,81 @@ def k369(c):
         ns['_fetch_source'] = keep[0]
         if keep[1] is not None:
             RJ.REGISTRY[('dfsproc', 'build')] = keep[1]
+
+
+@case('K521', 'base/fetch of the source `enr51` (France) reads the ENR 1.7 table of levels with the ENR 5.1: one page each, once per cycle, the ENR 5.1 of the cycle already there is not asked again; route/levels_fr.json is written with its cycle and counted among the files written (SOG-0568)', 'K', static=True,
+      rule='SOG-0568 (23 Nov 2026): SOG-0530 decided and delivered « the ENR 1.7 is read with the ENR 5.1, once per cycle, same host, one page » but only the /__aero/fetch dispatcher (aero_fetch.fetch) chained enr17 after enr51; base/fetch (_fetch_source) called aero_fetch.enr51 alone, so no « update » of France ever asked the ENR 1.7 page and route/levels_fr.json was never written (the route screen: « tableau de la France non lu »). No new host and no new page; the pages are simulated (no real network)')
+def k521(c):
+    RJ, BS, AF, DS = _mods()
+    AC = importlib.import_module('aero_cycles')
+    cur = AC.airac_start()
+    kept = (AF.get, sys.modules.get('sia_enr17'), sys.modules.get('sia_enr51'))
+    urls = []
+
+    class Job:
+        data = {}
+
+        def cancelled(self):
+            return False
+
+        def log(self, *a):
+            pass
+
+        def step(self, *a, **k):
+            pass
+
+    class P17:
+        @staticmethod
+        def parse(page):
+            return {'lower': {'ifr': [1]}, 'upper': {'ifr': [2]}}
+
+    class P51:
+        @staticmethod
+        def parse(page):
+            return [{'id': 'LFR1'}]
+
+    def page(url, *a, **k):
+        urls.append(url.rsplit('/', 1)[-1])
+        return b'<html></html>'
+
+    AF.get = page
+    sys.modules['sia_enr17'], sys.modules['sia_enr51'] = P17, P51
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = Path(td)
+            levels = data / 'route' / 'levels_fr.json'
+            # ---- the ENR 5.1 of the cycle is there (France « up to date » since the 5.1 landed): ONLY the ENR 1.7 is asked
+            (data / 'sia' / 'zones' / 'fr').mkdir(parents=True)
+            (data / 'sia' / 'zones' / 'fr' / f'enr51_fr_{cur}.json').write_text(json.dumps({'schema': 1, 'zone': 'fr', 'cycle': cur, 'zones': []}), encoding='utf-8')
+            entry, files, errors, mods, cancelled = BS._fetch_source(Job(), str(data), 'fr', 'enr51')
+            c.eq((urls, levels.is_file(), 'route/levels_fr.json' in mods, entry['state'], errors), (['FR-ENR-1.7-fr-FR.html'], True, True, 'downloaded', []), 'the ENR 5.1 of the cycle held: base/fetch asks the ENR 1.7 page alone, writes route/levels_fr.json and counts it among the written files', what='1.7 alone')
+            doc = json.loads(levels.read_text(encoding='utf-8'))
+            c.eq(doc.get('cycle'), cur, 'the table carries the cycle it was read for', what='cycle')
+            # ---- a second call: the two files of the cycle are there, nothing is asked
+            urls.clear()
+            entry, files, errors, mods, cancelled = BS._fetch_source(Job(), str(data), 'fr', 'enr51')
+            c.eq((urls, entry['state'], mods), ([], 'unchanged', []), 'both files of the cycle held: one reading per cycle and per page, nothing asked, nothing written', what='once per cycle')
+            # ---- nothing held: both pages, the ENR 5.1 then the ENR 1.7
+            for f in (levels, data / 'sia' / 'zones' / 'fr' / f'enr51_fr_{cur}.json'):
+                f.unlink()
+            urls.clear()
+            entry, files, errors, mods, cancelled = BS._fetch_source(Job(), str(data), 'fr', 'enr51')
+            c.eq((urls, sorted(m.rsplit('/', 1)[-1] for m in mods)), (['FR-ENR-5.1-fr-FR.html', 'FR-ENR-1.7-fr-FR.html'], [f'enr51_fr_{cur}.json', 'levels_fr.json']), 'nothing held: the two pages of the SIA eAIP (same host), the two files written', what='both pages')
+            # ---- the ENR 1.7 page that cannot be read (layout changed): the failure is said, nothing is invented, the ENR 5.1 stays
+            levels.unlink()
+
+            class Bad:
+                @staticmethod
+                def parse(page):
+                    raise ValueError('layout changed')
+            sys.modules['sia_enr17'] = Bad
+            urls.clear()
+            entry, files, errors, mods, cancelled = BS._fetch_source(Job(), str(data), 'fr', 'enr51')
+            c.eq((entry['state'], levels.exists(), (data / 'sia' / 'zones' / 'fr' / f'enr51_fr_{cur}.json').is_file()), ('failed', False, True), 'an unreadable ENR 1.7 page: the source is said failed, no table written, the ENR 5.1 file kept', what='unreadable page')
+    finally:
+        AF.get = kept[0]
+        for name, mod in (('sia_enr17', kept[1]), ('sia_enr51', kept[2])):
+            if mod is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = mod

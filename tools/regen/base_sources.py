@@ -498,7 +498,7 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
         call(aero_fetch.enaire, data)
         removed = [f"{FOLDERS['enaire']}/{n}" for n in sorted(before - _names(folder))]  # les amendements précédents que enaire() retire
     else:
-        call(getattr(aero_fetch, p), data, **({'downloads': downloads} if p == 'navpt' else {}))      # navpt : prend aussi le fichier pris à la main dans les dossiers du lanceur (SOG-0244)
+        call(aero_fetch.enr51_pages if p == 'enr51' else getattr(aero_fetch, p), data, **({'downloads': downloads} if p == 'navpt' else {}))      # navpt : prend aussi le fichier pris à la main dans les dossiers du lanceur (SOG-0244)
     if not files and not errors:
         if cancelled:
             return None, files, errors, [], True
