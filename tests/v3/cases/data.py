@@ -11219,8 +11219,7 @@ def l171(c):
     c.ok(r['visible'], r, 'a country to update, no file seen: the button is in view too')
     c.eq([r['primary'], r['disabled'], r['afterNow'], r['before'], r['aboveSources'], r['pickup']], [True, False, True, [], True, None], 'a country to update with no file seen: the same place, primary, no pickup button', what='witness gb')
     _l89_sheet(c, 'es')
-    r = m('es')
-    c.eq([r['primary'], r['disabled'], r['primaries'], r['aboveSources']], [False, True, [], True], 'a country that is up to date: the button is grey, never primary (as before), still at the head', what='witness es')
+    c.eq([c.count('[data-sheet=es] [data-act=sheet-update]'), c.count('[data-sheet=es] button.primary')], [0, 0], 'a country that is up to date, nothing to receive: NO « Mettre à jour ce pays » at all (SOG-0568: never a grey button), no primary', what='witness es')
     c.check_errors()
 
 
@@ -11906,9 +11905,9 @@ def l181(c):
         ok = lambda redo=(), update=(): {**_zst('up-to-date'), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}, 'gains': {'redo': [rd(g) for g in redo], 'update': [rd(g) for g in update]}}
         w['zs']['fr'] = ok([_L181_GAINS['names'], _L181_GAINS['hours']], [_L181_GAINS['levels']])   # both: a reread AND an update
         w['zs']['gb'] = ok([_L181_GAINS['hours']])                                                    # a reread only
-        w['zs']['ca'] = ok([_L181_GAINS['hours']])                                                    # a reread only
+        w['zs']['nl'] = ok([_L181_GAINS['hours']])                                                    # a reread only
         w['zs']['es'] = ok()                                                                          # nothing to receive: plain green
-        w['zs']['us'] = ok([], [_L181_GAINS['levels']])                                               # only a piece to download: « à jour · complément possible », the update alone
+        w['zs']['ie'] = ok([], [_L181_GAINS['levels']])                                               # only a piece to download: « à jour · complément possible », the update alone
     st = _l102_open(c, world_tweak=tweak)
     group = '[data-group-body]'
 
@@ -11926,9 +11925,9 @@ def l181(c):
             c.tap('[data-act=sheet-close]')
         c.wait(200)
     # ---- 1. the map: the striped green for a country that can receive something; plain for the others
-    c.eq(c.js("(z => z.map(i => [i, !!document.querySelector(`[data-wmap] path[data-zone=${i}]`)?.hasAttribute('data-redo')]))(['fr', 'gb', 'ca', 'es', 'us'])"),
-         [['fr', True], ['gb', True], ['ca', True], ['es', False], ['us', False]], 'the map: the striped fill for the countries with a gain, the plain one for the others (the brown of « à faire » is for de, not for them)', what='map stripes')
-    us = c.js("(p => [p.dataset.tone, p.hasAttribute('data-redo'), p.getAttribute('aria-label')])(document.querySelector('[data-wmap] path[data-zone=us]'))")
+    c.eq(c.js("(z => z.map(i => [i, !!document.querySelector(`[data-wmap] path[data-zone=${i}]`)?.hasAttribute('data-redo')]))(['fr', 'gb', 'nl', 'es', 'it'])"),
+         [['fr', True], ['gb', True], ['nl', True], ['es', False], ['it', False]], 'the map: the striped fill for the countries with a gain, the plain one for the others (the brown of « à faire » is for de, not for them)', what='map stripes')
+    us = c.js("(p => [p.dataset.tone, p.hasAttribute('data-redo'), p.getAttribute('aria-label')])(document.querySelector('[data-wmap] path[data-zone=ie]'))")
     c.eq([us[0], us[1], us[2].split(' : ')[1].startswith(W['upd'])], ['ok', True, True], 'a country that only lacks a piece: the same striped green, the word follows the gesture offered (« à jour · complément possible », the update alone)', what='piece only')
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone"), 'ok', 'a country that can receive something is still « ok » (green): the map never paints it as to do', what='tone ok')
     c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=fr]').getAttribute('aria-label')").split(' : ')[1].startswith(W['redo']), True, 'the label of the map path says « à jour · relecture possible »', what='map label')
@@ -11999,5 +11998,5 @@ def l181(c):
     c.tap('[data-reread-all] button')
     c.wait(2500)
     builds = _posts(st, 'build')[n_build:]
-    c.eq([len(builds), sorted(builds[0].get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['ca', 'fr', 'gb'], 0], 'one build of the three countries, no download', what='reread all posts')
+    c.eq([len(builds), sorted(builds[0].get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['fr', 'gb', 'nl'], 0], 'one build of the three countries, no download', what='reread all posts')
     c.check_errors()

@@ -221,7 +221,7 @@ button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog
 </section>
 </main>
 <script>
-// Maquette seulement : ?v=liste|carte|fiche choisit la vue ; &run=1 montre la relecture de tous en cours ; &tone=day force le jour.
+// Maquette seulement : le paramètre « v » (liste, carte ou fiche) choisit la vue ; « run=1 » montre la relecture de tous en cours ; « tone=day » force le jour.
 const q = new URLSearchParams(location.search);
 document.body.dataset.v = ['liste', 'carte', 'fiche'].includes(q.get('v')) ? q.get('v') : 'liste';
 if (q.get('tone') === 'day') document.documentElement.dataset.tone = 'day';

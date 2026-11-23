@@ -1094,9 +1094,14 @@ def k114(c):
         before = (data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8')
         texts = {f'{k}.json': json.dumps({'schema': 2, 'zone': 'nl', 'cycle': '2026-10-29', 'kind': k, 'parserVersion': parser, 'data': []}) for k in BA.KINDS}
         entry = {'cycle': '2026-10-29', 'prefixes': [], 'kb': {}, 'cells': {}}
-        g = RJ.REGISTRY[('base', 'build')][0].__globals__
-        real = g['write_if_changed']
-        g['write_if_changed'] = lambda path, text, parsed=None: False if path.endswith('points.json') else real(path, text, parsed)      # a file lost between the writing and the index
+        real = os.replace
+
+        def lossy(a, b, *x, **k):      # a file lost between the writing and the index: the folder is swapped in, then points.json is gone (SOG-0568: install writes beside, then swaps)
+            r = real(a, b, *x, **k)
+            if '.new-' in str(a):
+                os.remove(os.path.join(str(b), 'points.json'))
+            return r
+        BA.os.replace = lossy
         try:
             try:
                 BA.install(str(data), 'nl', '2026-10-29', texts, entry)
@@ -1104,7 +1109,7 @@ def k114(c):
             except ValueError as e:
                 lost = str(e)
         finally:
-            g['write_if_changed'] = real
+            BA.os.replace = real
         c.eq((bool(lost) and 'points.json absent' in lost, (data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8') == before), (True, True), 'a file of the folder is absent when the index is to be written: the zone is not published, the index is untouched', what='no orphan index')
         paths, written = BA.install(str(data), 'nl', '2026-10-29', texts, entry)
         c.eq(('sia/base/index.json' in paths, json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))['zones']['nl']['cycle']), (True, '2026-10-29'), 'a complete folder: the index is written', what='index written')
