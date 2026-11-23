@@ -886,7 +886,7 @@ _TEXT_OF = """async (p) => { const db = await new Promise((res, rej) => { const 
 _CLEAR_ADD = """async () => { if (!(await indexedDB.databases()).some(d => d.name === 'sogFrame')) return false; const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
   for (const st of ['pending', 'docs']) { if (!db.objectStoreNames.contains(st)) continue;
     const keys = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
-    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^missions\/X_(TESTCO|CO)\//.test(String(k))) t.objectStore(st).delete(k);
+    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^missions\\/X_(TESTCO|CO)\\//.test(String(k))) t.objectStore(st).delete(k);
     await new Promise(res => { t.oncomplete = res; t.onerror = res }) }
   db.close(); return true }"""
 
@@ -2372,7 +2372,7 @@ def n49(c):
       const ready = performance.now() - t0, t1 = performance.now();
       i.value = 'parade inventee 7'; i.dispatchEvent(new Event('input', {{ bubbles: true }}));
       return {{ key: Math.round(key), ready: Math.round(ready), next: Math.round(performance.now() - t1),
-        hits: +((document.querySelector('{M} [data-count]')?.textContent || '').match(/\d+/) || [0])[0] }} }}""")
+        hits: +((document.querySelector('{M} [data-count]')?.textContent || '').match(/\\d+/) || [0])[0] }} }}""")
     c.ok(t['ready'] < 3000, t, 'the index of a hundred missions is ready within 3 s of the first keystroke')
     c.ok(t['key'] < 100 and t['next'] < 100, t, 'a keystroke redraws the list in less than 100 ms (before and after the index)')
     c.eq(t['hits'], 100, 'every mission has the risk: a hundred found (the count)', what='hits')
@@ -14643,7 +14643,7 @@ def n220(c):
 
 
 _L4_MARK = f"(() => {{ const m = document.querySelector('{E} [data-atflow] [data-mark=places]'); return [m.textContent.trim(), m.dataset.kind, document.querySelector('{E} [data-atflow] [data-line=places]').textContent.trim()] }})()"
-_L4_TODOBTN = f"(document.querySelector('{E} [data-edtodobtn]').textContent.match(/\((\d+)\)/) || [0, ''])[1]"
+_L4_TODOBTN = f"(document.querySelector('{E} [data-edtodobtn]').textContent.match(/\\((\\d+)\\)/) || [0, ''])[1]"
 
 
 @case('N221', 'Missions › the itinerary says what it is (SOG-0482, lot 4, correction): in a mission created, the header « Itinéraire » carries « ! » as long as a line of the itinerary is to fill in or to place (the Departure, the Arrival, a new point), '
@@ -14680,7 +14680,7 @@ def n221(c):
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
     dw_key(c, 'object')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
-    c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dkey], {E} [data-atflow] [data-dmark]')].filter(x => x.dataset.dkey === '1' || x.dataset.dmark === '1').map(x => x.textContent.replace(/[\s  ]+/g, ' ').trim())"""),
+    c.eq(c.js(f"""[...document.querySelectorAll('{E} [data-atflow] [data-dkey], {E} [data-atflow] [data-dmark]')].filter(x => x.dataset.dkey === '1' || x.dataset.dmark === '1').map(x => x.textContent.replace(/[\\s  ]+/g, ' ').trim())"""),
          ['!', 'clé : objet à trouver · à placer'], 'the line of the drawer says the key of its sheet, the object to place (lot 5: « à placer », never « à poser »), with « ! »', what='the key line')
     ed_leave(c)
     c.js(_REG_CLEAR)
@@ -15451,3 +15451,36 @@ def n247(c):
             c.eq(norm(c.text(f'{E} [data-adline=ed{k}]')), want, f'{width}: under the {k} the line says « {want} »', what=f'unknown line {k}')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+_N248_JS = """(() => {
+  const lum = c => { const v = (c.match(/[\\d.]+/g) || []).slice(0, 3).map(Number).map(x => x / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2] };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return Math.round((x + 0.05) / (y + 0.05) * 100) / 100 };
+  const l = document.querySelector('MAP .ms-atmaplbl:not([data-mapsel])');
+  if (!l) return null;
+  const probe = document.createElement('i'); probe.style.color = 'var(--sog-fg)'; l.parentNode.append(probe);
+  const fg = getComputedStyle(probe).color; probe.style.color = 'var(--sog-bg)'; const bg = getComputedStyle(probe).color; probe.remove();
+  const color = getComputedStyle(l).color;
+  return { text: l.textContent, color, fg, ratio: ratio(color, bg) };
+})()"""
+
+
+@case('N248', 'Missions › the labels of the places on the map of the workshop are readable in the night tone (SOG-0577): their ink is the text token of the frame (--sog-fg), '
+      'not a token that does not exist (--sog-text, whose fallback #222 drew dark ink on the dark label); no file of the module reads --sog-text', 'N',
+      tags=('missions',), designs=('standard',), screens=True, phone=False, langs4=False, night=False, tone='night',
+      rule='SOG-0577: editor_map.js MAP_CSS (.ms-atmaplbl), lookOf (LOOK_TOKENS, the colour of an object), editor_view.js (the diamond of an object on the thumbnail); frame/design/tokens.css has --sog-fg, no --sog-text')
+def n248(c):
+    from lib import ROOT
+    left = sorted(f.name for f in (ROOT / 'modules/missions').glob('*.js') if '--sog-text' in f.read_text(encoding='utf-8'))
+    c.eq(left, [], 'no file of the module reads --sog-text (a token the frame does not define)', what='--sog-text readers')
+    c.page.add_init_script(_EDMAP_HOOK)
+    _l3_open(c, 1280)
+    c.eq(c.js("document.documentElement.dataset.tone || ''"), 'night', 'the page is in the night tone', what='tone')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!document.querySelector('{_EDMAP} .ms-atmaplbl')", timeout=20000, what='the map with its labels')
+    c.wait(500)
+    r = c.js(_N248_JS.replace('MAP', _EDMAP))
+    c.ok(r is not None, r, 'a label of a place is on the map')
+    c.eq(r['color'], r['fg'], f'the ink of the label « {r["text"]} » is the text token of the frame', what='label ink')
+    c.ok(r['ratio'] >= 4.5, r, 'and it reads at 4.5:1 at least on the background of the design')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

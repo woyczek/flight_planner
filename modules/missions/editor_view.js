@@ -4320,7 +4320,7 @@ function thumbHtml(s, doc, run = null) {
     },
     shape = p => p.k === 'zone' ? p.r ? `<circle cx="${sx(p)}" cy="${sy(p)}" r="${Math.max(3, p.r * k).toFixed(1)}" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="4 3"/>` :
     `<rect x="${(sx(p) - 6).toFixed(1)}" y="${(sy(p) - 6).toFixed(1)}" width="12" height="12" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="3 2"/>` :
-    p.k === 'object' ? `<path data-thobject d="M${sx(p)} ${(sy(p) - 5).toFixed(1)}l5 5l-5 5l-5 -5z" fill="var(--sog-text, #222)"/>` :
+    p.k === 'object' ? `<path data-thobject d="M${sx(p)} ${(sy(p) - 5).toFixed(1)}l5 5l-5 5l-5 -5z" fill="var(--sog-fg, #222)"/>` :
     `<circle cx="${sx(p)}" cy="${sy(p)}" r="${p.k === 'pt' ? 3 : 4}" fill="${COL[p.k] || 'var(--sog-muted)'}"/>`;
   // les zones dessous, les points dessus
   return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}${extra.length ? `<polyline data-trtrail points="${extra.map(p => `${sx(p)},${sy(p)}`).join(' ')}" fill="none" stroke="var(--sog-accent)" stroke-width="1.5"/><circle data-trplane cx="${sx(extra[extra.length - 1])}" cy="${sy(extra[extra.length - 1])}" r="4.5" fill="var(--sog-accent)" stroke="#fff" stroke-width="1.5"/>` : ''}</svg>`;

@@ -67,7 +67,7 @@ export const MAPB = Object.freeze({
 /** Les règles de style que le bloc porte partout où il est posé (l'atelier, la lecture seule — mission_map.js) : son hôte, les
  *  étiquettes des lieux, la rangée « Fond / Espaces » et sa ligne. */
 export const MAP_CSS = `[data-module="missions"] .ms-atmaphost{width:100%;height:100%}
-[data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-text,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
+[data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-fg,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
 [data-module="missions"] .ms-atmaplbl[data-mapsel]{background:var(--sog-bg,#fff);border:1px solid var(--sog-accent);padding:1px 6px;font-size:.85em;z-index:1}
 [data-module="missions"] .ms-atlook{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0}
 [data-module="missions"] .ms-atlook button,[data-module="missions"] .ms-atlook label{min-height:44px}
@@ -97,7 +97,7 @@ function tokens(el, names) {
 }
 
 /** Les jetons que lookOf lit (ceux du design que la carte reprend). */
-const LOOK_TOKENS = ['--sog-chart-bg', '--sog-accent', '--sog-muted', '--sog-bg', '--sog-warn', '--sog-err', '--sog-ok', '--sog-text'];
+const LOOK_TOKENS = ['--sog-chart-bg', '--sog-accent', '--sog-muted', '--sog-bg', '--sog-warn', '--sog-err', '--sog-ok', '--sog-fg'];
 
 /** Ce qui fait changer les jetons du design : sa marque, son ton et sa classe sur <html>, le ton de l'appareil (ton « auto »), les
  *  feuilles de style chargées. Deux dessins de même clé lisent les mêmes couleurs : lookOf n'est refait que si la clé change (SOG-0468). */
@@ -153,7 +153,7 @@ export function lookOf(el) {
         target: t('--sog-err'),
         rdv: t('--sog-warn'),
         zone: t('--sog-ok'),
-        object: t('--sog-text'),
+        object: t('--sog-fg'),
         pt: muted
       }
     }
