@@ -203,8 +203,8 @@ def j2(c):
     c.ok(flight, f'Status rows {[r["k"] for r in rows]}', 'a row "flight" (Vol en cours › Carte)')
     maps_label = tx(APP, 'label', c.lang, after="id: 'maps'")
     c.eq(norm(flight['text']), norm(tx(APP, 'flight', c.lang, after='info: {').replace('{m}', maps_label)), 'the row is worded in the language of the run', what='Status row')
-    c.eq(flight['go'], '#maps', 'the row leads to Carte', what='row address')
-    c.tap('.f-status-row[data-go="#maps"]')
+    c.eq(flight['go'], '#maps?follow=1', 'the row leads to Carte, in follow mode (SOG-0207)', what='row address')
+    c.tap('.f-status-row[data-go="#maps?follow=1"]')
     c.until("location.hash.startsWith('#maps')", what='a tap on the row opens Carte')
 
     c.step(P, 5, 'Carte: title "vol en cours", no Follow without a position, GPS notification once')

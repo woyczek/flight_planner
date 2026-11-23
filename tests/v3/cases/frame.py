@@ -12001,3 +12001,22 @@ def a373(c):
     c.eq([x[0] for x in got], ['settings-github-token', 'settings-gitlab-pilot-token', 'settings-ivao-app', 'settings-lan-access'], 'the four paragraphs are in the help of this language', what='anchors')
     c.ok(all(x[1] != -1 for x in got) and got[1][1] == 7 and got[2][1] == 4, got, 'the GitLab token is a list of seven steps, the IVAO application a list of four (one action per line)')
     c.check_errors()
+
+
+@case('A374', "« Vol en cours › Carte » of the status block opens the map in follow mode: the line carries `#maps?follow=1` and a tap lands on that address (the Map reads the parameter and starts following once, as soon as the position is known)", 'A',
+      designs=('standard',), screens=False, night=False, tags=('data',),
+      rule='SOG-0207 (the ergonomist, point 1 of « Suivre »): the row of a flight under way in Réglages › Status (T.info.flight) opened `#maps` with no parameter, so the pilot had to ask the map to follow by hand; it opens `#maps?follow=1`')
+def a374(c):
+    c.page.context.grant_permissions(['geolocation'])
+    c.page.context.set_geolocation({'latitude': 47.0, 'longitude': -1.0})
+    c.open('flightlog', flight=False, docs=[['device/live.json', {'gps': True}, 'cache'], _started_flight()])
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens Réglages')
+    row = '[data-card="status"] .f-status-list > li[data-k="flight"] [data-go]'
+    c.until(f"!!document.querySelector('{row}')", timeout=20000, what='the status block lists the flight under way')
+    c.eq(c.attr(row, 'data-go'), '#maps?follow=1', 'the line of the flight under way asks the map to follow', what='go')
+    # the Map consumes the parameter (follow starts once, the address is replaced by `#maps`): the address is asked, then taken back
+    c.js("() => { window.__went = []; window.addEventListener('hashchange', e => window.__went.push(new URL(e.newURL).hash)) }")
+    c.tap(row)
+    c.until("window.__went.includes('#maps?follow=1') && location.hash.startsWith('#maps')", what='a tap on the line goes to #maps?follow=1 and lands on the map')
+    c.check_errors()

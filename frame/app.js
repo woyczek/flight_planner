@@ -2532,7 +2532,8 @@
       text: t(T.info.flight, {
         m: t(maps.label)
       }),
-      go: '#maps',
+      // follow=1 : la Carte enclenche le suivi une seule fois, dès que la position est connue (SOG-0207, « Suivre »)
+      go: '#maps?follow=1',
       news: true,
       // usage « à plusieurs » : la position part au dépôt du groupe, la trace reste sur l'appareil ; le pilote le lit ici
       ...(usages.users ? {
