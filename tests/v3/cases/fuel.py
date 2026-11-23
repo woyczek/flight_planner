@@ -10629,3 +10629,64 @@ def f308(c):
     c.eq(norm(c.text(f'{A} li[data-reason=no_conforming_route]') or ''), norm(W['none']), 'the computed route and its count, nothing '
          'about the other routes', what='none')
     c.check_errors()
+
+
+# SOG-0554: the words, written in clear (never read from the texts of the module)
+_WHY_WORDS = {
+    'fr': {'why': 'Voir pourquoi', 'unv': 'Non vérifiable : 1 point'},
+    'en': {'why': 'See why', 'unv': 'Cannot be verified: 1 point'},
+    'de': {'why': 'Gründe anzeigen', 'unv': 'Nicht prüfbar: 1 Punkt'},
+    'es': {'why': 'Ver por qué', 'unv': 'No verificable: 1 punto'},
+}
+
+
+@case('F309', 'Route step: on a card of the list, the fold of « Non vérifiable » says what it opens — « Voir pourquoi » — the verdict being '
+      'already said in bold above it (never « Non vérifiable : 1 point » twice); in the box of « Contrôler » (a typed route, no verdict '
+      'line), the fold keeps « Non vérifiable : 1 point »: there it IS the verdict',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0554 (the ergonomist, 23 Nov, on the captures of SOG-0552: « Non vérifiable : 1 point » said twice on a card; the relay: '
+      'keep the verdict of the box « Contrôler »); a fake launcher, invented routes')
+def f309(c):
+    st = _route_launcher(c, ['route/compute', 'route/check'])
+    W = _WHY_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    gap = {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}
+    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[], unverifiable=[gap]),
+                  dict(_alt(2, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), verdict='conform', violations=[],
+                       unverifiable=[])]
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"!!document.querySelector('{A} details[data-reasons=unverifiable] > summary')", timeout=10000, what='the fold of the card')
+    R = f"{A} [data-alt]:has(details[data-reasons=unverifiable])"
+    c.eq(norm(c.text(f'{R} [data-verdict=unverifiable]') or ''), norm(W['unv']), 'the verdict in bold on the card', what='verdict')
+    c.eq(norm(c.text(f'{R} details[data-reasons=unverifiable] > summary') or ''), norm(W['why']), 'the fold says what it opens (red '
+         'before: the verdict again)', what='fold')
+    c.js(f"document.querySelector('{R} details[data-reasons=unverifiable]').open = true")
+    c.ok(c.count(f'{R} details[data-reasons=unverifiable] li') >= 1, 'lines', 'it opens the reasons')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{R} details[data-reasons=unverifiable]').open = true")
+        c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F309_{c.design}_{w}_{c.lang}_card.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # « Contrôler » a typed route that cannot be verified: no verdict line in the box, its fold keeps the verdict
+    st['check'] = dict(_alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270, segs, sid=False), verdict='unverifiable', violations=[],
+                       unverifiable=[gap])
+    st['issues'] = []
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]:not([disabled])')", timeout=10000, what='« Contrôler »')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    B = f'{FUEL} [data-routealts]'
+    c.until(f"!document.querySelector('{B} [data-altlist]') && !!document.querySelector('{B} details[data-reasons=unverifiable] > summary')",
+            timeout=12000, what='the box of « Contrôler »')
+    c.eq(norm(c.text(f'{B} details[data-reasons=unverifiable] > summary') or ''), norm(W['unv']), 'in « Contrôler », the fold IS the '
+         'verdict: « Non vérifiable : 1 point »', what='check')
+    c.check_errors()
