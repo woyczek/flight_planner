@@ -10788,3 +10788,85 @@ def f310(c):
             timeout=12000, what='the box of « Contrôler »')
     terrain('« Contrôler »')
     c.check_errors()
+
+
+# SOG-0548: the words, written in clear
+_NP_WORDS = {
+    'fr': {'arr': 'aucune arrivée lue pour LFML', 'dep': 'aucun départ lu pour LFRS', 'read': 'Lire les procédures de LFML',
+           'stale': 'Périmé'},
+    'en': {'arr': 'no arrival read for LFML', 'dep': 'no departure read for LFRS', 'read': None, 'stale': 'Stale'},
+    'de': {'arr': 'keine Ankunft für LFML gelesen', 'dep': 'kein Abflug für LFRS gelesen', 'read': None, 'stale': 'Veraltet'},
+    'es': {'arr': 'ninguna llegada leída para LFML', 'dep': 'ninguna salida leída para LFRS', 'read': None, 'stale': None},
+}
+
+
+@case('F311', 'Route step: the line « enfreint » of a connector beyond its RAD limit, for a terrain whose arrival (or departure) Fuel has '
+      'not read, says « aucune arrivée lue pour LFML » and offers the reading gesture of the Procedures block (« Lire les procédures de '
+      'LFML »); nothing for a terrain whose procedures are read; once the reading has brought the procedures, the list asks to compute '
+      'again (« Périmé » with « Recalculer »): the next computation takes the procedure',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0548 (the ergonomist: the connector line says what is missing and offers the existing gesture — reuse SOG-0527; after '
+      'the reading, the computation takes the procedure; no new host); a fake launcher, a fake reading (aerodb.fetchProcedures), '
+      'invented rules and procedures')
+def f311(c):
+    # the procedures of the base: LFRS has a departure read, LFML has no arrival until the reading (a fake one, the launcher never asked)
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try {
+            const sid = { id: 'LFRS.SID.XQ1A', kind: 'SID', name: 'XQ1A', runway: '21', ad: 'LFRS', status: 'ok', points: [] };
+            const star = { id: 'LFML.STAR.XQ2B', kind: 'STAR', name: 'XQ2B', runway: '31R', ad: 'LFML', status: 'ok', points: [] };
+            db.procedures = async (icao) => String(icao).toUpperCase() === 'LFRS' ? [sid] : String(icao).toUpperCase() === 'LFML' && window.__read ? [star] : [];
+            db.fetchProcedures = async () => { window.__read = true; return { ok: true, stats: { pages: 1, read: 1 } } };
+          } catch (e) {}
+          return db } } } }) })()""")
+    st = _route_launcher(c, ['route/compute'])
+    W = _NP_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    lim = lambda ad, end, pt: {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': 48, 'limit_nm': 30, 'rule': 'XX9999', 'point': pt},
+                               'text': f'Raccord {ad}'}
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS LUGEN UN10 NEPIX LFML', 370, 270, segs, sid=False), faults=1, faulty=True, verdict='violates',
+                       violations=[lim('LFML', 'arr', 'NEPIX'), lim('LFRS', 'dep', 'LUGEN')], unverifiable=[])]
+    st['extra'] = {'status': 'faulty'}
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J'}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    G = f'{A} [data-alt] details[data-reasons=violates]'
+    c.until(f"!!document.querySelector('{G}')", timeout=10000, what='the group « Règles connues enfreintes »')
+    c.js(f"document.querySelector('{G}').open = true")
+    c.until(f"!!document.querySelector('{G} li[data-reason=connector_limit] [data-noproc]')", timeout=8000,
+            what='the connector line says what is missing (red before: nothing)')
+    lines = c.js(f"""[...document.querySelectorAll('{G} li[data-reason=connector_limit]')].map(e => ({{
+        np: e.querySelector('[data-noproc]')?.textContent || '', read: e.querySelector('[data-do=procfetch]')?.dataset.icao || '',
+        btn: e.querySelector('[data-do=procfetch]')?.textContent || '' }}))""")
+    c.eq([norm(x['np']).lstrip('— ').strip() for x in lines], [norm(W['arr']), ''], 'the arrival not read said; nothing for LFRS, whose '
+         'departure is read', what='said')
+    c.eq([x['read'] for x in lines], ['LFML', ''], 'the reading gesture of the Procedures block, for LFML only', what='gesture')
+    if W['read']:
+        c.eq(norm(lines[0]['btn']), norm(W['read']), 'the same words as the Procedures block', what='words')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{G}').open = true")
+        c.js(f"(() => {{ const e = document.querySelector('{G} li[data-reason=connector_limit]'); e.style.scrollMarginTop = '140px'; e.scrollIntoView({{block: 'start'}}) }})()")
+        c.wait(400)
+        c.shot(f'F311_{c.design}_{w}_{c.lang}_noproc.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # the reading: the procedures come, the list asks to compute again (the next computation takes the procedure); the line no longer
+    # says « aucune arrivée lue »
+    n0 = len(st['posts'])
+    c.tap(f'{G} li[data-reason=connector_limit] [data-do=procfetch]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rage][data-stale] [data-do=rcompute]')", timeout=10000,
+            what='« Périmé » with « Recalculer » once the reading is done')
+    if W['stale']:
+        c.ok(norm(c.text(f'{FUEL} [data-rage][data-stale]') or '').startswith(norm(W['stale'])), c.text(f'{FUEL} [data-rage]'), 'said stale')
+    c.eq(len(st['posts']), n0, 'no computation by itself: the pilot computes again', what='no call')
+    c.js(f"document.querySelector('{G}').open = true")
+    c.until(f"!document.querySelector('{G} [data-noproc]')", timeout=8000, what='the line no longer says the arrival is not read')
+    c.check_errors()
