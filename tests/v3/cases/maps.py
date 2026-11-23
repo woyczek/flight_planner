@@ -14,6 +14,7 @@ Rules covered
 Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) D27 (one line per VFR reporting point) D28 (the folded "Aussi ici" line) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
+import json
 import os
 import re
 import time
@@ -613,11 +614,9 @@ def d8(c):
     c.wait(2000)
     title = c.grip()                                  # the head is bare over a drawing: the state is said by the handle, not written
     c.ok(norm(row(c, 'stFlying')) in norm(title), f'grip label {title!r}', f'contains "{row(c, "stFlying")}"')
-    c.ok(c.shown('[data-mp="follow"]'), 'the Follow button is hidden during a started flight', 'Follow shown')
-    c.ok(c.attr('[data-mp="follow"]', 'aria-pressed') in ('true', 'false'), 'Follow has no aria-pressed', 'a toggle (aria-pressed)')
-    c.tap('[data-mp="follow"]')
-    c.until("document.querySelector('[data-mp=follow]').getAttribute('aria-pressed') === 'true'", what='Follow becomes pressed when tapped')
     text = norm(row(c, 'progNoPos'))
+    c.until(f"(window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(text)}))", timeout=10000, what='the position is read: none')
+    c.ok(not c.shown('[data-mp="follow"]'), 'Follow is shown without a position', 'Follow not shown without a position (SOG-0207: neither inactive nor grey; the toggle is D312)')
     c.eq(sum(1 for n in c.note_log() if norm(n) == text), 1, 'the "GPS or network not enabled" notification fired once', what='GPS notifications')
 
 

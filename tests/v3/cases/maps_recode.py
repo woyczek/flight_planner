@@ -211,17 +211,17 @@ def d31(c):
             timeout=10000, what='the grip says the flight is planned')
     c.ok(norm(row(c, 'stPlanned')) in norm(c.grip()), f'grip {c.grip()!r}', 'a progress object does not make the flight started')
     c.ok(not c.shown('[data-mp="follow"]'), 'Follow shown', 'Follow hidden without started.at')
-    # (b) started 20 min ago: the planned aircraft is drawn with its label, Follow shown, the GPS button in the notes
+    # (b) started 20 min ago, no position: the planned aircraft is drawn with its label, Follow not shown (SOG-0207), the GPS button in the notes
     h = _legs_flight(start=now() - datetime.timedelta(minutes=20))
     c.open(_CLOSE, docs=fdocs(h), wait=False)
     c.js(_TEXTS_JS)
     c.ready('maps', sheet=True)
     c.tap('[data-mp="fit"]')                                # a redraw after the hook
-    c.until("window.__t.shown(document.querySelector('[data-mp=follow]'))", what='Follow shown for a started flight')
     planned = norm(row(c, 'progPlanned').replace('{t}', '')).strip()
     c.until(f"(window.__mpTexts || []).some(t => t.replace(/[\\s\\u00a0\\u202f]+/g, ' ').startsWith({json.dumps(planned)}))", timeout=6000,
             what='the planned aircraft labelled')
     c.ok(c.js("!!document.querySelector('.mp-notes [data-live]')"), 'no button to enable the position', 'the progress line offers ctx.live.enable()')
+    c.ok(not c.shown('[data-mp="follow"]'), 'Follow shown for a started flight without a position', 'Follow not shown without a position (SOG-0207; the toggle is D312)')
     # (d) arrived: Follow hidden, the note says it
     k = _legs_flight(start=now() - datetime.timedelta(hours=3), progress={'phase': 'arrived'})
     c.open('maps', docs=fdocs(k))
@@ -10269,3 +10269,120 @@ def d_altncard(c):
         nm = c.js("([n, l]) => n.toLocaleString(l, { maximumFractionDigits: 1 })", [g['nm'], c.lang])
         c.ok(g['icao'] in g['text'] and f'{nm} NM' in g['text'], g['text'], f'the sheet of {g["icao"]} writes the distance « {nm} NM » as the language does')
     c.eq(worst, [], 'no sheet passes under a Map button, none leaves the map, no line of a sheet is cut', what='sheets')
+
+
+@case('D312', 'Follow: absent without a position; it arrives NOT pressed; a hand on the map releases it; after a loss it comes back pressed only if nothing moved', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0207 (ergonomist, 23 Nov): a map never moves by itself under the finger of the pilot. Without a position there is no « Suivre » at all (not inactive, not grey). It appears with the position, NOT pressed, and the map does not jump. A move of the map by hand releases it (the button comes back not pressed). The position lost: the follow stops and the button goes; the position back: the button returns, pressed ONLY if it was pressed when the position was lost and the map was not moved since. Arriving by « Vol en cours » (#maps?follow=1, only the value 1 counts): pressed once the position is known, unless the pilot moved the map first; the parameter is consumed.')
+def d312(c):
+    t0 = now() - datetime.timedelta(minutes=60)
+    FOLLOW = '[data-mp=follow]'
+
+    def pos():
+        return {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now())}
+
+    def write(g):
+        base = datetime.datetime.strptime(g['updated_at'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+        g['updated_at'] = iso(max(now(), base) + datetime.timedelta(seconds=1))   # strictly newer: the Map rereads only a newer record
+        c.js("""(a) => window.FrameData.adapter({ id: 't-follow', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
+
+    def shown(on, what):
+        c.until(f"{'' if on else '!'}window.__t.shown(document.querySelector('{FOLLOW}'))", timeout=12000, what=what)
+
+    def pressed():
+        return c.js(f"document.querySelector('{FOLLOW}')?.getAttribute('aria-pressed')")
+
+    def cam():
+        return c.js("() => { const m = window.__mp.S.map; const p = m.getCenter(); return [Math.round(p.lng * 1e4) / 1e4, Math.round(p.lat * 1e4) / 1e4, Math.round(m.getZoom() * 100) / 100] }")
+
+    # the Map is open on a started flight WITHOUT a position: no « Suivre » at all
+    f = flight(started={'at': iso(t0)}, progress={'phase': 'cruise', 'at': iso(now())})
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    c.until("!!(window.__mp.S && window.__mp.S.map)", timeout=12000, what='the map is there')
+    c.until("!!document.querySelector('.mp-notes [data-live]')", timeout=12000, what='the progress line asks for the position')
+    c.ok(not c.shown(FOLLOW), 'Follow shown without a position', 'no Follow without a position')
+    c.wait(1200)                                       # the first framing is done
+    before = cam()
+    # the position appears while the pilot is on the map: the button ARRIVES, not pressed, and the map does not jump
+    g = c.doc(PATH)
+    g['progress']['actual'] = pos()
+    write(g)
+    shown(True, 'Follow arrives with the position')
+    c.wait(800)
+    c.eq(pressed(), 'false', 'the button arrives not pressed', what='aria-pressed on arrival')
+    c.eq(cam(), before, 'the map does not move by itself when the position appears', what='camera on arrival')
+    if c.width in (390, 1280):
+        c.shot(f'D312_{c.width}_position.png')
+    # the pilot presses it, then moves the map by hand: the follow is released, the button comes back not pressed
+    c.tap(FOLLOW)
+    c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'true'", what='Follow becomes pressed when tapped')
+    if c.width in (390, 1280):
+        c.shot(f'D312_{c.width}_pressed.png')
+    c.js("() => { window.__mp.S.map.jumpTo({ center: [-1.4, 46.0] }) }")
+    c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'false'", what='a hand on the map releases the follow')
+    c.ok(c.shown(FOLLOW), 'Follow gone after a move of the map', 'the button stays, not pressed')
+    # pressed, then the position is lost and comes back with nothing moved: the button returns PRESSED
+    c.tap(FOLLOW)
+    c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'true'", what='pressed again')
+    g = c.doc(PATH)
+    g['progress'].pop('actual', None)
+    write(g)
+    shown(False, 'Follow goes with the position')
+    if c.width in (390, 1280):
+        c.shot(f'D312_{c.width}_noposition.png')
+    g = c.doc(PATH)
+    g['progress']['actual'] = pos()
+    write(g)
+    shown(True, 'Follow is back with the position')
+    c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'true'", what='back pressed: it was pressed at the loss and nothing moved')
+    # pressed, the position lost, the map moved by hand meanwhile, the position back: the button returns NOT pressed
+    g = c.doc(PATH)
+    g['progress'].pop('actual', None)
+    write(g)
+    shown(False, 'Follow goes again')
+    c.js("() => { window.__mp.S.map.jumpTo({ center: [-0.2, 46.9] }) }")
+    c.wait(300)
+    g = c.doc(PATH)
+    g['progress']['actual'] = pos()
+    write(g)
+    shown(True, 'Follow is back again')
+    c.wait(800)
+    c.eq(pressed(), 'false', 'the map was moved while the position was lost: the button comes back not pressed', what='aria-pressed after a move during the loss')
+
+    # the address asks for the follow (« Vol en cours › Carte » opens #maps?follow=1): set ONCE, when the position is known, unless the pilot moved the map
+    def open_asked(url):
+        f2 = flight(started={'at': iso(t0)}, progress={'phase': 'cruise', 'at': iso(now())})
+        c.open(url, docs=fdocs(f2), flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+        c.until("!!(window.__mp.S && window.__mp.S.map)", timeout=12000, what='the map is there')
+        c.until("!!document.querySelector('.mp-notes [data-live]')", timeout=12000, what='the progress line asks for the position')
+        c.ok(not c.shown(FOLLOW), 'Follow shown without a position', 'no Follow without a position, whatever the address says')
+
+    for url, want, why in (('maps?follow=1', 'true', 'follow=1: the follow is set when the position appears (pressed at once)'),
+                           ('maps?follow=true', 'false', 'only the value 1 counts: another value is ignored'),
+                           ('maps?follow=', 'false', 'an empty value is ignored'),
+                           ('maps', 'false', 'no parameter: the button arrives not pressed')):
+        open_asked(url)
+        g = c.doc(PATH)
+        g['progress']['actual'] = pos()
+        write(g)
+        shown(True, f'{url}: Follow arrives with the position')
+        c.wait(800)
+        c.eq(pressed(), want, why, what=f'aria-pressed for {url}')
+        if url == 'maps?follow=1':
+            c.ok('follow' not in c.js('location.hash'), c.js('location.hash'), 'the parameter is CONSUMED: the address no longer carries it (a reload or a return does not set it again)')
+            if c.width in (390, 1280):
+                c.shot(f'D312_{c.width}_asked.png')
+    # the pilot moves the map before the position appears: the request is dropped, the map does not jump
+    open_asked('maps?follow=1')
+    c.js("() => { window.__mp.S.map.jumpTo({ center: [-1.4, 46.0] }) }")
+    c.wait(300)
+    g = c.doc(PATH)
+    g['progress']['actual'] = pos()
+    write(g)
+    shown(True, 'Follow arrives after a move of the map')
+    c.wait(800)
+    c.eq(pressed(), 'false', 'the pilot moved the map before the position: the request of the address is dropped, not pressed', what='aria-pressed after a move')

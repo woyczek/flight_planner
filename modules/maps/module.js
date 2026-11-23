@@ -102,6 +102,9 @@ import {
   covClear
 } from './coverage.js';
 import {
+  followAsked
+} from './flight_time.js';
+import {
   chooseAsk,
   chooseLoad,
   chooseStart,
@@ -252,7 +255,9 @@ export async function mount(el, ctx) {
     noted: {},
     // le mode « choisir sur la carte » (#maps?choose=dep|arr&icao=LFXX, V3 § 10.23) : la demande est lue et retirée de l'adresse
     // tout de suite ; null hors du mode
-    choose: chooseAsk(ctx)
+    choose: chooseAsk(ctx),
+    // « Suivre » demandé par l'adresse (#maps?follow=1, le geste « Vol en cours › Carte », SOG-0207) : lu et retiré de l'adresse tout de suite
+    followAsk: followAsked(ctx)
   });
   el.innerHTML = skeleton(ctx);
   const q = s => el.querySelector(s),

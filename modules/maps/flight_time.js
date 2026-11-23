@@ -130,16 +130,43 @@ export function progressOnly(f) {
   schedule();
   drawCursor();
 }
+/** « Suivre » demandé par l'adresse (SOG-0207) : la ligne « Vol en cours › Carte » du cadre ouvre #maps?follow=1. Seule la valeur « 1 » compte,
+ *  toute autre est ignorée (une adresse est une entrée comme une autre) ; la clé est CONSOMMÉE à la lecture (ctx.consume : retirée de l'adresse,
+ *  un rechargement ou un retour ne la rejoue pas). La demande est posée une seule fois, quand la position est connue (S.followAsk), et
+ *  abandonnée si le pilote déplace la carte avant (screen.js, movestart). */
+export function followAsked(ctx) {
+  const got = ctx.consume ? ctx.consume('follow') : {
+    follow: ctx.query?.follow
+  };
+  return got.follow === '1' && !ctx.query?.mission && !ctx.query?.tune;
+}
 /** Trace gardée en mémoire, ligne de progression, Suivre ; hors d'un vol démarré, tout s'efface. */
 export function progressUpdate() {
   const f = S.route.flight,
     on = isStarted(f),
     t0 = Date.parse(f?.started?.at || '');
   header(); // « vol prévu » devient « vol en cours » dans le titre de la poignée
-  syncButtons(); // Suivre : seulement pendant un vol démarré et pas arrivé
-  if (!on || isArrived(f)) {
+  // la position réelle de ce vol : sans elle, « Suivre » n'est pas montré du tout (SOG-0207 : ni inactif, ni grisé)
+  const had = !!S.hasPos;
+  S.hasPos = on && !!actualOf(f);
+  // une carte ne bouge jamais seule sous le doigt du pilote : le bouton arrive NON enfoncé ; il ne revient enfoncé que si le suivi
+  // était en cours à la perte de la position et que la carte n'a pas été déplacée depuis (S.followBack, effacé par un geste, screen.js)
+  if (had && !S.hasPos && S.follow) S.followBack = true;
+  if (!on || isArrived(f)) S.followBack = false;
+  syncButtons(); // Suivre : seulement pendant un vol démarré, pas arrivé, et de position connue
+  if (!on || isArrived(f) || !S.hasPos) {
     if (!on) S.trail = [];
-    if (S.follow) setFollow(false);
+    if (S.follow) setFollow(false); // la position se perd : le suivi s'arrête avec son bouton
+    if (on && isArrived(f)) S.followAsk = false; // arrivé : plus rien à suivre
+  } else if (S.followAsk || (!had && S.followBack)) {
+    // la demande de l'adresse (une fois, à la première position connue) ou la position qui revient : le suivi se pose, la carte n'ayant pas
+    // été déplacée entre-temps (un geste efface l'un et l'autre, screen.js)
+    S.followAsk = false;
+    S.followBack = false;
+    if (!S.follow) {
+      setFollow(true);
+      return;
+    }
   }
   if (!on) {
     S.progHtml = '';

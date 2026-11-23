@@ -252,7 +252,8 @@ export function buildOverlay(ctx, modesHtml) {
 }
 /** Boutons montrés selon l'état (SPEC § 4) : sans carte (pas de vol, mission vide) seul Couches reste ; une carte de mission
  *  n'a ni la route, ni le mode, ni l'Édition ; en mode Édition seuls Édition, « + », Annuler et Recentrer restent (avec le
- *  plein écran du cadre) ; Suivre seulement pendant un vol démarré et pas arrivé. Écrit seulement ce qui change. */
+ *  plein écran du cadre) ; Suivre seulement pendant un vol démarré, pas arrivé, et de position réelle connue (S.hasPos, posé par
+ *  progressUpdate). Écrit seulement ce qui change. */
 export function syncButtons() {
   if (!S?.routeBtn) return;
   const on = !!S.boxOn,
@@ -265,7 +266,8 @@ export function syncButtons() {
   show(S.routeBtn, flight && !edit);
   show(S.modeBtn, flight && !edit);
   show(S.editBtn, flight);
-  show(S.followBtn, flight && !edit && isStarted(S.route.flight) && !isArrived(S.route.flight));
+  // sans position réelle, pas de « Suivre » du tout (SOG-0207)
+  show(S.followBtn, flight && !edit && isStarted(S.route.flight) && !isArrived(S.route.flight) && !!S.hasPos);
   show(S.addBtn, edit);
   show(S.undoBtn, edit);
   if (!flight) closePanels();
@@ -599,6 +601,8 @@ export async function startTiles() {
         if (S && !S.selfMove && !isOwnResize(map)) {
           S.userMoved = true;
           S.gesture = true;
+          S.followBack = false; // un geste du pilote : le suivi ne reprendra pas seul au retour de la position
+          S.followAsk = false; // ni sur la demande de l'adresse : la carte ne bouge jamais seule sous son doigt
           if (S.follow) setFollow(false);
         }
       });

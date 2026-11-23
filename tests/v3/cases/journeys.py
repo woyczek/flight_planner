@@ -206,11 +206,11 @@ def j2(c):
     c.tap('.f-status-row[data-go="#maps"]')
     c.until("location.hash.startsWith('#maps')", what='a tap on the row opens Carte')
 
-    c.step(P, 5, 'Carte: title "vol en cours", Follow shown, GPS notification once')
+    c.step(P, 5, 'Carte: title "vol en cours", no Follow without a position, GPS notification once')
     c.until("!!document.querySelector('.f-sheet-head .f-sheet-grip') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-grip').title)", timeout=10000, what='the sheet title names the flight')
     flying = tx(MP, 'stFlying', c.lang)
     c.ok(norm(flying) in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'contains "{flying}"')
-    c.ok(c.shown('[data-mp="follow"]'), 'the Follow button is not displayed in a started flight', 'Follow shown')
+    c.ok(not c.shown('[data-mp="follow"]'), 'the Follow button is displayed without a position', 'Follow not shown without a position (SOG-0207)')
     c.wait(1500)
     c.eq(sum(1 for n in c.note_log() if norm(n) == nopos), 2, 'once per mount of Carte: the start mounted it, the tap on the row mounted it again', what='no-position notifications after the second mount')
 

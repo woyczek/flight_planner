@@ -45,7 +45,7 @@ JOURNEYS = {
             'Préparer: "Démarrer le vol" (fuel § 12)',
             '`started = {at, by}`',
             'gear badge green, Status row "Vol en cours › Carte"',
-            'Carte: title "vol en cours", Follow shown, position from GPS or none (notification once), progress block in the sheet notes',
+            'Carte: title "vol en cours", no Follow without a position, position from GPS or none (notification once), progress block in the sheet notes',
             'full screen',
             'end: "Annuler le démarrage" or the report',
         ],
