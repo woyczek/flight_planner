@@ -1,0 +1,113 @@
+<!doctype html>
+<!-- Banc des images du rendu Markdown de l'aide (frame/lib/markdown.js, SOG-0574 : un texte ne fait JAMAIS charger une image d'ailleurs) : une adresse RELATIVE du dépôt fait une <img> ; une adresse
+     absolue (https:, http:, data:, javascript:, « // », « \\ », avec des caractères de commande ou des majuscules devant) est rendue en TEXTE — le texte de remplacement, puis l'adresse, non cliquable —
+     et ne déclenche AUCUNE requête (le cas A370 écoute le réseau de la page : aucun hôte extérieur). Les liens restent des liens. Page nue ; window.__mdBench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>markdown images — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<div id="stage"></div>
+<script src="../markdown.js?v=0"></script>
+<script>
+  (async () => {
+    const rows = [],
+      out = document.getElementById('out'),
+      stage = document.getElementById('stage');
+    window.__mdBench = {
+      done: false,
+      pass: 0,
+      fail: 0,
+      rows
+    };
+    const ck = (name, ok, detail = '') => {
+      window.__mdBench[ok ? 'pass' : 'fail']++;
+      rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+      out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+    };
+    const J = v => JSON.stringify(v);
+    const eq = (name, got, want) => ck(name, J(got) === J(want), `got ${J(got)}, want ${J(want)}`);
+    const base = new URL('./docs/', location.href).href;
+    // comme help.js : une adresse relative est résolue sur le dossier des documents ; une absolue reste telle quelle
+    const image = src => !/^[a-z]+:/i.test(src) ? new URL(src, base).href : src;
+    const html = md => window.DocMarkdown.render(md, {
+      image
+    }).html;
+    const mount = md => {
+      stage.innerHTML = html(md);
+      return stage;
+    };
+    // ---- une adresse relative du dépôt : une image
+    let s = mount('![Logo](images/a.png)');
+    eq('relative : une <img> résolue sur le dossier des documents', [...s.querySelectorAll('img')].map(i => [i.getAttribute('src'), i
+      .alt
+    ]), [
+      [base + 'images/a.png', 'Logo']
+    ]);
+    s = mount('![](../images/b.png)');
+    eq('relative en « ../ » sans texte de remplacement : une <img>', s.querySelectorAll('img').length, 1);
+    s = mount('![Racine](/docs/images/c.png)');
+    eq('relative à la racine du site (« / » seul) : une <img> du même site', s.querySelectorAll('img').length, 1);
+    // ---- les adresses absolues : du TEXTE
+    const hostile = [
+      ['https', 'https://evil.invalid/x.png'],
+      ['http', 'http://evil.invalid/x.png'],
+      ['majuscules', 'HTTPS://EVIL.INVALID/x.png'],
+      ['sans schéma (//)', '//evil.invalid/x.png'],
+      ['barres obliques inverses', '\\\\evil.invalid\\x.png'],
+      ['une barre et une barre inverse', '/\\evil.invalid/x.png'],
+      ['data:', 'data:image/png;base64,AAAA'],
+      ['javascript:', 'javascript:void0'],
+      ['caractère de commande devant', '\u0001https://evil.invalid/x.png'],
+      ['schéma inconnu (ftp:)', 'ftp://evil.invalid/x.png'],
+      ['blob:', 'blob:https://evil.invalid/x']
+    ];
+    for (const [name, src] of hostile) {
+      s = mount(`avant ![Texte <b>de remplacement</b>](${src}) après`);
+      const imgs = s.querySelectorAll('img').length,
+        links = s.querySelectorAll('a').length,
+        span = s.querySelector('[data-noimg]');
+      ck(`${name} : aucune <img>, aucun lien, le texte puis l'adresse en texte`, imgs === 0 && links === 0 && span && span.textContent.startsWith('Texte <b>de remplacement</b> ') && span
+        .querySelector('code') && span
+        .querySelector('code').textContent === src, `imgs ${imgs}, liens ${links}, ${span && span.outerHTML.slice(0, 160)}`);
+    }
+    s = mount('![](https://evil.invalid/seul.png)');
+    eq('sans texte de remplacement : l\'adresse seule, en texte', [s.querySelectorAll('img').length, s.querySelector('[data-noimg]')
+      .textContent
+    ], [0, 'https://evil.invalid/seul.png']);
+    s = mount('Liste :\n\n- ![a](https://evil.invalid/1.png)\n- ![b](images/ok.png)\n\n| x |\n|---|\n| ![c](//evil.invalid/2.png) |');
+    eq('dans une liste et un tableau : l\'absolue en texte, la relative en image', [s.querySelectorAll('img').length, s
+      .querySelectorAll('[data-noimg]').length
+    ], [1, 2]);
+    // ---- aucune <img> d'un autre site, quel que soit le texte
+    const all = hostile.map(([, src]) => `![x](${src})`).join('\n\n') + '\n\n![ok](images/ok.png)';
+    stage.innerHTML = html(all);
+    eq('toutes les <img> du rendu sont du même site', [...stage.querySelectorAll('img')].every(i => new URL(i.src, location.href)
+      .origin === location.origin), true);
+    eq('et il y en a une seule (la relative)', stage.querySelectorAll('img').length, 1);
+    // ---- le reste ne change pas : les liens, le code, le HTML permis
+    s = mount('[Un site](https://example.org/page) et `![x](https://evil.invalid/c.png)` et <b>gras</b> <kbd>K</kbd>');
+    eq('un lien externe reste un lien (nouvel onglet, noopener)', [s.querySelectorAll('a').length, s.querySelector('a').target, s
+      .querySelector('a').rel
+    ], [1, '_blank', 'noopener']);
+    eq('l\'image écrite dans du code reste du code, le HTML non permis reste du texte', [s.querySelectorAll('code').length, s
+      .querySelectorAll('img, b').length, s.querySelectorAll('kbd').length
+    ], [1, 0, 1]);
+    // ---- sans fonction image : mêmes règles
+    stage.innerHTML = window.DocMarkdown.render('![r](images/z.png) ![e](https://evil.invalid/z.png)').html;
+    eq('sans option image : la relative reste une <img>, l\'absolue du texte', [stage.querySelectorAll('img').length, stage
+      .querySelectorAll('[data-noimg]').length
+    ], [1, 1]);
+    // ---- le réseau : après avoir tout monté, aucune ressource d'un hôte extérieur n'a été demandée
+    stage.innerHTML = html(all);
+    await new Promise(r => setTimeout(r, 400));
+    const asked = performance.getEntriesByType('resource').map(e => new URL(e.name).hostname).filter(h => h && h !== location.hostname);
+    eq('aucune requête vers un hôte extérieur (évènements de ressources de la page)', asked, []);
+    window.__mdBench.done = true;
+    out.append(`\n${window.__mdBench.pass} passed, ${window.__mdBench.fail} failed\n`);
+  })();
+</script>
+</body>
+</html>

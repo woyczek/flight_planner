@@ -19,6 +19,12 @@
   /** Ancre d'un titre, comme GitHub et GitLab : minuscules, lettres accentuées gardées, ponctuation retirée, espaces →
    *  tirets (« Fiche équipage » → fiche-équipage, « Reporting d'une famille » → reporting-dune-famille). */
   const slug = text => String(text).toLowerCase().replace(/<[^>]+>/g, '').replace(/[^\p{L}\p{N}\s_-]/gu, '').trim().replace(/\s/g, '-');
+  /** Une adresse d'image qui sort du dépôt : avec un schéma (https:, http:, data:, javascript:…) ou « // » (sans schéma, sur n'importe quel hôte) ;
+   *  le navigateur ignore les caractères de commande et les blancs de tête, et lit « \ » comme « / ». Seules les adresses RELATIVES du dépôt font une <img>. */
+  const external = src => {
+    const u = String(src).replace(/[\u0000-\u0020\u007f]/g, '');
+    return /^[a-z][a-z0-9+.-]*:/i.test(u) || /^[\\/]{2}/.test(u);
+  };
   const ALLOWED = /^<\/?(br|kbd|sup|sub|details|summary)\s*\/?>$|^<a id="[\w-]+"><\/a>$/i;
 
   /** Éléments en ligne : code, images, liens, gras, italique, HTML autorisé. */
@@ -28,7 +34,10 @@
     let s = String(text)
       .replace(/`([^`]+)`/g, (_, c) => hold(`<code>${esc(c)}</code>`))
       .replace(/<a id="[\w-]+"><\/a>|<\/?[a-z]+\s*\/?>/gi, m => ALLOWED.test(m) ? hold(m) : m)
-      .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, alt, src) => hold(`<img src="${esc(opt.image ? opt.image(src) : src)}" alt="${esc(alt)}" loading="lazy">`))
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, alt, src) => hold(external(src) ?
+        // un texte ne fait JAMAIS charger une image d'ailleurs : l'adresse absolue est montrée en TEXTE (le texte de remplacement, puis l'adresse, non cliquable)
+        `<span class="f-md-noimg" data-noimg>${alt ? `${esc(alt)} ` : ''}<code>${esc(src)}</code></span>` :
+        `<img src="${esc(opt.image ? opt.image(src) : src)}" alt="${esc(alt)}" loading="lazy">`))
       .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, label, href) => {
         const h = opt.link ? opt.link(href) : href;
         const ext = /^https?:/i.test(h);

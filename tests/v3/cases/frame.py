@@ -11891,3 +11891,16 @@ def a346(c):
             c.js("window.scrollTo(0, 0)")
             c.shot('A346_390_fr_gitlab_fin.png')
     c.check_errors()
+
+
+
+
+@case('A370', "A text never makes the help load an image from elsewhere (SOG-0574, frame/lib/markdown.js, decision of the ergonomist, 23 Nov 2026): an <img> only for a RELATIVE address of the repository; an absolute address (https:, http:, data:, javascript:, « // », backslashes, a control character in front) is rendered as TEXT — the replacement text, then the address, not clickable — and the page asks NO host outside (the network of the page is listened to); links stay links", 'A',
+      tags=('launcher',), screens=False, night=False,
+      rule='SOG-0574 (hardening, Q-0143): the Markdown of the help is read from files the repository can change (data repository, manuals); an image of another site in a text would be a request sent from the user\'s page (address, time, referrer): never; the CSP (img-src \'self\' data: blob:) is Sécurisation\'s, this is the render side; V2 untouched')
+def a370(c):
+    asked = []
+    c.page.on('request', lambda r: asked.append(r.url) if re.match(r'^https?://(?!127\.0\.0\.1|localhost)', r.url) else None)
+    _bench(c, 'frame/lib/test/markdown_images.html', '__mdBench')
+    c.wait(500)
+    c.eq(asked, [], 'the page asked no host outside while it rendered every hostile image address', what='requests outside')
