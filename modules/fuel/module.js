@@ -2885,6 +2885,9 @@ const STYLE = `
 [data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
+/* SOG-0539 (l'ergonome) : un repli dans un repli — le chevron seul, sans puce devant */
+[data-module="fuel"] .fu-faultlist>li:has(>details){list-style:none;margin-left:-1.1em}
+[data-module="fuel"] .fu-rterrain [data-terrainrefs]{margin:.2em 0 .4em;overflow-wrap:anywhere}
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
 [data-module="fuel"] .fu-rprophead{margin:.8em 0 .2em;font-size:.95em;color:var(--sog-warn)} /* « Propositions non validées » (plan impossible) */
 /* SOG-0161 : « Prendre cette proposition » sous le texte d'une proposition sur un module étroit (le texte jamais écrasé, comme SOG-0344) */
@@ -4773,7 +4776,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
         errors: []
       } : a),
       ok = !a?.verdict || a.verdict === 'conform' ? `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>` : '';
-    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : ok}${a ? verdictsHtml(a, true, n.rad?.terrain_rules || []) : ''}${limitsHtml(n)}`;
+    if (box) box.innerHTML = `${lines.length || a?.incomplete ? faultsHtml(lines, a) : ok}${a ? verdictsHtml(a, true) : ''}${limitsHtml(n)}`;
     S.ralts = null;
     if (a) altsPublish('check', [a], [r.points || []]); // la route tapée est déjà lue : ses points (INTEGRATION § 3 bis)
     renderPts();
@@ -5457,7 +5460,14 @@ function sectionsHtml(a) {
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
-const limitsHtml = n => perfDefaultHtml() + (n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '');
+const limitsHtml = n => perfDefaultHtml() + (n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${terrainHtml(n.rad?.terrain_rules)}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '');
+/** SOG-0539 (l'ergonome) : les règles du RAD qui citent un terrain du vol et un espace non lu — un fait du VOL, hors de tout verdict : une
+ *  fois par écran, dans « Ce que le contrôle ne couvre pas » (liste et « Contrôler »), le départ d'abord, aucune ligne à 0 ; chaque ligne
+ *  est un repli (le chevron seul) qui s'ouvre sur ses références à la suite (esc : elles viennent du RAD), 40 au plus, « et N autres » à
+ *  la fin. */
+function terrainHtml(list) {
+  return (Array.isArray(list) ? list : []).filter(x => x.total > 0).map(x => `<details class="fu-faultmore fu-rterrain" data-terrainrules data-role="${esc(x.role)}"><summary>${esc(tt(x.total === 1 ? RR.ROWS.terrainRules1 : RR.ROWS.terrainRules, { ad: x.ad, n: x.total }))}</summary><p class="f-muted" data-terrainrefs>${esc(x.rules.slice(0, 40).join(', '))}${x.total > 40 ? ` <span data-terrainmore>${esc(tt(RR.ROWS.more, { n: x.total - 40 }))}</span>` : ''}</p></details>`).join('');
+}
 /** SOG-0401 : le détail du contrôle RAD, écrit à l'ouverture du pli seulement (la liste peut compter 1 500 conditions) — les espaces
  *  inconnus et leurs règles, puis les conditions laissées à examiner (cent au plus, puis leur nombre). */
 function radListFill(fold) {
@@ -6818,7 +6828,7 @@ function unverifTitle(list, n = 0) {
 /** SOG-0532 (3) : les deux groupes, montrés s'ils ont des lignes — « Règles connues enfreintes », « Non vérifiable : N point(s) » ;
  *  chaque ligne composée dans la langue de l'écran (RR.compose, posée par esc), sept au plus, puis « et N autre(s) » qui ouvre le
  *  reste. `open` : dépliés (le contrôle d'une route tapée). */
-function verdictsHtml(a, open = false, terrain = S.ralts?.n?.rad?.terrain_rules || []) {
+function verdictsHtml(a, open = false) {
   const lang = S.ctx.lang(),
     // SOG-0532 lot 2 (l'ergonome) : la ligne d'un État dont des règles du RAD portent sur la route EST le bouton qui ouvre leur liste
     // (sept, puis le reste) ; sans liste, une ligne simple
@@ -6831,11 +6841,7 @@ function verdictsHtml(a, open = false, terrain = S.ralts?.n?.rad?.terrain_rules 
         li = x => `<li data-rule>${esc(RR.ruleLine(x, tt))}</li>`;
       return it.length ? `<li data-reason="${esc(r.code)}"><details class="fu-faultmore" data-staterules><summary>${text}</summary><ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? `<details class="fu-faultmore" data-rulesmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: it.length - 7 }))}</summary><ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul></details>` : ''}</details></li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
     },
-    // SOG-0539 (l'ergonome) : sous « Non vérifiable », une ligne fermée par terrain du vol dont des règles du RAD le citent avec un espace
-    // non lu ; elle s'ouvre comme la ligne d'un État : une référence par ligne (esc : elles viennent du RAD), 40 au plus, puis « et {n}
-    // autres » ; hors du compte du verdict
-    terrainLi = x => `<li data-reason="terrain_rules" data-role="${esc(x.role)}"><details class="fu-faultmore" data-terrainrules><summary>${esc(tt(x.total === 1 ? RR.ROWS.terrainRules1 : RR.ROWS.terrainRules, { ad: x.ad, n: x.total }))}</summary><ul class="fu-faultlist">${x.rules.slice(0, 40).map(r => `<li data-rule>${esc(r)}</li>`).join('')}${x.total > 40 ? `<li class="f-muted" data-terrainmore>${esc(tt(RR.ROWS.more, { n: x.total - 40 }))}</li>` : ''}</ul></details></li>`,
-    group = (list, kind, title, cls, extra = '') => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}${extra}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
+    group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
     R = a.reasons || {
       violates: [],
       unverifiable: []
@@ -6855,7 +6861,7 @@ function verdictsHtml(a, open = false, terrain = S.ralts?.n?.rad?.terrain_rules 
   // SOG-0554 : sur une carte, le verdict est dit en gras au-dessus — le pli dit ce qu'il ouvre ; dans la boîte « Contrôler » (open, sans
   // ligne de verdict), le titre du pli EST le verdict
   return group(R.violates, 'violates', tt(RR.ROWS.groupViolates), 'f-warn') + group(R.unverifiable, 'unverifiable', open ? unverifTitle(R
-    .unverifiable) : tt(TX.rSeeWhy), 'f-warn', (terrain || []).map(terrainLi).join('')) + level + levelNote + note;
+    .unverifiable) : tt(TX.rSeeWhy), 'f-warn') + level + levelNote + note;
 }
 /** SOG-0532 (4) : le nombre des règles connues que la route du vol enfreint — celle prise d'un calcul (route.violations, une entrée de
  *  data/ : entier borné), sinon le jugement de « Contrôler » sur CE texte ; 0 sinon. */

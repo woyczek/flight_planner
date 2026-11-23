@@ -2590,6 +2590,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   most) when n > 0: « {terrain} : {n} règles du RAD citent ce terrain et un espace que nous ne lisons pas » (one rule: « cite »; the frame's
   plural marks do not agree a verb, so two rows). It opens like the line of a State: one reference per line, sorted, 40 at most, then
   « et {n} autres » (n = total − 40); the references come from the RAD: written with esc. Out of the count: the verdict and its count do
-  not change. The lines follow the group « Non vérifiable » of each route (the terrains are the flight's: the same on every route) and of
-  the box « Contrôler »; a route without that group shows none (the sentence above the list says the airspace rules, SOG-0552). Read
-  bounded by `RE.radOf` (2 terrains, 100 references of 20 signs). Case F310, red before.
+  not change. **Placement (the ergonomist's retouch)**: these lines are a fact of the FLIGHT, not of a route — once per screen, in the
+  existing fold « Ce que le contrôle ne couvre pas » (the list and the box « Contrôler » both draw it), whatever the verdict; « Voir
+  pourquoi » shows only the reasons counted in THIS route's verdict. Each line is a fold in a fold: the chevron alone, no bullet (the line
+  of a State too); its references follow one another, separated by commas, « et N autres » at the end. The block of a State keeps one
+  line per rule: they are sentences (« place — reason (reference) »), not bare references. Read bounded by `RE.radOf` (2 terrains, 100
+  references of 20 signs). Case F310, red before.

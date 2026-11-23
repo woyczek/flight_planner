@@ -3067,8 +3067,8 @@ def _route_launcher(c, verbs):
                 if st['norad'] else {'ok': False, 'reason': 'failed', 'message': 'search stopped'} if a.get('action') == 'compute' and a.get('alternatives') and st.get('fail_alt') else \
                 dict(dict(common, ok=True, alternatives=phase(st.get('alts') or alts, a), segments=alts[0]['segments'], issues=[], message='2 alternative(s).',
                      **({'cache': st['cache']} if st.get('cache') else {})), **(st.get('extra') or {})) if a.get('action') == 'compute' else \
-                dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
-                     issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
+                dict(dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
+                     issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message=''), **(st.get('extra_check') or {}))
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), handler)
@@ -10709,24 +10709,30 @@ _TR_WORDS = {
 }
 
 
-@case('F310', 'Route step: under « Non vérifiable », ONE closed line per terrain of the flight whose RAD rules name it and aim at an '
-      'airspace we do not read — « LFRS : 45 règles du RAD citent ce terrain et un espace que nous ne lisons pas » — which opens like the '
-      'line of a State: one reference per line, sorted, 40 at most, then « et 5 autres »; no line for a terrain without such a rule; the '
-      'verdict and its count unchanged; a reference is written as text, never as markup',
+@case('F310', 'Route step: the RAD rules that name a terrain of the flight and aim at an airspace we do not read are a fact of the FLIGHT — '
+      'said ONCE per screen in « Ce que le contrôle ne couvre pas », the departure first, none for a terrain without such a rule, in the '
+      'list as after « Contrôler »: « LFRS : 45 règles du RAD citent ce terrain et un espace que nous ne lisons pas », a fold (the chevron '
+      'alone, no bullet) that opens on its references one after the other, separated by commas, 40 at most, then « et 5 autres »; under '
+      '« Voir pourquoi » of a card only the reasons counted in its verdict; a reference is written as text, never as markup',
       'F', tags=('fuel', 'aerodb', 'security'), designs=('standard',), screens=True, langs4=True,
-      rule='SOG-0539 (the ergonomist, fiche in BACKLOG.md; AeroDB K500: rad.terrain_rules [{ role, ad, rules, total, cut }]; Sécurisation: '
-      'the ids come from the RAD, written with esc or textContent); a fake launcher, invented aerodromes rules (XX9xxx)')
+      rule='SOG-0539 (the ergonomist, fiche in BACKLOG.md, then the retouch of 23 Nov: a fact of the flight, once per screen, a fold in a '
+      'fold, the references in one paragraph; AeroDB K500: rad.terrain_rules [{ role, ad, rules, total, cut }]; Sécurisation: the ids '
+      'come from the RAD, written with esc or textContent); a fake launcher, invented aerodromes rules (XX9xxx)')
 def f310(c):
-    st = _route_launcher(c, ['route/compute'])
+    st = _route_launcher(c, ['route/compute', 'route/check'])
     W = _TR_WORDS[c.lang]
     segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
     gap = {'code': 'network_gap', 'values': {'from_point': 'LUGEN', 'to_point': 'NEPIX', 'nm': 61}, 'text': 'gap'}
     refs = [f'XX9{i:03d}' for i in range(1, 45)] + ['<img src=x onerror=alert(1)>']
-    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[], unverifiable=[gap])]
-    st['extra'] = {'rad': {'title': 'RAD test', 'start': '2026-10-29', 'terrain_rules': [
+    rad = {'title': 'RAD test', 'start': '2026-10-29', 'terrain_rules': [
         {'role': 'dep', 'ad': 'LFRS', 'rules': sorted(refs), 'total': 45, 'cut': False},
         {'role': 'arr', 'ad': 'LFML', 'rules': ['XX9500'], 'total': 1, 'cut': False},
-        {'role': 'arr', 'ad': 'XQZZ', 'rules': [], 'total': 0, 'cut': False}]}}
+        {'role': 'arr', 'ad': 'XQZZ', 'rules': [], 'total': 0, 'cut': False}]}
+    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[], unverifiable=[gap]),
+                  dict(_alt(2, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), verdict='conform', violations=[],
+                       unverifiable=[])]
+    st['extra'] = {'rad': rad}
+    st['extra_check'] = {'rad': rad}  # « Contrôler » reads the same RAD
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):
@@ -10737,30 +10743,46 @@ def f310(c):
     to_step(c, 1)
     _compute_now(c, st)
     A = f'{FUEL} [data-altlist]'
+    L = f'{FUEL} [data-routealts] details[data-rlimits]'
+    T = f'{L} details[data-terrainrules]'
+
+    def terrain(where):
+        c.until(f"!!document.querySelector('{L}')", timeout=10000, what=f'« Ce que le contrôle ne couvre pas » ({where})')
+        c.js(f"document.querySelector('{L}').open = true")
+        c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{T} > summary')].map(e => e.textContent)")], [norm(W['many']), norm(W['one'])],
+             f'{where}: one line per terrain, the departure first, none for a terrain without such a rule (red before: none here)', what=f'lines ({where})')
+        c.eq(c.count(f'{FUEL} [data-routealts] [data-terrainrules]'), 2, f'{where}: once per screen', what='once')
+        c.ok(c.js(f"[...document.querySelectorAll('{T}')].every(d => !d.open && !d.closest('li'))"), 'bullet', f'{where}: closed folds, never in a bulleted line')
+        c.js(f"document.querySelector('{T}').open = true")
+        want = ', '.join(r[:20] for r in sorted(refs)[:40]) + ' ' + W['more']
+        c.eq(norm(c.text(f'{T} [data-terrainrefs]') or ''), norm(want), f'{where}: the references one after the other, cut at 20 signs, then '
+             '« et 5 autres »', what='refs')
+        c.eq(c.count(f'{FUEL} [data-routealts] img'), 0, f'{where}: a reference is text, never markup', what='esc')
+
+    terrain('the list')
+    # under « Voir pourquoi » of a card: only the reasons counted in its verdict (« 1 point »: one line), no terrain line
     G = f'{A} [data-alt] details[data-reasons=unverifiable]'
-    c.until(f"!!document.querySelector('{G}')", timeout=10000, what='the fold of « Non vérifiable »')
     c.js(f"document.querySelector('{G}').open = true")
-    T = f'{G} li[data-reason=terrain_rules]'
-    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{T} > details > summary')].map(e => e.textContent)")],
-         [norm(W['many']), norm(W['one'])], 'one line per terrain, the departure first, none for a terrain without such a rule (red before: '
-         'no line)', what='lines')
-    c.eq(norm(c.text(f'{A} [data-alt] [data-verdict=unverifiable]') or ''), norm({'fr': 'Non vérifiable : 1 point', 'en': 'Cannot be verified: 1 point',
-         'de': 'Nicht prüfbar: 1 Punkt', 'es': 'No verificable: 1 punto'}[c.lang]), 'the verdict and its count unchanged', what='count')
-    c.ok(c.js(f"[...document.querySelectorAll('{T} > details')].every(d => !d.open)"), 'open', 'each line closed')
-    c.js(f"document.querySelector('{T} > details').open = true")
-    got = c.js(f"[...document.querySelector('{T} > details').querySelectorAll('li[data-rule]')].map(e => e.textContent)")
-    c.eq(len(got), 40, '40 references at most', what='40')
-    c.eq(got, [r[:20] for r in sorted(refs)][:40], 'one reference per line, sorted, cut at 20 signs (the contract)', what='refs')
-    c.eq(norm(c.text(f'{T} > details [data-terrainmore]') or ''), norm(W['more']), 'then « et 5 autres »', what='more')
-    c.eq(c.count(f'{G} img'), 0, 'a reference is text, never markup', what='esc')
+    c.eq(c.count(f'{G} > ul > li'), 1, '« 1 point », one line under « Voir pourquoi »', what='one')
+    c.eq(c.count(f'{A} [data-terrainrules]'), 0, 'no terrain line in a card, whatever its verdict', what='cards')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
-        top = f"(() => {{ const e = document.querySelector('{T}'); e.style.scrollMarginTop = '140px'; e.scrollIntoView({{block: 'start'}}) }})()"
-        c.js(f"document.querySelector('{G}').open = true; document.querySelectorAll('{T} > details').forEach(d => d.open = false)")
-        c.js(top)
-        c.shot(f'F310_{c.design}_{w}_{c.lang}_lines.png')
-        c.js(f"document.querySelector('{T} > details').open = true")
-        c.js(top)
-        c.shot(f'F310_{c.design}_{w}_{c.lang}_terrain.png')
+        top = lambda sel: c.js(f"(() => {{ const e = document.querySelector('{sel}'); e.style.scrollMarginTop = '120px'; e.scrollIntoView({{block: 'start'}}) }})()")
+        c.js(f"document.querySelector('{L}').open = true; document.querySelector('{T}').open = true")
+        top(L)
+        c.shot(f'F310_{c.design}_{w}_{c.lang}_limits.png')
+        c.js(f"document.querySelector('{G}').open = true")
+        top(f'{A} [data-alt]:has(details[data-reasons=unverifiable])')
+        c.shot(f'F310_{c.design}_{w}_{c.lang}_card.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # after « Contrôler » (a typed route): the same lines, once, in the same fold
+    st['check'] = dict(_alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270, segs, sid=False), verdict='unverifiable', violations=[],
+                       unverifiable=[gap])
+    st['issues'] = []
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]:not([disabled])')", timeout=10000, what='« Contrôler »')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"!document.querySelector('{A}') && !!document.querySelector('{FUEL} [data-routealts] details[data-reasons=unverifiable]')",
+            timeout=12000, what='the box of « Contrôler »')
+    terrain('« Contrôler »')
     c.check_errors()
