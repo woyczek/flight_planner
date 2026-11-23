@@ -20596,3 +20596,32 @@ def k518(c):
         return (p.get('ok'), (first.get('end') or {}).get('id'), [x['state'] for x in (p.get('dct_limits') or {}).get('checked', []) if x['end'] == 'dep'])
     c.eq(fly(True), (True, 'NEAR', ['within']), 'the limit of ZZBB is 10 NM: the connector goes to NEAR (7 NM) and not to FAR (30 NM, on the straight line: the route through it is 22 NM shorter and was chosen before: red before, FAR « exceeded »); the check says « within »', what='restricted')
     c.eq(fly(False)[:2] + (fly(False)[2],), (True, 'FAR', ['exceeded']), 'NEAR is in the graph but leads nowhere that reaches ZZEE: no route with the restricted connectors, the search is redone once with the connectors of before: the route of before (FAR) and the check says the limit that is exceeded — a route that violates never becomes « no route »', what='fallback')
+@case('K519', 'Route engine, SOG-0561 lot 1: a rule of Annex 2B whose AIRWAY column is a list of aliases ("(H1, UH1)", "H1, UH1") or the short form "H/UH1" (the same airway under its lower and its upper name) is read for the airway that the flight flies, instead of being judged "not concerned" in silence (103 rules of the cycle, 8 on one real flight, 2 of them among the nine errors of the IFPS); an unclosed list stays unread; the search avoids a prohibition written that way',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0561, the nine errors of a real validation): « une règle écartée en silence est pire qu\'une règle non lue » ; the measure: the column « Airway » of 103 rules of the cycle is « (P83, UP83) » ; `target` compared the whole text with the airway of the leg, found nothing and answered « this rule does not concern this flight » (decided, no finding, not even counted as unread). Invented base (ZZAA → ZZBB, the airway UH1, a second airway UH2 by an invented point Q2), rules written like the real ones',
+      )
+def k519(c):
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, view as V
+    row = lambda rid, way, a, b, util: ['NEW', '29 OCT 2026 [2611]', 'UFN', rid, way, a, b, '', util, 'H24', 'S', 'invented', '', 'ZZACC', 'ZZ']
+    only = lambda via: 'ONLY AVBL FOR TFC' + chr(10) + 'VIA ' + via      # « only available for traffic via N1 » : the flight does not fly N1 (a condition with a VIA is not a static block: it is read on the route, by `target`)
+
+    def fly(rules, lanes=None, points=None):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data, rad = _sog532_bench(td, rules_2b=rules, lanes=lanes, points=points)
+            return P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+    rules = [row('ZZ5001', '(H1, UH1)', 'P1', 'P2', only('N1')), row('ZZ5002', 'H1, UH1', 'P2', 'P3', only('N1')), row('ZZ5003', 'H/UH1', 'P3', 'P4', only('N1')),
+             row('ZZ5004', '(H1, UH1)', 'P4', 'B0', only('P3')), row('ZZ5005', '(UH1', 'A0', 'P1', only('N1')), row('ZZ5006', 'UH1', 'A0', 'P1', only('P1')),
+             row('ZZ5008', '(H1, UH1)', 'XQ1', 'XQ2', only('N1')), row('ZZ5009', 'UH1', 'XQ1', 'XQ2', only('N1')),
+             row('ZZ5010', '(H1, UH1)', 'FARA', 'FARB', only('N1')), row('ZZ5011', 'UH1', 'FARA', 'FARB', only('N1'))]      # ZZ5008-5011: the airway of another country with the SAME name (the ends of the segment are not in the base, or are in the base and far from every leg flown): the list is not flown here, the plain name stays « unread » as before
+    p = fly(rules, None, {'FARA': (60.0, 30.0), 'FARB': (60.5, 31.0)})
+    found = {i['values']['id']: i['values'].get('target') for i in p['violations'] if i.get('code') == 'rad_rule'}
+    c.eq(found, {'ZZ5001': 'UH1 P1–P2', 'ZZ5002': 'UH1 P2–P3', 'ZZ5003': 'UH1 P3–P4'}, 'the three lists (in parentheses, bare, short form) are read for the airway UH1 that the flight flies: « only available for traffic via N1 » is violated by a flight that does not fly N1, on the leg that the rule names (red before: no finding, the rules were judged « not concerned »); the list whose condition holds (ZZ5004), the unclosed list (ZZ5005, unread) and the plain name that holds (ZZ5006) give nothing', what='violations')
+    c.eq(sorted(i['id'] for st in p.get('not_verified') or [] for i in st['items']), ['ZZ5009', 'ZZ5011'], 'a list of aliases whose segment is not in the base, or far from every leg flown, is NOT counted as unread (an airway of another country with the same name: « (L607, UL607) GENDO–GIVIS » is Greek and counted on a Frankfurt–Brussels flight, red in the replay); the plain name keeps its old behaviour (ZZ5009 unread, unchanged by the lot)', what='homonym')
+    c.eq(p.get('verdict'), 'violates', 'the verdict follows: the route is « violates », never « unverifiable » with the rule silently dropped', what='verdict')
+    lanes = [('UH1', ['A0', 'P1', 'P2', 'P3', 'P4', 'B0'], 5000, 46000), ('UH2', ['P1', 'Q2', 'P3'], 5000, 46000)]
+    block = fly([row('ZZ5007', '(H1, UH1)', 'P2', 'P3', 'NOT AVBL FOR TFC')], lanes, {'Q2': (50.6, 4.5)})
+    legs = [(l['via'], l['start']['id'], l['end']['id']) for l in block['legs']]
+    c.ok(('UH1', 'P2', 'P3') not in legs and any(w == 'UH2' for w, _a, _b in legs), str(legs), 'a prohibition written « (H1, UH1) P2–P3, not available for traffic » is avoided by the SEARCH: the route takes UH2 by Q2 (red before: the shorter UH1 P2–P3, the rule silently dropped)')

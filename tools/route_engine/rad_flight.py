@@ -4,6 +4,7 @@ reported as reviews; they never become permissions or silently pass as valid.
 """
 import collections,functools,math,re
 from . import fra   # SOG-0081 : import relatif
+from . import geo
 from . import rad_via      # SOG-0401 (forme B) : la SUITE d'un groupe VIA
 
 def active_during(clock,start,end):
@@ -236,10 +237,11 @@ def reasons_of(values):
 LINE = chr(10)
 
 
-def not_verified(rad, legs, dep, arr, candidates, known_ids=None, airway=None):
+def not_verified(rad, legs, dep, arr, candidates, known_ids=None, airway=None, locate=None):
     """SOG-0532 lot 2 : [{ state, flown, spaces_only, items: [{ id, sheet, row, reason, reasons }] }], l'État qui a le plus de règles d'abord, au plus MAX_NV_STATES États et MAX_NV_ITEMS règles par État ; seules les règles de l'annexe 2B restées « à interpréter » comptent : `flown` = la cible est volée par cette route (ou le serait : le doute de sens), `spaces_only` = la cible est un espace que la base ne connaît pas (un compte, jamais une liste) ; une règle dont la route n'apparaît que dans une condition n'est pas comptée."""
     ctx = context(legs, dep, arr)
     ctx['airway'] = airway
+    ctx['locate'] = locate      # SOG-0561 lot 1 : les positions d'un point (nom → [{lat, lon}]), pour situer le segment d'une règle à liste d'alias
     ctx['known'] = known_ids
     states = {}
     for rule in candidates:
@@ -289,6 +291,34 @@ def leg_label(leg):
     via = str(leg.get('via') or '')[:20]
     return f'{via} {a}–{b}' if via and via != 'DCT' else f'{a}–{b}'
 
+
+AIRWAY_NAME=re.compile(r'[A-Z0-9]{2,7}')
+AIRWAY_PLAIN=re.compile(r'\(\s*([A-Z0-9]{2,7}(?:\s*,\s*[A-Z0-9]{2,7}){0,11})\s*\)|([A-Z0-9]{2,7}(?:\s*,\s*[A-Z0-9]{2,7}){1,11})')
+AIRWAY_SLASH=re.compile(r'([A-Z])/U\1(\d{1,4})')
+MAX_AIRWAY_NAMES=12
+
+def airway_names(text):
+    """SOG-0561 lot 1 : les NOMS de la colonne « Voie » d'une règle de l'annexe 2B : une voie seule (« UP83 » : [« UP83 »], comme avant), une liste d'ALIAS « (P83, UP83) » ou « N859, UN859 » (la même voie sous ses deux noms, étage bas et étage haut : la règle vaut pour chacun), ou la forme abrégée « P/UP83 » (= P83 et UP83) ; au plus MAX_AIRWAY_NAMES. Tout autre texte est rendu TEL QUEL (une liste d'un seul mot : comme avant : il ne vise aucune voie du vol) ; jamais une exception."""
+    t=str(text or '').strip()
+    m=AIRWAY_PLAIN.fullmatch(t)
+    if m:return [x.strip() for x in (m[1] or m[2]).split(',')][:MAX_AIRWAY_NAMES]
+    m=AIRWAY_SLASH.fullmatch(t)
+    if m:return [m[1]+m[2],'U'+m[1]+m[2]]
+    return [text]
+
+def near_segment(p,q,used,locate):
+    """SOG-0561 lot 1 : un tronçon volé peut-il être sur le segment p–q d'une voie dont la base ne donne pas l'ordre ? Oui si le milieu d'un tronçon volé est dans l'ellipse de foyers p et q (sa distance à p plus sa distance à q au plus deux fois p–q, plus 60 NM : une voie n'est jamais plus de deux fois plus longue que la corde de son segment). Non si p ou q n'a aucune position dans la base. Oui sans situateur (les appels qui n'en passent pas : comme avant)."""
+    if locate is None:return True
+    ps,qs=locate(p) or [],locate(q) or []
+    if not ps or not qs:return False
+    for leg in used:
+        s,e=leg.get('start') or {},leg.get('end') or {}
+        try:m=dict(lat=(s['lat']+e['lat'])/2,lon=(s['lon']+e['lon'])/2)
+        except (KeyError,TypeError):return True
+        for a in ps:
+            for b in qs:
+                if geo.nm(m,a)+geo.nm(m,b)<=2*geo.nm(a,b)+60:return True
+    return False
 
 @functools.lru_cache(maxsize=8192)      # SOG-0468 (5) : le calcul demande les noms d'une voie des centaines de milliers de fois (221 000 appels, 0,7 s sur trois vols) ; une fonction pure d'un texte : mémorisée, et rendue en ensemble NON modifiable (les appelants ne font que lire)
 def aliases(text):
@@ -486,17 +516,21 @@ def target(rule,ctx,legs,rad):
         if v[7] not in ctx['points']:return False,[]
         return True,[i for i,l in enumerate(legs) if v[7] in [l['start']['id'],l['end']['id']]]
     if all(v[i] for i in [4,5,6]) and not v[7]:
+        wanted_ways=frozenset(airway_names(v[4]))      # SOG-0561 lot 1 : « (P83, UP83) » est la voie sous ses deux noms
         for i,l in enumerate(legs):
-            if v[4] not in aliases(l['via']) or l['start']['id']!=v[5]:continue
+            if not (wanted_ways & aliases(l['via'])) or l['start']['id']!=v[5]:continue
             for j in range(i,len(legs)):
-                if v[4] not in aliases(legs[j]['via']):break
+                if not (wanted_ways & aliases(legs[j]['via'])):break
                 if legs[j]['end']['id']==v[6]:ids.extend(range(i,j+1));break
         if ids:return True,sorted(set(ids))
         # SOG-0401 (EDLO1003) : le vol qui n'enchaîne pas EXACTEMENT « de v[5] à v[6] » sur la voie peut quand même voler une PARTIE du segment (TIVDA T703 BEPAS pour le segment ARBAX–DEXIT : ARBAX–BARIX–BEPAS est dedans) ; Eurocontrol applique la règle à toute portion. « Sans objet » n'est donc dit que si le vol n'est jamais sur la voie ; sinon on cherche les tronçons du segment dans la voie, et sans ordre de la voie (ou dans le sens inverse) la règle n'est PAS décidée
-        used=[i for i,l in enumerate(legs) if v[4] in aliases(l['via'])]
+        used=[i for i,l in enumerate(legs) if wanted_ways & aliases(l['via'])]
         if not used:return False,[]
-        path=(ctx.get('airway') or (lambda *a:None))(v[4],v[5],v[6])
-        if path is None:return UNSURE,used      # l'ordre de la voie manque : la règle n'est décidée que si la conclusion est la même qu'elle s'applique ou non (voir evaluate)
+        paths=[(ctx.get('airway') or (lambda *a:None))(name,v[5],v[6]) for name in sorted(wanted_ways & {a for i in used for a in aliases(legs[i]['via'])})]      # SOG-0561 lot 1 : l'ordre de la voie, pour chacun des noms que le vol vole (un seul nom : l'appel d'avant)
+        path=None if any(x is None for x in paths) else (set().union(*(x[0] for x in paths)),set().union(*(x[1] for x in paths))) if len(paths)>1 else paths[0]
+        if path is None:
+            if len(wanted_ways)>1 and not near_segment(v[5],v[6],[legs[i] for i in used],ctx.get('locate')):return False,[]      # SOG-0561 lot 1 : une liste d'alias dont aucun tronçon volé ne peut être dans le segment : la voie de la règle est celle d'un autre pays qui porte le MÊME NOM (« (L607, UL607) GENDO–GIVIS » est grecque, la base n'a pas ses voies : elle était comptée « non lue » sur un vol Francfort–Bruxelles) ; une voie à un seul nom : inchangé
+            return UNSURE,used      # l'ordre de la voie manque : la règle n'est décidée que si la conclusion est la même qu'elle s'applique ou non (voir evaluate)
         forward,reverse=path
         ids=[i for i in used if (legs[i]['start']['id'],legs[i]['end']['id']) in forward]
         if ids:return True,sorted(set(ids))
@@ -504,8 +538,9 @@ def target(rule,ctx,legs,rad):
         return False,[]
     return None,[]
 
-def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None,natural=False):
+def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None,natural=False,locate=None):
     ctx=context(legs,dep,arr,natural);findings=[];avoids=[];decided=0
+    ctx['locate']=locate      # SOG-0561 lot 1 (voir not_verified)
     ctx['airway']=airway      # SOG-0401 : airway(alias,p,q) -> (tronçons de p à q dans le sens de la voie, tronçons en sens inverse) ou None si la voie ne relie pas p et q
     ctx['known']=known_ids;ctx['fl']=int(fl) if isinstance(fl,(int,float)) else None      # SOG-0401 : le niveau demandé (déposé), pour les conditions « RFL ABV FLnnn »
     duplicates=collections.Counter((c['sheet'],c['id']) for c in candidates if c.get('change')!='DEL')
@@ -592,4 +627,6 @@ def static_blocks(rad,dep,arr):
             base=dict(id=v[3],sheet='Annex 2B',row=r['row'])
             if v[7] and not any(v[i] for i in [4,5,6]) and re.fullmatch('[A-Z0-9]{2,8}',v[7]):blocks.append(dict(base,kind='point',point=v[7]))
             elif all(re.fullmatch('[A-Z0-9]{2,8}',v[i]) for i in [4,5,6]) and not v[7]:blocks.append(dict(base,kind='segment',via=v[4],start=v[5],end=v[6]))
+            elif v[5] and v[6] and not v[7] and all(re.fullmatch('[A-Z0-9]{2,8}',v[i]) for i in [5,6]) and len(airway_names(v[4]))>1 and all(re.fullmatch('[A-Z0-9]{2,8}',w) for w in airway_names(v[4])):      # SOG-0561 lot 1 : une liste d'alias : un blocage par nom
+                blocks.extend(dict(base,kind='segment',via=w,start=v[5],end=v[6]) for w in airway_names(v[4]))
     return blocks

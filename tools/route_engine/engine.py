@@ -344,6 +344,10 @@ class Nav:
         if not candidates: raise ValueError('Aucune position de '+ident+' reliée à l’airway indiquée')
         raise ValueError('Identifiant géographiquement ambigu : '+ident+' ('+str(len(candidates))+' positions encore possibles).')
 
+    def positions(self,ident):
+        """SOG-0561 lot 1 : les positions { lat, lon } des points de ce nom dans la base (une liste : plusieurs points d'un même nom) ; vide si le nom est inconnu."""
+        return [self.nodes[k] for k in self.ids.get(ident,[]) if k in self.nodes]
+
     def airway_portion(self,alias,p,q):
         """SOG-0401 : la portion de la voie `alias` entre les points p et q (identifiants), cherchée dans les tronçons chargés : le plus court chemin (en tronçons) de p à q en suivant les sens de la voie ; renvoie (tronçons dans le sens de p vers q, tronçons du chemin pris à l'envers) ou None si aucun chemin ne relie p à q (donnée manquante : la règle n'est alors pas décidée)."""
         cache=self.__dict__.setdefault('_portions',{})
@@ -967,6 +971,8 @@ class Rad:
                         blocks.append(dict(base,kind='point',point=v[7]))
                     elif all(re.fullmatch('[A-Z0-9]{2,7}',v[i]) for i in [4,5,6]) and not v[7]:
                         blocks.append(dict(base,kind='segment',via=v[4],start=v[5],end=v[6]))
+                    elif v[5] and v[6] and not v[7] and len(rad_flight.airway_names(v[4]))>1 and all(re.fullmatch('[A-Z0-9]{2,7}',x) for x in [*rad_flight.airway_names(v[4]),v[5],v[6]]):      # SOG-0561 lot 1 : une liste d'alias « (P83, UP83) » : un blocage par nom
+                        blocks.extend(dict(base,kind='segment',via=w,start=v[5],end=v[6]) for w in rad_flight.airway_names(v[4]))
                 else:
                     if v[8].upper() not in ['NO','N'] or v[9] or v[10]!='H24': continue
                     lo=re.fullmatch(r'(?:FL)?(\d{1,3})',v[6]); hi=re.fullmatch(r'(?:FL)?(\d{1,3})',v[7])
@@ -1283,9 +1289,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
     elapsed=0.
     for leg in legs:
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
-    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion,natural=not marks and not written)      # SOG-0513 (A) : sans changement de niveau dans la route, les règles de niveau jugent le profil du niveau déposé
+    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion,natural=not marks and not written,locate=nav.positions)      # SOG-0513 (A) : sans changement de niveau dans la route, les règles de niveau jugent le profil du niveau déposé
     atomic_ids={(b['sheet'],b['row']) for b in violations}
-    not_verified=rad_flight.not_verified(rad,legs,dep,arr,candidates,set(nav.ids)|used_routes,nav.airway_portion)      # SOG-0532 lot 2 : par État, le COMPTE des règles du RAD dont la cible est volée et non décidées (avec leur raison en code), et celui des règles qui ne visent qu'un espace inconnu ; la phrase « Règles RAD NON appliquées » (SOG-0501 (c)) n'est plus dite : une ligne par État
+    not_verified=rad_flight.not_verified(rad,legs,dep,arr,candidates,set(nav.ids)|used_routes,nav.airway_portion,locate=nav.positions)      # SOG-0532 lot 2 : par État, le COMPTE des règles du RAD dont la cible est volée et non décidées (avec leur raison en code), et celui des règles qui ne visent qu'un espace inconnu ; la phrase « Règles RAD NON appliquées » (SOG-0501 (c)) n'est plus dite : une ligne par État
     for nv in not_verified:
         issue('REVUE',f"RAD, État {nv['state']} : "+(f"{nv['flown']} règle(s) visent un tronçon ou un point de cette route et n'ont pas pu être vérifiées" if nv['flown'] else '')+(' ; ' if nv['flown'] and nv['spaces_only'] else '')+(f"{nv['spaces_only']} règle(s) ne visent qu'un espace que la base ne connaît pas" if nv['spaces_only'] else '')+'.','rad_unread',True,state=nv['state'],flown=nv['flown'],spaces_only=nv['spaces_only'])
     for finding in rad_summary['findings']:
