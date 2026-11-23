@@ -81,13 +81,16 @@ a condition.
 `python tests/v3/run.py --touched`; the full pass after the push, in the background on the pushed head, and a fix at once
 if it is red.
 
-**One full pass at a time on this computer** (two at 10 workers each crashed a browser driver): a full pass takes a lock in
-the computer's temp folder (`sog-noreg-full.lock`: pid, time, folder, runs at a time), shared by every worktree; while another
-runs, it refuses to start and says who runs (exit 3), or waits with `--wait`. A heavy targeted pass (more than 30 cases: an
-area with `--grep`, a large `--touched` before a push) takes its own lock (`sog-noreg-targeted.lock`), one at a time, and runs
-**beside** a full pass at 4 runs at a time instead of waiting for it (`heavy_slot`, `BESIDE_JOBS`, 30 Oct 2026); a full pass
-that starts while a targeted pass runs above 4 waits for it. A lock older than two hours, or whose process is gone, is
-ignored. A pass of 30 cases or fewer stays free.
+**ONE heavy job at a time on this computer** (decision of the ergonomist, 24 Nov 2026; before it, two passes at 10 workers each crashed
+a browser driver): every pass of `run.py` that starts a browser (a full pass, a targeted one, a single case) takes a lock in the
+computer's temp folder (`sog-heavy.lock`: what for, process number, process start time, worktree — nothing else), shared by every worktree, and a held
+lock makes the next one **wait**: it says who holds it every minute and gives up at its `--lock-timeout` (an argument, default 4 h; exit 3, it never runs anyway); `--no-wait` refuses at once; `--wait` is kept and is now the rule.
+Nothing runs beside it any more (the former « targeted pass beside a full one at 4 runs » is withdrawn). A pass with no browser case
+(the static ones) is free. The lock is also the ONE entry point of every other script that starts a headless browser (a capture of a
+mock-up or of a tutorial, a diagnostic): `python tests/v3/heavy_lock.py --label "what for" -- python my_script.py`, or
+`with heavy_lock.heavy('what for'):` in Python. The lock of a **live** process is never freed, however long (past two hours the one that waits says so and waits);
+only a **dead** process frees it, judged by its number AND its start time (Windows reuses numbers), said and freed; nobody stops another one's process. Case I27 tests it.
+**Transition**: the file `sog-heavy.lock` is seen ONLY by the new `run.py` and `heavy_lock.py`; an older `run.py` in another worktree still takes the former `sog-noreg-full.lock`, does not see the new lock and can run beside a heavy job. So, at the push: the tree of Essais (`E:\DEFA-essais`) goes on the pushed SHA before its next pass, and a session that starts `run.py` or a capture script from an older worktree rebases first.
 
 ### Which cases run for which change (`--changed`, `--for`)
 

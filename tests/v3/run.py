@@ -47,116 +47,29 @@ DEFAULT_JOBS = max(1, (os.cpu_count() or 4) // 2 - 2)
 # runs at a time for the rest, and says so (30 Oct 2026: four « Target crashed » under load, green alone)
 CRASH_LIMIT, LOW_JOBS = 3, 6
 SLOWEST = 20  # report.md: the slowest cases, to replace their fixed waits by waits on a condition
-# one heavy pass at a time on this computer (two at 10 workers each crashed a browser driver, 30 Oct 2026): a full pass, or
-# any pass of more than HEAVY cases (an area with --grep, a large --touched); the lock lives in the computer's temp folder,
-# not in the repository, so that the sessions' worktrees see each other's; a lock older than two hours or whose process is
-# gone is ignored
-HEAVY = 30
-FULL_LOCK = Path(tempfile.gettempdir()) / 'sog-noreg-full.lock'
-# a heavy targeted pass (a --touched before a push) takes its own lock, one at a time, and runs BESIDE one full pass instead of
-# waiting for it, at BESIDE_JOBS runs at a time (30 Oct 2026, Simplification: the pushes waited behind other worktrees' full
-# passes; the crash came from two passes at 10); a full pass starting while a targeted one runs above that waits for it
-TARGET_LOCK = Path(tempfile.gettempdir()) / 'sog-noreg-targeted.lock'
-BESIDE_JOBS = 4
-LOCK_STALE = 2 * 3600
+# ONE heavy job at a time on this computer (two at 10 workers each crashed a browser driver, 30 Oct 2026; decision of the ergonomist, 24 Nov 2026,
+# SOG-0594): ANY pass that starts a browser takes the lock (a full pass, a targeted one, a single case), and so does every script of the sessions
+# that starts a headless browser (a capture, a diagnostic) through the same helper, heavy_lock.py; a held lock makes the pass WAIT, it does not run
+# beside the other (the old « targeted pass beside a full one at 4 runs » is gone).  The lock lives in the computer's temp folder, not in the
+# repository, so that the sessions' worktrees see each other's; the lock of a LIVE process is never freed (past two hours the one that waits says so and waits),
+# an orphan (its process dead, by number AND start time) is said and freed, and a wait has a said end (--lock-timeout: it gives up, it never runs anyway).
+HEAVY = 30  # kept for the reports: a pass of more cases than this is « large »
+import heavy_lock as HL  # noqa: E402
+FULL_LOCK = HL.LOCK
+pid_alive, lock_holder, drop_lock = HL.pid_alive, HL.holder, HL.drop
 
 
-def pid_alive(pid):
-    """True while the process runs.  On Windows os.kill(pid, 0) would end it: the process is asked through the API."""
-    if not isinstance(pid, int) or pid <= 0:
-        return False
-    if os.name == 'nt':
-        import ctypes
-        k = ctypes.windll.kernel32
-        h = k.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
-        if not h:
-            return False
-        code = ctypes.c_ulong()
-        ok = k.GetExitCodeProcess(h, ctypes.byref(code))
-        k.CloseHandle(h)
-        return bool(ok) and code.value == 259  # STILL_ACTIVE
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+def take_lock(wait=False, path=None, timeout=None):
+    """Takes the heavy lock (see heavy_lock.py); True when taken."""
+    return HL.take('a noreg pass', wait, path, timeout=timeout)
 
 
-def lock_holder(path=None):
-    """The running pass that holds the lock ({ pid, at, cwd, jobs }), or None (no lock, stale, or its process gone)."""
-    try:
-        h = json.loads((path or FULL_LOCK).read_text(encoding='utf-8'))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(h, dict) or time.time() - float(h.get('at') or 0) > LOCK_STALE or not pid_alive(h.get('pid')):
-        return None
-    return h
-
-
-def take_lock(wait=False, path=None, jobs=0):
-    """Takes a lock (the full passes' by default); True when taken.  Held by another running pass: False at once, or (wait)
-    once it is free."""
-    path = path or FULL_LOCK
-    said = False
-    while True:
-        try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            h = lock_holder(path)
-            if h is None:  # stale, or its process gone: removed, then taken again
-                try:
-                    path.unlink()
-                except OSError:
-                    pass
-                continue
-            if not wait:
-                print(f"another heavy pass is running (pid {h.get('pid')}, since {time.strftime('%H:%M', time.localtime(h.get('at', 0)))}, "
-                      f"{h.get('cwd', '?')}): --wait to start after it")
-                return False
-            if not said:
-                print(f"waiting for the heavy pass of pid {h.get('pid')} ({h.get('cwd', '?')}) to end…")
-                said = True
-            time.sleep(10)
-            continue
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            json.dump({'pid': os.getpid(), 'at': time.time(), 'cwd': str(ROOT), 'jobs': jobs}, f)
-        atexit.register(drop_lock, path)
-        return True
-
-
-def drop_lock(path=None):
-    """Removes the lock if it is this process's."""
-    path = path or FULL_LOCK
-    try:
-        if json.loads(path.read_text(encoding='utf-8')).get('pid') == os.getpid():
-            path.unlink()
-    except (OSError, ValueError, AttributeError):
-        pass
-
-
-def heavy_slot(full, heavy, jobs, wait=False):
-    """The place of a pass on this computer: (allowed, jobs).  A full pass takes the full lock (refused or waiting, as before),
-    then waits for a targeted pass running above BESIDE_JOBS; a heavy targeted pass takes the targeted lock (one at a time,
-    waiting) and runs beside a full pass at BESIDE_JOBS at most; a light pass is free."""
-    if full:
-        if not take_lock(wait, FULL_LOCK, jobs):
-            return False, jobs
-        said = False
-        while (h := lock_holder(TARGET_LOCK)) and int(h.get('jobs') or 0) > BESIDE_JOBS:
-            if not said:
-                print(f"waiting for the targeted pass of pid {h.get('pid')} ({h.get('cwd', '?')}, {h.get('jobs')} runs at a time) to end…")
-                said = True
-            time.sleep(10)
+def heavy_slot(browser, jobs, wait=True, timeout=None):
+    """The place of a pass on this computer: (allowed, jobs).  A pass with no browser case (the static ones) is free; any other takes
+    the ONE heavy lock and waits for it (wait=False: refused at once; `timeout` seconds: gives up; both exit 3).  Its runs are never lowered: nothing runs beside it."""
+    if not browser:
         return True, jobs
-    if not heavy:
-        return True, jobs
-    beside = lock_holder(FULL_LOCK)
-    if beside and jobs > BESIDE_JOBS:
-        print(f"a full pass runs (pid {beside.get('pid')}, {beside.get('cwd', '?')}): this pass runs beside it, {BESIDE_JOBS} runs at a time")
-        jobs = BESIDE_JOBS
-    return take_lock(True, TARGET_LOCK, jobs), jobs
+    return HL.take('a noreg pass', wait, None, timeout=timeout), jobs
 
 
 def full_pass(args):
@@ -518,7 +431,9 @@ def main():
     ap.add_argument('--tag', help='run the cases carrying one of these tags')
     ap.add_argument('--journey', help='the guard cases and the end-to-end case of these journeys (P1..P6, commas), added to --changed / --for if given')
     ap.add_argument('--keep-server', action='store_true', help='leave the static server running and print its address')
-    ap.add_argument('--wait', action='store_true', help='a full pass waits for the heavy pass already running on this computer instead of refusing to start')
+    ap.add_argument('--wait', action='store_true', help='(kept: waiting is now the rule) a pass waits for the heavy job already running on this computer')
+    ap.add_argument('--lock-timeout', type=int, default=HL.DEFAULT_TIMEOUT, metavar='SECONDS', help=f'how long a pass waits for the heavy lock before giving up (exit 3, it does not run anyway); default {HL.DEFAULT_TIMEOUT}, 0: no end')
+    ap.add_argument('--no-wait', action='store_true', help='refuse to start (exit 3) instead of waiting when another heavy job runs on this computer')
     ap.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help=f'worker processes (default {DEFAULT_JOBS}: the physical cores less two; 1 runs in this process)')
     ap.add_argument('--list', action='store_true', help='show the areas, the journeys and the cases chosen, and exit (nothing runs)')
     args = ap.parse_args()
@@ -584,10 +499,8 @@ def main():
     for l in journey_lines(touched):                # PLAN.md section O: before the first case
         print(l)
 
-    # a full pass takes the full lock (refused when another runs, unless --wait); a heavy targeted one (--touched before a
-    # push) runs beside it at BESIDE_JOBS (heavy_slot)
-    full = full_pass(args)
-    ok, args.jobs = heavy_slot(full, len(cases) > HEAVY, args.jobs, args.wait)
+    # any pass that starts a browser takes the ONE heavy lock of this computer and waits for it (--no-wait: refused, exit 3)
+    ok, args.jobs = heavy_slot(any(not registry[j[0]].static for j in jobs), args.jobs, not args.no_wait, args.lock_timeout or None)
     if not ok:
         return 3
     t0 = time.time()

@@ -1914,36 +1914,86 @@ def i25(c):
     c.ok(not L.SYNC_LOCK.locked() and after == '', after, 'the synchronisation lock and the jobs\u2019 starts are given back')
 
 
-@case('I27', 'The noreg runner: a targeted pass runs beside one full pass at 4 runs at a time; two full passes stay exclusive', 'I', static=True,
-      rule='Simplification 30 Oct (the pushes waited behind other worktrees\u2019 full passes; the crash came from two passes at 10): heavy_slot — a full pass takes the full lock; a heavy targeted pass its own lock, one at a time, beside a full pass at BESIDE_JOBS = 4; a full pass waits for a targeted one above that')
+@case('I27', 'ONE heavy job at a time on this computer (the noreg runner and every script that starts a browser): a held lock makes the next one WAIT, only a DEAD process frees a lock (number and start time), a wait has a said end (SOG-0594)', 'I', static=True,
+      rule='ergonomist, 24 Nov 2026: tests/v3/heavy_lock.py is the one entry point, run.py takes it for ANY pass with a browser case (heavy_slot). (1) the lock of a LIVE process is never freed, however long (past two hours the one that waits says who and since when, and waits); (2) dead = the number is gone OR lives with another start time than the one written (Windows reuses numbers); (3) a wait has a said end, `timeout` an argument, and never runs anyway; (4) the lock holds only what for, number, start time, worktree, in the temp folder. REPLACES the case of 30 Oct (« a targeted pass runs beside one full pass at 4 runs at a time »), whose rule is withdrawn by this decision')
 def i27(c):
     import importlib
     import json
     import os
+    import subprocess as sp
     import time as _t
     sys.path.insert(0, str(c.root / 'tests' / 'v3'))
     R = importlib.import_module('run')
+    HL = importlib.import_module('heavy_lock')
     tmp = Path(tempfile.mkdtemp(prefix='sog-locks-'))
-    kept = R.FULL_LOCK, R.TARGET_LOCK
+    kept = HL.LOCK, HL.POLL
+    said = []
     try:
-        R.FULL_LOCK, R.TARGET_LOCK = tmp / 'full.lock', tmp / 'targeted.lock'
-        R.print = lambda *a, **k: None  # heavy_slot's lines about this trial stay out of the pass's own output
-        c.eq(R.heavy_slot(False, False, 10), (True, 10), 'a light pass is free, its runs untouched', what='light')
-        # a full pass of another worktree runs (a live process: this one, under another folder name)
-        R.FULL_LOCK.write_text(json.dumps({'pid': os.getpid(), 'at': _t.time(), 'cwd': 'E:/other', 'jobs': 10}), encoding='utf-8')
-        c.eq(R.heavy_slot(True, True, 10), (False, 10), 'a second full pass is refused (without --wait)', what='two full passes')
-        ok, jobs = R.heavy_slot(False, True, 10)
-        held = json.loads(R.TARGET_LOCK.read_text(encoding='utf-8'))
-        c.ok(ok and jobs == R.BESIDE_JOBS == 4 and held['jobs'] == 4, f'{ok} {jobs} {held}', 'a heavy targeted pass runs beside it, 4 runs at a time, said in its lock')
-        R.drop_lock(R.TARGET_LOCK)
-        R.FULL_LOCK.unlink()
-        ok, jobs = R.heavy_slot(False, True, 10)
-        c.eq((ok, jobs), (True, 10), 'without a full pass, a targeted pass keeps its runs', what='alone')
-        R.drop_lock(R.TARGET_LOCK)
-        c.ok(not R.TARGET_LOCK.exists() and not R.FULL_LOCK.exists(), '', 'the locks are dropped by their own process')
+        HL.LOCK, HL.POLL = tmp / 'heavy.lock', .1
+        # a pass with no browser case (the static ones) is free, whatever is held
+        c.eq(R.heavy_slot(False, 10, wait=False), (True, 10), 'a pass without a browser case is free, its runs untouched', what='static pass')
+        # nobody holds it: a pass with a browser takes it, with its runs untouched (nothing runs beside it, so nothing is lowered)
+        c.eq(R.heavy_slot(True, 10, wait=False), (True, 10), 'a pass with a browser takes the lock and keeps its runs', what='alone')
+        held = json.loads(HL.LOCK.read_text(encoding='utf-8'))
+        c.eq(sorted(held), ['cwd', 'label', 'pid', 'start'], 'the lock holds only what for, the number, the start time, the worktree', what='four fields')
+        mine = HL.start_time(os.getpid())
+        c.ok(held['pid'] == os.getpid() and held['label'] and (mine is None or abs(held['start'] - mine) < HL.SAME_START), str(held), 'and they are this process\u2019s own, the start time read from the system')
+        # held by a LIVE job (this process): any other pass with a browser, even a single case, does not run beside it
+        c.eq(R.heavy_slot(True, 4, wait=False), (False, 4), 'a second pass with a browser, targeted or not, is refused (--no-wait): it does not run beside the first', what='two passes')
+        c.eq(HL.take('a capture', wait=False, say=said.append), False, 'a capture script that asks for the lock while a pass holds it does not run beside it', what='capture waits')
+        c.ok(said and 'another heavy job is running' in said[-1], str(said), 'and says who holds it')
+        # a LIVE holder for over two hours keeps the lock: it is said and waited for, never freed
+        old = _t.time() - 3 * 3600
+        os.utime(HL.LOCK, (old, old))
+        said.clear()
+        c.eq(HL.take('later', wait=False, say=said.append), False, 'a live process that holds the lock for three hours still holds it: nothing frees it', what='long live holder')
+        c.ok(HL.LOCK.exists(), '', 'its lock is still there')
+        # the wait has a SAID END: at its timeout it gives up with the sentence and does not run anyway
+        said.clear()
+        t0 = _t.time()
+        c.eq(HL.take('patient', wait=True, say=said.append, timeout=1), False, 'a wait gives up at its timeout', what='timeout')
+        c.ok(0.9 <= _t.time() - t0 < 5 and any('gave up' in s and 'did NOT run' in s for s in said) and any('over two hours' in s for s in said), str(said), 'with the sentence (it did not run), and says that the holder is a long one')
+        try:
+            with HL.heavy('never runs', wait=True, say=said.append, timeout=1):
+                ran = True
+        except RuntimeError:
+            ran = False
+        c.ok(ran is False, '', 'the `heavy` guard raises instead of running the job anyway')
+        HL.drop()
+        c.ok(not HL.LOCK.exists(), '', 'the lock is given back by its own process')
+        # an ORPHAN: the lock of a process that is DEAD (its number gone) is said and freed, it does not block the computer
+        gone = sp.Popen([sys.executable, '-c', 'pass'])
+        gone.wait()
+        HL.LOCK.write_text(json.dumps({'label': 'a dead capture', 'pid': gone.pid, 'start': _t.time() - 99, 'cwd': 'E:/other'}), encoding='utf-8')
+        said.clear()
+        c.eq(HL.take('after the orphan', wait=False, say=said.append), True, 'the lock of a dead process is freed and taken', what='orphan')
+        c.ok(any('dead' in s and 'a dead capture' in s for s in said), str(said), 'the orphan is SAID (who, and why it is freed)')
+        HL.drop()
+        # a REUSED number: a live process of that number, but another start time than the one written: the old one is dead
+        if mine is not None:
+            HL.LOCK.write_text(json.dumps({'label': 'before the number was reused', 'pid': os.getpid(), 'start': mine - 3600, 'cwd': 'E:/other'}), encoding='utf-8')
+            said.clear()
+            c.eq(HL.take('after the reuse', wait=False, say=said.append), True, 'a number that lives with another start time is a dead process: freed and taken', what='reused number')
+            HL.drop()
+        # a lock file that is EMPTY and fresh is the one of a job between os.open and json.dump: waited for, never taken for an orphan
+        HL.LOCK.write_text('', encoding='utf-8')
+        said.clear()
+        c.eq(HL.take('too early', wait=False, say=said.append), False, 'an empty lock file, written a moment ago, is a job that is taking the lock: not taken for an orphan', what='fresh empty lock')
+        old = _t.time() - 60
+        os.utime(HL.LOCK, (old, old))
+        c.eq(HL.take('later', wait=False, say=said.append), True, 'the same empty file a minute later is unreadable for good: freed and taken', what='old empty lock')
+        HL.drop()
+        # the command line: the command runs with the lock held and its exit code comes back; held by a live job, it gives up at its --timeout
+        env = {**os.environ, 'TMP': str(tmp), 'TEMP': str(tmp), 'TMPDIR': str(tmp)}
+        tool = str(c.root / 'tests' / 'v3' / 'heavy_lock.py')
+        out = sp.run([sys.executable, tool, '--label', 'tool case', '--', sys.executable, '-c', 'import sys;sys.stdout.write(open(sys.argv[1]).read())', str(tmp / 'sog-heavy.lock')],
+                     capture_output=True, text=True, env=env)
+        c.ok(out.returncode == 0 and '"label": "tool case"' in out.stdout, f'{out.returncode} {out.stdout[:200]} {out.stderr[:200]}', 'the command line holds the lock while the command runs')
+        (tmp / 'sog-heavy.lock').write_text(json.dumps({'label': 'a pass of the other', 'pid': os.getpid(), 'start': mine, 'cwd': 'E:/other'}), encoding='utf-8')
+        out = sp.run([sys.executable, tool, '--timeout', '1', '--', sys.executable, '-c', 'print("RAN")'], capture_output=True, text=True, env=env)
+        c.ok(out.returncode == 3 and 'RAN' not in out.stdout and 'gave up' in out.stdout, f'{out.returncode} {out.stdout[:200]}', 'held by a live job, the command line gives up at its --timeout with a failure code and does not run the command')
     finally:
-        R.FULL_LOCK, R.TARGET_LOCK = kept
-        R.__dict__.pop('print', None)
+        HL.LOCK, HL.POLL = kept
         shutil.rmtree(tmp, ignore_errors=True)
 
 
