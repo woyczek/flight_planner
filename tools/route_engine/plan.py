@@ -311,15 +311,42 @@ def judge_repairs(request, nav, rad, primary, check_budget, avoids, assess=None)
         _, _, primary, avoids, judge = tried[best]
         request['_rad_avoid'] = avoids
     say = dict(verdict=judge.get('verdict') if judge else None, compute_verdict=primary.get('verdict'), retries=len(retries), attempts=retries, seconds=round(time.perf_counter() - began, 3))
-    if judge and judge.get('verdict') != primary.get('verdict'):      # le verdict affiché EST celui du texte par le contrôle
-        have = {i.get('text') for i in primary.get('issues') or []}
-        for i in judge.get('issues') or []:
-            if i.get('level') == 'ERREUR' and i.get('text') not in have:
-                primary.setdefault('issues', []).append(i)
-        for k in ('verdict', 'violations', 'unverifiable', 'status'):
-            primary[k] = judge.get(k)
+    adopt_verdict(primary, judge)
     primary['judge'] = say
     return primary, avoids, say
+
+
+def adopt_verdict(route, judge):
+    """SOG-0576 : le verdict affiché d'une route EST celui de son TEXTE par le contrôle : s'il diffère, le verdict, les infractions, les points non vérifiés, le statut et les ERREUR du contrôle sont repris dans la route."""
+    if judge and judge.get('verdict') != route.get('verdict'):
+        have = {i.get('text') for i in route.get('issues') or []}
+        for i in judge.get('issues') or []:
+            if i.get('level') == 'ERREUR' and i.get('text') not in have:
+                route.setdefault('issues', []).append(i)
+        for k in ('verdict', 'violations', 'unverifiable', 'status'):
+            route[k] = judge.get(k)
+
+
+def judge_alternatives(request, nav, rad, alternatives, how, check_budget, assess=None):
+    """SOG-0576 (l'ergonome, 23 nov. : « les alternatives jugées ») : chaque alternative proposée au pilote repasse UNE fois dans le contrôle (son TEXTE, sans le chemin de la recherche), SANS reprise, et son verdict affiché est celui du contrôle ; `judge` = { verdict, compute_verdict, seconds } ; `how[id(alternative)]` donne le niveau, la stratégie et les conditions avec lesquels elle a été trouvée. Un budget atteint ou un calcul interrompu arrête le jugement des suivantes (elles gardent le verdict de la recherche) : rend True si interrompu."""
+    import time
+    assess = assess or engine.assess
+    for alt in alternatives:
+        args = how.get(id(alt))
+        if not args or not alt.get('route'):
+            continue
+        began = time.perf_counter()
+        try:
+            check_budget()
+            judge = assess(dict(args['conditions'], mode='validate', route=alt['route'], fl=args['fl'], level_strategy=args['strategy'], via=[]), nav, rad)
+        except engine.Interrupted:
+            return True
+        except (ValueError, SearchBudget):
+            return False
+        say = dict(verdict=judge.get('verdict'), compute_verdict=alt.get('verdict'), seconds=round(time.perf_counter() - began, 3))
+        adopt_verdict(alt, judge)
+        alt['judge'] = say
+    return False
 
 
 def plan(request, root):
@@ -442,6 +469,7 @@ def plan(request, root):
     check_only = request.get('mode', 'calculate') == 'validate' and not request.get('alternatives')
     coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
     alternatives = []
+    judged_how = {}
     failures = list(coverage_gaps)
     tested = []
     # SOG-0161 : une route de tête refusée parce que sa RECHERCHE a atteint son budget (« Budget de recherche atteint ») : chercher d'autres niveaux refait la même recherche (6 s chacune : EIDW → KBOS rendait une proposition en 35 s) :
@@ -479,6 +507,7 @@ def plan(request, root):
             def signature(r):
                 return (r.get('route'), tuple((round(l.get('altitude_start_ft', 0) / 100), round(l.get('altitude_end_ft', 0) / 100), round(l.get('altitude_min_ft', 0) / 100), round(l.get('altitude_max_ft', 0) / 100)) for l in r.get('legs', [])))
             seen = {signature(primary)} if primary.get('ok') else set()
+            judged_how.clear()
 
             def consider(route, level, strategy, path=None, conditions=None):
                 check_budget()
@@ -492,6 +521,7 @@ def plan(request, root):
                     return
                 seen.add(sig)
                 r['generated'] = True
+                judged_how[id(r)] = dict(fl=level, strategy=strategy, conditions=conditions or request)      # SOG-0576 : de quoi le contrôle repasse son texte (judge_alternatives)
                 r['alternative_kind'] = ('FRA · ' + ', '.join(r['fra_stats']['areas'])) if r['fra_stats']['segments'] else 'Profil avec paliers adaptés' if strategy == 'adapt' else 'Palier de croisière FL' + str(level)
                 r['report'] = engine.report(r)
                 alternatives.append(r)
@@ -555,12 +585,14 @@ def plan(request, root):
     wanted = (rejected or bool(request.get('alternatives'))) and not check_only
     if not alternatives:
         failures.extend(e for t in tested for e in t['errors'])
+    if alternatives and not interrupted and request.get('mode', 'calculate') == 'calculate':      # SOG-0576 : le verdict d'une alternative EST celui de son texte par le contrôle (une fois, sans reprise)
+        interrupted = judge_alternatives(request, nav, rad, alternatives, judged_how, lambda: None)      # le contrôle ne cherche rien : ni budget d'états à tenir (le garde de durée du moteur reste)
     alternatives.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
     if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not primary.get('data_gaps') and not any(i['level'] == 'ERREUR' for i in primary['issues']) and request.get('objective') in ['fastest', 'economical']:
-        pool = [primary, *alternatives]
+        pool = [primary, *(a for a in alternatives if not any(i['level'] == 'ERREUR' for i in a['issues']) and VERDICT_RANK.get(a.get('verdict'), 1) <= VERDICT_RANK.get(primary.get('verdict'), 1))]      # SOG-0576 (l'ergonome, 23 nov.) : la route de tête n'est JAMAIS remplacée par une route moins bien jugée par le contrôle (ni refusée, ni d'un verdict plus faible) : l'alternative écartée reste proposée avec son verdict
         pool.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
         primary = pool[0]
-        alternatives = pool[1:4]
+        alternatives = [*pool[1:4], *(a for a in alternatives if not any(a is b for b in pool))][:3]      # SOG-0576 : les alternatives refusées par le contrôle restent proposées avec leur verdict, après les autres
     message = ('' if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''      # SOG-0401 : « sans incompatibilité détectée » n'est plus rendu (c'était un 0 constat sur les seules conditions décidables, 95 contre 555 à examiner) : l'écran compose sa phrase avec `rad.decided` et `rad.review`
     repli = None
     if rejected and not alternatives and not check_only and not interrupted:

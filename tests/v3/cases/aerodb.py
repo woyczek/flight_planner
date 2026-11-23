@@ -21071,3 +21071,103 @@ def k533(c):
     long_assess = lambda request, nav, rad: (_ for _ in ()).throw(ValueError('x' * 1000)) if request.get('mode') != 'validate' else assess(request, nav, rad)
     out = P.judge_repairs({}, None, None, {'ok': True, 'route': 'R1', 'verdict': 'unverifiable', 'issues': []}, lambda: None, [], long_assess)
     c.eq(len(out[0]['judge']['attempts'][0]['error']), P.ERROR_MAX, 'the error of a search again is cut at ERROR_MAX signs in the answer (Sécurisation: a text that can hold identifiers of the base)', what='cut')
+
+@case('K535', 'Route engine, SOG-0576 (alternatives judged): each alternative offered to the pilot goes ONCE through the control (its TEXT, not the path of the search), with no search again, and the verdict shown is the verdict of the control — a text that the control finds worse carries its verdict and its errors, one that it finds better carries the better one, the head route is not touched by it; an interruption or a budget stops the judging of the next ones (they keep the verdict of the search)',
+      'K', static=True,
+      rule='The ergonomist through the relay, 23 Nov 2026 (« NOUVEAU petit lot : les alternatives jugées. Chaque alternative proposée au pilote repasse UNE fois dans le contrôle, sans reprise, et son verdict affiché est celui du contrôle »). Two parts on invented sets: `judge_alternatives` with a control that is invented (the logic: once each, verdict and errors taken, interruption, budget), and `plan.compute` on an invented base with two lanes between two invented aerodromes, the control forced to refuse the text of the alternatives that go by one of the two lanes (the wiring: the judging runs, once per alternative, after the search, and the head route keeps its own verdict)',
+      )
+def k535(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    import route_fixture as RF
+    from route_engine import engine as E, import_books as I, plan as P, view
+    # 1. the logic
+    Q = {'A': ('violates', 'erreur A'), 'B': ('conform', None), 'C': ('unverifiable', None)}
+    calls = []
+
+    def control(request, nav, rad):
+        calls.append(request)
+        verdict, error = Q[request['route']]
+        return {'verdict': verdict, 'violations': [{'code': 'x'}] if error else [], 'unverifiable': [], 'status': verdict, 'issues': [{'level': 'ERREUR', 'text': error}] if error else []}
+    how = lambda r: {'fl': 330, 'strategy': 'adapt', 'conditions': {'dep': 'XSTA'}}
+    alts = [{'route': k, 'verdict': 'unverifiable', 'issues': []} for k in 'ABC']
+    cut = {id(a): how(a) for a in alts[:2]}      # the third one has no way recorded: it is not judged
+    stopped = P.judge_alternatives({}, None, None, alts, cut, lambda: None, control)
+    c.eq((stopped, [x['route'] for x in calls], [x['mode'] for x in calls], [x['fl'] for x in calls], [x['via'] for x in calls]), (False, ['A', 'B'], ['validate', 'validate'], [330, 330], [[], []]), 'one control per alternative that has its way recorded, on its TEXT (mode validate, its level, no passage imposed), none for the other', what='once')
+    c.eq([(a['verdict'], a.get('judge', {}).get('verdict'), [i['text'] for i in a['issues']]) for a in alts], [('violates', 'violates', ['erreur A']), ('conform', 'conform', []), ('unverifiable', None, [])], 'the verdict shown is the verdict of the control, worse (with its error) or better; the alternative that was not judged keeps its own', what='verdict')
+
+    def interrupted(request, nav, rad):
+        raise E.Interrupted('trop lent')
+    alts2 = [{'route': k, 'verdict': 'unverifiable', 'issues': []} for k in 'AB']
+    c.eq((P.judge_alternatives({}, None, None, alts2, {id(a): how(a) for a in alts2}, lambda: None, interrupted), [a['verdict'] for a in alts2]), (True, ['unverifiable', 'unverifiable']), 'an interruption stops the judging and is reported (True); the alternatives keep the verdict of the search', what='interrupted')
+
+    def over_budget():
+        raise P.SearchBudget('budget')
+    alts3 = [{'route': 'A', 'verdict': 'unverifiable', 'issues': []}]
+    c.eq((P.judge_alternatives({}, None, None, alts3, {id(alts3[0]): how(0)}, over_budget, control), alts3[0]['verdict']), (False, 'unverifiable'), 'a budget reached stops the judging without an error (False); the alternative keeps the verdict of the search', what='budget')
+    # 2. the wiring, on an invented base: two lanes between two invented aerodromes
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+            ai = json.load(f)
+        ai['data']['rows'] += [['XSTA', 'DEPART', 55.0, 10.0, 20, 0, 0], ['XEND', 'ARRIVE', 55.0, 24.0, 20, 0, 0]]
+        with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump(ai, f)
+        short = {'S1': (55.0, 11.0), 'S2': (55.0, 12.5), 'S3': (55.0, 14.0)}
+        rest = {'S3': (55.0, 14.0), 'S4': (55.0, 17.0), 'S5': (55.0, 20.5)}
+        long_ = {'S1': (55.0, 11.0), 'N2': (55.6, 12.5), 'S3': (55.0, 14.0)}
+        nodes = {**short, **long_, **rest}
+        with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+            doc = json.load(f)
+        doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in nodes.items()]
+        with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+            json.dump(doc, f)
+        with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+            al = json.load(f)
+        node = lambda n: {'id': n, 'lat': nodes[n][0], 'lon': nodes[n][1]}
+        lane = lambda name, ids: [{'route': name, 'a': node(a), 'b': node(b), 'lower': 2000, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+        al['data'] += lane('L9', list(short)) + lane('L8', list(long_)) + lane('L7', list(rest))
+        with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+            json.dump(al, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        real = E.assess
+        seen = []
+
+        def forcing(request, nav, rad_, **kw):
+            r = real(request, nav, rad_, **kw)
+            if request.get('mode') == 'validate' and '_path' not in kw and ' L8 ' in ' ' + str(request.get('route')) + ' ':
+                seen.append(request['route'])
+                r = dict(r, verdict='violates', violations=[{'code': 'forced'}], issues=[*r['issues'], {'level': 'ERREUR', 'text': 'refus du contrôle forcé'}])
+            elif request.get('mode') == 'validate' and '_path' not in kw:
+                seen.append(request['route'])
+            return r
+        E.assess = forcing
+        try:
+            out = P.compute(view.to_request({'action': 'compute', 'adep': 'XSTA', 'adest': 'XEND', 'fl': 330, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': True, 'proposals': False}), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))
+        finally:
+            E.assess = real
+
+        def scoring(request, nav, rad_, **kw):
+            r = real(request, nav, rad_, **kw)
+            if ' L8 ' in ' ' + str(request.get('route')) + ' ':
+                return dict(r, verdict='unverifiable', objective_score=-1)
+            return dict(r, verdict='conform')
+        E.assess = scoring      # the head route is NEVER replaced by a route that the control judges less well: objective fastest, a head conform, an alternative unverifiable that scores better on the objective
+        try:
+            out2 = P.compute(view.to_request({'action': 'compute', 'adep': 'XSTA', 'adest': 'XEND', 'fl': 330, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': True, 'proposals': False, 'objective': 'fastest'}), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))
+        finally:
+            E.assess = real
+    primary, alts = out['primary'], out['alternatives']
+    c.eq((out2['primary']['verdict'], ' L8 ' in ' ' + out2['primary']['route'] + ' ', [a['verdict'] for a in out2['alternatives'] if ' L8 ' in ' ' + a['route'] + ' ']), ('conform', False, ['unverifiable']), 'objective fastest, a head conform and an alternative unverifiable that scores better: the head keeps its place (never replaced by a route judged less well), the alternative stays proposed with its verdict (red before the guard on the rank: the head becomes unverifiable)', what='head kept')
+    by = [(' L8 ' in ' ' + a['route'] + ' ', a['verdict'], (a.get('judge') or {}).get('verdict'), any(i['text'] == 'refus du contrôle forcé' for i in a['issues'])) for a in alts]
+    c.eq((len(alts) >= 2, len(seen) - 1, sorted(set(by))), (True, len(alts), [(False, 'unverifiable', 'unverifiable', False), (True, 'violates', 'violates', True)]), 'on an invented base each alternative is judged ONCE after the search (the controls beyond the one of the head route: as many as alternatives), the one that goes by L8, which the control refuses, carries the verdict and the error of the control, the others keep theirs — red before: no `judge` on the alternatives', what='wiring')
+    c.eq((primary['verdict'], 'L8' in primary['route'], any(i['text'] == 'refus du contrôle forcé' for i in primary['issues'])), ('unverifiable', False, False), 'the head route is not touched by the judging of the alternatives', what='head')
