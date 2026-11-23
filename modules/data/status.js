@@ -233,8 +233,11 @@ export function zoneStateHtml(id) {
     reasons = st === 'up-to-date' || st === 'building' ? [] : zoneReasons(id),
     open = S.whyOpen.has(id) && reasons.length,
     // SOG-0370 : quand la raison réelle est un fichier qui attend dans Téléchargements (non constructible), l'étape qui BLOQUE se dit — « Un fichier à prendre » — et non « À reconstruire »
-    label = tt(st === 'stale' && needsFileOf(id) ? waitingFileOf(id) ? TX.zst.waiting : TX.zst.files : TX.zst[st]);
-  const dot = `<i class="f-dot" aria-hidden="true"${kind(level)}></i>`;
+    gain = st === 'up-to-date' && S.status?.zones && Object.hasOwn(S.status.zones, id) ? M.gainLevel(S.status.zones[id]) :
+    null, // SOG-0568 : à jour, mais une relecture ou un complément apporterait quelque chose : le même vert, strié (anneau), et le mot qui le dit
+    label = gain ? tt(TX.gn[gain === 'redo' ? 'stateRedo' : 'stateUpd']) : tt(st === 'stale' && needsFileOf(id) ? waitingFileOf(id) ? TX.zst
+      .waiting : TX.zst.files : TX.zst[st]);
+  const dot = `<i class="f-dot" aria-hidden="true"${kind(level)}${gain ? ' data-redo' : ''}></i>`;
   return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}<span class="d-whyhint" data-why-hint>${esc(tt(TX.whyHint))}<i class="d-chev" aria-hidden="true"></i></span></button>` :
     `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}
     ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;

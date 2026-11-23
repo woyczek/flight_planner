@@ -1467,6 +1467,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz[data-tone=ok]{stroke:var(--sog-ok);fill:var(--sog-ok)}
 [data-module="data"] .d-wz[data-tone=warn]{stroke:var(--sog-warn);fill:var(--sog-warn)}
 [data-module="data"] .d-wz[data-redo]{fill:url(#d-redo);fill-opacity:1}
+[data-module="data"] .f-dot[data-redo]{background:transparent;box-shadow:inset 0 0 0 2px var(--sog-ok)}
 [data-module="data"] .d-sw[data-redo]{background:repeating-linear-gradient(135deg,var(--sog-ok) 0 3px,var(--sog-surface) 3px 6px);border-color:var(--sog-ok)}
 [data-module="data"] .d-gcb[data-redo]{position:relative;border-left-color:transparent}
 [data-module="data"] .d-gcb[data-redo]::before{content:"";position:absolute;left:-6px;top:-1px;bottom:-1px;width:6px;background:repeating-linear-gradient(135deg,var(--sog-ok) 0 3px,var(--sog-surface) 3px 6px)}
