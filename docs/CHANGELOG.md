@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Data: the sheet of a country says the right pack** (SOG-0588; case L182) — the sheet took the FIRST pack of `packs.json` that holds the country: France, in five regional packs (its overseas parts), said « groupe Amérique du Nord ». Now: the open pack when it holds the country; else the pack of its main part (the one whose other countries lie nearest to the main frame of the country, overseas left out); else the code alone; never the first one.
 - **Fuel: « Copier pour Eurocontrol » is no longer offered for a route computed for another flight** (SOG-0572; case F318) — another aircraft, level, aerodrome, date or imposed point than the computation's: « Route calculée pour le FL270, BE9L : le vol a changé. » with « Recalculer » instead; a route typed or pasted is always copiable.
 - **Fuel: « QNH inconnu » offers « Lire la météo des terrains » on the spot** (SOG-0325; case F316) — on the arrival's « Terrain » line of the Procedures block; no need to go to the Weather step.
 - **Fuel: the proposed alternates can be computed again after the flight changed** (SOG-0566; case F315) — a new date, time, duration or aerodrome marks the list « Périmé (calculé à …) » with « Recalculer »; nothing is computed by itself.

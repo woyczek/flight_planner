@@ -1009,7 +1009,8 @@ function sheetHtml() {
     '', // un fichier vu que la règle de nom refuse vraiment : le bandeau le dit, le bouton est absent
     op = cardAreaHtml('base', 'sheet')
     .trim(); // la carte de l'opération qui a refusé le geste de CETTE fiche ; la fiche ne montre que son pays (son fil), jamais le bilan d'une autre opération ; le fil, la carte et l'avancement de la dernière opération sont SOUS l'état, avant les sources (visibles sans parcourir les inventaires)
-  const gp = packList().find(x => x.pack.zones.includes(id))?.pack,
+  const gp = M.homePack(id, packList().map(x => x.pack), S.cw.grp,
+      mainBoxOf), // SOG-0588 : le paquet ouvert, sinon celui de la partie principale du pays, jamais le premier du fichier
     sub = [id.toUpperCase(), gp ? tt(TX.d2.subGroup, {
       g: gp.names[li()] || gp.names[0]
     }) : '', partsText(id)].filter(Boolean).join(' \u00b7 '),

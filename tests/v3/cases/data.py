@@ -12001,3 +12001,43 @@ def l181(c):
     builds = _posts(st, 'build')[n_build:]
     c.eq([len(builds), sorted((builds[0].get('args') or {}).get('zones', [])) if builds else None, len(_posts(st, 'fetch')) - n_fetch], [1, ['fr', 'gb', 'nl'], 0], 'one build of the three countries, no download', what='reread all posts')
     c.check_errors()
+
+
+_L182_SUB = {'fr': 'groupe {g}', 'en': 'group {g}', 'de': 'Gruppe {g}', 'es': 'grupo {g}'}
+
+
+@case('L182', 'Données: the sheet of a country that belongs to several packs says the OPEN pack if it holds it, else the pack of its MAIN part (France: Europe de l\'Ouest, not « Amérique du Nord »), never the first pack of the file (SOG-0588)', 'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0588 (the relay reading the captures of SOG-0568; a fact of BUGS since 12 Nov, 4fdeee2e2): the sheet took `packList().find(pack holds the country)`, the FIRST pack of frame/aerodb/packs.json that holds it: France, in five regional packs (its overseas parts), said « groupe Amérique du Nord ». The ergonomist\'s rule: the OPEN pack if it holds the country; else the pack of its main part (the one whose other countries lie nearest to the main frame of the country, the overseas rings left out); else the code alone (« FR »); never the first one')
+def l182(c):
+    lang = c.lang
+    pk = json.loads((ROOT / 'frame/aerodb/packs.json').read_text(encoding='utf-8'))
+    name = lambda pid: next(r['names'] for r in pk['regions'] if r['id'] == pid)[['fr', 'en', 'de', 'es'].index(lang)]
+    sub = lambda pid: 'FR · ' + _L182_SUB[lang].replace('{g}', name(pid))
+    st = _l102_open(c)
+    first = next(r['id'] for r in pk['regions'] if 'fr' in r['zones'])
+    held = [r['id'] for r in pk['regions'] if 'fr' in r['zones']]
+    c.ok(first == 'north-america' and len(held) >= 3 and 'europe-west' in held, str(held), 'the world of the case: France is in several packs and the first of the file is not the one of its main part')
+    head = lambda: norm(c.text('[data-sheet=fr] [data-sheet-sub]'))
+    # ---- 1. from the map, no pack open: the pack of its MAIN part
+    # the whole world is drawn with no pack open: France is a few pixels under its neighbours, a finger cannot hit it; the click goes to the path itself (the gesture under test is the SHEET it opens, not the aim)
+    c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))")
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-sub]')", timeout=15000, what='the sheet of France')
+    c.ok(head().startswith(norm(sub('europe-west'))), head(), 'no pack open: the pack of the main part of France (Europe de l\'Ouest), not the first pack of the file')
+    c.ok(norm(name('north-america')) not in head(), head(), 'and never « Amérique du Nord »')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-sheet=fr]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L182_{c.width}_{lang}_main.png')
+    if c.width == 390:
+        c.tap('[data-act=sheet-close]')
+        c.wait(250)
+    # ---- 2. a pack that holds France is OPEN (the Mediterranean one): the sheet says that one
+    c.tap('[data-group-id=mediterranean] [data-act=grp-toggle]')
+    c.until("(e => !!e && e.offsetParent !== null)(document.querySelector('[data-group-id=mediterranean] [data-group-body] [data-zone=fr]'))", timeout=8000, what='the Mediterranean pack is open')
+    c.tap('[data-group-id=mediterranean] [data-group-body] [data-zone=fr]')
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-sub]')", timeout=15000, what='the sheet of France from the open pack')
+    c.ok(head().startswith(norm(sub('mediterranean'))), head(), 'the open pack holds France: the sheet says that pack')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-sheet=fr]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L182_{c.width}_{lang}_open.png')
+    c.check_errors()
+

@@ -73,6 +73,32 @@ export function frameOf(boxes) {
     my = Math.max((bottom - top) * .08, 6);
   return [w - mx, top - my, e - w + 2 * mx, bottom - top + 2 * my].map(v => Math.round(v * 100) / 100);
 }
+/** Le paquet que dit la fiche d'un pays (SOG-0588) : le paquet OUVERT s'il contient le pays ; sinon, pour un pays qui est dans plusieurs paquets (la France et son outre-mer), le paquet de sa PARTIE PRINCIPALE — celui dont les autres pays
+ *  sont les plus proches du cadre principal du pays (sans son outre-mer : `boxOf(id)` = [ouest, sud, est, nord] ou null) ; un pays dans un seul paquet : ce paquet ; sans cadre à comparer : null (la fiche dit le code seul). Jamais le premier venu.
+ *  `packs` : les paquets { id, zones } ; `openId` : l'identifiant du paquet ouvert ou null. Pur. */
+export function homePack(id, packs, openId, boxOf) {
+  const mine = (packs || []).filter(p => Array.isArray(p?.zones) && p.zones.includes(id));
+  if (!mine.length) return null;
+  const open = openId ? mine.find(p => p.id === openId) : null;
+  if (open) return open;
+  if (mine.length === 1) return mine[0];
+  const centre = b => Array.isArray(b) && b.length === 4 && b.every(Number.isFinite) ? [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2] : null,
+    me = centre(boxOf?.(id));
+  if (!me) return null;
+  let best = null,
+    bestD = Infinity;
+  for (const p of mine) {
+    const others = p.zones.filter(z => z !== id).map(z => centre(boxOf(z))).filter(Boolean);
+    if (!others.length) continue;
+    const mean = [others.reduce((a, c) => a + c[0], 0) / others.length, others.reduce((a, c) => a + c[1], 0) / others.length],
+      d = Math.hypot(me[0] - mean[0], me[1] - mean[1]);
+    if (d < bestD) {
+      best = p;
+      bestD = d;
+    }
+  }
+  return best;
+}
 /** Le cadre du monde entier (le même pour tous : « Voir le monde entier »). */
 export const worldFrame = () => frameOf([WORLD]);
 /** La teinte d'un pays sur la carte : 'muted' (hors de la couverture), la teinte de l'état du lanceur (vert, ambre, rouge ; « en cours » dit ambre : la marche se lit dans la barre d'état), neutre (« état non lu ») quand l'état est lu et ne dit rien de ce pays ; null quand l'état n'est pas lu
