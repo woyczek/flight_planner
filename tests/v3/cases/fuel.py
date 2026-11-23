@@ -3052,7 +3052,10 @@ def _route_launcher(c, verbs):
             rule = st.get('levels_rule')
             res = rule(asked) if rule else {'ok': False, 'reason': 'failed', 'message': 'no rule'}
             jid = urllib.parse.parse_qs(u.query).get('id', ['j' + str(len(st['posts']))])[0]
-            body = {'id': jid, 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []} if res is None \
+            # SOG-0563: a route/levels still running says where it is (st['levels_prog'] = (done, total), the job.step of the launcher)
+            prog = st.get('levels_prog') or (0, 1)
+            body = {'id': jid, 'state': 'running', 'step': 'route : niveaux', 'done': prog[0], 'total': prog[1], 'unit': 'niveau', 'log': []} \
+                if res is None \
                 else {'id': jid, 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
         elif u.path.endswith('/__setup/regen/job') and st['posts'] and (st['posts'][-1].get('args') or {}).get('alternatives') \
                 and time.time() - st.get('t', 0) < st.get('delay_alt', 0):
@@ -11207,4 +11210,58 @@ def f318(c):
     c.until(f"!!document.querySelector('{P} [data-fplstale]')", timeout=8000, what='stale by the level')
     c.eq(norm(c.text(f'{S0} [data-rstaletext]') or ''), norm(W[1]), 'the level alone, under the route', what='level')
     c.eq(c.count(f'{P} [data-do=fplcopy]'), 0, 'no copy', what='no copy 2')
+    c.check_errors()
+
+
+# SOG-0563: the words of the progress of « Auto », written in clear (the ergonomist, 23 Nov)
+_AP_WORDS = {'fr': 'Auto : calcul en cours, niveau {n} sur {t}.', 'en': 'Auto: computing, level {n} of {t}.',
+             'de': 'Auto: Berechnung läuft, Fläche {n} von {t}.', 'es': 'Auto: calculando, nivel {n} de {t}.'}
+
+
+@case('F317', '« Auto » level: while the route engine judges the levels, the line under the Level field says WHERE it is — « Auto : calcul '
+      'en cours, niveau 3 sur 6. » — (never « route valide », which the suite never claims); the sentence goes as soon as the search ends, or '
+      'when « Calculer » cancels it; the list of routes stays empty until the end',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0563 (AeroDB measured 70 to 106 s for a « Calculer » in « Auto », SOG-0557; the ergonomist, 23 Nov: the progress said, the '
+      'sentence gone at the end or on a cancel, nothing moving in the list); a fake launcher giving the progress of the job (done, total)')
+def f317(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    W = _AP_WORDS[c.lang]
+    M = f'{FUEL} [data-lvlwhy] [data-lvlmain]'
+    answer = {'v': None}
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    lv = _auto_ne(c, st, lambda lv: answer['v'] and answer['v'](lv), 20000)
+    total = len(lv)
+    # the job runs: 2 levels done of the levels asked — « niveau 3 sur N »
+    st['levels_prog'] = (2, total)
+    c.until(f"(w) => (document.querySelector('{M}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            norm(W.format(n=3, t=total)), timeout=8000, what='the progress said (red before: « recherche d’un niveau avec une route valide… »)')
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'the list stays empty until the end', what='empty')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} input[data-k=fl]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F317_{c.design}_{w}_{c.lang}_progress.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    st['levels_prog'] = (5, total)
+    c.until(f"(w) => (document.querySelector('{M}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            norm(W.format(n=min(6, total), t=total)), timeout=8000, what='the progress follows the job')
+    # the search ends: the progress goes, the result is said
+    answer['v'] = lambda lv: _ne_answer(lv)
+    pre = norm(W.split('{n}')[0])
+    c.until(f"(p) => {{ const t = (document.querySelector('{M}')?.textContent || '').replace(/[\s\u00a0\u202f]+/g, ' '); return !t.includes(p) && t.includes('(auto)') }}",
+            pre, timeout=10000, what='the progress gone at the end, the result said')
+    # a new search, cancelled by « Calculer »: the progress goes
+    answer['v'] = None
+    st['levels_prog'] = (1, total)
+    lv = _auto_ne(c, st, lambda lv: answer['v'] and answer['v'](lv), 20000)
+    c.until(f"(w) => (document.querySelector('{M}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            norm(W.format(n=2, t=len(lv))), timeout=8000, what='the progress of the new search')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]:not([disabled])')", timeout=10000, what='« Calculer »')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    to_step(c, 0)
+    c.until(f"(p) => !(document.querySelector('{M}')?.textContent || '').replace(/[\s\u00a0\u202f]+/g, ' ').includes(p) || document.querySelector('{FUEL} [data-lvlwhy]').hidden",
+            pre, timeout=10000, what='the progress gone when « Calculer » cancels the search')
     c.check_errors()
