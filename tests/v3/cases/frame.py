@@ -2613,6 +2613,17 @@ def _gl_counter(c):
     return [n, m]
 
 
+def _gl_said(c, phrase, what, tries=100):
+    """Waits until the line of the test (« [data-msg] » of the assistant) says `phrase`, and returns its text: NOT « any text » — while the test runs the line already says « test en cours » (kind warn), a load-sensitive read took it for the answer."""
+    text = ''
+    for _ in range(tries):
+        text = norm(c.text('[data-card="join"] [data-msg]') or '')
+        if norm(phrase) in text:
+            return text
+        c.page.wait_for_timeout(150)
+    raise Fail(f'never said within {tries * 150} ms: {what}; the line says: {text[:120]}', 'the sentence of the answer')
+
+
 def _gl_test(c, token='test-token'):
     """At step 5, types the token and presses « Tester »."""
     c.page.fill('input[data-f="jToken"]', token)
@@ -2676,7 +2687,7 @@ def a71(c):
     who.update({'bot': True, 'expires': None})
     _gl_join(c, 5)
     _gl_test(c)
-    c.until("!!document.querySelector('[data-card=\"join\"] [data-msg]')?.textContent", timeout=15000, what='the test answers')
+    _gl_said(c, tx(K, 'tokenExpiry', c.lang), 'the expiry warning (no expiry)')
     c.eq([c.attr('[data-card="join"] [data-msg]', 'data-kind'), norm(tx(K, 'tokenExpiry', c.lang)) in norm(c.text('[data-card="join"] [data-msg]')), c.count('.f-modal'), c.js('!!FrameData.github.config()')],
          ['warn', True, 0, True], 'no expiry: a warning line, no question, saved', what='no expiry')
     # an expiry beyond a year, and rights beyond what the transport uses
@@ -2684,8 +2695,7 @@ def a71(c):
     who.update({'expires': far, 'scopes': ['api', 'sudo']})
     _gl_join(c, 5)
     _gl_test(c)
-    c.until("!!document.querySelector('[data-card=\"join\"] [data-msg]')?.textContent", timeout=15000, what='the test answers')
-    text = norm(c.text('[data-card="join"] [data-msg]'))
+    text = _gl_said(c, tx(K, 'tokenExpiry', c.lang), 'the expiry warning (beyond a year)')
     c.ok(norm(tx(K, 'tokenExpiry', c.lang)) in text and norm(tx(K, 'tokenScopes', c.lang).replace('{s}', 'sudo')) in text, text, 'more than a year away: the expiry warning; scopes beyond api: the rights warning naming them')
     c.check_errors()
 
@@ -3978,7 +3988,7 @@ def a101(c):
         prio = root / 'organisation' / 'PRIORITES.json'
         written = lambda: json.loads(prio.read_text(encoding='utf-8'))['items'] if prio.exists() else None
         st = _prio_launcher(c, root)
-        NOTE = "(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))"
+        NOTE = "(w) => (window.__notes || []).some(n => n.replace(/[\\s  ]+/g, ' ').includes(w))"
         col = '[data-col="backlog"] li[data-id]'
         ids = lambda: c.js("[...document.querySelectorAll('[data-col=\"backlog\"] li[data-id]')].map(l => l.dataset.id)")
         open_ = lambda: (c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'col': 'backlog', 'view': 'priorities'}, 'cache']]), c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the cards with an identifier'))
@@ -4241,7 +4251,7 @@ def a105(c):
     c.eq(norm(c.text(fiche('[data-themes-title]'))), norm(T('themeSummary').replace('{n}', '17').replace('{m}', '17')), 'no kind and no file: the seventeen themes are ticked in advance', what='no kind count')
     c.eq(c.count(fiche('li[data-theme]')), 17, 'seventeen themes listed, one box each', what='listed')
     c.eq(c.js(f"document.querySelector('{fiche('li[data-theme]')}').dataset.theme"), 'COMMERCIAL', 'COMMERCIAL first in the list shown (the table carries it 17th: only the file is written in the table order)', what='first')
-    g = c.js(f"(() => {{ const u = document.querySelector('{fiche('[data-themes]')}'), cs = getComputedStyle(u); return [cs.listStyleType, cs.gridTemplateColumns.trim().split(/\s+/).length, u.scrollWidth <= u.clientWidth + 1] }})()")
+    g = c.js(f"(() => {{ const u = document.querySelector('{fiche('[data-themes]')}'), cs = getComputedStyle(u); return [cs.listStyleType, cs.gridTemplateColumns.trim().split(/\\s+/).length, u.scrollWidth <= u.clientWidth + 1] }})()")
     c.eq(g, ['none', 2 if c.width >= 700 else 1, True], 'no bullet before a box; two columns from 700 px, one below', what='layout')
     c.js(f"document.querySelector('{fiche('[data-themes-title]')}').scrollIntoView({{ block: 'start' }})")
     c.shot(f"A105_standard_{c.width}_themes_delivered.png")   # the themes of the sheet, read by the ergonomist
@@ -4886,7 +4896,7 @@ def a362(c):
         c.tap('[data-skey="C1:0"][data-sbtn="ok"]')
         got = until_written(lambda g: 'SOG-0301' in g, '301 ok')
         c.eq([got['SOG-0301']['verdict'], 'SOG-0302' in got], ['ok', False], 'a good step validates the fiches it alone cites; the fiche another step still cites waits', what='step 1')
-        c.until("(w) => [...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(W['noted']), what="the note names the path and the count (« (s) » is the frame's plural: one card)")
+        c.until("(w) => [...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", norm(W['noted']), what="the note names the path and the count (« (s) » is the frame's plural: one card)")
         c.eq([c.js("document.querySelector('[data-step=\"C1:0\"]').dataset.state"), c.js("document.querySelector('[data-skey=\"C1:0\"][data-sbtn=\"ok\"]').getAttribute('aria-pressed')"), norm(c.text('[data-path=C1] [data-progress]'))], ['ok', 'true', norm(steps(1, 4))], 'the step is good, its button pressed, the progress counts it', what='state')
         # ---- the second step: 302 is now ok (every step that cites it is good); 303 still waits for C3
         c.tap('[data-skey="C1:1"][data-sbtn="ok"]')
@@ -5060,8 +5070,8 @@ def a116(c):
         c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and ('/apps/' in h or '/FuelDashboard/' in h) for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
         c.eq(c.text('[data-screen=legacy] h1'), title, 'the title says what it is', what=f'title ({app})')
         # the pelican sites tool (SOG-0083) is the Canadair group; the fire reports are under Missions
-        peli = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=canadair] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/'))")
-        fire = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=missions] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/')).filter(p => /FIRE/.test(p))")
+        peli = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=canadair] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\\/apps\\//, 'apps/'))")
+        fire = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=missions] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\\/apps\\//, 'apps/')).filter(p => /FIRE/.test(p))")
         c.eq((peli, fire), (['apps/outils/pelicandromes/index.html', 'apps/outils/pelicandromes/original.html'], ['apps/cr/FIRE/fire_cr.html', 'apps/cr/FIRE/fire_reporting.html']),
              'the Canadair group carries the pelican sites tool, the fire reports are under Missions', what=f'Canadair group ({app})')
     # the tool: the user's file kept as it came (original.html, not linked), index.html the adapted copy (MapLibre and js-yaml from the repository, the launcher's content
@@ -5142,7 +5152,7 @@ def a118(c):
     c.context.unroute(re.compile(r'/__setup/'))
     c.context.route(re.compile(r'/__setup/'), launcher)
     info = """() => { const e = document.getElementById('fStale'), cs = getComputedStyle(e), h = document.querySelector('.f-head').getBoundingClientRect().height,
-      d = document.documentElement; const rgb = x => (x.match(/\d+/g) || []).slice(0, 3).map(Number);
+      d = document.documentElement; const rgb = x => (x.match(/\\d+/g) || []).slice(0, 3).map(Number);
       const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b) };
       const L1 = lum(rgb(cs.color)), L2 = lum(rgb(cs.backgroundColor));
       return { shown: e.getClientRects().length > 0, text: e.textContent, radius: cs.borderTopLeftRadius, color: cs.color, h, tall: Math.round(e.getBoundingClientRect().height),
@@ -5254,7 +5264,7 @@ def a251(c):
     c.js("() => { window.FrameData.sendPending = () => new Promise(() => {}); window.FrameData.sync = () => new Promise(() => {}) }")
     c.context.route(re.compile(r'/__setup/(sync|changes)'), lambda r: None)
     c.page.evaluate("() => { window.__t0 = performance.now(); location.hash = '#fuel?ralt=2' }")
-    c.until("(() => { const ta = document.querySelector('[data-k=\"rtext\"]'); return !!ta && ta.value.split(/\s+/).filter(w => w !== 'DCT').slice(0, 3).join(' ') === 'LFRS LUGEN LFML' })()",
+    c.until("(() => { const ta = document.querySelector('[data-k=\"rtext\"]'); return !!ta && ta.value.split(/\\s+/).filter(w => w !== 'DCT').slice(0, 3).join(' ') === 'LFRS LUGEN LFML' })()",
             timeout=1000, what='the third route taken in the route field, in under a second, the send held')
     ms = c.js('Math.round(performance.now() - window.__t0)')
     c.ok(ms < 1000, f'{ms} ms', 'the choice reaches the route field in under a second with the send held')
@@ -8523,7 +8533,7 @@ def a165(c):
     c.tap('[data-card="about"] [data-licence]')
     c.until("!!document.querySelector('[data-suite-doc=licence] h1')", timeout=15000, what='the licence in the viewer')
     c.eq([c.js('location.hash'), c.count('[data-suite-doc=licence] h1') >= 1, c.count('[data-suite-doc=licence] table') >= 1, c.count('#fView > .f-docbar .f-back a[href="#help"]')], ['#help?d=licence', True, True, 1], 'the licence is formatted (a heading, its tables) with the way back to the manual', what='viewer')
-    c.ok(not c.js("/^#\s|\|---/m.test(document.querySelector('[data-suite-doc=licence]').textContent)"), None, 'no raw Markdown on the screen (no « # » titles, no table pipes)')
+    c.ok(not c.js("/^#\\s|\\|---/m.test(document.querySelector('[data-suite-doc=licence]').textContent)"), None, 'no raw Markdown on the screen (no « # » titles, no table pipes)')
     c.shot(f'A165_licence_{c.width}_{c.lang}_delivered.png')
     c.tap('#fView > .f-docbar .f-back a[href="#help"]')
     c.until("!!document.querySelector('[data-help-manuals], [data-toc], .f-doc')", what='back in the help')
@@ -8540,7 +8550,7 @@ def a166(c):
     c.until("!!document.getElementById('fAppIco') && !!document.querySelector('#fAppIco svg')", timeout=15000, what='the title icon')
     c.wait(600)
     r = c.js("""(() => { const ico = document.getElementById('fAppIco'), head = document.querySelector('.f-head'), rt = getComputedStyle(document.documentElement);
-      const rgb = s => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number), lum = a => { const [r, g, b] = a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }); return .2126 * r + .7152 * g + .0722 * b };
+      const rgb = s => (s.match(/[\\d.]+/g) || []).slice(0, 3).map(Number), lum = a => { const [r, g, b] = a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }); return .2126 * r + .7152 * g + .0722 * b };
       const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
       const col = rgb(getComputedStyle(ico).color), bg = rgb(getComputedStyle(head).backgroundColor), tok = n => { const e = document.createElement('i'); e.style.color = `var(${n})`; document.body.append(e); const v = rgb(getComputedStyle(e).color); e.remove(); return v };
       return { col, ratio: Math.round(ratio(col, bg) * 10) / 10, accent: tok('--sog-accent'), ink: tok('--sog-fg'), moduleInk: tok('--sog-module-ink'), err: tok('--sog-err'), tint: getComputedStyle(ico).getPropertyValue('--f-app-tint').trim() } })()""")
@@ -9085,7 +9095,7 @@ def a184(c):
     folds = c.js("[...document.querySelectorAll('details.f-group')].map(g => [g.dataset.group, g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden, (e => e ? (e.dataset.hint ?? e.textContent).trim() : '')(g.querySelector(':scope > summary > .f-ghint'))])")
     c.eq([[f[0], f[1]] for f in folds], [['data', True], ['sync', True], ['device', True], ['start', True]], 'the four folds are folded unless their title carries the attention dot', what='folded')
     c.eq([norm(f[2]) for f in folds], [norm(H('data')), norm(H('sync')), norm(H('device')), norm(H('start'))], 'each says how often it is used (a fold with a dot says what is wrong in its place: SOG-0362, its original hint is kept in data-hint)', what='hints')
-    row = c.js("(a => a ? [a.tagName, a.getAttribute('href'), a.textContent.replace(/\s+/g, ' ').trim(), a.getBoundingClientRect().height] : null)(document.querySelector('a.f-grow[data-group=admin]'))")
+    row = c.js("(a => a ? [a.tagName, a.getAttribute('href'), a.textContent.replace(/\\s+/g, ' ').trim(), a.getBoundingClientRect().height] : null)(document.querySelector('a.f-grow[data-group=admin]'))")
     c.ok(row and row[0] == 'A' and row[1] == '#settings?card=admin' and norm(row[2]).startswith(norm(G('admin'))) and row[3] >= 43.5, row, 'Administration is a row (a link, 44 px) to its page, not a fold')
     start = c.js("[...document.querySelectorAll('details.f-group[data-group=start] [data-card]')].map(e => e.dataset.card)")
     c.eq([k for k in start if k in ('identity', 'access', 'onboard')], ['identity', 'access', 'onboard'], '« Mise en route » holds identity, access, and create / join an airline', what='start cards')
@@ -9614,7 +9624,7 @@ def a201(c):
       designs=('standard',), screens=False, night=False, langs4=False,
       rule="SOG-0335 (the ergonomist, 14 Nov: « trois signalements identiques sont arrivés pour un seul texte »): a report is a document under pilot/<trigram>/signalements/<id>.json with an identifier made at each send; a second tap, a retyped text or copies kept « non envoyé » each made a document of their own; now the button says « Envoi… » and is off while it leaves, the same kind + title + text within a minute is refused with a sentence, and identical unsent copies are collapsed before they leave")
 def a202(c):
-    docs_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\/SIG-[0-9a-f]{10}\.json$/.test(String(k)))) } })"""
+    docs_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\\/SIG-[0-9a-f]{10}\\.json$/.test(String(k)))) } })"""
     c.open('signaler', docs=LEVEL3)
     c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
     c.page.fill('[data-title]', 'Bouton cassé')
@@ -9769,7 +9779,7 @@ def a206(c):
       rule="SOG-0343 (the user, on his phone: « il faut avoir de tout petits doigts pour viser les points météo déjà téléchargés. Ça génère des accès parasites »; the ergonomist: the size of a finger is a fact the device declares, not a setting): one rule for every map — a coarse pointer takes a point in 22 px, a mouse in 8 px; between two points the nearest to the press is taken; a press in the void reads NOTHING; the Weather screen applies it first (BUGS SOG), any map after")
 def a207(c):
     c.open('fuel', docs=LEVEL3)
-    url = c.js("(() => document.querySelector('script[src*=\"app.js\"]').src.replace(/app\.js.*$/, 'lib/hit_target.js'))()")
+    url = c.js("(() => document.querySelector('script[src*=\"app.js\"]').src.replace(/app\\.js.*$/, 'lib/hit_target.js'))()")
     r = c.js("""async (url) => {
       const H = await import(url), P = [{ x: 100, y: 100, id: 'a' }, { x: 110, y: 100, id: 'b' }, { x: 300, y: 300, id: 'c' }], out = {};
       out.radii = [H.RADIUS.coarse, H.RADIUS.fine, H.radiusFor('touch'), H.radiusFor('pen'), H.radiusFor('mouse')];
@@ -9882,7 +9892,7 @@ def a209(c):
     c.eq([r['groups'], len(r['tags']), r['ids']], [0, 2, ['SOG-0313', 'SOG-0312']], 'no group by application in « Déjà vus »; the latest verdict first (the failure of 18:05 before the pass of 18:00)', what='one sequence')
     want = c.js("['2026-11-09T18:05:00Z', '2026-11-09T18:00:00Z'].map(z => { const d = new Date(z), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' à ' + p(d.getHours()) + ' h ' + p(d.getMinutes()) })")
     c.eq([r['at'], c.js("document.querySelector('[data-section=seen] [data-verdict-at]').title")], [want, '2026-11-09T18:05:00Z'], "the time of the verdict is on every line, at the time of the DEVICE as one reads one's watch (« 09/11 à 19 h 05 »; the UTC instant in the tooltip, the sort stays on it) — SOG-0355", what='moment')
-    tm = c.js("""async () => { const T = await import(document.querySelector('script[src*="app.js"]').src.replace(/app\.js.*$/, 'lib/time.js')), d = new Date(2026, 10, 14, 12, 10), now = new Date(2026, 10, 14, 18, 0).getTime(), other = new Date(2026, 10, 9, 7, 5).toISOString();
+    tm = c.js("""async () => { const T = await import(document.querySelector('script[src*="app.js"]').src.replace(/app\\.js.*$/, 'lib/time.js')), d = new Date(2026, 10, 14, 12, 10), now = new Date(2026, 10, 14, 18, 0).getTime(), other = new Date(2026, 10, 9, 7, 5).toISOString();
       return { fr: T.fmtMoment(d.toISOString(), 'fr', now), en: T.fmtMoment(d.toISOString(), 'en', now), de: T.fmtMoment(d.toISOString(), 'de', now), es: T.fmtMoment(d.toISOString(), 'es', now),
                frOld: T.fmtMoment(other, 'fr', now), deOld: T.fmtMoment(other, 'de', now), esOld: T.fmtMoment(other, 'es', now), bad: T.fmtMoment('nope', 'fr') } }""")
     c.eq(tm, {'fr': 'aujourd’hui à 12 h 10', 'en': 'today at 12:10', 'de': 'heute um 12:10', 'es': 'hoy a las 12:10', 'frOld': '09/11 à 07 h 05', 'deOld': '09.11. um 07:05', 'esOld': '09/11 a las 07:05', 'bad': ''}, 'the time of the verdict as one reads a watch, in the four languages (« aujourd’hui à 12 h 10 » the same day, « 09/11 à 07 h 05 » before)', what='fmtMoment')
@@ -9909,7 +9919,7 @@ def a189(c):
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), launcher)
     c.page.add_init_script("""(() => { const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u);
-      return /__setup\/(?!status|sync-remote)/.test(url) ? new Promise(ok => setTimeout(ok, 2000)).then(() => f.apply(this, arguments)) : f.apply(this, arguments) } })()""")
+      return /__setup\\/(?!status|sync-remote)/.test(url) ? new Promise(ok => setTimeout(ok, 2000)).then(() => f.apply(this, arguments)) : f.apply(this, arguments) } })()""")
     c.open('settings', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"display\"]')", timeout=15000, what='the cards are drawn')
     t_first = c.js("(() => { const m = performance.getEntriesByName('sog-settings-first').pop(), s = performance.getEntriesByName('sog-settings-start').pop(); return m && s ? m.startTime - s.startTime : null })()")
@@ -10272,7 +10282,7 @@ def a242(c):
 def a214(c):
     sid_re = re.compile(r'^SIG-[0-9a-f]{10}$')
     store_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const g = r.result.transaction('docs').objectStore('docs').get('device/signaler.json'); g.onsuccess = () => res(g.result ? JSON.parse(g.result.text) : null) } })"""
-    keys_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\/SIG-[0-9a-f]{10}\.json$/.test(String(k)))) } })"""
+    keys_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\\/SIG-[0-9a-f]{10}\\.json$/.test(String(k)))) } })"""
     c.open('signaler', docs=LEVEL3)
     c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
     c.page.fill('[data-title]', 'Le bouton reste gris')
@@ -10563,7 +10573,7 @@ def a246(c):
         return norm(c.js("[...document.querySelectorAll('.f-note > span')].map(n => n.textContent).join(' | ')"))
 
     def said(text, what):
-        c.until("(w) => [...document.querySelectorAll('.f-note > span')].some(n => n.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", text, timeout=8000, what=what)
+        c.until("(w) => [...document.querySelectorAll('.f-note > span')].some(n => n.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", text, timeout=8000, what=what)
 
     def clear():
         c.js("document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
