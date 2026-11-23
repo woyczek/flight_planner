@@ -2525,7 +2525,7 @@ def i38(c):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-@case('I39', 'Launcher: the tree of data/ (GET /__setup/changes) is read in well under 50 ms when nothing has changed (SOG-0164): the same heads and trees as before, no link or junction followed', 'I', static=True,
+@case('I39', 'Launcher: the tree of data/ (GET /__setup/changes) is read with no system call per file when nothing has changed (SOG-0164, counted, not timed): the same heads and trees as before, no link or junction followed', 'I', static=True,
       rule='SOG-0164 (10 Nov 2026): the page Maintenance took 2.5 s to open; /__setup/changes answered in 593 ms, then 703 ms, with nothing changed: frame_tree walked data/ with os.walk and two system calls per file (islink, stat); os.scandir gives the size, the date and the reparse attribute with the listing (about 20 ms for 10 000 files against 350 ms)')
 def i39(c):
     import hashlib
@@ -2571,13 +2571,33 @@ def i39(c):
         c.eq((tree == want, head == hashlib.sha1(json.dumps(sorted(want.items())).encode()).hexdigest()), (True, True),
              f'the tree is the git blob hash of every file but the excluded places ({len(want)} files), the head is the hash of the tree; linked folder tried: {linked}', what='tree')
         c.ok(not any(k.startswith('pilot/link') for k in tree), str([k for k in tree if 'link' in k]), 'a link or a junction is not followed')
-        best = 1e9
-        for _ in range(7):
-            t = time.perf_counter()
+        # SOG-0594: what SOG-0164 protects is the NUMBER OF SYSTEM CALLS, not a wall clock (« under 50 ms » failed now and then while the machine was loaded by the
+        # other cases, Windows Defender scanning a thousand files): with nothing changed, one scandir per folder, no file read, no stat / lstat / islink / walk per file
+        calls = {'scandir': 0, 'open': 0, 'stat': 0}
+        real = {'scandir': os.scandir, 'stat': os.stat, 'lstat': os.lstat, 'islink': os.path.islink, 'walk': os.walk}
+
+        def count(key, fn):
+            def wrapped(*a, **k):
+                calls[key] += 1
+                return fn(*a, **k)
+            return wrapped
+        def counted_open(*a, **k):
+            calls['open'] += 1
+            return open(*a, **k)
+        os.scandir, os.stat, os.lstat, os.path.islink, os.walk = (count('scandir', real['scandir']), count('stat', real['stat']), count('stat', real['lstat']), count('stat', real['islink']), count('stat', real['walk']))
+        L.open = counted_open
+        try:
             h2, _ = L.frame_tree()
-            best = min(best, (time.perf_counter() - t) * 1000)
+        finally:
+            os.scandir, os.stat, os.lstat, os.path.islink, os.walk = real['scandir'], real['stat'], real['lstat'], real['islink'], real['walk']
+            del L.open
+        folders = sum(1 for _ in [p for p in data.rglob('*') if p.is_dir() and not p.is_symlink()]) + 1
         c.eq(h2, head, 'nothing changed: the same head', what='same head')
-        c.ok(best < 50, f'{best:.0f} ms for {len(want)} files', 'nothing changed: the tree is read in under 50 ms (best of 7)')
+        c.eq((calls['open'], calls['stat']), (0, 0), f'nothing changed: no file is read and there is no stat, lstat, islink or walk per file ({len(want)} files)', what='system calls per file')
+        c.ok(0 < calls['scandir'] <= folders, f'{calls["scandir"]} scandir for {folders} folders', 'one scandir per folder at most: the listing carries the size and the date (SOG-0164)')
+        t0 = time.perf_counter()
+        L.frame_tree()
+        c.ok((time.perf_counter() - t0) < 5, f'{(time.perf_counter() - t0) * 1000:.0f} ms for {len(want)} files', 'a GUARD, not the performance promised (the judge is the count of calls above): a read that does not give the hand back within 5 s')
         f = data / 'pilot' / 'P01' / 'd1' / 'f1.json'
         f.write_bytes(b'{"i": 1000}')
         h3, t3 = L.frame_tree()
