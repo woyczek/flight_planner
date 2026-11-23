@@ -3689,3 +3689,26 @@ def i51(c):
         S._ids.clear()
     src = (c.root / 'tools' / 'sim_position.py').read_text(encoding='utf-8')
     c.ok('MIN_GAP = 1.0' in src, '', 'the cadence is not changed: one pass per second at most')
+
+
+@case('I52', 'The content policy restricts images to the suite itself: img-src \'self\' data: blob: and no host', 'I', static=True,
+      rule='SOG-0574 (the ergonomist, 23 Nov 2026, Q-0143, hardening of the audit M2): tools/csp_policy.py gives img-src \'self\' data: blob: and NOTHING else, in the launcher\'s header AND in the meta of the site without launcher, and in the policy of a page of the table too; the five tile hosts stay in connect-src only (MapLibre loads its tiles by fetch), PROVIDER_TABLE and connect-src do not change; red before: no img-src directive at all.')
+def i52(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    P = importlib.import_module('csp_policy')
+    L = importlib.import_module('launch')
+    want = "img-src 'self' data: blob:"
+    cut = lambda pol, name: next((d.strip() for d in pol.split(';') if d.strip().startswith(name + ' ')), '')
+    page = '/apps/outils/pelicandromes/index.html'
+    for what, pol in (('the launcher header', L.csp_policy()), ('the meta of the site without launcher', P.value(meta=True)), ('a page of the table', L.csp_policy(page))):
+        c.eq(cut(pol, 'img-src'), want, f'{what}: images from the suite, data and blob only', what=f'img-src in {what}')
+        c.ok(pol.count('img-src') == 1, pol[-120:], f'{what}: exactly one img-src directive')
+    img = cut(P.value(meta=True), 'img-src')
+    c.ok('http' not in img and '*' not in img, img, 'no host and no wildcard in img-src')
+    tiles = ['https://tiles.openfreemap.org', 'https://tiles.versatiles.org', 'https://a.tile.opentopomap.org', 'https://b.tile.opentopomap.org',
+             'https://c.tile.opentopomap.org', 'https://s3.amazonaws.com/elevation-tiles-prod/']
+    c.eq([h for h in tiles if h not in P.CONNECT], [], 'the tile hosts stay in connect-src (MapLibre fetches its tiles)', what='tile hosts missing from CONNECT')
+    c.eq([h for h in tiles if h in img], [], 'and none of them is in img-src', what='tile hosts in img-src')
+    general, mine = L.csp_policy(), L.csp_policy(page)
+    c.eq(mine.replace(' https://server.arcgisonline.com', '', 1), general, 'a page of the table differs from the general policy by its connect-src host only', what='page vs general')

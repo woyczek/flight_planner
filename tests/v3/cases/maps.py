@@ -2028,3 +2028,49 @@ def d111(c):
     c.wait(300)
     back = win_state(c)
     c.ok(abs(back['from'] - whole['from']) < .5 and abs(back['to'] - whole['to']) < .5, f'window {back["from"]}..{back["to"]}', 'a double click goes back to the whole flight')
+
+
+@case('D311', 'Map under the image policy: the tiles still draw (fetched), an image of another host is refused and never requested', 'D', tags=('maps',),
+      phone=False, screens=True, night=False,
+      rule='SOG-0574 (the ergonomist, 23 Nov 2026, Q-0143): img-src is \'self\' data: blob: and nothing else; MapLibre loads its tiles by fetch (connect-src), so a map must still draw with the policy on, tried on INVENTED tiles (never the real network); an <img> of an outside host is refused by the policy and no request leaves; red before: the policy has no img-src, the outside image is requested.')
+def d311(c):
+    import base64
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    policy = importlib.import_module('csp_policy').value(meta=True)
+    png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==')
+    hits = {'tile': 0, 'refused': 0, 'control': 0}
+
+    def serve(route, request):
+        u = request.url
+        hits['tile' if '/invented/t/' in u else 'refused' if '/invented/refused' in u else 'control'] += 1
+        route.fulfill(status=200, content_type='image/png', body=png)
+    c.page.route(re.compile(r'^https://tiles\.openfreemap\.org/invented/'), serve)
+    c.open('maps', flight=True)
+    c.wait(1500)
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    add_img = "(u) => { const i = new Image(); i.src = u; document.body.appendChild(i); return true }"
+
+    def waited(key, n, ms=6000):
+        end = time.time() + ms / 1000
+        while hits[key] < n and time.time() < end:
+            c.page.wait_for_timeout(50)
+    # the control: with no image policy the harness lets an outside image through (so a refusal below is the policy's, not the harness's)
+    c.js(add_img, 'https://tiles.openfreemap.org/invented/control.png')
+    waited('control', 1)
+    c.eq(hits['control'], 1, 'before the policy, an image of another host is requested', what='control requests')
+    c.js("""(p) => { const m = document.createElement('meta'); m.httpEquiv = 'Content-Security-Policy'; m.content = p; document.head.appendChild(m);
+        window.__viol = []; document.addEventListener('securitypolicyviolation', e => window.__viol.push(e.violatedDirective + ' ' + e.blockedURI)); return true }""", policy)
+    c.js(add_img, 'https://tiles.openfreemap.org/invented/refused.png')
+    c.until("window.__viol.some(v => v.startsWith('img-src') && v.includes('refused'))", timeout=6000, what='the policy refuses the image of another host (img-src violation)')
+    c.eq(hits['refused'], 0, 'no request left for the refused image', what='refused requests')
+    # the map: invented raster tiles on an invented host, fetched by MapLibre (connect-src), must draw
+    style = {'version': 8, 'sources': {'inv': {'type': 'raster', 'tileSize': 256, 'tiles': ['https://tiles.openfreemap.org/invented/t/{z}/{x}/{y}.png']}},
+             'layers': [{'id': 'inv', 'type': 'raster', 'source': 'inv'}]}
+    c.js("(s) => { window.__mp.S.map.setStyle(s); return true }", style)
+    waited('tile', 1, 10000)
+    c.ge(hits['tile'], 1, 'MapLibre asked for the invented tiles (by fetch, under connect-src)', what='tile requests')
+    c.until("window.__mp.S.map.areTilesLoaded() && window.__mp.S.map.isSourceLoaded('inv')", timeout=10000, what='the invented tiles are drawn with the policy on')
+    bad = c.js("() => window.__viol.filter(v => v.startsWith('img-src') && !v.includes('refused'))")
+    c.eq(bad, [], 'no other image refused: the map needs no img-src host', what='img-src violations other than the probe')

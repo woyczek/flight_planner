@@ -2,8 +2,9 @@
 lanceur (balise meta posée dans chaque page par tools/build_pages.py : GitHub Pages n'envoie pas d'en-têtes ; l'appli
 iOS reprend ce site). Les pages ne contactent (fetch, cartes, workers) que la suite et les services prévus : un script
 injecté ne peut plus envoyer les données ailleurs par requête. Scripts : ceux de la suite, en ligne (pages actuelles),
-pdf.js et acorn épinglés. Images, liens et navigation : non restreints (tuiles, liens d'aide) — fuite résiduelle
-documentée (docs/technique/AUDIT_SECURITE_2026-10-07.md, M2 ; APPLI_AUTONOME_SECURITE.md, S1).
+pdf.js et acorn épinglés. Images : celles de la suite, en données (data:) ou locales (blob:) seulement (SOG-0574, décision de l'ergonome du
+23 nov. 2026 : une image d'un autre hôte est refusée ; les fonds de carte passent par fetch, donc par connect-src, pas par img-src). Liens et
+navigation : non restreints (liens d'aide) — fuite résiduelle documentée (docs/technique/AUDIT_SECURITE_2026-10-07.md, M2 ; APPLI_AUTONOME_SECURITE.md, S1).
 """
 import os
 import re
@@ -108,4 +109,4 @@ def value(extra=(), meta=False, page=''):
     les hôtes s'ajoutent à connect-src."""
     connect = ' '.join(dict.fromkeys(["'self'", *CONNECT, *extra, *PAGES.get(str(page).lower(), ())]))
     return (f"connect-src {connect}; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' {' '.join(SCRIPTS)}; "
-            "object-src 'none'; base-uri 'self'; form-action 'self'" + ('' if meta else "; frame-ancestors 'self'"))
+            "img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'" + ('' if meta else "; frame-ancestors 'self'"))
