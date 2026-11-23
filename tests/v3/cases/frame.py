@@ -9046,7 +9046,7 @@ def a183(c):
     if c.design != 'standard':
         return
     c.page.set_viewport_size({'width': 460, 'height': 900})
-    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'tst', 'name': "Compagnie d'essai"}]}, 'document']]     # an invented test airline, never a real one (the apostrophe is meant: it exercises the escaping)
     c.open('settings?card=company', docs=docs)
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2 && document.querySelector('[data-airline-fiche]').children.length > 0", timeout=15000, what='the airlines and the sheet of the chosen one')
     c.wait(500)
@@ -9075,7 +9075,7 @@ def a184(c):
     lang = c.lang
     G = lambda k: tx('frame/settings/groups.js', k, lang, after='    groups: {')
     H = lambda k: tx('frame/settings/groups.js', k, lang, after='    groupHint: {')
-    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'tst', 'name': "Compagnie d'essai"}]}, 'document']]     # an invented test airline, never a real one (the apostrophe is meant: it exercises the escaping)
     c.open('settings', docs=docs)
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2", timeout=15000, what='the airlines')
     c.wait(600)
@@ -9106,7 +9106,7 @@ def a184(c):
       rule='SOG-0320: the user validated the mockup (about 900 px for the three blocks); the screen delivered at d19410e67 needed four screens before « Données »: the level card (three radios with their menus), the Design card (ten thumbnails and three tone radios), the open sheet of the chosen airline (kinds, seventeen mission families)')
 def a185(c):
     lang = c.lang
-    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'tst', 'name': "Compagnie d'essai"}]}, 'document']]     # an invented test airline, never a real one (the apostrophe is meant: it exercises the escaping)
     c.open('settings', docs=docs)
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2 && !!document.querySelector('[data-card=\"company\"] [data-airline-fiche]')", timeout=15000, what='the airlines')
     c.wait(800)

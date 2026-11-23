@@ -259,6 +259,11 @@ def b2(c):
   or, when the plan says "measure against the real box", measured from the real box (the bar's height is read, not assumed).
 - A new case goes in the file of its area with a stable id, a header line in that file, and, if it guards a bug a test caught,
   a row in PLAN.md section L. Add the glob that should run it to `domains.py` if its area is not enough.
+- **The airline of a test is invented.** A NEW case that needs an airline takes « Compagnie d'essai », code `tst` (badge « TST »; the
+  apostrophe is meant: it exercises the escaping), never a real company's name or code. An EXISTING case is renamed only when its owner
+  touches it for another reason, and then the WHOLE set of the case is renamed (folder, index, site), never half of it. A capture shown
+  to the user, or that goes into the help or a manual, never shows « DEFA » (the test data of the existing cases are test data, not the
+  user's, but a picture of them is read as the real thing).
 
 ## Known failures (`cases/known_failures.py`)
 
