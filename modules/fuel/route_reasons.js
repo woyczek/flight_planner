@@ -15,11 +15,8 @@
 // Les valeurs sont posées telles quelles : l'appelant écrit la phrase par textContent ou esc, jamais en HTML.
 
 export const ROWS = {
-  // les titres des groupes et du verdict (le plus grave : enfreint > non vérifiable > conforme)
-  conform: ['conforme à ce que nous savons lire', 'conforms to what we can read', 'entspricht dem, was wir lesen können',
-    'conforme a lo que sabemos leer'
-  ],
-  // sous le seul verdict « conforme » (l'ergonome, 20/11)
+  // les titres des groupes (le plus grave : enfreint > non vérifiable > aucune infraction trouvée)
+  // SOG-0552 : une fois, au-dessus de la liste des routes (l'ergonome, 23/11)
   onlyEurocontrol: ['Seul Eurocontrol valide un plan.', 'Only Eurocontrol validates a plan.', 'Nur Eurocontrol validiert einen Plan.',
     'Solo Eurocontrol valida un plan.'
   ],
@@ -68,12 +65,13 @@ export const ROWS = {
   rad_unread: ['{zone} : {n} règle(s) du RAD portent sur cette route', '{zone}: {n} RAD rule(s) apply to this route',
     '{zone}: {n} RAD-Regel(n) betreffen diese Route', '{zone}: {n} regla(s) del RAD se aplican a esta ruta'
   ],
-  // les règles qui ne portent que sur des espaces : UNE note sous le groupe, hors compte, sous tout verdict ; SOG-0538 (l'ergonome,
-  // 21/11) : sans nombre — le moteur compte des États que la route ne traverse pas (SOG-0537)
-  spacesOnly: ['Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées.',
-    'The RAD rules that only apply to airspaces are not verified.',
-    'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft.',
-    'Las reglas del RAD que solo se aplican a espacios no se verifican.'
+  // les règles qui visent un espace aérien entier : UNE ligne, hors compte, sans nombre (SOG-0538 : le moteur compte des États que la
+  // route ne traverse pas) ; SOG-0552 (l'ergonome, 23/11) : toujours sous « Aucune infraction trouvée », jamais deux fois ; sous
+  // « non vérifiable » et « enfreint » quand la route en croise
+  spacesOnly: ['Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
+    'The RAD rules that target a whole airspace are not examined.',
+    'Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
+    'Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.'
   ],
   // une règle de la liste : l'endroit d'abord, la référence à la fin ; sans endroit : la référence d'abord
   ruleLine: ['{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})', '{target} — {why} ({id})'],
@@ -175,15 +173,14 @@ export const ROWS = {
     'Descenso al FL{down} en {downAt}, y luego subida al FL{up} en {upAt} («yoyó»)'
   ],
   // 6
-  no_conforming_route: ['Aucune route conforme trouvée au FL{fl}. La route montrée enfreint {n} règle(s) connue(s).',
-    'No conforming route found at FL{fl}. The route shown breaks {n} known rule(s).',
-    'Keine konforme Route auf FL{fl} gefunden. Die gezeigte Route verletzt {n} bekannte Regel(n).',
-    'Ninguna ruta conforme encontrada en el FL{fl}. La ruta mostrada infringe {n} regla(s) conocida(s).'
+  // SOG-0552 (l'ergonome, 23/11) : une phrase toujours vraie, sur la route calculée seule — les verdicts des autres routes disent le reste
+  no_conforming_route: ['La route calculée au FL{fl} enfreint {n} règle(s) connue(s).',
+    'The computed route at FL{fl} breaks {n} known rule(s).',
+    'Die berechnete Route auf FL{fl} verletzt {n} bekannte Regel(n).',
+    'La ruta calculada en el FL{fl} infringe {n} regla(s) conocida(s).'
   ],
-  no_conforming_route0: ['Aucune route conforme trouvée. La route montrée enfreint {n} règle(s) connue(s).',
-    'No conforming route found. The route shown breaks {n} known rule(s).',
-    'Keine konforme Route gefunden. Die gezeigte Route verletzt {n} bekannte Regel(n).',
-    'Ninguna ruta conforme encontrada. La ruta mostrada infringe {n} regla(s) conocida(s).'
+  no_conforming_route0: ['La route calculée enfreint {n} règle(s) connue(s).', 'The computed route breaks {n} known rule(s).',
+    'Die berechnete Route verletzt {n} bekannte Regel(n).', 'La ruta calculada infringe {n} regla(s) conocida(s).'
   ],
   // 8
   stale_cycle: ['{zone} : données du {cycle}, périmées à la date du vol — voies concernées : {routes}',

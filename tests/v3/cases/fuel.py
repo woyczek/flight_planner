@@ -9463,26 +9463,27 @@ def f295(c):
         dict(_alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, segs, sid=False), verdict='conform', violations=[], unverifiable=[])]
     want = {
         # SOG-0545 (mock-up v2): « conforme » in one word on the route, explained once above the list — changed on purpose
-        'fr': {'v': 'enfreint 4 règles connues', 'u': 'Non vérifiable : 9 points', 'c': 'conforme',
+        # SOG-0552 (the ergonomist, 23 Nov): the label of the level `conform` and the line of the airspace rules — changed on purpose
+        'fr': {'v': 'enfreint 4 règles connues', 'u': 'Non vérifiable : 9 points', 'c': 'Aucune infraction trouvée',
                'gv': 'Règles connues enfreintes', 'gu': 'Non vérifiable : 2 points', 'more': 'et 2 autres',
                'lines': ['LUGEN–NEPIX : règle du RAD non respectée (XX9001)', 'Route interdite par le RAD (XX9002)',
                          'Arrivée à LFML : direct de 48,5 NM depuis NEPIX, limite 30 NM (RAD XX9003)', _F295_YOYO,
                          'Départ de LFRS : direct de 12 NM — limite du RAD non lue pour ce terrain',
                          'Aucune voie dans la base entre LUGEN et NEPIX : direct de 61 NM']},
-        'en': {'v': 'breaks 4 known rules', 'u': 'Cannot be verified: 9 points', 'c': 'conforms',
+        'en': {'v': 'breaks 4 known rules', 'u': 'Cannot be verified: 9 points', 'c': 'No violation found',
                'gv': 'Known rules broken', 'gu': 'Cannot be verified: 2 points', 'more': 'and 2 others',
                'lines': ['LUGEN–NEPIX: RAD rule not met (XX9001)', 'Route prohibited by the RAD (XX9002)',
                          'Arrival at LFML: direct of 48.5 NM from NEPIX, limit 30 NM (RAD XX9003)', 'engine text, in French: ' + _F295_YOYO,
                          'Departure from LFRS: direct of 12 NM — RAD limit not read for this aerodrome',
                          'No airway in the base between LUGEN and NEPIX: direct of 61 NM']},
-        'de': {'v': 'verletzt 4 bekannte Regeln', 'u': 'Nicht prüfbar: 9 Punkte', 'c': 'konform',
+        'de': {'v': 'verletzt 4 bekannte Regeln', 'u': 'Nicht prüfbar: 9 Punkte', 'c': 'Keine Verstöße gefunden',
                'gv': 'Verletzte bekannte Regeln', 'gu': 'Nicht prüfbar: 2 Punkte', 'more': 'und 2 weitere',
                'lines': ['LUGEN–NEPIX: RAD-Regel nicht eingehalten (XX9001)', 'Route durch das RAD verboten (XX9002)',
                          'Ankunft in LFML: Direktstrecke von 48,5 NM ab NEPIX, Grenze 30 NM (RAD XX9003)',
                          'Text der Routenberechnung, auf Französisch: ' + _F295_YOYO,
                          'Abflug von LFRS: Direktstrecke von 12 NM — RAD-Grenze für diesen Flugplatz nicht gelesen',
                          'Keine Luftstraße in der Basis zwischen LUGEN und NEPIX: Direktstrecke von 61 NM']},
-        'es': {'v': 'infringe 4 reglas conocidas', 'u': 'No verificable: 9 puntos', 'c': 'conforme',
+        'es': {'v': 'infringe 4 reglas conocidas', 'u': 'No verificable: 9 puntos', 'c': 'No se encontró ninguna infracción',
                'gv': 'Reglas conocidas infringidas', 'gu': 'No verificable: 2 puntos', 'more': 'y 2 otros',
                'lines': ['LUGEN–NEPIX: regla del RAD no respetada (XX9001)', 'Ruta prohibida por el RAD (XX9002)',
                          'Llegada a LFML: directo de 48,5 NM desde NEPIX, límite 30 NM (RAD XX9003)', 'texto del motor, en francés: ' + _F295_YOYO,
@@ -9564,26 +9565,26 @@ def f296(c):
         'fr': {'title': 'Non vérifiable : 3 points', 'state': 'Belgique : 9 règles du RAD portent sur cette route',
                'first': 'LUGEN–NEPIX — dépend de l’activité d’une zone — à vérifier le jour du vol (XX9100)',
                'second': 'XX9101 — horaire que nous ne savons pas lire', 'unknown': 'XX9108 — règle que nous ne savons pas lire',
-               'more': 'et 2 autres', 'conform': 'conforme',
-               'note': 'Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées.',
+               'more': 'et 2 autres', 'conform': 'Aucune infraction trouvée',
+               'note': 'Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
                'share': 'en infraction : 10 % · distance contrôlée : 60 % · données incomplètes : 30 %'},
         'en': {'title': 'Cannot be verified: 3 points', 'state': 'Belgium: 9 RAD rules apply to this route',
                'first': 'LUGEN–NEPIX — depends on the activity of an area — to check on the day of the flight (XX9100)',
                'second': 'XX9101 — schedule we cannot read', 'unknown': 'XX9108 — rule we cannot read',
-               'more': 'and 2 others', 'conform': 'conforms',
-               'note': 'The RAD rules that only apply to airspaces are not verified.',
+               'more': 'and 2 others', 'conform': 'No violation found',
+               'note': 'The RAD rules that target a whole airspace are not examined.',
                'share': 'in breach: 10 % · distance checked: 60 % · incomplete data: 30 %'},
         'de': {'title': 'Nicht prüfbar: 3 Punkte', 'state': 'Belgien: 9 RAD-Regeln betreffen diese Route',
                'first': 'LUGEN–NEPIX — hängt von der Aktivität eines Gebiets ab — am Flugtag zu prüfen (XX9100)',
                'second': 'XX9101 — Zeitplan, den wir nicht lesen können', 'unknown': 'XX9108 — Regel, die wir nicht lesen können',
-               'more': 'und 2 weitere', 'conform': 'konform',
-               'note': 'Die RAD-Regeln, die nur Lufträume betreffen, werden nicht geprüft.',
+               'more': 'und 2 weitere', 'conform': 'Keine Verstöße gefunden',
+               'note': 'Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
                'share': 'regelwidrig: 10 % · geprüfte Strecke: 60 % · unvollständige Daten: 30 %'},
         'es': {'title': 'No verificable: 3 puntos', 'state': 'Bélgica: 9 reglas del RAD se aplican a esta ruta',
                'first': 'LUGEN–NEPIX — depende de la actividad de una zona — a comprobar el día del vuelo (XX9100)',
                'second': 'XX9101 — horario que no sabemos leer', 'unknown': 'XX9108 — regla que no sabemos leer',
-               'more': 'y 2 otros', 'conform': 'conforme',
-               'note': 'Las reglas del RAD que solo se aplican a espacios no se verifican.',
+               'more': 'y 2 otros', 'conform': 'No se encontró ninguna infracción',
+               'note': 'Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.',
                'share': 'en infracción: 10 % · distancia controlada: 60 % · datos incompletos: 30 %'}}[c.lang]
     docs = proc_flight()
     for d in docs:
@@ -10213,14 +10214,15 @@ def f304(c):
 
 # SOG-0545: the words of the list of routes, written in clear (never read from the texts of the module)
 _RT_WORDS = {
-    'fr': {'cols': ['Distance', 'Temps', 'Étape'], 'line': '« conforme » : conforme à ce que nous savons lire. Seul Eurocontrol valide un plan.',
-           'conform': 'conforme', 'fast': 'la plus rapide', 'eco': 'la plus économe', 'chosen': 'choisie', 'take': 'Choisir'},
-    'en': {'cols': ['Distance', 'Time', 'Trip'], 'line': '“conforms”: conforms to what we can read. Only Eurocontrol validates a plan.',
-           'conform': 'conforms', 'fast': 'fastest', 'eco': 'most economical', 'chosen': 'chosen', 'take': 'Choose'},
-    'de': {'cols': ['Entfernung', 'Zeit', 'Reise'], 'line': '„konform“: entspricht dem, was wir lesen können. Nur Eurocontrol validiert einen Plan.',
-           'conform': 'konform', 'fast': 'die schnellste', 'eco': 'die sparsamste', 'chosen': 'gewählt', 'take': 'Auswählen'},
-    'es': {'cols': ['Distancia', 'Tiempo', 'Etapa'], 'line': '«conforme»: conforme a lo que sabemos leer. Solo Eurocontrol valida un plan.',
-           'conform': 'conforme', 'fast': 'la más rápida', 'eco': 'la más económica', 'chosen': 'elegida', 'take': 'Elegir'},
+    # SOG-0552 (the ergonomist, 23 Nov): the label of the level `conform` and « Seul Eurocontrol » alone — changed on purpose
+    'fr': {'cols': ['Distance', 'Temps', 'Étape'], 'line': 'Seul Eurocontrol valide un plan.',
+           'conform': 'Aucune infraction trouvée', 'fast': 'la plus rapide', 'eco': 'la plus économe', 'chosen': 'choisie', 'take': 'Choisir'},
+    'en': {'cols': ['Distance', 'Time', 'Trip'], 'line': 'Only Eurocontrol validates a plan.',
+           'conform': 'No violation found', 'fast': 'fastest', 'eco': 'most economical', 'chosen': 'chosen', 'take': 'Choose'},
+    'de': {'cols': ['Entfernung', 'Zeit', 'Reise'], 'line': 'Nur Eurocontrol validiert einen Plan.',
+           'conform': 'Keine Verstöße gefunden', 'fast': 'die schnellste', 'eco': 'die sparsamste', 'chosen': 'gewählt', 'take': 'Auswählen'},
+    'es': {'cols': ['Distancia', 'Tiempo', 'Etapa'], 'line': 'Solo Eurocontrol valida un plan.',
+           'conform': 'No se encontró ninguna infracción', 'fast': 'la más rápida', 'eco': 'la más económica', 'chosen': 'elegida', 'take': 'Elegir'},
 }
 # invented positions of the points of the three routes (the engine's `points`, view.points_of)
 _RT_PTS = {'LFRS': (47.15, -1.61), 'LUGEN': (46.6, -0.9), 'NEPIX': (45.0, 2.5), 'BOSUP': (45.9, 1.2), 'LFML': (43.44, 5.22)}
@@ -10539,16 +10541,16 @@ def f307(c):
 _NV_WORDS = {
     'fr': {'label': 'Aucune infraction trouvée', 'spaces': 'Les règles du RAD qui visent un espace aérien entier ne sont pas examinées.',
            'euro': 'Seul Eurocontrol valide un plan.', 'old': 'conforme',
-           'none': 'La route calculée au FL270 enfreint 2 règle(s) connue(s).'},
+           'none': 'La route calculée au FL270 enfreint 2 règles connues.'},
     'en': {'label': 'No violation found', 'spaces': 'The RAD rules that target a whole airspace are not examined.',
            'euro': 'Only Eurocontrol validates a plan.', 'old': 'conforms',
-           'none': 'The computed route at FL270 breaks 2 known rule(s).'},
+           'none': 'The computed route at FL270 breaks 2 known rules.'},
     'de': {'label': 'Keine Verstöße gefunden', 'spaces': 'Die RAD-Regeln, die einen ganzen Luftraum betreffen, werden nicht geprüft.',
            'euro': 'Nur Eurocontrol validiert einen Plan.', 'old': 'konform',
-           'none': 'Die berechnete Route auf FL270 verletzt 2 bekannte Regel(n).'},
+           'none': 'Die berechnete Route auf FL270 verletzt 2 bekannte Regeln.'},
     'es': {'label': 'No se encontró ninguna infracción', 'spaces': 'Las reglas del RAD que se aplican a un espacio aéreo entero no se examinan.',
            'euro': 'Solo Eurocontrol valida un plan.', 'old': 'conforme',
-           'none': 'La ruta calculada en el FL270 infringe 2 regla(s) conocida(s).'},
+           'none': 'La ruta calculada en el FL270 infringe 2 reglas conocidas.'},
 }
 
 
@@ -10605,7 +10607,9 @@ def f308(c):
         c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
         c.shot(f'F308_{c.design}_{w}_{c.lang}_noviolation.png')
     # 5. (the ergonomist, 23 Nov, point 3) the engine's review « no conforming route »: a sentence always true, on the computed route
-    # alone — the verdicts of the other routes say the rest (never « Aucune route conforme trouvée »)
+    # alone — the verdicts of the other routes say the rest (never « Aucune route conforme trouvée »). The engine puts this code in
+    # `issues` (a review), never in `violations`: the fixture plants it there to read the sentence Fuel composes — no capture (its count
+    # of rules would include the review)
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     rad = {'code': 'rad_rule', 'values': {'id': 'XX9001', 'target': 'LUGEN–NEPIX'}, 'text': 'Règle XX9001'}
     st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, segs), faults=1, faulty=True,
@@ -10617,10 +10621,4 @@ def f308(c):
     c.until(f"!!document.querySelector('{A} li[data-reason=no_conforming_route]')", timeout=10000, what='the review of the engine')
     c.eq(norm(c.text(f'{A} li[data-reason=no_conforming_route]') or ''), norm(W['none']), 'the computed route and its count, nothing '
          'about the other routes', what='none')
-    c.js(f"document.querySelectorAll('{A} details[data-reasons]').forEach(d => d.open = true)")
-    for w in (390, 1280):
-        c.page.set_viewport_size({'width': w, 'height': c.height})
-        c.settle()
-        c.js(f"document.querySelector('{A} li[data-reason=no_conforming_route]').scrollIntoView({{block: 'center'}})")
-        c.shot(f'F308_{c.design}_{w}_{c.lang}_faulty.png')
     c.check_errors()

@@ -2566,3 +2566,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   says), rounded as shown; the best tied with another: no mention — never an end of the range (F305 changed on purpose). (C) The
   « Choisir » of the line kept stays: it writes that route in the Route field (« Auto » never does) and sets the level, « Auto »
   removed — more than closing the list. (1) No route name on a level line: accepted by the ergonomist (no `name` asked of AeroDB).
+- **23 Nov 2026 — « Aucune infraction trouvée » replaces « conforme »** (SOG-0552, the ergonomist: « conforme » claimed what the
+  engine does not know). The engine and its code `conform` do not change; the screen's label of that level is « Aucune infraction
+  trouvée » (en « No violation found », de « Keine Verstöße gefunden », es « No se encontró ninguna infracción »). Under it, ALWAYS and
+  once, the line « Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. »; under « non vérifiable » and
+  « enfreint », the same line when the route crosses such rules (spacesOnly > 0, as before) — the sentence of SOG-0538 and its calque
+  « portent » are gone. Above the list, « Seul Eurocontrol valide un plan. » alone (the existing row onlyEurocontrol; the explanation of
+  « conforme » left with the word; ROWS.conform, no longer read, removed). `no_conforming_route` says the computed route alone, always
+  true: « La route calculée au FL{fl} enfreint {n} règle(s) connue(s). » — the old « Aucune route conforme trouvée » could sit above a
+  variant at the same level that breaks nothing known (the engine sets the review on the head and its RAD retries, then searches
+  variants at the same level). Note: the engine puts that code in `issues` (a review), never in `violations`, so the list shows it only
+  if a later lot reads it there. Case F308 red before; F295, F296, F305 changed on purpose.

@@ -528,16 +528,11 @@ const TX = {
   themeNone: ['— aucune —', '— none —', '— keine —', '— ninguna —'],
   // SOG-0545 (l'ergonome, maquette v2) : « choisie », puisque le bouton dit « Choisir »
   rTaken: ['choisie', 'chosen', 'gewählt', 'elegida'],
-  // SOG-0545 : les deux mentions (au meilleur temps, au moindre carburant d'étape) et le verdict « conforme » en un mot, expliqué une fois
-  // au-dessus de la liste (rConformLine)
+  // SOG-0545 : les deux mentions (au meilleur temps, au moindre carburant d'étape) ; SOG-0552 (l'ergonome, 23/11) : le verdict
+  // `conform` du moteur dit « Aucune infraction trouvée » (« conforme » affirmait ce que le moteur ne sait pas)
   rFastest: ['la plus rapide', 'fastest', 'die schnellste', 'la más rápida'],
   rCheapest: ['la plus économe', 'most economical', 'die sparsamste', 'la más económica'],
-  rConformShort: ['conforme', 'conforms', 'konform', 'conforme'],
-  rConformLine: ['« conforme » : conforme à ce que nous savons lire. Seul Eurocontrol valide un plan.',
-    '“conforms”: conforms to what we can read. Only Eurocontrol validates a plan.',
-    '„konform“: entspricht dem, was wir lesen können. Nur Eurocontrol validiert einen Plan.',
-    '«conforme»: conforme a lo que sabemos leer. Solo Eurocontrol valida un plan.'
-  ],
+  rConformShort: ['Aucune infraction trouvée', 'No violation found', 'Keine Verstöße gefunden', 'No se encontró ninguna infracción'],
   // insécable : jamais « 0 » en fin de ligne et « écart » sur la suivante (capture F241 à 390 px)
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -6241,7 +6236,7 @@ function routeAltsDraw() {
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
   // SOG-0532 (l'ergonome, 20/11) : la ligne « Contrôle de simulation : … » est retirée — ses comptes, ceux de tout le calcul, doublaient
-  // et contredisaient les groupes des verdicts ; « Seul Eurocontrol valide un plan. » se dit sous « conforme » (verdictWord)
+  // et contredisaient les groupes des verdicts ; « Seul Eurocontrol valide un plan. » se dit une fois au-dessus de la liste (SOG-0552)
   fig = new Map(routes.map(([a, i]) => [i, altFigures(a, i)]));
   marks = figMarks(routes.filter(([a]) => !a.faulty && a.verdict !== 'violates').map(([, i]) => [i, fig.get(i)]));
   const tier = a => a.faulty || a.verdict === 'violates' ? 2 : a.verdict === 'conform' ? 0 : 1,
@@ -6252,7 +6247,8 @@ function routeAltsDraw() {
     shown = [...routes].sort(([a, i], [b, j]) => (j === A.chosen) - (i === A.chosen) || (j === lead) - (i === lead) || tier(a) - tier(b) ||
       figCmp(fig0(fig.get(i)), fig0(fig.get(j))) || i - j),
     cols = routes.some(([, i]) => fig.get(i)) ? `<div class="fu-rfigs fu-rcols f-muted" data-figcols aria-hidden="true"><span>${esc(tt(TX.unitDist))}</span><span>${esc(tt(TX.time))}</span><span>${esc(tt(TX.tripS))}</span></div>` : '',
-    conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(TX.rConformLine))}</p>` : '';
+    // SOG-0552 : « Seul Eurocontrol valide un plan. » seul, une fois (l'explication de « conforme » partie avec le mot)
+    conformLine = routes.length ? `<p class="f-muted fu-rconform" data-conformline>${esc(tt(RR.ROWS.onlyEurocontrol))}</p>` : '';
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
@@ -6804,7 +6800,7 @@ function verdictWord(a, good = null) {
   if (good === false && a.verdict === 'conform') return '';
   // SOG-0532 (l'ergonome) : sous le SEUL verdict « conforme », une ligne courte et visible — jamais dans un pli
   // SOG-0545 (l'ergonome, maquette v2) : « conforme » en un mot sur la route ; son sens et « Seul Eurocontrol valide un plan. » une fois,
-  // sous « Calculé à … » (rConformLine)
+  // sous « Calculé à … » (SOG-0552 : « Seul Eurocontrol valide un plan. » seul, RR.ROWS.onlyEurocontrol)
   if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(TX.rConformShort))}</span>`;
   if (a.verdict === 'unverifiable') return `<b class="f-warn fu-rh2" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable, a.uCount))}</b>`;
   return '';
@@ -6837,8 +6833,9 @@ function verdictsHtml(a, open = false) {
       violates: [],
       unverifiable: []
     };
-  // la note des règles qui ne portent que sur des espaces : hors compte, sous tout verdict (jamais « non vérifiable » à elle seule)
-  const note = a.spacesOnly > 0 ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly))}</p>` : '', // SOG-0538 : sans nombre
+  // la ligne des règles qui visent un espace aérien entier : hors compte, sans nombre (SOG-0538) ; SOG-0552 (l'ergonome) : toujours
+  // sous « Aucune infraction trouvée » (une fois), sous les deux autres verdicts quand la route en croise
+  const note = a.spacesOnly > 0 || (a.verdict === 'conform' && !a.faulty) ? `<p class="f-muted" data-spacesonly>${esc(tt(RR.ROWS.spacesOnly))}</p>` : '',
     // SOG-0530 (l'ergonome, 21/11) : le niveau de croisière, le moins grave en dernier, ton d'avertissement — il ne change JAMAIS le
     // verdict ; {n} ne compte que les niveaux hors règle (sans eux, le titre sans compte) ; sa note hors compte dessous, ou seule
     lw = a.levelWarn || [],
