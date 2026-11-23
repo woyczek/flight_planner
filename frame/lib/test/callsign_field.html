@@ -96,7 +96,8 @@
   const ctx = {
     aerodb: {
       aircraft: async () => ({
-        search: async (q, n) => (calls.push([q, n]), FLEET.filter(x => JSON.stringify(x).toUpperCase().includes(String(q).toUpperCase()
+        search: async (q, n) => (calls.push([q, n]), FLEET.filter(x => JSON.stringify(x).toUpperCase().includes(String(q)
+          .toUpperCase()
           .replace(/\s+/g, '')) || /^xc/i.test(q)))
       })
     },
@@ -132,8 +133,9 @@
   await type(0, 'x');
   ck('un caractère : rien proposé', box().hidden && codes().length === 0, codes());
   await type(0, 'xcs');
-  ck('« xcs » : les indicatifs qui commencent par le texte d’abord, puis ceux qui le contiennent', JSON.stringify(codes()) === JSON.stringify(
-    ['XCS101', 'XCS102', 'XCS200', 'XCS300', 'ZZXCS9']), JSON.stringify(codes()));
+  ck('« xcs » : les indicatifs qui commencent par le texte d’abord, puis ceux qui le contiennent', JSON.stringify(codes()) === JSON
+    .stringify(
+      ['XCS101', 'XCS102', 'XCS200', 'XCS300', 'ZZXCS9']), JSON.stringify(codes()));
   ck('la ligne : le type et l’immatriculation', /XCS101\s*— XT01 · X-AAAA/.test(box().querySelector('[data-callsign="XCS101"]')
     .textContent), box().querySelector('[data-callsign="XCS101"]').textContent);
   ck('un indicatif de deux types : une ligne, ses deux types', /XT01 \/ XT04/.test(box().querySelector('[data-callsign="XCS200"]')

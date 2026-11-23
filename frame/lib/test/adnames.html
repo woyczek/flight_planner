@@ -86,9 +86,12 @@
     'LFVZ');
 
   // SOG-0468 (2) : la forme d'un code vit ici (sans écran) ; le champ de terrain réexporte la MÊME fonction
-  ck('isCode : quatre signes ou une hélistation (LF418), rien d\'autre ; ad_field.js réexporte la même règle', ['LFPO', 'EG74', 'LF418', 'lfpo',
-    'LFP', 'LFPOX', '', null].map(isCode).join() === 'true,true,true,false,false,false,false,false' && ['LFPO', 'EG74', 'LF418', 'lfpo',
-    'LFP', 'LFPOX', '', null].every(v => fieldIsCode(v) === isCode(v)));
+  ck('isCode : quatre signes ou une hélistation (LF418), rien d\'autre ; ad_field.js réexporte la même règle', ['LFPO', 'EG74', 'LF418',
+    'lfpo',
+    'LFP', 'LFPOX', '', null
+  ].map(isCode).join() === 'true,true,true,false,false,false,false,false' && ['LFPO', 'EG74', 'LF418', 'lfpo',
+    'LFP', 'LFPOX', '', null
+  ].every(v => fieldIsCode(v) === isCode(v)));
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

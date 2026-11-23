@@ -62,17 +62,19 @@
       const ents = await AeroZipStream.entries(zip);
       check('the central directory is read from the end of the file', ents.length === 3 && ents.find(e => e.name ===
         'XML_SIA_2026-10-01.xml').size === siaBytes.length && ents.some(e => e.method === 8), ents);
-      const back = new Uint8Array(await new Response(await AeroZipStream.stream(zip, ents.find(e => /AIXM/.test(e.name)))).arrayBuffer());
-      check('an entry comes back byte for byte', back.length === aixmBytes.length && back.every((v, k) => v === aixmBytes[k]), back.length);
+      const back = new Uint8Array(await new Response(await AeroZipStream.stream(zip, ents.find(e => /AIXM/.test(e.name))))
+        .arrayBuffer());
+      check('an entry comes back byte for byte', back.length === aixmBytes.length && back.every((v, k) => v === aixmBytes[k]), back
+        .length);
       // la chaîne de V2 (archive en mémoire, texte entier, lecteurs de la page) et la chaîne en flux : mêmes comptes
       const v2 = await ZipStore.read(zip),
         text = async (re, enc) => new TextDecoder(enc).decode(await v2.find(e => re.test(e.name)).bytes()),
-        siaText = await text(/XML_SIA/, 'iso-8859-1'),
-        aixmText = await text(/AIXM/, 'utf-8'),
-        refA = SiaBase.parseXmlSiaAirspaces(siaText),
-        refV = SiaBase.parseXmlSiaVfrPoints(siaText),
-        refAero = SiaAero.parseAixm(aixmText),
-        refObs = SiaBase.parseAixmObstacles(aixmText);
+          siaText = await text(/XML_SIA/, 'iso-8859-1'),
+          aixmText = await text(/AIXM/, 'utf-8'),
+          refA = SiaBase.parseXmlSiaAirspaces(siaText),
+          refV = SiaBase.parseXmlSiaVfrPoints(siaText),
+          refAero = SiaAero.parseAixm(aixmText),
+          refObs = SiaBase.parseAixmObstacles(aixmText);
       const streamed = async (re, kind) => {
         const r = AeroXmlStream.create(kind),
           info = await AeroXmlStream.pump(await AeroZipStream.stream(zip, ents.find(e => re.test(e.name))), r);
@@ -83,12 +85,18 @@
       };
       const s1 = await streamed(/XML_SIA/, 'sia'),
         s2 = await streamed(/AIXM/, 'aixm');
-      check('streamed XML_SIA: the same airspaces and VFR points as V2', J(s1.out.airspaces) === J(refA) && J(s1.out.vrp) === J(refV) && s1.info.encoding === 'iso-8859-1',
+      check('streamed XML_SIA: the same airspaces and VFR points as V2', J(s1.out.airspaces) === J(refA) && J(s1.out.vrp) === J(refV) &&
+        s1.info.encoding === 'iso-8859-1',
         [s1.out.airspaces.length, refA.length, s1.out.vrp.length, refV.length]);
-      check('streamed AIXM: the same aerodromes, navaids, points, obstacles and obstacle cells as V2', s2.out.aerodromes.length === refAero.aerodromes.length &&
-        s2.out.navaids.length === refAero.navaids.length && s2.out.points === refAero.points.length && s2.out.obstacles === refAero.obstacles.length &&
-        J(s2.out.obstacleCells) === J(refObs), [s2.out.aerodromes.length, refAero.aerodromes.length, s2.out.navaids.length, refAero.navaids.length]);
-      check('the fixture has the real shape (enough of each kind for the counts to mean something)', refA.length >= 20 && refV.length >= 10 &&
+      check('streamed AIXM: the same aerodromes, navaids, points, obstacles and obstacle cells as V2', s2.out.aerodromes.length ===
+        refAero.aerodromes.length &&
+        s2.out.navaids.length === refAero.navaids.length && s2.out.points === refAero.points.length && s2.out.obstacles === refAero
+        .obstacles.length &&
+        J(s2.out.obstacleCells) === J(refObs), [s2.out.aerodromes.length, refAero.aerodromes.length, s2.out.navaids.length, refAero
+          .navaids.length
+        ]);
+      check('the fixture has the real shape (enough of each kind for the counts to mean something)', refA.length >= 20 && refV.length >=
+        10 &&
         refAero.aerodromes.length >= 10 && refAero.navaids.length >= 10, [refA.length, refV.length, refAero.aerodromes.length]);
       let bad = '';
       try {

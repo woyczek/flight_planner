@@ -302,8 +302,9 @@
       const fresh = view.querySelector('[data-token-fresh]');
       ck('la ligne du nouveau : le trigramme d’abord, créé le, l’expiration, « créé à l’instant » — jamais « jamais utilisé »', !!
         fresh &&
-        new RegExp('^ABC\\s+créé le 2026-11-01 · expire le ' + FAR2 + ' · dans \\d+ jours? · créé à l’instant').test(fresh.textContent.trim().replace(
-          /\s+/g, ' ')) && !
+        new RegExp('^ABC\\s+créé le 2026-11-01 · expire le ' + FAR2 + ' · dans \\d+ jours? · créé à l’instant').test(fresh.textContent
+          .trim().replace(
+            /\s+/g, ' ')) && !
         /jamais utilisé/.test(fresh.textContent), fresh?.textContent.trim().replace(/\s+/g, ' '));
       view.querySelector('[data-act=another]').click();
       await tick();
@@ -548,7 +549,8 @@
       ck('de J-5 à J-2 : « expire le … · dans 4 jours » en jaune (niveau soon)', /expire le \d{4}-\d\d-\d\d · dans 4 jours/.test(
           ex(32)?.textContent || '') &&
         ex(32).dataset.level === 'soon' && lvl(32) === 'soon', ex(32)?.textContent);
-      ck('la veille (J-1) : « dans 1 jour » en rouge (niveau urgent)', ex(33)?.dataset.level === 'urgent' && lvl(33) === 'urgent' && /dans 1 jour$/
+      ck('la veille (J-1) : « dans 1 jour » en rouge (niveau urgent)', ex(33)?.dataset.level === 'urgent' && lvl(33) === 'urgent' &&
+        /dans 1 jour$/
         .test(ex(33).textContent), ex(33)?.textContent);
       ck('un jeton expiré, non révoqué : « a expiré le … » en rouge (niveau expired)', /^a expiré le \d{4}-\d\d-\d\d$/.test(ex(34)
         ?.textContent || '') && lvl(34) === 'expired', ex(34)?.textContent);

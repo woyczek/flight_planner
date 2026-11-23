@@ -96,17 +96,22 @@
     label: 'Trois'
   }];
   list.show(A, hits);
-  ck('show : trois propositions, la liste visible, le champ « aria-expanded »', box().querySelectorAll('[role=option]').length === 3 && !box()
+  ck('show : trois propositions, la liste visible, le champ « aria-expanded »', box().querySelectorAll('[role=option]').length === 3 && !
+    box()
     .hidden && A.getAttribute('aria-expanded') === 'true' && B.getAttribute('aria-expanded') === 'false', box().innerHTML.slice(0, 120));
-  ck('show : un libellé est du texte (échappé ; seul le code est en gras)', box().querySelectorAll('b').length === 3 && box().textContent.includes('Un <b>'), box().innerHTML.slice(0,
-    200));
+  ck('show : un libellé est du texte (échappé ; seul le code est en gras)', box().querySelectorAll('b').length === 3 && box().textContent
+    .includes('Un <b>'), box().innerHTML.slice(0,
+      200));
   ck('↓ ↓ : la deuxième surlignée, signalée au lecteur d’écran', key('ArrowDown') && key('ArrowDown') && A.getAttribute(
     'aria-activedescendant') === 'bn-1', A.getAttribute('aria-activedescendant'));
   ck('↑ : revient à la première', key('ArrowUp') && A.getAttribute('aria-activedescendant') === 'bn-0', A.getAttribute(
     'aria-activedescendant'));
   key('ArrowDown');
-  ck('Entrée : la proposition surlignée écrite, la liste fermée, « input » rendu au champ pendant le choix', key('Enter') && writes.join() ===
-    'XBBB' && A.value === 'XBBB' && box().hidden && JSON.stringify(inputs) === JSON.stringify([['XBBB', true]]), JSON.stringify({
+  ck('Entrée : la proposition surlignée écrite, la liste fermée, « input » rendu au champ pendant le choix', key('Enter') && writes
+    .join() ===
+    'XBBB' && A.value === 'XBBB' && box().hidden && JSON.stringify(inputs) === JSON.stringify([
+      ['XBBB', true]
+    ]), JSON.stringify({
       writes,
       inputs,
       hidden: box().hidden

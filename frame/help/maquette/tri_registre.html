@@ -513,43 +513,106 @@ table.reg tr[aria-selected="true"] td {
     ['ok', 'M-003', 'Vol de réception', 'Entraînement', 1, 'LFRS → LFRS', 35],
     ['pb', 'M-002', 'Convoyage d’un hélicoptère', 'Transport', 4, 'LFOH → LFRZ', 73]
   ];
-  const cols = { st: 0, id: 1, title: 2, fam: 3, ser: 4, route: 5, dur: 6 }, text = new Set(['st', 'id', 'title', 'fam', 'route']);
-  const lab = { st: 'État', id: 'Identifiant', title: 'Titre', fam: 'Famille', ser: 'Série', dur: 'Durée' };
-  const stl = { pb: 'À corriger', ok: 'Lue', nr: 'Non lue' };
+  const cols = {
+      st: 0,
+      id: 1,
+      title: 2,
+      fam: 3,
+      ser: 4,
+      route: 5,
+      dur: 6
+    },
+    text = new Set(['st', 'id', 'title', 'fam', 'route']);
+  const lab = {
+    st: 'État',
+    id: 'Identifiant',
+    title: 'Titre',
+    fam: 'Famille',
+    ser: 'Série',
+    dur: 'Durée'
+  };
+  const stl = {
+    pb: 'À corriger',
+    ok: 'Lue',
+    nr: 'Non lue'
+  };
   const fmt = m => m == null ? '—' : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
-  let S = { key: 'id', dir: 'desc' }, sel = null;
-  const ROUTES = { 'M-014': ['LFRB', 'ILE DE BATZ', 'ILE D’OUESSANT', 'LFRK'], 'M-009': ['LFRS', 'NTS', 'ROYAN', 'LFBO'], 'M-007': ['LFRN', 'CAP FRÉHEL', 'LFRN'], 'M-006': ['LFOB', 'LFRH'], 'M-004': ['LFRD', 'LFRS'], 'M-003': ['LFRS'], 'M-002': ['LFOH', 'ROUEN', 'LFRZ'] };
+  let S = {
+      key: 'id',
+      dir: 'desc'
+    },
+    sel = null;
+  const ROUTES = {
+    'M-014': ['LFRB', 'ILE DE BATZ', 'ILE D’OUESSANT', 'LFRK'],
+    'M-009': ['LFRS', 'NTS', 'ROYAN', 'LFBO'],
+    'M-007': ['LFRN', 'CAP FRÉHEL', 'LFRN'],
+    'M-006': ['LFOB', 'LFRH'],
+    'M-004': ['LFRD', 'LFRS'],
+    'M-003': ['LFRS'],
+    'M-002': ['LFOH', 'ROUEN', 'LFRZ']
+  };
   const openSheet = id => {
-    const r = ROWS.find(x => x[1] === id); if (!r) return; sel = id;
+    const r = ROWS.find(x => x[1] === id);
+    if (!r) return;
+    sel = id;
     document.getElementById('sh-title').textContent = `${r[1]} · ${r[2]}`;
     document.getElementById('sh-meta').innerHTML = `<span class="st ${r[0]}">${stl[r[0]]}</span> · fichier missions/${r[1]}.yaml`;
     document.getElementById('sh-route').innerHTML = (ROUTES[id] || []).map((p, i, a) => `<span>${p}</span>${i < a.length - 1 ? '→' : ''}`).join('');
     document.getElementById('sh-dl').innerHTML = `<dt>Famille</dt><dd>${r[3]}</dd><dt>Série</dt><dd>${r[4] ?? '—'}</dd><dt>Durée ≈</dt><dd>${fmt(r[6])}</dd><dt>Aéronefs</dt><dd>EC135, H145</dd><dt>Théâtre</dt><dd>Bretagne</dd>`;
-    document.getElementById('sheet').hidden = false; document.getElementById('layout').classList.add('open'); paint();
+    document.getElementById('sheet').hidden = false;
+    document.getElementById('layout').classList.add('open');
+    paint();
   };
-  const closeSheet = () => { sel = null; document.getElementById('sheet').hidden = true; document.getElementById('layout').classList.remove('open'); paint(); };
+  const closeSheet = () => {
+    sel = null;
+    document.getElementById('sheet').hidden = true;
+    document.getElementById('layout').classList.remove('open');
+    paint();
+  };
   const menu = document.getElementById('menu');
   const showMenu = btn => {
-    const r = btn.getBoundingClientRect(); menu.hidden = false;
-    menu.style.top = `${window.scrollY + r.bottom + 4}px`; menu.style.left = `${Math.max(8, Math.min(window.scrollX + r.right - 190, window.innerWidth - 200))}px`;
-    document.querySelectorAll('[aria-expanded][data-act]').forEach(x => x.setAttribute('aria-expanded', 'false')); btn.setAttribute('aria-expanded', 'true');
+    const r = btn.getBoundingClientRect();
+    menu.hidden = false;
+    menu.style.top = `${window.scrollY + r.bottom + 4}px`;
+    menu.style.left = `${Math.max(8, Math.min(window.scrollX + r.right - 190, window.innerWidth - 200))}px`;
+    document.querySelectorAll('[aria-expanded][data-act]').forEach(x => x.setAttribute('aria-expanded', 'false'));
+    btn.setAttribute('aria-expanded', 'true');
   };
-  const hideMenu = () => { menu.hidden = true; document.querySelectorAll('[data-act]').forEach(x => x.removeAttribute('aria-expanded')); };
+  const hideMenu = () => {
+    menu.hidden = true;
+    document.querySelectorAll('[data-act]').forEach(x => x.removeAttribute('aria-expanded'));
+  };
   document.addEventListener('click', e => {
     const act = e.target.closest('[data-act]');
-    if (act) { e.stopPropagation(); if (!menu.hidden) { hideMenu(); } else showMenu(act); return; }
-    if (e.target.closest('#sh-more')) { showMenu(e.target.closest('#sh-more')); return; }
+    if (act) {
+      e.stopPropagation();
+      if (!menu.hidden) {
+        hideMenu();
+      } else showMenu(act);
+      return;
+    }
+    if (e.target.closest('#sh-more')) {
+      showMenu(e.target.closest('#sh-more'));
+      return;
+    }
     if (!e.target.closest('#menu')) hideMenu();
-    const row = e.target.closest('[data-id]'); if (row && !e.target.closest('th')) openSheet(row.dataset.id);
+    const row = e.target.closest('[data-id]');
+    if (row && !e.target.closest('th')) openSheet(row.dataset.id);
   });
   document.getElementById('close').addEventListener('click', closeSheet);
   document.getElementById('back').addEventListener('click', closeSheet);
-  const coll = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+  const coll = new Intl.Collator('fr', {
+    numeric: true,
+    sensitivity: 'base'
+  });
   const sorted = () => {
-    const i = cols[S.key], k = S.dir === 'asc' ? 1 : -1;
+    const i = cols[S.key],
+      k = S.dir === 'asc' ? 1 : -1;
     return ROWS.map((r, n) => [r, n]).sort((A, B) => {
-      const a = A[0][i], b = B[0][i];
-      const ea = a == null || a === '', eb = b == null || b === '';
+      const a = A[0][i],
+        b = B[0][i];
+      const ea = a == null || a === '',
+        eb = b == null || b === '';
       if (ea !== eb) return ea ? 1 : -1; // vide toujours en dernier, dans les deux sens
       const c = text.has(S.key) ? coll.compare(String(a), String(b)) : a - b;
       return c ? c * k : A[1] - B[1];
@@ -559,32 +622,68 @@ table.reg tr[aria-selected="true"] td {
     const rows = sorted();
     document.getElementById('tb').innerHTML = rows.map(r => `<tr data-id="${r[1]}"${sel === r[1] ? ' aria-selected="true"' : ''}><td><span class="st ${r[0]}">${stl[r[0]]}</span></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4] ?? '—'}</td><td>${r[5]}</td><td class="num">${fmt(r[6])}</td><td><button class="rowact" type="button" data-act="${r[1]}" aria-haspopup="menu" aria-label="Gestes de ${r[1]}">⋯</button></td></tr>`).join('');
     document.getElementById('ls').innerHTML = rows.map(r => `<div class="row" data-id="${r[1]}"><div class="txt"><b>${r[1]}</b> ${r[2]}<div class="meta"><span class="st ${r[0]}">${stl[r[0]]}</span> · ${r[3]} · série ${r[4] ?? '—'} · ${r[5]} · ${fmt(r[6])}</div></div><button class="rowact" type="button" data-act="${r[1]}" aria-haspopup="menu" aria-label="Gestes de ${r[1]}">⋯</button></div>`).join('');
-    document.querySelectorAll('#tbl th[aria-sort]').forEach(th => th.setAttribute('aria-sort', th.querySelector('button').dataset.col === S.key ? (S.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
+    document.querySelectorAll('#tbl th[aria-sort]').forEach(th => th.setAttribute('aria-sort', th.querySelector('button').dataset
+      .col === S.key ? (S.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
     document.getElementById('sortlbl').textContent = `${lab[S.key] || 'Identifiant'} ${S.dir === 'asc' ? '▲' : '▼'}`;
     document.querySelectorAll('input[name=col]').forEach(r => r.checked = r.value === S.key);
     document.querySelectorAll('.dirs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === S.dir)));
   };
   document.querySelectorAll('#tbl th button').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.col; // même colonne : on inverse ; une autre : texte croissant d'abord, nombre décroissant d'abord
-    S = S.key === k ? { key: k, dir: S.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: text.has(k) ? 'asc' : 'desc' };
+    S = S.key === k ? {
+      key: k,
+      dir: S.dir === 'asc' ? 'desc' : 'asc'
+    } : {
+      key: k,
+      dir: text.has(k) ? 'asc' : 'desc'
+    };
     paint();
   }));
   document.getElementById('sortbtn').addEventListener('click', () => {
-    const p = document.getElementById('panel'), o = p.hidden;
-    p.hidden = !o; document.getElementById('sortbtn').setAttribute('aria-expanded', String(o));
+    const p = document.getElementById('panel'),
+      o = p.hidden;
+    p.hidden = !o;
+    document.getElementById('sortbtn').setAttribute('aria-expanded', String(o));
   });
-  document.querySelectorAll('input[name=col]').forEach(r => r.addEventListener('change', () => { S = { key: r.value, dir: text.has(r.value) ? 'asc' : 'desc' }; paint(); }));
-  document.querySelectorAll('.dirs button').forEach(b => b.addEventListener('click', () => { S = { ...S, dir: b.dataset.dir }; paint(); }));
+  document.querySelectorAll('input[name=col]').forEach(r => r.addEventListener('change', () => {
+    S = {
+      key: r.value,
+      dir: text.has(r.value) ? 'asc' : 'desc'
+    };
+    paint();
+  }));
+  document.querySelectorAll('.dirs button').forEach(b => b.addEventListener('click', () => {
+    S = {
+      ...S,
+      dir: b.dataset.dir
+    };
+    paint();
+  }));
   const go = id => {
     document.querySelectorAll('[data-state]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.state === id)));
-    S = id === 'b' ? { key: 'dur', dir: 'desc' } : { key: 'id', dir: 'desc' };
+    S = id === 'b' ? {
+      key: 'dur',
+      dir: 'desc'
+    } : {
+      key: 'id',
+      dir: 'desc'
+    };
     const open = id === 'c';
-    document.getElementById('panel').hidden = !open; document.getElementById('sortbtn').setAttribute('aria-expanded', String(open));
-    if (id === 'c') S = { key: 'dur', dir: 'desc' };
-    hideMenu(); closeSheet();
+    document.getElementById('panel').hidden = !open;
+    document.getElementById('sortbtn').setAttribute('aria-expanded', String(open));
+    if (id === 'c') S = {
+      key: 'dur',
+      dir: 'desc'
+    };
+    hideMenu();
+    closeSheet();
     paint();
     if (id === 'd') openSheet('M-014');
-    if (id === 'e') { const w = window.innerWidth > 700; const b = document.querySelector(w ? '#tb tr[data-id="M-009"] [data-act]' : '#ls .row[data-id="M-009"] [data-act]'); if (b) showMenu(b); }
+    if (id === 'e') {
+      const w = window.innerWidth > 700;
+      const b = document.querySelector(w ? '#tb tr[data-id="M-009"] [data-act]' : '#ls .row[data-id="M-009"] [data-act]');
+      if (b) showMenu(b);
+    }
   };
   document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => go(b.dataset.state)));
   const v = new URLSearchParams(location.search).get('v');

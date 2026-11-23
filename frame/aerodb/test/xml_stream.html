@@ -48,7 +48,8 @@
         aixmBytes = await fetchBytes('fixtures/stream/AIXM4.5_sample.xml');
       const siaText = new TextDecoder('iso-8859-1').decode(siaBytes),
         aixmText = new TextDecoder('utf-8').decode(aixmBytes);
-      check('the encodings are read from the prologue', AeroXmlStream.sniff(siaBytes) === 'iso-8859-1' && AeroXmlStream.sniff(aixmBytes) ===
+      check('the encodings are read from the prologue', AeroXmlStream.sniff(siaBytes) === 'iso-8859-1' && AeroXmlStream.sniff(
+          aixmBytes) ===
         'utf-8', [AeroXmlStream.sniff(siaBytes), AeroXmlStream.sniff(aixmBytes)]);
       const feed = (kind, text, size) => {
         const r = AeroXmlStream.create(kind);
@@ -121,7 +122,8 @@
       });
       const rs = AeroXmlStream.create('sia'),
         ps = await AeroXmlStream.pump(chunked(siaBytes), rs);
-      check('pump: bytes in chunks, encoding from the prologue, the same airspaces and VFR points', ps.encoding === 'iso-8859-1' && ps.bytes === siaBytes.length &&
+      check('pump: bytes in chunks, encoding from the prologue, the same airspaces and VFR points', ps.encoding === 'iso-8859-1' && ps
+        .bytes === siaBytes.length &&
         J((x => [x.airspaces, x.vrp])(rs.end())) === J([refA, refV]), ps);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));

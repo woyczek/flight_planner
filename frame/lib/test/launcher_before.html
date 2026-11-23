@@ -224,28 +224,31 @@
         set: 'base',
         verb: 'status'
       });
-      ck('une lecture pure libérée par le lanceur est redemandée une fois : deux départs, résultat « done », pas d’erreur', e1.starts.length === 2 && re.ok === true && !re.released, JSON.stringify({
-        starts: e1.starts.length,
-        re
-      }));
+      ck('une lecture pure libérée par le lanceur est redemandée une fois : deux départs, résultat « done », pas d’erreur', e1.starts
+        .length === 2 && re.ok === true && !re.released, JSON.stringify({
+          starts: e1.starts.length,
+          re
+        }));
       const e2 = released('status', true);
       const re2 = await mk(e2.fetch).job('regen/job', {
         set: 'base',
         verb: 'status'
       });
-      ck('libérée deux fois : une seule redemande, puis le client le dit (released), sans boucle', e2.starts.length === 2 && re2.ok === false && re2.released === true, JSON.stringify({
-        starts: e2.starts.length,
-        re2
-      }));
+      ck('libérée deux fois : une seule redemande, puis le client le dit (released), sans boucle', e2.starts.length === 2 && re2.ok ===
+        false && re2.released === true, JSON.stringify({
+          starts: e2.starts.length,
+          re2
+        }));
       const e3 = released('build');
       const re3 = await mk(e3.fetch).job('regen/job', {
         set: 'base',
         verb: 'build'
       });
-      ck('un travail qui écrit libéré n’est jamais relancé de lui-même', e3.starts.length === 1 && re3.ok === false && re3.released === true, JSON.stringify({
-        starts: e3.starts.length,
-        re3
-      }));
+      ck('un travail qui écrit libéré n’est jamais relancé de lui-même', e3.starts.length === 1 && re3.ok === false && re3.released ===
+        true, JSON.stringify({
+          starts: e3.starts.length,
+          re3
+        }));
       // 7. SOG-0438 : `current` dit le travail en cours d'une route sans le suivre (une page rouverte le retrouve) : set, verbe, arguments simples, avancement ; null sans travail en cours ou fini
       const cur = view => mk(async (url, init = {}) => json(view)).current('regen/job');
       const c1 = await cur({
@@ -268,7 +271,9 @@
           started: 1700000000
         }
       });
-      ck('current : le travail en cours, sans le suivre (set, verbe, arguments simples seulement, avancement)', c1?.id === 'j9' && c1.set === 'proc' && c1.verb === 'ead-fetch' && c1.args?.icao === 'EGGW' && !('deep' in c1.args) && !('bad key' in c1.args) && c1.done === 5 && c1.total === 10, JSON.stringify(c1));
+      ck('current : le travail en cours, sans le suivre (set, verbe, arguments simples seulement, avancement)', c1?.id === 'j9' && c1
+        .set === 'proc' && c1.verb === 'ead-fetch' && c1.args?.icao === 'EGGW' && !('deep' in c1.args) && !('bad key' in c1.args) &&
+        c1.done === 5 && c1.total === 10, JSON.stringify(c1));
       const c2 = await cur({
         job: {
           id: 'j8',

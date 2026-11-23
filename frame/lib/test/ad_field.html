@@ -81,7 +81,9 @@
   let offs = 0;
   const aerodb = {
     coords: async code => (calls.push(['coords', code]), BASE[code] || null),
-    suggest: async q => (calls.push(['suggest', q]), Object.entries(BASE).filter(([c]) => c.startsWith(q.toUpperCase())).map(([code, x]) => ({
+    suggest: async q => (calls.push(['suggest', q]), Object.entries(BASE).filter(([c]) => c.startsWith(q.toUpperCase())).map(([code,
+      x
+    ]) => ({
       code,
       name: x.name,
       rank: 1,
@@ -89,11 +91,42 @@
       lon: x.lon
     }))),
     // SOG-0480 : deux points de banc, « XRN » (deux homonymes) et la balise « XNV »
-    find: async q => (calls.push(['find', q]), /^xr/i.test(q) ? [{ kind: 'point', code: 'XRN', name: 'XRN', lat: 46, lon: 2 }] : /^xn/i.test(q) ? [{
-      kind: 'navaid', code: 'XNV', name: 'VOR XNV', lat: 45.1, lon: 1.1 }] : []),
-    coordsAll: async (code, o) => (calls.push(['coordsAll', code, o?.near || null]), code === 'XRN' ? [{ kind: 'point', item: { lat: 45.2, lon: 1.2 },
-      distanceNm: 14 }, { kind: 'point', item: { lat: 60, lon: 20 }, distanceNm: 1100 }] : code === 'XNV' ? [{ kind: 'navaid', item: { lat: 45.1, lon: 1.1,
-      name: 'VOR XNV' }, distanceNm: 6 }] : []),
+    find: async q => (calls.push(['find', q]), /^xr/i.test(q) ? [{
+      kind: 'point',
+      code: 'XRN',
+      name: 'XRN',
+      lat: 46,
+      lon: 2
+    }] : /^xn/i.test(q) ? [{
+      kind: 'navaid',
+      code: 'XNV',
+      name: 'VOR XNV',
+      lat: 45.1,
+      lon: 1.1
+    }] : []),
+    coordsAll: async (code, o) => (calls.push(['coordsAll', code, o?.near || null]), code === 'XRN' ? [{
+      kind: 'point',
+      item: {
+        lat: 45.2,
+        lon: 1.2
+      },
+      distanceNm: 14
+    }, {
+      kind: 'point',
+      item: {
+        lat: 60,
+        lon: 20
+      },
+      distanceNm: 1100
+    }] : code === 'XNV' ? [{
+      kind: 'navaid',
+      item: {
+        lat: 45.1,
+        lon: 1.1,
+        name: 'VOR XNV'
+      },
+      distanceNm: 6
+    }] : []),
     on: () => () => offs++
   };
   const ctx = {
@@ -121,7 +154,8 @@
   });
   await wait(50);
   const items = [...screen.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
-  ck('frappe « xt » : les deux terrains du code proposés', JSON.stringify(items) === JSON.stringify(['XTST', 'XTSU']), JSON.stringify(items));
+  ck('frappe « xt » : les deux terrains du code proposés', JSON.stringify(items) === JSON.stringify(['XTST', 'XTSU']), JSON.stringify(
+    items));
   ck('frappe : la liste est visible sous le champ', !screen.querySelector('[data-adsug]').hidden && input.getAttribute('aria-expanded') ===
     'true');
   ck('le champ propose pour ses seules clés : un champ inconnu est ignoré', F.onInput({
@@ -173,10 +207,14 @@
   ck('hélistation : known vrai', await F.known('XH418') === true);
   ck('zoneAt : le plus petit cadre qui porte la position, null sans zones', zoneAt([{
     id: 'A',
-    frames: [[0, 40, 10, 50]]
+    frames: [
+      [0, 40, 10, 50]
+    ]
   }, {
     id: 'B',
-    frames: [[0, 44, 2, 46]]
+    frames: [
+      [0, 44, 2, 46]
+    ]
   }], {
     lat: 45,
     lon: 1
@@ -222,25 +260,33 @@
   });
   await wait(80);
   const pv = [...screen2.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
-  ck('points : la ligne montre l’identifiant, jamais la clé interne « CODE@lat,lon »', [...screen2.querySelectorAll('[data-adsug] [data-code]')]
-    .every(x => x.querySelector('b')?.textContent === 'XRN' && !/@/.test(x.textContent)), screen2.querySelector('[data-adsug]').textContent);
+  ck('points : la ligne montre l’identifiant, jamais la clé interne « CODE@lat,lon »', [...screen2.querySelectorAll(
+      '[data-adsug] [data-code]')]
+    .every(x => x.querySelector('b')?.textContent === 'XRN' && !/@/.test(x.textContent)), screen2.querySelector('[data-adsug]')
+    .textContent);
   // SOG-0468 (2) : les deux règles nommées, le même résultat que les motifs qu'elles remplacent
   ck('isIcao = /^[A-Z0-9]{4}$/ et isIcaoAlpha = /^[A-Z]{4}$/, sur les mêmes entrées', ['LFPO', 'EG74', 'LF418', 'lfpo', '', null, undefined,
-    0, 1234, 'LFP', ' LFPO'].every(v => isIcao(v) === /^[A-Z0-9]{4}$/.test(v) && isIcaoAlpha(v) === /^[A-Z]{4}$/.test(v)) && isIcao('EG74') &&
+      0, 1234, 'LFP', ' LFPO'
+    ].every(v => isIcao(v) === /^[A-Z0-9]{4}$/.test(v) && isIcaoAlpha(v) === /^[A-Z]{4}$/.test(v)) && isIcao('EG74') &&
     !isIcaoAlpha('EG74') && !isIcao('LF418'));
   ck('isCode exporté : la même règle que l’instance, sans écran', isCode('LF418') && isCode('LFPO') && !isCode('LF41A') && !isCode('') &&
     isCode === P.isCode);
-  ck('points : les deux XRN, le plus proche d’abord, chacun avec sa position', JSON.stringify(pv) === JSON.stringify(['XRN@45.20000,1.20000',
-    'XRN@60.00000,20.00000']), JSON.stringify(pv));
-  ck('points : near() donné à coordsAll', JSON.stringify(calls.find(c => c[0] === 'coordsAll' && c[1] === 'XRN')?.[2]) === '[45,1]', JSON.stringify(
-    calls.filter(c => c[0] === 'coordsAll')));
-  ck('points : le genre et la distance dans la ligne', /point/.test(screen2.querySelector('[data-adsug]').textContent) && /14 NM/.test(screen2
+  ck('points : les deux XRN, le plus proche d’abord, chacun avec sa position', JSON.stringify(pv) === JSON.stringify([
+    'XRN@45.20000,1.20000',
+    'XRN@60.00000,20.00000'
+  ]), JSON.stringify(pv));
+  ck('points : near() donné à coordsAll', JSON.stringify(calls.find(c => c[0] === 'coordsAll' && c[1] === 'XRN')?.[2]) === '[45,1]', JSON
+    .stringify(
+      calls.filter(c => c[0] === 'coordsAll')));
+  ck('points : le genre et la distance dans la ligne', /point/.test(screen2.querySelector('[data-adsug]').textContent) && /14 NM/.test(
+    screen2
     .querySelector('[data-adsug]').textContent), screen2.querySelector('[data-adsug]').textContent);
   P.onClick({
     target: screen2.querySelector('[data-adsug] [data-code="XRN@45.20000,1.20000"]')
   });
   await wait(30);
-  ck('choix d’un point : le champ reçoit l’identifiant, la position est gardée', pt.value === 'XRN' && JSON.stringify(P.positionOf('edpt')) ===
+  ck('choix d’un point : le champ reçoit l’identifiant, la position est gardée', pt.value === 'XRN' && JSON.stringify(P.positionOf(
+      'edpt')) ===
     JSON.stringify({
       code: 'XRN',
       lat: 45.2,

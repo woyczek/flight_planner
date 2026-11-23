@@ -467,14 +467,18 @@ textarea {
 </div>
 <script>
 (() => {
-  const screens = [...document.querySelectorAll('[data-screen]')], btns = [...document.querySelectorAll('[data-go]')];
+  const screens = [...document.querySelectorAll('[data-screen]')],
+    btns = [...document.querySelectorAll('[data-go]')];
   let from = 'list';
   const go = id => {
     screens.forEach(s => s.hidden = s.dataset.screen !== id);
     btns.forEach(b => b.setAttribute('aria-pressed', b.dataset.go === id ? 'true' : 'false'));
     window.scrollTo(0, 0);
   };
-  btns.forEach(b => b.addEventListener('click', () => { from = b.dataset.go; go(b.dataset.go); }));
+  btns.forEach(b => b.addEventListener('click', () => {
+    from = b.dataset.go;
+    go(b.dataset.go);
+  }));
   document.addEventListener('click', e => {
     if (e.target.closest('[data-open]')) go('detail');
     else if (e.target.closest('[data-back]')) go(from === 'detail' ? 'list' : from);

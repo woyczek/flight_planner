@@ -41,9 +41,12 @@
     out.append(l);
   };
   const F = ['fichier', 'fichiers'];
-  ck('plural fr : 0 et 1 au singulier, 2 et plus au pluriel', [0, 1, 2, 10].map(n => plural('fr', n, F)).join() === 'fichier,fichier,fichiers,fichiers');
-  ck('plural en, de, es : 1 seul au singulier (0 : pluriel)', ['en', 'de', 'es'].every(l => [0, 1, 2].map(n => plural(l, n, F)).join() === 'fichiers,fichier,fichiers'));
-  ck('plural : un nombre qui n\'est pas fini, ou absent, donne le pluriel ; une chaîne numérique compte', [NaN, Infinity, undefined, 'x'].every(n => plural('fr', n, F) === 'fichiers') && plural('fr', '1', F) === 'fichier');
+  ck('plural fr : 0 et 1 au singulier, 2 et plus au pluriel', [0, 1, 2, 10].map(n => plural('fr', n, F)).join() ===
+    'fichier,fichier,fichiers,fichiers');
+  ck('plural en, de, es : 1 seul au singulier (0 : pluriel)', ['en', 'de', 'es'].every(l => [0, 1, 2].map(n => plural(l, n, F)).join() ===
+    'fichiers,fichier,fichiers'));
+  ck('plural : un nombre qui n\'est pas fini, ou absent, donne le pluriel ; une chaîne numérique compte', [NaN, Infinity, undefined, 'x']
+    .every(n => plural('fr', n, F) === 'fichiers') && plural('fr', '1', F) === 'fichier');
   const T = '{n} fichier(s) manquant(s)';
   ck('agree fr : 0 et 1 sans marque, 2 avec', agree(T, {
     n: 0
@@ -72,16 +75,18 @@
   }, 'de') === '{n} Kategorie' && agree('{n} Luftfahrzeug(e)', {
     n: 5
   }, 'de') === '{n} Luftfahrzeuge');
-  ck('agree : une marque se lie au nombre qui la précède (le deuxième nombre n\'emporte pas le premier)', agree('{a} jeu(x) sur {b} fichier(s)', {
-    a: 1,
-    b: 2
-  }, 'fr') === '{a} jeu sur {b} fichiers' && agree('{b} fichier(s) pour {a} jeu(x)', {
+  ck('agree : une marque se lie au nombre qui la précède (le deuxième nombre n\'emporte pas le premier)', agree(
+    '{a} jeu(x) sur {b} fichier(s)', {
+      a: 1,
+      b: 2
+    }, 'fr') === '{a} jeu sur {b} fichiers' && agree('{b} fichier(s) pour {a} jeu(x)', {
     a: 3,
     b: 1
   }, 'fr') === '{b} fichier pour {a} jeux');
-  ck('agree : sans nombre devant (ou une variable qui n\'est pas un nombre), la marque est au pluriel', agree('fichier(s)', {}, 'fr') === 'fichiers' && agree('{z} fichier(s)', {
-    z: 'abc'
-  }, 'fr') === '{z} fichiers');
+  ck('agree : sans nombre devant (ou une variable qui n\'est pas un nombre), la marque est au pluriel', agree('fichier(s)', {}, 'fr') ===
+    'fichiers' && agree('{z} fichier(s)', {
+      z: 'abc'
+    }, 'fr') === '{z} fichiers');
   ck('agree : les {clé} restent à remplacer, le texte autour est intact, un texte vide ou absent donne ""', agree('« {n} »', {
     n: 1
   }, 'fr') === '« {n} »' && agree('', {}, 'fr') === '' && agree(null, {}, 'fr') === '');

@@ -37,15 +37,20 @@
 
   // (1) les paliers d'avant, écrits en dur
   const corpus = [0, 0.05, 0.0501, 0.1, 0.1001, 0.2, 0.2001, 0.5, 0.5001, NaN, -1, Infinity, null, 'texte', '0.05', undefined, {}, -0];
-  const before = ['excellent', 'excellent', 'parfait', 'parfait', 'réussi', 'réussi', 'partiel', 'partiel', '', '', '', '', '', '', '', '', '', 'excellent'];
+  const before = ['excellent', 'excellent', 'parfait', 'parfait', 'réussi', 'réussi', 'partiel', 'partiel', '', '', '', '', '', '', '', '',
+    '', 'excellent'
+  ];
   corpus.forEach((d, i) => {
     const label = typeof d === 'number' && Object.is(d, -0) ? '-0' : typeof d === 'object' && d ? '{}' : String(d);
     ck(`tierOf(${label}) = '${before[i]}' (cadre)`, P.tierOf(d) === before[i], `obtenu '${P.tierOf(d)}'`);
     ck(`tierOf(${label}) réexporté par drawers.js : le même palier`, D.tierOf(d) === before[i], `obtenu '${D.tierOf(d)}'`);
   });
-  ck('PRECISION, TIERS : les mêmes objets que ceux que drawers.js réexporte', D.PRECISION === P.PRECISION && D.TIERS === P.TIERS && D.AD_NM === P.AD_NM && D.FIX_PERIOD_SEC === P.FIX_PERIOD_SEC);
+  ck('PRECISION, TIERS : les mêmes objets que ceux que drawers.js réexporte', D.PRECISION === P.PRECISION && D.TIERS === P.TIERS && D
+    .AD_NM === P.AD_NM && D.FIX_PERIOD_SEC === P.FIX_PERIOD_SEC);
   // V3 Frame, 19/11 : partagés par tous les modules qui les importent, ils sont figés — un module ne peut changer ni un palier ni un mot
-  ck('PRECISION, TIERS et TIER_TEXT sont figés (chaque palier, chaque liste de mots, et l\'objet des mots)', Object.isFrozen(P.PRECISION) && P.PRECISION.every(Object.isFrozen) && Object.isFrozen(P.TIERS) && Object.isFrozen(P.TIER_TEXT) && Object.values(P.TIER_TEXT).every(Object.isFrozen));
+  ck('PRECISION, TIERS et TIER_TEXT sont figés (chaque palier, chaque liste de mots, et l\'objet des mots)', Object.isFrozen(P.PRECISION) &&
+    P.PRECISION.every(Object.isFrozen) && Object.isFrozen(P.TIERS) && Object.isFrozen(P.TIER_TEXT) && Object.values(P.TIER_TEXT).every(
+      Object.isFrozen));
   eq('PRECISION : quatre paliers, bornes comprises', P.PRECISION.map(x => [x.tier, x.nm]), [
     ['excellent', 0.05],
     ['parfait', 0.1],
@@ -56,7 +61,8 @@
   eq('TIERS : les quatre identifiants, du meilleur au plus large', P.TIERS, ['excellent', 'parfait', 'réussi', 'partiel']);
   eq('AD_NM et FIX_PERIOD_SEC : 1 et 5', [P.AD_NM, P.FIX_PERIOD_SEC], [1, 5]);
   eq('TIER_TEXT : les quatre mots en quatre langues', Object.keys(P.TIER_TEXT), P.TIERS);
-  ck('TIER_TEXT : quatre textes par palier', P.TIERS.every(t => P.TIER_TEXT[t].length === 4 && P.TIER_TEXT[t].every(x => typeof x === 'string' && x)));
+  ck('TIER_TEXT : quatre textes par palier', P.TIERS.every(t => P.TIER_TEXT[t].length === 4 && P.TIER_TEXT[t].every(x => typeof x ===
+    'string' && x)));
   eq('TIER_TEXT : les mots français et anglais', P.TIERS.map(t => [P.TIER_TEXT[t][0], P.TIER_TEXT[t][1]]), [
     ['excellent', 'excellent'],
     ['parfait', 'perfect'],
@@ -305,8 +311,11 @@
     ['D', 'réussi'],
     ['D', 'parfait']
   ]);
-  eq('precisionLandings : `at` en millisecondes, pour le constat comme pour la preuve', got.map(x => x.at), [Date.parse(iso(20)), Date.parse(iso(30)), Date.UTC(2026, 10, 19, 10, 40)]);
-  ck('precisionLandings : les distances sont recalculées, jamais celles qui sont écrites', close(got[0].distNm, 0.04) && close(got[1].distNm, 0.15) && close(got[2].distNm, 0.08), JSON.stringify(got));
+  eq('precisionLandings : `at` en millisecondes, pour le constat comme pour la preuve', got.map(x => x.at), [Date.parse(iso(20)), Date
+    .parse(iso(30)), Date.UTC(2026, 10, 19, 10, 40)
+  ]);
+  ck('precisionLandings : les distances sont recalculées, jamais celles qui sont écrites', close(got[0].distNm, 0.04) && close(got[1]
+    .distNm, 0.15) && close(got[2].distNm, 0.08), JSON.stringify(got));
   const sorted = P.precisionLandings(drawers, {
     ...book,
     drawer_B: {
@@ -332,39 +341,37 @@
       state: 'closed'
     }
   }), []);
-  eq('precisionLandings : une preuve « overflight » : omise (seul le posé compte)', P.precisionLandings(drawers, book).filter(x => x.at === Date.parse(iso(25))), []);
+  eq('precisionLandings : une preuve « overflight » : omise (seul le posé compte)', P.precisionLandings(drawers, book).filter(x => x.at ===
+    Date.parse(iso(25))), []);
   eq('precisionLandings : une mission sans tiroir', P.precisionLandings([], book), []);
   eq('precisionLandings : un carnet vide', P.precisionLandings(drawers, {}), []);
-  eq('precisionLandings : une preuve au-delà des règles de la suite, ou loin de la règle de son rang : omise', P.precisionLandings([drawers[2]], {
+  eq('precisionLandings : une preuve au-delà des règles de la suite, ou loin de la règle de son rang : omise', P.precisionLandings([drawers[
+    2]], {
     drawer_D: {
       state: 'open',
       at: iso(41),
       how: 'sequence',
       steps: [{
-          how: 'landing',
-          from: at49(2),
-          to: at49(0.01),
-          at: iso(30)
-        },
-        {
-          how: 'landing',
-          from: at49(2),
-          to: at49(0.01),
-          at: iso(31)
-        },
-        {
-          how: 'landing',
-          from: at49(2),
-          to: at49(0.01),
-          at: iso(32)
-        },
-        {
-          how: 'landing',
-          from: at49(2),
-          to: at49(0.01),
-          at: iso(33)
-        }
-      ]
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.01),
+        at: iso(30)
+      }, {
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.01),
+        at: iso(31)
+      }, {
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.01),
+        at: iso(32)
+      }, {
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.01),
+        at: iso(33)
+      }]
     }
   }).map(x => x.at), [Date.parse(iso(31))]);
   eq('precisionLandings : un constat de tiroir ne compte que pour une clé « atterrissage »', P.precisionLandings([{
@@ -393,7 +400,7 @@
   const many = Array.from({
     length: 30
   }, (_, i) => ({
-    id: 'BCDEFGHIJKLM'[i % 12],
+    id: 'BCDEFGHIJKLM' [i % 12],
     key: key(rule())
   }));
   const bookMany = Object.fromEntries([...'BCDEFGHIJKLM'].map(l => [`drawer_${l}`, {
@@ -436,13 +443,16 @@
     id: 'B',
     key: key(rule())
   }));
-  noThrow('precisionLandings : une liste de 200 000 tiroirs : lue en bornes, sans exception', () => ck('  … 1 ligne au plus par tiroir lu', P.precisionLandings(huge, bookMany).length <= 12));
+  noThrow('precisionLandings : une liste de 200 000 tiroirs : lue en bornes, sans exception', () => ck('  … 1 ligne au plus par tiroir lu',
+    P.precisionLandings(huge, bookMany).length <= 12));
   // hostile
   const hostile = [
     ['null', null, null],
     ['texte', 'texte', 'texte'],
     ['nombres', 12, 7],
-    ['tableaux', [], []],
+    ['tableaux', [],
+      []
+    ],
     ['tiroirs non tableau', {
       length: 5
     }, book],
@@ -530,7 +540,8 @@
     }
     ck(`precisionLandings : entrée hostile (${name}) : un tableau, sans exception`, !err && Array.isArray(r), err);
   }
-  eq('precisionLandings : un tiroir __proto__ ou un carnet dont le prototype porte les clés : rien', [P.precisionLandings(hostile[6][1], hostile[6][2]), P.precisionLandings(hostile[7][1], hostile[7][2])], [
+  eq('precisionLandings : un tiroir __proto__ ou un carnet dont le prototype porte les clés : rien', [P.precisionLandings(hostile[6][1],
+    hostile[6][2]), P.precisionLandings(hostile[7][1], hostile[7][2])], [
     [],
     []
   ]);
@@ -539,9 +550,12 @@
       throw new Error('piège');
     }
   };
-  noThrow('precisionLandings : un carnet à accesseur qui lève : aucune exception', () => eq('  … et rien', P.precisionLandings(drawers, trapBook), []));
+  noThrow('precisionLandings : un carnet à accesseur qui lève : aucune exception', () => eq('  … et rien', P.precisionLandings(drawers,
+    trapBook), []));
   // un tiroir illisible n'empêche pas les autres
-  eq('precisionLandings : un tiroir illisible n\'empêche pas les autres', P.precisionLandings([null, ...drawers], book).map(x => x.id), ['B', 'D', 'D']);
+  eq('precisionLandings : un tiroir illisible n\'empêche pas les autres', P.precisionLandings([null, ...drawers], book).map(x => x.id), [
+    'B', 'D', 'D'
+  ]);
   noThrow('precisionLandings : sans argument', () => P.precisionLandings());
 
   // (4) le carnet écrit par le VRAI écrivain de Missions (D.withOpen), relu par precisionLandings
@@ -596,12 +610,15 @@
       id: 'D',
       key: seqKey
     }], doc);
-    ck('withOpen : le carnet de Missions est écrit (un constat et une suite)', !!doc && !!doc.drawer_B && !!doc.drawer_D && doc.drawer_D.steps.length === 2, JSON.stringify(doc).slice(0, 200));
+    ck('withOpen : le carnet de Missions est écrit (un constat et une suite)', !!doc && !!doc.drawer_B && !!doc.drawer_D && doc.drawer_D
+      .steps.length === 2, JSON.stringify(doc).slice(0, 200));
     eq('withOpen puis precisionLandings : une ligne par posé, le palier recalculé', w.map(x => [x.id, x.tier]), [
       ['B', 'excellent'],
       ['D', 'réussi']
     ]);
-    ck('withOpen puis precisionLandings : `at` lisible (millisecondes du fait) et distance recalculée', w.length === 2 && w[0].at === Date.UTC(2026, 10, 19, 10, 12) && w[1].at === Date.UTC(2026, 10, 19, 10, 30) && close(w[0].distNm, 0.03) && close(w[1].distNm, 0.15), JSON.stringify(w));
+    ck('withOpen puis precisionLandings : `at` lisible (millisecondes du fait) et distance recalculée', w.length === 2 && w[0].at === Date
+      .UTC(2026, 10, 19, 10, 12) && w[1].at === Date.UTC(2026, 10, 19, 10, 30) && close(w[0].distNm, 0.03) && close(w[1].distNm, 0.15),
+      JSON.stringify(w));
   }
 
   window.__precisionBench.done = true;

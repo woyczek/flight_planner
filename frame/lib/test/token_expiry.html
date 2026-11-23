@@ -177,7 +177,9 @@
   });
   ck('son jeton sous 5 jours : « Votre jeton expire le 2026-11-16 (dans 4 jours) … », niveau soon, mène à la carte Accès, phrase brève « le jeton expire dans 4 jours »',
     own12.length === 1 && /^Votre jeton expire le 2026-11-16 \(dans 4 jours\)/.test(texts(own12[0])) && own12[0].level === 'soon' &&
-    own12[0].go === 'card:access' && texts({ text: own12[0].short }) === 'le jeton expire dans 4 jours', own12[0] && texts(own12[0]));
+    own12[0].go === 'card:access' && texts({
+      text: own12[0].short
+    }) === 'le jeton expire dans 4 jours', own12[0] && texts(own12[0]));
   const tomorrow = lines({
     own: {
       expiresAt: '2026-11-13'
@@ -185,7 +187,9 @@
     pilots: null
   });
   ck('la veille : niveau urgent (rouge), phrase brève « le jeton expire demain » ; à 12 jours : rien (SOG-0362)',
-    tomorrow.length === 1 && tomorrow[0].level === 'urgent' && texts({ text: tomorrow[0].short }) === 'le jeton expire demain' && lines({
+    tomorrow.length === 1 && tomorrow[0].level === 'urgent' && texts({
+      text: tomorrow[0].short
+    }) === 'le jeton expire demain' && lines({
       own: {
         expiresAt: '2026-11-24'
       }
@@ -197,7 +201,9 @@
     pilots: null
   });
   ck('son jeton expiré : « Votre jeton a expiré le … » (niveau expired) ; lointain ou inconnu : rien',
-    /^Votre jeton a expiré le 2026-11-01 :/.test(texts(gone[0])) && gone[0].level === 'expired' && texts({ text: gone[0].short }) === 'jeton expiré : le renouveler dans Accès' && lines({
+    /^Votre jeton a expiré le 2026-11-01 :/.test(texts(gone[0])) && gone[0].level === 'expired' && texts({
+      text: gone[0].short
+    }) === 'jeton expiré : le renouveler dans Accès' && lines({
       own: {
         expiresAt: '2027-06-30'
       }

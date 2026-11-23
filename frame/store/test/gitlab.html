@@ -572,9 +572,11 @@
         G.st.perPage = 100;
         const h = await T.head(),
           bt = await T.tree(h);
-        ck('tree : 10 444 fichiers lus en entier, page par page (rien de tronqué, DEFA présente)', Object.keys(bt).length === 10444 && !!bt['airline/defa/settings.json'] && !!bt['airline/defa/fleet.json'] && !!bt['airline/index.json'],
+        ck('tree : 10 444 fichiers lus en entier, page par page (rien de tronqué, DEFA présente)', Object.keys(bt).length === 10444 && !
+          !bt['airline/defa/settings.json'] && !!bt['airline/defa/fleet.json'] && !!bt['airline/index.json'],
           Object.keys(bt).length);
-        ck('tree : ce que la lecture a rendu est dit (pages, entrées, fichiers), pour le diagnostic', T.lastTree?.pages === 105 && T.lastTree?.blobs === 10444 && T.lastTree?.entries === 10445, JSON.stringify(T.lastTree));
+        ck('tree : ce que la lecture a rendu est dit (pages, entrées, fichiers), pour le diagnostic', T.lastTree?.pages === 105 && T
+          .lastTree?.blobs === 10444 && T.lastTree?.entries === 10445, JSON.stringify(T.lastTree));
         G.st.perPage = 2;
       }
       // SOG-0337 (« GitLab 429 sur le téléphone », 14 nov. 2026) : un 429 est une demande d'attendre, pas un échec ni un recommencement : la lecture de l'arbre ATTEND (Retry-After, sinon 60 s doublé),
@@ -601,10 +603,13 @@
           prev = {
             ...L.pacing
           };
-        L.pacing.gapMs = 600; // le banc l'avait coupée pour ses arbres entiers (la garde est partagée par les transports du même dépôt et du même jeton)
+        L.pacing.gapMs =
+          600; // le banc l'avait coupée pour ses arbres entiers (la garde est partagée par les transports du même dépôt et du même jeton)
         L.pacing.perMin = 80;
-        ck('limite : le transport porte sa garde (cadence, attente, état)', !!L && typeof L.waiting === 'function' && L.pacing.perMin === 80 && L.pacing.gapMs === 600 && L.pacing.retries === 3, JSON.stringify(L?.pacing));
-        L.pacing.windowMs = 50; // les 105 pages du grand arbre sont dans la minute : la fenêtre du banc est courte (la cadence a son propre essai, plus bas)
+        ck('limite : le transport porte sa garde (cadence, attente, état)', !!L && typeof L.waiting === 'function' && L.pacing
+          .perMin === 80 && L.pacing.gapMs === 600 && L.pacing.retries === 3, JSON.stringify(L?.pacing));
+        L.pacing.windowMs =
+          50; // les 105 pages du grand arbre sont dans la minute : la fenêtre du banc est courte (la cadence a son propre essai, plus bas)
         L.pacing.gapMs = 0;
         L.pacing.minWait = 1;
         L.pacing.defWait = 1;
@@ -620,11 +625,19 @@
         await new Promise(r => setTimeout(r, 300));
         const during = L.waiting();
         const bt = await pr;
-        ck('limite : un 429 à la page 4 — l’arbre est lu en entier après l’attente (12 fichiers)', Object.keys(bt).length === 12 && Date.now() - t0 >= 900, `${Object.keys(bt).length} fichiers en ${Date.now() - t0} ms`);
-        ck('limite : l’attente est dite pendant qu’elle dure (waiting : secondes, statut 429) et finie ensuite', !!during && during.secs === 1 && during.status === 429 && L.waiting() === null && waits.includes(1) && waits.at(-1) === 0, JSON.stringify([during, waits]));
-        ck('limite : la lecture REPREND — les pages 1 à 3 lues une fois, la page 4 deux fois, rien ne recommence de zéro', [1, 2, 3].every(n => G.st.pageHits[n] === 1) && G.st.pageHits[4] === 2 && G.st.pageHits[7] === 1, JSON.stringify(G.st.pageHits));
-        ck('limite : ce qui a été lu est gardé pour le diagnostic (attentes, secondes, statut, Retry-After lisible)', L.info.waits === 1 && L.info.waitedS === 1 && L.info.last?.status === 429 && L.info.last?.retryAfterS === 1 && L.info.last?.source === 'retry-after', JSON.stringify(L.info));
-        ck('limite : une attente seule n’est pas une limite qui DURE (SOG-0360) — streak 1 pendant l’attente, 0 dès qu’une réponse réussit', during?.streak === 1 && L.info.streak === 0, JSON.stringify([during?.streak, L.info.streak]));
+        ck('limite : un 429 à la page 4 — l’arbre est lu en entier après l’attente (12 fichiers)', Object.keys(bt).length === 12 && Date
+          .now() - t0 >= 900, `${Object.keys(bt).length} fichiers en ${Date.now() - t0} ms`);
+        ck('limite : l’attente est dite pendant qu’elle dure (waiting : secondes, statut 429) et finie ensuite', !!during && during
+          .secs === 1 && during.status === 429 && L.waiting() === null && waits.includes(1) && waits.at(-1) === 0, JSON.stringify([
+            during, waits
+          ]));
+        ck('limite : la lecture REPREND — les pages 1 à 3 lues une fois, la page 4 deux fois, rien ne recommence de zéro', [1, 2, 3]
+          .every(n => G.st.pageHits[n] === 1) && G.st.pageHits[4] === 2 && G.st.pageHits[7] === 1, JSON.stringify(G.st.pageHits));
+        ck('limite : ce qui a été lu est gardé pour le diagnostic (attentes, secondes, statut, Retry-After lisible)', L.info.waits ===
+          1 && L.info.waitedS === 1 && L.info.last?.status === 429 && L.info.last?.retryAfterS === 1 && L.info.last?.source ===
+          'retry-after', JSON.stringify(L.info));
+        ck('limite : une attente seule n’est pas une limite qui DURE (SOG-0360) — streak 1 pendant l’attente, 0 dès qu’une réponse réussit',
+          during?.streak === 1 && L.info.streak === 0, JSON.stringify([during?.streak, L.info.streak]));
         // (b) Retry-After illisible (CORS) : 60 s par défaut, doublé (ici 1 s, 2 s)
         fresh();
         L.info.waits = 0;
@@ -633,7 +646,8 @@
         G.st.limitHits = 2;
         h = await T.head();
         const b2 = await T.tree(h);
-        ck('limite : sans Retry-After lisible, l’attente est la valeur par défaut DOUBLÉE à chaque fois (1 s puis 2 s)', Object.keys(b2).length === 12 && L.info.waits === 2 && L.info.waitedS === 3 && L.info.last?.retryAfterS === null, JSON.stringify(L.info));
+        ck('limite : sans Retry-After lisible, l’attente est la valeur par défaut DOUBLÉE à chaque fois (1 s puis 2 s)', Object.keys(b2)
+          .length === 12 && L.info.waits === 2 && L.info.waitedS === 3 && L.info.last?.retryAfterS === null, JSON.stringify(L.info));
         // (c) la limite ne passe pas : l’erreur est levée après les reprises, l’arbre lu jusque-là est GARDÉ ; la lecture suivante reprend à la page où elle s’était arrêtée
         fresh();
         L.pacing.retries = 1;
@@ -647,13 +661,17 @@
         } catch (e) {
           err = e;
         }
-        ck('limite : une limite qui dure lève l’erreur après les reprises (rateLimited, statut 429, message GitLab 429)', err?.rateLimited === true && err.status === 429 && /^GitLab 429:/.test(err.message), `${err?.message} ${err?.rateLimited}`);
+        ck('limite : une limite qui dure lève l’erreur après les reprises (rateLimited, statut 429, message GitLab 429)', err
+          ?.rateLimited === true && err.status === 429 && /^GitLab 429:/.test(err.message), `${err?.message} ${err?.rateLimited}`);
         G.st.limitHits = 0;
         const before = {
           ...G.st.pageHits
         };
         const b3 = await T.tree(h);
-        ck('limite : la lecture suivante REPREND à la page 4 (pages 1 à 3 non redemandées), l’arbre est entier', Object.keys(b3).length === 12 && [1, 2, 3].every(n => G.st.pageHits[n] === before[n]) && T.lastTree?.resumedAt === 3, JSON.stringify([G.st.pageHits, T.lastTree]));
+        ck('limite : la lecture suivante REPREND à la page 4 (pages 1 à 3 non redemandées), l’arbre est entier', Object.keys(b3)
+          .length === 12 && [1, 2, 3].every(n => G.st.pageHits[n] === before[n]) && T.lastTree?.resumedAt === 3, JSON.stringify([G.st
+            .pageHits, T.lastTree
+          ]));
         // (d) le 429 d’une réponse sans en-tête CORS : le navigateur ne dit que « réseau » — en pleine lecture, traité de même
         fresh();
         L.pacing.retries = 3;
@@ -661,7 +679,8 @@
         G.st.dropAt = 3;
         h = await T.head();
         const b4 = await T.tree(h);
-        ck('limite : une coupure en pleine lecture de l’arbre (429 sans en-tête CORS) est attendue puis reprise, pas un échec muet', Object.keys(b4).length === 12 && L.info.waits === 1 && L.info.last?.kind === 'unreadable', JSON.stringify(L.info));
+        ck('limite : une coupure en pleine lecture de l’arbre (429 sans en-tête CORS) est attendue puis reprise, pas un échec muet',
+          Object.keys(b4).length === 12 && L.info.waits === 1 && L.info.last?.kind === 'unreadable', JSON.stringify(L.info));
         // (e) un refus qui n’est pas une limite (401, 404) n’est jamais attendu
         L.info.waits = 0;
         const bad = FD.gitlab({
@@ -675,21 +694,24 @@
         } catch (e) {
           e401 = e;
         }
-        ck('limite : un 401 n’est pas une limite (levé tout de suite, aucune attente)', e401?.status === 401 && !e401.rateLimited && bad.limit.info.waits === 0, e401?.message);
+        ck('limite : un 401 n’est pas une limite (levé tout de suite, aucune attente)', e401?.status === 401 && !e401.rateLimited && bad
+          .limit.info.waits === 0, e401?.message);
         // (f) la cadence : une pause entre deux pages (600 ms par défaut : 80 pages à la minute au plus)
         fresh();
         L.pacing.gapMs = 150;
         h = await T.head();
         t0 = Date.now();
         await T.tree(h);
-        ck('cadence : une pause entre deux pages de l’arbre (150 ms demandées : 7 pages, six pauses)', Date.now() - t0 >= 800, `${Date.now() - t0} ms`);
+        ck('cadence : une pause entre deux pages de l’arbre (150 ms demandées : 7 pages, six pauses)', Date.now() - t0 >= 800,
+          `${Date.now() - t0} ms`);
         // (g) la cadence par fenêtre : à `perMin` demandes dans la fenêtre, la suivante attend son tour (jamais perdue) — fenêtre de 500 ms pour le banc
         const g = FD.git.guard(async () => 'ok');
         g.pacing.perMin = 3;
         g.pacing.windowMs = 500;
         t0 = Date.now();
         for (let i = 0; i < 4; i++) await g.call('x');
-        ck('cadence : la quatrième demande dans la fenêtre attend sa fin (au moins 450 ms)', Date.now() - t0 >= 450 && Date.now() - t0 < 2000, `${Date.now() - t0} ms`);
+        ck('cadence : la quatrième demande dans la fenêtre attend sa fin (au moins 450 ms)', Date.now() - t0 >= 450 && Date.now() - t0 <
+          2000, `${Date.now() - t0} ms`);
         L.onLimit = null;
         // SOG-0349 : la lecture d'un fichier que l'on attend est PATIENTE (une limite la fait attendre, dit, jamais « absent ») et ABANDONNABLE (la requête abandonnée n'est ni attendue ni comptée)
         {
@@ -705,14 +727,17 @@
           } catch (e) {
             e1 = e;
           }
-          ck('lecture : sans patience, une limite qui dure après ses reprises lève l’erreur (comme l’arbre)', e1?.rateLimited === true, e1?.message);
+          ck('lecture : sans patience, une limite qui dure après ses reprises lève l’erreur (comme l’arbre)', e1?.rateLimited === true,
+            e1?.message);
           G.st.blobLimit = 3;
           const t0 = Date.now(),
             txt = await T.read('d/00.json', sha, {
               patient: true
             });
-          ck('lecture patiente : la même limite est attendue jusqu’au bout (trois attentes) et le fichier est rendu — jamais « absent »', typeof txt === 'string' && Date.now() - t0 >= 2500 && L.info.waits >= 3, `${Date.now() - t0} ms`);
-          ck('lecture patiente : trois attentes de suite sans réponse réussie entre elles — la limite DURE (streak 3) jusqu’à la première réponse réussie, qui la remet à 0 (SOG-0360)', L.info.streak === 0 && L.info.waits >= 3, JSON.stringify(L.info));
+          ck('lecture patiente : la même limite est attendue jusqu’au bout (trois attentes) et le fichier est rendu — jamais « absent »',
+            typeof txt === 'string' && Date.now() - t0 >= 2500 && L.info.waits >= 3, `${Date.now() - t0} ms`);
+          ck('lecture patiente : trois attentes de suite sans réponse réussie entre elles — la limite DURE (streak 3) jusqu’à la première réponse réussie, qui la remet à 0 (SOG-0360)',
+            L.info.streak === 0 && L.info.waits >= 3, JSON.stringify(L.info));
           // abandonnée pendant l'attente : la requête s'arrête, l'attente aussi
           G.st.blobLimit = 50;
           const ctl = new AbortController(),
@@ -725,7 +750,8 @@
           const during = L.waiting();
           ctl.abort();
           const e2 = await p1;
-          ck('lecture dont le demandeur se retire pendant la pause d’une limite : la demande est annulée tout de suite (aborted) ; la pause, elle, est celle de l’hôte : elle continue pour tous', !!during && e2?.aborted === true && Date.now() - t1 < 1800, JSON.stringify([!!during, e2?.message, Date.now() - t1]));
+          ck('lecture dont le demandeur se retire pendant la pause d’une limite : la demande est annulée tout de suite (aborted) ; la pause, elle, est celle de l’hôte : elle continue pour tous',
+            !!during && e2?.aborted === true && Date.now() - t1 < 1800, JSON.stringify([!!during, e2?.message, Date.now() - t1]));
           G.st.blobLimit = 0;
           // abandonnée dans la file de la cadence : elle ne prend ni sa place ni une part de la cadence
           const g = FD.git.guard(async () => 'ok');
@@ -741,7 +767,8 @@
           const e3 = await q2,
             t2 = Date.now();
           await g.call('c');
-          ck('file de la cadence : une requête abandonnée n’attend plus et ne compte pas — la suivante part à la fin de la fenêtre, pas une fenêtre plus tard', e3?.aborted === true && Date.now() - t2 < 800, JSON.stringify([e3?.message, Date.now() - t2]));
+          ck('file de la cadence : une requête abandonnée n’attend plus et ne compte pas — la suivante part à la fin de la fenêtre, pas une fenêtre plus tard',
+            e3?.aborted === true && Date.now() - t2 < 800, JSON.stringify([e3?.message, Date.now() - t2]));
           // priorité : à cadence pleine, la priorité la plus haute d'abord, et à égalité la DERNIÈRE demandée (l'écran en vue avant l'arbre de fond)
           const g2 = FD.git.guard(async url => url);
           g2.pacing.perMin = 1;
@@ -760,7 +787,8 @@
             priority: 3
           })].map(p => p.then(u => order.push(u)));
           await Promise.all(ps);
-          ck('file à priorité : la tête d’abord, puis les lectures de fichiers (la dernière demandée d’abord), l’arbre de fond après', JSON.stringify(order) === JSON.stringify(['head', 'read2', 'read1', 'tree2', 'tree1']), JSON.stringify(order));
+          ck('file à priorité : la tête d’abord, puis les lectures de fichiers (la dernière demandée d’abord), l’arbre de fond après',
+            JSON.stringify(order) === JSON.stringify(['head', 'read2', 'read1', 'tree2', 'tree1']), JSON.stringify(order));
           L.pacing.retries = 3;
         }
         // Sécurisation (classe de défaut) : la lecture d'un fichier est PLAFONNÉE en octets — un faux dépôt qui sert 300 Mo : la lecture s'arrête au plafond, le flux est annulé, la mémoire ne suit pas
@@ -788,28 +816,35 @@
           }, {
             total: 300 * MiB
           });
-          ck('plafond : 300 Mo servis en flux, plafond de 2 Mo — la lecture s’arrête (tooBig), le flux est annulé, au plus quelques Mo lus', r.err?.tooBig === true && G.st.cancelled && G.st.served <= 5 * MiB, JSON.stringify([r.err?.message, G.st.cancelled, G.st.served / MiB]));
+          ck('plafond : 300 Mo servis en flux, plafond de 2 Mo — la lecture s’arrête (tooBig), le flux est annulé, au plus quelques Mo lus',
+            r.err?.tooBig === true && G.st.cancelled && G.st.served <= 5 * MiB, JSON.stringify([r.err?.message, G.st.cancelled, G.st
+              .served / MiB
+            ]));
           r = await tryRead({
             max: 2 * MiB
           }, {
             total: 300 * MiB,
             header: true
           });
-          ck('plafond : la taille annoncée (Content-Length) au-delà du plafond refuse sans rien lire', r.err?.tooBig === true && G.st.served <= 2 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : la taille annoncée (Content-Length) au-delà du plafond refuse sans rien lire', r.err?.tooBig === true && G.st
+            .served <= 2 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
           r = await tryRead({}, {
             total: 70 * MiB
           });
-          ck('plafond : sans plafond donné, celui du cadre (32 Mio) — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 34 * MiB && FD.git.MAX_READ === 32 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : sans plafond donné, celui du cadre (32 Mio) — jamais une lecture sans borne', r.err?.tooBig === true && G.st
+            .served <= 34 * MiB && FD.git.MAX_READ === 32 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
           r = await tryRead({
             max: 500 * MiB
           }, {
             total: 70 * MiB
           });
-          ck('plafond : un module ne peut que l’abaisser — demander 500 Mio n’ouvre rien au-dessus de 32', r.err?.tooBig === true && G.st.served <= 34 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : un module ne peut que l’abaisser — demander 500 Mio n’ouvre rien au-dessus de 32', r.err?.tooBig === true && G
+            .st.served <= 34 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
           r = await tryRead({}, {
             total: 15 * MiB
           });
-          ck('plafond : le plus gros fichier légitime d’aujourd’hui (14,5 Mo : les espaces d’une zone) passe avec marge', r.err === null && r.txt.length === 15 * MiB, JSON.stringify([r.err?.message, r.txt?.length]));
+          ck('plafond : le plus gros fichier légitime d’aujourd’hui (14,5 Mo : les espaces d’une zone) passe avec marge', r.err ===
+            null && r.txt.length === 15 * MiB, JSON.stringify([r.err?.message, r.txt?.length]));
           let rb = null;
           G.st.bigBlob = {
             total: 300 * MiB
@@ -822,13 +857,16 @@
             rb = e;
           }
           G.st.bigBlob = null;
-          ck('plafond : les octets d’un fichier (logo) sont plafonnés de même', rb?.tooBig === true && G.st.served <= 4 * MiB, JSON.stringify([rb?.message, G.st.served / MiB]));
+          ck('plafond : les octets d’un fichier (logo) sont plafonnés de même', rb?.tooBig === true && G.st.served <= 4 * MiB, JSON
+            .stringify([rb?.message, G.st.served / MiB]));
           r = await tryRead({
             max: 2 * MiB
           }, {
             total: MiB
           });
-          ck('plafond : un fichier sous son plafond est lu en entier', r.err === null && r.txt.length === MiB, JSON.stringify([r.err?.message, r.txt?.length]));
+          ck('plafond : un fichier sous son plafond est lu en entier', r.err === null && r.txt.length === MiB, JSON.stringify([r.err
+            ?.message, r.txt?.length
+          ]));
         }
       }
       // SOG-0337, T2 : avec un arbre déjà connu, seulement ce qui a changé — UNE comparaison des deux têtes, puis le SEUL dossier de chaque fichier ajouté ou modifié, sans récursion ; l'arbre gardé reste
@@ -856,7 +894,8 @@
         G.st.perPage = 100;
         const h0 = await T.head(),
           t0 = await T.tree(h0);
-        ck('arbre incrémental : l’arbre de départ est lu en entier (37 fichiers)', Object.keys(t0).length === 37 && T.lastTree?.incremental !== true, JSON.stringify(T.lastTree));
+        ck('arbre incrémental : l’arbre de départ est lu en entier (37 fichiers)', Object.keys(t0).length === 37 && T.lastTree
+          ?.incremental !== true, JSON.stringify(T.lastTree));
         // modifié, ajouté, supprimé, renommé (d vers e)
         G.st.files['d/03.json'] = {
           sha: 'b-new-03',
@@ -876,9 +915,14 @@
           tree: t0
         });
         const used = reads(mark);
-        ck('arbre incrémental : même arbre qu’une lecture entière (modifié, ajouté, supprimé, renommé)', same(t1, expected()), JSON.stringify([Object.keys(t1).length, Object.keys(expected()).length]));
-        ck('arbre incrémental : une comparaison puis les deux dossiers touchés (d, e) : trois requêtes, aucune lecture récursive', used.length === 3 && /\/repository\/compare\?from=/.test(used[0]) && used.slice(1).every(u => /\/repository\/tree\?/.test(u) && !/recursive=true/.test(u)), JSON.stringify(used));
-        ck('arbre incrémental : ce qui a été fait est dit pour le diagnostic (incrémental, fichiers changés, dossiers, requêtes)', T.lastTree?.incremental === true && T.lastTree.changed === 4 + 0 && T.lastTree.dirs === 2 && T.lastTree.requests === 3, JSON.stringify(T.lastTree));
+        ck('arbre incrémental : même arbre qu’une lecture entière (modifié, ajouté, supprimé, renommé)', same(t1, expected()), JSON
+          .stringify([Object.keys(t1).length, Object.keys(expected()).length]));
+        ck('arbre incrémental : une comparaison puis les deux dossiers touchés (d, e) : trois requêtes, aucune lecture récursive', used
+          .length === 3 && /\/repository\/compare\?from=/.test(used[0]) && used.slice(1).every(u => /\/repository\/tree\?/.test(u) &&
+            !/recursive=true/.test(u)), JSON.stringify(used));
+        ck('arbre incrémental : ce qui a été fait est dit pour le diagnostic (incrémental, fichiers changés, dossiers, requêtes)', T
+          .lastTree?.incremental === true && T.lastTree.changed === 4 + 0 && T.lastTree.dirs === 2 && T.lastTree.requests === 3, JSON
+          .stringify(T.lastTree));
         // repli : une tête qui a disparu (la comparaison refuse)
         mark = G.st.calls.length;
         G.st.files['e/9.json'] = {
@@ -890,7 +934,8 @@
             head: 'c-disparue',
             tree: t1
           });
-        ck('repli : l’ancienne tête a disparu — l’arbre entier est lu, et il est juste', same(t2, expected()) && reads(mark).some(u => /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark)));
+        ck('repli : l’ancienne tête a disparu — l’arbre entier est lu, et il est juste', same(t2, expected()) && reads(mark).some(u =>
+          /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark)));
         // repli : la comparaison est tronquée
         G.st.compareTimeout = true;
         mark = G.st.calls.length;
@@ -904,7 +949,8 @@
             tree: t2
           });
         G.st.compareTimeout = false;
-        ck('repli : la comparaison est tronquée (compare_timeout) — l’arbre entier, et il est juste', same(t3, expected()) && reads(mark).some(u => /recursive=true/.test(u)), JSON.stringify(reads(mark)));
+        ck('repli : la comparaison est tronquée (compare_timeout) — l’arbre entier, et il est juste', same(t3, expected()) && reads(
+          mark).some(u => /recursive=true/.test(u)), JSON.stringify(reads(mark)));
         // repli : plus de cent fichiers changés
         G.reset(Object.fromEntries(Array.from({
           length: 130
@@ -922,7 +968,9 @@
           head: hb,
           tree: tb
         });
-        ck('repli : 101 fichiers changés — l’arbre entier (plus de cent : plus simple, pas plus cher), et il est juste', same(tc, expected()) && reads(mark).some(u => /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark).slice(0, 3)));
+        ck('repli : 101 fichiers changés — l’arbre entier (plus de cent : plus simple, pas plus cher), et il est juste', same(tc,
+          expected()) && reads(mark).some(u => /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(
+          mark).slice(0, 3)));
         // repli : un dossier trop grand à lister (1 500 fichiers = quinze pages pour en lire un)
         G.reset(Object.fromEntries(Array.from({
           length: 1500
@@ -940,7 +988,8 @@
           head: hh,
           tree: th
         });
-        ck('repli : un fichier changé dans un dossier de 1 500 entrées (quinze pages à lister) — l’arbre entier cadencé, et il est juste', same(ti, expected()) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark).slice(0, 3)));
+        ck('repli : un fichier changé dans un dossier de 1 500 entrées (quinze pages à lister) — l’arbre entier cadencé, et il est juste',
+          same(ti, expected()) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark).slice(0, 3)));
         // un petit changement dans un grand arbre : deux requêtes, pas quinze (ni cent cinq)
         G.st.files['small/a.json'] = {
           sha: 'b-small',
@@ -952,7 +1001,10 @@
           head: hi,
           tree: ti
         });
-        ck('arbre incrémental : un fichier ajouté dans un arbre de 1 500 — la comparaison et son dossier, deux requêtes', same(tj, expected()) && T.lastTree?.incremental === true && T.lastTree.requests === 2 && reads(mark).length === 2, JSON.stringify([T.lastTree, reads(mark).length]));
+        ck('arbre incrémental : un fichier ajouté dans un arbre de 1 500 — la comparaison et son dossier, deux requêtes', same(tj,
+          expected()) && T.lastTree?.incremental === true && T.lastTree.requests === 2 && reads(mark).length === 2, JSON.stringify([
+          T.lastTree, reads(mark).length
+        ]));
         G.st.perPage = 2;
       }
     } catch (x) {
