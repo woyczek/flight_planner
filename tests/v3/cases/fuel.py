@@ -11051,6 +11051,7 @@ def f315(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.settle()
+        c.js(_F281_NOTES_OFF)  # the floating notices of the fake launcher are not the subject of the capture
         c.js(f"document.querySelector('{B} [data-altnstale]').scrollIntoView({{block: 'center'}})")
         c.wait(400)
         c.shot(f'F315_{c.design}_{w}_{c.lang}_stale.png')

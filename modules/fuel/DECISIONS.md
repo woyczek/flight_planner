@@ -2627,3 +2627,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   proposed alternates, when every one is « ? » for want of a flight date (`wx-notime`), the cause is said once above the list (« Sans date
   de vol, la météo des dégagements n’est pas jugée. »), the rows keep their sign without it (F303 changed on purpose). Case F313, red
   before.
+- **23 Nov 2026 — the proposal of alternates is said stale when the flight changes** (SOG-0566, high priority: the user's recette,
+  « On met à jour l'horaire, mais on ne peut pas redemander un calcul. »). The proposal keeps the fingerprint of its flight (`altnPropSig`:
+  departure, arrival, date and time, the trip's duration, aircraft) and its time; once the flight differs, « Périmé (calculé à {t}) » with
+  « Recalculer » (the gesture that proposes, `altnpropose`) above the list — as for the routes; never a computation by itself. Case F315,
+  red before.

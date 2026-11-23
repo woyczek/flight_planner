@@ -915,6 +915,8 @@ const TX = {
   },
   // SOG-0398 lot 2 : « Proposer un dégagement »
   altnPropose: ['Proposer un dégagement', 'Suggest an alternate', 'Ausweichflugplatz vorschlagen', 'Proponer un alternativo'],
+  // SOG-0566 (l'ergonome) : la proposition d'un vol qui a changé depuis — dite, avec « Recalculer » (rRecompute), comme les routes
+  altnPropOld: ['Périmé (calculé à {t})', 'Stale (computed at {t})', 'Veraltet (berechnet um {t})', 'Caducado (calculado a las {t})'],
   altnPropBusy: ['Recherche des terrains de dégagement…', 'Looking for alternates…', 'Suche nach Ausweichflugplätzen…',
     'Buscando aeródromos alternativos…'
   ],
@@ -5932,6 +5934,8 @@ async function altnProposeRun() {
   const P = S.altnProp = {
       arr,
       key: altnPropKey(),
+      sig: altnPropSig(), // SOG-0566 : le vol de CETTE proposition (date, heure, durée, terrains)
+      at: new Date().toISOString(),
       pending: true,
       msg: null,
       list: [],
@@ -6053,6 +6057,16 @@ function altnDocWrite() {
   }));
   Promise.resolve(S.ctx.data.put(ALTN_DOC, doc)).catch(() => {});
 }
+/** SOG-0566 : l'empreinte du vol qui fait la proposition — départ, arrivée, date et heure du vol, et ce qui fait sa durée (le niveau, la
+ *  distance de la route : jamais le devis lui-même, que le vent lu ensuite fait bouger), aéronef ; changée, la proposition est dite
+ *  périmée. */
+function altnPropSig() {
+  const r = S.flight.route || {};
+  return JSON.stringify([String(r.dep || '').toUpperCase(), String(r.arr || '').toUpperCase(), S.flight.planned_at || '', +S.flight.level
+    ?.ft || 0,
+    Math.round(+r.distanceNm || 0), altnPropKey()
+  ]);
+}
 /** Une proposition dont l'arrivée n'est plus celle du vol est retirée, et la Carte prévenue (liste vide). */
 function altnPropStale() {
   const P = S.altnProp;
@@ -6095,7 +6109,9 @@ function altnPropHtml() {
     was = S.body?.querySelector('[data-altnchk] details[data-altnprop]'),
     open = P.reopen || !was || was.open;
   P.reopen = false;
-  return `<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary>${allNoTime ? `<p class="f-muted" data-altnwxall>${esc(tt(TX.altnPropNoTime))}</p>` : ''}<ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
+  // SOG-0566 : le vol a changé depuis la proposition — dit, avec « Recalculer » (le geste qui propose) ; jamais un calcul tout seul
+  const old = P.sig && P.sig !== altnPropSig() ? `<p class="f-row fu-rage f-warn" data-altnstale><span>${esc(tt(TX.altnPropOld, { t: hhmmLocal(P.at) }))}</span><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.rRecompute))}</button></p>` : '';
+  return `${old}<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary>${allNoTime ? `<p class="f-muted" data-altnwxall>${esc(tt(TX.altnPropNoTime))}</p>` : ''}<ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
 }
 /** « Prendre » : le terrain écrit dans le champ Dégagement (le seul geste qui l'écrit), la proposition fermée, la Carte prévenue. */
 function altnTake(icao) {
