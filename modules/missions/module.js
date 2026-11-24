@@ -1081,8 +1081,8 @@ function reopen(s) {
 }
 /** SOG-0617 : le vol courant de ce pilote, pilot/<TRI>/current_flight.json (le trigramme validé : trois lettres) ; '' sans trigramme. */
 const flightPath = s => {
-  const tri = String(s.ctx.identity?.trigram || '').trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(tri) ? `pilot/${tri}/current_flight.json` : '';
+  const tri = MS.triOf(s.ctx.identity?.trigram); // la règle du trigramme, écrite une fois (frame/lib/mission.js, SOG-0468 point 2 : N253)
+  return tri ? `pilot/${tri}/current_flight.json` : '';
 };
 /** SOG-0617 (F13) : la mission du vol DÉMARRÉ, relue (une entrée non fiable : écrite par Carburant et la Carte, d'un autre appareil
  *  aussi) — s.inFlight = { id, at } ou null ; la liste et la fiche de cette mission redessinées quand elle change. */
@@ -1091,7 +1091,7 @@ async function flightRead(s) {
     f = path ? await Promise.resolve().then(() => s.ctx.data.get(path)).catch(() => null) : null;
   if (S !== s) return;
   const at = typeof f?.started?.at === 'string' && Number.isFinite(Date.parse(f.started.at)) ? f.started.at : '',
-    id = at && typeof f.mission === 'string' ? f.mission.trim().toUpperCase().slice(0, 40) : '',
+    id = at ? MS.midOf(f.mission) : '', // la forme d'un identifiant de mission, celle de la suite (SOG-0468)
     next = id ? {
       id,
       at: new Date(Date.parse(at)).toISOString()
