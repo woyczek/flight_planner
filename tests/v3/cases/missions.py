@@ -16547,6 +16547,11 @@ def n267(c):
             # case is green only with the module.js that makes that row the only content of the slot (Features)
             c.eq(c.js(f"[!!document.querySelector('{M} [data-actslot] > [data-dw-acts] [data-dw-seen]'), !!document.querySelector('{M} [data-actslot] > [data-dw-acts] [data-dw-ask]'), "
                       f"document.querySelectorAll('{S} [data-dw-acts]').length]"), [True, True, 0], 'at 390 the two gestures are in the place of the row of actions of the sheet, the block has no foot of its own', what='gestures in the slot')
+            # ONE sticky foot at a time: the foot that holds the place of the gestures holds NOTHING else — the actions of the sheet went down into
+            # the flow (module.js, Features; red with the module.js before, whose row of actions was that foot)
+            one = c.js(f"""(() => {{ const slot = document.querySelector('{M} [data-actslot]'), foot = slot && slot.closest('[data-f-foot]');
+              return [!!foot, foot ? [...foot.querySelectorAll('button')].filter(b => !b.closest('[data-dw-acts]')).map(b => b.textContent.trim()) : null] }})()""")
+            c.eq(one, [True, []], 'at 390 in flight the sticky foot holds only the two gestures: no action of the sheet in it', what='one foot')
             r = c.js(reach)
             c.ok(all(v['inside'] and v['hit'] for v in r.values()), r, 'at 390 the two gestures are inside the viewport and not covered, right after the block is painted')
             c.js("for (const e of [document.scrollingElement, document.querySelector('#fView')]) if (e) e.scrollTop = (e.scrollHeight - e.clientHeight) / 2")
