@@ -21498,3 +21498,101 @@ def k536(c):
          'the switch false (the state before the lot): the search flies the short lane above the floor, the control refuses it (PROF407) and the search is made again without it — one search more for the same route: red before the lot (`judge.retries` 1, not 0)', what='before')
     c.eq((on_one['ok'], ' A1 ' in ' ' + on_one['route'] + ' ', len(floor_errors(on_one)), on_one['verdict'], 'DETR' in on_one['route'], any('liaison' in i['text'] for i in on_one['issues'])), (True, True, 1, 'violates', False, False),
          'CAP_SEARCH true and the short lane alone: the cap leaves no route, the search is made AGAIN without it — the route of the short lane, the infraction said, the verdict « violates », and NOT a direct of liaison over a gap that the cap alone made', what='fallback')
+
+
+@case('K537', 'Route engine, SOG-0610 (the free route between two neighbouring areas): a point that two neighbouring areas both have as an INTERMEDIATE point links them (the chaining) — the search crosses from one area to the next at the level asked, and the CONTROL reads the same chain; an entry whose orientation of level does not fit the level is set aside and the answer says why (`fra_causes`: the code, the area, the parity that fits, the points), the control refuses a direct that enters it at that level (ERREUR `fra_entry_orientation`) and an exit by a line whose band is below the level flown (ERREUR `fra_exit_band`); no step of level is added by the search',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0610, choice B: « le niveau demandé par le pilote est GARDÉ ; la suite dit à quel niveau la traversée existe »; the chaining at a constant level, the control judging the chaining, the orientation at the entry and at the exit and the band of a line of an area, the cause given without a second search, no step inserted). An INVENTED base (no line of the list of Eurocontrol): two areas AREAA (entry E1, orientation even, intermediate M1 and PC) and AREAB (PC, M2, exit X1, and a point XB whose exit line is bounded at FL245 while its intermediate line is not) joined by PC, a lane before the first area and a lane after the second, nothing between them',
+      )
+def k537(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import fra as FR, import_books as I, plan as PL, view as V
+    pad = lambda row: row + [None] * (15 - len(row))
+    fra_rows = [RF.FRA_HEAD,
+                pad([None, None, 'E1', 'N550000', 'E0150000', 'AREAA', 'E', '-', None, None, 'EVEN', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'M1', 'N550000', 'E0170000', 'AREAA', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'PC', 'N550000', 'E0180000', 'AREAA', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'PC', 'N550000', 'E0180000', 'AREAB', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'M2', 'N550000', 'E0190000', 'AREAB', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'XP', 'N550000', 'E0193000', 'AREAB', 'EX', '-', None, None, 'ODD', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'X1', 'N550000', 'E0200000', 'AREAB', 'X', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'XO', 'N550000', 'E0201500', 'AREAB', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'XO', 'N550000', 'E0201500', 'AREAB', 'X', '-', None, None, 'ODD', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'XB', 'N550000', 'E0203000', 'AREAB', 'X', '-', None, None, '-', 'FL195 / FL245', 'H24', 'XX']),
+                pad([None, None, 'XU', 'N550000', 'E0204500', 'AREAB', 'I', '-', None, None, '-', 'FL195 / FL660', 'H24', 'XX']),
+                pad([None, None, 'XU', 'N550000', 'E0204500', 'AREAB', 'X', '-', None, None, '-', 'FL195 / ABC', 'H24', 'XX']),
+                pad([None, None, 'XB', 'N550000', 'E0203000', 'AREAB', 'I', '-', None, None, '-', 'FL245 / FL660', 'H24', 'XX'])]
+
+    def run(fl, action='compute', route=None, with_fra=True):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+                ai = json.load(f)
+            ai['data']['rows'] += [['XSTA', 'DEPART', 55.0, 10.0, 20, 0, 0], ['XEND', 'ARRIVE', 55.0, 24.0, 20, 0, 0]]
+            with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+                json.dump(ai, f)
+            nodes = {'XS1': (55.0, 10.5), 'E1': (55.0, 15.0), 'M1': (55.0, 17.0), 'PC': (55.0, 18.0), 'M2': (55.0, 19.0), 'XP': (55.0, 19.5), 'X1': (55.0, 20.0), 'XO': (55.0, 20.25), 'XB': (55.0, 20.5), 'XU': (55.0, 20.75), 'XE1': (55.0, 23.5)}
+            with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in nodes.items()]
+            with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            node = lambda n: {'id': n, 'lat': nodes[n][0], 'lon': nodes[n][1]}
+            with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+                al = json.load(f)
+            al['data'] += [{'route': 'A1', 'a': node('XS1'), 'b': node('E1'), 'lower': 2000, 'upper': 66000}] + [{'route': 'A2', 'a': node(a), 'b': node(b), 'lower': 2000, 'upper': 66000} for a, b in (('X1', 'XO'), ('XO', 'XB'), ('XB', 'XU'), ('XU', 'XE1'))]
+            with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+                json.dump(al, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            if with_fra:
+                fra = os.path.join(td, 'FRA_2611.xlsx')
+                RF.write_xlsx(fra, [('COVER', [[None], [None], ['Free Route Airspace Significant Points'], ['Effective Date - 29 OCT 2026']]), ('FRA Points', fra_rows), ('Column Explanation', [['Column content explanation']])])
+                I.write(os.path.join(data, 'route', 'fra.json.gz'), I.merge([], [I.read_book(fra)[1]]))
+            else:
+                with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                    json.dump([], f)
+            args = {'action': action, 'adep': 'XSTA', 'adest': 'XEND', 'fl': fl, 'date': '2026-11-10T12:00', 'speed_kt': 450, 'alternatives': False, 'proposals': False, 'via': []}
+            if route:
+                args['route'] = route
+            PL.drop_contexts()
+            request = V.to_request(args)
+            return PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+    areas = lambda p: [l.get('fra_area') for l in p['legs'] if l.get('kind') == 'FRA']
+    gap = lambda p: any(i.get('code') == 'network_gap' or 'Réseau absent' in i['text'] for i in p['issues'])
+    right, wrong = run(340), run(330)
+    c.eq((right['ok'], areas(right)[:1], areas(right)[-1:], 'PC' in right['route'] or 'M1' in right['route'], gap(right), right['fra_causes']), (True, ['AREAA'], ['AREAB'], True, False, []),
+         'at the level that fits (FL340, even): the search crosses from AREAA to AREAB by the point that both have as an intermediate point (the chaining), by the free route, with no bridge over a gap — red before the chaining (a direct of liaison, `Réseau absent`) — and nothing to say of the areas it took', what='chaining')
+    c.eq((wrong['ok'], 'AREAA' in areas(wrong), gap(wrong), wrong['fra_causes']), (True, False, True, [dict(code='fra_entry_orientation', area='AREAA', fl=330, parity='EVEN', points=['E1'])]),
+         'at the level that does not fit (FL330, odd): the entry E1 is set aside for its orientation alone, the search does not enter AREAA (the level asked is KEPT: no step is inserted; it still has the bridge over the gap), and the answer says why — the code, the area, the level, the parity that fits, the point — without a second search', what='cause')
+    typed = lambda fl, text, **kw: run(fl, 'check', text, **kw)
+    through = 'XSTA DCT XS1 A1 E1 DCT M1 DCT PC DCT M2 DCT X1 A2 XE1 DCT XEND'
+    ok340, bad330 = typed(340, through), typed(330, through)
+    c.eq((areas(ok340), [i['code'] for i in ok340['issues'] if str(i.get('code', '')).startswith('fra_') and i['level'] == 'ERREUR'], [(i['code'], i['values']['area'], i['values']['parity']) for i in bad330['issues'] if i['level'] == 'ERREUR' and str(i.get('code', '')).startswith('fra_')]), (['AREAA', 'AREAA', 'AREAB', 'AREAB'], [], [('fra_entry_orientation', 'AREAA', 'EVEN')]),
+         'the CONTROL, a typed route through the two areas: at FL340 the four directs are legs of the free route, the two last ones of AREAB (the chain M1 → PC → M2 is read as the search wrote it) and nothing to refuse, at FL330 the direct that enters AREAA at E1 is an ERREUR with its code, the area and the parity that fits', what='control entry')
+    band = typed(340, 'XSTA DCT XS1 A1 E1 DCT M1 DCT PC DCT M2 DCT XB A2 XE1 DCT XEND')
+    c.eq([(i['code'], i['values']['area'], i['values']['point'], i['values']['lower_fl'], i['values']['upper_fl']) for i in band['issues'] if i['level'] == 'ERREUR' and str(i.get('code', '')).startswith('fra_')], [('fra_exit_band', 'AREAB', 'XB', 195, 245)],
+         'the CONTROL, an exit by a line whose band is BELOW the level flown (the point XB has an exit line to FL245 and an intermediate line above): ERREUR `fra_exit_band` with the area, the point and the band — the doubtful route of the measure is refused', what='control exit band')
+    orient = lambda fl: [(i['code'], i['values']['point'], i['values']['parity']) for i in typed(fl, 'XSTA DCT XS1 A1 E1 DCT M1 DCT PC DCT M2 DCT XO A2 XE1 DCT XEND')['issues'] if i['level'] == 'ERREUR' and str(i.get('code', '')).startswith('fra_')]
+    c.eq((orient(340), orient(330)), ([('fra_exit_orientation', 'XO', 'ODD')], [('fra_entry_orientation', 'E1', 'EVEN')]),
+         'the CONTROL, an exit by a line whose orientation is odd at the level FL340 (even): ERREUR `fra_exit_orientation`; at FL330 the exit fits (the entry E1, even, is the one that is refused)', what='control exit orientation')
+    through_ex = typed(340, 'XSTA DCT XS1 A1 E1 DCT M1 DCT PC DCT M2 DCT XP DCT X1 A2 XE1 DCT XEND')
+    c.eq((areas(through_ex), [i['code'] for i in through_ex['issues'] if i['level'] == 'ERREUR' and str(i.get('code', '')).startswith('fra_')]), (['AREAA', 'AREAA', 'AREAB', 'AREAB', 'AREAB'], []),
+         'a point that is BOTH an entry and an exit (role « EX », here of an odd orientation, at the even level FL340) is crossed as an intermediate point when the route goes on in the area — as the search crosses it; the orientation counts only where the run of the free route ends (red before: the direct that ends at it was refused)', what='control EX')
+    unreadable = typed(340, 'XSTA DCT XS1 A1 E1 DCT M1 DCT PC DCT M2 DCT XU A2 XE1 DCT XEND')
+    c.eq(([i['code'] for i in unreadable['issues'] if i['level'] == 'ERREUR' and str(i.get('code', '')).startswith('fra_')], [i['code'] for i in unreadable['issues'] if i['level'] == 'REVUE' and str(i.get('code', '')).startswith('fra_')]), ([], ['fra_exit_role']),
+         'an exit by a point whose exit line has a band that cannot be read (Sécurisation, 24 Nov): no exception, no ERREUR — a REVUE `fra_exit_role` (to be examined); red before: the minimum of an empty list', what='unreadable band')
+    off = run(340, with_fra=False)
+    c.eq((areas(off), off['fra_causes']), ([], []), 'without the list of the free-route points the route does not use the free route and has no cause to give', what='no list')
+    c.eq(FR.orientation('EVEN/ODD', 'E'), 'EVEN', 'the orientation of an entry « EVEN/ODD » is the first one, of an exit the second; « - » none', what='orientation')
+    c.eq((FR.orientation('EVEN/ODD', 'X'), FR.orientation('-', 'E'), FR.orientation('ODD', 'X')), ('ODD', None, 'ODD'), 'the orientation of an exit « EVEN/ODD » is ODD, a dash gives none, an exit « ODD » stays', what='orientation 2')

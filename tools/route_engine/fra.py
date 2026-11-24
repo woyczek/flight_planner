@@ -29,6 +29,12 @@ def time_ok(value,when):
     a=int(m[1])*60+int(m[2]);b=int(m[3])*60+int(m[4]); t=when.hour*60+when.minute
     return a<=t<b if a<b else t>=a or t<b
 
+def orientation(value,role):
+    """SOG-0610 : l'orientation de niveau (« EVEN » / « ODD ») qu'une LIGNE de la liste impose à son entrée (`E`) ou à sa sortie (`X`) ; None : aucune. La même lecture que `parity`."""
+    if value in ['-','','ALL','ALL/ALL']:return None
+    if value in ['EVEN/ODD','ODD/EVEN']:value=value.split('/')[0 if role=='E' else 1] if role in ['E','X'] else None
+    return value if value in ['ODD','EVEN'] else None
+
 def parity(value,fl,role):
     if value in ['-','','ALL','ALL/ALL','EVEN/ODD','ODD/EVEN']:
         if value in ['EVEN/ODD','ODD/EVEN']:
@@ -41,6 +47,7 @@ def parity(value,fl,role):
 class Fra:
     def __init__(self,nav,date,nm):
         self.nav=nav;self.nm=nm;self.records=[];self.by_key=collections.defaultdict(list);self.book=None
+        self.by_row={};self.by_id=collections.defaultdict(list);self.discards=[]      # SOG-0610 : les lignes par numéro de ligne et par nom de point ; les entrées et sorties écartées pour leur seule orientation, au dernier graphe
         path=Path(FRA_FILE) if FRA_FILE else Path(__file__).resolve().parent/'fra.json.gz'   # SOG-0081 : FRA_FILE
         if not path.exists():return
         with gzip.open(path,'rt',encoding='utf-8') as f:books=json.load(f)
@@ -54,7 +61,7 @@ class Fra:
             key=nav.add(dict(id=v[2],lat=lat,lon=lon))
             r=dict(key=key,id=v[2],area=v[5],enroute=v[6],terminal=v[7],arr=v[8],dep=v[9],flos=v[10],
                    lower=lo,upper=hi,time=v[12],remarks=v[14],row=record['row'],cycle=self.book['start'])
-            self.records.append(r);self.by_key[key].append(r)
+            self.records.append(r);self.by_key[key].append(r);self.by_row[r['row']]=r;self.by_id[r['id']].append(r)
 
     def eligible(self,r,fl,when,steps=False):
         return r['lower'] is not None and r['upper'] is not None and r['lower']<=fl*100 and (steps or fl*100<=r['upper']) and time_ok(r['time'],when) and not r['remarks']
@@ -64,6 +71,7 @@ class Fra:
 
     def graph(self,g,dep,arr,fl,when,via=(),steps=False,density="normal"):
         nav=self.nav
+        self.discards=[]      # SOG-0610 : les entrées et sorties écartées pour leur seule orientation de niveau, à ce niveau (`causes`)
         # SOG-0161 : les distances de ce graphe (des millions d'appels de nm) se calculent sur des positions dont le sinus et le cosinus sont faits une fois (même formule que engine.nm)
         trig={}
         def tr(p):
@@ -99,9 +107,19 @@ class Fra:
             r=dict(r,state=state,_tr=tr(p));groups[r['area']].append(r)      # SOG-0468 (2) : `_tr` = les positions en radians du point, faites une fois (le dictionnaire reste local à ce graphe : les arêtes n'en reprennent que des valeurs)
             enter=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
             leave=('X' in r['enroute'] and parity(r['flos'],fl,'X')) or ('A' in r['terminal'] and self.airport_match(r['arr'],arr))
+            if not enter and 'E' in r['enroute'] and orientation(r['flos'],'E'):self.discards.append(dict(code='fra_entry_orientation',area=r['area'],point=r['id'],fl=fl,parity=orientation(r['flos'],'E')))
+            if not leave and 'X' in r['enroute'] and orientation(r['flos'],'X'):self.discards.append(dict(code='fra_exit_orientation',area=r['area'],point=r['id'],fl=fl,parity=orientation(r['flos'],'X')))
             gate=dict(route='DCT',nm=0,kind='FRA_GATE',fra_area=r['area'],lower=r['lower'],upper=r['upper'])
             if enter:g.setdefault(r['key'],[]).append((state,gate))
             if leave:g.setdefault(state,[]).append((r['key'],gate))
+        shared=collections.defaultdict(list)      # SOG-0610 : le CHAÎNAGE : un point INTERMÉDIAIRE (rôle « I ») que deux aires voisines ont tous deux, au niveau demandé, relie les deux aires (la liste donne une ligne par aire à ce point) ; l'orientation de niveau ne joue que pour une entrée ou une sortie, jamais ici
+        for records in groups.values():
+            for r in records:
+                if r['enroute']=='I':shared[r['key']].append(r)
+        for rows in shared.values():
+            for a in rows:
+                for b in rows:
+                    if a['area']!=b['area'] and max(a['lower'],b['lower'])<=min(a['upper'],b['upper']):g.setdefault(a['state'],[]).append((b['state'],dict(route='DCT',nm=0,kind='FRA_GATE',fra_area=b['area'],lower=max(a['lower'],b['lower']),upper=min(a['upper'],b['upper']),chained=True)))
         cand_cache={}
         for area,records in groups.items():
             cells=collections.defaultdict(list)
@@ -149,6 +167,81 @@ class Fra:
                         from_role=r['enroute'] or r['terminal'],to_role=o['enroute'] or o['terminal'],fra_rows=[r['row'],o['row']],source_cycle=r['cycle'])))
         return g
 
+    def near_miss(self,a,b,fl,when,dep,arr,active_areas,steps=False):
+        """SOG-0610 : un DIRECT entre deux points de route libre d'une même aire que `match` n'a pas retenu pour sa SEULE orientation de niveau : l'entrée (le premier point est une entrée « E » d'orientation autre que celle du niveau) ou la sortie (le second est une sortie « X »). Rend { code, area, point, parity } ou None ; le contrôle juge ensuite si l'avion est en croisière à ce point (`run_findings`)."""
+        for r in self.by_key.get(a,[]):
+            if not self.eligible(r,fl,when,steps):continue
+            for s in self.by_key.get(b,[]):
+                if s['area']!=r['area'] or not self.eligible(s,fl,when,steps):continue
+                entry=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
+                continuation=r['area'] in active_areas and r['enroute'] in ('I','EX')      # SOG-0610 : un point « EX » (entrée et sortie) se traverse comme un point intermédiaire dans l'aire, comme dans le graphe de la recherche (l'orientation ne joue qu'à l'entrée et à la sortie de la suite)
+                leave=('X' in s['enroute'] and parity(s['flos'],fl,'X')) or ('A' in s['terminal'] and self.airport_match(s['arr'],arr))
+                if not (entry or continuation) and 'E' in r['enroute'] and orientation(r['flos'],'E') and (leave or s['enroute'] in ('I','EX')):
+                    return dict(code='fra_entry_orientation',area=r['area'],point=r['id'],parity=orientation(r['flos'],'E'))
+                if (entry or continuation) and not (leave or s['enroute'] in ('I','EX')) and 'X' in s['enroute'] and orientation(s['flos'],'X'):
+                    return dict(code='fra_exit_orientation',area=s['area'],point=s['id'],parity=orientation(s['flos'],'X'))
+        return None
+
+    def active_after(self,m,target,fl,when,steps=False):
+        """SOG-0610 : les aires ACTIVES après un tronçon de route libre `m` (un résultat de `match`) arrivé en `target` : la sienne tant qu'il n'en sort pas, et, quand il arrive à un point intermédiaire, les aires voisines qui ont aussi ce point en intermédiaire au niveau demandé (le chaînage)."""
+        out={m['area']} if (not m['exits'] or m['to_role']=='EX') else set()
+        if m['to_role']=='I':out|={s['area'] for s in self.by_key.get(target,[]) if s['enroute']=='I' and s['area']!=m['area'] and self.eligible(s,fl,when,steps)}
+        return out
+
+    def causes(self,used_areas=()):
+        """SOG-0610 : pourquoi la recherche n'a pas pris une aire : les entrées et sorties écartées pour leur SEULE orientation de niveau au niveau demandé, une cause par aire et par code (l'aire, la parité qui passe, le niveau, trois points au plus) ; sans les aires que la route traverse. Rien n'est cherché de plus : lues au graphe déjà fait. ATTENTION : `discards` est l'état du dernier graphe fait (`Nav.last_fra_discards` le pose avant la lecture) : si deux plans partagent un même contexte, la cause peut être celle de l'autre demande (des points publics de la liste, jamais un secret)."""
+        found={}
+        for d in self.discards:
+            if d['area'] in used_areas:continue
+            c=found.setdefault((d['code'],d['area']),dict(code=d['code'],area=d['area'],fl=d['fl'],parity=d['parity'],points=[]))
+            if d['point'] not in c['points'] and len(c['points'])<3:c['points'].append(d['point'])
+        return sorted(found.values(),key=lambda c:(c['area'],c['code']))
+
+    def run_findings(self,legs,cruise_fl,levels,when,dep,arr):
+        """SOG-0610 : le contrôle juge chaque SUITE de tronçons de route libre : à son ENTRÉE (la ligne en rôle « E » : l'orientation de niveau) et à sa SORTIE (une ligne en rôle « X » de la même aire, au niveau volé : sa bande, son orientation ; une sortie par un point intermédiaire seul est une REVUE). Jugés seulement quand l'avion est EN CROISIÈRE au point (l'altitude du profil est le niveau) : en montée ou en descente, le niveau n'est pas celui de la ligne. Rend [{level, code, text, values}]."""
+        out=[];n=len(legs);i=0
+        for k,leg in enumerate(legs):
+            miss=leg.get('fra_near_miss')
+            if not miss:continue
+            fl=levels[k] if levels and levels[k] else cruise_fl
+            at=leg.get('altitude_start_ft') if miss['code']=='fra_entry_orientation' else leg.get('altitude_end_ft')
+            if isinstance(at,(int,float)) and abs(at-fl*100)<=50:
+                out.append(dict(level='ERREUR',code=miss['code'],values=dict(area=miss['area'],point=miss['point'],fl=fl,parity=miss['parity']),text=f"Route libre : {'entrée' if miss['code']=='fra_entry_orientation' else 'sortie'} de l'aire {miss['area']} à {miss['point']} au niveau FL{fl:03d} ; cette {'entrée' if miss['code']=='fra_entry_orientation' else 'sortie'} n'est ouverte qu'aux niveaux {'impairs' if miss['parity']=='ODD' else 'pairs'} (orientation de niveau de la liste Eurocontrol)."))
+        while i<n:
+            if legs[i].get('kind')!='FRA':i+=1;continue
+            j=i
+            while j+1<n and legs[j+1].get('kind')=='FRA' and legs[j+1]['start']['id']==legs[j]['end']['id']:j+=1
+            out+=self._run_findings(legs,i,j,cruise_fl,levels,when,dep,arr,j+1<n and bool(legs[j+1].get('fra_near_miss')))
+            i=j+1
+        return out
+
+    def _run_findings(self,legs,i,j,cruise_fl,levels,when,dep,arr,refused_next=False):
+        out=[];first,last=legs[i],legs[j]
+        def level_of(n):return (levels[n] if levels and levels[n] else cruise_fl)
+        def steady(altitude,fl):return isinstance(altitude,(int,float)) and abs(altitude-fl*100)<=50
+        fl=level_of(i);entry=self.by_row.get((first.get('fra_rows') or [None])[0])
+        if entry and 'E' in entry['enroute'] and steady(first.get('altitude_start_ft'),fl):
+            want=orientation(entry['flos'],'E')
+            if want and not parity(entry['flos'],fl,'E') and not ('D' in entry['terminal'] and self.airport_match(entry['dep'],dep)):
+                out.append(dict(level='ERREUR',code='fra_entry_orientation',values=dict(area=first['fra_area'],point=first['start']['id'],fl=fl,parity=want),text=f"Route libre : entrée de l'aire {first['fra_area']} à {first['start']['id']} au niveau FL{fl:03d} ; cette entrée n'est ouverte qu'aux niveaux {'impairs' if want=='ODD' else 'pairs'} (orientation de niveau de la liste Eurocontrol)."))
+        fl=level_of(j);area=last.get('fra_area');end=last['end']['id']
+        if steady(last.get('altitude_end_ft'),fl) and not refused_next:      # le direct suivant, refusé pour son orientation, le dit déjà
+            rows=[x for x in self.by_id.get(end,[]) if x['area']==area and 'X' in x['enroute'] and self.time_ok_row(x,when)]
+            arrival=any('A' in x['terminal'] and self.airport_match(x['arr'],arr) for x in self.by_id.get(end,[]) if x['area']==area)
+            inside=[x for x in rows if x['lower'] is not None and x['upper'] is not None and x['lower']<=fl*100<=x['upper']]
+            if arrival or any(parity(x['flos'],fl,'X') for x in inside):pass
+            elif inside:
+                want=orientation(inside[0]['flos'],'X')
+                out.append(dict(level='ERREUR',code='fra_exit_orientation',values=dict(area=area,point=end,fl=fl,parity=want),text=f"Route libre : sortie de l'aire {area} à {end} au niveau FL{fl:03d} ; cette sortie n'est ouverte qu'aux niveaux {'impairs' if want=='ODD' else 'pairs'} (orientation de niveau de la liste Eurocontrol)."))
+            elif any(isinstance(x['lower'],(int,float)) and isinstance(x['upper'],(int,float)) for x in rows):      # les lignes dont une borne est illisible ne donnent pas de bande (jamais une exception : la REVUE ci-dessous les dit)
+                bands=[x for x in rows if isinstance(x['lower'],(int,float)) and isinstance(x['upper'],(int,float))];low=min(x['lower'] for x in bands);high=max(x['upper'] for x in bands)
+                out.append(dict(level='ERREUR',code='fra_exit_band',values=dict(area=area,point=end,fl=fl,lower_fl=low//100,upper_fl=high//100),text=f"Route libre : sortie de l'aire {area} à {end} au niveau FL{fl:03d} ; la sortie n'existe qu'entre FL{low//100:03d} et FL{high//100:03d} (bande de la liste Eurocontrol)."))
+            else:
+                out.append(dict(level='REVUE',code='fra_exit_role',values=dict(area=area,point=end,fl=fl),text=f"Route libre : l'aire {area} est quittée à {end}, qui n'y est pas un point de sortie dans la liste Eurocontrol : à examiner."))
+        return out
+
+    def time_ok_row(self,r,when):return time_ok(r['time'],when) and not r['remarks']
+
     def match(self,a,b,fl,when,dep,arr,active_areas,steps=False):
         matches=[]
         for r in self.by_key.get(a,[]):
@@ -156,9 +249,9 @@ class Fra:
             for s in self.by_key.get(b,[]):
                 if s['area']!=r['area'] or not self.eligible(s,fl,when,steps):continue
                 entry=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
-                continuation=r['area'] in active_areas and r['enroute']=='I'
+                continuation=r['area'] in active_areas and r['enroute'] in ('I','EX')      # SOG-0610 : un point « EX » (entrée et sortie) se traverse comme un point intermédiaire dans l'aire, comme dans le graphe de la recherche (l'orientation ne joue qu'à l'entrée et à la sortie de la suite)
                 exit_ok='X' in s['enroute'] and parity(s['flos'],fl,'X') or 'A' in s['terminal'] and self.airport_match(s['arr'],arr)
-                if (entry or continuation) and (exit_ok or s['enroute']=='I'):
+                if (entry or continuation) and (exit_ok or s['enroute'] in ('I','EX')):
                     matches.append(dict(area=r['area'],lower=max(r['lower'],s['lower']),upper=min(r['upper'],s['upper']),
                         from_role=r['enroute'],to_role=s['enroute'],exits=exit_ok,rows=[r['row'],s['row']],cycle=r['cycle']))
         return matches

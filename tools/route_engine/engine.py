@@ -274,7 +274,7 @@ class Nav:
         return cache[key]
 
     def release_graph_caches(self):
-        for name in ['_fra_graph_cache','_routing_cache','_routing_base','_fra_recovery_graph_cache','_turn_cache']:
+        for name in ['_fra_graph_cache','_fra_discards','_routing_cache','_routing_base','_fra_recovery_graph_cache','_turn_cache']:
             cache=getattr(self,name,None)
             if cache is not None:cache.clear()
 
@@ -756,11 +756,16 @@ class Nav:
             a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if (allow_steps or strict) else fl)
             terminal=terminal or {}
             when=when or dt.datetime.combine(self.date,dt.time(12))
+            fra_disc=[]      # SOG-0610 : les entrées et sorties de route libre écartées pour leur seule orientation de niveau (rendues avec la route : `fra_causes`)
             if enable_fra and getattr(self,'fra',None) and self.fra.book:
                 key=(dep,arr,fl,allow_steps,tuple(via),when.isoformat(timespec='minutes'),terminal.get('search_density','normal'))
                 if key not in self._fra_graph_cache:
                     self._fra_graph_cache[key]=self.fra.graph(g,dep,arr,fl,when,via,allow_steps,terminal.get('search_density','normal'))
-                    if len(self._fra_graph_cache)>1: self._fra_graph_cache.pop(next(iter(self._fra_graph_cache)))
+                    if not hasattr(self,'_fra_discards'):self._fra_discards={}
+                    self._fra_discards[key]=list(self.fra.discards)
+                    if len(self._fra_graph_cache)>1:
+                        old=next(iter(self._fra_graph_cache));self._fra_graph_cache.pop(old);self._fra_discards.pop(old,None)
+                fra_disc=list(getattr(self,'_fra_discards',{}).get(key,[]))
                 g={u:list(es) for u,es in self._fra_graph_cache[key].items()}
             if terminal.get('unable_rnav'):
                 rejected=0;unknown=0
@@ -841,10 +846,10 @@ class Nav:
                     g.setdefault(waypoint,[]).append((key,edge))
                     g.setdefault(key,[]).append((waypoint,edge))
             g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
-            base=(g,used_procs,a,b,restricted,capped_any)
+            base=(g,used_procs,a,b,restricted,capped_any,fra_disc)
             self._routing_base[base_key]=base
             if len(self._routing_base)>1:self._routing_base.popitem(last=False)
-        g,used_procs,a,b,restricted,capped_any=base
+        g,used_procs,a,b,restricted,capped_any,fra_disc=base
         # Apply RAD after SID/STAR and all connectors have been inserted. A rule
         # on a procedure point must affect path finding, not only final checking.
         out={}
@@ -864,6 +869,7 @@ class Nav:
                 allowed.extend((v,dict(e,lower=lower,upper=upper)) if relevant else (v,e) for lower,upper in bands)
             out[u]=allowed
         graph=RoutingGraph(out)
+        graph.fra_discards=fra_disc      # SOG-0610
         graph.restricted=restricted      # SOG-0547 : les raccords de départ ont été restreints aux derniers points des SID
         graph.rad_avoid=frozenset(r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='point')      # SOG-0354 L5 (4) défaut 4 : les points qu'une règle RAD fait éviter (repli) : ni entrée ni sortie de route NAT ou de route libre
         graph.rad_compel={r['before']:r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='compel'}      # { Y : X } : Y s'atteint (se quitte) par X (la route libre)
@@ -887,6 +893,7 @@ class Nav:
         import time
         if DEADLINE is not None and time.perf_counter()>DEADLINE:raise interrupted(round(SEARCH_CAP_S))      # SOG-0524 : le garde-fou de temps (plus de limite de phase en secondes)
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
+        self.last_fra_discards=getattr(g,'fra_discards',[])      # SOG-0610 : lues par `assess` pour rendre la cause d'une aire non prise
         mandatory=self.resolve_vias(g,a,b,via)
         path=None
         if getattr(self,'sections',False) and not mandatory and not (terminal or {}).get('require_fra'):      # SOG-0354 L2b (3) : l'option `sections` de la demande : un vol qui traverse l'Atlantique par une track est découpé en sections (tools/route_engine/sections.py) ; None = pas applicable, la recherche entière suit
@@ -1151,8 +1158,10 @@ def assess(request,_nav=None,_rad=None,_path=None):
             if matches:
                 hints=[x for u,v,x in path if x.get('kind')=='FRA' and nav.nodes[u]['id']==nav.nodes[current]['id'] and nav.nodes[v]['id']==nav.nodes[target]['id']]
                 m=next((m for m in matches if any(h.get('fra_area')==m['area'] and h.get('fra_rows')==m['rows'] for h in hints)),None) or next((m for m in matches if m['lower']<=fl*100<=m['upper']),matches[0]); e.update(kind='FRA',fra_area=m['area'],lower=m['lower'],upper=m['upper'],from_role=m['from_role'],to_role=m['to_role'],fra_rows=m['rows'],source_cycle=m['cycle'])
-                active_fra={m['area']} if not m['exits'] else set()
-            else: active_fra=set()
+                active_fra=nav.fra.active_after(m,target,fl,when,strategy=='adapt')      # SOG-0610 : la sienne, et les aires voisines que le point intermédiaire d'arrivée relie (le chaînage)
+            else:
+                if request.get('enable_fra',True) and getattr(nav,'fra',None) and nav.fra.book:e['fra_near_miss']=nav.fra.near_miss(current,target,fl,when,dep,arr,active_fra,strategy=='adapt')      # SOG-0610 : un direct entre deux points de route libre refusé pour sa seule orientation de niveau : jugé plus bas, où l'avion croise
+                active_fra=set()
             parsed.append((current,target,e))
         else:
             active_fra=set()
@@ -1180,7 +1189,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     for a,b,e in parsed:
         known_ids.update([nav.nodes[a]['id'],nav.nodes[b]['id']]); used_routes.add(e['route'])
         legs.append(dict(start=nav.nodes[a],end=nav.nodes[b],via=e['route'],kind=e.get('kind','AIRWAY' if e['route']!='DCT' else 'DCT'),
-            data_gap=e.get('data_gap'),fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
+            data_gap=e.get('data_gap'),fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),fra_near_miss=e.get('fra_near_miss'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             fra_floor_cap=e.get('fra_floor_cap'),procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
@@ -1221,6 +1230,11 @@ def assess(request,_nav=None,_rad=None,_path=None):
             else:issue('REVUE','Les changements de palier du profil ne sont pas écrits dans le texte de la route : ce texte n’est pas celui que ses tronçons donnent.')
             if profile.get('changes_total',0)>len(profile.get('changes') or []):issue('REVUE',f'Le texte de la route ne porte que les {len(profile["changes"])} premiers des {profile["changes_total"]} changements de niveau.')
             if lowered and written:issue('REVUE','Niveau écrit ramené à un niveau de croisière : '+', '.join(f'{pt}/F{lv:03d} (le plafond de la voie est F{raw:03d})' for pt,raw,lv in lowered[:6])+(f' et {len(lowered)-6} autre(s)' if len(lowered)>6 else '')+' : un niveau écrit dans une route est un multiple de dix, au plus égal au plafond (Eurocontrol refuse F205 : SYN101) ; le profil du vol garde l’altitude du plafond.')
+    fra_findings=nav.fra.run_findings(legs,fl,leg_levels(legs,words,marks),when,dep,arr) if legs and request.get('enable_fra',True) and getattr(nav,'fra',None) and nav.fra.book else []      # SOG-0610 : le contrôle juge l'entrée et la sortie de chaque suite de tronçons de route libre (l'orientation de niveau, la bande de la ligne de sortie)
+    for f in fra_findings:issue(f['level'],f['text'],f['code'],False,**f['values'])
+    fra_causes=[]      # SOG-0610 : la cause d'une aire non prise par la recherche (lue au graphe déjà fait, sans seconde recherche)
+    if generated and getattr(nav,'fra',None) and nav.fra.book:
+        nav.fra.discards=getattr(nav,'last_fra_discards',[]);fra_causes=nav.fra.causes({l.get('fra_area') for l in legs if l.get('kind')=='FRA'})
     band_runs=flight_profile.band_findings(legs,fl,profile.get('cruise_nm'),leg_levels(legs,words,marks))
     if band_runs and (generated or _path is not None):
         count=sum(len(r['legs']) for r in band_runs)
@@ -1391,7 +1405,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result=dict(refused=refused[:MAX_BAND_ISSUES],ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,warnings=warnings,level_rule=dict(level_stats,warnings=len(level_warnings),undecided=len(level_open)) if legs else None,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
-        coverage=nav.coverage,rad_summary=rad_summary,not_verified=not_verified,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
+        coverage=nav.coverage,rad_summary=rad_summary,not_verified=not_verified,dct_limits=dct_summary,fra_causes=fra_causes,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
         procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},
