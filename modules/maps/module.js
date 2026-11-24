@@ -20,7 +20,8 @@ import {
   keep,
   esc,
   got,
-  need
+  need,
+  flightPath
 } from './state.js';
 import {
   svg
@@ -87,6 +88,7 @@ import {
   deriveMission,
   retryMission,
   restoreProvided,
+  retryLeave,
   missionEvents,
   pilotStart
 } from './mission_view.js';
@@ -413,6 +415,14 @@ export async function mount(el, ctx) {
   }
   if (!S) return;
   viewAdopt(vst);
+  // SOG-0608 : ce que le stockage avait refusé avant que la Carte soit quittée (l'édition de la route, la sortie d'une mission) est réécrit au retour : au montage, et — Réglages étant un écran du
+  // cadre posé PAR-DESSUS la Carte, qui reste montée (le pilote y va libérer de la place) — quand l'adresse redevient celle de la Carte
+  retryHeld();
+  const onReturn = () => {
+    if (S && /^#maps(?:[?/]|$)/.test(location.hash)) retryHeld();
+  };
+  addEventListener('hashchange', onReturn);
+  S.stops.push(() => removeEventListener('hashchange', onReturn));
   // mode « choisir sur la carte » : les procédures du terrain sont lues avant le fond, qui part de la vue qu'elles donnent (S.fit)
   if (S.choose) {
     await chooseLoad();
@@ -503,6 +513,12 @@ export async function mount(el, ctx) {
   });
 }
 
+/** SOG-0608 : réécrit ce que le stockage avait refusé pour ce vol (l'édition de la route, la sortie de la mission) ; sans effet s'il n'y a rien. */
+function retryHeld() {
+  if (!S) return;
+  if (keep.refused.has(flightPath())) need('edit').then(m => m.retryRefused(), () => {});
+  if (keep.refusedLeave.has(flightPath())) retryLeave();
+}
 export function unmount() {
   if (!S) return;
   for (const f of S.stops) try {

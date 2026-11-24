@@ -462,6 +462,8 @@ et « + » font de même. « Annuler » reprend le dernier geste. Chaque changem
 Carburant refait le devis ; le profil suit. Retoucher le bouton (ou Échap) ferme le mode, et la carte se déplace de nouveau au doigt.
 Pour taper la route en texte, le crayon en haut de la colonne de droite (« Modifier la route ») ouvre l'étape Route de Carburant. Pendant le mode, la colonne de droite ne garde que « Modifier sur la carte », « + », « Annuler », « Recentrer » et le plein écran.
 
+**Route non enregistrée.** Si le stockage de l’appareil refuse l’écriture (plein, en panne), la Carte le dit une fois et garde votre édition en mémoire, même si vous quittez la Carte sans rien enregistrer, par exemple pour libérer de la place dans Réglages › Données hors ligne : à votre retour, la Carte la réécrit et la route modifiée est à l’écran. Elle retente aussi à chaque geste. Il en va de même de la croix de la fenêtre d’une mission.
+
 ## Sans réseau
 
 **Ce qui marche sans réseau.** La carte, les espaces aériens, les terrains, les balises et le profil restent

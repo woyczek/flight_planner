@@ -13,7 +13,11 @@ import {
   flightPath,
   outLon,
   dLon,
-  level
+  level,
+  four,
+  failNote,
+  holdMemory,
+  releaseMemory
 } from './state.js';
 import {
   unwrapLons
@@ -228,19 +232,55 @@ function commit(points, levelFt = null) {
  *  par le seul écrivain de frame/lib (setRoute : relit l'enregistrement, applique les clés de route changées et le niveau s'il a changé,
  *  by 'maps') : ce qu'un autre module a écrit entre-temps reste (SOG-0013, SOG-0004) ; rien d'autre (progress, quote, profile sont à
  *  Carburant ou au cadre, route.procedures à Carburant). La base repart de l'enregistrement rendu. */
+const ROUTE_NOTE =
+  'maps:routeRefused'; // la clé de la note du refus : l'écriture confirmée la retire (le refus d'avant n'est plus vrai : SOG-0607)
+let saving = 0, // l'écriture la plus récente seule dit l'état (une plus ancienne qui finit après elle ne le change pas)
+  failNoted =
+  false; // la note d'échec n'est levée qu'au PREMIER échec ; relevée après une écriture réussie suivie d'un nouvel échec (SOG-0608)
 async function saveRoute(ctx, path, base, mine) {
+  const mark = ++saving,
+    settle = () => {
+      // écriture CONFIRMÉE : plus rien de refusé pour ce vol
+      if (mark === saving) {
+        keep.refused.delete(path);
+        releaseMemory(`route:${path}`);
+        if (failNoted) ctx.dismissNote?.(
+          ROUTE_NOTE); // la note « Route non enregistrée » dirait une chose fausse : elle part avec le refus
+      }
+      failNoted = false;
+    };
   try {
     const ch = changesOf(base, mine);
-    if (!ch) return;
+    if (!ch) return settle();
     const next = await setRoute(ctx.data, path, ch, {
       by: 'maps'
     });
+    settle();
     if (S?.ctx === ctx && S.route) S.route.base = routeBase(next);
   } catch (e) {
-    ctx.notify?.(ctx.t(TX.saveFailed, {
-      m: e?.message || String(e)
-    }), 'err');
+    // refusée (stockage plein, panne) : l'édition est gardée EN MÉMOIRE pour la réécrire, même si la Carte est quittée (SOG-0608) ; chaque geste, et le remontage, la retentent
+    if (mark === saving) keep.refused.set(path, {
+      base,
+      mine
+    });
+    // le cadre est dit « tenu en mémoire seulement » (son avertissement du navigateur, sa ligne d'état) ; la note : ma tête, la cause est celle du cadre
+    holdMemory(ctx, `route:${path}`, four(TX.memRoute), e);
+    if (!failNoted) {
+      failNoted = true;
+      ctx.notify?.(failNote(ctx, ctx.t(TX.saveHead), e, path), 'err', {
+        key: ROUTE_NOTE
+      });
+    }
   }
+}
+/** Au montage de la Carte : l'édition de ce vol que le stockage avait refusée est réécrite (setRoute applique sur le vol relu ce que la Carte avait changé : ce
+ *  qu'un autre module a écrit entre-temps reste) ; la Carte n'ajoute rien à son écran (le cadre dit l'état) ; refusée encore, elle reste gardée. */
+export async function retryRefused() {
+  const me = S,
+    path = me && flightPath(),
+    e = path && keep.refused.get(path);
+  if (!e) return;
+  await saveRoute(me.ctx, path, e.base, e.mine);
 }
 /** L'état d'avant le geste gardé pour « Annuler ». */
 function remember() {

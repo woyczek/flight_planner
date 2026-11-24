@@ -456,6 +456,8 @@ and “+” do the same. “Undo” takes back the last gesture. Each change is 
 quote; the profile follows. Tapping the button again (or Escape) closes the mode, and the map moves under your finger again. To type the route as
 text, the pencil at the top of the right column (“Edit the route”) opens Fuel's Route step. While the mode is on, the right column keeps only “Edit on the map”, “+”, “Undo”, “Recentre” and full screen.
 
+**Route not saved.** If the device’s storage refuses the write (full, out of order), the Map says so once and keeps your edit in memory, even if you leave the Map without saving anything, for example to free some space in Settings › Offline data: when you come back, the Map writes it again and the edited route is on the screen. It also tries again at each gesture. The same goes for the cross of a mission’s window.
+
 ## Without network
 
 **What works without network.** The map, the airspaces, the airfields, the beacons and the profile stay available

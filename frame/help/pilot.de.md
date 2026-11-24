@@ -488,6 +488,8 @@ eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die Flughöhe 
 Kraftstoff rechnet neu; das Profil folgt. Erneutes Tippen auf die Schaltfläche (oder Esc) schließt den Modus, und die Karte lässt sich wieder mit dem Finger
 verschieben. Um die Route als Text einzugeben, öffnet der Stift oben in der rechten Spalte („Route bearbeiten“) den Schritt Route von Kraftstoff. Solange der Modus aktiv ist, behält die rechte Spalte nur „Auf der Karte bearbeiten“, „+“, „Rückgängig“, „Zentrieren“ und den Vollbildmodus.
 
+**Route nicht gespeichert.** Verweigert der Speicher des Geräts das Schreiben (voll, gestört), sagt die Karte es einmal und behält Ihre Änderung im Speicher, auch wenn Sie die Karte verlassen, ohne etwas zu speichern, etwa um in den Einstellungen › Offline-Daten Platz zu schaffen: bei Ihrer Rückkehr schreibt die Karte sie erneut, und die geänderte Route ist auf dem Bildschirm. Sie versucht es auch bei jeder Geste erneut. Dasselbe gilt für das Kreuz im Fenster einer Mission.
+
 ## Ohne Netz
 
 **Was ohne Netz funktioniert.** Karte, Lufträume, Flugplätze, Funkfeuer und Profil bleiben offline verfügbar für die

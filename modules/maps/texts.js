@@ -174,6 +174,10 @@ export const TX = {
     'Auf diesem Gerät nicht verfügbar: Position von {id} unbekannt', 'No disponible en este dispositivo: posición de {id} desconocida'
   ],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
+  // SOG-0608 : la TÊTE d'une écriture refusée (le cadre écrit la cause : ctx.writeFailText) et ce que la Carte tient en mémoire seulement (ctx.memoryOnly)
+  saveHead: ['Route non enregistrée', 'Route not saved', 'Route nicht gespeichert', 'Ruta no guardada'],
+  memRoute: ['route de la carte', 'map route', 'Kartenroute', 'ruta del mapa'],
+  memLeave: ['carte du vol', 'flight map', 'Flugkarte', 'mapa del vuelo'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   follow: ['Suivre', 'Follow', 'Folgen', 'Seguir'],
   followHelp: ['Garder la carte centrée sur la position réelle', 'Keep the map centred on the actual position',

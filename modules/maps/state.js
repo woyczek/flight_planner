@@ -25,8 +25,34 @@ export const keep = {
   win: null,
   touchAt: -1e9,
   // cadrage de l'utilisateur { sig, center, zoom } : gardé pour ce vol-là seulement (signature flightSig, SPEC § 5)
-  cam: null
+  cam: null,
+  // SOG-0608 : ce que le stockage a REFUSÉ d'écrire (plein, panne), gardé EN MÉMOIRE seulement (aucun repli vers un autre stockage) à travers le démontage : le pilote va libérer de
+  // la place dans Réglages, la Carte réécrit au retour. refused : chemin du vol → { base, mine } (l'édition de la route : ce que la Carte avait lu, ce qu'elle en a fait) ;
+  // refusedLeave : chemins des vols dont la sortie de la mission (la croix de la fenêtre) n'a pas pu être écrite
+  refused: new Map(),
+  refusedLeave: new Set(),
+  // SOG-0608 / SOG-0607 : les travaux DÉCLARÉS au cadre comme tenus en mémoire seulement (clé → la fonction qui les relâche) ; ils survivent au démontage, c'est l'écriture confirmée qui relâche
+  held: new Map()
 };
+/** Les quatre textes d'une ligne de texts.js, en { fr, en, de, es } (ce que ctx.memoryOnly attend). */
+export const four = row => ({
+  fr: row[0],
+  en: row[1],
+  de: row[2],
+  es: row[3]
+});
+/** La note d'une écriture refusée : MA tête, la cause écrite par le cadre (ctx.writeFailText : « {tête} : {cause} », le texte brut du navigateur au diagnostic seulement) ; `file` : le nom du fichier
+ *  refusé. Jamais la cause écrite ici, ni l'erreur ré-enveloppée. Sans ce service (un cadre plus ancien) : la tête seule. */
+export const failNote = (ctx, head, e, file) => ctx.writeFailText?.(e, head, file) || head;
+/** Déclare au cadre, UNE fois par clé, un travail tenu en mémoire seulement (« route de la carte ») : son avertissement du navigateur reste armé tant qu'une écriture ne l'a pas relâché. */
+export function holdMemory(ctx, key, what, e) {
+  if (!keep.held.has(key)) keep.held.set(key, ctx.memoryOnly?.(what, e) || (() => {}));
+}
+/** Une écriture CONFIRMÉE : le travail de cette clé n'est plus tenu en mémoire seulement. */
+export function releaseMemory(key) {
+  keep.held.get(key)?.();
+  keep.held.delete(key);
+}
 
 /** Mètres dans un mille nautique (distances de la coupe en mètres, affichées en NM). */
 export const FT_NM = 1852;

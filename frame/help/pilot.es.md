@@ -469,6 +469,8 @@ deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combust
 Volver a tocar el botón (o Esc) cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, el lápiz arriba de la columna derecha («Editar la ruta») abre
 el paso Ruta de Combustible. Mientras el modo está activo, la columna derecha solo conserva «Editar en el mapa», «+», «Deshacer», «Recentrar» y la pantalla completa.
 
+**Ruta sin guardar.** Si el almacenamiento del dispositivo rechaza la escritura (lleno, averiado), el Mapa lo dice una vez y conserva su edición en memoria, aunque salga del Mapa sin guardar nada, por ejemplo para liberar espacio en Ajustes › Datos sin conexión: al volver, el Mapa la escribe de nuevo y la ruta modificada está en pantalla. También lo reintenta en cada gesto. Lo mismo vale para la cruz de la ventana de una misión.
+
 ## Sin conexión
 
 **Lo que funciona sin conexión.** El mapa, los espacios aéreos, los aeródromos, las radioayudas y el perfil siguen

@@ -10983,3 +10983,114 @@ def d325(c):
     c.ok(any(t.startswith('NEPIX') for t in got) and not any(t.startswith('Nom ignoré') for t in got), 'NEPIX / name', 'a point with a code keeps its code (its name is not drawn)')
     c.wait(500)
     c.shot('D325.png')
+
+
+
+# ------------------------------------------------------------------------------------------------------ D320
+# the browser refuses every write of the pending queue, as a full storage does (QuotaExceededError); window.__full lifts the quota
+_FULL_JS = """() => { window.__full = true; const o = IDBObjectStore.prototype.put;
+  if (!o.__full) { IDBObjectStore.prototype.put = function (...a) { if (window.__full && this.name === 'pending') throw new DOMException('quota exceeded', 'QuotaExceededError'); return o.apply(this, a) };
+    IDBObjectStore.prototype.put.__full = true } return true }"""
+
+
+def _leave_map(c, where):
+    """The pilot leaves the Map WITHOUT any question. `#settings` is a screen of the frame laid OVER the Map, which stays mounted (frame/app.js: SCREENS); any other module unmounts it."""
+    c.js("(h) => { location.hash = h }", where)
+    if where == '#settings':
+        c.until("() => !!document.querySelector('#fView > .f-screen') && !document.querySelector('.f-modal')", timeout=10000, what='Réglages over the Map, nothing asked')
+        c.ok(c.js("() => !!window.__mp.S"), '', 'the Map stays mounted under the screen of the frame')
+    else:
+        c.until("() => !(window.__mp && window.__mp.S)", timeout=10000, what='the Map is unmounted, nothing asked')
+
+
+def _hold_route(c, where, tag):
+    f = flight()
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)                                         # window.__mp: the state of the Map (without it the wait « the Map is unmounted » below is true at once and the return is not a remount)
+    hook_map(c)
+    c.js(_FULL_JS)
+    c.tap('[data-mp="edit"]')
+    c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    a = xy(c, 44.9, 2.4)                                   # NEPIX
+    mouse_drag(c, a, (a[0] + 45, a[1] + 35))
+    said = norm(tx(M, 'saveHead', c.lang))        # the head is mine; the cause after it is written by the frame (ctx.writeFailText)
+    held = lambda: [norm(x) for x in c.js("() => window.SogFrame.memoryOnlyList()")]
+    c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=8000,
+            what='the refusal is said')
+    c.shot(f'{tag}_{c.width}_{c.lang}_refus.png')            # the note « Route non enregistrée : … » on the screen
+    c.eq(c.doc(PATH)['route']['points'][2]['id'], 'NEPIX', 'nothing was written: the stored route is the old one', what='stored route')
+    c.eq(held(), [norm(tx(M, 'memRoute', c.lang))], 'the Map declares to the frame the work held in memory only (map route)', what='held')
+    # a second gesture while the storage is still full: the write is tried again (and refused), the note is NOT raised again
+    mouse_drag(c, (a[0] + 45, a[1] + 35), (a[0] + 65, a[1] + 55))
+    c.wait(1500)
+    c.eq(sum(1 for n in c.note_log() if said in norm(n)), 1, 'the failure note is raised at the first failure only, not at each gesture', what='notes')
+    c.eq(c.doc(PATH)['route']['points'][2]['id'], 'NEPIX', 'still refused: the stored route is still the old one', what='stored route')
+    # the pilot leaves for Réglages WITHOUT any question, frees some space, and comes back
+    _leave_map(c, where)
+    c.eq(len(held()), 1, 'leaving does not release it: the browser warning stays armed until a write is confirmed', what='held after leaving')
+    c.js("() => { window.__full = false; location.hash = '#maps' }")
+    c.ready('maps', sheet=True)
+    doc = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and COORD.match(d['route']['points'][2]['id'] or ''), what='the refused edit is written again at the return', timeout=10000)
+    c.ok(COORD.match(doc['route']['points'][2]['id']), doc['route']['points'][2]['id'], 'the moved point is the edit made before leaving')
+    c.until("() => !!window.__mp.S && window.__mp.S.route.points.length >= 3 && window.__mp.S.route.points.every(p => p.id !== 'NEPIX')", timeout=10000, what='the edited route is on the screen')
+    c.until("() => window.SogFrame.memoryOnlyList().length === 0", timeout=10000, what='the write confirmed: the work is released')
+    c.until(f"() => ![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=6000,
+            what='the write confirmed: the refusal note is gone (it would say a falsehood)')
+    c.shot(f'{tag}_{c.width}_{c.lang}_retour.png')           # back: the edited route is drawn, nothing held
+    # a NEW episode (a write confirmed, then the storage full again): the note is raised again, once (the decision of the ergonomist: the first failure of each episode)
+    before = sum(1 for n in c.note_log() if said in norm(n))
+    c.js(_FULL_JS)
+    hook_map(c)
+    if c.js("() => document.querySelector('[data-mp=edit]').getAttribute('aria-pressed')") != 'true':
+        c.tap('[data-mp="edit"]')
+        c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    b = xy(c, 46.5833, -1.2)                               # LUGEN
+    mouse_drag(c, b, (b[0] + 40, b[1] + 30))
+    c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=8000, what='the second episode is said again')
+    c.wait(500)
+    c.eq(sum(1 for n in c.note_log() if said in norm(n)) - before, 1, 'a new episode raises the note once: the first failure after a confirmed write', what='notes of the new episode')
+
+
+@case('D320', 'SOG-0608: a route edit refused by a FULL storage survives in memory through a change of module (no question), is tried again at every gesture and at the return', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0608 (ergonomist, rule of SOG-0607): the edit refused by the storage is kept IN MEMORY (module variable, per flight, no other storage) through the unmount of the Map; leaving for Réglages is NOT asked about; at the return the edit is replayed and the edited route is on the screen; the write is tried again at each gesture and at the return; the failure note is raised at the FIRST failure only; the Map adds nothing to its screen (the frame says the state). Red before: the edit state went with the unmount and the stored route stayed the old one')
+def d320(c):
+    _hold_route(c, '#settings', 'D320')                      # Réglages, over the Map (which stays mounted): the retry comes with the address of the Map
+
+
+@case('D330', 'SOG-0608: the same refused route edit survives the UNMOUNT of the Map (a change of module), is tried again at the remount', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0608 (ergonomist, rule of SOG-0607): the edit refused by the storage is kept IN MEMORY (module variable, per flight, no other storage) through the unmount of the Map; leaving for Réglages is NOT asked about; at the return the edit is replayed and the edited route is on the screen; the write is tried again at each gesture and at the return; the failure note is raised at the FIRST failure only; the Map adds nothing to its screen (the frame says the state). Red before: the edit state went with the unmount and the stored route stayed the old one')
+def d330(c):
+    _hold_route(c, '#atmosphere', 'D330')
+
+
+@case('D321', 'SOG-0608: the cross of a flight\'s mission window refused by a FULL storage is kept in memory and written again at the return', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0608 (same rule as D320, mission_view.js): leaving the mission (the cross, then « yes ») refused by the storage is kept in memory through the unmount, the pilot leaves for Réglages without a question, comes back, and the flight is written without its mission once the quota is lifted')
+def d321(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-id')", timeout=15000, what='the banner of the mission')
+    c.js(_STATE_JS)
+    c.js(_FULL_JS)
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_generale.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1'", timeout=10000, what='a provided map shown')
+    c.tap('.mp-mbar [data-mbx]')
+    c.until("() => !!document.querySelector('.mp-mbar [data-mbyes]')", timeout=6000, what='the cross asks before abandoning')
+    c.tap('.mp-mbar [data-mbyes]')
+    said = norm(tx(M, 'saveHead', c.lang))        # the head is the existing one (Route not saved), the cause after it is written by the frame
+    c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=8000,
+            what='the refusal is said')
+    c.shot(f'D321_{c.width}_{c.lang}_refus.png')
+    c.eq(c.doc(PATH).get('mission'), 'ESSAI1', 'nothing was written: the flight still names its mission', what='stored mission')
+    c.eq([norm(x) for x in c.js("() => window.SogFrame.memoryOnlyList()")], [norm(tx(M, 'memLeave', c.lang))], 'the Map declares the work held in memory only (flight map)', what='held')
+    _leave_map(c, '#settings')
+    c.js("() => { window.__full = false; location.hash = '#maps' }")
+    c.until_doc(PATH, lambda d: d and not d.get('mission'), what='the flight is written without its mission at the return', timeout=12000)
+    c.until("() => window.SogFrame.memoryOnlyList().length === 0", timeout=10000, what='the write confirmed: the work is released')
+    c.until(f"() => ![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=6000,
+            what='the write confirmed: the refusal note is gone (it would say a falsehood)')
+    c.shot(f'D321_{c.width}_{c.lang}_retour.png')

@@ -8,7 +8,12 @@ import {
   tt,
   flightPath,
   setData,
-  setHtml
+  setHtml,
+  keep,
+  four,
+  failNote,
+  holdMemory,
+  releaseMemory
 } from './state.js';
 import {
   unwrapLons
@@ -354,12 +359,40 @@ async function leaveMission() {
         .toISOString() // jamais plus vieux que le vol lu : l'écriture la plus récente l'emporte
     });
   } catch (e) {
-    S?.ctx.notify?.(tt(TX.saveFailed, {
-      m: e?.message || String(e)
-    }), 'err');
+    // refusée par le stockage : la sortie est gardée EN MÉMOIRE et réécrite au retour sur la Carte (SOG-0608) ; la note n'est levée qu'au premier échec
+    keep.refusedLeave.add(path);
+    holdMemory(me.ctx, `leave:${path}`, four(TX.memLeave), e); // tenu en mémoire seulement : le cadre le sait, l'écriture confirmée le relâche
+    if (!leaveNoted) {
+      leaveNoted = true;
+      me.ctx.notify?.(failNote(me.ctx, me.ctx.t(TX.saveHead), e, path), 'err', {
+        key: LEAVE_NOTE
+      }); // ma tête ; la cause est celle du cadre
+    }
     return;
   }
+  keep.refusedLeave.delete(path);
+  releaseMemory(`leave:${path}`);
+  if (leaveNoted) me.ctx.dismissNote?.(LEAVE_NOTE); // le refus d'avant n'est plus vrai : sa note part (SOG-0607)
+  leaveNoted = false;
   if (S === me) await followMission();
+}
+let leaveNoted = false;
+const LEAVE_NOTE = 'maps:leaveRefused'; // la clé de la note du refus de la sortie de la mission
+/** Au montage : la sortie de la mission que le stockage avait refusée est réécrite si le vol nomme encore sa mission (SOG-0608). */
+export async function retryLeave() {
+  const me = S,
+    path = me && flightPath();
+  if (!path || !keep.refusedLeave.has(path)) return;
+  const cur = await me.ctx.data.get(path).catch(() => null);
+  if (S !== me) return;
+  if (!cur?.mission) {
+    keep.refusedLeave.delete(path); // le vol ne nomme plus sa mission (écrit ailleurs) : rien à réécrire, plus rien en mémoire seulement
+    releaseMemory(`leave:${path}`);
+    if (leaveNoted) me.ctx.dismissNote?.(LEAVE_NOTE);
+    leaveNoted = false;
+    return;
+  }
+  await leaveMission();
 }
 /** Les passages vol ↔ carte fournie se font l'un après l'autre (un choix fait pendant le précédent attend qu'il ait fini). */
 let turn = Promise.resolve();
