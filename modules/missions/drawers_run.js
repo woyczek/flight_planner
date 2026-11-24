@@ -909,12 +909,12 @@ export async function seal(id, letter) {
     ...ctx,
     letter
   }).length > 0;
-  const yes = typeof c.ctx.ask === 'function' ? await Promise.resolve().then(() => c.ctx.ask(c.tt(many ? RTX.sealAskMany : RTX
+  const agreed = typeof c.ctx.ask === 'function' ? await Promise.resolve().then(() => c.ctx.ask(c.tt(many ? RTX.sealAskMany : RTX
     .sealAskOne), {
     ok: c.tt(RTX.sealOk),
     cancel: c.tt(RTX.sealCancel)
   })).catch(() => false) : true;
-  if (!yes || c.dead) return;
+  if (!agreed || c.dead) return;
   const ok = await locked(c, async guarded => {
     const cur = guarded ? await reread(c) : c.doc,
       next = D.withSeal(cur, {
