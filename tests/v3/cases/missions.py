@@ -15514,8 +15514,11 @@ def n254(c):
                 f"document.querySelector('{E} input[data-k=edtitle]'))")
     # the Company application at the level Complet: its tab « Flotte » (the module aircraft, level 3) is ANOTHER module in the bar and the
     # rail; at the default level the bar has only Missions and the gear
-    other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab]')].find(x => x.checkVisibility() &&
-      !['missions', 'settings'].includes(x.dataset.landmark)); return a ? a.dataset.tab : null })()"""
+    # the bar of a phone (#fTabs, a[data-tab]) or the left column of a wide screen (#fMenu, a[data-id]): the selector of the first SHOWN
+    # entry of another module
+    other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab], #fMenu a[data-id]')].find(x => x.checkVisibility() &&
+      !['missions', 'settings'].includes(x.dataset.landmark)); return !a ? null : a.dataset.tab ? `#fTabs a[data-tab="${a.dataset.tab}"]` :
+      `#fMenu a[data-id="${a.dataset.id}"]` })()"""
 
     def to_workshop(w, docs=None, fill=True):
         reg_open(c, _TRIAL_TEXTS, docs=docs)
@@ -15559,7 +15562,7 @@ def n254(c):
         to_workshop(w, docs=[['device/level.json', {'level': 3}, 'cache']], fill=False)
         tab = c.js(other)
         c.ok(bool(tab), tab, f'{w} px: a tab of another module in the bar or the rail')
-        c.tap(f'#fTabs a[data-tab="{tab}"] >> visible=true')
+        c.tap(f'{tab} >> visible=true')
         c.until(f"!location.hash.startsWith('#missions') && !document.querySelector('{M}')", timeout=15000,
                 what=f'{w} px: another module reached')
         c.wait(600)  # red before (390): the stale entry skipped, the address came back to Missions
