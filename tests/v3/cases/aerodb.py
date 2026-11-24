@@ -21171,3 +21171,36 @@ def k535(c):
     by = [(' L8 ' in ' ' + a['route'] + ' ', a['verdict'], (a.get('judge') or {}).get('verdict'), any(i['text'] == 'refus du contrôle forcé' for i in a['issues'])) for a in alts]
     c.eq((len(alts) >= 2, len(seen) - 1, sorted(set(by))), (True, len(alts), [(False, 'unverifiable', 'unverifiable', False), (True, 'violates', 'violates', True)]), 'on an invented base each alternative is judged ONCE after the search (the controls beyond the one of the head route: as many as alternatives), the one that goes by L8, which the control refuses, carries the verdict and the error of the control, the others keep theirs — red before: no `judge` on the alternatives', what='wiring')
     c.eq((primary['verdict'], 'L8' in primary['route'], any(i['text'] == 'refus du contrôle forcé' for i in primary['issues'])), ('unverifiable', False, False), 'the head route is not touched by the judging of the alternatives', what='head')
+
+
+@case('K540', 'base/coverage says WHY a state has no procedures: `procReader` is `readable` (it holds some), `none` (the suite has no procedure reader for that state: Denmark, Sweden…) or `unchecked` (nothing held, no reader known: the reading was never checked) (SOG-0615)', 'K', static=True,
+      rule='SOG-0615 (the ergonomist: « « non » dit toujours POURQUOI »): the line « Procédures : non » of the Data screen could not tell « no reader » from « never checked »; the launcher says it, read-only, with closed values; `PROC_NO_READER` (dk, fo, gl, ca, se) is written by hand; a zone that holds procedures is `readable` whatever the table says; the three values are closed (the screen ignores any other)')
+def k540(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('base', 'coverage')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        w = lambda path, obj: (os.makedirs(os.path.dirname(path), exist_ok=True), open(path, 'w', encoding='utf-8').write(json.dumps(obj)))
+        w(os.path.join(data, 'sia', 'base', 'index.json'), {'schema': 2, 'zones': {'dk': {'cycle': '2026-10-01', 'prefixes': ['EK']}, 'se': {'cycle': '2026-10-01', 'prefixes': ['ES']},
+                                                                                 'ie': {'cycle': '2026-10-29', 'prefixes': ['EI']}, 'xx': {'cycle': '2026-10-29', 'prefixes': ['XX']}}})
+        w(os.path.join(data, 'proc', 'manual', 'EIDW.json'), {'procedures': [{'id': 'p', 'source': {'kind': 'ead-basic'}}]})
+        z = fn(RJ.Job('base', 'coverage', {}), {}, {'data': data})['zones']
+        c.eq([z[k]['procReader'] for k in ('dk', 'se', 'ie', 'xx')], ['none', 'none', 'readable', 'unchecked'], 'Denmark and Sweden: no reader; Ireland holds procedures: readable; an unknown state: never checked', what='procReader')
+        w(os.path.join(data, 'proc', 'manual', 'EKCH.json'), {'procedures': [{'id': 'p', 'source': {'kind': 'ead-basic'}}]})
+        z = fn(RJ.Job('base', 'coverage', {}), {}, {'data': data})['zones']
+        c.eq(z['dk']['procReader'], 'readable', 'a state of the table that DOES hold procedures (a hand file) is readable: the table never hides what is held', what='held beats the table')
+
+
+@case('K541', 'The two hand-written lists of what the suite does not read stay in step: every state of `base_cycle.NO_READER_ZONES` (sources whose files are dropped by hand and never read) is in `coverage.PROC_NO_READER` (SOG-0615)', 'K', static=True,
+      rule='Sécurisation (SOG-0615, note 2): PROC_NO_READER (tools/regen/coverage.py: the states with no procedure reader, Sweden added by hand) is written by hand and must follow base_cycle.NO_READER_ZONES (the states whose dropped files are not read): a state that one list says unread and the other forgets would say « Procédures : non » without its reason, or invite to drop files for a state without a reader')
+def k541(c):
+    RJ = _regen()
+    cycle = RJ.REGISTRY[('base', 'cycle')][0].__globals__
+    cov = RJ.REGISTRY[('base', 'coverage')][0].__globals__
+    unread = {z for zs in cycle['NO_READER_ZONES'].values() for z in zs}
+    c.ok(unread, 'NO_READER_ZONES is empty', 'base_cycle names the states whose dropped files are not read')
+    c.eq(sorted(unread - set(cov['PROC_NO_READER'])), [], 'every state with unread dropped files is in PROC_NO_READER', what='states missing from PROC_NO_READER')
+    c.ok('se' in cov['PROC_NO_READER'], str(cov['PROC_NO_READER']), 'Sweden (the ENR is read, the procedures are not) is there by hand')

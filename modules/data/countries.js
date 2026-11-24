@@ -973,6 +973,14 @@ function depositOnly(id) {
   const v = viewOf(id, cy, false);
   return takingStepOf(id, z, cy, v.avail, v.split)?.k === 'edition-unknown';
 }
+/** Le texte de la ligne « Procédures : non » et sa RAISON, dite par le lanceur (`procReader`, SOG-0615) : aucun lecteur pour cet État, ou lecture jamais vérifiée ; sans valeur (un lanceur qui ne la dit pas) : « Procédures : non » seul, comme avant. */
+const procReasonOf = reader => reader === 'none' ? TX.cw.procNoReader : reader === 'unchecked' ? TX.cw.procUnchecked : TX.cw.procNo;
+/** Le bloc d'une source que la suite NE LIT PAS (Naviair) dans la fiche : une ligne neutre, sans bouton de prise ni ligne orange ; les fichiers déjà déposés sont comptés (leurs noms sont dans le bloc replié « Vu par le poste, non lu par la suite »), rien n'est supprimé (SOG-0615). */
+function noReaderSourceHtml(id, cy) {
+  const T = TX.cw,
+    n = (cy.data?.unread || []).find(u => u.id === id)?.files.length || 0;
+  return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="muted" data-noreader-src><div class="d-srch"><h4>${esc(srcName(id, cy))}</h4></div><p class="f-muted" data-noreader-line>${esc(tt(T.noReaderSrc))}</p>${n ? `<p class="f-muted" data-noreader-files>${esc(tt(T.noReaderFiles, { n }))}</p><p class="f-muted" data-noreader-kept>${esc(tt(T.noReaderKept))}</p>` : ''}</section>`;
+}
 /** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » (le bouton principal, juste sous la phrase d'état, ou son avancement) ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
  *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
 function sheetHtml() {
@@ -989,8 +997,11 @@ function sheetHtml() {
     {
       ids,
       split,
-      avail
+      avail: availAll
     } = viewOf(id, cy, off),
+    // SOG-0615 : une source SANS lecteur (le lanceur le dit : addWillAsk.noReader) n'est pas une source à la main — ni prise, ni « édition non connue », ni invitation à déposer ; son bloc est neutre
+    nrIds = inCov && !off ? cy.zv?.addWillAsk.noReader || [] : [],
+    avail = availAll.filter(s => !nrIds.includes(s)),
     gone = split.filter(x => x.un),
     noReader = (cy.zv?.addWillAsk.noReader || []).map(x => (catSource(x)?.n?.[li()] || x).replace(/\s*\(.*\)\s*$/, '')),
     hands = avail.filter(s => regimeOf(s, split.find(x => x.id === s)?.item) === 'hand'),
@@ -1029,11 +1040,11 @@ function sheetHtml() {
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(badgeTone)}"${badgeText.length > 24 ? ' data-long' : ''} data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, badgeTone) || ''}</b> ${esc(badgeText)}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
     ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${off ? `<span class="d-st" data-off-state>${esc(badgeText)}</span>` : stepWord ? `<span class="d-st" data-step-state="${esc(step.k)}"><i class="f-dot" aria-hidden="true"${kind(badgeTone)}></i>${esc(stepWord)}</span>` : zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div>${off ? '' : `<ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul>`}</div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${inCov && !off ? nowHtml(id, seenAny, rename, step, cy, needs) : ''}${inCov ? updateBlockHtml(id, seenAny && !rename, step) : ''}${inCov && !off ? contentsHtml(cy) : ''}
-    ${S.cw.proc?.state === 'ready' && !off ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
+    ${S.cw.proc?.state === 'ready' && !off ? `<p class="f-muted" data-sheet-proc${procs ? '' : ` data-proc-reader="${esc(S.cw.proc.readers?.[id] || '')}"`}>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(procReasonOf(S.cw.proc.readers?.[id])))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
     ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}
-    <h4 class="d-sh">${esc(tt(off ? T.sourcesZone : T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => off ? offSourceHtml(s, cy) : sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${off ? offCopyHtml(id) : ''}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
+    <h4 class="d-sh">${esc(tt(off ? T.sourcesZone : T.sourcesTitle))}</h4>${ids.length || nrIds.length ? `${avail.map(s => off ? offSourceHtml(s, cy) : sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${nrIds.map(s => noReaderSourceHtml(s, cy)).join('')}${off ? offCopyHtml(id) : ''}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
     ${inCov && !off ? sheetPublishHtml(id, z) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
@@ -1356,14 +1367,16 @@ export async function wantProc() {
   if (S.cov?.rows) { // le tableau de couverture a déjà lu la même chose
     S.cw.proc = {
       state: 'ready',
-      zones: M.procZonesOf(S.cov.rows)
+      zones: M.procZonesOf(S.cov.rows),
+      readers: M.procReadersOf(S.cov.rows)
     };
     return renderBuild();
   }
   const cw = S.cw;
   cw.proc = {
     state: 'loading',
-    zones: {}
+    zones: {},
+    readers: {}
   };
   cw.procP = new Promise(done => {
     cw.procDone = done; // le tableau « Couverture par pays » qui s'ouvre pendant la lecture l'attend (covtable.js)
@@ -1380,7 +1393,8 @@ export async function wantProc() {
     const rows = final?.status === 409 ? null : M.coverageOf(final);
     cw.proc = {
       state: rows ? 'ready' : 'unread',
-      zones: rows ? M.procZonesOf(rows) : {}
+      zones: rows ? M.procZonesOf(rows) : {},
+      readers: rows ? M.procReadersOf(rows) : {}
     };
     cw.procRows = rows; // le tableau « Couverture par pays » reprend cette lecture à sa première ouverture (une seule lecture)
     if (rows) renderBuild();

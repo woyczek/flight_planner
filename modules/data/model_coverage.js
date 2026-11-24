@@ -13,6 +13,8 @@ const ZONE = /^[a-z0-9_-]{2,12}$/;
 const CYCLE = /^\d{4}-\d{2}-\d{2}$/;
 const KINDS = ['aerodromes', 'navaids', 'points', 'airways', 'airspaces', 'vrp', 'fir'];
 const HAS = ['points', 'navaids', 'airways', 'airspaces', 'fir', 'procedures', 'ground'];
+/** Pourquoi un pays a, ou n'a pas, de procédures (SOG-0615, valeurs fermées du lanceur) : lisible (il en détient), aucun lecteur, jamais vérifié ; '' pour un lanceur qui ne le dit pas. */
+export const PROC_READERS = ['readable', 'none', 'unchecked'];
 /** Un entier ≥ 0 borné à un milliard, 0 sinon (« 0 » veut dire « non » : le contrat n'a pas d'inconnu dans un compte). */
 const int = v => Number.isInteger(v) && v >= 0 ? Math.min(v, 1e9) : 0;
 /** Les identifiants de source d'un tableau du contrat : de la liste fermée, sans doublon, dix au plus. */
@@ -32,6 +34,7 @@ export function coverageOf(final) {
       counts,
       procedures: int(z.procedures),
       ground: int(z.ground),
+      procReader: PROC_READERS.includes(z.procReader) ? z.procReader : '',
       procSources: (Array.isArray(z.procSources) ? z.procSources : []).filter(x => typeof x === 'string' && /^[a-z0-9-]{2,20}$/.test(x))
         .slice(0, 6), // d'où viennent ses procédures : [] sans (SOG-0264)
       declared: sources(z.sources?.declared),

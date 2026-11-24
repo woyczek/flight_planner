@@ -143,6 +143,14 @@ export function procZonesOf(rows) {
   return out;
 }
 
+/** Pourquoi chaque pays a, ou n'a pas, de procédures d'après les lignes de base/coverage (`procReader`, SOG-0615) : { zone: 'readable' | 'none' | 'unchecked' } ; {} sans ligne, une zone sans valeur n'y figure pas. */
+export function procReadersOf(rows) {
+  const out = {};
+  for (const r of rows || [])
+    if (r?.procReader) out[r.zone] = r.procReader;
+  return out;
+}
+
 // ------------------------------------------------------------------------------------------------ base/cycle
 const REGIMES = ['auto', 'hand', 'local'];
 const DL_STATES = ['done', 'late', 'missing', 'waiting', 'n/a', 'unavailable'];

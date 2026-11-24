@@ -6853,7 +6853,8 @@ def _l89_cycle(world):
         zone = args.get('zone')
         by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip] + ([mora] if world.get('mora') else []), 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
         if zone in by:
-            res['zoneView'] = {'zone': zone, 'known': True, 'inCoverage': True, 'sources': by[zone], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+            res['zoneView'] = {'zone': zone, 'known': True, 'inCoverage': True, 'sources': by[zone], 'state': None,
+                               'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': list(world.get('noreader', {}).get(zone, []))}}
         if zone == 'de':   # a country outside the coverage: what adding it will ask (K182 addWillAsk, lot C)
             res['zoneView'] = {'zone': 'de', 'known': True, 'inCoverage': False, 'sources': [_l89_item('openaip', 'auto', {'state': 'missing'}, (1, 0), (0, 1, 0), None, 'not-downloaded')], 'state': None,
                                'addWillAsk': {'sources': ['openaip', 'sia', 'nats', 'naviair'], 'auto': ['openaip'], 'hand': [{'id': 'sia', 'expected': ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip']}], 'personal': ['nats'], 'noReader': ['naviair']}}
@@ -7579,6 +7580,10 @@ def l95(c):
     c.eq([p['verb'] for p in st['posts'][n_posts:] if p['verb'] in ('fetch', 'build', 'update')], [], 'adding downloads and builds nothing', what='nothing started')
     c.until("!document.querySelector('[data-sheet=de] [data-add-ask]') && !!document.querySelector('[data-sheet=de] [data-sheet-remove]')", timeout=8000, what='the sheet is now the one of a covered country')
     # ---- remove: one question first, No keeps it, Yes removes it (the files are never purged)
+    # the notification of the add (« added ») floats over the bottom of the screen for 6 s; during its first 400 ms it lets touches through (SOG-0605), then it takes them. At 390 the sheet of a covered country
+    # is longer (the line of the sources the suite does not read, the neutral block) and the « remove » link lies under it: the first touch (still within the 400 ms) passes and opens the question, the SECOND one
+    # (after « No ») finds the note over the link. The notification, counted above, is dismissed before the touches (as the case does before the add)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.tap('[data-sheet=de] [data-act=remove-country]')
     q = _ask_text(c)
     c.eq([norm(q['text']), norm(q['ok'])], [norm(LC('removeAsk').replace('{c}', de)), norm(LC('removeBtn'))], 'ONE question that says the files stay', what='question')
@@ -12066,4 +12071,49 @@ def l183(c):
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-group-id=europe-east]').scrollIntoView({ block: 'start' })")
         c.shot(f'L183_{c.width}_{lang}_pack_none.png')
+    c.check_errors()
+
+
+_L184_FILES = {'fr': '2 fichiers déposés, non lus.', 'en': '2 files dropped, not read.', 'de': '2 Dateien abgelegt, nicht gelesen.', 'es': '2 archivos depositados, no leídos.'}
+
+
+@case('L184', 'Données: a source the suite does not read is not a hand source on the sheet (no take button, no orange line, a neutral sentence and the NUMBER of files dropped), and « Procédures : non » says its reason (SOG-0615)', 'L', tags=('data',), langs4=True, designs=('standard',),
+      screens=True, night=False,
+      rule='SOG-0615 (the ergonomist: « l\'écran n\'invite jamais à un geste qui ne sert à rien, et « non » dit toujours POURQUOI »; mock-up maquette/sans_lecteur.html): a source for which the launcher says `addWillAsk.noReader` has no take button, no « édition non connue » line, no inventory in the country sheet: one neutral line, the number of files dropped (their names stay in the folded block), « nothing is deleted »; the sheet line says « Sources que la suite ne lit pas : … »; the line « Procédures : non » carries the reason of `base/coverage` (`procReader`: none → « pas de lecteur de procédures pour cet État », unchecked → « Lecture jamais vérifiée pour cet État »), `readable` keeps its words and the state badge does not change; red before: the source is a hand source with its button and the line says « non » alone')
+def l184(c):
+    lang = c.lang
+    CW = lambda k, row=0: _trow(k, lang, after='  cw: {', row=row)
+    world = {'sia_seen': True, 'noreader': {'ca': ['navcan']},
+             'unread': [{'id': 'navcan', 'files': ['CA_AIP_ENR_1.pdf', 'CA_AIP_ENR_2.pdf'], 'reason': 'no-reader', 'note': ''}]}
+    cov_view = _view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': {
+        'fr': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip'], 'procReader': 'readable'},
+        'ca': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 0, 'sources': {}, 'procSources': [], 'procReader': 'none'},
+        'gb': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 0, 'sources': {}, 'procSources': [], 'procReader': 'unchecked'}}})
+    st, _x4 = _l89_open(c, world, verbs=('base/pickup', 'base/cycle', 'base/coverage'), views=[cov_view], my_coverage=False)
+    # ---- 1. a country with a source the suite does not read (« ca » stands for Denmark: no fixture of its own): the neutral block, nothing to do
+    _l89_sheet(c, 'ca')
+    c.until("!!document.querySelector('[data-sheet=ca] [data-sheet-proc]')", timeout=15000, what='the procedures line of the sheet')
+    blk = '[data-sheet=ca] [data-noreader-src]'
+    # the sheet is drawn first from the coverage, then again when the launcher has answered `zone ca` (what adding will ask: the sources it does not read): wait for that second drawing
+    c.until("!!document.querySelector('[data-sheet=ca] [data-noreader-src]')", timeout=15000, what='the neutral block of the source the suite does not read (zone view of the launcher answered)')
+    c.eq(c.count(blk), 1, 'the source the suite does not read has ONE neutral block', what='block')
+    c.eq(norm(c.text(blk + ' [data-noreader-line]')), norm(CW('noReaderSrc')), 'its sentence: the suite does not read the files of this source, no need to drop them (the name is the title of the block, not repeated)', what='sentence')
+    c.eq(norm(c.text(blk + ' [data-noreader-files]')), norm(_L184_FILES[lang]), 'the number of files already dropped, agreed by the frame (2 files)', what='files')
+    c.eq(norm(c.text(blk + ' [data-noreader-kept]')), norm(CW('noReaderKept')), 'nothing is deleted', what='kept')
+    c.eq(c.count(blk + ' button, ' + blk + ' a, ' + blk + ' input, ' + blk + ' [data-inventory], ' + blk + ' [data-regime-line]'), 0, 'no button, no link, no inventory, no « by hand » regime: nothing to do', what='nothing to do')
+    c.ok(c.count('[data-sheet=ca] [data-sheet-source=navcan]:not([data-noreader-src])') == 0, '', 'the same source has no second, hand-source block')
+    c.ok(norm(CW('noReader').split('{s}')[0]) in norm(c.text('[data-sheet=ca] [data-sheet-noreader]')), c.text('[data-sheet=ca] [data-sheet-noreader]'), 'the sheet line says « Sources that the suite does not read: … »')
+    c.ok('pas encore' not in c.text('[data-sheet=ca]').lower() and 'not read yet' not in c.text('[data-sheet=ca]').lower(), c.text('[data-sheet=ca]')[:200], 'nothing is promised: « non lu », never « pas encore lu »')
+    # ---- 2. « Procédures : non » and its reason
+    c.eq([c.js("document.querySelector('[data-sheet=ca] [data-sheet-proc]').dataset.procReader"), norm(c.text('[data-sheet=ca] [data-sheet-proc]'))], ['none', norm(CW('procNoReader'))], 'no reader for the state: the reason on the same line', what='none')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-sheet=ca]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L184_{c.width}_{lang}_noreader.png')
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-proc]')", timeout=10000, what='the procedures line of the sheet of gb')
+    c.eq([c.js("document.querySelector('[data-sheet=gb] [data-sheet-proc]').dataset.procReader"), norm(c.text('[data-sheet=gb] [data-sheet-proc]'))], ['unchecked', norm(CW('procUnchecked'))], 'a state with nothing held and no reader known: the reading was never checked', what='unchecked')
+    c.eq(c.count('[data-sheet=gb] [data-noreader-src]'), 0, 'a country without a source the suite does not read has no such block', what='no block')
+    _l89_sheet(c, 'fr')
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-proc]')", timeout=10000, what='the procedures line of the sheet of fr')
+    c.ok('eAIP' in c.text('[data-sheet=fr] [data-sheet-proc]') and c.count('[data-sheet=fr] [data-sheet-proc][data-proc-reader]') == 0, c.text('[data-sheet=fr] [data-sheet-proc]'), 'a state that holds procedures keeps its words (« Procédures : oui (eAIP) »)')
     c.check_errors()

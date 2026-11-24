@@ -649,6 +649,26 @@ export const TX = {
     ],
     procYes: ['Procédures : oui ({s})', 'Procedures: yes ({s})', 'Verfahren: ja ({s})', 'Procedimientos: sí ({s})'],
     procNo: ['Procédures : non', 'Procedures: no', 'Verfahren: nein', 'Procedimientos: no'],
+    // SOG-0615 : « non » dit POURQUOI (la raison vient du lanceur : procReader)
+    procNoReader: ['Procédures : non. La suite n’a pas de lecteur de procédures pour cet État.',
+      'Procedures: no. The suite has no procedure reader for this state.',
+      'Verfahren: nein. Die Suite hat keinen Verfahrensleser für diesen Staat.',
+      'Procedimientos: no. La suite no tiene lector de procedimientos para este Estado.'
+    ],
+    procUnchecked: ['Procédures : non. Lecture jamais vérifiée pour cet État.', 'Procedures: no. Reading never checked for this state.',
+      'Verfahren: nein. Lesen für diesen Staat nie geprüft.', 'Procedimientos: no. Lectura nunca verificada para este Estado.'
+    ],
+    noReaderSrc: ['La suite ne lit pas les fichiers de cette source : inutile de les déposer.',
+      'The suite does not read the files of this source: no need to drop them.',
+      'Die Suite liest die Dateien dieser Quelle nicht: Sie müssen nicht abgelegt werden.',
+      'La suite no lee los archivos de esta fuente: no hace falta depositarlos.'
+    ],
+    noReaderFiles: ['{n} fichier(s) déposé(s), non lu(s).', '{n} file(s) dropped, not read.', '{n} Datei(en) abgelegt, nicht gelesen.',
+      '{n} archivo(s) depositado(s), no leído(s).'
+    ],
+    noReaderKept: ['Rien n’est supprimé : les fichiers restent dans Téléchargements.', 'Nothing is deleted: the files stay in Downloads.',
+      'Nichts wird gelöscht: Die Dateien bleiben in Downloads.', 'No se borra nada: los archivos siguen en Descargas.'
+    ],
     procSource: {
       cifp: ['CIFP', 'CIFP', 'CIFP', 'CIFP'],
       eaip: ['eAIP', 'eAIP', 'eAIP', 'eAIP'],
@@ -799,10 +819,9 @@ export const TX = {
       'Beim Herausgeber seit {d} nicht verfügbar.', 'No disponible en su editor desde {d}.'
     ],
     pathCheck: ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar'],
-    noReader: ['Fichiers à déposer à la main que la suite ne lit pas encore : {s}.',
-      'Files to drop by hand that the suite does not read yet: {s}.',
-      'Von Hand abzulegende Dateien, die die Suite noch nicht liest: {s}.',
-      'Archivos que se depositan a mano y que la suite aún no lee: {s}.'
+    noReader: ['Sources que la suite ne lit pas : {s}.', 'Sources that the suite does not read: {s}.',
+      'Quellen, die die Suite nicht liest: {s}.',
+      'Fuentes que la suite no lee: {s}.'
     ],
     name: ['Fichier : {n}', 'File: {n}', 'Datei: {n}', 'Archivo: {n}'],
     seen: ['vu dans Téléchargements', 'seen in Downloads', 'in Downloads gesehen', 'visto en Descargas'],
@@ -2696,13 +2715,13 @@ export const TX = {
       ]
     },
     // Vu par le poste, pas encore lu
-    unreadTitle: ['Vu par le poste, pas encore lu par la suite', 'Seen by the workstation, not read by the suite yet',
-      'Vom Rechner gesehen, von der Suite noch nicht gelesen', 'Visto por el equipo, aún sin leer por la suite'
+    unreadTitle: ['Vu par le poste, non lu par la suite', 'Seen by the workstation, not read by the suite',
+      'Vom Rechner gesehen, von der Suite nicht gelesen', 'Visto por el equipo, no leído por la suite'
     ],
-    unreadHint: ['Fichiers présents dans Téléchargements que la suite ne lit pas encore : rien à faire ici.',
-      'Files in Downloads that the suite does not read yet: nothing to do here.',
-      'Dateien in Downloads, die die Suite noch nicht liest: hier ist nichts zu tun.',
-      'Archivos en Descargas que la suite aún no lee: nada que hacer aquí.'
+    unreadHint: ['Fichiers présents dans Téléchargements que la suite ne lit pas : rien à faire ici.',
+      'Files in Downloads that the suite does not read: nothing to do here.',
+      'Dateien in Downloads, die die Suite nicht liest: hier ist nichts zu tun.',
+      'Archivos en Descargas que la suite no lee: nada que hacer aquí.'
     ],
     unreadNone: ['Rien de tel dans Téléchargements.', 'Nothing of the kind in Downloads.', 'Nichts dergleichen in Downloads.',
       'Nada de eso en Descargas.'
@@ -2734,8 +2753,8 @@ export const TX = {
     addPersonal: ['cocher la case d’usage personnel pour {s}', 'tick the personal-use box for {s}',
       'das Feld für den persönlichen Gebrauch ankreuzen für {s}', 'marcar la casilla de uso personal para {s}'
     ],
-    addNoReader: ['{s} : déposés mais pas encore lus', '{s}: dropped but not read yet', '{s}: abgelegt, aber noch nicht gelesen',
-      '{s}: depositados pero aún sin leer'
+    addNoReader: ['{s} : non lu par la suite', '{s}: not read by the suite', '{s}: von der Suite nicht gelesen',
+      '{s}: no leído por la suite'
     ],
     addNothing: ['rien de plus : aucun fichier à fournir', 'nothing more: no file to provide',
       'nichts weiter: keine Datei bereitzustellen',

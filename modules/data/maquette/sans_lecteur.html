@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Données : source sans lecteur et « Procédures : non » avec sa raison (maquette SOG-0615)</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --ok: #1a7f37;
+  --ok-bg: #e6f6ea;
+  --ok-line: #9bd3a8;
+  --warn: #7d4e00;
+  --warn-bg: #fff4d1;
+  --warn-line: #d4a72c;
+  --accent: #0b5cad;
+  --accent-bg: #eaf2fb;
+  --neutral-bg: #f0f2f4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a;
+    --ink: #e6ebf0;
+    --muted: #a3afbb;
+    --line: #35404b;
+    --soft: #171e26;
+    --ok: #5fd07c;
+    --ok-bg: #12301b;
+    --ok-line: #2c6a40;
+    --warn: #f0c36a;
+    --warn-bg: #3a2c0a;
+    --warn-line: #8a6a1c;
+    --accent: #79b8ff;
+    --accent-bg: #10243a;
+    --neutral-bg: #1c242d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a;
+  --ink: #e6ebf0;
+  --muted: #a3afbb;
+  --line: #35404b;
+  --soft: #171e26;
+  --ok: #5fd07c;
+  --ok-bg: #12301b;
+  --ok-line: #2c6a40;
+  --warn: #f0c36a;
+  --warn-bg: #3a2c0a;
+  --warn-line: #8a6a1c;
+  --accent: #79b8ff;
+  --accent-bg: #10243a;
+  --neutral-bg: #1c242d;
+}
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 16px 40px
+}
+h1 {
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 14px 0 4px
+}
+h2.scene {
+  font-size: 15px;
+  margin: 22px 0 8px;
+  padding: 6px 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-left: 4px solid var(--accent)
+}
+p {
+  margin: 0 0 8px
+}
+.intro {
+  color: var(--muted);
+  font-size: 14px
+}
+code {
+  font: 13px/1.4 ui-monospace, Consolas, monospace;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  padding: 1px 4px;
+  border-radius: 3px;
+  overflow-wrap: anywhere
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px
+}
+@media (min-width: 900px) {
+  .grid.two {
+    grid-template-columns: 1fr 1fr
+  }
+}
+.sheet {
+  background: var(--bg);
+  border: 1px solid var(--ink);
+  text-align: left;
+  min-width: 0
+}
+.shead {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px 6px
+}
+.shead .tt {
+  flex: 1;
+  min-width: 0
+}
+.shead h3 {
+  font-size: 20px;
+  line-height: 1.2;
+  margin: 0
+}
+.shead .sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted)
+}
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-top: 3px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 1px solid var(--ok-line)
+}
+.sbody {
+  padding: 4px 12px 12px
+}
+.cells {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 6px 0 10px
+}
+.cell {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  font-size: 14px
+}
+.cl {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted)
+}
+.line {
+  font-size: 14px;
+  margin: 6px 0;
+  color: var(--muted)
+}
+.line b {
+  color: var(--ink)
+}
+.proc {
+  font-size: 14px;
+  margin: 6px 0
+}
+.why {
+  color: var(--muted)
+}
+.srch {
+  font-size: 15px;
+  margin: 12px 0 6px
+}
+.src {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ok-line);
+  padding: 8px 10px;
+  margin: 0 0 8px
+}
+.src.neutral {
+  border-left-color: var(--line);
+  background: var(--neutral-bg)
+}
+.src h4 {
+  margin: 0 0 4px;
+  font-size: 15px
+}
+.regime {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 4px
+}
+.src .msg {
+  font-size: 14px;
+  margin: 4px 0
+}
+.files {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted)
+}
+.files li {
+  padding: 2px 0;
+  overflow-wrap: anywhere
+}
+.side {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0 0;
+  border-top: 1px dashed var(--line);
+  padding-top: 6px
+}
+.btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+  min-height: 44px
+}
+.other {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  margin: 8px 0 0;
+  font-size: 14px
+}
+.other h5 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted)
+}
+.fold {
+  border: 1px solid var(--line);
+  margin: 8px 0 0
+}
+.fold>summary {
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600
+}
+.fold .fb {
+  padding: 0 10px 8px;
+  font-size: 14px
+}
+.rules {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  padding-left: 18px
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Données : une source sans lecteur, et « Procédures : non » avec sa raison</h1>
+<p class="intro">Maquette SOG-0615. Fiche d’un État <b>inventé</b>, la Ruritanie (RU), dont la source « AIP Ruritanie » se dépose à la main mais n’a aucun lecteur dans la suite. La pastille de l’État ne change pas (ici : « à jour », vert). Règle : l’écran n’invite jamais à un geste qui ne sert à rien, et « non » dit pourquoi ; on écrit « non lu », jamais « pas encore lu ».</p>
+
+<h2 class="scene">Scène 1 · une source sans lecteur, aucun fichier déposé</h2>
+<div class="grid two">
+  <div>
+    <div class="sheet" data-scene="1">
+      <div class="shead"><div class="tt"><h3>Ruritanie</h3><p class="sub">RU · groupe Europe centrale</p></div><span class="badge">● À jour</span></div>
+      <div class="sbody">
+        <div class="cells"><div class="cell"><span class="cl">État</span>À jour</div><div class="cell"><span class="cl">Publié</span>le 20/11</div></div>
+        <p class="proc" data-proc>Procédures : non. <span class="why">La suite n’a pas de lecteur de procédures pour cet État.</span></p>
+        <p class="line" data-sheet-noreader>Sources que la suite ne lit pas : <b>AIP Ruritanie</b>.</p>
+        <h4 class="srch">Sources</h4>
+        <section class="src"><h4>openAIP</h4><p class="regime">Prise seule par le lanceur</p><p class="msg">Téléchargé le 18/11 · construit · publié</p></section>
+        <section class="src neutral" data-noreader-src><h4>AIP Ruritanie</h4>
+          <p class="msg" data-noreader-line>La suite ne lit pas les fichiers de cette source : inutile de les déposer.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="other"><h5>Le même mot, hors couverture (« Ajouter ce pays demandera : »)</h5>
+      <ul style="margin:0;padding-left:18px"><li>télécharger openAIP (le lanceur le fait seul)</li><li data-ask="noreader">AIP Ruritanie : non lu par la suite</li></ul></div>
+    <details class="fold" open><summary>Vu par le poste, non lu par la suite <small style="font-weight:400;color:var(--muted)">· rien dans cet exemple</small></summary>
+      <div class="fb"><p class="line">Rien de tel dans Téléchargements.</p></div></details>
+  </div>
+</div>
+
+<h2 class="scene">Scène 2 · la même source, des fichiers déjà déposés</h2>
+<div class="grid two">
+  <div>
+    <div class="sheet" data-scene="2">
+      <div class="shead"><div class="tt"><h3>Ruritanie</h3><p class="sub">RU · groupe Europe centrale</p></div><span class="badge">● À jour</span></div>
+      <div class="sbody">
+        <div class="cells"><div class="cell"><span class="cl">État</span>À jour</div><div class="cell"><span class="cl">Publié</span>le 20/11</div></div>
+        <p class="proc">Procédures : non. <span class="why">La suite n’a pas de lecteur de procédures pour cet État.</span></p>
+        <p class="line">Sources que la suite ne lit pas : <b>AIP Ruritanie</b>.</p>
+        <h4 class="srch">Sources</h4>
+        <section class="src"><h4>openAIP</h4><p class="regime">Prise seule par le lanceur</p><p class="msg">Téléchargé le 18/11 · construit · publié</p></section>
+        <section class="src neutral" data-noreader-src><h4>AIP Ruritanie</h4>
+          <p class="msg" data-noreader-line>La suite ne lit pas les fichiers de cette source : inutile de les déposer.</p>
+          <p class="msg" data-noreader-files>3 fichiers déposés, non lus.</p>
+          <p class="side">Rien n’est supprimé : les fichiers restent dans Téléchargements.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="other"><h5>Le bloc replié « Vu par le poste, non lu par la suite » (les noms de fichiers sont gardés)</h5></div>
+    <details class="fold" open><summary>Vu par le poste, non lu par la suite <small style="font-weight:400;color:var(--muted)">· 3 fichiers</small></summary>
+      <div class="fb"><p class="line">Fichiers vus dans Téléchargements que la suite ne lit pas : rien à faire ici.</p>
+        <ul class="files" style="font-size:14px"><li><b style="color:var(--ink)">AIP Ruritanie</b> : <code>RU_ENR_3_1_en.pdf</code>, <code>RU_AD_2_RUCH.pdf</code>, <code>RU_AD_2_RUBB.pdf</code> — pas de lecteur</li></ul></div></details>
+    <div class="other"><h5>Un seul fichier</h5><p style="margin:0" data-noreader-files>1 fichier déposé, non lu.</p></div>
+  </div>
+</div>
+
+<h2 class="scene">Scène 3 · la ligne « Procédures » dans ses trois raisons</h2>
+<div class="grid two">
+  <div class="sheet" data-scene="3a"><div class="sbody">
+    <p class="proc" data-proc="none"><b>Procédures : non.</b> <span class="why">La suite n’a pas de lecteur de procédures pour cet État.</span></p>
+    <p class="line" style="margin-top:0">Raison « aucun lecteur » (le Danemark, la Suède aujourd’hui) : la suite ne sait pas lire les procédures de cet État. La fiche EST celle de l’État : aucun nom à décliner, dans les quatre langues.</p>
+  </div></div>
+  <div class="sheet" data-scene="3b"><div class="sbody">
+    <p class="proc" data-proc="unknown"><b>Procédures : non.</b> <span class="why">Lecture jamais vérifiée pour cet État.</span></p>
+    <p class="line" style="margin-top:0">Raison « jamais vérifié » : un lecteur existe peut-être, il n’a jamais été essayé sur cet État.</p>
+    <p class="proc" data-proc="readable"><b>Procédures : oui</b> (CIFP, eAIP) <span class="why">· le cas lisible garde ses mots d’aujourd’hui</span></p>
+    <p class="line" style="margin-top:0">Ou, lisible mais rien de publié : « Procédures : non » comme aujourd’hui, avec son geste.</p>
+  </div></div>
+</div>
+<ul class="rules">
+  <li>La raison vient du lanceur : un champ en lecture seule, aux valeurs fermées « aucun lecteur », « jamais vérifié », « lisible ».</li>
+  <li>Quatre langues, le « (s) » accordé par le cadre : « 1 fichier déposé, non lu » / « 3 fichiers déposés, non lus ».</li>
+</ul>
+</div>
+</body>
+</html>
