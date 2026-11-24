@@ -269,12 +269,13 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-text p{margin:.4em 0;white-space:pre-wrap}
 [data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}
 [data-drawers] [data-dw-pos]{margin:0 0 8px}
-[data-drawers][data-flight]{display:flex;flex-direction:column;border:1px solid var(--sog-border);background:var(--sog-bg);margin:0 0 12px}
-[data-drawers][data-flight]>section,[data-drawers][data-flight]>header{padding:12px 16px;border-bottom:1px solid var(--sog-border);margin:0}
-[data-drawers][data-flight] .dw-head h3{margin:0;font-size:1.25em}
-[data-drawers][data-flight] .dw-state{margin:2px 0 0;font-size:var(--sog-size-s);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-[data-drawers][data-flight] .dw-state i{width:8px;height:8px;border-radius:50%;background:var(--sog-ok,#1e7d32);display:inline-block}
-[data-drawers][data-flight] .dw-kick{margin:0 0 8px;font-size:var(--sog-size-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted)}
+[data-drawers].dw-flight{display:flex;flex-direction:column;border:1px solid var(--sog-border);background:var(--sog-bg);margin:0 0 12px}
+[data-drawers].dw-flight>section,[data-drawers].dw-flight>header{padding:12px 16px;border-bottom:1px solid var(--sog-border);margin:0}
+[data-drawers].dw-flight .dw-head h3{margin:0;font-size:1.25em}
+[data-drawers].dw-flight .dw-state{margin:2px 0 0;font-size:var(--sog-size-s);display:flex;align-items:center;gap:2px 14px;flex-wrap:wrap}
+[data-drawers].dw-flight .dw-state i{width:8px;height:8px;border-radius:50%;background:var(--sog-ok,#1e7d32);display:inline-block;margin-right:-8px}
+[data-drawers].dw-flight .dw-state [data-dw-nopos]{color:var(--sog-fg)}
+[data-drawers].dw-flight .dw-kick,[data-dw-acts] .dw-kick{margin:0 0 8px;font-size:var(--sog-size-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted)}
 [data-drawers] .dw-env{display:flex;gap:14px;align-items:center}
 [data-drawers] .dw-env+.dw-env{margin-top:12px;padding-top:12px;border-top:1px dashed var(--sog-border)}
 [data-drawers] .dw-shape{position:relative;flex:none;width:96px;height:62px;border:1px solid var(--sog-border);background:var(--sog-soft,var(--sog-bg))}
@@ -283,10 +284,13 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-what{flex:1;min-width:0}
 [data-drawers] .dw-what b{display:block}
 [data-drawers] .dw-now .dw-row{border:0;padding:0;background:none}
-[data-drawers] .dw-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-[data-drawers] .dw-two button{width:100%;min-height:var(--sog-touch,44px)}
-[data-drawers] .dw-acts{background:var(--sog-soft,var(--sog-bg))}
-[data-drawers] .dw-answer{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--sog-muted);background:var(--sog-bg);font-size:var(--sog-size-s)}
+[data-dw-acts] .dw-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-dw-acts] .dw-two button{width:100%;min-height:var(--sog-touch,44px)}
+[data-dw-acts]{background:var(--sog-soft,var(--sog-bg))}
+[data-dw-acts] .dw-answer{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--sog-muted);background:var(--sog-bg);font-size:var(--sog-size-s)}
+[data-dw-acts] .dw-ask{border:1px solid var(--sog-border);padding:8px 10px;background:var(--sog-bg);margin:0 0 8px}
+[data-dw-acts] .dw-ask p{margin:0 0 8px}
+[data-dw-acts] .dw-ask .dw-acts{display:flex;flex-wrap:wrap;gap:8px;margin:0}
 [data-drawers] .dw-fold>summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;min-height:var(--sog-touch,44px);align-items:center}
 [data-drawers] .dw-fold>summary .t{flex:1;min-width:0}
 [data-drawers] .dw-fold>summary .h{color:var(--sog-muted);font-size:var(--sog-size-s)}
@@ -297,9 +301,12 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers][data-narrow] .dw-what b{display:inline}
 [data-drawers][data-narrow] .dw-what span::before{content:" · "}
 [data-drawers][data-narrow] .dw-env button{flex:1 0 100%}
-[data-drawers][data-narrow] .dw-acts{position:sticky;bottom:0;z-index:2;border-top:1px solid var(--sog-border);box-shadow:0 -4px 12px rgba(0,0,0,.10);display:flex;flex-direction:column}
-[data-drawers][data-narrow] .dw-acts .dw-kick{display:none}
-[data-drawers][data-narrow] .dw-acts .dw-answer{order:-1;margin:0 0 8px}`;
+[data-drawers][data-narrow] [data-dw-acts]{position:sticky;bottom:0;z-index:2;border-top:1px solid var(--sog-border);box-shadow:0 -4px 12px rgba(0,0,0,.10);display:flex;flex-direction:column}
+[data-drawers][data-narrow] [data-dw-acts] .dw-kick{display:none}
+[data-drawers][data-narrow] [data-dw-acts] .dw-answer{order:-1;margin:0 0 8px}
+[data-actslot]>[data-dw-acts]{flex:1 1 100%;min-width:0;display:flex;flex-direction:column;padding:0;background:none}
+[data-actslot]>[data-dw-acts] .dw-kick{display:none}
+[data-actslot]>[data-dw-acts] .dw-answer{order:-1;margin:0 0 8px}`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 export const POLL_MS = RUN.POLL_MS;
 /** Ce que la fiche et son Détail montrent de cette mission (le juge le sait : drawers_run.js). */
@@ -430,6 +437,7 @@ export function stop() {
   W = null;
   clearTimeout(w.restTimer);
   clearTimeout(w.ansTimer);
+  w.actsEl?.remove(); // les gestes posés dans la place de la rangée de la fiche partent avec la section
   w.askBtn?.remove();
   w.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
   RD.detach();
@@ -585,7 +593,10 @@ function paintPos(w) {
   if (W !== w) return;
   const c = RUN.stateOf(w.id),
     p = w.host?.querySelector?.('[data-dw-pos]');
-  if (c && p) p.textContent = posText(w, c);
+  if (c && p) {
+    p.textContent = posText(w, c);
+    p.toggleAttribute('data-dw-nopos', !RUN.liveInfo(c).tracking);
+  }
 }
 
 /** « Demander la suite » dans la place que la fiche lui donne ([data-actslot] de sa rangée des actions, après « Préparer ce vol »), ou
@@ -634,8 +645,10 @@ function paint(w) {
 /** La section hors vol, comme avant SOG-0619 : cachée et vide tant qu'aucun tiroir de MA mission n'est ouvert (SOG-0459), puis « Suite de la
  *  mission » et une ligne par tiroir ouvert ; « Demander la suite » dans la place de la rangée des actions de la fiche. */
 function paintLegacy(w, c) {
-  w.host.removeAttribute('data-flight');
+  w.host.classList.remove('dw-flight');
   w.host.removeAttribute('data-narrow');
+  w.actsEl?.remove(); // hors vol, les gestes du bloc ne sont nulle part : « Demander la suite » reprend sa place de la rangée (placeAsk)
+  w.actsEl = null;
   const opened = c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open) : [],
     rows = opened.map(s => rowHtml(w, c, s)),
     asking = c.mine && c.asking;
@@ -675,11 +688,15 @@ function paintFlight(w, c) {
     started = Date.parse(c.startIso || ''),
     hhmm = ms => fmtZ(new Date(ms));
   w.host.hidden = false;
-  w.host.setAttribute('data-flight', '');
+  // l'accroche du style du bloc d'une mission en vol (le module sait « à moi et en vol » par son propre état : aucun signal à lui donner)
+  w.host.classList.add('dw-flight');
   w.host.toggleAttribute('data-narrow', narrow);
   w.host.toggleAttribute('data-mine', read.length > 0 || unread.length > 0);
   // (1) l'état, une ligne
-  const head = `<header class="dw-head" data-dw-head><h3>${esc(w.tt(TX.head))}</h3><p class="f-muted dw-state" data-dw-state><i></i>${Number.isFinite(started) ? `${esc(w.tt(TX.inFlight, { t: hhmm(started) }))} · ` : ''}<span data-dw-pos>${esc(posText(w, c))}</span></p></header>`;
+  // la ligne d'état : deux éléments côte à côte (flex-wrap, jamais un point médian qui reste seul au bout d'une ligne) ; « Pas de position » est un avertissement :
+  // la couleur du texte, pas le gris d'aide
+  const tracking = RUN.liveInfo(c).tracking,
+    head = `<header class="dw-head" data-dw-head><h3>${esc(w.tt(TX.head))}</h3><p class="f-muted dw-state" data-dw-state><i></i>${Number.isFinite(started) ? `<span data-dw-since>${esc(w.tt(TX.inFlight, { t: hhmm(started) }))}</span>` : ''}<span data-dw-pos${tracking ? '' : ' data-dw-nopos'}>${esc(posText(w, c))}</span></p></header>`;
   // (2) ce qui vient d'arriver : une enveloppe par message pas encore lu ; rien de son texte avant le geste
   const arrived = unread.length ? `<section data-dw-arrived><p class="dw-kick">${esc(w.tt(TX.kArrived))}</p>${unread.map(s => `<div class="dw-env" data-dw-env="${esc(s.id)}"><div class="dw-shape" role="img" aria-label="${esc(w.tt(RD.TX.envelope))}"><span></span></div><div class="dw-what"><b>${esc(w.tt(TX.envMsg))}</b><span class="f-muted">${esc(w.tt(TX.envAt, { t: hhmm(s.at) }))}</span></div><button type="button" class="primary" data-dw-open="${esc(s.id)}">${esc(w.tt(RD.TX.envOpen))}</button></div>`).join('')}</section>` : '';
   // (3) maintenant : le dernier message lu, entier ; sans message lu, l'ordre de mission
@@ -696,7 +713,25 @@ function paintFlight(w, c) {
   const left = RUN.restLeft(w.id),
     ans = c.answer && Date.now() - c.answer.at < ANSWER_MS ? w.tt(TX[c.answer.key]) : '',
     box = c.asking ? `<div class="dw-ask" data-dw-askbox><p>${esc(w.tt(TX.askText))}</p><div class="dw-acts"><button type="button" class="primary" data-dw-ask-yes>${esc(w.tt(TX.askYes))}</button><button type="button" data-dw-ask-no>${esc(w.tt(TX.askNo))}</button></div></div>` : '',
-    acts = `<section class="dw-acts" data-dw-acts${narrow ? ' data-f-foot' : ''}><p class="dw-kick">${esc(w.tt(TX.kDo))}</p>${box}<div class="dw-two"><button type="button" data-dw-seen>${esc(w.tt(TX.objSeen))}</button><button type="button" data-dw-ask${left > 0 ? ' disabled data-dw-rest' : ''} aria-expanded="${c.asking ? 'true' : 'false'}">${esc(w.tt(TX.ask))}</button></div>${ans ? `<p class="dw-answer" data-dw-answer role="status">${esc(ans.endsWith('.') ? ans : `${ans}.`)}</p>` : ''}</section>`;
+    inner = `<p class="dw-kick">${esc(w.tt(TX.kDo))}</p>${box}<div class="dw-two"><button type="button" data-dw-seen>${esc(w.tt(TX.objSeen))}</button><button type="button" data-dw-ask${left > 0 ? ' disabled data-dw-rest' : ''} aria-expanded="${c.asking ? 'true' : 'false'}">${esc(w.tt(TX.ask))}</button></div>${ans ? `<p class="dw-answer" data-dw-answer role="status">${esc(ans.endsWith('.') ? ans : `${ans}.`)}</p>` : ''}`,
+    // UN SEUL pied collant à la fois (SOG-0619, l'ergonome) : dans la FICHE d'un téléphone, la place [data-actslot] de la rangée des actions (askSlot) porte les gestes — le
+    // pied de la fiche est alors le seul pied, le bloc n'a pas le sien ; dans le volet (askSlot null) ou sans place, le bloc garde son pied collant, déclaré au cadre
+    // (data-f-foot) ; sur un écran, les gestes restent dans le flux du bloc, sous « Maintenant ». Jamais à deux endroits.
+    slot = narrow ? gestureSlot(w) : null,
+    acts = slot ? '' : `<section class="dw-acts" data-dw-acts${narrow ? ' data-f-foot' : ''}>${inner}</section>`;
+  if (slot) {
+    if (!w.actsEl || w.actsEl.parentElement !== slot) {
+      w.actsEl?.remove();
+      w.actsEl = document.createElement('div');
+      w.actsEl.setAttribute('data-dw-acts', '');
+      w.actsEl.addEventListener('click', onClick);
+      slot.append(w.actsEl);
+    }
+    w.actsEl.innerHTML = inner;
+  } else {
+    w.actsEl?.remove();
+    w.actsEl = null;
+  }
   // (5) avant : les messages lus précédents, repliés, le plus récent d'abord ; le débrief y prend sa place comme un message ; l'ordre de mission en dernier
   const before = read.slice(0, -1).map(s => ({
       at: s.at,
@@ -723,6 +758,11 @@ function paintFlight(w, c) {
   if (left > 0) w.restTimer = setTimeout(() => W === w && paint(w), Math.min(left + 50, 2 ** 31 - 1));
   if (ans) w.ansTimer = setTimeout(() => W === w && paint(w), Math.max(50, ANSWER_MS - (Date.now() - c.answer.at) + 50));
   reader(w, c, true);
+}
+
+/** La place des gestes de la fiche d'un téléphone : `askSlot` (par défaut [data-actslot] de la fiche) ; null sans place (le volet, ou une section hors fiche). */
+function gestureSlot(w) {
+  return (w.askSlot === undefined ? w.host.closest?.('.ms-sheet')?.querySelector('[data-actslot]') : w.askSlot) || null;
 }
 
 const ANSWER_MS = 60e3; // la réponse d'un geste reste affichée une minute (celle du repos de « Demander la suite »)
@@ -797,7 +837,7 @@ function onAsk(e) {
   const w = W;
   e?.stopPropagation?.();
   if (!w || !RUN.ask(w.id)) return;
-  w.host.querySelector('[data-dw-ask-yes]')?.focus?.();
+  (w.actsEl?.querySelector('[data-dw-ask-yes]') || w.host.querySelector('[data-dw-ask-yes]'))?.focus?.();
 }
 
 /** Les gestes de la section : « Demander » et « Pas maintenant » du panneau, « Resceller » (niveau Complet). */
@@ -805,7 +845,7 @@ async function onClick(e) {
   const w = W,
     b = e.target.closest?.(
       '[data-dw-ask-yes],[data-dw-ask-no],[data-dw-seal],[data-dw-ask],[data-dw-seen],[data-dw-open],[data-dw-readorder]');
-  if (!w || !b || !w.host.contains(b)) return;
+  if (!w || !b || !(w.host.contains(b) || w.actsEl?.contains(b))) return;
   e.stopPropagation();
   if (b.hasAttribute('data-dw-open')) return RUN.markDrawerRead(w.id, b.dataset.dwOpen); // « Ouvrir l'enveloppe » d'un message arrivé
   if (b.hasAttribute('data-dw-seen')) return RUN.objectSeen(w.id); // « Objet en vue »

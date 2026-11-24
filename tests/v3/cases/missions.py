@@ -4888,12 +4888,18 @@ _DW_ASK = f'{M} [data-actslot] > [data-dw-ask]'
 _NOTHING = {'fr': "Rien de nouveau pour l'instant", 'en': 'Nothing new for now', 'de': 'Vorerst nichts Neues', 'es': 'Nada nuevo por ahora'}
 # SOG-0617 (e), SOG-0619: the block of MY mission while its flight is started and nothing has arrived — the state line (with the position line), the mission order
 # under « Maintenant », the two gestures; no envelope, no message row, no « data-mine »
-_DW_QUIET = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === false && s.hasAttribute('data-flight') && !s.hasAttribute('data-mine')
-  && !!s.querySelector(':scope > header [data-dw-state] [data-dw-pos]') && s.querySelectorAll('[data-dw-acts] button[data-dw-seen], [data-dw-acts] button[data-dw-ask]').length === 2
+_DW_QUIET = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === false && s.classList.contains('dw-flight') && !s.hasAttribute('data-mine')
+  && !!s.querySelector(':scope > header [data-dw-state] [data-dw-pos]') && document.querySelectorAll('{M} [data-dw-acts] button[data-dw-seen], {M} [data-dw-acts] button[data-dw-ask]').length === 2
   && !s.querySelector('[data-dw], [data-dw-env], [data-dw-arrived]') }})()"""
 # the gestures of the block of a mission in flight (they replace « Demander la suite » of the row of actions)
-_DW_ASK_F = f'{M} [data-drawers] [data-dw-acts] [data-dw-ask]'
-_DW_SEEN_F = f'{M} [data-drawers] [data-dw-acts] [data-dw-seen]'
+# (on a phone, in the sheet, the gestures are in the place [data-actslot] of the row of actions: the selectors look in the whole module, not in the block)
+_DW_ASK_F = f'{M} [data-dw-acts] [data-dw-ask]'
+_DW_SEEN_F = f'{M} [data-dw-acts] [data-dw-seen]'
+_DW_ACTS = f'{M} [data-dw-acts]'
+# the colour of the position line against the text token of the frame (--sog-fg): « Pas de position » is a warning, in the colour of the text; the line with a position stays muted
+_DW_POS_COLOR = f"""(() => {{ const p = document.querySelector('{M} [data-drawers] [data-dw-pos]'); if (!p) return null;
+  const probe = document.createElement('i'); probe.style.color = 'var(--sog-fg)'; p.parentNode.append(probe);
+  const fg = getComputedStyle(probe).color; probe.remove(); return {{ same: getComputedStyle(p).color === fg }} }})()"""
 
 
 def _dw_read(c, S, letter):
@@ -5082,8 +5088,8 @@ def n83(c):
         """« Demander la suite » (once its rest is over), then « Demander »."""
         c.until(f"(() => {{ const b = document.querySelector('{_DW_ASK_F}'); return !!b && !b.disabled }})()", timeout=75000, what='« Demander la suite » ready')
         c.tap(_DW_ASK_F)
-        c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=4000, what='the panel')
-        c.tap(f'{S} [data-dw-ask-yes]')
+        c.until(f"!!document.querySelector('{_DW_ACTS} [data-dw-ask-yes]')", timeout=4000, what='the panel')
+        c.tap(f'{_DW_ACTS} [data-dw-ask-yes]')
 
     try:
         c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -5127,7 +5133,7 @@ def n83(c):
         # the object, out of range: « Demander » answers « Rien de nouveau pour l'instant » and writes nothing
         c.wait(6000)
         ask()
-        c.until(f"(document.querySelector('{S} [data-dw-answer]')?.textContent || '').replace(/\\s+/g, ' ').trim() === {json.dumps(nothing + '.')}", timeout=6000,
+        c.until(f"(document.querySelector('{_DW_ACTS} [data-dw-answer]')?.textContent || '').replace(/\\s+/g, ' ').trim() === {json.dumps(nothing + '.')}", timeout=6000,
                 what='« Rien de nouveau pour l\'instant. » in the answer line of the block')
         c.wait(600)
         c.ok('drawer_C' not in c.doc(BOOK) and c.count(f'{S} [data-dw="C"]') == 0 and c.count(f'{_DW_ASK_F}[data-dw-rest]') == 1, c.doc(BOOK),
@@ -16329,6 +16335,8 @@ def n263(c):
         phase(True, 'X-963A')
         c.until(f"/^{live_re}$/.test(document.querySelector('{S} [data-dw-pos]')?.textContent.replace(/\\s+/g, ' ').trim() || '')", timeout=40000, what='the line « Position : X-Plane, reçue il y a n s »')
         c.ok(c.js(_DW_QUIET), c.js(f"document.querySelector('{S}')?.outerHTML"), 'the block shows the state line with that position and the two gestes: no envelope, no message row, no « data-mine »')
+        c.eq(c.js(_DW_POS_COLOR)['same'], False, 'the line with a position stays muted (not the colour of the text)', what='colour with a position')
+        c.ok('·' not in c.text(f'{S} [data-dw-state]'), c.text(f'{S} [data-dw-state]'), 'the state line has no middle dot: two elements side by side')
         c.eq(re.fullmatch(live_re, norm(c.text(f'{S} [data-dw-pos]'))) is not None, True, 'the line reads « Position : X-Plane, reçue il y a n s » (n a number)', what='line with a position')
         unroute()
         # (B) no position (the simulator answers 404): the line says what it changes for the rest of the mission
@@ -16337,6 +16345,8 @@ def n263(c):
         c.eq(norm(c.text(f'{S} [data-dw-pos]')), "Pas de position : la suite de la mission ne s'ouvrira pas à l'arrivée sur un lieu.",
              'without a position the line says the rest of the mission will not open on arriving at a place', what='line without position')
         c.ok(c.js(_DW_QUIET), c.js(f"document.querySelector('{S}')?.outerHTML"), 'and the block shows nothing else of the mission: no envelope, no message')
+        c.eq(c.js(_DW_POS_COLOR)['same'], True, '« Pas de position » is a warning: in the colour of the text (--sog-fg), not the grey of the help', what='colour without position')
+        c.ok('·' not in c.text(f'{S} [data-dw-state]'), c.text(f'{S} [data-dw-state]'), 'and no separator: no middle dot')
         unroute()
         # (C) a mission that is not mine: no line at all, the section hidden and empty
         phase(True, 'X-963B')
@@ -16417,13 +16427,16 @@ def n265(c):
         order = c.js(f"[...document.querySelector('{S}').children].map(e => e.matches('[data-dw-head]') ? 'head' : e.matches('[data-dw-arrived]') ? 'arrived' : e.matches('[data-dw-now]') ? 'now' : "
                      "e.matches('[data-dw-acts]') ? 'acts' : e.matches('[data-dw-past]') ? 'past' : e.tagName)")
         # at 390 the gestures are the sticky foot of the block: last in its order (the mock-up validated by the ergonomist, 24 Nov)
-        c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'] if c.width >= 760 else ['head', 'arrived', 'now', 'past', 'acts'],
+        c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'] if c.width >= 760 else ['head', 'arrived', 'now', 'past'],
              'the block reads: the state line, what has just arrived, now, the gestures, before (at 390 the gestures are its sticky foot)', what='reading order')
         c.shot(f'N265_{c.design}_{c.width}_{c.lang}_enveloppe.png')  # for the relay: the envelope, nothing opened by itself
-        # the kickers follow the reading order: on a phone the gestures are the foot, so « Ce que vous pouvez faire » comes LAST (its title is in the DOM, hidden by the style)
-        kickers = ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'] if c.width >= 760 else ["Vient d'arriver", 'Maintenant', 'Avant', 'Ce que vous pouvez faire']
+        # the kickers follow the reading order; on a phone the gestures are in the place of the row of actions of the sheet (askSlot), outside the block
+        kickers = ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'] if c.width >= 760 else ["Vient d'arriver", 'Maintenant', 'Avant']
         c.eq(c.js(f"[...document.querySelectorAll('{S} .dw-kick')].map(e => e.textContent.trim())"), kickers,
              'the four kickers of the block, in the language of the pilot and in the reading order of the width', what='kickers')
+        if c.width < 760:
+            c.eq(c.count(f'{M} [data-actslot] > [data-dw-acts]'), 1, 'on a phone the two gestures are in the place of the row of actions of the sheet, and the block has no foot of its own', what='gestures in the slot')
+            c.eq(c.count(f'{S} [data-dw-acts]'), 0, 'one sticky foot at a time: none in the block', what='no second foot')
         c.eq(c.count(f'{S} [data-dw-env]'), 1, 'ONE envelope: the drawer D', what='envelopes')
         now = norm(c.text(f'{S} [data-dw-now]'))
         c.ok('Canot en vue' in now and 'Restez en vue du canot' in now and 'Secteur de recherche' not in now and 'Mission terminée' not in now, now,
@@ -16459,7 +16472,7 @@ def n266(c):
     S = f'{M} [data-drawers]'
     nothing = {'fr': "Rien de nouveau pour l'instant.", 'en': 'Nothing new for now.', 'de': 'Vorerst nichts Neues.', 'es': 'Nada nuevo por ahora.'}[c.lang]
     keys = {'X-965A': '    trigger_object: OBJ-1\n    fallback_delay_min: 600', 'X-965B': '    trigger_zone: ZONE-1\n    fallback_delay_min: 600', 'X-965C': '    trigger_point: ORIGIN\n    trigger_delay_min: 600'}   # a delay WITHOUT a point is read as a key by hand (« Demander » opens it)
-    answer = f"(document.querySelector('{S} [data-dw-acts] [data-dw-answer]')?.textContent || '').replace(/\\s+/g, ' ').trim()"
+    answer = f"(document.querySelector('{_DW_ACTS} [data-dw-answer]')?.textContent || '').replace(/\\s+/g, ' ').trim()"
     try:
         for mid, key in keys.items():
             c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
@@ -16478,11 +16491,11 @@ def n266(c):
             c.shot(f'N266_{c.design}_{c.width}_{c.lang}_{mid}_reponse.png')  # for the relay: the answer in place, above the gestures
             # « Demander la suite » then « Demander »
             c.tap(_DW_ASK_F)
-            c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=8000, what='the panel in the zone of the gestures')
-            c.ok(c.js(f"!!document.querySelector('{S} [data-dw-acts] [data-dw-askbox]')"), 'elsewhere', f'{mid}: the panel « Demander » is inside the zone of the gestures')
-            c.tap(f'{S} [data-dw-ask-yes]')
+            c.until(f"!!document.querySelector('{_DW_ACTS} [data-dw-ask-yes]')", timeout=8000, what='the panel in the zone of the gestures')
+            c.ok(c.js(f"!!document.querySelector('{_DW_ACTS} [data-dw-askbox]')"), 'elsewhere', f'{mid}: the panel « Demander » is inside the zone of the gestures')
+            c.tap(f'{_DW_ACTS} [data-dw-ask-yes]')
             c.until(f"{answer} === {json.dumps(nothing)}", timeout=8000, what=f'{mid}: the sentence in the answer line after « Demander la suite »')
-            c.eq(c.js(f"(() => {{ const a = document.querySelector('{S} [data-dw-acts] [data-dw-answer]'), b = document.querySelector('{_DW_ASK_F}'); return !!a && !!b && a.parentElement === b.closest('[data-dw-acts]') }})()"),
+            c.eq(c.js(f"(() => {{ const a = document.querySelector('{_DW_ACTS} [data-dw-answer]'), b = document.querySelector('{_DW_ASK_F}'); return !!a && !!b && a.parentElement === b.closest('[data-dw-acts]') }})()"),
                  True, f'{mid}: the sentence is in the zone of the gestures, with them', what='answer in place')
             c.ok(not any(norm(n) == norm(nothing) for n in c.note_log()), c.note_log(), f'{mid}: no note says it: the answer is in the block')
             c.ok('drawer_B' not in (c.doc('pilot/ABC/missions/' + mid + '.json') or {}), c.doc('pilot/ABC/missions/' + mid + '.json'), f'{mid}: nothing opened, nothing written')
@@ -16513,7 +16526,7 @@ def n267(c):
     c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
     c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=404, content_type='application/json', body='{}'))
     reach = """() => { const out = {}; for (const k of ['seen', 'ask']) {
-        const b = document.querySelector('[data-module="missions"] [data-drawers] [data-dw-acts] [data-dw-' + k + ']'), r = b.getBoundingClientRect();
+        const b = document.querySelector('[data-module="missions"] [data-dw-acts] [data-dw-' + k + ']'), r = b.getBoundingClientRect();
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         out[k] = { inside: r.top >= 0 && r.bottom <= innerHeight, hit: hit === b || b.contains(hit) } }
       return out }"""
@@ -16529,7 +16542,11 @@ def n267(c):
         acts = f"document.querySelector('{S} [data-dw-acts]')"
         if c.width < 760:
             c.wait(600)
-            c.eq(c.js(f"{acts}.hasAttribute('data-f-foot') && getComputedStyle({acts}).position"), 'sticky', 'at 390 the gestures are a sticky foot declared to the frame as a fixed bar (data-f-foot)', what='sticky foot')
+            # ONE sticky foot at a time (the ergonomist, 24 Nov): in the sheet, on a phone, the two gestures are in the place [data-actslot] of the row of actions (askSlot) — the foot
+            # of the sheet — and the block has none of its own; the pane of the pilot app (a host without askSlot) keeps the block's own foot, checked by the bench of N81. This
+            # case is green only with the module.js that makes that row the only content of the slot (Features)
+            c.eq(c.js(f"[!!document.querySelector('{M} [data-actslot] > [data-dw-acts] [data-dw-seen]'), !!document.querySelector('{M} [data-actslot] > [data-dw-acts] [data-dw-ask]'), "
+                      f"document.querySelectorAll('{S} [data-dw-acts]').length]"), [True, True, 0], 'at 390 the two gestures are in the place of the row of actions of the sheet, the block has no foot of its own', what='gestures in the slot')
             r = c.js(reach)
             c.ok(all(v['inside'] and v['hit'] for v in r.values()), r, 'at 390 the two gestures are inside the viewport and not covered, right after the block is painted')
             c.js("for (const e of [document.scrollingElement, document.querySelector('#fView')]) if (e) e.scrollTop = (e.scrollHeight - e.clientHeight) / 2")

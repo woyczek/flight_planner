@@ -192,8 +192,8 @@
     empty = () => !!sec() && !sec().hasAttribute('data-mine') && (sec().hidden === true && sec().innerHTML === '' || posOnly()),
     /** SOG-0617 (e) : la section de MA mission dont le vol est démarré ne montre QUE la ligne « Position » (ni titre, ni « data-mine ») ; avec elle,
      *  « vide » veut dire : rien des tiroirs. */
-    posOnly = () => !!sec() && sec().hidden === false && sec().hasAttribute('data-flight') && !sec().hasAttribute('data-mine') &&
-    !!sec().querySelector('[data-dw-state] [data-dw-pos]') && !!sec().querySelector('[data-dw-acts]') && !sec().querySelector(
+    posOnly = () => !!sec() && sec().hidden === false && sec().classList.contains('dw-flight') && !sec().hasAttribute('data-mine') &&
+    !!sec().querySelector('[data-dw-state] [data-dw-pos]') && !!q('[data-dw-acts]') && !sec().querySelector(
       '[data-dw], [data-dw-env]'),
     askBtn = () => q('[data-actslot] > [data-dw-ask]') || q('[data-dw-acts] [data-dw-ask]'),
     /** SOG-0619 : en vol, un tiroir ouvert arrive comme une ENVELOPPE (rien ne s'ouvre seul) : on attend l'enveloppe ou la ligne, on touche l'enveloppe,
@@ -904,7 +904,8 @@
   await until(() => ctx.live.subs.size === 1);
   ck('un objet que l\'appareil suit : rien à l\'écran de ses messages (SOG-0619 : le bloc montre l\'état et les DEUX gestes « Objet en vue » et « Demander la suite », plus rien dans la rangée)',
     empty() && !!q(
-      '[data-dw-acts] [data-dw-seen]') && !!q('[data-dw-acts] [data-dw-ask]') && order() === 'prepare slot(BUTTON) back' && !stage
+      '[data-dw-acts] [data-dw-seen]') && !!q('[data-dw-acts] [data-dw-ask]') && order() === (matchMedia('(max-width: 759px)').matches ?
+      'prepare slot(BUTTON,DIV) back' : 'prepare slot(BUTTON) back') && !stage
     .textContent.includes('Radeau'));
   await ask();
   ck('« Demander » HORS de portée : « Rien de nouveau pour l\'instant », rien d\'écrit, rien d\'ouvert', text('[data-dw-answer]') ===
@@ -2580,6 +2581,42 @@
   q('[data-rd-read]').click();
   ck('mission jouée seul : la liseuse sans enveloppe, rien n\'est écrit dans mon carnet', !q('[data-rd-env]') && !!q('[data-rd-pages]') &&
     !ctx.store.has(BOOK), [...ctx.store.keys()]);
+  DV.stop();
+  // ---- 13. SOG-0619 : UN seul pied collant à la fois, les gestes à UN seul endroit — téléphone (la fenêtre sous 760 px) : dans la fiche, la place [data-actslot] de la rangée des
+  //      actions (le pied de la fiche), le bloc sans pied ; dans le volet (askSlot: null), le pied du bloc, déclaré data-f-foot ; écran : dans le flux du bloc
+  const phoneNow = matchMedia('(max-width: 759px)').matches;
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(ZONE, HAND), {
+    mine: true
+  });
+  await until(() => !!q('[data-dw-acts]'));
+  const inSlot = qa('[data-actslot] > [data-dw-acts]').length,
+    inBlock = sec().querySelectorAll('[data-dw-acts]').length;
+  ck('un seul pied collant : dans la fiche, les gestes sont dans la place de la rangée des actions sur un téléphone, dans le flux du bloc sur un écran — jamais aux deux',
+    sec().classList.contains('dw-flight') && (phoneNow ? inSlot === 1 && inBlock === 0 : inSlot === 0 &&
+      inBlock === 1) && !sec().querySelector(
+      '[data-f-foot]'), [phoneNow, inSlot, inBlock]);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(ZONE, HAND), {
+    mine: true,
+    askSlot: null
+  });
+  await until(() => !!q('[data-dw-acts]'));
+  ck('le volet (askSlot: null) : le bloc garde ses gestes, avec son pied collant déclaré au cadre (data-f-foot) sur un téléphone, sans pied sur un écran ; rien dans la place de la rangée',
+    qa('[data-actslot] > [data-dw-acts]').length === 0 && sec().querySelectorAll('[data-dw-acts]').length === 1 && sec().querySelector(
+      '[data-dw-acts]').hasAttribute(
+      'data-f-foot') === phoneNow, [phoneNow, sec().innerHTML.slice(-300)]);
+  const pos = sec().querySelector('[data-dw-since] + [data-dw-pos]');
+  ck('la ligne d\'état : « En vol depuis … » et la position sont deux éléments côte à côte, sans point médian', !!pos && !/·/.test(sec()
+      .querySelector('[data-dw-state]').textContent) &&
+    /^En vol depuis \d\d:\d\dZ$/.test(text('[data-dw-since]')), sec().querySelector('[data-dw-state]')?.outerHTML);
   DV.stop();
   stage.innerHTML = '';
 
