@@ -3735,19 +3735,15 @@ def i51(c):
         return get
     try:
         base = {'lat': 47.1, 'lon': -1.6, 'elev': 609.6, 'hpath': 120.0, 'psi': 123.4, 'gs': 72.0}
-        S._ids.clear()
         S._get = fake({**base, 'agl': 457.2, 'ground': 0.0})
         r = S.xplane(8086)
         c.eq((r['altFt'], r['aglFt'], r['onGround'], r['headingDeg'], r['trackDeg']), (2000, 1500, False, 123, 120), 'X-Plane in flight: altitude, height above the ground (m → ft), on the ground false, the true heading, the track', what='x-plane flight')
-        S._ids.clear()
         S._get = fake({**base, 'agl': 0.3, 'ground': 1.0, 'gs': 0.2})
         r = S.xplane(8086)
         c.eq((r['aglFt'], r['onGround'], r['headingDeg'], r['trackDeg']), (1, True, 123, 123), 'X-Plane on the ground: on the ground true; at a stop the track is the true heading (as before)', what='x-plane ground')
-        S._ids.clear()
         S._get = fake({**base, 'agl': 457.2, 'ground': 0.0}, known=[n for k, n in names.items() if k not in ('agl', 'ground')])
         r = S.xplane(8086)
         c.eq((r['lat'], r['aglFt'], r['onGround']), (47.1, None, None), 'an X-Plane that does not know the two datarefs: the position is still given, the two are None (unknown, not 0, not false)', what='unknown datarefs')
-        S._ids.clear()
         S._get = fake({**base, 'agl': None, 'ground': None, 'psi': None})
         r = S.xplane(8086)
         c.eq((r['aglFt'], r['onGround'], r['headingDeg']), (None, None, None), 'a dataref without a value: None', what='no value')
@@ -3760,7 +3756,6 @@ def i51(c):
         c.eq((r['aglFt'], r['onGround'], r['headingDeg']), (None, None, None), 'Little Navmap without them (or with a value that is not a boolean): None', what='lnm none')
     finally:
         S._get = saved
-        S._ids.clear()
     src = (c.root / 'tools' / 'sim_position.py').read_text(encoding='utf-8')
     c.ok('MIN_GAP = 1.0' in src, '', 'the cadence is not changed: one pass per second at most')
 
@@ -3923,3 +3918,86 @@ def i57(c):
                 raw.append(f'{rel}:{n}')
     c.eq(cause, [], 'the cause « le stockage de cet appareil » is written only in frame/app.js', what='cause elsewhere')
     c.eq(raw, [], 'no notification of the frame shows the raw message of an error', what='raw message in a notification')
+
+
+@case('I59', 'Launcher, simulator position (SOG-0622): a WRONG position is worse than none — the ids are resolved by name at each pass, so an old id that answers 200 (a frozen value, no value, the value of another dataref) never makes a position; none is given while the reading is not verified; the right one is given at once after a change of place', 'I', static=True,
+      rule='SOG-0622 (the ergonomist: the follow-up dies in flight after a change of place or a reload of the flight in X-Plane, X-Plane answering right when asked directly by a new process; a false position is worse than an absent one): tools/sim_position.py resolved the ids once and dropped them only on an HTTP error, so an old id that answers 200 with a FROZEN value, no value or the value of ANOTHER dataref was read for ever (the position stayed the one from before the change, or was a wrong one) and `at` was stamped « now ». Now the ids are resolved by their name at each pass: nothing is given while that resolution fails, and the right position is given at the first pass after the change. The simulator is SIMULATED (the web API of X-Plane answered by a fake `_get`); red before: the old position (or a wrong one) is given after the change, and one is given while the names cannot be resolved')
+def i59(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    import sim_position as S
+    names = list(S.DATAREFS.values())
+    saved = S._get
+
+    class Sim:
+        """X-Plane's web API as far as the module uses it: ids by name, values by id; `gen` is the numbering of the ids, `old` what an id of an older numbering answers."""
+        def __init__(self):
+            self.gen, self.resolves, self.names_ok = 1, 0, True
+            self.pos, self.alt, self.old = (46.0, 1.0), 1000.0, 'frozen'
+            self.frozen = ((46.0, 1.0), 1000.0)
+
+        def move_place(self, pos, old):
+            self.frozen, self.old = (self.pos, self.alt), old     # what the ids of the old numbering go on answering
+            self.gen, self.pos = self.gen + 1, pos
+
+        def get(self, port, path):
+            if port != 8086:
+                raise OSError('closed')                          # Little Navmap is not running
+            if path.startswith('/api/v2/datarefs?'):
+                self.resolves += 1
+                if not self.names_ok:                            # the dataref table is not there (the flight is reloading)
+                    raise S.urllib.error.HTTPError(path, 404, 'no flight', None, None)
+                return {'data': [{'name': n, 'id': self.gen * 1000 + k} for k, n in enumerate(names, 1)]}
+            g, k = divmod(int(path.split('/')[-2]), 1000)
+            kind = names[k - 1].split('/')[-1]
+            if g != self.gen:
+                if self.old == 'none':
+                    return {'data': None}                        # 200 with no value
+                if self.old == 'other':
+                    return {'data': 12.5}                        # 200 with the value of ANOTHER dataref (the id now designates something else): a number, in range
+                if self.old == 'far':
+                    return {'data': 123.0}                       # …or one that cannot be a latitude
+                pos, alt = self.frozen
+            else:
+                pos, alt = self.pos, self.alt
+            return {'data': {'latitude': pos[0], 'longitude': pos[1], 'elevation': alt, 'hpath': 90.0, 'true_psi': 90.0, 'groundspeed': 60.0, 'y_agl': 500.0, 'onground_any': 0}[kind]}
+
+    def reset(sim):
+        S._down.clear()
+        S._last[0], S._last[1] = -1e9, None
+        S._get = sim.get
+
+    def ask(sim):
+        S._last[0] = -1e9                                        # one pass at each call (the cadence of one per second is another case)
+        return S.position()
+    try:
+        # (1) a change of place; whatever the OLD ids answer, the first position given afterwards is the right one, and no wrong one is ever given
+        for old in ('frozen', 'none', 'other', 'far'):
+            sim = Sim()
+            reset(sim)
+            c.eq([ask(sim) is not None for _ in range(6)], [True] * 6, f'{old}: before the change, a position at each pass', what='before')
+            sim.move_place((10.0, 20.0), old)
+            got = [ask(sim) for _ in range(12)]
+            wrong = [None if p is None else (p['lat'], p['lon']) for p in got if p is None or (round(p['lat']), round(p['lon'])) != (10, 20)]
+            c.eq(wrong, [], f'old ids answering 200 ({old}): after the change of place no pass gives a wrong position, nor none: the right one at once', what='positions not right')
+        # (2) not verified, no position: the names cannot be resolved (the flight is reloading) while the old ids still answer 200 with the old position
+        sim = Sim()
+        reset(sim)
+        ask(sim)
+        sim.names_ok = False
+        c.eq([ask(sim) for _ in range(4)], [None] * 4, 'the names cannot be resolved: no position, even though the old ids still answer (an unverified position is not given)', what='positions given')
+        sim.names_ok = True
+        sim.move_place((-30.0, 150.0), 'frozen')
+        back = ask(sim)
+        c.eq((round(back['lat']), round(back['lon'])) if back else None, (-30, 150), 'the names resolve again: the right position comes back at the first pass', what='back')
+        # (3) an aircraft at a stop is a verified read at each pass: it does not pass for lost
+        sim = Sim()
+        reset(sim)
+        got = [ask(sim) for _ in range(30)]
+        c.ok(all(p is not None and (p['lat'], p['lon']) == (46.0, 1.0) for p in got), 'a pass gave none or another position', 'an aircraft at a stop: its position at each pass')
+        # (4) the cost: one resolution per pass, no more
+        c.eq(sim.resolves, 30, 'resolutions for 30 passes', what='one resolution per pass')
+    finally:
+        S._get = saved
+        S._down.clear()
+        S._last[0], S._last[1] = 0.0, None

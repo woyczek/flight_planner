@@ -1,12 +1,14 @@
 """Position du simulateur de vol de ce poste (V3 frame, service de position réelle : source « sim », frame/SPEC.md § 3.2).
 
 Route du lanceur GET /__setup/sim/position ; interroge, dans l'ordre :
-  1. l'API web de X-Plane 12 (12.1.1 et plus ; port 8086 par défaut) : id des datarefs résolus une fois par nom
-     (/api/v2/datarefs?filter[name]=…, puis de nouveau si X-Plane a redémarré : id inconnu), valeurs lues une à une
-     (/api/v2/datarefs/<id>/value) ; liste vide ou position 0° / 0° tant qu'aucun vol n'est chargé : pas de position ;
+  1. l'API web de X-Plane 12 (12.1.1 et plus ; port 8086 par défaut) : id des datarefs résolus par leur NOM à chaque
+     passage (/api/v2/datarefs?filter[name]=…) puis valeurs lues une à une (/api/v2/datarefs/<id>/value) ; liste vide,
+     position 0° / 0° ou hors du globe : pas de position. SOG-0622 : les id ne sont JAMAIS gardés — après un changement
+     de lieu ou un rechargement du vol un ancien id peut répondre 200 avec une valeur figée, nulle ou d'un autre
+     dataref — et une position non vérifiée n'est pas rendue : une position FAUSSE est pire que l'absence de position ;
   2. l'API web de Little Navmap (son serveur web lancé ; port 8965 par défaut) : /api/sim/info, « active » faux sans
      simulateur relié.
-Rend { lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt, source: 'xplane' | 'lnm', at } ou None (aucun simulateur). SOG-0447 : aglFt (hauteur au-dessus du sol, pieds), onGround (vrai/faux) et
+Rend { lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt, source: 'xplane' | 'lnm', at } ou None (aucun simulateur, ou lecture non vérifiée). `at` : l'heure de ce passage ; toute position rendue a été lue pendant ce passage avec des id résolus par leur nom. SOG-0447 : aglFt (hauteur au-dessus du sol, pieds), onGround (vrai/faux) et
 headingDeg (cap VRAI) valent None — INCONNU, jamais 0 ni « en vol » — quand la source ne les donne pas : X-Plane les donne (datarefs y_agl, onground_any, true_psi ; un dataref que cette version
 ne connaît pas = None), Little Navmap : la hauteur sol et « au sol » seulement si son API les porte (sinon None), jamais le cap vrai (son cap est magnétique).
   · jamais d'appel hors de ce poste : l'hôte est la boucle locale, seuls les ports se règlent (tools/.sim.json, local,
@@ -39,9 +41,13 @@ DATAREFS = {
 
 _lock = threading.Lock()
 _last = [0.0, None]  # heure du dernier passage, son résultat
-_ids = {}  # port de X-Plane -> {clé: id} (les id changent à chaque démarrage de X-Plane)
 _host = {}  # port -> hôte de la boucle locale qui a répondu
 _down = {}  # simulateur -> heure où il n'a pas répondu (port fermé)
+
+
+def _clock():
+    """L'horloge monotone (un seul endroit : les cas la remplacent par une horloge simulée)."""
+    return time.monotonic()
 
 
 def ports():
@@ -85,43 +91,40 @@ def _num(v):
 
 
 def xplane(port):
-    """Position de X-Plane 12 (API web, v2) ; None sans vol chargé ou sans X-Plane."""
-    for attempt in (0, 1):
-        ids = _ids.get(port)
-        if not ids:
-            q = '&'.join('filter[name]=' + urllib.parse.quote(n, safe='/') for n in DATAREFS.values()) + '&fields=id,name'
-            try:
-                rows = (_get(port, '/api/v2/datarefs?' + q) or {}).get('data') or []
-            except urllib.error.HTTPError:
-                return None  # 404 : datarefs inconnus tant qu'aucun vol n'est chargé ; 403 : trafic entrant coupé
-            by = {r.get('name'): r.get('id') for r in rows if isinstance(r, dict)}
-            ids = {k: by[n] for k, n in DATAREFS.items() if by.get(n) is not None}
-            if 'lat' not in ids or 'lon' not in ids:
-                return None
-            _ids[port] = ids
-        try:
-            v = {k: _num((_get(port, f'/api/v2/datarefs/{i}/value') or {}).get('data')) for k, i in ids.items()}
-        except urllib.error.HTTPError:
-            _ids.pop(port, None)  # X-Plane redémarré : id à résoudre de nouveau, une fois
-            continue
-        lat, lon = v.get('lat'), v.get('lon')
-        if lat is None or lon is None or (abs(lat) < .01 and abs(lon) < .01):
-            return None
-        gs = v.get('gs')
-        # route vraie en mouvement ; à l'arrêt (moins de 1 m/s) elle n'a pas de sens : le cap vrai
-        track = v.get('hpath') if gs is not None and gs >= 1 and v.get('hpath') is not None else v.get('psi')
-        agl, ground, psi = v.get('agl'), v.get('ground'), v.get('psi')
-        return {
-            'lat': lat, 'lon': lon,
-            'altFt': None if v.get('elev') is None else round(v['elev'] / 0.3048),
-            'aglFt': None if agl is None else round(agl / 0.3048),
-            'onGround': None if ground is None else ground >= 0.5,
-            'headingDeg': None if psi is None else round(psi) % 360,
-            'trackDeg': None if track is None else round(track) % 360,
-            'gsKt': None if gs is None else round(gs * 1.943844),
-            'source': 'xplane',
-        }
-    return None
+    """Position de X-Plane 12 (API web, v2) ; None sans vol chargé ou sans X-Plane.
+    SOG-0622 : les id des datarefs sont résolus par leur NOM À CHAQUE PASSAGE (une requête de plus) et jamais gardés : après un changement de lieu ou un rechargement du vol, un ancien id peut
+    répondre 200 avec une valeur figée, nulle ou d'un autre dataref, et rien ne le distingue d'une vraie lecture. Une position FAUSSE est pire que l'absence de position : sans résolution
+    réussie par le nom, ou avec une valeur qui n'est pas une latitude et une longitude, il n'y a pas de position (None)."""
+    q = '&'.join('filter[name]=' + urllib.parse.quote(n, safe='/') for n in DATAREFS.values()) + '&fields=id,name'
+    try:
+        rows = (_get(port, '/api/v2/datarefs?' + q) or {}).get('data') or []
+    except urllib.error.HTTPError:
+        return None  # 404 : datarefs inconnus tant qu'aucun vol n'est chargé ; 403 : trafic entrant coupé
+    by = {r.get('name'): r.get('id') for r in rows if isinstance(r, dict)}
+    ids = {k: by[n] for k, n in DATAREFS.items() if by.get(n) is not None}
+    if 'lat' not in ids or 'lon' not in ids:
+        return None
+    try:
+        v = {k: _num((_get(port, f'/api/v2/datarefs/{i}/value') or {}).get('data')) for k, i in ids.items()}
+    except urllib.error.HTTPError:
+        return None  # X-Plane en plein rechargement : pas de position à ce passage, la résolution recommence au suivant
+    lat, lon = v.get('lat'), v.get('lon')
+    if lat is None or lon is None or abs(lat) > 90 or abs(lon) > 180 or (abs(lat) < .01 and abs(lon) < .01):
+        return None
+    gs = v.get('gs')
+    # route vraie en mouvement ; à l'arrêt (moins de 1 m/s) elle n'a pas de sens : le cap vrai
+    track = v.get('hpath') if gs is not None and gs >= 1 and v.get('hpath') is not None else v.get('psi')
+    agl, ground, psi = v.get('agl'), v.get('ground'), v.get('psi')
+    return {
+        'lat': lat, 'lon': lon,
+        'altFt': None if v.get('elev') is None else round(v['elev'] / 0.3048),
+        'aglFt': None if agl is None else round(agl / 0.3048),
+        'onGround': None if ground is None else ground >= 0.5,
+        'headingDeg': None if psi is None else round(psi) % 360,
+        'trackDeg': None if track is None else round(track) % 360,
+        'gsKt': None if gs is None else round(gs * 1.943844),
+        'source': 'xplane',
+    }
 
 
 def lnm(port):
@@ -152,7 +155,7 @@ def lnm(port):
 def position():
     """Position du simulateur de ce poste, ou None ; au plus un passage par seconde."""
     with _lock:
-        now = time.monotonic()
+        now = _clock()
         if now - _last[0] < MIN_GAP:
             return _last[1]
         p = ports()
@@ -165,7 +168,7 @@ def position():
             except Exception as e:  # port fermé, réponse illisible ou inattendue : pas de position de lui
                 got[name] = None
                 if isinstance(e, OSError) and not isinstance(e, urllib.error.HTTPError):
-                    _down[name] = time.monotonic()
+                    _down[name] = _clock()
 
         asked = [a for a in (('xplane', xplane), ('lnm', lnm)) if now - _down.get(a[0], -DOWN_GAP) >= DOWN_GAP]
         threads = [threading.Thread(target=ask, args=a, daemon=True) for a in asked]
@@ -174,7 +177,7 @@ def position():
         for th in threads:
             th.join(3 * TIMEOUT + 2)
         fix = got.get('xplane') or got.get('lnm')
-        if fix:
+        if fix:  # `at` : l'heure de CE passage, dont la lecture est vérifiée (id résolus par leur nom pendant ce passage : SOG-0622)
             fix = {**fix, 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')}
-        _last[0], _last[1] = time.monotonic(), fix
+        _last[0], _last[1] = _clock(), fix
         return fix
