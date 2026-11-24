@@ -2815,7 +2815,7 @@ def k208(c):
 
 
 @case('K154', 'The launcher’s content policy survives a file replaced while it is read: a failing read keeps the previous value, the request does not fail (SOG-0219)', 'K', static=True,
-      rule='SOG-0219 (the ergonomist, 10 Nov: « FileNotFoundError … frame\app.js » raised in csp_policy while an alignment of E:\DEFA replaced the file): csp_policy() read the dates of the files it depends on with « exists » then « getmtime » (a race) and listed the modules from frame/app.js; any OSError there fell on the request; now a read that fails keeps the previous policy (tried again at the next call), and without a previous one the base policy with no added site')
+      rule='SOG-0219 (the ergonomist, 10 Nov: « FileNotFoundError … frame/app.js » raised in csp_policy while an alignment of E:/DEFA replaced the file): csp_policy() read the dates of the files it depends on with « exists » then « getmtime » (a race) and listed the modules from frame/app.js; any OSError there fell on the request; now a read that fails keeps the previous policy (tried again at the next call), and without a previous one the base policy with no added site')
 def k154(c):
     import importlib
     import sys
