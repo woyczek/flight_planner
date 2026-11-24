@@ -10559,7 +10559,7 @@ def d315(c):
 
 @case('D316', 'SOG-0600 (captures): without a position the notification says so once; the position arrives and the note is gone', 'D', tags=('maps',),
       screens=True, designs=('standard',), night=False,
-      rule='SOG-0600 (ergonomist, 23 Nov): D316_390_sansposition (the notification « pas de position réelle », said once after the grace, when no source gives a position) and D316_390_position (the position has arrived: the note is absent from #fNotes; it fades by itself, or at once through ctx.dismissNote of the frame when it is pushed)')
+      rule='SOG-0600 (ergonomist, 23 Nov): D316_390_sansposition (the notification « pas de position réelle », said once after the grace, when no source gives a position) and D316_390_position (the position has arrived: the note is withdrawn at once through ctx.dismissNote of the frame, well before the 6 s at which a warning fades by itself)')
 def d316(c):
     t0 = now() - datetime.timedelta(minutes=60)
     f = flight(started={'at': iso(t0)}, progress={'phase': 'cruise', 'at': iso(now())})
@@ -10574,7 +10574,7 @@ def d316(c):
     base = datetime.datetime.fromisoformat(g['updated_at'].replace('Z', '+00:00'))
     g['updated_at'] = iso(max(now(), base) + datetime.timedelta(seconds=1))
     c.js("""(a) => window.FrameData.adapter({ id: 't-pos', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
-    c.until("!document.querySelector('#fNotes .f-note')", timeout=15000, what='the position has arrived and the note is gone (faded by itself, or withdrawn by the frame)')
+    c.until("!document.querySelector('#fNotes .f-note')", timeout=2500, what='the position has arrived and the note is withdrawn by the frame (ctx.dismissNote), not left to fade after 6 s')
     c.ok(not c.notes(), str(c.notes()), 'no notification left on the screen')
     if c.width == 390:
         c.shot('D316_390_position.png')
