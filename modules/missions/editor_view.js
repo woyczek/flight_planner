@@ -484,6 +484,10 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-itin-add{display:block;margin:0;padding:6px 8px;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-itin-mv{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 8px 0;background:color-mix(in srgb,var(--sog-accent,#1a73e8) 10%,var(--sog-surface,#fff));border-left:3px solid var(--sog-accent,#1a73e8);margin:0} /* la bande et la fiche : UN bloc, une seule barre */
 [data-module="missions"] .ms-itin-mv>button{min-height:44px}
+[data-module="missions"] .ms-itin-list>.ms-plrow[data-reorder-row]{display:flex;align-items:stretch} /* lot 7b : la poignée du glisser, puis la ligne */
+[data-module="missions"] .ms-itin-list>.ms-plrow[data-reorder-row]>.ms-plpick{flex:1 1 0;width:auto;min-width:0}
+[data-module="missions"] .ms-itin-list .f-reorder-handle{align-self:center}
+[data-module="missions"] .ms-atpart .f-reorder-handle{margin:-6px 4px -6px -6px}
 [data-module="missions"] .ms-itin-mvrow{display:flex;gap:8px;align-self:stretch;width:100%}
 [data-module="missions"] .ms-itin-mvrow>.f-reorder{flex:1 1 auto} /* les deux flèches du bloc du cadre */
 [data-module="missions"] .ms-itin-plus{flex:0 0 56px;min-height:44px;margin:0;font-size:22px;font-weight:600;color:var(--sog-accent,#1a73e8)} /* « ＋ » : le bouton du module, dans la rangée des flèches (la maquette : .mv .plus) */
@@ -1375,6 +1379,34 @@ function edPlusHtml(s, at, rows, lines, reader, title, end = false) {
   };
 }
 
+/** La poignée du glisser d'une ligne de l'itinéraire (SOG-0482, lot 7b ; le bloc frame/lib/reorder.js, handleHtml) : sur CHAQUE ligne des trois listes qui ont les flèches — la route du
+ *  départ (liste « route »), la suite de route d'un tiroir (« suite:<tiroir> »), les tiroirs entre eux (« tiroirs ») —, jamais sur le Départ, l'Arrivée ni « Hors itinéraire » ; le bloc
+ *  trouve les lignes d'une liste par leurs poignées, donc une liste dont une ligne n'en a pas ne se glisse pas : rien ici ne dépend de la ligne choisie. '' quand le geste ne vaut pas
+ *  (l'essai en cours, l'atelier voilé pour les tiroirs et leur suite). Même identifiant que les flèches : le rang du lieu dans sa route, l'identifiant du tiroir. */
+function edHandleHtml(s, run, l, reader) {
+  if (run || s.ed.trial?.on) return '';
+  const lang = s.ctx.lang?.() || 'fr';
+  if (l.kind === 'drawer') {
+    const d = reader.find(x => x.id === l.drawer);
+    return d && !s.ed.veil ? RO.handleHtml({
+      lang,
+      list: 'tiroirs',
+      id: d.id,
+      name: s.tt(EDTX.atDrawer, {
+        n: d.rank
+      })
+    }) : '';
+  }
+  if (l.kind !== 'place' || l.where !== 'start' && l.where !== 'drawer') return '';
+  if (l.where === 'drawer' && (s.ed.veil || !(reader.find(x => x.id === l.drawer) || {}).rank)) return '';
+  return RO.handleHtml({
+    lang,
+    list: l.where === 'start' ? 'route' : `suite:${l.drawer}`,
+    id: String(l.n),
+    name: (s.ed.places || [])[l.i]?.id || ''
+  });
+}
+
 /** Les flèches d'une liste de l'itinéraire (SOG-0482, lot 3 ; le bloc frame/lib/reorder.js : ses deux boutons, la flèche au bord GRISÉE avec son titre, jamais cachée) : sous la
  *  ligne choisie d'un lieu de la route du départ (liste « route ») ou de la suite d'un tiroir (liste « suite:<tiroir> »), au-dessus de sa fiche, puis « Retirer … de l'itinéraire »
  *  (le geste d'aujourd'hui : edroutedel, eddrchipdel ; `data-it` l'adresse à la ligne choisie). Le départ et l'arrivée n'ont pas de flèches, ni les lieux « hors itinéraire ».
@@ -1437,6 +1469,88 @@ function edReorder(s, m) {
     top1 = arrow()?.getBoundingClientRect().top;
   if (Number.isFinite(top0) && Number.isFinite(top1) && Math.abs(top1 - top0) > 1) window.scrollBy(0, top1 - top0);
   return out;
+}
+
+/** Un lâcher de poignée du bloc (frame/lib/reorder.js, `bind` : onDrop) : { list, id, from, to }, `to` l'indice d'arrivée dans la liste des lignes MONTRÉES une fois la ligne retirée. Le même chemin
+ *  qu'une flèche (edReorderDo) : l'état d'avant est gardé (edMapRemember : ↶ le rend), le lieu ou le tiroir déplacé RESTE choisi, l'itinéraire est redessiné, puis le focus revient (RO.focusAfter).
+ *  Un tiroir bouge AVEC sa suite (sa ligne du module porte sa route) ; le bloc ne fait jamais sortir un geste de sa liste. Les éléments montrés gardent leurs places entre eux, ce qui est caché
+ *  (un jeton que le lecteur ne résout pas) reste où il est. */
+function edReorderDrop(s, m) {
+  const e = s.ed;
+  if (!e || state() !== s || e.trial?.on || !Number.isInteger(m?.to) || !Number.isInteger(m?.from)) return;
+  const doc = edDoc(e),
+    {
+      lines,
+      reader
+    } = edItinLines(s, doc),
+    land = (items, shownIds, idOf) => {
+      const r = RO.moveIdTo(shownIds, m.id, m.to, x => x.id),
+        spots = shownIds.map(x => items.findIndex((y, k) => idOf(y, k) === x.pos));
+      if (!r || spots.some(k => k < 0)) return null;
+      const out = [...items];
+      r.items.forEach((x, n) => {
+        out[spots[n]] = items[spots[shownIds.findIndex(y => y.pos === x.pos)]];
+      });
+      return {
+        out,
+        at: shownIds[r.to].pos // la place où la ligne a atterri (les places ne bougent pas, les éléments si)
+      };
+    },
+    dir = m.to < m.from ? 'up' : 'down';
+  if (m.list === 'route') {
+    const shownIds = lines.filter(l => l.kind === 'place' && l.where === 'start').map(l => ({
+        id: String(l.n),
+        pos: l.n
+      })),
+      r = land(edRoute(e), shownIds, (x, k) => k);
+    if (!r) return;
+    edMapRemember(e);
+    e.route = r.out;
+    e.itAt = `start:${r.at}`;
+    edItinRepaint(s);
+    return RO.focusAfter(s.el, {
+      list: m.list,
+      id: String(r.at),
+      dir
+    });
+  }
+  const suite = /^suite:(.+)$/.exec(m.list || '');
+  if (suite) {
+    const row = edDrawerRowOf(e, suite[1]);
+    if (!row || e.veil) return;
+    const shownIds = lines.filter(l => l.kind === 'place' && l.where === 'drawer' && l.drawer === suite[1]).map(l => ({
+        id: String(l.n),
+        pos: l.n
+      })),
+      r = land(row.route, shownIds, (x, k) => k);
+    if (!r) return;
+    edMapRemember(e);
+    row.route = r.out;
+    e.itAt = `drawer:${row.id}:${r.at}`;
+    edItinRepaint(s);
+    return RO.focusAfter(s.el, {
+      list: m.list,
+      id: String(r.at),
+      dir
+    });
+  }
+  if (m.list === 'tiroirs' && !e.veil) {
+    edDrawerRowOf(e, e.sel); // les lignes de la séance naissent à la première retouche
+    const shownIds = reader.map(d => ({
+        id: d.id,
+        pos: d.id
+      })),
+      r = land(edDrawers(e), shownIds, x => x.id);
+    if (!r) return;
+    edMapRemember(e);
+    e.drawers = r.out;
+    edItinRepaint(s);
+    return RO.focusAfter(s.el, {
+      list: m.list,
+      id: m.id,
+      dir
+    });
+  }
 }
 
 function edReorderDo(s, m) {
@@ -1602,7 +1716,8 @@ function edItinHtml(s, doc, run = null) {
     if (l.kind === 'drawer') {
       const d = reader.find(x => x.id === l.drawer);
       if (!d) return;
-      html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead"><span class="ms-plbadge ms-badge-key">${esc(s.tt(EDTX.itBadgeDrawer))}</span><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : ''}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(edKeyLine(s, d, drows))}</span></button>`);
+      const drag = edHandleHtml(s, run, l, reader);
+      html.push(`<button type="button" class="f-item ms-atpart ms-itin-pick" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${drag ? ' data-reorder-row' : ''}${sel === d.id ? ' aria-current="true"' : ''}><span class="ms-atparthead">${drag}<span class="ms-plbadge ms-badge-key">${esc(s.tt(EDTX.itBadgeDrawer))}</span><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : ''}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(edKeyLine(s, d, drows))}</span></button>`);
       if (sel === d.id && !run) {
         strip = true;
         html.push(edItinDrawerMoveHtml(s, d, reader, edPlusHtml(s, `drawer:${d.id}`, rows, lines, reader, said.title)), edDrawerHtml(s, doc));
@@ -1619,7 +1734,8 @@ function edItinHtml(s, doc, run = null) {
       od = l.where === 'out' ? said.outDetail(r, l.i) : null,
       needs = !od && said.needs(r);
     firstOf.add(l.i);
-    html.push(`<div class="ms-plrow${l.in ? ' ms-itin-in' : ''}" data-place="${l.i}" data-kind="${esc(r.kind)}" data-at="${esc(l.at)}"${od?.bad ? ' data-outbad' : ''}${needs ? ' data-needs' : ''}><button type="button" class="ms-plpick" data-do="edplace" data-i="${l.i}" data-at="${esc(l.at)}"${first ? ' data-first="1"' : ''}${k === openAt || k === mapAt ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(said.title(r))}</b><span class="f-muted">${esc(od ? od.text : l.where === 'drawer' ? edSuiteText(s, doc, l.at) : said.detail(r, l.i))}</span></span></button></div>`);
+    const drag = edHandleHtml(s, run, l, reader);
+    html.push(`<div class="ms-plrow${l.in ? ' ms-itin-in' : ''}" data-place="${l.i}" data-kind="${esc(r.kind)}" data-at="${esc(l.at)}"${drag ? ' data-reorder-row' : ''}${od?.bad ? ' data-outbad' : ''}${needs ? ' data-needs' : ''}>${drag}<button type="button" class="ms-plpick" data-do="edplace" data-i="${l.i}" data-at="${esc(l.at)}"${first ? ' data-first="1"' : ''}${k === openAt || k === mapAt ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(said.title(r))}</b><span class="f-muted">${esc(od ? od.text : l.where === 'drawer' ? edSuiteText(s, doc, l.at) : said.detail(r, l.i))}</span></span></button></div>`);
     if (k === openAt && !run) {
       const st = edItinMoveHtml(s, l, lines, reader, edPlusHtml(s, l.at, rows, lines, reader, said.title));
       if (st) strip = true;
@@ -3378,9 +3494,12 @@ export function edAfter(s) {
     }
     if (KEPT_ED && KEPT_ED !== s.ed) edMemDone(KEPT_ED); // SOG-0607 : la séance gardée d'avant ne revient plus, son signe part
     KEPT_ED = null; // un atelier ouvert à neuf : celui d'avant n'a plus lieu de revenir
-    s.edReorderOff ||= RO.bind(s.el, { // lot 3 : les flèches du bloc du cadre (UN écouteur délégué sur la racine du module, par séance)
-      onMove: m => edReorder(s, m)
-    });
+    s.edReorderOff ||= RO.bind(s
+      .el, { // lot 3 : les flèches du bloc du cadre, lot 7b : la poignée (UN écouteur délégué sur la racine du module, par séance) ; `edges` : la sonde du bloc suffit
+        onMove: m => edReorder(s,
+          m), // (la rangée d'onglets collante et le pied de l'atelier sont fixed / sticky : le bloc commence le défilement SOUS eux)
+        onDrop: m => edReorderDrop(s, m)
+      });
     kwSync(s); // SOG-0508 : la fenêtre des briques suit l'état (ouverte, fermée, son contenu)
     edDraftSoon(s); // SOG-0486 : ce que ce dessin montre est gardé sur l'appareil (au plus un écrit par seconde)
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée

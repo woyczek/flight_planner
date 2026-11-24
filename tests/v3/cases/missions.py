@@ -17044,3 +17044,154 @@ def n280(c):
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_LIVE_REGISTRY], ['missions/X_TIR/X-904A/missionX-904A.yaml', _DW_LIVE]])
     c.open('maps', wait=False, docs=[['pilot/ABC/current_flight.json', flight, 'document']])
     c.until(loaded, 'drawers_run.js', timeout=30000, what='a started flight that names a mission: the judge of the drawers is loaded')
+
+
+# SOG-0482 lot 7b: the HANDLE of the drag (frame/lib/reorder.js, INTEGRATION.md § 12h « The handle and the drag ») on the three lists of the itinerary that have the arrows.
+def _mgrab(c):
+    """A pointer for the drag cases (the same as `_grab` of the frame cases): a finger (Chrome's touch events) on a phone, the mouse on a screen. Returns (down, move, up)."""
+    if c.phone:
+        cdp = c.context.new_cdp_session(c.page)
+        last = {}
+
+        def touch(kind, x=None, y=None):
+            cdp.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': [] if kind == 'touchEnd' else [{'x': x, 'y': y, 'id': 1}]})
+            c.page.wait_for_timeout(16)
+
+        def down(x, y):
+            last.update(x=x, y=y)
+            touch('touchStart', x, y)
+
+        def move(x, y, steps=6):
+            x0, y0 = last['x'], last['y']
+            for k in range(1, steps + 1):
+                touch('touchMove', x0 + (x - x0) * k / steps, y0 + (y - y0) * k / steps)
+            last.update(x=x, y=y)
+
+        return down, move, lambda: touch('touchEnd')
+    m = c.page.mouse
+    last = {}
+
+    def down(x, y):
+        last.update(x=x, y=y)
+        m.move(x, y)
+        m.down()
+
+    def move(x, y, steps=6):
+        m.move(x, y, steps=steps)
+        last.update(x=x, y=y)
+
+    return down, move, m.up
+
+
+# the lines of a list of the itinerary, by their handles: [name of the place or of the drawer]
+_DRAG_NAMES = """(list) => [...document.querySelectorAll('E_ [data-edplaces] .f-reorder-handle[data-list="' + list + '"]')].map(h => {
+  const r = h.closest('[data-reorder-row]'); return (r.querySelector('.ms-plbody b') || r.querySelector('[data-dtitle]')).textContent.split(' · ')[0].trim() })""".replace('E_', E)
+# the rectangle of the handle (then of the row) number i of a list, scrolled to the middle of the screen first
+_DRAG_BOX = """([list, i, what]) => { const hs = [...document.querySelectorAll('E_ [data-edplaces] .f-reorder-handle[data-list="' + list + '"]')], h = hs[i];
+  if (what === 'handle') h.scrollIntoView({ block: 'center' }); const el = what === 'handle' ? h : h.closest('[data-reorder-row]'), r = el.getBoundingClientRect(); return [r.left, r.top, r.width, r.height] }""".replace('E_', E)
+_DRAG_COUNTS = """(() => { const q = s => document.querySelectorAll('E_ [data-edplaces] ' + s).length; return { route: q('.f-reorder-handle[data-list="route"]'), tiroirs: q('.f-reorder-handle[data-list="tiroirs"]'),
+  'suite:C': q('.f-reorder-handle[data-list="suite:C"]'), 'suite:E': q('.f-reorder-handle[data-list="suite:E"]'), dep: q('.ms-plrow[data-kind=dep] .f-reorder-handle'), arr: q('.ms-plrow[data-kind=arr] .f-reorder-handle'),
+  rows: q('[data-reorder-row]') } })()""".replace('E_', E)
+_DRAG_HELD = "[document.querySelectorAll('[data-reorder-dragging]').length, document.querySelectorAll('[data-reorder-drop]').length, document.querySelectorAll('[data-reorder-active]').length]"
+
+
+@case('N276', 'Missions › the workshop, the HANDLE of the drag on the lists that have arrows (SOG-0482, lot 7b): every line of the route of the departure, of the onward route of a drawer and of the drawers has a handle '
+      '(the departure and the arrival none); a handle dragged one place down changes the order of the session like « ↓ Plus tard » (a mouse at 1280, a finger at 390) and « ↶ » gives it back, the file written '
+      'follows; under 6 px nothing moves; Esc during the drag cancels',
+      'N', tags=('missions',), designs=('standard',), langs4=False, screens=True, night=False,
+      rule='SOG-0482 lot 7b (frame/INTEGRATION.md § 12h): editor_view.js `edHandleHtml` (the handle and data-reorder-row on each line), `edReorderDrop` (onDrop: the same path as an arrow, the same undo), RO.bind(…, { onMove, onDrop })')
+def n276(c):
+    import yaml
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    _l3_open(c, c.width)
+    _tab(c, 'itin')
+    down, move, up = _mgrab(c)
+    names = lambda lst='route': c.js(_DRAG_NAMES, lst)  # noqa: E731
+    box = lambda lst, i, what: c.js(_DRAG_BOX, [lst, i, what])  # noqa: E731
+    mid = lambda b: (b[0] + b[2] / 2, b[1] + b[3] / 2)  # noqa: E731
+    before = names()
+    c.eq(c.js(_DRAG_COUNTS), {'route': 4, 'tiroirs': 5, 'suite:C': 1, 'suite:E': 1, 'dep': 0, 'arr': 0, 'rows': 11},
+         'a handle on EVERY line of the three lists (the route 4, the drawers 5, the onward route of drawer 2 and of drawer 4: 1 each), none on the departure and the arrival; each line is a row', what='handles')
+    c.eq(len(before), 4, 'the route of the departure has four lines', what='route lines')
+    # under 6 px: nothing moves
+    x, y = mid(box('route', 0, 'handle'))
+    down(x, y)
+    move(x, y + 4, 2)
+    c.eq(c.js(_DRAG_HELD), [0, 0, 0], 'under 6 px nothing is held and nothing is marked', what='under 6 px')
+    up()
+    c.wait(200)
+    c.eq(names(), before, 'a tap on a handle changes nothing', what='tap')
+    # Esc during the drag cancels
+    x, y = mid(box('route', 0, 'handle'))
+    down(x, y)
+    r1 = box('route', 1, 'row')
+    move(x, r1[1] + r1[3] * 0.8, 8)
+    c.eq(c.js(_DRAG_HELD)[:2], [1, 1], 'past 6 px the line is held and the insertion mark is on a neighbour', what='held')
+    c.key('Escape')
+    c.eq(c.js(_DRAG_HELD), [0, 0, 0], 'Esc: everything is put away', what='Esc')
+    up()
+    c.wait(200)
+    c.eq(names(), before, 'and nothing landed', what='Esc order')
+    # the first place dragged one place down: the same order as « ↓ Plus tard »
+    after = [before[1], before[0], *before[2:]]
+    x, y = mid(box('route', 0, 'handle'))
+    down(x, y)
+    r1 = box('route', 1, 'row')
+    move(x, r1[1] + r1[3] * 0.8, 8)
+    c.eq(c.js(_DRAG_HELD)[:2], [1, 1], 'the line is held, the insertion mark shows', what='held 2')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot(f'N276_glisser_{c.width}.png')
+    up()
+    c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the route in its new order')
+    c.eq(c.js(_DRAG_HELD), [0, 0, 0], 'the attributes are gone after the drop', what='clean')
+    # « ↶ » gives the order back, the same as for an arrow
+    c.tap(f'{_EDHIST} [data-do=edmapundo]')
+    c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(before, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the order is back')
+    # the same drop again, then the file: the route of the departure is written in the new order
+    x, y = mid(box('route', 0, 'handle'))
+    down(x, y)
+    r1 = box('route', 1, 'row')
+    move(x, r1[1] + r1[3] * 0.8, 8)
+    up()
+    c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the new order again')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    d = yaml.safe_load(c.js(_TEXT_OF, path))
+    c.eq(d['route_order'], ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION'], 'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)', what='file')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N277', 'Missions › the workshop at 390, the drag of a drawer toward the BOTTOM of the view scrolls the page by itself (SOG-0482, lot 7b): held at the bottom edge the page goes down, bounded to the list '
+      '(it stops once the last drawer is in view), and it stops at once at Esc',
+      'N', tags=('missions',), designs=('standard',), langs4=False, screens=False, night=False,
+      rule='SOG-0482 lot 7b (frame/INTEGRATION.md § 12h, the rules of the gesture): the block scrolls the nearest scrolling zone at the edge, under the sticky tab row and the foot (its own probe: no `edges` given by the module)')
+def n277(c):
+    _l3_open(c, c.width)
+    _tab(c, 'itin')
+    down, move, up = _mgrab(c)
+    sy = lambda: c.js('Math.round(document.scrollingElement.scrollTop)')  # noqa: E731
+    names = lambda: c.js(_DRAG_NAMES, 'tiroirs')  # noqa: E731
+    before = names()
+    c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').closest('[data-reorder-row]'); scrollTo(0, scrollY + r.getBoundingClientRect().top - 130) })()".replace('E_', E))
+    c.wait(200)
+    x, y = (lambda b: (b[0] + b[2] / 2, b[1] + b[3] / 2))(c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').getBoundingClientRect(); return [r.left, r.top, r.width, r.height] })()".replace('E_', E)))
+    s0 = sy()
+    down(x, y)
+    move(x, y + 40, 4)
+    move(x, c.height - 8, 10)
+    c.wait(900)
+    s1 = sy()
+    c.ok(s1 > s0 + 20, [s0, s1], 'held near the bottom edge of the view, the page scrolls down by itself')
+    c.wait(2500)
+    s2 = sy()
+    c.wait(500)
+    c.eq(sy(), s2, 'bounded to the list: the scroll has stopped (the last drawer is in view)', what='bound')
+    last_in = c.js("(() => { const rs = [...document.querySelectorAll('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]')].map(h => h.closest('[data-reorder-row]')), r = rs[rs.length - 1].getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight })()".replace('E_', E))
+    c.ok(last_in, 'last drawer out of view', 'the last drawer is in view')
+    c.key('Escape')
+    up()
+    c.wait(300)
+    c.eq([names(), c.js(_DRAG_HELD)], [before, [0, 0, 0]], 'Esc: nothing landed, the attributes are gone', what='Esc')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
