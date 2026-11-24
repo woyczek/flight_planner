@@ -16888,3 +16888,43 @@ def n271(c):
     c.wait(2000)
     c.ok(note not in c.notes()[said:], c.notes()[said:], '1280 px: the block on screen: NO note « Un message de la mission est arrivé. »')
     c.shot(f'N271_{c.design}_1280_{c.lang}_pane_open.png')
+
+
+# SOG-0624: the places a CONDITION key cites (the point of a landing, the station of a refill, the objects of the steps) live in `rule` / `steps`, not in `key.point`: the reader's rule
+# (frame/lib/mission.js `keyPlaces`) counts them as cited; the workshop (editor.js `pilotRows`) used to look at `key.object` alone and said « cité nulle part » of a station.
+_KEYPLACES_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission lieux de conditions
+summary: Un poser et un ravitaillement inventés.
+cruise_speed_kt: 120
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+  - { id: PT8, name: Point huit, lat: 44.7, lon: 1.3 }
+  - { id: PT9, name: Point neuf, lat: 44.6, lon: 1.4 }
+objects:
+  - { id: OBJ-9, kind: refill, name: Station neuf, lat: 44.62, lon: 1.38, detection_range_nm: 0.4 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - { id: B, title: Poser au point neuf, message: Posez-vous., brief: Un poser., fallback_delay_min: 60, trigger_condition: { kind: landing, point: PT9, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 } }
+  - { id: C, title: Remplir, message: Remplissez., brief: Un remplissage., fallback_delay_min: 90, trigger_condition: { kind: refill, object: OBJ-9, duration_sec: 300 } }"""
+_KEYPLACES_OUT = f"""[...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > [data-at^="out:"]')].filter(x => x.hasAttribute('data-outbad')).map(x => x.querySelector('.ms-plbody b').textContent.split(' · ')[0].trim())"""
+
+
+@case('N274', 'Missions › the workshop does not say « cité nulle part » of a place that a CONDITION key cites (SOG-0624): a drawer asking to LAND at PT9 and another asking the REFILL at the station OBJ-9 — '
+      'neither « À compléter » nor the line « Hors itinéraire » says it of PT9 or of OBJ-9; a place nothing cites (PT8) is still said',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0624: editor.js `pilotRows` takes the places of the key of each drawer of the view from MS.keyPlaces (frame/lib/mission.js, one rule, no list by hand): the objects of a refill or a landing count too; '
+      'the guard of SOG-0448 holds: what nothing cites is still said')
+def n274(c):
+    uncited = lambda: [norm(x) for x in c.js(_UNCITED)]  # noqa: E731
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    _ed_open(c, _KEYPLACES_MISSION)
+    ed_reveal(c)
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", timeout=15000, what='the places of the workshop')
+    c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 2", timeout=10000, what='the two drawers')
+    c.eq(uncited(), [norm("Hors itinéraire — le point PT8 n'est cité nulle part : le pilote ne le verra pas")],
+         '« À compléter » says « cité nulle part » of PT8 ONLY — not of PT9 (the point of a landing) nor of OBJ-9 (the station of a refill)', what='À compléter')
+    c.eq(c.js(_KEYPLACES_OUT), ['PT8'], 'in « Hors itinéraire », only the line of PT8 is marked: what nothing cites', what='Hors itinéraire')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
