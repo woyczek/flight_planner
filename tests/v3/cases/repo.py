@@ -3804,3 +3804,49 @@ def i55(c):
     c.ok('SECRET-LOCAL-123' not in say and 'SECRET-SESSION-456' not in say, say[:200], 'never the content of localStorage or sessionStorage')
     c.ok(say.count('console.error: probe') <= 5 and '(+3 more)' in say, say[:300], 'five errors at most, the others counted')
     c.ok('x' * 201 not in say and 'e' * 121 not in say and len(say) < 1500, f'{len(say)} characters', 'every piece is cut: the visible text (200), each error (120), the whole under 1 500 characters')
+
+
+@case('I56', 'The source formatter changes no string of a file that is not .js, .css or .html (SOG-0604): a « <script>x</script> » in a Python case stays on one line, said as out of scope; a real .html still has its script block formatted', 'I', static=True,
+      rule='SOG-0604 (24 Nov): tools/format_sources.py treated every file named on its command line that was not .js or .css as HTML, so `<script>x</script>` inside a string of tests/v3/cases/missions.py became three lines (the VALUE of the string changed): a formatter never changes the value of a string; only .js, .css and .html are in its scope, any other named file is left as it is and said')
+def i56(c):
+    import importlib
+    import io
+    import contextlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    try:
+        FS = importlib.import_module('format_sources')
+    except ImportError as e:
+        raise Skip(f'the formatter needs jsbeautifier and cssbeautifier ({e})')
+    # NOT under tools/ nor docs/: the formatter leaves those out of scope by name (EXCLUS) and the probe would pass even with the bug
+    probe = Path(FS.ROOT) / 'tests' / 'v3' / '_i56_probe'
+    probe.mkdir(parents=True, exist_ok=True)
+    made = []
+    try:
+        src = "tag = read(b('t1', '<script>x</script>') + b('t2'))\nnote = \"<style>a{color:red}</style>\"\n"
+        files = {'probe_i56.py': src, 'probe_i56.md': '<script>x</script>\n', 'probe_i56.json': '{"s": "<script>x</script>"}\n'}
+        for name, body in files.items():
+            (probe / name).write_text(body, encoding='utf-8', newline='')
+            made.append(probe / name)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            FS.main([f'tests/v3/_i56_probe/{n}' for n in files])
+        for name, body in files.items():
+            c.eq((probe / name).read_text(encoding='utf-8'), body, f'{name}: the file is left as it is, not a character changed', what=name)
+        c.ok(out.getvalue().count('hors champ') >= 3, out.getvalue()[:300], 'and the formatter says so for each of them')
+        # the tool still works where it should: a .html with a script block is formatted
+        html = probe / 'probe_i56.html'
+        html.write_text('<!doctype html><script>var a=1;function f(){return a}</script>\n', encoding='utf-8', newline='')
+        made.append(html)
+        with contextlib.redirect_stdout(io.StringIO()):
+            FS.main(['tests/v3/_i56_probe/probe_i56.html'])
+        c.ok(html.read_text(encoding='utf-8') != '<!doctype html><script>var a=1;function f(){return a}</script>\n', html.read_text(encoding='utf-8')[:120], 'a .html file is still formatted')
+    finally:
+        for f in made:
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        try:
+            probe.rmdir()
+        except OSError:
+            pass

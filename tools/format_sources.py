@@ -208,7 +208,7 @@ def mettre_en_forme(chemin, paires):
         else:
             neuf = css(texte)
         paires.append({'nom': nom, 'type': 'css', 'avant': texte, 'apres': neuf})
-    else:
+    elif nom.endswith('.html'):
         def sc(m):
             """Bloc <script> JavaScript non vide mis en forme ; autres blocs inchangés."""
             if not est_js(m.group(2)) or not m.group(3).strip():
@@ -225,6 +225,8 @@ def mettre_en_forme(chemin, paires):
             paires.append({'nom': f'{nom} (style)', 'type': 'css', 'avant': m.group(2), 'apres': corps})
             return f'{m.group(1)}\n{corps}\n{m.group(3)}'
         neuf = STYLE.sub(st, SCRIPT.sub(sc, texte))
+    else:
+        neuf = texte  # SOG-0604 : une autre extension (.py, .md, .json…) n'est PAS du HTML : ses « <script>…</script> » sont des chaînes ou du texte, jamais un bloc à mettre en forme
     if not neuf.endswith('\n') and texte.endswith('\n'):
         neuf += '\n'
     return nom, (neuf if neuf != texte else None), nl
@@ -239,6 +241,10 @@ def main(args):
     for f in [f for f in liste if EXCLUS.search(f.replace('\\', '/'))]:
         print(f'  laissé tel quel (hors champ) : {f}')
     liste = [f for f in liste if not EXCLUS.search(f.replace('\\', '/'))]
+    # un fichier nommé d'une autre extension que .js, .css ou .html : laissé tel quel, et dit (SOG-0604 : un formateur ne change jamais la valeur d'une chaîne)
+    for f in [f for f in liste if not f.replace('\\', '/').endswith(('.js', '.css', '.html'))]:
+        print(f'  laissé tel quel (extension hors champ : .js, .css et .html seulement) : {f}')
+    liste = [f for f in liste if f.replace('\\', '/').endswith(('.js', '.css', '.html'))]
     paires, changes = [], []
     for f in liste:
         nom, neuf, nl = mettre_en_forme(os.path.join(ROOT, f), paires)
