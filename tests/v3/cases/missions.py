@@ -15854,29 +15854,37 @@ def n253(c):
     c.eq(found, [], 'no own trigram / mission-id form, no own triOf / midOf in the module', what='own id rules')
 
 
-@case('N254', 'Missions › « Annuler » when js-yaml does not load still asks the frame\'s question (SOG-0468, point 3): the reader cannot be loaded (its file is refused), a mission opened and its title '
-      'changed has no draft to keep, so « Annuler » asks « Quitter sans enregistrer ? Les changements seront perdus. » — never nothing — and « Rester » keeps the workshop', 'N',
+@case('N254', 'Missions › « Annuler » when js-yaml does not load still asks the frame\'s question (SOG-0468, point 3): the reader cannot be loaded (its file is refused), '
+      'so the registry says it cannot be read and « Créer une mission » is the way into the workshop; a title typed has no draft to keep, so « Annuler » asks '
+      '« Quitter sans enregistrer ? Les changements seront perdus. » — never nothing — and « Rester » keeps the workshop', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0468 point 3: modules/missions/editor_view.js `edYamlReady` rejects when the import fails; `edLeave` keeps its own net (`.catch(() => 0)`) so that the exit falls back to `ctx.askLeave()`')
 def n254(c):
-    title = 'Un titre retouché'
-    c.page.route('**/frame/lib/js-yaml.min.js', lambda r: r.abort())
+    title = 'Un titre sans lecteur'
+    # every load of the reader is refused, the page's and the frame's service worker's (which keeps its own copy: a route of the page alone
+    # let the second pass read that copy)
+    c.page.context.route(lambda u: 'js-yaml.min.js' in u, lambda r: r.abort())
     for width in (390, 1280):
         c.page.set_viewport_size({'width': width, 'height': c.height})
-        reg_open(c, _TRIAL_TEXTS)
+        # the registry cannot be read without its reader (« Registre des missions illisible ») : « Créer une mission » stays, and opens the workshop
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        c.js(_TEXTS_JS, _TRIAL_TEXTS)
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+        c.tap(f'{M} [data-do="regopen"]')
+        c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=20000, what='« Créer une mission » on the registry')
         c.ok(c.js('() => !globalThis.jsyaml') is True, 'the reader is loaded', f'{width}: the reader is not loaded (its file is refused)')
-        c.tap(f'{R} [data-rowid="X-001A"]')
-        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
-        ed_reveal(c)
-        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E}')", timeout=15000, what='the workshop of a new mission')
+        _tab(c, 'mission')
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
-            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
-        _tab(c, 'mission')
         _ed_fill(c, 'edtitle', title)
         c.wait(1500)
         c.eq(c.js("() => window.SogFrame.unsaved()"), True, f'{width}: without the reader no draft is written: the frame knows there is something to lose', what='unsaved')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
         c.tap(f'{E} [data-do="edcancel"]')
         c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question of the frame')
         c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), 'Quitter sans enregistrer ? Les changements seront perdus.',
@@ -15885,6 +15893,9 @@ def n254(c):
         c.until("!document.querySelector('.f-modal')", what='« Rester »')
         c.eq(c.count(E), 1, f'{width}: « Rester » keeps the workshop', what='stay')
         c.js(_REG_CLEAR)
+    # the reader refused on purpose: the loads that give up on it say so (« Failed to fetch dynamically imported module … js-yaml.min.js », and the
+    # 503 the frame's service worker answers for it); only those are set aside, every other error still fails the case
+    c.errors[:] = [e for e in c.errors if not ('js-yaml.min.js' in e and ('Failed to fetch dynamically imported module' in e or e.startswith('missing file 503:')))]
 
 
 @case('N255', 'Missions › editor_view.js loads js-yaml in ONE place: the file js-yaml.min.js is named once in the file, outside the comments, inside edYamlReady (SOG-0468, point 3)',
