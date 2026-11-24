@@ -174,8 +174,11 @@ export function show(host, {
   id,
   mission
 } = {}) {
+  // la place DANS la rangée des actions ; en vol (SOG-0619, N267 : un seul pied collant), la place est dans le pied de la fiche, réservée
+  // aux gestes de la suite : « Affecter… » va alors en queue de la rangée elle-même, dans le flux
   const sheet = host?.closest?.('.ms-sheet') || null,
-    slot = sheet?.querySelector('[data-actslot]') || null,
+    row = sheet?.querySelector('.ms-actions') || null,
+    slot = row?.querySelector('[data-actslot]') || row,
     vis = ctx && sheet && slot && Number(ctx.level) >= 2 ? visibleOf(id, mission) : null;
   if (!vis) return stop();
   if (!W || W.id !== vis.id || W.ctx !== ctx) {
