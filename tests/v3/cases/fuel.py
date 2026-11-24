@@ -11485,3 +11485,31 @@ def f322(c):
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), route, 'the route chosen holds', what='route')
     c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=fl]').value"), level, 'the level chosen holds', what='level')
     c.check_errors()
+
+
+@case('F323', 'Procedures card, the arrival: an approach that does not start where the chosen arrival ends says it, under the approach line — « Aucune '
+      'liaison publiée entre MEN03 (fin de MEN1A) et FAF13 (début de l\'approche). » —, in the Map\'s words, word for word in the four languages; '
+      'nothing without an approach', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0569 (the ergonomist, 23 Nov, decision 2: the missing link is said, never drawn — no line from A to B; the sentence is the SAME on '
+      'the Map and in Fuel: whoever codes it second copies it word for word and checks the four languages): modules/maps/texts.js procNoLink '
+      '(BUGS SOG, first); the rule of the link is the Map\'s (procs.js procGap: the same name within 3 NM, otherwise within 0.3 NM); invented '
+      'procedures (MEN1A ends at MEN03, I13R starts at FAF13, 3.4 NM apart)')
+def f323(c):
+    want = {'fr': "Aucune liaison publiée entre MEN03 (fin de MEN1A) et FAF13 (début de l'approche).",
+            'en': 'No published link between MEN03 (end of MEN1A) and FAF13 (start of the approach).',
+            'de': 'Keine veröffentlichte Verbindung zwischen MEN03 (Ende von MEN1A) und FAF13 (Beginn des Anflugs).',
+            'es': 'Ningún enlace publicado entre MEN03 (final de MEN1A) y FAF13 (inicio de la aproximación).'}[c.lang]
+    open_proc(c, procs=V2_PROCS)
+    # the two tables say the same sentence, in the four languages (BUGS SOG changes a word → this case is red, and Fuel follows)
+    same = c.js("""async () => { const M = (await import('/modules/maps/texts.js')).TX, P = (await import('/modules/fuel/procedures_texts.js')).TX;
+      return !!M.procNoLink && JSON.stringify(M.procNoLink) === JSON.stringify(P.procNoLink) }""")
+    c.ok(same, '', 'procNoLink: the same four sentences as the Map\'s')
+    wait_rows(c, 'arr')
+    line = f'{FUEL} [data-proc="arr"] [data-nolink]'
+    c.until(f"!!document.querySelector('{line}')?.checkVisibility()", timeout=15000, what='the line of the missing link, under the approach')
+    c.eq(norm(c.text(line)), norm(want), 'the end of the arrival, the start of the approach, in the Map\'s words', what='sentence')
+    c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F323_{c.design}_{c.width}_{c.lang}.png')
+    # no approach: no line
+    pick_proc(c, 'p-arr-app', '__none')
+    c.until(f"!document.querySelector('{line}')?.checkVisibility()", timeout=8000, what='without an approach: no line')
