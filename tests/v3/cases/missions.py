@@ -15597,16 +15597,16 @@ route_order: [ORIGIN, PT1, PT2, DESTINATION]
       'the name of a place; a name only for a place the pilot may see (pilotView); invented mission and places')
 def n259(c):
     texts = {
-        'fr': ['Mission X-618A : Lac Inventé → Plateau Sans Position (2 points), à compléter.',
+        'fr': ['Mission X-618A : Lac Inventé → Plateau Sans Position (2 points), à compléter. Vitesse de la mission (300 kt) non appliquée : le devis garde celle de l’appareil.',
                'Lac Inventé n’a pas de code : ni piste, ni procédures, ni météo pour ce terrain.',
                'Plateau Sans Position n’a ni code ni position : ce lieu n’est pas repris dans la route.'],
-        'en': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 points), to complete.',
+        'en': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 points), to complete. Mission speed (300 kt) not applied: the quote keeps the aircraft’s.',
                'Lac Inventé has no code: no runway, no procedures, no weather for this aerodrome.',
                'Plateau Sans Position has neither a code nor a position: this place is not taken into the route.'],
-        'de': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 Punkte), zu vervollständigen.',
+        'de': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 Punkte), zu vervollständigen. Geschwindigkeit der Mission (300 kt) nicht übernommen: das Angebot behält die des Luftfahrzeugs.',
                'Lac Inventé hat keinen Code: keine Piste, keine Verfahren, kein Wetter für diesen Platz.',
                'Plateau Sans Position hat weder Code noch Position: dieser Ort wird nicht in die Route übernommen.'],
-        'es': ['Misión X-618A: Lac Inventé → Plateau Sans Position (2 puntos), por completar.',
+        'es': ['Misión X-618A: Lac Inventé → Plateau Sans Position (2 puntos), por completar. Velocidad de la misión (300 kt) no aplicada: el presupuesto mantiene la de la aeronave.',
                'Lac Inventé no tiene código: ni pista, ni procedimientos, ni meteorología para este aeródromo.',
                'Plateau Sans Position no tiene ni código ni posición: este lugar no se incluye en la ruta.'],
     }[c.lang]
@@ -15626,7 +15626,7 @@ def n259(c):
          'the names of the places, by their coordinate word (PT2 has no name)', what='names')
     for i, want in enumerate(texts):
         c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(want),
-                what=['loaded: the names of the ends, never « ? → ? »', 'the end without a code: what it lacks', 'the end with neither: said'][i])
+                what=['loaded: the names of the ends, never « ? → ? », and the mission speed not applied (SOG-0618 (c), the ergonomist\'s way (ii))', 'the end without a code: what it lacks', 'the end with neither: said'][i])
     c.eq(sum(1 for n in c.js('window.__notes || []') if 'Lac Inventé' in n and '→' not in n), 1, 'said once', what='once')
     # the list of points: the name of the place first, its coordinate word under it
     f = c.until_doc('pilot/ABC/current_flight.json', lambda d: any(p.get('place') for p in (d.get('route') or {}).get('points') or []),
@@ -15645,3 +15645,49 @@ def n259(c):
         c.ok(len(got) > 2 and got[2][0] == '4430N00130E', got, f'{w} px: a point without a name keeps its coordinate')
         c.js("document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.scrollIntoView({block: 'center'})")
         c.shot(f'N259_{c.design}_{w}_{c.lang}.png')
+
+
+# SOG-0618 (F12): an invented mission WITHOUT route_order — a turning point no visible part cites, the key zone of a closed drawer
+# (zone_shown absent: hidden)
+_HIDDEN_REGISTRY = """missions:
+  - { id: X-618B, family: TESTDIR, title: Zone cachée, folder: X_DIR/X-618B, files: [missionX-618B.yaml] }
+"""
+_HIDDEN_MISSION = """mission: { id: X-618B, type: SAR, subtype: RECHERCHE }
+title: Zone cachée
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft }]
+turning_points:
+  - { id: PT9, name: Point Non Cité, lat: 44.75, lon: 1.25 }
+zones:
+  - { id: ZONE-K, name: Zone Secrète, kind: search, centre: { lat: 44.5, lon: 1.5 }, radius_km: 3 }
+phases:
+  - id: B
+    title: Secteur caché
+    message: "Message caché."
+    trigger_zone: ZONE-K
+    fallback_delay_min: 60
+"""
+
+
+@case('N260', 'Preparing a mission: the route taken into Fuel holds only what the pilot may see — without route_order, neither a place no '
+      'visible part cites nor the key zone of a closed drawer enters the plan, its coordinates or its name', 'N',
+      tags=('missions', 'fuel'), designs=('standard',), screens=False,
+      rule='SOG-0618 (F12, the ergonomist, 24 Nov): without route_order, missionFlight put EVERY point of the mission in the route '
+      '(frame/lib/mission.js, Object.keys(mission.points)), the key zone of a closed drawer included; Fuel now keeps the points pilotView '
+      'cites (no drawer open at loading); invented mission')
+def n260(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _HIDDEN_REGISTRY], ['missions/X_DIR/X-618B/missionX-618B.yaml', _HIDDEN_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-618B\"]')", timeout=15000, what='the mission is listed')
+    c.go('fuel?mission=X-618B')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-618B', 'the flight of the mission is written',
+                    timeout=10000)
+    r = f.get('route', {})
+    c.eq([w for w in r.get('text', '').split() if w != 'DCT'], ['XTST', 'XTSU'],
+         'origin → destination only (red before: 4445N00115E, the point no one cites, and 4430N00130E, the centre of the hidden zone)',
+         what='text')
+    blob = json.dumps(f, ensure_ascii=False)
+    c.ok('Zone Secrète' not in blob and 'Point Non Cité' not in blob and '4430N00130E' not in blob, blob[:400],
+         'nothing of the hidden places in the flight: neither a name nor a coordinate')
