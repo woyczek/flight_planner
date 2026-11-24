@@ -52,7 +52,9 @@ export const meta = {
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'reader.js',
     'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
-    'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
+    'drawers.js', 'drawers_view.js',
+    'drawers_run.js', // SOG-0617 : le juge des tiroirs (Création), importé par drawers_view.js
+    '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
     '../../frame/lib/text.js', // text.js : importé par ad_field.js et search.js (SOG-0468 (2))
