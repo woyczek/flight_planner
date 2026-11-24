@@ -15570,3 +15570,78 @@ def n254(c):
         c.ok(c.count(M) == 0 and c.count('.f-modal') == 0, '', f'{w} px: Missions left, no question')
         c.shot(f'N254_{c.design}_{w}_{c.lang}_rail.png')
         c.js(_REG_CLEAR)
+
+
+# SOG-0618: an invented mission whose origin has a position but no code, whose destination has neither, and a turning point with a name
+_NOCODE_REGISTRY = """missions:
+  - { id: X-618A, family: TESTDIR, title: Lieux sans code, folder: X_DIR/X-618A, files: [missionX-618A.yaml] }
+"""
+_NOCODE_MISSION = """mission: { id: X-618A, type: TRANSPORT }
+title: Lieux sans code
+origin: { name: Lac Inventé, lat: 45.0, lon: 1.0 }
+destination: { name: Plateau Sans Position }
+aircraft: [{ type: C30J Hercules, cruise_level: FL240, cruise_speed_kt: 300 }]
+turning_points:
+  - { id: PT1, name: Ferme du Test, lat: 44.75, lon: 1.25 }
+  - { id: PT2, lat: 44.5, lon: 1.5 }
+route_order: [ORIGIN, PT1, PT2, DESTINATION]
+"""
+
+
+@case('N259', 'Preparing a mission: an origin or a destination WITHOUT a code but with a position enters the route at its coordinates, and '
+      'says once what it lacks; one with neither code nor position is said in clear words — never « ? → ? »; the places of the mission keep '
+      'their NAME on Fuel\'s list of points (the coordinate stays what the plan files)', 'N',
+      tags=('missions', 'fuel'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0618 lot 0 (user\'s P1, 24 Nov: « ? → ? » in flight, then « il ne lit que des coordonnées là où la mission parle d\'un lieu '
+      'nommé »): before, applyMission dropped the position missionFlight gives (depAt) when the end had no code, and route.points never had '
+      'the name of a place; a name only for a place the pilot may see (pilotView); invented mission and places')
+def n259(c):
+    texts = {
+        'fr': ['Mission X-618A : Lac Inventé → Plateau Sans Position (2 points), à compléter.',
+               'Lac Inventé n’a pas de code : ni piste, ni procédures, ni météo pour ce terrain.',
+               'Plateau Sans Position n’a ni code ni position : ce lieu n’est pas repris dans la route.'],
+        'en': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 points), to complete.',
+               'Lac Inventé has no code: no runway, no procedures, no weather for this aerodrome.',
+               'Plateau Sans Position has neither a code nor a position: this place is not taken into the route.'],
+        'de': ['Mission X-618A: Lac Inventé → Plateau Sans Position (2 Punkte), zu vervollständigen.',
+               'Lac Inventé hat keinen Code: keine Piste, keine Verfahren, kein Wetter für diesen Platz.',
+               'Plateau Sans Position hat weder Code noch Position: dieser Ort wird nicht in die Route übernommen.'],
+        'es': ['Misión X-618A: Lac Inventé → Plateau Sans Position (2 puntos), por completar.',
+               'Lac Inventé no tiene código: ni pista, ni procedimientos, ni meteorología para este aeródromo.',
+               'Plateau Sans Position no tiene ni código ni posición: este lugar no se incluye en la ruta.'],
+    }[c.lang]
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _NOCODE_REGISTRY], ['missions/X_DIR/X-618A/missionX-618A.yaml', _NOCODE_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-618A\"]')", timeout=15000, what='the mission is listed')
+    c.go('fuel?mission=X-618A')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-618A', 'the flight of the mission is written',
+                    timeout=10000)
+    r = f.get('route', {})
+    c.eq([w for w in r.get('text', '').split() if w != 'DCT'], ['4500N00100E', '4445N00115E', '4430N00130E'],
+         'the origin without a code at its coordinates, first word of the route (red before: dropped), then the points; the destination '
+         'without a position is not in the route', what='text')
+    c.eq([r.get('dep'), r.get('arr')], ['', ''], 'the aerodrome fields stay empty: they take a code only', what='dep arr')
+    c.eq(r.get('names'), {'4500N00100E': 'Lac Inventé', '4445N00115E': 'Ferme du Test'},
+         'the names of the places, by their coordinate word (PT2 has no name)', what='names')
+    for i, want in enumerate(texts):
+        c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(want),
+                what=['loaded: the names of the ends, never « ? → ? »', 'the end without a code: what it lacks', 'the end with neither: said'][i])
+    c.eq(sum(1 for n in c.js('window.__notes || []') if 'Lac Inventé' in n and '→' not in n), 1, 'said once', what='once')
+    # the list of points: the name of the place first, its coordinate word under it
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: any(p.get('place') for p in (d.get('route') or {}).get('points') or []),
+                    'the points of the route carry the name of their place', timeout=10000)
+    c.eq({p.get('id'): p.get('place') for p in f['route']['points'] if p.get('place')}, {'4500N00100E': 'Lac Inventé', '4445N00115E': 'Ferme du Test'},
+         'route.points: place on the named points only', what='place')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        if not c.js("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.checkVisibility()"):
+            c.js("document.querySelector(\"[data-module=fuel] .fu-steps [data-step='1']\")?.click()")
+        c.until("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.checkVisibility()", what=f'{w} px: the list of points')
+        got = c.js("[...document.querySelectorAll('[data-module=fuel] [data-pts] .fu-pt .fu-ptid')].map(e => [e.querySelector('b')?.textContent || '', "
+                   "e.querySelector('small')?.textContent || ''])")
+        c.eq(got[:2], [['Lac Inventé', '4500N00100E'], ['Ferme du Test', '4445N00115E']], f'{w} px: the name in bold, the coordinate under it',
+             what='list')
+        c.ok(len(got) > 2 and got[2][0] == '4430N00130E', got, f'{w} px: a point without a name keeps its coordinate')
+        c.js("document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.scrollIntoView({block: 'center'})")
+        c.shot(f'N259_{c.design}_{w}_{c.lang}.png')
