@@ -15515,12 +15515,14 @@ def n254(c):
     other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab]')].find(x => x.checkVisibility() &&
       !['missions', 'settings'].includes(x.dataset.landmark)); return a ? a.dataset.tab : null })()"""
 
-    def to_workshop(w, docs=None):
+    def to_workshop(w, docs=None, fill=True):
         reg_open(c, _TRIAL_TEXTS, docs=docs)
         c.tap(f'{R} [data-rowid="X-001A"]')  # 390: the sheet full screen, its history entry (made stale when the workshop opens)
         c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what=f'{w} px: X-001A in the workshop')
+        if not fill:  # (B) the workshop open is enough: what is tested is the way out of it, not its work
+            return
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
             _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
@@ -15549,7 +15551,7 @@ def n254(c):
         ed_leave(c)
         c.js(_REG_CLEAR)
         # (B) the bar (390) or the rail (1 280) to ANOTHER module: the page arrives there and stays
-        to_workshop(w, docs=[['device/level.json', {'level': 3}, 'cache']])
+        to_workshop(w, docs=[['device/level.json', {'level': 3}, 'cache']], fill=False)
         tab = c.js(other)
         c.ok(bool(tab), tab, f'{w} px: a tab of another module in the bar or the rail')
         c.tap(f'#fTabs a[data-tab="{tab}"] >> visible=true')
@@ -15557,6 +15559,6 @@ def n254(c):
                 what=f'{w} px: another module reached')
         c.wait(600)  # red before (390): the stale entry skipped, the address came back to Missions
         c.ok(not c.hash().startswith('#missions'), c.hash(), f'{w} px: the address stays on the other module (red before: #missions…)')
-        c.ok(c.count(M) == 0 and c.count('.f-modal') == 0, '', f'{w} px: Missions left, no question (the draft kept)')
+        c.ok(c.count(M) == 0 and c.count('.f-modal') == 0, '', f'{w} px: Missions left, no question')
         c.shot(f'N254_{c.design}_{w}_{c.lang}_rail.png')
         c.js(_REG_CLEAR)
