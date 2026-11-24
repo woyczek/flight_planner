@@ -2179,7 +2179,8 @@ _CH_PAINT = """async ([full, reserved]) => { const C = await import('/modules/ma
 _FRAME_HOOK = """() => { window.__chF = [[]]; const w = CanvasRenderingContext2D.prototype;
   if (!w.fillText.__chf) { const f = w.fillText, k = w.clearRect;
     w.fillText = function (t, x, y, m) { if (this.canvas && this.canvas.classList.contains('mp-over')) window.__chF[window.__chF.length - 1].push(String(t)); return f.call(this, t, x, y, m) };
-    w.clearRect = function (x, y, a, b) { if (this.canvas && this.canvas.classList.contains('mp-over') && x === 0 && y === 0 && a >= this.canvas.width && b >= this.canvas.height) window.__chF.push([]); return k.call(this, x, y, a, b) };
+    w.clearRect = function (x, y, a, b) { if (this.canvas && this.canvas.classList.contains('mp-over')) { const m = this.getTransform ? this.getTransform() : { a: 1, d: 1 };
+      if (a * m.a >= this.canvas.width - 2 && b * m.d >= this.canvas.height - 2) window.__chF.push([]) } return k.call(this, x, y, a, b) };
     w.fillText.__chf = true } return true }"""
 
 
@@ -2194,6 +2195,7 @@ def d79(c):
     c.wait(300)
     # SOG-0626: counted FRAME by frame. Under load a second draw can come from the page itself (data arriving) inside the wait: LFML is then written once in each of two frames, which is not a doubled label
     per = c.js("() => window.__chF.map(f => f.filter(t => t === 'LFML').length)")
+    c.ok(len(per) >= 2, f'{per}: no frame boundary seen (the full clear of the overlay was not recognised): the count would be over several drawings, not over a frame', 'the frames of the overlay are told apart')
     c.ok(max(per) == 1 and per.count(1) >= 1, f'LFML written {per} time(s) in each frame of the overlay',
          'LFML written once in each frame (no second label under the veil, none by the route)')
     # the COUNTER-PROOF of the case (a case that is changed keeps its proof): the same hook, fed with a MUTATION — one frame of the overlay in which LFML is written twice, then a frame in which it is written
@@ -2202,6 +2204,10 @@ def d79(c):
       window.__chF = [[]]; g.clearRect(0, 0, 300, 150); g.fillText('LFML', 5, 20); g.fillText('LFML', 5, 40); g.clearRect(0, 0, 300, 150); g.fillText('LFML', 5, 20);
       return window.__chF.map(f => f.filter(t => t === 'LFML').length) }""")
     c.eq(mutant, [0, 2, 1], 'counter-proof: a doubled LFML in ONE frame is counted 2 (the check above would be red), one in each of two frames is counted 1 and 1', what='counter-proof')
+    scaled = c.js("""() => { const cv = document.createElement('canvas'); cv.className = 'mp-over'; cv.width = 600; cv.height = 300; const g = cv.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0);
+      window.__chF = [[]]; g.clearRect(0, 0, 300, 150); g.fillText('LFML', 5, 20); g.clearRect(0, 0, 299.6, 149.6); g.fillText('LFML', 5, 20);
+      return window.__chF.map(f => f.filter(t => t === 'LFML').length) }""")
+    c.eq(scaled, [0, 1, 1], 'a frame is told apart at a device ratio of 2 and at a width that is not a whole number of pixels (the clear is then a hair short of the canvas)', what='frames at a ratio of 2')
     free = c.js(_CH_PAINT, [False, False])
     c.eq(free['ad'], 'LFML', 'the choose layout carries the aerodrome’s code', what='code')
     c.eq(free['numbers'], ['13', '31'], 'with room, both runway numbers are written', what='numbers with room')
