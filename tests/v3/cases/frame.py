@@ -12466,3 +12466,100 @@ def a387(c):
     c.ok(not any('unknown kind' in x for x in told), told, 'the text of the note is not written in the console')
     c.eq(c.js("() => window.__kinds"), {'k-err': 'err', 'k-warn': 'warn', 'k-ok': 'ok', 'k-info': 'info', 'k-error': 'info', 'k-error2': 'info', 'k-success': 'info'}, 'the notes of an unknown kind are announced and shown as an information; the four known kinds are kept', what='kinds')
     c.check_errors()
+
+
+_FULL_LAUNCHER = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+
+
+def _sim_launcher(c, mode):
+    """A simulated launcher for the position of the simulator: mode['m'] = 'fix' (a moving position, invented), 'none' (204: nothing readable) or 'hang' (never answers); mode['hits'] counts the requests."""
+    mode.setdefault('hits', 0)
+    mode.setdefault('i', 0)
+
+    def sim(route):
+        mode['hits'] += 1
+        if mode['m'] == 'none':
+            return route.fulfill(status=204, body='')
+        if mode['m'] == 'hang':
+            return None                                   # no answer, ever: the request stays pending until the page gives it up
+        mode['i'] += 1
+        fix = {'lat': 47.1 + mode['i'] * 0.01, 'lon': -1.6, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 123, 'trackDeg': 120, 'gsKt': 140, 'source': 'xplane', 'at': '2026-11-17T10:00:00Z'}
+        return route.fulfill(status=200, content_type='application/json', body=json.dumps(fix))
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FULL_LAUNCHER)))
+    c.context.route(re.compile(r'/__setup/sim/position'), sim)
+
+
+@case('A391', 'A position that stops arriving is SAID on every screen (SOG-0622): a flight started, the tracking on and a first position received, then none for 2 minutes — « Position perdue depuis 2 min. » (a warning, key live-lost), ONCE per episode, withdrawn when a position comes back; a new episode says it again', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0622 (the user's flight: the position died 2 min 30 after « Démarrer le vol », nothing said): the launcher returns a position only from a read made with fresh dataref ids (else 204), so « no fix » tells the truth; the frame counts from the last fix received; frame/app.js fixSeen(), LIVE_LOST")
+def a391(c):
+    mode = {'m': 'fix'}
+    _sim_launcher(c, mode)
+    c.page.clock.install()
+    c.open('fuel', flight=True, started=True, wait=False)
+    c.until("!!window.SogFrame && window.SogFrame.live.status === 'tracking'", timeout=30000, what='a first position is received')
+    lost = norm(tx('frame/app.js', 'lost', c.lang, after="SOG-0622 : une position qui n'arrive plus se DIT").replace('{n}', '2'))
+    told = lambda: sum(1 for x in c.note_log() if norm(x) == lost)             # noqa: E731
+    c.eq(told(), 0, 'positions arrive: nothing is said', what='before')
+    mode['m'] = 'none'                                                          # the simulator answers nothing any more (204)
+    c.page.clock.run_for(121000)                                                # the note is born at 120 s and stays 6 s of the page clock
+    c.wait(300)
+    c.shot(f"P_0622_{c.page.viewport_size['width']}_position_perdue.png")
+    c.page.clock.run_for(9000)
+    c.until(f"(window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === {json.dumps(lost)})", timeout=10000, what='« Position perdue depuis 2 min. » is said')
+    c.eq(told(), 1, 'said once', what='once')
+    c.page.clock.run_for(60000)
+    c.eq(told(), 1, 'still no position: the note is NOT said again in the same episode', what='not again')
+    lat0 = c.js("() => window.SogFrame.live.last.lat")
+    mode['m'] = 'fix'                                                           # the position comes back
+    for _ in range(6):                                                          # a turn of the clock fires the next request; its answer arrives in real time
+        c.page.clock.run_for(6000)
+        c.wait(400)
+        if c.js("() => window.SogFrame.live.last.lat") != lat0:
+            break
+    c.ok(c.js("() => window.SogFrame.live.last.lat") != lat0, lat0, 'a new position has been received')   # (the note itself leaves after 6 s of the page clock: withdrawing it is dismissNote, run at the next fix)
+    mode['m'] = 'none'                                                          # a new episode
+    c.page.clock.run_for(130000)
+    c.until(f"(window.__notes || []).filter(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === {json.dumps(lost)}).length === 2", timeout=10000, what='the second episode says it again')
+    c.check_errors()
+
+
+@case('A392', 'A request to the simulator that never answers does not stop the tracking (SOG-0622): the request is given up after a delay and the next turn goes out anyway', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0622 (BUGS SOG's reading of frame/app.js simTick): launcherRequest('sim/position') had no delay and no abandon, and the next turn was armed only after the answer: a pending request stopped the tracking in silence; LIVE_SIM_TIMEOUT, AbortSignal.timeout")
+def a392(c):
+    mode = {'m': 'hang'}
+    _sim_launcher(c, mode)
+    c.open('fuel', flight=True, started=True, wait=False)
+    c.until("!!window.SogFrame && window.SogFrame.live.watchers() >= 0", timeout=30000, what='the frame')
+    n = 0
+    for _ in range(40):                                  # at most 20 s: the request is given up at 8 s, the next turn 5 s later
+        c.wait(500)
+        n = mode['hits']
+        if n >= 2:
+            break
+    c.ok(n >= 2, n, 'the simulator never answers: the request is given up and a second one goes out (it did not before)')
+    c.check_errors()
+
+
+@case('A393', 'A position that cannot be WRITTEN is said, once, and tried again (SOG-0622): the write refused by the browser (a full disk) does not stay « written »; « Trace du vol non enregistrée : le stockage de cet appareil est plein… » is said once; when the write works again the next fix is written', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0622 (BUGS SOG's reading of onFix): lastWrite was set BEFORE the awaited writes and never given back when one threw: the position was not written but said to be, the next fix within 30 m was not written either, and nothing was said; frame/app.js onFix / writeFix")
+def a393(c):
+    mode = {'m': 'fix'}
+    _sim_launcher(c, mode)
+    c.page.add_init_script("""(() => { window.__ok = 0; const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
+      if (v && v.path === 'device/trail.json') { if (window.__fail) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError'); window.__ok++ }
+      return put.apply(this, arguments) } })()""")
+    c.page.add_init_script("window.__fail = true")
+    c.open('fuel', flight=True, started=True, wait=False)
+    head = tx('frame/app.js', 'notSaved', c.lang, after="SOG-0622 : une position qui n'arrive plus se DIT")
+    cause = tx('frame/app.js', 'causeFull', c.lang)
+    want = norm(tx('frame/app.js', 'causeJoin', c.lang).replace('{head}', head).replace('{cause}', cause))
+    c.until(f"(window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === {json.dumps(want)})", timeout=40000, what='the refused write is said')
+    c.wait(12000)
+    c.eq(sum(1 for x in c.note_log() if norm(x) == want), 1, 'said once for the episode, whatever the fixes that follow', what='once')
+    c.ok(not any(re.search(r'quota|exceeded', x, re.I) for x in c.note_log()), c.note_log(), 'the browser\'s raw text is in no note')
+    c.js("() => { window.__fail = false }")
+    c.until("window.__ok >= 1", timeout=40000, what='the write works again: the next fix is written')
+    c.check_errors()

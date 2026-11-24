@@ -922,6 +922,11 @@
       'Aplicación servida por el lanzador del equipo «{h}» en la red local: sus datos, su simulador, su relé. Sin uso sin conexión en este dispositivo (página en http).'
     ],
     live: {
+      // SOG-0622 : une position qui n'arrive plus se DIT, sur tout écran, une fois par épisode ; une position qui ne peut pas être écrite aussi (la tête ; la cause est celle du cadre)
+      lost: ['Position perdue depuis {n} min.', 'Position lost for {n} min.', 'Position seit {n} Min. verloren.',
+        'Posición perdida desde hace {n} min.'
+      ],
+      notSaved: ['Trace du vol non enregistrée', 'Flight track not saved', 'Flugspur nicht gespeichert', 'Traza del vuelo no guardada'],
       title: ['Position réelle du vol : {s}, {t}', 'Actual position of the flight: {s}, {t}',
         'Tatsächliche Position des Flugs: {s}, {t}',
         'Posición real del vuelo: {s}, {t}'
@@ -5378,6 +5383,8 @@
   };
   const LIVE_WRITE = 10e3,
     LIVE_SIM = 5e3,
+    LIVE_SIM_TIMEOUT = 8e3, // SOG-0622 : une requête au simulateur qui ne répond pas est abandonnée ; le tour suivant part quand même
+    LIVE_LOST = 120e3, // SOG-0622 : sans relevé depuis 2 min, la position est dite perdue
     LIVE_SIM_FRESH = 15e3,
     LIVE_NET_RELAY = 15e3,
     LIVE_NET_DIRECT = 60e3,
@@ -5447,6 +5454,7 @@
       clearTimeout(simTimer);
       clearTimeout(netTimer);
       clearTimeout(liveLater);
+      lostStop();
     }
     paintLive();
   }
@@ -5542,7 +5550,9 @@
     clearTimeout(simTimer);
     if (!live.active || !launcherHere) return;
     try {
-      const r = await launcherRequest('sim/position'),
+      const r = await launcherRequest('sim/position', {
+          signal: AbortSignal.timeout?.(LIVE_SIM_TIMEOUT)
+        }),
         p = r?.status === 200 ? r.body : null;
       if (live.active && (p?.source === 'xplane' || p?.source === 'lnm')) {
         simAt = Date.now();
@@ -5630,6 +5640,40 @@
     });
     return off;
   }
+  // SOG-0622 : « Position perdue » — le vol est démarré, le suivi actif, un relevé est déjà venu, et plus aucun depuis LIVE_LOST : le cadre le dit, sur tout écran (notify, clé live-lost), UNE fois par
+  // épisode ; la note est retirée dès qu'un relevé revient. Le lanceur ne rend une position que d'une lecture faite avec des id frais (sinon 204) : « pas de relevé » dit la vérité, un avion à l'arrêt qui
+  // répond n'est jamais « perdu ». Un seul minuteur, réarmé à chaque relevé valide (réagit à une ABSENCE d'événement : il n'y a pas d'autre moyen de la voir).
+  let lostTimer = 0,
+    lostTold = false,
+    fixAt = 0,
+    writeTold = false; // « Trace du vol non enregistrée » dite pour cet épisode d'écriture
+
+  function fixSeen() {
+    fixAt = Date.now();
+    clearTimeout(lostTimer);
+    if (lostTold) {
+      lostTold = false;
+      dismissNote('live-lost');
+    }
+    lostTimer = setTimeout(() => {
+      lostTimer = 0;
+      if (!live.active || lostTold) return;
+      lostTold = true;
+      notify(t(T.live.lost, {
+        n: Math.max(2, Math.round((Date.now() - fixAt) / 6e4))
+      }), 'warn', {
+        key: 'live-lost'
+      });
+    }, LIVE_LOST);
+  }
+
+  function lostStop() {
+    clearTimeout(lostTimer);
+    lostTimer = 0;
+    if (lostTold) dismissNote('live-lost');
+    lostTold = false;
+    writeTold = false;
+  }
   /** Nouvelle position : gardée, montrée, écrite au plus une fois par 10 s si elle a bougé. */
   async function onFix(source, pos) {
     // position nulle (0°, 0° : pilote en cours de connexion) ou illisible : ignorée
@@ -5642,6 +5686,7 @@
     };
     live.source = source;
     live.last = a;
+    fixSeen();
     paintLive();
     if (fixWatchers.size) {
       const frozen = Object.freeze({
@@ -5662,10 +5707,27 @@
       liveLater = setTimeout(() => live.last === a && onFix(source, pos), wait);
       return;
     }
+    const prevWrite = lastWrite;
     lastWrite = {
       ...a,
       t: Date.now()
     };
+    try {
+      await writeFix(a);
+      writeTold = false;
+    } catch (e) {
+      // SOG-0622 : l'écriture a échoué (IndexedDB fermée, disque plein) : « écrite » ne doit pas rester vrai, le prochain relevé la retente ; l'échec est dit, une fois par épisode, sans le texte du navigateur
+      lastWrite = prevWrite;
+      if (!writeTold) {
+        writeTold = true;
+        notify(writeFailText(e, t(T.live.notSaved), flightPath), 'warn', {
+          key: 'live-write'
+        });
+      }
+    }
+  }
+  /** Écrit la position `a` dans le vol courant (la fusion commune, relue juste avant) et dans la trace de l'appareil ; lève si une écriture échoue. */
+  async function writeFix(a) {
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
     // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé (la

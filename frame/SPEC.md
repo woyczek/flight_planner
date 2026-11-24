@@ -656,7 +656,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
          aircraft moved more than 30 m or changed altitude by 50 ft or more.
        - The two ports can be changed in `tools/.sim.json` (`{ "xplane": 8086, "lnm": 8965 }`, local, never
          versioned). The host is always the local machine, and the launcher makes at most one pass a second.
-       - X-Plane: the datarefs' ids are resolved once by name and again after a restart. Altitude comes from
+       - The page's request is bounded (SOG-0622): given up after 8 s (`LIVE_SIM_TIMEOUT`), and the next turn goes out anyway, so a request that never answers does not stop the tracking. **A position that stops arriving is said**: with a first fix received and none for 2 minutes (`LIVE_LOST`), the frame says « Position perdue depuis {n} min. » (a warning, key `live-lost`) on every screen, once per episode, and withdraws it when a fix comes back; the launcher returns a position only from a read made with fresh ids (else 204), so « no fix » tells the truth and a parked aircraft that answers is never « lost ». A fix that cannot be WRITTEN (a full disk) is said once per episode (« Trace du vol non enregistrée : {cause} »), `lastWrite` is given back and the next fix is tried again.
+       - X-Plane: the datarefs' ids are resolved by name at every pass, never kept (a stale id could answer 200 with a frozen value after a change of place or a reload of the flight: SOG-0622). Altitude comes from
          `elevation` (MSL), and track from `hpath`, or `true_psi` below 1 m/s. No flight loaded, or a position at
          0° / 0°, means no position.
        - Little Navmap: `indicated_altitude`, `ground_speed`, and the magnetic `heading` as track (it gives no track).

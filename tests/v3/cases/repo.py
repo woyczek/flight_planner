@@ -3918,7 +3918,6 @@ def i57(c):
                 raw.append(f'{rel}:{n}')
     c.eq(cause, [], 'the cause « le stockage de cet appareil » is written only in frame/app.js', what='cause elsewhere')
     c.eq(raw, [], 'no notification of the frame shows the raw message of an error', what='raw message in a notification')
-<<<<<<< HEAD
 
 
 @case('I59', 'Launcher, simulator position (SOG-0622): a WRONG position is worse than none — the ids are resolved by name at each pass, so an old id that answers 200 (a frozen value, no value, the value of another dataref) never makes a position; none is given while the reading is not verified; the right one is given at once after a change of place', 'I', static=True,
@@ -4002,8 +4001,6 @@ def i59(c):
         S._get = saved
         S._down.clear()
         S._last[0], S._last[1] = 0.0, None
-||||||| parent of 7f0577bf4 (:bug: Cadre : un genre de note que le cadre ne connaît pas est dit dans la console, jamais au pilote ; la carte de Naviair ne promet plus de lecteur (décision de l'ergonome, SOG-0615) — l'atelier passait 'error' à notify : le cadre ne connaît que err, warn, ok et info, la note s'affichait sans bruit, dans le style par défaut, et partait en 6 s ; notify la montre maintenant comme une information et le dit dans la console, une fois par genre (le genre seulement, jamais le texte), sans alias (la chaîne se corrige dans les modules) ; cas A387 (rouge avant : aucun avertissement) et I58 (statique : aucun genre inconnu dans les périmètres corrigés, frame/ d'abord ; shared/ et apps/ passent par AppFramework.notify, qui aliase déjà) ; Naviair : « à déposer ; lecture à venir » retiré, « État : non lu par la suite. » ×4, mot fixe jusqu'au dégel (SOG-0614))
-=======
 
 
 def _notify_kind_calls(src):
@@ -4070,4 +4067,3 @@ def i58(c):
                 if kind not in ('err', 'warn', 'ok', 'info'):
                     bad.append(f'{rel}:{line} ({kind})')
     c.eq(bad, [], 'no call of notify with an unknown kind in the corrected perimeters', what='unknown kinds')
->>>>>>> 7f0577bf4 (:bug: Cadre : un genre de note que le cadre ne connaît pas est dit dans la console, jamais au pilote ; la carte de Naviair ne promet plus de lecteur (décision de l'ergonome, SOG-0615) — l'atelier passait 'error' à notify : le cadre ne connaît que err, warn, ok et info, la note s'affichait sans bruit, dans le style par défaut, et partait en 6 s ; notify la montre maintenant comme une information et le dit dans la console, une fois par genre (le genre seulement, jamais le texte), sans alias (la chaîne se corrige dans les modules) ; cas A387 (rouge avant : aucun avertissement) et I58 (statique : aucun genre inconnu dans les périmètres corrigés, frame/ d'abord ; shared/ et apps/ passent par AppFramework.notify, qui aliase déjà) ; Naviair : « à déposer ; lecture à venir » retiré, « État : non lu par la suite. » ×4, mot fixe jusqu'au dégel (SOG-0614))
