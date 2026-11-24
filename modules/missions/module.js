@@ -1947,7 +1947,7 @@ async function moveWrite(s, rows, to) {
     } catch (e) {
       s.ctx.notify(s.tt(TX.addFailed, {
         e: String(e?.message || e).slice(0, 120)
-      }), 'error');
+      }), 'err');
       break;
     }
     done++;
@@ -2082,7 +2082,7 @@ async function addWrite(s) {
     } catch (e) {
       s.ctx.notify(s.tt(TX.addFailed, {
         e: String(e?.message || e).slice(0, 120)
-      }), 'error');
+      }), 'err');
       break;
     }
     done++;
@@ -2113,7 +2113,7 @@ async function regAddWritten(s, written) {
     if (S !== s) return;
     if (got.why && got.why !== 'missing') return s.ctx.notify(s.tt(TX.regFailed, {
       e: got.err || s.tt(TX.regUnread)
-    }), 'error');
+    }), 'err');
     const doc = got.doc && typeof got.doc === 'object' ? got.doc : {},
       series = RG.seriesRows(RG.entries(doc)),
       found = written.map(i => ({
@@ -2130,7 +2130,7 @@ async function regAddWritten(s, written) {
   } catch (e) {
     if (S === s) s.ctx.notify(s.tt(TX.regFailed, {
       e: String(e?.message || e).slice(0, 120)
-    }), 'error');
+    }), 'err');
   }
 }
 
@@ -2661,7 +2661,7 @@ async function regPut(s, change, done) {
     // un registre qui ne se lit pas n'est jamais réécrit ; un registre absent se crée
     if (got.why && got.why !== 'missing') return s.ctx.notify(s.tt(TX.regFailed, {
       e: got.err || s.tt(TX.regUnread)
-    }), 'error');
+    }), 'err');
     const fresh = got.doc && typeof got.doc === 'object' ? got.doc : {};
     if (r.doc && regSig(fresh) !== regSig(r.doc)) {
       s.ctx.notify(s.tt(TX.regStale), 'warn');
@@ -2686,7 +2686,7 @@ async function regPut(s, change, done) {
   } catch (e) {
     s.ctx.notify(s.tt(TX.regFailed, {
       e: String(e?.message || e).slice(0, 120)
-    }), 'error');
+    }), 'err');
   } finally {
     r.busy = false;
   }
