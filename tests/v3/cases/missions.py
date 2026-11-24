@@ -15643,8 +15643,10 @@ def n259(c):
         c.eq(got[:2], [['Lac Inventé', '4500N00100E'], ['Ferme du Test', '4445N00115E']], f'{w} px: the name in bold, the coordinate under it',
              what='list')
         c.ok(len(got) > 2 and got[2][0] == '4430N00130E', got, f'{w} px: a point without a name keeps its coordinate')
-        # the notes of the loading (read above) put away: the picture shows the list of points
+        # the notes of the loading (read above) put away, the list « Points » unfolded (folded at 390): the picture shows the points and their names
         c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("(() => { const d = document.querySelector('[data-module=fuel] [data-pts]')?.closest('details'); if (d && !d.open) d.querySelector('summary')?.click() })()")
+        c.until("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.checkVisibility()", what=f'{w} px: the list of points shown')
         c.js("document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.scrollIntoView({block: 'center'})")
         c.shot(f'N259_{c.design}_{w}_{c.lang}.png')
 
