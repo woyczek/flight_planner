@@ -370,7 +370,7 @@ async function edModelSave(s) {
   } catch (x) {
     s.ctx.notify(s.tt(TX.edFailed, {
       e: String(x?.message || x).slice(0, 120)
-    }), 'error');
+    }), 'err');
   } finally {
     e.busy = false;
     if (state() === s && s.ed === e) draw(s);
@@ -4551,7 +4551,7 @@ async function edSave(s) {
   } catch (x) {
     s.ctx.notify(s.tt(TX.edFailed, {
       e: String(x?.message || x).slice(0, 120)
-    }), 'error');
+    }), 'err');
   } finally {
     e.busy = false;
     if (state() === s && s.ed === e) draw(s);
@@ -5420,7 +5420,7 @@ function edDraftFailed(s, e, doc, x) {
     return; // un épisode de refus se dit une fois ; un écrit confirmé le clôt (edDraftWrite), un nouveau refus le dit de nouveau
   e.draftRefused = true;
   try {
-    s.ctx.notify(s.tt(EDTX.draftNotKept), 'error');
+    s.ctx.notify(s.tt(EDTX.draftNotKept), 'err');
   } catch {
     // le cadre n'a plus d'écran où le dire : rien de plus à faire
   }

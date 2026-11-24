@@ -15992,3 +15992,64 @@ def n256(c):
         c.ok(bool(got and got.get('read') and got['read']['title'] == title + ' bis'), got, f'{width}: the draft file holds the title')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+
+def _notify_kinds(src):
+    """The second argument of each `notify(` call of a JavaScript text, when it is a written string ('…' or "…"): [kind, …]. A small scanner:
+    the quotes, the template literals and the brackets are followed, so a comma inside a text or a nested call does not cut an argument."""
+    out, i, n = [], 0, len(src)
+    while True:
+        i = src.find('notify(', i)
+        if i < 0:
+            return out
+        j, depth, args, cur, q = i + len('notify('), 1, [], [], None
+        while j < n and depth:
+            ch = src[j]
+            if q:
+                cur.append(ch)
+                if ch == '\\':
+                    cur.append(src[j + 1] if j + 1 < n else '')
+                    j += 2
+                    continue
+                if ch == q:
+                    q = None
+            elif ch in '\'"`':
+                q = ch
+                cur.append(ch)
+            elif ch in '([{':
+                depth += 1
+                cur.append(ch)
+            elif ch in ')]}':
+                depth -= 1
+                if depth:
+                    cur.append(ch)
+            elif ch == ',' and depth == 1:
+                args.append(''.join(cur).strip())
+                cur = []
+            else:
+                cur.append(ch)
+            j += 1
+        args.append(''.join(cur).strip())
+        if len(args) > 1:
+            m = re.fullmatch(r"""(['"])([A-Za-z]*)\1""", args[1])
+            if m:
+                out.append(m.group(2))
+        i = j
+
+
+@case('N258', 'Missions › every note of the module is given a kind the frame knows (info, ok, warn, err): the failures of « Enregistrer », of a '
+      'model and of the draft were given « error », which the frame does not know (shown as an ordinary note, gone after 6 s instead of 12)', 'N',
+      static=True, tags=('missions',),
+      rule='frame/app.js notify(text, kind): the kinds are info, ok, warn and err (an err note stays 12 s and passes ahead); the relay, 24 Nov (SOG-0607)')
+def n258(c):
+    import re as _re  # noqa: F401  (used by _notify_kinds through the module)
+    files = sorted([*(c.root / 'modules/missions').glob('*.js'), c.root / 'frame/lib/mission.js'])
+    files = [f for f in files if f.name not in ('module.js', 'registry.js', 'search.js')]  # Features SOG's files, not this module's notes
+    bad = {}
+    for f in files:
+        kinds = _notify_kinds(f.read_text(encoding='utf-8'))
+        wrong = sorted({k for k in kinds if k not in ('info', 'ok', 'warn', 'err')})
+        if wrong:
+            bad[f.name] = wrong
+    c.eq(bad, {}, 'every notify(…) of the module passes one of the frame\'s kinds (info, ok, warn, err)', what='kinds outside the frame\'s')
