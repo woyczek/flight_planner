@@ -314,10 +314,7 @@
     .synced ===
     1 && sec().hasAttribute('data-mine') && !/Tiroir/.test(sec().textContent), [sec().textContent, ctx.synced]);
   await seeOpen('C');
-  ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre (« ouvert à l\'heure ») ; aucune note « Suite de la mission » : le bloc est à l'
-    écran(SOG - 0617, le veilleur de la page dit l 'arrivée quand il n'
-      y est pas)
-    ',
+  ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre ; aucune note « Suite de la mission » (le bloc est à l\'écran)',
     q('[data-dw="C"]')?.dataset.open === 'time' && /^ouvert à l'heure, à \d\d:\d\dZ$/.test(text('[data-dw="C"] [data-dw-how]')) && text(
       '[data-dw="C"] [data-dw-text]').includes('CYRANO') && !ctx.notes.some(n => n[0] === 'ok'), [text('[data-dw="C"]'), ctx.notes]);
   ck('après la réponse la commande se repose (désactivée, « data-dw-rest »), puis se réarme d\'elle-même ; le panneau est fermé', askBtn()
@@ -394,10 +391,8 @@
     }
   }));
   await seeOpen('D');
-  ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous — « ouvert au passage de la zone par BBB, à … », aucune note (le bloc est à l'
-    écran);
-  reçu dans la minute: pas de« reçu ici» ',
-  q('[data-dw="D"]')?.dataset.open === 'zone' && /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ$/.test(text(
+  ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous, aucune note (le bloc est à l\'écran), pas de « reçu ici »',
+    q('[data-dw="D"]')?.dataset.open === 'zone' && /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ$/.test(text(
       '[data-dw="D"] [data-dw-how]')) && text('[data-dw="D"] [data-dw-text]').includes('Zone atteinte.') && ctx.notes.length ===
     notesBefore, [text('[data-dw="D"]'), ctx.notes.slice(notesBefore)]);
   await until(() => ctx.store.has(SEEN));

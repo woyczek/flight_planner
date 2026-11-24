@@ -4884,6 +4884,8 @@ _DW_EMPTY = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]')
 # the Current level and above, posed at the END of the place by assign_view.js) is left out of this row — N89 reads it
 _DW_ROW = f"""[...(document.querySelector('{M} .ms-sheet .ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? 'slot:' + [...e.children].filter(x => !x.hasAttribute('data-as-open')).map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join(',') : (e.dataset.do || e.tagName))"""
 _DW_ASK = f'{M} [data-actslot] > [data-dw-ask]'
+# the answer of a gesture that opens nothing, in the four languages, written in clear (never read from the texts: SOG-0617 moved its row to drawers_run.js)
+_NOTHING = {'fr': "Rien de nouveau pour l'instant", 'en': 'Nothing new for now', 'de': 'Vorerst nichts Neues', 'es': 'Nada nuevo por ahora'}
 # SOG-0617 (e), SOG-0619: the block of MY mission while its flight is started and nothing has arrived — the state line (with the position line), the mission order
 # under « Maintenant », the two gestures; no envelope, no message row, no « data-mine »
 _DW_QUIET = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === false && s.hasAttribute('data-flight') && !s.hasAttribute('data-mine')
@@ -5074,7 +5076,7 @@ def n83(c):
     S = f'{M} [data-drawers]'
     row = lambda k: tx(DW, k, c.lang)
     head = lambda k: norm(row(k).split('{')[0])
-    nothing = norm(row('nothing'))
+    nothing = norm(_NOTHING[c.lang])
 
     def ask():
         """« Demander la suite » (once its rest is over), then « Demander »."""
@@ -5361,7 +5363,7 @@ def n87(c):
     idx = {'updatedAt': at(0), 'assignments': [line('X-907A'), line('X-908A')]}
     S = f'{M} [data-drawers]'
     row = lambda k: tx(DW, k, c.lang)
-    nothing = norm(row('nothing'))
+    nothing = norm(_NOTHING[c.lang])
     WORDS = ('Secteur caché', 'écho', 'Descendez', 'Épave', 'épave', 'Orbitez', 'navire', 'wreck')
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_DW_CLEAR)
@@ -16217,6 +16219,13 @@ _PUT_LOG = """(() => { const put = IDBObjectStore.prototype.put; window.__putLog
   IDBObjectStore.prototype.put = function (v) {
     try { if (v && typeof v.path === 'string' && v.path.startsWith('pilot/ABC/missions/') && JSON.stringify(v).includes('drawer_B')) window.__putLog.push(v.path) } catch (e) {}
     return put.apply(this, arguments) } })()"""
+# the frame tells the other tabs of a write by a BroadcastChannel (frame/store/frame_data.js 'sog-frame-data'): a tab made deaf to it cannot learn that the other tab has
+# written. An IndexedDB put cannot be held back (its transaction would close), so the barrier of the case is on the HEARING side: the first tab writes the finding, the
+# second tab never hears of it, judges the same crossing on its own document and — without the guard — writes the same finding again on a stale record.
+_DEAF_TAB = """(() => { const BC = window.BroadcastChannel;
+  window.BroadcastChannel = function (name) { const c = new BC(name);
+    if (name === 'sog-frame-data') { Object.defineProperty(c, 'onmessage', { set() {}, get() { return null } }); c.addEventListener = () => {} }
+    return c } })()"""
 _FIRST_FULL = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
                'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
 
@@ -16259,6 +16268,7 @@ def n262(c):
         c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-962A' && !!document.querySelector('{_DW_ASK_F}')", timeout=20000, what='the sheet of X-962A, mine')
         # the second tab: the same browser, the same documents, the same mission opened
         p2 = c.context.new_page()
+        p2.add_init_script(_DEAF_TAB)                    # the second tab hears nothing of the writes of the first (see _DEAF_TAB): the guard alone stands between them
         p2.goto(f'{c.base}/frame/index.html?app=company#missions', wait_until='load')
         p2.wait_for_selector(f'{M} [data-list] [data-id="X-962A"]', timeout=20000)
         p2.click(f'{M} [data-list] [data-id="X-962A"]')
@@ -16270,7 +16280,8 @@ def n262(c):
         p2.wait_for_function(f'() => {open_b}', timeout=30000)
         c.wait(12000)                                    # time for a second write, were there one
         writes = [len(pg.evaluate('window.__putLog || []')) for pg in (c.page, p2)]
-        c.eq(sum(writes), 1, 'the finding of the drawer B is written ONCE for the two tabs (one page wrote it, the other re-read the record and wrote nothing)', what='writes of drawer_B')
+        c.eq(sum(writes), 1, 'the finding of the drawer B is written ONCE for the two tabs although the second never heard of the first write: it waited for the lock, re-read the record and wrote nothing '
+             '(without the guard both tabs write it: 2)', what='writes of drawer_B')
         book = c.doc(BOOK)
         c.ok(book['drawer_B']['how'] == 'zone' and 'drawer_C' not in book, book, 'the record: the drawer B by the zone, nothing else opened')
     finally:
