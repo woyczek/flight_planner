@@ -14,6 +14,10 @@
 // API : attach(sheet, { ctx, id, view, states, line, unread, how, routeNm, onRead }) — à rappeler à chaque dessin de la fiche de MA
 //   mission (sheet : l'élément .ms-sheet) ; how(state, drawer) → « ouvert …, à … » (drawers_view.js describe) ; onRead() → promesse,
 //   vraie quand « lu » est écrit. detach() — la fiche se ferme ou la mission n'est pas la mienne. TX : les textes, quatre langues.
+//   SOG-0619 : `foot` (en vol seulement) = { seen, ask, askText, yes, no (les mots), asking, rest, answer, news (le compte des messages arrivés et non
+//   lus : « 1 nouvelle »), onSeen, onAsk, onYes, onNo } — le PIED FIXE sous les pages : le pager, le compte des nouveaux (sans tourner la page), la réponse
+//   d'un geste et les deux gestes « Objet en vue » et « Demander la suite » (les mêmes entrées du juge que le bloc). openReader() ouvre la liseuse (le lien
+//   « Lire l'ordre de mission » du bloc).
 
 import * as R from './reader.js';
 import {
@@ -87,7 +91,15 @@ const STYLE = `[data-module="missions"] .ms-sheet[data-reading]{display:block}
 [data-reader] .rd-links{display:flex;flex-wrap:wrap;gap:6px 16px}
 [data-reader] .rd-foot{margin-top:auto;padding-top:8px;display:flex;justify-content:space-between;gap:12px;font-size:var(--sog-size-s);color:var(--sog-muted)}
 [data-reader] .rd-pager{display:flex;align-items:center;justify-content:center;gap:14px}
-[data-reader] .rd-pager button{min-width:48px;min-height:var(--sog-touch,44px)}`;
+[data-reader] .rd-pager button{min-width:48px;min-height:var(--sog-touch,44px)}
+[data-reader] .rd-footbar{position:sticky;bottom:0;z-index:2;background:var(--sog-bg);border:1px solid var(--sog-border);padding:10px 12px;display:grid;gap:8px}
+[data-reader] .rd-footbar .rd-pager b{color:var(--sog-accent)}
+[data-reader] .rd-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-reader] .rd-two button{width:100%;min-height:var(--sog-touch,44px)}
+[data-reader] .rd-answer{margin:0;padding:8px 10px;border-left:3px solid var(--sog-muted);background:var(--sog-bg);font-size:var(--sog-size-s)}
+[data-reader] .rd-askbox{border:1px solid var(--sog-border);padding:8px 10px}
+[data-reader] .rd-askbox p{margin:0 0 8px}
+[data-reader] .rd-askbox .rd-two{margin:0}`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`),
   WIDE = 850, // deux pages côte à côte à partir de cette largeur du module (le seuil de la fiche en deux colonnes)
   SWIPE = 50, // un glissé horizontal d'au moins 50 px tourne la page
@@ -161,6 +173,29 @@ export function attach(sheet, o = {}) {
     a.ro.observe(sheet);
   }
   paint();
+}
+
+/** Ouvre la liseuse (le lien « Lire l'ordre de mission » du bloc) : comme « Lire la mission » ; faux sans liseuse posée. */
+export function openReader() {
+  const a = A;
+  if (!a) return false;
+  a.on = true;
+  a.env = !!a.o.unread;
+  paint();
+  a.sheet.querySelector('[data-reader]')?.focus({
+    preventScroll: true
+  });
+  return true;
+}
+
+/** Le pied fixe sous les pages (SOG-0619) : le pager (et le compte des nouveaux messages, sans tourner la page), puis, en vol, la réponse d'un
+ *  geste et les deux gestes. `where` : « Page 4 sur 5 ». */
+function footHtml(a, where, sp) {
+  const f = a.o.foot,
+    pager = `<div class="rd-pager"><button type="button" data-rd-prev aria-label="${esc(tt(TX.prev))}"${sp.prev === null ? ' disabled' : ''}>‹</button><span data-rd-where>${esc(where)}</span>${f?.news ? ` · <b data-rd-new>${esc(f.news)}</b>` : ''}<button type="button" data-rd-next aria-label="${esc(tt(TX.next))}"${sp.next === null ? ' disabled' : ''}>›</button></div>`;
+  if (!f) return pager;
+  const box = f.asking ? `<div class="rd-askbox" data-rd-askbox><p>${esc(f.askText)}</p><div class="rd-two"><button type="button" class="primary" data-rd-ask-yes>${esc(f.yes)}</button><button type="button" data-rd-ask-no>${esc(f.no)}</button></div></div>` : '';
+  return `<div class="rd-footbar" data-rd-footbar data-f-foot>${pager}${box}${f.answer ? `<p class="rd-answer" data-rd-answer role="status">${esc(f.answer)}</p>` : ''}<div class="rd-two"><button type="button" data-rd-seen>${esc(f.seen)}</button><button type="button" data-rd-ask${f.rest ? ' disabled' : ''}>${esc(f.ask)}</button></div></div>`;
 }
 
 /** Un texte de TX dans la langue du cadre. */
@@ -252,7 +287,7 @@ function paint() {
     // aucun compte des tiroirs fermés : même le fait qu'il y en ait est caché (SOG-0459)
     html = `${head}<div class="rd-pages" data-rd-pages>${shown.map((p, i) => `<article class="rd-page" data-rd-page="${p.kind}"${p.kind === 'drawer' ? ` data-rd-drawer="${esc(p.id)}"` : ''}>${bodyHtml(p)}
       <div class="rd-foot"><span data-rd-n>${sp.from + i + 1} / ${n}</span></div></article>`).join('')}</div>
-      <div class="rd-pager"><button type="button" data-rd-prev aria-label="${esc(tt(TX.prev))}"${sp.prev === null ? ' disabled' : ''}>‹</button><span data-rd-where>${esc(where)}</span><button type="button" data-rd-next aria-label="${esc(tt(TX.next))}"${sp.next === null ? ' disabled' : ''}>›</button></div>`;
+      ${footHtml(a, where, sp)}`;
     a.prev = sp.prev;
     a.next = sp.next;
   }
@@ -279,9 +314,17 @@ function turn(dir) {
 /** Les gestes : « Lire la mission », « Ouvrir l'enveloppe », « ← Fiche », les flèches du pied. */
 async function onClick(e) {
   const a = A,
-    b = e.target.closest?.('[data-rd-read],[data-rd-open],[data-rd-back],[data-rd-prev],[data-rd-next]');
+    b = e.target.closest?.(
+      '[data-rd-read],[data-rd-open],[data-rd-back],[data-rd-prev],[data-rd-next],[data-rd-seen],[data-rd-ask],[data-rd-ask-yes],[data-rd-ask-no]'
+    );
   if (!a || !b || !a.sheet.contains(b)) return;
   e.stopPropagation();
+  // les gestes du pied (SOG-0619) : les mêmes entrées du juge que le bloc
+  const f = a.o.foot;
+  if (b.dataset.rdSeen !== undefined) return void f?.onSeen?.();
+  if (b.dataset.rdAsk !== undefined) return void f?.onAsk?.();
+  if (b.dataset.rdAskYes !== undefined) return void f?.onYes?.();
+  if (b.dataset.rdAskNo !== undefined) return void f?.onNo?.();
   if (b.dataset.rdRead !== undefined) {
     a.on = true;
     a.env = !!a.o.unread; // une mission affectée pas encore lue : son enveloppe d'abord

@@ -54,6 +54,10 @@ import {
   routeNm
 } from '../../frame/lib/mission.js'; // ce que le pilote peut voir : la règle du lecteur, écrite une fois (SOG-0448)
 import * as RD from './reader_view.js'; // l'enveloppe et la liseuse de MA mission (lot T3)
+import {
+  clean,
+  plain
+} from '../../frame/lib/untrusted.js';
 
 export const TX = {
   // SOG-0459 : l'écran du pilote — rien avant l'ouverture, puis « Suite de la mission » ; un seul geste neutre
@@ -232,6 +236,19 @@ export const TX = {
     'Keine Position: Die Fortsetzung der Mission öffnet sich nicht bei der Ankunft an einem Ort.',
     'Sin posición: la continuación de la misión no se abrirá al llegar a un lugar.'
   ],
+  // SOG-0619 : le bloc unique de la mission en vol, dans l'ordre de lecture
+  inFlight: ['En vol depuis {t}', 'In flight since {t}', 'Im Flug seit {t}', 'En vuelo desde {t}'],
+  kArrived: ['Vient d\'arriver', 'Just arrived', 'Gerade eingetroffen', 'Acaba de llegar'],
+  envMsg: ['Un message de la mission', 'A message of the mission', 'Eine Nachricht der Mission', 'Un mensaje de la misión'],
+  envAt: ['arrivé à {t}', 'arrived at {t}', 'eingetroffen um {t}', 'llegado a las {t}'],
+  kNow: ['Maintenant', 'Now', 'Jetzt', 'Ahora'],
+  orderRead: ['lu à {t}', 'read at {t}', 'gelesen um {t}', 'leído a las {t}'],
+  readOrder: ['Lire l\'ordre de mission', 'Read the mission order', 'Missionsauftrag lesen', 'Leer la orden de misión'],
+  kDo: ['Ce que vous pouvez faire', 'What you can do', 'Was Sie tun können', 'Lo que puede hacer'],
+  objSeen: ['Objet en vue', 'Object in sight', 'Objekt in Sicht', 'Objeto a la vista'],
+  kPast: ['Avant', 'Before', 'Vorher', 'Antes'],
+  newOne: ['1 nouvelle', '1 new', '1 neu', '1 nueva'],
+  newMany: ['{n} nouvelles', '{n} new', '{n} neu', '{n} nuevas'],
   ...RUN.RTX // « Rien de nouveau… », une écriture refusée, « lu » refusé : les textes que le juge dit lui-même (drawers_run.js)
 };
 
@@ -251,7 +268,38 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-text{margin:6px 0 0;overflow-wrap:anywhere}
 [data-drawers] .dw-text p{margin:.4em 0;white-space:pre-wrap}
 [data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}
-[data-drawers] [data-dw-pos]{margin:0 0 8px}`;
+[data-drawers] [data-dw-pos]{margin:0 0 8px}
+[data-drawers][data-flight]{display:flex;flex-direction:column;border:1px solid var(--sog-border);background:var(--sog-bg);margin:0 0 12px}
+[data-drawers][data-flight]>section,[data-drawers][data-flight]>header{padding:12px 16px;border-bottom:1px solid var(--sog-border);margin:0}
+[data-drawers][data-flight] .dw-head h3{margin:0;font-size:1.25em}
+[data-drawers][data-flight] .dw-state{margin:2px 0 0;font-size:var(--sog-size-s);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+[data-drawers][data-flight] .dw-state i{width:8px;height:8px;border-radius:50%;background:var(--sog-ok,#1e7d32);display:inline-block}
+[data-drawers][data-flight] .dw-kick{margin:0 0 8px;font-size:var(--sog-size-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted)}
+[data-drawers] .dw-env{display:flex;gap:14px;align-items:center}
+[data-drawers] .dw-env+.dw-env{margin-top:12px;padding-top:12px;border-top:1px dashed var(--sog-border)}
+[data-drawers] .dw-shape{position:relative;flex:none;width:96px;height:62px;border:1px solid var(--sog-border);background:var(--sog-soft,var(--sog-bg))}
+[data-drawers] .dw-shape::before{content:"";position:absolute;inset:0;background:linear-gradient(to bottom right,transparent calc(50% - 1px),var(--sog-border) 50%,transparent calc(50% + 1px)) top left/50% 55% no-repeat,linear-gradient(to bottom left,transparent calc(50% - 1px),var(--sog-border) 50%,transparent calc(50% + 1px)) top right/50% 55% no-repeat}
+[data-drawers] .dw-shape span{position:absolute;left:50%;top:55%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--sog-accent)}
+[data-drawers] .dw-what{flex:1;min-width:0}
+[data-drawers] .dw-what b{display:block}
+[data-drawers] .dw-now .dw-row{border:0;padding:0;background:none}
+[data-drawers] .dw-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-drawers] .dw-two button{width:100%;min-height:var(--sog-touch,44px)}
+[data-drawers] .dw-acts{background:var(--sog-soft,var(--sog-bg))}
+[data-drawers] .dw-answer{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--sog-muted);background:var(--sog-bg);font-size:var(--sog-size-s)}
+[data-drawers] .dw-fold>summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;min-height:var(--sog-touch,44px);align-items:center}
+[data-drawers] .dw-fold>summary .t{flex:1;min-width:0}
+[data-drawers] .dw-fold>summary .h{color:var(--sog-muted);font-size:var(--sog-size-s)}
+[data-drawers] .dw-fold+.dw-fold{border-top:1px solid var(--sog-border)}
+[data-drawers][data-narrow] .dw-env{flex-wrap:wrap;gap:10px 12px}
+[data-drawers][data-narrow] .dw-shape{width:64px;height:42px}
+[data-drawers][data-narrow] .dw-what{flex:1 1 0}
+[data-drawers][data-narrow] .dw-what b{display:inline}
+[data-drawers][data-narrow] .dw-what span::before{content:" · "}
+[data-drawers][data-narrow] .dw-env button{flex:1 0 100%}
+[data-drawers][data-narrow] .dw-acts{position:sticky;bottom:0;z-index:2;border-top:1px solid var(--sog-border);box-shadow:0 -4px 12px rgba(0,0,0,.10);display:flex;flex-direction:column}
+[data-drawers][data-narrow] .dw-acts .dw-kick{display:none}
+[data-drawers][data-narrow] .dw-acts .dw-answer{order:-1;margin:0 0 8px}`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 export const POLL_MS = RUN.POLL_MS;
 /** Ce que la fiche et son Détail montrent de cette mission (le juge le sait : drawers_run.js). */
@@ -381,6 +429,8 @@ export function stop() {
   const w = W;
   W = null;
   clearTimeout(w.restTimer);
+  clearTimeout(w.ansTimer);
+  w.ro?.disconnect();
   w.askBtn?.remove();
   w.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
   RD.detach();
@@ -428,6 +478,7 @@ function showDrawers(host, {
       restMs
     });
     bind(host);
+    watchWidth(W);
     return paint(W);
   }
   stop();
@@ -450,6 +501,7 @@ function showDrawers(host, {
     }),
     tick: () => paintPos(w)
   };
+  watchWidth(w);
   RUN.attach(id, {
     ctx,
     mission,
@@ -459,6 +511,14 @@ function showDrawers(host, {
   });
   bind(host);
   paint(w);
+}
+
+/** La largeur du bloc suivie (ResizeObserver sur l'hôte) : le bloc est redessiné quand il passe le seuil des 760 px (l'ordre et le pied collant). */
+function watchWidth(w) {
+  if (typeof ResizeObserver !== 'function') return;
+  w.ro?.disconnect();
+  w.ro = new ResizeObserver(() => W === w && w.host && w.narrow !== undefined && narrowOf(w.host) !== w.narrow && paint(w));
+  if (w.host) w.ro.observe(w.host);
 }
 
 /** L'écoute des gestes sur cet élément (une fois par élément : la fiche est redessinée avec lui). */
@@ -476,8 +536,9 @@ function bind(host) {
 
 /** La ligne d'un tiroir OUVERT (SOG-0459 : un tiroir fermé n'a pas de ligne) : son titre, comment et quand, son message, son briefing,
  *  « Resceller » au niveau Complet. Ni rang ni numéro : rien ne dit ce qui reste à venir. Tout texte du fichier passe par esc. */
-function rowHtml(w, c, s) {
+function rowHtml(w, c, s, withOnward = false) {
   const d = c.drawers.find(x => x.id === s.id) || {},
+    onward = withOnward ? onwardOf(d) : '',
     t = describe(w.tt, s, d, {
       live: RUN.liveNow(c),
       notJudged: c.notJudged
@@ -493,7 +554,14 @@ function rowHtml(w, c, s) {
   return `<div class="dw-row" data-dw="${esc(s.id)}" data-open="${esc(s.how)}"><div class="dw-top">${name}</div>
     <small class="f-muted dw-key" data-dw-how>${esc(t.how)}${esc(got)}${s.gone ? ` — ${esc(w.tt(TX.gone, { by: s.by }))}` : ''}</small>
     ${d.message || brief ? `<div class="dw-text" data-dw-text>${d.message ? `<p class="dw-msg" data-dw-msg>${esc(d.message)}</p>` : ''}${cut ? `<p data-dw-brief>${esc(cut)}${cut.length < brief.length ? '…' : ''}</p>` : ''}${cut.length < brief.length ? `<details class="ms-more" data-dw-more><summary class="f-muted">${esc(w.tt(TX.more))}</summary><p>${esc(brief.slice(cut.length))}</p></details>` : ''}</div>` : ''}
+    ${onward ? `<p class="f-muted" data-dw-onward>${esc(w.tt(RD.TX.onward, { r: onward }))}</p>` : ''}
     ${canSeal ? `<div class="dw-acts"><button type="button" class="f-linkbtn" data-dw-seal="${esc(s.id)}">${esc(w.tt(TX.seal))}</button></div>` : ''}</div>`;
+}
+
+/** La suite de route d'un tiroir, en une ligne de noms (« PT2 → PT3 »), '' sans route. Les noms du fichier sont nettoyés (jamais un objet entier). */
+function onwardOf(d) {
+  const list = Array.isArray(d?.route) ? d.route.slice(0, 60) : [];
+  return list.map(p => plain(p) ? clean(p.name) || clean(p.id) : clean(p)).filter(Boolean).join(' → ');
 }
 
 /** La ligne du débrief d'un posé de précision : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », suivie de « — BBB » pour un équipier. Les mots
@@ -519,7 +587,7 @@ function posText(w, c) {
 function paintPos(w) {
   if (W !== w) return;
   const c = RUN.stateOf(w.id),
-    p = w.host?.querySelector?.(':scope > [data-dw-pos]');
+    p = w.host?.querySelector?.('[data-dw-pos]');
   if (c && p) p.textContent = posText(w, c);
 }
 
@@ -561,11 +629,20 @@ function placeAsk(w, c) {
 function paint(w) {
   const c = RUN.stateOf(w.id);
   if (W !== w || !w.host || !c) return;
+  clearTimeout(w.ansTimer);
+  if (c.mine && c.flying) paintFlight(w, c);
+  else paintLegacy(w, c);
+}
+
+/** La section hors vol, comme avant SOG-0619 : cachée et vide tant qu'aucun tiroir de MA mission n'est ouvert (SOG-0459), puis « Suite de la
+ *  mission » et une ligne par tiroir ouvert ; « Demander la suite » dans la place de la rangée des actions de la fiche. */
+function paintLegacy(w, c) {
+  w.host.removeAttribute('data-flight');
+  w.host.removeAttribute('data-narrow');
   const opened = c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open) : [],
     rows = opened.map(s => rowHtml(w, c, s)),
-    asking = c.mine && c.asking,
-    pos = c.mine && c.flying ? `<p class="f-muted" data-dw-pos>${esc(posText(w, c))}</p>` : '';
-  w.host.hidden = !rows.length && !asking && !pos;
+    asking = c.mine && c.asking;
+  w.host.hidden = !rows.length && !asking;
   // pour MA mission, un tiroir ouvert : la section prend la place de la ligne des zones de la première page (STYLE)
   w.host.toggleAttribute('data-mine', rows.length > 0);
   // le panneau : les mêmes mots et les mêmes éléments pour toute mission (aucun mot ne dépend des tiroirs)
@@ -576,7 +653,7 @@ function paint(w) {
   // le débrief : sous la suite, seulement s'il a au moins une ligne (donc après l'ouverture d'un tiroir) ; visible à tous les niveaux
   const lines = rows.length ? D.debriefOf(c.states) : [],
     debrief = lines.length ? `<h3 data-dw-debrief-head>${esc(w.tt(TX.debriefHead))}</h3><div class="dw-list" data-dw-debrief>${lines.map(l => debriefRow(w, l)).join('')}</div>` : '';
-  w.host.innerHTML = pos + box + list + debrief;
+  w.host.innerHTML = box + list + debrief;
   const rest = w.host.querySelector('[data-dw-rest]');
   if (rest) rest.ontoggle = () => {
     if (W === w) w.restOpen = rest.open; // gardé à travers les dessins
@@ -585,21 +662,120 @@ function paint(w) {
   reader(w, c, c.mine); // l'enveloppe et la liseuse : MA mission, avec ou sans tiroir (le secret : rien ne dépend des tiroirs)
 }
 
+/** Le bloc d'une mission EN VOL (SOG-0619), dans l'ordre de lecture : l'état en une ligne (en vol depuis, position) ; « Vient d'arriver » (une
+ *  enveloppe par message ouvert et pas encore lu, le plus ancien d'abord : rien ne s'ouvre seul) ; « Maintenant » (le dernier message lu, entier,
+ *  sa suite de route en une ligne ; sans message lu, l'ordre de mission) ; les deux gestes, toujours là, la réponse juste au-dessus ; « Avant » (les
+ *  messages précédents repliés, le plus récent d'abord, le débrief comme un message, l'ordre de mission en dernier). Étroit (le bloc, pas la fenêtre,
+ *  sous 760 px) : les gestes sont le PIED COLLANT du bloc, déclaré au cadre comme une barre fixe (data-f-foot : aucune note ne naît dessus). */
+function paintFlight(w, c) {
+  const states = Array.isArray(c.states) ? c.states : [],
+    unread = RUN.unreadOf(c),
+    unreadIds = new Set(unread.map(s => s.id)),
+    read = states.filter(s => s.open && !unreadIds.has(s.id)).sort((a, b) => a.at - b.at),
+    last = read.at(-1) || null,
+    narrow = w.narrow = narrowOf(w.host),
+    started = Date.parse(c.startIso || ''),
+    hhmm = ms => fmtZ(new Date(ms));
+  w.host.hidden = false;
+  w.host.setAttribute('data-flight', '');
+  w.host.toggleAttribute('data-narrow', narrow);
+  w.host.toggleAttribute('data-mine', read.length > 0 || unread.length > 0);
+  // (1) l'état, une ligne
+  const head = `<header class="dw-head" data-dw-head><h3>${esc(w.tt(TX.head))}</h3><p class="f-muted dw-state" data-dw-state><i></i>${Number.isFinite(started) ? `${esc(w.tt(TX.inFlight, { t: hhmm(started) }))} · ` : ''}<span data-dw-pos>${esc(posText(w, c))}</span></p></header>`;
+  // (2) ce qui vient d'arriver : une enveloppe par message pas encore lu ; rien de son texte avant le geste
+  const arrived = unread.length ? `<section data-dw-arrived><p class="dw-kick">${esc(w.tt(TX.kArrived))}</p>${unread.map(s => `<div class="dw-env" data-dw-env="${esc(s.id)}"><div class="dw-shape" role="img" aria-label="${esc(w.tt(RD.TX.envelope))}"><span></span></div><div class="dw-what"><b>${esc(w.tt(TX.envMsg))}</b><span class="f-muted">${esc(w.tt(TX.envAt, { t: hhmm(s.at) }))}</span></div><button type="button" class="primary" data-dw-open="${esc(s.id)}">${esc(w.tt(RD.TX.envOpen))}</button></div>`).join('')}</section>` : '';
+  // (3) maintenant : le dernier message lu, entier ; sans message lu, l'ordre de mission
+  const view = pilotView(c.mission, read.map(s => s.id), {
+      mine: true
+    }),
+    book = D.bookFor(D.readBook(c.doc, w.id), c.seance),
+    orderHow = book?.readAt != null ? w.tt(TX.orderRead, {
+      t: hhmm(book.readAt)
+    }) : '',
+    order = view?.summary ? `<h4 data-dw-order>${esc(w.tt(RD.TX.kOrder))}</h4>${orderHow ? `<div class="f-muted" data-dw-orderhow>${esc(orderHow)}</div>` : ''}<p>${esc(view.summary)}</p>` : '',
+    now = `<section class="dw-now" data-dw-now><p class="dw-kick">${esc(w.tt(TX.kNow))}</p>${last ? rowHtml(w, c, last, true) : `${order}${w.readerHost === null || !order ? '' : `<button type="button" class="f-linkbtn" data-dw-readorder>${esc(w.tt(TX.readOrder))}</button>`}`}</section>`;
+  // (4) ce que vous pouvez faire : les deux gestes côte à côte, la réponse contre eux
+  const left = RUN.restLeft(w.id),
+    ans = c.answer && Date.now() - c.answer.at < ANSWER_MS ? w.tt(TX[c.answer.key]) : '',
+    box = c.asking ? `<div class="dw-ask" data-dw-askbox><p>${esc(w.tt(TX.askText))}</p><div class="dw-acts"><button type="button" class="primary" data-dw-ask-yes>${esc(w.tt(TX.askYes))}</button><button type="button" data-dw-ask-no>${esc(w.tt(TX.askNo))}</button></div></div>` : '',
+    acts = `<section class="dw-acts" data-dw-acts${narrow ? ' data-f-foot' : ''}><p class="dw-kick">${esc(w.tt(TX.kDo))}</p>${box}<div class="dw-two"><button type="button" data-dw-seen>${esc(w.tt(TX.objSeen))}</button><button type="button" data-dw-ask${left > 0 ? ' disabled data-dw-rest' : ''} aria-expanded="${c.asking ? 'true' : 'false'}">${esc(w.tt(TX.ask))}</button></div>${ans ? `<p class="dw-answer" data-dw-answer role="status">${esc(ans.endsWith('.') ? ans : `${ans}.`)}</p>` : ''}</section>`;
+  // (5) avant : les messages lus précédents, repliés, le plus récent d'abord ; le débrief y prend sa place comme un message ; l'ordre de mission en dernier
+  const before = read.slice(0, -1).map(s => ({
+      at: s.at,
+      title: s.title || w.tt(TX.envMsg),
+      body: rowHtml(w, c, s, true)
+    })),
+    lines = D.debriefOf(c.states).map(l => ({
+      at: l.at,
+      title: w.tt(TX.debriefHead),
+      body: debriefRow(w, l)
+    })),
+    rows = [...before, ...lines].sort((a, b) => b.at - a.at);
+  if (last && view?.summary) rows.push({
+    at: book?.readAt ?? null,
+    title: w.tt(RD.TX.kOrder),
+    body: `<p>${esc(view.summary)}</p>`
+  });
+  const past = rows.length ? `<section class="dw-past" data-dw-past><p class="dw-kick">${esc(w.tt(TX.kPast))}</p>${rows.map(r => `<details class="dw-fold" data-dw-before><summary><span class="t">${esc(r.title)}</span><span class="h">${r.at != null ? esc(hhmm(r.at)) : ''}</span></summary>${r.body}</details>`).join('')}</section>` : '';
+  w.host.innerHTML = head + arrived + now + (narrow ? past + acts : acts + past);
+  w.askBtn?.remove(); // la rangée des actions de la fiche n'a plus « Demander la suite » : les gestes sont dans le bloc
+  w.askBtn = null;
+  clearTimeout(w.restTimer);
+  // les deux seuls minuteurs de ce bloc : la fin du repos (la commande se réarme) et la fin de la réponse affichée (sans geste, jamais { gesture: true })
+  if (left > 0) w.restTimer = setTimeout(() => W === w && paint(w), Math.min(left + 50, 2 ** 31 - 1));
+  if (ans) w.ansTimer = setTimeout(() => W === w && paint(w), Math.max(50, ANSWER_MS - (Date.now() - c.answer.at) + 50));
+  reader(w, c, true);
+}
+
+const ANSWER_MS = 60e3; // la réponse d'un geste reste affichée une minute (celle du repos de « Demander la suite »)
+
+/** Le bloc est-il étroit ? Sa propre largeur (celle de son hôte, jamais celle de la fenêtre) sous 760 px. */
+function narrowOf(host) {
+  const width = host?.getBoundingClientRect?.().width || 0;
+  return width > 0 && width < 760;
+}
+
 /** L'enveloppe et la liseuse de MA mission (lot T3, reader_view.js) : posées avec la section, retirées pour une mission qui n'est pas
  *  la mienne. La liseuse ne reçoit que la mission passée par pilotView — rien d'un tiroir fermé. `readerHost` : où elles s'accrochent (par
  *  défaut la fiche ; `null` : nulle part, le volet du pilote est déjà le Brief). */
 function reader(w, c, full) {
   const sheet = full ? (w.readerHost === undefined ? w.host.closest('.ms-sheet') : w.readerHost) : null;
   if (!sheet || !c.mission) return RD.detach();
-  const opened = c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open).map(s => s.id) : [],
+  // SOG-0619 : un message arrivé et pas encore lu n'a PAS de page (rien de son texte avant « Ouvrir l'enveloppe ») : la liseuse le voit fermé
+  const unread = new Set(RUN.unreadOf(c).map(s => s.id)),
+    states = Array.isArray(c.states) ? c.states.map(s => unread.has(s.id) ? {
+      ...s,
+      open: false
+    } : s) : c.states,
+    opened = states?.filter?.(s => s.open).map(s => s.id) || [],
     view = pilotView(c.mission, opened, {
       mine: true
-    });
+    }),
+    flight = !!c.flying,
+    ans = c.answer && Date.now() - c.answer.at < ANSWER_MS ? w.tt(TX[c.answer.key]) : '';
   RD.attach(sheet, {
     ctx: w.ctx,
     id: w.id,
     view,
-    states: c.states,
+    states,
+    // les deux gestes et le compte des nouveaux messages, dans le pied fixe de la liseuse (en vol seulement)
+    foot: flight ? {
+      seen: w.tt(TX.objSeen),
+      ask: w.tt(TX.ask),
+      askText: w.tt(TX.askText),
+      yes: w.tt(TX.askYes),
+      no: w.tt(TX.askNo),
+      asking: !!c.asking,
+      rest: RUN.restLeft(w.id) > 0,
+      answer: ans ? (ans.endsWith('.') ? ans : `${ans}.`) : '',
+      news: unread.size ? (unread.size === 1 ? w.tt(TX.newOne) : w.tt(TX.newMany, {
+        n: unread.size
+      })) : '',
+      onSeen: () => RUN.objectSeen(w.id),
+      onAsk: () => RUN.ask(w.id),
+      onYes: () => RUN.answer(w.id),
+      onNo: () => RUN.cancelAsk(w.id)
+    } : null,
     line: c.line ? {
       ...c.line,
       pilot: c.me
@@ -635,9 +811,14 @@ function onAsk(e) {
 /** Les gestes de la section : « Demander » et « Pas maintenant » du panneau, « Resceller » (niveau Complet). */
 async function onClick(e) {
   const w = W,
-    b = e.target.closest?.('[data-dw-ask-yes],[data-dw-ask-no],[data-dw-seal]');
+    b = e.target.closest?.(
+      '[data-dw-ask-yes],[data-dw-ask-no],[data-dw-seal],[data-dw-ask],[data-dw-seen],[data-dw-open],[data-dw-readorder]');
   if (!w || !b || !w.host.contains(b)) return;
   e.stopPropagation();
+  if (b.hasAttribute('data-dw-open')) return RUN.markDrawerRead(w.id, b.dataset.dwOpen); // « Ouvrir l'enveloppe » d'un message arrivé
+  if (b.hasAttribute('data-dw-seen')) return RUN.objectSeen(w.id); // « Objet en vue »
+  if (b.hasAttribute('data-dw-readorder')) return RD.openReader(); // « Lire l'ordre de mission »
+  if (b.hasAttribute('data-dw-ask')) return onAsk(e); // « Demander la suite » du bloc : le panneau s'ouvre dans la zone des gestes
   if (b.hasAttribute('data-dw-ask-no')) return RUN.cancelAsk(w.id); // « Pas maintenant » : le panneau se ferme, sans repos
   if (b.hasAttribute('data-dw-ask-yes')) return RUN.answer(w.id);
   return RUN.seal(w.id, b.dataset.dwSeal);

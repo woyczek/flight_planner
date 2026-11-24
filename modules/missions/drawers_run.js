@@ -22,6 +22,8 @@
 //     La vue d'une AUTRE mission n'arrête jamais celle qui est suivie.
 //   stateOf(id) → LE CONTRÔLEUR lui-même (lecture seule pour la vue) : id, ctx, mission, drawers, mine, states, flying, startIso, asking, inRange,
 //     seance, line, doc, me, gotNow, passage(p), notJudged(k), tt(row, vars) ; ou null.
+//   markDrawerRead(id, lettre) : « Ouvrir l'enveloppe » d'un message arrivé (`drawer_<L>.read_at`) ; objectSeen(id) : « Objet en vue » (SOG-0619) ;
+//     isUnread(c, s), unreadOf(c) : les messages arrivés et non lus, le plus ancien d'abord.
 //   ask(id) → le panneau « Demander la suite » s'ouvre (faux au repos ou hors de ma mission) ; cancelAsk(id) ; answer(id) ; markRead(id) ;
 //     seal(id, lettre) : les gestes de la vue. restLeft(id) : ce qui reste du repos de « Demander ». liveNow(c), liveInfo(c).
 //   sees(id, mission) → ce que la fiche et son Détail montrent de cette mission (SOG-0448 : pilotView, avec les tiroirs que le contrôleur sait ouverts).
@@ -607,6 +609,7 @@ function announce(c, before, states) {
     const was = (before || []).find(x => x.id === s.id);
     if (s.open && !c.first && was && !was.open && !c.said.has(`open:${s.id}`)) {
       c.said.add(`open:${s.id}`);
+      c.answer = null; // la réponse d'un geste ne survit pas à ce qui arrive
       const cb = c.followed?.onArrive;
       if (cb && !onScreen(c)) {
         try {
@@ -680,6 +683,7 @@ export function ask(id) {
   const c = CTL.get(id);
   if (!c || !c.mine || restLeft(id) > 0) return false;
   c.asking = true;
+  c.answer = null;
   paintViews(c);
   return true;
 }
@@ -729,6 +733,7 @@ export async function answer(id) {
   const c = CTL.get(id);
   if (!c) return;
   c.asking = false;
+  c.answer = null;
   REST.set(id, Date.now() + c.restMs);
   const states = Array.isArray(c.states) ? c.states : [],
     first = states.find(x => !x.open && !x.locked),
@@ -738,10 +743,7 @@ export async function answer(id) {
     a = c.mine ? D.asked(states, {
       inRange: near
     }) : null;
-  if (!a) {
-    c.ctx.notify?.(c.tt(RTX.nothing), 'info');
-    return paintViews(c);
-  }
+  if (!a) return nothing(c);
   paintViews(c);
   if (a.how !== 'hand') return void record(c, a.id, { // un objet, ou un survol à confirmer : le constat tenu dans c.inRange
     ...r.f,
@@ -771,6 +773,82 @@ export async function answer(id) {
   await load(c); // l'annonce vient du calcul (announce)
   // les autres appareils de la mission le liront à leur synchronisation : un passage demandé tout de suite, sans attendre celui de fond
   Promise.resolve().then(() => c.ctx.data.sync?.()).catch(() => {});
+}
+
+/** La même réponse pour toute demande sans suite : « Rien de nouveau pour l'instant ». En vol (SOG-0619), elle s'affiche DANS le bloc, juste au-dessus
+ *  des gestes (c.answer, jamais une note éloignée) ; hors vol, la notification d'avant. */
+function nothing(c) {
+  if (!c.flying) {
+    c.ctx.notify?.(c.tt(RTX.nothing), 'info');
+    return paintViews(c);
+  }
+  c.answer = {
+    key: 'nothing',
+    at: Date.now()
+  };
+  paintViews(c);
+}
+
+/** Ce message est-il NON LU par moi ? (SOG-0619) Seulement pour MA mission en vol : un tiroir ouvert, que je n'ai pas lu (`readAt` absent), et
+ *  ouvert PENDANT ce vol (son heure d'ouverture n'est pas avant le départ du vol) — un tiroir ouvert avant cette version, ou avant ce départ,
+ *  compte comme lu : aucune inondation d'enveloppes. */
+export function isUnread(c, s) {
+  const start = Date.parse(c.startIso || '');
+  return !!c.mine && !!c.flying && !!s?.open && s.readAt == null && Number.isFinite(start) && s.at >= start;
+}
+
+/** Les messages arrivés et non lus, le plus ANCIEN d'abord (le rattrapage en apporte deux). */
+export const unreadOf = c => (Array.isArray(c.states) ? c.states : []).filter(s => isUnread(c, s)).sort((a, b) => a.at - b.at);
+
+/** « Ouvrir l'enveloppe » d'un message arrivé : `drawer_<L>.read_at` écrit dans MON carnet (une fois), puis la section relue. Le garde entre
+ *  onglets : relu dans le verrou, rien n'est réécrit si la lecture y est déjà. */
+export async function markDrawerRead(id, letter) {
+  const c = CTL.get(id);
+  if (!c || c.dead || !c.mine || !D.LETTERS.includes(letter)) return false;
+  const ctx = {
+    mission: c.id,
+    me: c.me,
+    seance: c.seance
+  };
+  if (!D.withDrawerRead(c.doc, ctx, letter, Date.now())) {
+    c.ctx.notify?.(c.tt(RTX.noRead, {
+      e: c.tt(RTX.noTrigram)
+    }), 'err');
+    return false;
+  }
+  const ok = await locked(c, async guarded => {
+    const cur = guarded ? await reread(c) : c.doc;
+    if (guarded && D.bookFor(D.readBook(cur, c.id), c.seance)?.reads?.[letter] != null) return true; // déjà lu (un autre onglet)
+    const next = D.withDrawerRead(cur, ctx, letter, Date.now());
+    return !!next && await put(c, c.myPath, next, RTX.noRead);
+  });
+  if (!ok || c.dead) return false;
+  await load(c);
+  Promise.resolve().then(() => c.ctx.data.sync?.()).catch(() => {});
+  return true;
+}
+
+/** « Objet en vue » (SOG-0619) : le geste LIMITÉ À L'OBJET — il ne joue que si la clé du premier tiroir fermé est un objet (ou un survol à
+ *  confirmer) que l'appareil a à portée maintenant, le même test que « Demander » ; sinon la MÊME réponse, « Rien de nouveau pour l'instant ».
+ *  Aucune règle du juge ne change : c'est le constat tenu dans c.inRange qui s'écrit, par record. */
+export async function objectSeen(id) {
+  const c = CTL.get(id);
+  if (!c || c.dead) return;
+  c.asking = false;
+  c.answer = null;
+  const states = Array.isArray(c.states) ? c.states : [],
+    first = states.find(x => !x.open && !x.locked),
+    r = c.inRange,
+    near = !!first && !!r && r.id === first.id && Date.now() - r.seen <= RANGE_MS && followsHere(c, first) ? first.id : null,
+    a = c.mine && near ? D.asked(states, {
+      inRange: near
+    }) : null;
+  if (!a || a.how === 'hand') return nothing(c);
+  paintViews(c);
+  return void record(c, a.id, {
+    ...r.f,
+    at: Date.now()
+  }, r.source).catch(() => {});
 }
 
 /** « Resceller » (niveau Complet) : le tiroir est rescellé dans MON carnet, puis la section relue. */

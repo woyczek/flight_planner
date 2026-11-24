@@ -219,17 +219,22 @@ export function readBook(doc, missionId) {
   const id = midOf(missionId);
   if (!id || !doc || typeof doc !== 'object' || Array.isArray(doc) || midOf(own(doc, 'mission')) !== id) return null;
   const s = own(doc, 'seance'),
-    drawers = {};
+    drawers = {},
+    reads = {};
   for (const l of LETTERS) {
     const e = entryOf(own(doc, `drawer_${l}`));
     if (e) drawers[l] = e;
+    // SOG-0619 : la lecture d'un message (`read_at`), portée par la clé du tiroir — quelle que soit son ouverture (la mienne, celle d'un autre, l'heure)
+    const at = msOf(own(own(doc, `drawer_${l}`), 'read_at'));
+    if (at != null) reads[l] = at;
   }
   return {
     mission: id,
     seance: typeof s === 'string' && SEANCE.test(s) ? s : null,
     readAt: msOf(own(doc, 'read_at')),
     startAt: msOf(own(doc, 'start_at')),
-    drawers
+    drawers,
+    reads
   };
 }
 
@@ -1211,6 +1216,9 @@ export function stateOf(drawers, {
       tier: land && land.tier ? land.tier :
       null, // le palier d'un posé de précision, recalculé ici ; null sans palier (terrain, autre clé)
       distNm: land && land.tier ? land.distNm : null,
+      ...(mine?.reads?.[id] != null ? {
+        readAt: mine.reads[id] // SOG-0619 : l'heure à laquelle j'ai lu ce message (absent : pas encore lu)
+      } : {}),
       lands: w ? found.flatMap(c => landLines(c, key).map(l =>
         ({ // les posés jugés de ce tiroir, les miens et ceux des équipiers (SOG-0516, lot B)
           ...l,
@@ -1342,13 +1350,17 @@ function baseOf(doc, ctx) {
       seance: null,
       readAt: null,
       startAt: null,
-      drawers: {}
+      drawers: {},
+      reads: {}
     };
   return {
     ...b,
     seance: key || b.seance,
     drawers: {
       ...b.drawers
+    },
+    reads: {
+      ...b.reads
     },
     by: tri
   };
@@ -1364,7 +1376,15 @@ function docOf(b, now) {
     start_at: isoOf(b.startAt) || null
   };
   for (const l of LETTERS) {
-    const e = b.drawers[l];
+    const e = b.drawers[l],
+      read = b.reads?.[l];
+    // la lecture d'un message dont ce carnet n'a pas l'ouverture (ouvert par l'heure ou par un autre) : une clé « read » que les lecteurs d'avant
+    // ignorent (ni « open » ni « sealed ») ; elle ne vaut qu'ici
+    if (!e && read != null) out[`drawer_${l}`] = {
+      state: 'read',
+      at: isoOf(read),
+      read_at: isoOf(read)
+    };
     if (!e) continue;
     out[`drawer_${l}`] = e.state === 'sealed' ? {
       state: 'sealed',
@@ -1373,6 +1393,9 @@ function docOf(b, now) {
       state: 'open',
       at: isoOf(e.at),
       how: e.how,
+      ...(read != null ? {
+        read_at: isoOf(read)
+      } : {}),
       ...(e.from && e.to ? {
         from: e.from,
         to: e.to
@@ -1443,6 +1466,17 @@ export function withOpen(doc, ctx, id, how = 'hand', fix = null) {
     } : {})
   };
   return docOf(b, now);
+}
+
+/** Le carnet avec ce message LU (SOG-0619 : « Ouvrir l'enveloppe » d'un message arrivé) : `drawer_<L>.read_at`, l'heure de la première lecture, gardée
+ *  (une seconde lecture ne la change pas). Sans tiroir ouvert dans ce carnet (ouvert par l'heure ou par un autre), la clé porte seulement la
+ *  lecture. null sans identifiants ou pour une lettre inconnue. `now` : l'instant de la lecture. */
+export function withDrawerRead(doc, ctx, letter, now = Date.now()) {
+  const b = baseOf(doc, ctx);
+  if (!b || !LETTERS.includes(letter)) return null;
+  const t = Number.isFinite(now) ? now : Date.now();
+  if (b.reads[letter] == null) b.reads[letter] = t;
+  return docOf(b, t);
 }
 
 /** Le carnet avec ce tiroir rescellé par ce pilote (outil d'auteur, niveau Complet) : son ouverture et l'heure ne l'ouvrent plus pour

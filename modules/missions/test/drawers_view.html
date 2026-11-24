@@ -192,33 +192,45 @@
     empty = () => !!sec() && !sec().hasAttribute('data-mine') && (sec().hidden === true && sec().innerHTML === '' || posOnly()),
     /** SOG-0617 (e) : la section de MA mission dont le vol est démarré ne montre QUE la ligne « Position » (ni titre, ni « data-mine ») ; avec elle,
      *  « vide » veut dire : rien des tiroirs. */
-    posOnly = () => !!sec() && sec().hidden === false && !sec().hasAttribute('data-mine') && sec().children.length === 1 &&
-    !!sec().querySelector(':scope > p[data-dw-pos]') && !sec().querySelector('h3'),
-    askBtn = () => q('[data-actslot] > [data-dw-ask]'),
-    /** L'ordre de la rangée des actions : « Préparer ce vol », la place (et ce qu'elle porte), puis le reste. */
-    order = () => [...(q('.ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? `slot(${[...e.children].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join()})` : e.dataset.do || e.tagName).join(
-      ' '),
-    /** Monte la section sur une mission et attend sa lecture (et, pour MA mission, « Demander la suite » posé). */
-    mount = async (c, m, more = {}) => {
-        DV.show(host(more.bare), {
-          ctx: c,
-          id: more.id || ID,
-          mission: m,
-          restMs: 100,
-          ...more
-        });
-        await until(() => c.asked.includes('missions/affectations.json'));
-        if (more.mine) await until(() => !!askBtn());
-        await sleep(120);
+    posOnly = () => !!sec() && sec().hidden === false && sec().hasAttribute('data-flight') && !sec().hasAttribute('data-mine') &&
+    !!sec().querySelector('[data-dw-state] [data-dw-pos]') && !!sec().querySelector('[data-dw-acts]') && !sec().querySelector(
+      '[data-dw], [data-dw-env]'),
+    askBtn = () => q('[data-actslot] > [data-dw-ask]') || q('[data-dw-acts] [data-dw-ask]'),
+    /** SOG-0619 : en vol, un tiroir ouvert arrive comme une ENVELOPPE (rien ne s'ouvre seul) : on attend l'enveloppe ou la ligne, on touche l'enveloppe,
+     *  on attend le message sous « Maintenant ». Hors vol, la ligne est là d'emblée. */
+    seeOpen = async (L, ms = 3000) => {
+        await until(() => !!q(`[data-dw-open="${L}"]`) || !!q(`[data-dw="${L}"][data-open]`), ms);
+        const b = q(`[data-dw-open="${L}"]`);
+        if (b) {
+          b.click();
+          await until(() => !!q(`[data-dw="${L}"][data-open]`), ms);
+        }
       },
-      /** « Demander la suite » puis « Demander » ; attend la fin du repos d'avant (le banc le raccourcit). */
-      ask = async () => {
-          await until(() => !!askBtn() && !askBtn().disabled);
-          askBtn().click();
-          q('[data-dw-ask-yes]').click();
-          await sleep(60);
+      /** L'ordre de la rangée des actions : « Préparer ce vol », la place (et ce qu'elle porte), puis le reste. */
+      order = () => [...(q('.ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? `slot(${[...e.children].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join()})` : e.dataset.do || e.tagName)
+      .join(
+        ' '),
+      /** Monte la section sur une mission et attend sa lecture (et, pour MA mission, « Demander la suite » posé). */
+      mount = async (c, m, more = {}) => {
+          DV.show(host(more.bare), {
+            ctx: c,
+            id: more.id || ID,
+            mission: m,
+            restMs: 100,
+            ...more
+          });
+          await until(() => c.asked.includes('missions/affectations.json'));
+          if (more.mine) await until(() => !!askBtn());
+          await sleep(120);
         },
-        opened = () => qa('[data-dw]').map(e => e.dataset.dw + ':' + e.dataset.open).join();
+        /** « Demander la suite » puis « Demander » ; attend la fin du repos d'avant (le banc le raccourcit). */
+        ask = async () => {
+            await until(() => !!askBtn() && !askBtn().disabled);
+            askBtn().click();
+            q('[data-dw-ask-yes]').click();
+            await sleep(60);
+          },
+          opened = () => qa('[data-dw]').map(e => e.dataset.dw + ':' + e.dataset.open).join();
 
   // ---- 1. une mission qu'on feuillette : rien — ni ligne, ni compte, ni geste
   let ctx = fakeCtx({
@@ -287,7 +299,7 @@
     empty() &&
     !ctx.store.has(BOOK) && ctx.notes.length === 0, [sec().innerHTML, ctx.notes]);
   await ask();
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const book = ctx.store.get(BOOK);
   ck('« Demander » sur un premier tiroir « à la main » : le carnet de CE pilote est écrit (le tiroir, « hand », la séance, l\'auteur), et lui seul',
     book?.drawer_B?.state === 'open' && book.drawer_B.how === 'hand' && book.seance === `A:${iso(T0).slice(0, 10)}` && book.by === 'AAA' &&
@@ -301,7 +313,7 @@
       '[data-dw="B"] [data-dw-msg]') === 'Fin de mission.' && text('[data-dw="B"] [data-dw-brief]') === 'Retour au terrain.' && ctx
     .synced ===
     1 && sec().hasAttribute('data-mine') && !/Tiroir/.test(sec().textContent), [sec().textContent, ctx.synced]);
-  await until(() => !!q('[data-dw="C"][data-open]'));
+  await seeOpen('C');
   ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre (« ouvert à l\'heure ») ; aucune note « Suite de la mission » : le bloc est à l'
     écran(SOG - 0617, le veilleur de la page dit l 'arrivée quand il n'
       y est pas)
@@ -381,7 +393,7 @@
       source: 'xplane'
     }
   }));
-  await until(() => !!q('[data-dw="D"][data-open]'));
+  await seeOpen('D');
   ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous — « ouvert au passage de la zone par BBB, à … », aucune note (le bloc est à l'
     écran);
   reçu dans la minute: pas de« reçu ici» ',
@@ -434,7 +446,7 @@
   await mount(ctx, missionOf(ZONE, HAND), {
     mine: true
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('un constat reçu plus d\'une minute après le fait : « ouvert au passage de la zone par BBB, à … — reçu ici à … » ; aucune notification pour ce qui était déjà ouvert à l\'arrivée ; le suivant (à la main) n\'a pas de ligne',
     /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ — reçu ici à \d\d:\d\dZ$/.test(text('[data-dw="B"] [data-dw-how]')) && ctx.notes
     .length === 0 && opened() === 'B:zone', [text('[data-dw="B"] [data-dw-how]'), ctx.notes]);
@@ -472,7 +484,7 @@
   });
   ck('le premier tiroir a une heure : rien ne dit son heure avant qu\'elle joue (section cachée et vide)', empty() && !stage.textContent
     .includes(z(T4 + 40 * MIN)));
-  await until(() => !!q('[data-dw="B"][data-open]'), 6000);
+  await seeOpen('B', 6000);
   ck('à l\'heure : le tiroir s\'ouvre de lui-même (« ouvert à l\'heure, à … »), aucune note ; le suivant n\'a pas de ligne',
     q('[data-dw="B"]')?.dataset.open === 'time' && text('[data-dw="B"] [data-dw-how]') === `ouvert à l'heure, à ${z(T4 + 40 * MIN)}` &&
     ctx.notes.length === 0 && opened() === 'B:time' && sec().hidden === false, [text('[data-dw="B"]'), ctx.notes]);
@@ -509,7 +521,7 @@
     empty() &&
     ctx.store.get(BOOK).drawer_B.state === 'sealed', [sec().innerHTML, ctx.store.get(BOOK)]);
   await ask();
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('… et « Demander » le rouvre (le premier fermé est de nouveau « à la main »)', ctx.store.get(BOOK).drawer_B.state === 'open' &&
     opened() === 'B:hand', ctx.store.get(BOOK));
   DV.stop();
@@ -531,7 +543,7 @@
   await mount(ctx, mission, {
     mine: true
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('niveau Courant : aucun « Resceller » ; un tiroir déjà ouvert à l\'arrivée n\'est pas annoncé', !q('[data-dw-seal]') && ctx.notes
     .length === 0, ctx.notes);
 
@@ -560,7 +572,7 @@
     mine: true
   });
   await ask();
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('un trigramme de l\'identité avec des blancs et en minuscules : tous les chemins partent du trigramme validé (aucun blanc, « ZZZ »), le vol est lu, le carnet écrit à sa place',
     ctx.asked.length > 0 && ctx.asked.every(p => !/\s/.test(p)) && ctx.asked.includes('pilot/ZZZ/current_flight.json') && ctx.store.get(
       'pilot/ZZZ/missions/X-701A.json')?.by === 'ZZZ' && [...ctx.store.keys()].every(k => !/\s/.test(k)), [ctx.asked, [...ctx.store
@@ -862,7 +874,7 @@
     onGround: false,
     gsKt: 120
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const zb = ctx.store.get(BOOK)?.drawer_B;
   ck('le trajet entre dans la zone : le CONSTAT est écrit au carnet (« zone », ses DEUX relevés à pleine précision, la source), « Suite de la mission » le dit (« ouvert au passage de la zone, à … »), une notification, un passage demandé',
     zb?.how === 'zone' && zb.from?.lat === 44.7 && zb.to?.lat === 44.5 && zb.to.aglFt === 1500 && zb.to.onGround === false && zb
@@ -886,13 +898,13 @@
     mine: true
   });
   await until(() => ctx.live.subs.size === 1);
-  ck('un objet que l\'appareil suit : rien à l\'écran (plus de « Objet en vue »), seul « Demander la suite » dans la rangée', empty() && !q(
-    '[data-dw-seen]') && order() === 'prepare slot(BUTTON,ask) back' && !stage.textContent.includes('Radeau'));
+  ck('un objet que l\'appareil suit : rien à l\'écran de ses messages (SOG-0619 : le bloc montre l\'état et les DEUX gestes « Objet en vue » et « Demander la suite », plus rien dans la rangée)',
+    empty() && !!q(
+      '[data-dw-acts] [data-dw-seen]') && !!q('[data-dw-acts] [data-dw-ask]') && order() === 'prepare slot(BUTTON) back' && !stage
+    .textContent.includes('Radeau'));
   await ask();
-  ck('« Demander » HORS de portée : « Rien de nouveau pour l\'instant », rien d\'écrit, rien d\'ouvert', JSON.stringify(ctx.notes) === JSON
-    .stringify([
-      ['info', 'Rien de nouveau pour l\'instant']
-    ]) && !ctx.store.get(BOOK)?.drawer_B && empty(), ctx.notes);
+  ck('« Demander » HORS de portée : « Rien de nouveau pour l\'instant », rien d\'écrit, rien d\'ouvert', text('[data-dw-answer]') ===
+    'Rien de nouveau pour l\'instant.' && !ctx.store.get(BOOK)?.drawer_B && empty(), ctx.notes);
   ctx.live.emit({
     lat: 44.61,
     lon: -1.32
@@ -907,8 +919,10 @@
   ctx.live.status = 'off';
   await ask();
   ck('à portée, mais la position en direct s\'est tue (position inconnue) : « Demander » n\'ouvre pas — une position inconnue ne satisfait jamais la clé',
-    ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant' && !ctx.store.get(BOOK)?.drawer_B && empty(), [ctx.notes, ctx.store.get(
-      BOOK)]);
+    text('[data-dw-answer]') === 'Rien de nouveau pour l\'instant.' && !ctx.store.get(BOOK)?.drawer_B && empty(), [ctx.notes, ctx.store
+      .get(
+        BOOK)
+    ]);
   ctx.live.status = 'tracking';
   ctx.live.emit({
     lat: 44.61,
@@ -922,7 +936,7 @@
   await sleep(150);
   const nObj = ctx.notes.length;
   await ask();
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const ob = ctx.store.get(BOOK)?.drawer_B;
   ck('« Demander » à portée (la position revenue) : le constat est écrit (« object », le trajet à portée), « Suite de la mission » l\'ouvre et sa notification le dit',
     ob?.how === 'object' && ob.from?.lat === 44.61 && ob.to?.lat === 44.6 && /^ouvert quand vous avez trouvé l'objet, à \d\d:\d\dZ$/.test(
@@ -952,7 +966,7 @@
     lat: 44.6,
     lon: -1.3
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('un objet SANS déclaration voulue (confirm: false) : la portée l\'ouvre seule, comme avant', ctx.store.get(BOOK)?.drawer_B?.how ===
     'object' && opened() === 'B:object');
   DV.stop();
@@ -978,14 +992,14 @@
   });
   await sleep(150);
   await ask();
-  const inAir = empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant';
+  const inAir = empty() && !ctx.store.get(BOOK)?.drawer_B && text('[data-dw-answer]') === 'Rien de nouveau pour l\'instant.';
   ctx.live.emit({
     lat: 45.0,
     lon: 1.0,
     onGround: true,
     gsKt: 8
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('l\'arrivée : au terrain mais en vol, rien (et « Demander » ne l\'ouvre pas) ; posé et lent, le constat « arrival » est écrit et « Suite de la mission » dit « ouvert à l\'arrivée, à … »',
     inAir && ctx.store.get(BOOK)?.drawer_B?.how === 'arrival' && /^ouvert à l'arrivée, à \d\d:\d\dZ$/.test(text(
       '[data-dw="B"] [data-dw-how]')), [inAir, ctx.store.get(BOOK), ctx.notes]);
@@ -1081,7 +1095,7 @@
   await sleep(150);
   const notYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
   ctx.live.emit(lfix(10));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const lb = ctx.store.get(BOOK)?.drawer_B;
   ck('l\'atterrissage : en vol puis posé 5 s, rien ; posé 10 s d\'affilée (relevés espacés de 5 s), le constat « landing » est écrit avec ses deux relevés et « Suite de la mission » dit « ouvert à votre atterrissage, à … »',
     notYet && lb?.how === 'landing' && lb.from?.onGround === true && lb.to?.onGround === true && Date.parse(lb.to.at) - Date.parse(lb.from
@@ -1187,7 +1201,7 @@
   [30, 20, 15, 10].forEach(sec => ctx.live.emit(lfix(sec, {
     lat: 45.0 - 0.15 * NMV
   })));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const pb = ctx.store.get(BOOK)?.drawer_B;
   ck('posé de précision de bout en bout : posé 10 s à 0,15 NM du point, le constat est écrit avec tier « réussi » et distNm 0,15, et « Suite de la mission » dit « ouvert à votre atterrissage, à … », sans palier ni « NM » (ils ne sont dits que dans le Débrief)',
     pb?.how === 'landing' && pb.tier === 'réussi' && pb.distNm === 0.15 && /^ouvert à votre atterrissage, à \d\d:\d\dZ$/.test(text(
@@ -1213,7 +1227,8 @@
   await sleep(150);
   await ask();
   ck('l\'atterrissage avec une source qui ignore « au sol » (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas ; la clé dit la même chose qu\'une arrivée non suivie',
-    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+    empty() && !ctx.store.get(BOOK)?.drawer_B && text('[data-dw-answer]') === 'Rien de nouveau pour l\'instant.', [ctx.store.get(BOOK),
+      ctx
       .notes
     ]);
   DV.stop();
@@ -1301,7 +1316,7 @@
   ctx.live.emit(ofix(10, 45.05, 1000));
   await sleep(100);
   ctx.live.emit(ofix(5, 44.95, 1000));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const ob2 = ctx.store.get(BOOK)?.drawer_B;
   ck('le survol sans confirmation : au-dessus de la bande, rien ; le trajet qui coupe le point dans la bande (relevés du simulateur avec hauteur sol) écrit le constat « overflight » (ses deux relevés, hauteur comprise) et « Suite de la mission » dit « ouvert à votre survol, à … »',
     tooHigh && ob2?.how === 'overflight' && ob2.from?.aglFt === 1000 && ob2.to?.aglFt === 1000 && /^ouvert à votre survol, à \d\d:\d\dZ$/
@@ -1326,7 +1341,7 @@
   const waiting = empty() && !ctx.store.get(BOOK)?.drawer_B && !stage.textContent.includes('DESTINATION');
   const nOv = ctx.notes.length;
   await ask();
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const ob3 = ctx.store.get(BOOK)?.drawer_B;
   ck('le survol avec confirmation : le passage dans la bande n\'ouvre rien tout seul ; « Demander la suite » l\'ouvre (constat « overflight », ses deux relevés), « Suite de la mission » le dit',
     waiting && ob3?.how === 'overflight' && ob3.from?.lat === 45.05 && ob3.to?.lat === 44.95 && /^ouvert à votre survol, à \d\d:\d\dZ$/
@@ -1353,7 +1368,8 @@
     await sleep(150);
     await ask();
     ck(`le survol (confirm ${confirm}) avec une source sans hauteur sol : aucun constat, rien ne s'ouvre, « Demander » ne l'ouvre pas`,
-      empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+      empty() && !ctx.store.get(BOOK)?.drawer_B && text('[data-dw-answer]') === 'Rien de nouveau pour l\'instant.', [ctx.store.get(BOOK),
+        ctx
         .notes
       ]);
     DV.stop();
@@ -1450,7 +1466,7 @@
   await sleep(150);
   const hNotYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
   ctx.live.emit(hfix(10));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const hb = ctx.store.get(BOOK)?.drawer_B;
   ck('le stationnaire : en transit puis tenu 5 s, rien ; tenu 10 s d\'affilée (relevés du simulateur espacés de 5 s), le constat « hover » est écrit avec ses deux relevés (hauteur sol comprise) et « Suite de la mission » dit « ouvert à votre stationnaire, à … » sans nommer le lieu',
     hNotYet && hb?.how === 'hover' && hb.from?.aglFt === 40 && hb.to?.onGround === false && Date.parse(hb.to.at) - Date.parse(hb.from
@@ -1478,7 +1494,8 @@
   await sleep(150);
   await ask();
   ck('le stationnaire avec une source sans hauteur sol (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas',
-    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+    empty() && !ctx.store.get(BOOK)?.drawer_B && text('[data-dw-answer]') === 'Rien de nouveau pour l\'instant.', [ctx.store.get(BOOK),
+      ctx
       .notes
     ]);
   DV.stop();
@@ -1534,7 +1551,7 @@
   await sleep(150);
   const sNotYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
   ctx.live.emit(lfix(15));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const sb = ctx.store.get(BOOK)?.drawer_B;
   ck('la suite d\'étapes : le survol fait, l\'atterrissage posé 5 s, rien ; posé 10 s d\'affilée, le constat « sequence » est écrit avec ses deux preuves (survol, atterrissage) et « Suite de la mission » dit « ouvert à la fin de vos étapes, à … » ; la notification le dit, l\'écran ne montre aucun lieu',
     sNotYet && sb?.how === 'sequence' && sb.steps?.length === 2 && sb.steps[0].how === 'overflight' && sb.steps[1].how === 'landing' &&
@@ -1578,7 +1595,7 @@
   await mount(ctx, missionOf(ZONE, HAND), {
     mine: true
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const tb = ctx.store.get(BOOK)?.drawer_B;
   ck('le rattrapage : la page revient, la trace gardée de CE vol a traversé la zone → le constat est retrouvé et écrit (source « trail », les deux points de la trace, l\'heure du franchissement)',
     tb?.how === 'zone' && tb.source === 'trail' && tb.from?.lat === 44.52 && tb.to?.lat === 44.49 && Date.parse(tb.at) > T5 + 300e3 &&
@@ -1614,7 +1631,7 @@
     lat: 44.5,
     lon: -1.1
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const through = ctx.store.get(BOOK)?.drawer_B;
   ck('le premier relevé reçu est jugé depuis le dernier relevé du cadre : le trajet a traversé la zone entre les deux (aucun relevé dedans) → franchi, les deux relevés au carnet',
     through?.how === 'zone' && through.from?.lon === -1.3 && through.to?.lon === -1.1, through);
@@ -1663,7 +1680,7 @@
     lat: 44.5,
     lon: -1.2
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('la position en direct arrive après le dessin : sans elle, un relevé dans la zone n\'ouvre rien ; au premier relevé suivi, la zone s\'ouvre (sans attendre la minute)',
     quiet && ctx.store.get(BOOK)?.drawer_B?.how === 'zone', [quiet, ctx.store.get(BOOK)]);
   DV.stop();
@@ -1729,7 +1746,7 @@
       ...leg
     }
   }, T2));
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   await sleep(200);
   const after = ctx.synced;
   await sleep(700);
@@ -1799,10 +1816,8 @@
   await ask();
   await sleep(100);
   ck('MA mission SANS tiroir, son vol démarré : AUCUN carnet écrit (pas de départ réel au dépôt), « Demander la suite » présent, la même réponse ; le document « ouverts » de l\'appareil publié',
-    !ctx.store.has(BOOK) && [...ctx.store.keys()].every(k => !k.startsWith('pilot/AAA/missions/')) && !!askBtn() && JSON.stringify(ctx
-      .notes) === JSON.stringify([
-      ['info', 'Rien de nouveau pour l\'instant']
-    ]) && ctx.store.get('cache/missions/open_X-701A.json')?.mine === true, [
+    !ctx.store.has(BOOK) && [...ctx.store.keys()].every(k => !k.startsWith('pilot/AAA/missions/')) && !!askBtn() && text(
+      '[data-dw-answer]') === 'Rien de nouveau pour l\'instant.' && ctx.store.get('cache/missions/open_X-701A.json')?.mine === true, [
       [...ctx.store.keys()], ctx.notes
     ]);
   DV.stop();
@@ -2182,7 +2197,7 @@
   await mount(ctx, dMission, {
     mine: true
   });
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   ck('débrief : sans posé de précision jugé (un tiroir ouvert à la main), pas de bloc « Débrief » ni de titre',
     !!q('[data-dw="B"]') && !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && qa('h3').map(h => h.textContent).join() ===
     'Suite de la mission', sec().innerHTML);
@@ -2437,7 +2452,7 @@
   ctx.live.emit(rfix(0, {
     onGround: false
   })); // le premier relevé en l'air : le tiroir s'ouvre
-  await until(() => !!q('[data-dw="B"][data-open]'));
+  await seeOpen('B');
   const rb = ctx.store.get(BOOK)?.drawer_B;
   ck('le ravitaillement : en transit puis tenu 5 s, rien ; tenue complète (10 s d\'affilée) puis un relevé posé qui bouge un peu, rien encore ; au premier relevé en l\'air, le constat « refill » est écrit (from, to, last, off, cap compris) et « Suite de la mission » dit « ouvert à votre ravitaillement en retardant, à … » sans nommer le lieu',
     rNotYet && rFull && rb?.how === 'refill' && rb.from?.headingDeg === 90 && rb.to?.onGround === true && rb.last?.onGround === true && rb
