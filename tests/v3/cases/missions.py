@@ -14086,6 +14086,15 @@ def n196(c):
     asked = "!!document.querySelector('.f-modal [data-ok]')"
     path = 'cache/missions/draft_X-001A.json'
     quiet = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"
+    # the ergonomist (24 Nov): at its FIRST frame a note never cuts the foot of the workshop — each note added is measured at the next frame, with
+    # the foot the workshop declares to the frame (.ms-atfoot[data-f-foot]); A378 holds the rule on a generic foot, this one on the real workshop
+    c.page.add_init_script("""(() => { window.__noteFirst = []; const box = () => document.getElementById('fNotes');
+      const watch = () => { const b = box(); if (!b) return setTimeout(watch, 50);
+        new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.classList?.contains('f-note')) requestAnimationFrame(() => {
+          const r = n.getBoundingClientRect(), f = document.querySelector('.ms-atfoot[data-f-foot]')?.getBoundingClientRect();
+          window.__noteFirst.push({ text: n.textContent.replace(/\\s+/g, ' ').trim().slice(0, 80), note: [r.left, r.top, r.right, r.bottom],
+            foot: f && f.height ? [f.left, f.top, f.right, f.bottom] : null }) }) }).observe(b, { childList: true }) };
+      document.readyState === 'loading' ? addEventListener('DOMContentLoaded', watch) : watch() })()""")
 
     def open_x(texts):
         reg_open(c, texts)
@@ -14189,6 +14198,11 @@ def n196(c):
                         break
                     c.wait(250)
                 c.ok(len(failed()) == 1, failed(), f'{width} {how}: the draft written after the keystrokes is refused and said, before the exit')
+                first = [x for x in (c.js('window.__noteFirst') or []) if x['text'].startswith('Mission non enregistrée')]
+                c.ok(bool(first) and first[-1]['foot'] is not None, first, f'{width} {how}: the note and the foot of the workshop are measured at the first frame of the note')
+                nr, ft = first[-1]['note'], first[-1]['foot']
+                c.ok(nr[3] <= ft[1] or nr[1] >= ft[3] or nr[2] <= ft[0] or nr[0] >= ft[2], first[-1],
+                     f'{width} {how}: at its first frame the note « Mission non enregistrée » does not cut the foot of the workshop (.ms-atfoot[data-f-foot])')
                 c.wait(300)
                 c.js(quiet)
                 c.tap(f'{E} [data-do="edcancel"]')
