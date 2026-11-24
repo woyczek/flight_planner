@@ -15633,11 +15633,11 @@ def n259(c):
                     'the points of the route carry the name of their place', timeout=10000)
     c.eq({p.get('id'): p.get('place') for p in f['route']['points'] if p.get('place')}, {'4500N00100E': 'Lac Inventé', '4445N00115E': 'Ferme du Test'},
          'route.points: place on the named points only', what='place')
+    from cases import fuel as FC  # the step Route on screen, whatever the width (to_step: tapped again until it holds)
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
-        if not c.js("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.checkVisibility()"):
-            c.js("document.querySelector(\"[data-module=fuel] .fu-steps [data-step='1']\")?.click()")
-        c.until("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')?.checkVisibility()", what=f'{w} px: the list of points')
+        FC.to_step(c, 1)
+        c.until("!!document.querySelector('[data-module=fuel] [data-pts] [data-place]')", what=f'{w} px: the list of points')
         got = c.js("[...document.querySelectorAll('[data-module=fuel] [data-pts] .fu-pt .fu-ptid')].map(e => [e.querySelector('b')?.textContent || '', "
                    "e.querySelector('small')?.textContent || ''])")
         c.eq(got[:2], [['Lac Inventé', '4500N00100E'], ['Ferme du Test', '4445N00115E']], f'{w} px: the name in bold, the coordinate under it',
