@@ -3057,6 +3057,51 @@ def a81(c):
     c.eq([keys[0], got.get('suite')], ['suite', ver], 'the head of the diagnostic: the suite’s version', what='diagnostic')
 
 
+_A389_LABEL = {'fr': 'Écritures refusées', 'en': 'Refused writes', 'de': 'Abgelehnte Schreibvorgänge', 'es': 'Escrituras rechazadas'}
+
+
+@case('A389', 'Settings › About › Diagnostic: a write the browser refused is one readable line « Refused writes » (the time, the head of the module, the raw text of the browser ESCAPED, the name of the file); no refused write, no line; the copied diagnostic carries it', 'A',
+      langs4=True, designs=('standard',), screens=False, night=False,
+      rule='SOG-0606 (the ergonomist, 24 Nov): the browser\'s raw text is never shown to the pilot in a note; the frame keeps it in the diagnostic (page.writeFailures, memory only); the line says it, ten at most, the text is not trusted (escaped), the name of the file yes and its content never; the label in four languages; the line is absent when there is nothing to say')
+def a389(c):
+    lang = c.lang
+    c.context.add_init_script("""window.__copied = []; try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async s => { window.__copied.push(String(s)) } } }) } catch (e) {}""")
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    row = '[data-diag] dt[data-dg="writeFailures"]'
+
+    def show():
+        c.page.evaluate("location.hash = '#settings'")
+        c.js("() => { const d = document.querySelector('[data-diagbox]'); if (d) { d.open = true; d.closest('details.f-group')?.setAttribute('open', '') } }")
+        c.until("!!document.querySelector('[data-diag] dt')", timeout=15000, what='the diagnostic is painted')
+        c.wait(600)
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogFrame && typeof window.SogFrame.writeFailText === 'function'", timeout=20000, what='the frame keeps the refused writes')
+    show()
+    c.eq(c.count(row), 0, 'no refused write: no line', what='no line')
+    # a refused write whose text carries markup (not trusted), then the page of the diagnostic again
+    c.js("""() => { window.SogFrame.writeFailText(new DOMException('<b id="evil">full</b> <img src=x onerror=window.__pwned=1>', 'QuotaExceededError'), 'Mission non enregistrée', 'pilot/handoff.json');
+      window.SogFrame.writeFailText(new Error('boom'), '') }""")
+    c.page.evaluate("location.hash = '#help'")
+    c.wait(300)
+    show()
+    c.until(f"!!document.querySelector('{row}')", timeout=10000, what='the line appears')
+    label = norm(c.text(row))
+    c.eq(label, norm(_A389_LABEL[lang]), 'the label is the one of the language of the run', what='label')
+    lines = [norm(x) for x in c.js("[...document.querySelectorAll('[data-diag] dd[data-dg=\"writeFailures\"] [data-wf]')].map(e => e.textContent)")]
+    c.eq(len(lines), 2, 'one line per refused write', what='count')
+    c.ok(re.match(r'^\d\d:\d\d:\d\d · Mission non enregistrée · QuotaExceededError: <b id="evil">full</b> <img src=x onerror=window\.__pwned=1> · pilot/handoff\.json$', lines[0]) is not None, lines[0], 'time · head · the raw text of the browser as TEXT · the file')
+    c.ok(re.match(r'^\d\d:\d\d:\d\d · Error: boom$', lines[1]) is not None, lines[1], 'no head, no file: the time and the raw text only')
+    c.eq([c.count('[data-diag] #evil'), c.count('[data-diag] img'), c.js('window.__pwned || 0')], [0, 0, 0], 'the text of the browser is escaped: no element, nothing run', what='escaped')
+    if lang == 'fr':
+        c.js("document.querySelector('[data-diag] dd[data-dg=\"writeFailures\"]').scrollIntoView({block: 'center'})")
+        c.shot(f'A389_{c.width}_fr_ecritures.png')
+    c.js("() => document.querySelector('[data-diagbox] [data-act=\"copy\"]').click()")
+    c.until("(window.__copied || []).length > 0", timeout=10000, what='the diagnostic copied')
+    got = json.loads(c.js("window.__copied.at(-1)"))
+    c.eq([len(got['page']['writeFailures']), got['page']['writeFailures'][0]['file']], [2, 'pilot/handoff.json'], 'the copied diagnostic carries the refused writes', what='copied')
+    c.check_errors()
+
+
 def location_has(c):
     return 'mission=X-1' in c.js('location.hash')
 

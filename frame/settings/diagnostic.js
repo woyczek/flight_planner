@@ -87,7 +87,9 @@
       aeroMissing: ['Base aéro : zones manquantes', 'Aero base: missing zones', 'Luftfahrtbasis: fehlende Zonen',
         'Base aeronáutica: zonas ausentes'
       ],
-      aeroError: ['Base aéro : erreur', 'Aero base: error', 'Luftfahrtbasis: Fehler', 'Base aeronáutica: error']
+      aeroError: ['Base aéro : erreur', 'Aero base: error', 'Luftfahrtbasis: Fehler', 'Base aeronáutica: error'],
+      // SOG-0606 : les écritures que le navigateur a refusées (en mémoire chez le cadre, vidées au rechargement)
+      writeFailures: ['Écritures refusées', 'Refused writes', 'Abgelehnte Schreibvorgänge', 'Escrituras rechazadas']
     },
     yes: ['oui', 'yes', 'ja', 'sí'],
     no: ['non', 'no', 'nein', 'no'],
@@ -140,7 +142,15 @@
       ['aeroMissing', ae.missing],
       ['aeroError', ae.error]
     ];
-    dl.innerHTML = rows.map(([k, v]) => `<dt>${esc(t(T.dg[k]))}</dt><dd>${esc(raw(v))}</dd>`).join('');
+    // SOG-0606 : une entrée par écriture refusée (dix au plus) — l'heure, la tête du module, le texte brut du navigateur, le nom du fichier refusé (jamais son contenu) ;
+    // le texte du navigateur n'est pas fiable : chaque morceau passe par esc(), la ligne est bâtie ici (h = déjà du HTML) ; la ligne n'existe pas quand il n'y a rien à dire
+    const hhmmss = at => {
+      const x = new Date(at);
+      return isNaN(x) ? '' : [x.getHours(), x.getMinutes(), x.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+    };
+    const fails = (Array.isArray(pg.writeFailures) ? pg.writeFailures : []).slice(-10);
+    if (fails.length) rows.push(['writeFailures', fails.map(f => `<span data-wf>${[hhmmss(f?.at), String(f?.head ?? '').slice(0, 80), String(f?.raw ?? '').slice(0, 200), String(f?.file ?? '').slice(0, 120)].filter(Boolean).map(x => esc(x)).join(' · ')}</span>`).join('<br>'), true]);
+    dl.innerHTML = rows.map(([k, v, html]) => `<dt data-dg="${k}">${esc(t(T.dg[k]))}</dt><dd data-dg="${k}">${html ? v : esc(raw(v))}</dd>`).join('');
   }
 
   /** Carte À propos : liens vers l'aide et la feuille de route, puis le diagnostic replié et « Copier ». */
