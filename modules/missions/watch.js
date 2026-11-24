@@ -14,7 +14,8 @@
 //     ailleurs, sa fiche (#missions?open=<id>) ;
 //   · la ligne du bloc d'état « Mission {id} en cours › {titre du dernier tiroir ouvert, ou « Brief »} » : cache/missions/status.json,
 //     `flight: true` (le cadre la range juste après « Vol en cours › Carte »), écrite quand elle change, vidée quand le vol finit.
-// Le titre d'un tiroir n'est dit que s'il est OUVERT (onState du juge ne rend que ceux-là) : la ligne ne dit rien de ce qui reste à venir.
+// Le titre d'un message n'est dit qu'une fois LU, son enveloppe ouverte (onState du juge ne rend que ceux-là, SOG-0619) : la ligne ne dit
+// rien de ce qui reste à venir, ni d'un message arrivé et pas encore ouvert.
 
 import * as DR from './drawers_run.js'; // le MÊME spécifieur que drawers_view.js : un seul juge par page
 import * as MS from '../../frame/lib/mission.js';

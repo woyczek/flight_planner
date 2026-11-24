@@ -750,7 +750,9 @@ def n15(c):
 
 
 _PANE_JS = """() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'), r = p?.getBoundingClientRect();
-  return { shown: !!p && !p.hidden && r.height > 0, first: p?.querySelector('section')?.hasAttribute('data-mrisks') || false,
+  return { shown: !!p && !p.hidden && r.height > 0,
+    // the risks first of what the pane SHOWS (the block « Suite de la mission », at its head, is hidden out of flight: SOG-0619)
+    first: [...(p?.querySelectorAll('section') || [])].find(x => x.checkVisibility())?.hasAttribute('data-mrisks') || false,
     risks: [...(p?.querySelectorAll('[data-mrisk]') || [])].map(e => e.textContent.trim()), zones: p?.querySelectorAll('[data-mzone] a').length || 0,
     step: [...document.querySelectorAll('[data-module=fuel] .fu-steps [data-step]')].findIndex(b => b.getAttribute('aria-current') === 'step'),
     sw: document.documentElement.scrollWidth, iw: innerWidth } }"""
@@ -16838,16 +16840,23 @@ def n271(c):
                     'finding written in my record', timeout=40000)
         c.until("(w) => (window.__notes || []).includes(w)", note, timeout=15000, what=f'{w} px: the note « Un message de la mission est arrivé. » + « Ouvrir »')
         c.ok(not any('Secteur de recherche' in n for n in c.notes()), c.notes(), f'{w} px: the note does not say the title (an envelope)')
-        c.until_doc(STATUS, lambda d: lines(d) == [opened], f'{w} px: the status line says the title of the drawer just opened', timeout=15000)
+        # an envelope (SOG-0619): the title is read by opening it — the status line does not say it before either
+        c.wait(1500)
+        c.eq(lines(c.doc(STATUS)), [brief], f'{w} px: the status line still says « Brief » (the message not opened yet)', what='line before')
         c.shot(f'N271_{c.design}_{w}_{c.lang}_note.png')
         c.tap('#fNotes .f-note [data-act]')
         c.until("location.hash.startsWith('#fuel')", timeout=10000, what=f'{w} px: « Ouvrir » leads to Fuel')
         c.until("(() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'); return !!p && !p.hidden })()", timeout=15000,
                 what=f'{w} px: the pane of the mission open')
-        # the pane hosts the block « Suite de la mission » (the component of the sheet, SOG-0619), first: the drawer just opened is there
-        c.until("(() => { const b = document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]'); return !!b && !b.hidden && "
-                "b.textContent.includes('Secteur de recherche') })()", timeout=15000, what=f'{w} px: the block in the pane, the drawer opened')
+        # the pane hosts the block « Suite de la mission » (the component of the sheet, SOG-0619), first: the message arrived is there,
+        # as an envelope; opened, its title is read — in the block and on the status line
+        c.until("!!document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]')?.querySelector('[data-dw-env=\"B\"]')?.checkVisibility()", timeout=15000,
+                what=f'{w} px: the block in the pane, the envelope of the message arrived')
         c.shot(f'N271_{c.design}_{w}_{c.lang}_pane.png')
+        c.tap('[data-module=fuel] [data-mpane] [data-drawers] [data-dw-open="B"]')
+        c.until("(document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]')?.textContent || '').includes('Secteur de recherche')", timeout=15000, what=f'{w} px: the envelope opened: its title')
+        c.until_doc(STATUS, lambda d: lines(d) == [opened], f'{w} px: the status line says the title of the message read', timeout=15000)
+        c.shot(f'N271_{c.design}_{w}_{c.lang}_read.png')
     # the pane OPEN (the block on screen) when the next drawer opens: it opens in the block, and no note is raised (its envelope is enough)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     now['fix'] = fix(44.9, 1.0)
@@ -16864,8 +16873,8 @@ def n271(c):
     now['fix'] = fix(44.80, 1.0)
     c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', '1280 px: the zone crossed, the pane open: the finding written',
                 timeout=40000)
-    c.until("(() => (document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]')?.textContent || '').includes('Secteur de recherche'))()",
-            timeout=15000, what='1280 px: the drawer opens in the block of the pane')
+    c.until("!!document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]')?.querySelector('[data-dw-env=\"B\"]')?.checkVisibility()", timeout=15000,
+            what='1280 px: the message arrives in the block of the pane, as an envelope')
     c.wait(2000)
     c.ok(note not in c.notes()[said:], c.notes()[said:], '1280 px: the block on screen: NO note « Un message de la mission est arrivé. »')
     c.shot(f'N271_{c.design}_1280_{c.lang}_pane_open.png')
