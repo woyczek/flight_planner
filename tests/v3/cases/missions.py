@@ -16378,7 +16378,7 @@ def _dw_book(mission, start_min, opened):
 @case('N265', 'Missions › the block of a mission in flight reads in ONE order (SOG-0619): the state line, « Vient d\'arriver » (the envelope of the message that arrived and is not read), '
       '« Maintenant » (the last message read, whole), the two gestures, « Avant » (the previous messages folded, the most recent first, the mission order last); nothing opens by itself, '
       'and the touch on the envelope writes drawer_D.read_at in my record and moves the message under « Maintenant »',
-      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=True, screens=True, night=False,
       rule='SOG-0619, the mock-up validated by the ergonomist (24 Nov 2026, modules/missions/maquette/suite_bloc.html): one component, one reading order; a drawer is UNREAD when its read mark is '
       'absent and it opened during this flight; the read mark is drawer_<L>.read_at of my own book; invented mission, simulator and launcher simulated, no network')
 def n265(c):
@@ -16404,7 +16404,10 @@ def n265(c):
         c.ok('Mission terminée' not in html and 'Rendez compte au centre' not in html, 'found', 'the message and the briefing of the unread drawer are nowhere in the page before the touch')
         order = c.js(f"[...document.querySelector('{S}').children].map(e => e.matches('[data-dw-head]') ? 'head' : e.matches('[data-dw-arrived]') ? 'arrived' : e.matches('[data-dw-now]') ? 'now' : "
                      "e.matches('[data-dw-acts]') ? 'acts' : e.matches('[data-dw-past]') ? 'past' : e.tagName)")
-        c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'], 'the block reads: the state line, what has just arrived, now, the gestures, before', what='reading order')
+        # at 390 the gestures are the sticky foot of the block: last in its order (the mock-up validated by the ergonomist, 24 Nov)
+        c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'] if c.width >= 760 else ['head', 'arrived', 'now', 'past', 'acts'],
+             'the block reads: the state line, what has just arrived, now, the gestures, before (at 390 the gestures are its sticky foot)', what='reading order')
+        c.shot(f'N265_{c.design}_{c.width}_{c.lang}_enveloppe.png')  # for the relay: the envelope, nothing opened by itself
         c.eq(c.js(f"[...document.querySelectorAll('{S} .dw-kick')].map(e => e.textContent.trim())"), ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'],
              'the four kickers of the block, in the language of the pilot', what='kickers')
         c.eq(c.count(f'{S} [data-dw-env]'), 1, 'ONE envelope: the drawer D', what='envelopes')
@@ -16422,6 +16425,7 @@ def n265(c):
         c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-before] summary .t')].map(e => e.textContent.trim())"), ['Canot en vue', 'Secteur de recherche', 'Ordre de mission'],
              'under « Avant »: the previous messages, the most recent first, the mission order last', what='before after')
         c.ok('Mission terminée' in c.text(f'{S} [data-dw-now]'), c.text(f'{S} [data-dw-now]'), 'under « Maintenant »: the message of D, whole')
+        c.shot(f'N265_{c.design}_{c.width}_{c.lang}_ouvert.png')  # for the relay: the message read, under « Maintenant »
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
@@ -16457,6 +16461,7 @@ def n266(c):
             # « Objet en vue »
             c.tap(_DW_SEEN_F)
             c.until(f"{answer} === {json.dumps(nothing)}", timeout=8000, what=f'{mid}: the sentence in the answer line after « Objet en vue »')
+            c.shot(f'N266_{c.design}_{c.width}_{c.lang}_{mid}_reponse.png')  # for the relay: the answer in place, above the gestures
             # « Demander la suite » then « Demander »
             c.tap(_DW_ASK_F)
             c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=8000, what='the panel in the zone of the gestures')
@@ -16517,9 +16522,11 @@ def n267(c):
             c.wait(400)
             r = c.js(reach)
             c.ok(all(v['inside'] and v['hit'] for v in r.values()), r, 'and after scrolling the page half way')
+            c.shot(f'N267_{c.design}_{c.width}_{c.lang}_pied.png')  # for the relay: a long message, the foot still under the thumb
         else:
             c.eq(c.js(f"[{acts}.hasAttribute('data-f-foot'), getComputedStyle({acts}).position]"), [False, 'static'], 'at 1280 the gestures are in the flow: no foot, no sticky', what='in flow')
             c.ok(c.js(f"{acts}.getBoundingClientRect().top >= document.querySelector('{S} [data-dw-now]').getBoundingClientRect().bottom - 1"), 'above', 'at 1280 they sit right under « Maintenant »')
+            c.shot(f'N267_{c.design}_{c.width}_{c.lang}_flux.png')  # for the relay: the gestures in the flow at 1280
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
