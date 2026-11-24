@@ -15496,3 +15496,42 @@ def n248(c):
     c.ok(r['ratio'] >= 4.5, r, 'and it reads at 4.5:1 at least on the background of the design')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+@case('N249', 'Missions › the workshop opened from a sheet of the Registry can be left by an address: the gear (⚙) shows Settings and the '
+      'address stays #settings, never brought back to #missions; the browser\'s Back returns to the workshop, its work kept', 'N',
+      tags=('missions',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0609 (measured by Création under the lock, 24 Nov: 3 ms after #settings a popstate brought #missions?view=registry back, '
+      'Missions was unmounted and the workshop closed; cause: s.onPop of SOG-0487 skipped the stale entry of the sheet on EVERY popstate, '
+      'even one that leaves Missions); the behaviour of SOG-0487 inside Missions unchanged (N43); invented missions')
+def n249(c):
+    title = 'Un titre en cours'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"]')  # 390: the sheet full screen, its history entry (made stale when the workshop opens)
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what=f'{w} px: X-001A in the workshop')
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            _tab(c, 'mission')
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what=f'{w} px: the Cadre unfolded')
+        _ed_fill(c, 'edtitle', title)
+        c.tap('#fDevice')
+        c.until("location.hash === '#settings'", what=f'{w} px: the gear opens #settings')
+        c.wait(600)  # red before: 3 ms after, the address came back to #missions?view=registry
+        c.eq(c.hash(), '#settings', f'{w} px: the address stays #settings (red before: #missions?view=registry)', what='address')
+        c.ok(c.js("!!document.querySelector('.f-screen')?.checkVisibility()"), '', f'{w} px: the Settings screen shown')
+        c.shot(f'N249_{c.design}_{w}_{c.lang}_settings.png')
+        c.page.go_back()
+        c.until(f"!document.querySelector('.f-screen') && !!document.querySelector('{E} input[data-k=edtitle]')", timeout=15000,
+                what=f'{w} px: Back: the workshop again')
+        c.wait(600)
+        c.ok(c.hash().startswith('#missions'), c.hash(), f'{w} px: back in Missions')
+        c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.value"), title, f'{w} px: the workshop keeps its work',
+             what='title kept')
+        c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.scrollIntoView({{block: 'center'}})")
+        c.shot(f'N249_{c.design}_{w}_{c.lang}_back.png')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
