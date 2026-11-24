@@ -29,6 +29,7 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
+import * as MCH from './mission_chip.js'; // SOG-0617 : la puce « Mission <ID> », un seul composant (la Carte l'importe aussi)
 import * as MT from '../../frame/lib/mission_themes.js'; // thème et sous-thème du vol (SOG-0202 T2, § 10.48)
 import {
   kindOf
@@ -121,7 +122,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js',
+    'altn_check.js', 'mission_chip.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
@@ -1322,11 +1323,7 @@ const TX = {
   ],
   // « Préparer ce vol » du module Missions (#fuel?mission=<id>)
   // la puce de la mission et son volet (SOG-0193 L2, § 10.47 b) : le retour direct à la mission, sans quitter l'étape
-  mChip: ['Mission {id}', 'Mission {id}', 'Einsatz {id}', 'Misión {id}'],
-  mChipTitle: ['La fiche de la mission, sans quitter l’étape', 'The mission sheet, without leaving the step',
-    'Das Einsatzblatt, ohne den Schritt zu verlassen',
-    'La ficha de la misión, sin salir del paso'
-  ],
+  mChip: MCH.TX.mChip, // SOG-0617 : les textes de la puce sont dans mission_chip.js (une seule source)
   mClose: ['Fermer la fiche de la mission', 'Close the mission sheet', 'Einsatzblatt schließen', 'Cerrar la ficha de la misión'],
   mRisks: ['Risques', 'Risks', 'Risiken', 'Riesgos'],
   mNoRisk: ['Aucun risque déclaré.', 'No risk declared.', 'Kein Risiko angegeben.', 'Ningún riesgo declarado.'],
@@ -3143,9 +3140,7 @@ ${PROC_STYLE}
 /* la puce de la mission (SOG-0193 L2) : à la taille du texte, teinte d'accent, cible de 44 px ; son volet par-dessus l'étape, à droite
    sur un ordinateur, en bas sur un téléphone, sans rien déplacer dessous */
 [data-module="fuel"] .fu-mchipslot:empty{display:none}
-[data-module="fuel"] .fu-mchip{position:relative;min-height:0;height:28px;padding:0 10px;border:1px solid var(--sog-accent);background:none;color:var(--sog-accent);font:inherit;font-size:var(--sog-size-s);font-weight:600;white-space:nowrap}
-[data-module="fuel"] .fu-mchip::before{content:'';position:absolute;inset:-8px -2px}
-[data-module="fuel"] .fu-mchip[aria-expanded="true"]{background:var(--sog-accent);color:var(--sog-surface)}
+${MCH.CSS}
 [data-module="fuel"]:has(> .fu-mpane:not([hidden])){position:relative} /* le volet dans la colonne de Carburant : la Carte à côté reste libre */
 [data-module="fuel"] .fu-mpane{position:absolute;z-index:30;right:0;top:88px;width:min(420px,100%);max-height:calc(100vh - 128px);overflow:auto;margin:0;box-shadow:var(--sog-shadow)}
 [data-module="fuel"] .fu-mpane[hidden]{display:none}
@@ -9198,7 +9193,9 @@ function mChipDraw() {
   const slot = S?.body?.parentElement?.querySelector(':scope > .fu-top [data-mchip]');
   if (!slot) return;
   const id = typeof S.flight?.mission === 'string' ? S.flight.mission.trim().slice(0, 40) : '';
-  slot.innerHTML = id ? `<button type="button" class="fu-mchip" data-do="mpane" aria-expanded="${!!S.mpane}" title="${esc(tt(TX.mChipTitle))}">${esc(tt(TX.mChip, { id }))}</button>` : '';
+  slot.innerHTML = MCH.chipHtml(tt, id, {
+    open: !!S.mpane
+  });
   if (!id) mPaneClose();
 }
 /** Ouvre ou ferme le volet de la mission. */
