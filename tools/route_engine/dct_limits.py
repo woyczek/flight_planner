@@ -129,6 +129,15 @@ def connection_points(procedures, ad, end, ceiling_ft=None):
     return pts if pts else (set() if items else None)      # set() : des procédures sont lues mais AUCUNE n'est volable de ce niveau ; None : la base n'en lit aucune
 
 
+def catalogue_empty(procedures, ad):
+    """SOG-0612 : aucune SID ni STAR n'est LUE pour ce terrain (le catalogue de la base : les `_total` du terrain ; à défaut, ses procédures données par `options`). Inconnu : False (rien n'est dit)."""
+    stats = getattr(procedures, 'stats', None)
+    if isinstance(stats, dict) and ad in stats:
+        return not any(v for k, v in stats[ad].items() if str(k).endswith('_total'))
+    options = getattr(procedures, 'options', None)
+    return False if options is None else not (options(ad, 'SID') or options(ad, 'STAR'))
+
+
 def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=False):
     """Le contrôle des raccords d'un résultat : ({ checked: [...], not_applied: [...] }, [(niveau, texte)]). Un raccord est le PREMIER tronçon depuis le terrain de départ (le DERNIER vers celui d'arrivée) quand c'est un direct sans
     SID ni STAR lue. Trois cas : (1) limite de N > 0 NM dépassée : ERREUR pour une route TAPÉE (comme Eurocontrol), REVUE pour une route calculée (la base n'a pas la SID que le RAD exige : la route le dit) ; (2) limite de 0 NM : la route doit
@@ -160,6 +169,7 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
         nm = round(float(leg.get('nm') or 0), 1)
         lim = limit_of(rad, ad, end)
         rec = {'ad': ad, 'end': end, 'point': far, 'leg_nm': nm, 'state': lim['state'], 'limit_nm': lim['nm'], 'rule': lim['rule']}
+        empty = catalogue_empty(procedures, ad)      # SOG-0612 : le catalogue du terrain est VIDE (aucune SID ni STAR lue) : le fait, par un code et ses valeurs ; le remède (les lire) n'est pas dit ici
         what = 'départ' if end == 'dep' else 'arrivée'
         link = f'{ad} → {far}' if end == 'dep' else f'{far} → {ad}'
         proc = 'SID' if end == 'dep' else 'STAR'
@@ -168,7 +178,7 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
             if nm > lim['nm']:
                 rec['state'] = 'exceeded'
                 if typed and not lim.get('struck'):      # SOG-0529 : une limite lue d'une cellule dont une partie barrée a été retirée n'invente jamais une ERREUR : REVUE, dite
-                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]})', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': lim['nm'], 'rule': lim['rule'], 'point': far}}))
+                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]})', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': lim['nm'], 'rule': lim['rule'], 'point': far, 'catalogue_empty': empty}}))
                     flag()
                 else:
                     issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]}) ; la route ne peut pas s’y conformer sans {proc} lue'))
@@ -185,7 +195,7 @@ def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None, strict=F
             else:
                 rec['state'] = 'exceeded'
                 if typed and not lim.get('struck'):      # SOG-0529 : une limite lue d'une cellule dont une partie barrée a été retirée n'invente jamais une ERREUR : REVUE, dite
-                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, la limite du RAD est de 0 NM ({lim["rule"]}) et {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} de {ad}', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': 0, 'rule': lim['rule'], 'point': far}}))
+                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, la limite du RAD est de 0 NM ({lim["rule"]}) et {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} de {ad}', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': 0, 'rule': lim['rule'], 'point': far, 'catalogue_empty': empty}}))
                     flag()
                 else:
                     issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, limite de 0 NM du RAD ({lim["rule"]}){said} : {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} volable{(" à FL" + format(ceiling_ft / 100, "03.0f")) if ceiling_ft else ""} ; la route sera refusée par l’IFPS (ROUTE{"135" if end == "dep" else "134"}) : à examiner, jamais une route valide', {'code': 'connector_limit', 'values': {'ad': ad, 'end': end, 'nm': nm, 'limit_nm': 0, 'rule': lim['rule'], 'point': far, 'struck': bool(lim.get('struck'))}}))

@@ -327,6 +327,21 @@ def adopt_verdict(route, judge):
             route[k] = judge.get(k)
 
 
+def replace_refused_head(primary, alternatives):
+    """SOG-0611 (l'ergonome, 24 nov. : « une route refusée n'est pas une route ») : une route de tête que le contrôle REFUSE (une ERREUR : « enfreint ») cède la place, à tous les objectifs, à la MEILLEURE selon l'objectif demandé des alternatives que le contrôle ne refuse pas ; l'ancienne tête reste proposée en alternative, avec son verdict et sa cause ; la réponse rend le FAIT (`head_replaced` : la règle que la plus courte enfreint, les deux routes, l'écart en NM). On choisit parmi des routes DÉJÀ jugées : aucune recherche n'est relancée. Sans alternative non refusée, la tête garde sa place (dite). Rend (la tête, les alternatives)."""
+    refused = lambda r: any(i['level'] == 'ERREUR' for i in r.get('issues') or []) or VERDICT_RANK.get(r.get('verdict'), 1) >= VERDICT_RANK['violates']
+    if not refused(primary):
+        return primary, alternatives
+    good = [a for a in alternatives if not refused(a)]
+    if not good:
+        return primary, alternatives
+    best = min(good, key=lambda r: r.get('objective_score', r['distance_nm']))
+    rules = [dict(code=x.get('code'), id=(x.get('values') or {}).get('id')) for x in primary.get('violations') or []]
+    best['head_replaced'] = dict(code='head_replaced', rules=rules, shortest_route=primary.get('route'), shortest_nm=primary.get('distance_nm'), proposed_nm=best.get('distance_nm'), extra_nm=round((best.get('distance_nm') or 0) - (primary.get('distance_nm') or 0), 1))
+    others = [a for a in alternatives if a is not best]
+    return best, [*others[:2], primary]
+
+
 def judge_alternatives(request, nav, rad, alternatives, how, check_budget, assess=None):
     """SOG-0576 (l'ergonome, 23 nov. : « les alternatives jugées ») : chaque alternative proposée au pilote repasse UNE fois dans le contrôle (son TEXTE, sans le chemin de la recherche), SANS reprise, et son verdict affiché est celui du contrôle ; `judge` = { verdict, compute_verdict, seconds } ; `how[id(alternative)]` donne le niveau, la stratégie et les conditions avec lesquels elle a été trouvée. Un budget atteint ou un calcul interrompu arrête le jugement des suivantes (elles gardent le verdict de la recherche) : rend True si interrompu."""
     import time
@@ -593,6 +608,8 @@ def plan(request, root):
         pool.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
         primary = pool[0]
         alternatives = [*pool[1:4], *(a for a in alternatives if not any(a is b for b in pool))][:3]      # SOG-0576 : les alternatives refusées par le contrôle restent proposées avec leur verdict, après les autres
+    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not interrupted and alternatives:      # SOG-0611 (l'ergonome, 24 nov.) : une route refusée n'est pas une route
+        primary, alternatives = replace_refused_head(primary, alternatives)
     message = ('' if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''      # SOG-0401 : « sans incompatibilité détectée » n'est plus rendu (c'était un 0 constat sur les seules conditions décidables, 95 contre 555 à examiner) : l'écran compose sa phrase avec `rad.decided` et `rad.review`
     repli = None
     if rejected and not alternatives and not check_only and not interrupted:

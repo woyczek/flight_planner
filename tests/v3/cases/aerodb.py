@@ -6910,7 +6910,7 @@ def k141(c):
         'https://aim.naviair.dk/en/', [(n, 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf' if n == 'EK_ENR_3_2_en.pdf' else None) for n in (
             'EK_ENR_3_1_en.pdf', 'EK_ENR_3_2_en.pdf', 'EK_ENR_3_3_en.pdf', 'EK_ENR_3_4_en.pdf', 'EK_ENR_4_1_en.pdf', 'EK_ENR_4_4_en.pdf', 'BG_ENR_3_1_en.pdf', 'BG_ENR_3_2_en.pdf', 'BG_ENR_4_1_en.pdf', 'BG_ENR_4_4_en.pdf', 'EK_ENR_3_1_en.pdf')],
         {'status': 'candidate', 'zones': ['dk', 'fo', 'gl'], 'localOnly': True, 'publish': False, 'build': 'none', 'lic': True}),
-        'Denmark, Greenland and the Faroe Islands (SOG-0262): the ENR files of the three AIPs (EK_ for Denmark and the Faroe Islands, BG_ for Greenland), the source is a candidate (« à déposer ; lecture à venir »): local only, nothing published, no build, the licence line cites GEN 0.1 § 6 in four languages', what='naviair')
+        'Denmark, Greenland and the Faroe Islands (SOG-0262): the ENR files of the three AIPs (EK_ for Denmark and the Faroe Islands, BG_ for Greenland), the source is a candidate (« non lu par la suite »): local only, nothing published, no build, the licence line cites GEN 0.1 § 6 in four languages', what='naviair')
     c.eq(sorted(f['name'] for f in st['nats']['files']), ['EG_AIP_DS_<AAAAMMJJ>_XML.zip', 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip', 'EG_UAS_…_XML.zip'], 'NATS: the three sets the pickup takes, each named', what='nats files')
     c.eq(st['sia']['page']['url'], 'https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-10-26.html', 'SIA: the page of the cycle asked for, resolved at the source (not a front page)', what='sia cycle')
 
@@ -14338,12 +14338,14 @@ def k321(c):
     written = 'LFPO DCT OLZOM B1 SITET/F190 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW'      # SOG-0431: the ceiling FL195 is written F190 (a level written in a route is a multiple of ten)
     # the search: the text carries the two changes
     res, view = run(action='compute', via=[])
-    p = res['primary']
+    headed = lambda r, text: next(x for x in [r['primary'], *r['alternatives']] if x['route'] == text)      # SOG-0611: a head that the control REFUSES (here the yoyo) yields to the best alternative that is not refused, and moves to the end of the alternatives with its verdict: the route that the search WRITES is found there
+    p = headed(res, written)
+    c.eq((res['primary']['route'], bool(res['primary'].get('head_replaced')), res['alternatives'][-1]['route']), (plain, True, written), 'SOG-0611: the head that the control refuses (the yoyo: an ERROR) yields to the plain route, which is not refused; the route the search wrote stays, last, with its verdict', what='head replaced')
     c.eq((p['route'], view['alternatives'][0]['route'], [i.get('code') for i in p['issues'] if i['level'] == 'ERREUR']), (written, plain, ['level_yoyo']),
          'the route the SEARCH writes carries the level changes: SITET/F190 (the descent to the ceiling FL195 of A1, written as the cruise level F190 below it, begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); SOG-0532 (1): this descent followed by a climb is a YOYO (PROF326 of Eurocontrol), an ERROR with its code `level_yoyo`: the route stays what the steps write (explicit steps) but the view puts an alternative WITHOUT the yoyo first (the plain route, one level for the whole flight)', what='search text')
     c.eq(short(p), [{'point': 'SITET', 'end_point': 'KEPAD', 'from_ft': 35000, 'to_ft': 19500, 'via': 'B1', 'kind': 'ceiling'}, {'point': 'MIDPT', 'end_point': 'BOYNE', 'from_ft': 19500, 'to_ft': 35000, 'via': 'B2', 'kind': 'release'}],
          '`profile_changes` is what it was (the groups are written FROM it): the descent at SITET, the release at MIDPT', what='changes')
-    c.eq(view['profile_changes'], p['profile_changes'], 'the view carries the same `profile_changes`', what='view changes')
+    c.eq(view['profile_changes'], res['primary']['profile_changes'], 'the view carries the `profile_changes` of the head that it shows (SOG-0611: the plain route, which has none: the changes of the refused route are in its own answer)', what='view changes')
     revue = [i['text'] for i in p['issues'] if 'Profil adapté aux plafonds' in i['text']]
     c.eq((len(revue), revue[0].endswith('voir `profile_changes` ; la route porte les changements de niveau (POINT/Fnnn).') if revue else None, [i['code'] for i in p['issues'] if i['level'] == 'ERREUR']), (1, True, ['level_yoyo']),
          'the REVUE « Profil adapté aux plafonds » says that the route carries the changes; the only ERREUR is the yoyo (SOG-0532 (1))', what='revue')
@@ -14377,7 +14379,7 @@ def k321(c):
          'filed at FL190 (inside every band): no change, no group, the former text, no REVUE about the profile', what='no change')
     # the alternatives carry their own groups, at their own level
     res8, _ = run(action='compute', via=[], alternatives=True)
-    alts = [a['route'] for a in res8['alternatives']]
+    alts = [a['route'] for a in [res8['primary'], *res8['alternatives']] if not any(i['level'] == 'ERREUR' for i in a['issues'])]      # SOG-0611: the refused route written by the search is kept last; the routes that are not refused are the three plain ones
     c.ok(len(alts) == 3 and all(r == plain for r in alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) is the plain route, one level: SOG-0532 (1): a descent to F190 followed by a climb back is a yoyo (PROF326), an ERROR; it is no longer offered')
     # the helpers
     legs = [{'via': v, 'start': {'id': a}, 'end': {'id': b}} for v, a, b in (('DCT', 'LFPO', 'A'), ('B1', 'A', 'B'), ('B1', 'B', 'C'), ('DCT', 'C', 'EIDW'))]
@@ -14390,7 +14392,7 @@ def k321(c):
          'a level group is `POINT/Fnnn` (three digits) or, as the flight plan writes it, `POINT/N0405F200` (speed then level: the speed is not read); a runway suffix and a plain word are not', what='split_level')
     # SOG-0431 (the user, 17 Nov: « NOHAT/N0405F205 » was refused by Eurocontrol: SYN101 INVALID LEVEL DESIGNATOR (ROUTE); F200 passes): a level written in a route is a CRUISE level that can be used — a multiple of ten, at most the ceiling of the airway — and the review says why it is lowered
     res_b, _ = run(a1=20500, action='compute', via=[])
-    p_b = res_b['primary']
+    p_b = headed(res_b, 'LFPO DCT OLZOM B1 SITET/F200 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW')
     said = [i['text'] for i in p_b['issues'] if 'Niveau écrit ramené' in i['text']]
     c.eq((p_b['route'], [x['to_ft'] for x in short(p_b)][:1], len(said), 'SITET/F200 (le plafond de la voie est F205)' in said[0] if said else None, 'multiple de dix' in said[0] if said else None), ('LFPO DCT OLZOM B1 SITET/F200 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW', [20500], 1, True, True),
          'a ceiling of 20 500 ft is written F200 (not F205: a multiple of ten at most equal to the ceiling), the profile keeps its altitude of 20 500 ft, and ONE REVUE says the written level, the ceiling and the rule (red before: F205)', what='written level')
@@ -15111,9 +15113,11 @@ def k331(c):
         def options(self, ad, kind, runway=''):
             return self.items.get((ad, kind), [])
     summ, iss = D.check(rad, [leg('ZZBB', 'P1', 25.0), leg('P1', 'P2', 100.0), leg('P2', 'ZZCC', 12.0)], 'ZZBB', 'ZZCC', True, Procs())
+    iss_read = D.check(rad, [leg('ZZBB', 'P1', 25.0), leg('P1', 'P2', 100.0), leg('P2', 'ZZCC', 12.0)], 'ZZBB', 'ZZCC', True, Procs(sids=('PX',)))[1]
     c.eq([i[0] for i in iss], ['ERREUR'], 'a TYPED route whose direct at the departure (25 NM) is longer than the limit (10 NM): an ERREUR; the arrival ZZCC (0 NM departures… 30 NM arrivals, a direct of 12 NM) is within', what='typed')
     c.ok(iss[0][1] == 'Raccord ZZBB → P1 : direct de 25 NM au départ, au-delà de la limite de 10 NM du RAD (ZZ_LIM_AD)', iss[0][1], 'the text says the link, the length, the end, the limit and the line of the RAD')
     c.eq([(r['end'], r['state'], r['limit_nm'], r['leg_nm']) for r in summ['checked']], [('dep', 'exceeded', 10, 25.0), ('arr', 'within', 30, 12.0)], 'the fields of the answer: one record per end', what='record')
+    c.eq((iss[0][2]['values']['catalogue_empty'], iss_read[0][2]['values']['catalogue_empty']), (True, False), 'SOG-0612: the ERREUR says by a code and its values that the CATALOGUE of the terrain is EMPTY (no SID, no STAR read: the fact, the remedy is not said here) — and that it is not when a procedure is read', what='catalogue empty')
     summ2, iss2 = D.check(rad, [leg('ZZBB', 'P1', 25.0), leg('P1', 'ZZCC', 12.0)], 'ZZBB', 'ZZCC', False, Procs())
     c.eq([(i[0], 'ne peut pas s’y conformer' in i[1]) for i in iss2], [('REVUE', True)], 'a CALCULATED route (the base reads no SID): a REVUE that says the route cannot conform, never an ERREUR (the proposals would all be refused)', what='calculated')
     # 0 NM: the SIDs unknown → to examine; the SIDs read → the end of one is within, another point is an ERREUR (typed) / a REVUE (calculated)
@@ -21596,3 +21600,87 @@ def k537(c):
     c.eq((areas(off), off['fra_causes']), ([], []), 'without the list of the free-route points the route does not use the free route and has no cause to give', what='no list')
     c.eq(FR.orientation('EVEN/ODD', 'E'), 'EVEN', 'the orientation of an entry « EVEN/ODD » is the first one, of an exit the second; « - » none', what='orientation')
     c.eq((FR.orientation('EVEN/ODD', 'X'), FR.orientation('-', 'E'), FR.orientation('ODD', 'X')), ('ODD', None, 'ODD'), 'the orientation of an exit « EVEN/ODD » is ODD, a dash gives none, an exit « ODD » stays', what='orientation 2')
+
+
+@case('K538', 'Route engine, SOG-0611 (a route that is refused is not a route): a head route that the control REFUSES (« violates ») gives its place — at every objective, the distance included — to the BEST (by the objective asked) of the alternatives that the control does not refuse; the old head stays proposed as an alternative with its verdict and its cause; the answer says the FACT (`head_replaced`: the rules that the shortest route breaks, the two routes, the gap in NM); a refused head with no alternative that is not refused keeps its place; a head that is not refused is not touched; nothing is searched again',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0611, measure: 2 of the 23 heads « enfreint » of the 160 flights have an alternative that the control does not refuse, at 0.2 % of distance; the 21 others have none — a connector limit or a RAD rule that no search repairs; « sans seuil »: the rule is « une route refusée n\'est pas une route », the reciprocal of « never replaced by a route judged less well »). On an invented base of two lanes between two invented aerodromes, the control forced to refuse the text of every route that goes by the short lane (the logic of the choice, then the wiring in `plan.compute`)',
+      )
+def k538(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    import route_fixture as RF
+    from route_engine import engine as E, import_books as I, plan as P, view
+    # 1. the logic
+    mk = lambda route, nm, verdict, errors=(), **kw: dict(route=route, distance_nm=nm, verdict=verdict, ok=True, issues=[{'level': 'ERREUR', 'text': t} for t in errors], violations=[{'code': 'rad_rule', 'values': {'id': 'XR1'}}] if verdict == 'violates' else [], **kw)
+    head = mk('SHORT', 500.0, 'violates', ['refused'])
+    a1, a2, a3 = mk('LONG', 560.0, 'unverifiable'), mk('LONGER', 600.0, 'unverifiable'), mk('BAD', 520.0, 'violates', ['refused too'])
+    new, alts = P.replace_refused_head(head, [a3, a1, a2])
+    c.eq((new['route'], [a['route'] for a in alts], alts[-1] is head, new['head_replaced']['extra_nm'], new['head_replaced']['rules'], new['head_replaced']['shortest_route']), ('LONG', ['BAD', 'LONGER', 'SHORT'], True, 60.0, [{'code': 'rad_rule', 'id': 'XR1'}], 'SHORT'),
+         'a refused head gives its place to the best alternative that is NOT refused (not to the shorter one that is refused), the old head stays proposed after the others with its own verdict and errors, and the fact is given: the rule, the two routes, +60 NM', what='logic')
+    best = mk('FAST', 700.0, 'unverifiable', objective_score=1.0)
+    new2, _ = P.replace_refused_head(mk('SHORT', 500.0, 'violates', ['x'], objective_score=9.0), [mk('LONG', 560.0, 'unverifiable', objective_score=5.0), best])
+    c.eq(new2['route'], 'FAST', 'the best is the best by the OBJECTIVE asked (the score when there is one), not the shortest', what='objective')
+    keep, kept = P.replace_refused_head(head, [a3])
+    c.eq((keep is head, kept == [a3], 'head_replaced' in head), (True, True, False), 'a refused head with no alternative that is not refused keeps its place, nothing is said', what='none')
+    good = mk('GOOD', 500.0, 'unverifiable')
+    c.eq(P.replace_refused_head(good, [a1]), (good, [a1]), 'a head that the control does not refuse is not touched', what='not refused')
+    # 2. the wiring, on an invented base: two lanes between two invented aerodromes
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+            ai = json.load(f)
+        ai['data']['rows'] += [['XSTA', 'DEPART', 55.0, 10.0, 20, 0, 0], ['XEND', 'ARRIVE', 55.0, 24.0, 20, 0, 0]]
+        with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump(ai, f)
+        short = {'S1': (55.0, 11.0), 'S2': (55.0, 12.5), 'S3': (55.0, 14.0)}
+        rest = {'S3': (55.0, 14.0), 'S4': (55.0, 17.0), 'S5': (55.0, 20.5), 'S6': (55.0, 23.4)}
+        long_ = {'S1': (55.0, 11.0), 'N2': (55.6, 12.5), 'S3': (55.0, 14.0)}
+        nodes = {**short, **long_, **rest}
+        with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+            doc = json.load(f)
+        doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in nodes.items()]
+        with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+            json.dump(doc, f)
+        with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+            al = json.load(f)
+        node = lambda n: {'id': n, 'lat': nodes[n][0], 'lon': nodes[n][1]}
+        lane = lambda name, ids: [{'route': name, 'a': node(a), 'b': node(b), 'lower': 2000, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+        al['data'] += lane('L9', list(short)) + lane('L8', list(long_)) + lane('L7', list(rest))
+        with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+            json.dump(al, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        real = E.assess
+
+        def refusing(only):
+            def forcing(request, nav, rad_, **kw):
+                r = real(request, nav, rad_, **kw)
+                if (' L9 ' in ' ' + str(r.get('route')) + ' ') if only else True:
+                    r = dict(r, verdict='violates', violations=[{'code': 'rad_rule', 'values': {'id': 'XR1'}}], issues=[*r['issues'], {'level': 'ERREUR', 'text': 'règle forcée', 'code': 'rad_rule', 'values': {'id': 'XR1'}}])
+                return r
+            return forcing
+
+        def go(only, objective='distance'):
+            E.assess = refusing(only)
+            try:
+                return P.compute(view.to_request({'action': 'compute', 'adep': 'XSTA', 'adest': 'XEND', 'fl': 330, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': False, 'proposals': False, 'objective': objective}), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))
+            finally:
+                E.assess = real
+        out = go(True)
+        out2 = go(False)
+    p, alts = out['primary'], out['alternatives']
+    c.eq((' L8 ' in ' ' + p['route'] + ' ', ' L9 ' in ' ' + p['route'] + ' ', p['verdict'], p.get('head_replaced', {}).get('code'), p['head_replaced']['extra_nm'] > 0, p['head_replaced']['rules']), (True, False, 'unverifiable', 'head_replaced', True, [{'code': 'rad_rule', 'id': 'XR1'}]),
+         'on the invented base, objective « distance » (the default): the shortest route (the lane L9) is refused, the route by the lane L8 that the control does not refuse takes the head, and the answer says the fact — the rule, the gap in NM (red before: the refused route kept the head)', what='wiring')
+    old = [a for a in alts if ' L9 ' in ' ' + a['route'] + ' ']
+    c.eq((len(old), old[0]['verdict'], any(i['text'] == 'règle forcée' for i in old[0]['issues'])), (1, 'violates', True), 'the old head stays proposed among the alternatives with its verdict and its cause', what='old head')
+    p2 = out2['primary']
+    c.eq((p2['verdict'], 'head_replaced' in p2), ('violates', False), 'when the control refuses every route of the bench, the head keeps its place and nothing is replaced', what='all refused')
