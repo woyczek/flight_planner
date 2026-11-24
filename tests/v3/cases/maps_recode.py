@@ -10730,3 +10730,34 @@ def d318(c):
       rule='SOG-0569 (a1): D319_<width>_choisir0 / choisir5 / choisir8 (390 and 1280, night)')
 def d319(c):
     _choose_scenes(c, 'D319')
+
+
+# SOG-0626: every write of a runway number (« 13 », « 31 ») on any 2D canvas of the page, with the FRAME of the overlay it belongs to (the full clear of `.mp-over`, told at any device ratio) and where the call comes
+# from (nine lines of stack)
+_RWY_HOOK = """() => { window.__rw = []; window.__rwf = 0; const p = CanvasRenderingContext2D.prototype;
+  if (!p.clearRect.__rw) { const k = p.clearRect; p.clearRect = function (x, y, a, b) { if (this.canvas && this.canvas.classList.contains('mp-over')) { const m = this.getTransform ? this.getTransform() : { a: 1, d: 1 };
+    if (a * m.a >= this.canvas.width - 2 && b * m.d >= this.canvas.height - 2) window.__rwf++ } return k.call(this, x, y, a, b) }; p.clearRect.__rw = true }
+  if (!p.fillText.__rw) { const f = p.fillText;
+    p.fillText = function (t, x, y, m) { const s = String(t); if (s === '13' || s === '31') window.__rw.push({ f: window.__rwf, t: s, canvas: (this.canvas && (this.canvas.className || this.canvas.id)) || '?', at: Math.round(x) + ',' + Math.round(y),
+      from: String(new Error().stack).split('\\n').slice(2, 11).map(l => l.trim().replace(/^at /, '').replace(/https?:\\/\\/[^/]+/, '')).join(' < ') }); return f.call(this, t, x, y, m) };
+    p.fillText.__rw = true } return true }"""
+
+
+@case('D326', 'SOG-0626: in the choose mode each runway number of the aerodrome is written ONCE per drawing (the black boxes of the mode: no second, grayed box beside the airfield written by the muted round of the collision pass)', 'D', tags=('maps',),
+      designs=('standard',), night=False,
+      rule='SOG-0626 (the ergonomist, on D318 at 390): the runways of LFML were written twice in the choose mode, « 31 » and « 13 » in black boxes and again in gray boxes stuck to the ring (the same on D66 of 23 Nov, before the tick-to-compare lot). Cause, read with the probes of the case: the collision pass of aero_symbols plays each layer TWICE, the first round with a MUTED context (its writes go nowhere); drawRunways took the raw context from `ctx.canvas`, which bypassed the mute: the first round wrote the numbers FOR REAL at their trial places (under the veil of the mode: grayed) and the second at the places kept. A runway number is written once per frame; the failure says which call wrote the second one')
+def d326(c):
+    _ch_open(c, {}, file=_CH_FILE)
+    c.js(_RWY_HOOK)
+    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
+    c.until("() => window.__rw.some(w => w.t === '13') && window.__rw.some(w => w.t === '31') && window.__rwf >= 1", timeout=8000, what='the runway numbers drawn, in a frame whose start was seen')
+    c.wait(300)
+    writes = c.js("() => window.__rw")
+    last = max(w['f'] for w in writes)
+    mine = [w for w in writes if w['f'] == last]
+    per = {}
+    for w in mine:
+        per.setdefault(w['t'], []).append(f"{w['canvas']} @{w['at']} from {w['from']}")
+    c.eq({t: v for t, v in per.items() if len(v) > 1}, {}, 'each runway number is written ONCE in a frame of the overlay (the second write is the doubled, grayed box)', what='numbers written more than once in the last frame')
+    c.eq(sorted(per), ['13', '31'], 'and both numbers are written (the vectors keep their numbers)', what='numbers written in the last frame')
+    c.shot('D326.png')

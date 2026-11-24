@@ -1056,8 +1056,10 @@ export function drawRunways(ctx, arrows, pl = null) {
     // le numéro de piste : blanc sur noir, comme sur le tarmac (SOG-0297 : le code couleur du terrain, pas celui du design)
     ctx.font = `700 11px Arial,sans-serif`;
     const bw = place.bw,
-      raw = ctx.canvas?.getContext?.('2d') ||
-      ctx; // le contexte brut : le contexte thématique de la Carte remplacerait le noir pur par l'encre du design et foncerait un blanc trop proche du fond (render.js themed)
+      // le contexte brut : le contexte thématique de la Carte remplacerait le noir pur par l'encre du design et foncerait un blanc trop proche du fond (render.js themed) ; SAUF au tour MUET de la passe de
+      // collision (aero_symbols.js pass : un contexte muet, dont les écritures ne vont nulle part) : en prendre le canevas le ferait écrire pour de bon, et chaque numéro serait écrit DEUX fois, au premier tour
+      // à sa place d'essai (sous le voile du mode « choisir » : un pavé grisé) et au second à sa place retenue (SOG-0626)
+      raw = Object.prototype.hasOwnProperty.call(ctx, 'measureText') ? ctx : ctx.canvas?.getContext?.('2d') || ctx;
     raw.fillStyle = '#000000';
     raw.fillRect(nx - bw / 2, ny - 8, bw, 16);
     raw.lineWidth = 1;
