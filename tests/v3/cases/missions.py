@@ -16679,3 +16679,106 @@ def n269(c):
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
     c.js(_DW_CLEAR)
+
+
+# SOG-0627: « Resceller » a drawer reseals the following drawers I opened too (one write), after a question of the frame.
+_DW_SEAL_REGISTRY = """missions:
+  - { id: X-973A, family: TESTTIROIR, title: Trois messages à resceller, folder: X_TIR/X-973A, files: [missionX-973A.yaml] }
+"""
+_DW_SEAL = """mission: { id: X-973A, type: SAR, subtype: RECHERCHE }
+title: Trois messages à resceller
+summary: Une mission inventée, trois messages.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.5, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.8, lon: 1.0 }, radius_km: 3 }
+  - { id: ZONE-2, name: Secteur sud, kind: search, centre: { lat: 44.6, lon: 1.0 }, radius_km: 3 }
+route_order: [ORIGIN, DESTINATION]
+phases:
+  - id: B
+    title: Premier message
+    message: "Message du premier tiroir."
+    brief: Consigne du premier tiroir.
+  - id: C
+    title: Deuxième message
+    message: "Message du deuxième tiroir."
+    brief: Consigne du deuxième tiroir.
+    trigger_zone: ZONE-1
+    fallback_delay_min: 600
+  - id: D
+    title: Troisième message
+    message: "Message du troisième tiroir."
+    brief: Consigne du troisième tiroir.
+    trigger_zone: ZONE-2
+    fallback_delay_min: 600
+"""
+
+
+@case('N273', 'Missions › « Resceller » a drawer reseals the following ones I opened too (SOG-0627): after the question of the frame (« Resceller ce tiroir et les suivants ? », its two buttons), '
+      'the three drawers are sealed in my record in ONE write and the block shows none of them; « Annuler » changes nothing; reopening the first (« Demander ») does not bring the other two back — '
+      'it arrives as an envelope again; with no following drawer open the question is the short one (« Resceller ce tiroir ? »)',
+      'N', tags=('missions',), designs=('standard',), langs4=True, phone=False, screens=True, night=False,
+      rule='SOG-0627, the ergonomist: nothing opens a drawer while an earlier one is closed, so the following drawers I opened would come back all at once on their old findings; '
+      'drawers.js withSeal (the following ones of MY record, never a crewmate\'s), drawers_run.js seal (the question, the lock); the read mark leaves with the seal')
+def n273(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    many = {'fr': 'Resceller ce tiroir et les suivants ?', 'en': 'Reseal this drawer and the following ones?', 'de': 'Diese Schublade und die folgenden wieder versiegeln?',
+            'es': '¿Volver a sellar este cajón y los siguientes?'}[c.lang]
+    one = {'fr': 'Resceller ce tiroir ?', 'en': 'Reseal this drawer?', 'de': 'Diese Schublade wieder versiegeln?', 'es': '¿Volver a sellar este cajón?'}[c.lang]
+    buttons = {'fr': ['Resceller', 'Annuler'], 'en': ['Reseal', 'Cancel'], 'de': ['Versiegeln', 'Abbrechen'], 'es': ['Sellar', 'Cancelar']}[c.lang]
+    BOOK = 'pilot/ABC/missions/X-973A.json'
+    S = f'{M} [data-drawers]'
+    book, start_iso = _dw_book('X-973A', -30, [('B', -27, -26, 'hand'), ('C', -24, -23, 'hand'), ('D', -20, -19, 'hand')])   # three drawers, opened and READ
+    flight = _dw_flight(start_iso.replace('.000Z', 'Z'), 'X-973A')
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
+    c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=404, content_type='application/json', body='{}'))
+    states = lambda: {l: (c.doc(BOOK) or {}).get(f'drawer_{l}', {}).get('state') for l in 'BCD'}
+    ask_seal = lambda letter: (c.tap(f'{S} [data-dw-seal="{letter}"]'), c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question of the frame'))
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_SEAL_REGISTRY], ['missions/X_TIR/X-973A/missionX-973A.yaml', _DW_SEAL]])
+        c.open('missions', wait=False, app='company', docs=[['device/level.json', {'level': 3}, 'cache'], ['pilot/ABC/current_flight.json', flight, 'document'], [BOOK, book, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-973A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-973A"]')
+        c.until(f"!!document.querySelector('{S} [data-dw-now] [data-dw=\"D\"]')", timeout=30000, what='the last message under « Maintenant »')
+        c.js(f"document.querySelectorAll('{S} [data-dw-before]').forEach(e => e.open = true)")
+        c.eq(states(), {'B': 'open', 'C': 'open', 'D': 'open'}, 'the three drawers are open in my record', what='before')
+        # 1. the question, with the following drawers; « Annuler » changes nothing
+        ask_seal('B')
+        c.eq(norm(c.text('.f-modal p')), norm(many), 'the question names the following drawers', what='the question')
+        c.eq([norm(c.text('.f-modal [data-ok]')), norm(c.text('.f-modal [data-no]'))], buttons, 'its two buttons', what='buttons')
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", what='the question closed')
+        c.wait(1500)
+        c.eq(states(), {'B': 'open', 'C': 'open', 'D': 'open'}, '« Annuler » changes nothing: the three drawers are still open', what='after Annuler')
+        c.eq(c.count(f'{S} [data-dw]'), 3, 'and the block still shows the three messages', what='messages')
+        # the confirmation: the three are sealed in my record, in ONE write, without their read mark; the block shows none of them
+        ask_seal('B')
+        c.tap('.f-modal [data-ok]')
+        d = c.until_doc(BOOK, lambda d: d and all(d.get(f'drawer_{l}', {}).get('state') == 'sealed' for l in 'BCD'), timeout=15000, what='the three drawers sealed')
+        c.ok(all('read_at' not in d[f'drawer_{l}'] for l in 'BCD'), d, 'the three are sealed in my record, and the read mark left with the seal')
+        c.until(f"document.querySelectorAll('{S} [data-dw]').length === 0", timeout=10000, what='no message left in the block')
+        c.eq([c.count(f'{S} [data-dw]'), c.count(f'{S} [data-dw-before]'), c.count(f'{S} [data-dw-env]')], [0, 0, 0], 'the block shows none of the three: no message, no « Avant », no envelope', what='block')
+        # 2. « Demander » reopens the first (its key is the gesture): it arrives as an ENVELOPE again; the other two stay closed
+        c.tap(_DW_ASK_F)
+        c.until(f"!!document.querySelector('{_DW_ACTS} [data-dw-ask-yes]')", timeout=8000, what='the panel')
+        c.tap(f'{_DW_ACTS} [data-dw-ask-yes]')
+        c.until(f"!!document.querySelector('{S} [data-dw-open=\"B\"]')", timeout=15000, what='the envelope of B')
+        c.wait(1500)
+        c.eq(states(), {'B': 'open', 'C': 'sealed', 'D': 'sealed'}, 'the first drawer is reopened, the other two stay sealed (they do not come back on their old findings)', what='after Demander')
+        c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-env]')].map(e => e.dataset.dwEnv)"), ['B'], 'B arrives as an envelope again (its read mark left with the seal), and only B', what='envelopes')
+        # 4. read it, then seal it again with NO following drawer open: the short question
+        c.tap(f'{S} [data-dw-open="B"]')
+        c.until(f"!!document.querySelector('{S} [data-dw-now] [data-dw=\"B\"]')", timeout=15000, what='B under « Maintenant »')
+        ask_seal('B')
+        c.eq(norm(c.text('.f-modal p')), norm(one), 'no following drawer open: the short question', what='the short question')
+        c.tap('.f-modal [data-ok]')
+        c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'sealed', timeout=15000, what='B sealed again')
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)

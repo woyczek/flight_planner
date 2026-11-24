@@ -90,6 +90,8 @@
         store,
         t: (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
         notify: (text, kind) => c.notes.push([kind, text]),
+        questions: [], // les questions du cadre (ctx.ask) : [texte, bouton de réponse, bouton d'abandon] ; toujours « oui » (le banc ne joue pas « Annuler »)
+        ask: async (text, o) => (c.questions.push([text, o?.ok, o?.cancel]), true),
         data: {
           get: async p => (c.asked.push(p), store.has(p) ? structuredClone(store.get(p)) : null),
           put: async (p, v) => {
@@ -515,6 +517,10 @@
     q('[data-dw="B"]').dataset.open === 'hand' && opened() === 'B:hand');
   q('[data-dw-seal="B"]').click();
   await until(() => !q('[data-dw="B"]'));
+  ck('SOG-0627 : « Resceller » DEMANDE avant d agir, par la question du cadre : aucun tiroir suivant ouvert par moi, la phrase courte et les boutons Resceller / Annuler',
+    JSON.stringify(ctx.questions) === JSON.stringify([
+      ['Resceller ce tiroir ?', 'Resceller', 'Annuler']
+    ]), ctx.questions);
   ck('rescellé : le tiroir est refermé pour moi — la section redevient cachée et vide (rien ne dit « rescellé »), le carnet le porte',
     empty() &&
     ctx.store.get(BOOK).drawer_B.state === 'sealed', [sec().innerHTML, ctx.store.get(BOOK)]);

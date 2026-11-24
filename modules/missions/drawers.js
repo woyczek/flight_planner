@@ -1504,11 +1504,33 @@ export function withSeal(doc, ctx, id) {
   const b = baseOf(doc, ctx);
   if (!b || !LETTERS.includes(id)) return null;
   const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
-  b.drawers[id] = {
-    state: 'sealed',
-    at: now
-  };
+  // SOG-0627 : rien n'ouvre un tiroir tant qu'un tiroir d'avant est fermé — rescellé le premier, les suivants que J'AI ouverts seraient VERROUILLÉS (disparus du bloc, leurs
+  // constats restant au carnet) puis reviendraient d'un coup à sa réouverture, sans que l'auteur puisse les rejouer : un seul écrit les rescelle TOUS dans MON carnet.
+  // Les constats des autres équipiers gardent leur règle (leur ouverture reste la leur : rien n'est écrit dans leur carnet). Le scellé n'a pas de `read_at` : la marque de
+  // lecture part avec lui, un tiroir rescellé puis rouvert arrive de nouveau en enveloppe.
+  for (const l of followersOf(b, id, true)) {
+    b.drawers[l] = {
+      state: 'sealed',
+      at: now
+    };
+    delete b.reads[l];
+  }
   return docOf(b, now);
+}
+
+/** Les lettres que « Resceller » ce tiroir rescelle avec lui : le tiroir, puis chaque tiroir SUIVANT (l'ordre des lettres B à M) que MON carnet a ouvert.
+ *  `self` : compter le tiroir lui-même. */
+function followersOf(book, id, self = false) {
+  const at = LETTERS.indexOf(id);
+  return LETTERS.filter((l, i) => i > at ? book?.drawers?.[l]?.state === 'open' : self && l === id);
+}
+
+/** Les tiroirs SUIVANTS que « Resceller » ce tiroir rescellerait aussi (SOG-0627) : ceux que mon carnet a ouverts après lui — la question du cadre n'est pas la même
+ *  avec ou sans eux. [] pour un document illisible, une lettre inconnue ou une mission qui n'est pas la mienne. */
+export function sealFollowers(doc, ctx) {
+  const id = midOf(ctx?.mission),
+    book = id ? bookFor(readBook(doc, id), ctx.seance) : null;
+  return book && LETTERS.includes(ctx.letter) ? followersOf(book, ctx.letter) : [];
 }
 
 /** Le carnet avec la mission lue (« Ouvrir » de l'enveloppe) : la première lecture est gardée. */

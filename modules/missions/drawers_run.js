@@ -50,6 +50,14 @@ export const RTX = {
   noRead: ['La mission n\'a pas pu être notée comme lue : {e}', 'The mission could not be marked as read: {e}',
     'Die Mission konnte nicht als gelesen vermerkt werden: {e}', 'No se pudo marcar la misión como leída: {e}'
   ],
+  // « Resceller » (SOG-0627) : la question du cadre, avec ou sans tiroir suivant que j'ai ouvert (ses boutons sont dits ici, le cadre n'ayant que « OK » et « Annuler »)
+  sealAskMany: ['Resceller ce tiroir et les suivants ?', 'Reseal this drawer and the following ones?',
+    'Diese Schublade und die folgenden wieder versiegeln?',
+    '¿Volver a sellar este cajón y los siguientes?'
+  ],
+  sealAskOne: ['Resceller ce tiroir ?', 'Reseal this drawer?', 'Diese Schublade wieder versiegeln?', '¿Volver a sellar este cajón?'],
+  sealOk: ['Resceller', 'Reseal', 'Versiegeln', 'Sellar'],
+  sealCancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
   noTrigram: ['aucun trigramme sur cet appareil', 'no trigram on this device', 'kein Trigramm auf diesem Gerät',
     'ningún trigrama en este dispositivo'
   ]
@@ -876,24 +884,46 @@ export async function objectSeen(id) {
   }, r.source).catch(() => {});
 }
 
-/** « Resceller » (niveau Complet) : le tiroir est rescellé dans MON carnet, puis la section relue. */
+/** « Resceller » (niveau Complet) : le cadre DEMANDE d'abord (« Resceller ce tiroir et les suivants ? » quand mon carnet en a ouvert après lui, sinon « Resceller ce
+ *  tiroir ? »), puis le tiroir et ses suivants que j'ai ouverts sont rescellés d'un seul écrit dans MON carnet (sous le verrou, comme les autres écritures), puis la
+ *  section relue. « Annuler » ne change rien. */
 export async function seal(id, letter) {
   const c = CTL.get(id);
   if (!c || c.dead) return;
-  const next = D.withSeal(c.doc, {
+  const ctx = {
     mission: c.id,
     me: c.me,
     seance: c.seance,
-    opened: openedOf(c),
-    now: Date.now()
-  }, letter);
-  if (!next) {
+    opened: openedOf(c)
+  };
+  if (!D.withSeal(c.doc, {
+      ...ctx,
+      now: Date.now()
+    }, letter)) {
     c.ctx.notify?.(c.tt(RTX.noWrite, {
       e: c.tt(RTX.noTrigram)
     }), 'err');
     return paintViews(c);
   }
-  if (!await put(c, c.myPath, next) || c.dead) return;
+  const many = D.sealFollowers(c.doc, {
+    ...ctx,
+    letter
+  }).length > 0;
+  const yes = typeof c.ctx.ask === 'function' ? await Promise.resolve().then(() => c.ctx.ask(c.tt(many ? RTX.sealAskMany : RTX
+    .sealAskOne), {
+    ok: c.tt(RTX.sealOk),
+    cancel: c.tt(RTX.sealCancel)
+  })).catch(() => false) : true;
+  if (!yes || c.dead) return;
+  const ok = await locked(c, async guarded => {
+    const cur = guarded ? await reread(c) : c.doc,
+      next = D.withSeal(cur, {
+        ...ctx,
+        now: Date.now()
+      }, letter);
+    return !!next && await put(c, c.myPath, next);
+  });
+  if (!ok || c.dead) return;
   await load(c);
   Promise.resolve().then(() => c.ctx.data.sync?.()).catch(() => {});
 }

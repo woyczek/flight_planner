@@ -544,8 +544,23 @@
     doc: sealed,
     now: T0 + 3 * H
   });
-  ck('rescellé par moi : l\'heure passée ne l\'ouvre plus, « sealed » ; mes autres tiroirs ne bougent pas', sealed.drawer_B.state ===
-    'sealed' && by(s, 'B').open === false && by(s, 'B').sealed === true && by(s, 'D').open, [sealed, s]);
+  ck('rescellé par moi : l\'heure passée ne l\'ouvre plus, « sealed » ; les tiroirs SUIVANTS que j\'ai ouverts sont rescellés avec lui (SOG-0627 : un seul écrit, aucun verrouillé qui reviendrait d\'un coup)',
+    sealed.drawer_B.state === 'sealed' && sealed.drawer_D.state === 'sealed' && by(s, 'B').open === false && by(s, 'B').sealed === true &&
+    by(s, 'D').open === false && by(s, 'D')
+    .sealed === true, [sealed, s]);
+  ck('sealFollowers : les tiroirs suivants que mon carnet a ouverts — D suit B, rien ne suit D ; la marque de lecture part avec le scellé (rouvert, il redevient une enveloppe)',
+    JSON.stringify(D.sealFollowers(opened, {
+      ...ctx(T0 + 41 * MIN),
+      letter: 'B'
+    })) === '["D"]' && D.sealFollowers(opened, {
+      ...ctx(T0 + 41 * MIN),
+      letter: 'D'
+    }).length === 0 && D.readBook(D.withSeal(D.withDrawerRead(opened, ctx(T0 + 30 * MIN), 'D', T0 + 30 * MIN), ctx(T0 + 41 * MIN), 'B'),
+      ID).reads.D === undefined && !('read_at' in sealed
+      .drawer_D), D.sealFollowers(opened, {
+      ...ctx(T0 + 41 * MIN),
+      letter: 'B'
+    }));
   const sealedC = D.withSeal(opened, ctx(T0 + 95 * MIN), 'C');
   s = st({
     doc: sealedC,
