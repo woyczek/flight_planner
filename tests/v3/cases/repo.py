@@ -4049,7 +4049,7 @@ def _notify_kind_calls(src):
 # OUT OF PERIMETER: shared/ and apps/ (apps/cpco included): they call AppFramework.notify, the V2 framework, which is frozen and promised to replacement and ALREADY aliases 'error' -> 'err'
 # (shared/app_framework.js, notify): nothing to correct there. The V3 frame does NOT alias (the ergonomist's decision, 24 Nov): the chain is corrected in the modules, the frame's console says an
 # unknown kind, and this case forbids it. The whole suite was red before: 25 calls of 'error' (modules/missions 9, shared 7, apps/cpco 9; the 16 of shared/ and apps/ work through the V2 alias).
-NOTIFY_KIND_SCOPES = ['frame']
+NOTIFY_KIND_SCOPES = ['frame', 'modules/missions']  # modules/missions: all its kinds corrected (Création 24 Nov, Features e1658208e)
 
 
 @case('I58', 'No call of notify passes a kind the frame does not know (err, warn, ok, info) in the perimeters that are corrected (frame/ first; each owner widens NOTIFY_KIND_SCOPES with its lot): « error » was shown without a sound, in the default style, and left after 6 s', 'I', static=True,

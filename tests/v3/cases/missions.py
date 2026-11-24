@@ -16110,7 +16110,6 @@ def _notify_kinds(src):
 def n258(c):
     import re as _re  # noqa: F401  (used by _notify_kinds through the module)
     files = sorted([*(c.root / 'modules/missions').glob('*.js'), c.root / 'frame/lib/mission.js'])
-    files = [f for f in files if f.name not in ('module.js', 'registry.js', 'search.js')]  # Features SOG's files, not this module's notes
     bad = {}
     for f in files:
         kinds = _notify_kinds(f.read_text(encoding='utf-8'))
