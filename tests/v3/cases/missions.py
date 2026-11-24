@@ -15498,16 +15498,21 @@ def n248(c):
     c.js(_REG_CLEAR)
 
 
-@case('N249', 'Missions › the workshop opened from a sheet of the Registry can be left by an address: the gear (⚙) shows Settings and the '
-      'address stays #settings, never brought back to #missions; the browser\'s Back returns to the workshop, its work kept', 'N',
+@case('N254', 'Missions › the workshop opened from a sheet of the Registry can be left by an address: the gear (⚙) shows Settings and the '
+      'address stays #settings, never brought back to #missions, and Back returns to the workshop as it was left, its changed title kept; '
+      'the bar (390) or the rail (1 280) leads to ANOTHER module and the page stays there — the workshop is left by its own rule (its draft '
+      'kept, « Brouillon gardé »), never by a bounce back to Missions', 'N',
       tags=('missions',), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0609 (measured by Création under the lock, 24 Nov: 3 ms after #settings a popstate brought #missions?view=registry back, '
       'Missions was unmounted and the workshop closed; cause: s.onPop of SOG-0487 skipped the stale entry of the sheet on EVERY popstate, '
-      'even one that leaves Missions); the behaviour of SOG-0487 inside Missions unchanged (N43); invented missions')
-def n249(c):
+      'even one that leaves Missions); the behaviour of SOG-0487 inside Missions unchanged (N43); invented missions. The sheet has its '
+      'history entry at 390 only (beside the table at 1 280 it has none): red before at 390, a guard at 1 280')
+def n254(c):
     title = 'Un titre en cours'
-    for w in (390, 1280):
-        c.page.set_viewport_size({'width': w, 'height': c.height})
+    other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab]')].find(x => x.checkVisibility() &&
+      !['missions', 'settings'].includes(x.dataset.landmark) && x.getAttribute('href')?.startsWith('#')); return a ? a.dataset.tab : null })()"""
+
+    def to_workshop(w):
         reg_open(c, _TRIAL_TEXTS)
         c.tap(f'{R} [data-rowid="X-001A"]')  # 390: the sheet full screen, its history entry (made stale when the workshop opens)
         c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
@@ -15518,20 +15523,37 @@ def n249(c):
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what=f'{w} px: the Cadre unfolded')
         _ed_fill(c, 'edtitle', title)
+
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        # (A) the gear: Settings, the address kept; Back: the workshop as it was left
+        to_workshop(w)
         c.tap('#fDevice')
         c.until("location.hash === '#settings'", what=f'{w} px: the gear opens #settings')
         c.wait(600)  # red before: 3 ms after, the address came back to #missions?view=registry
         c.eq(c.hash(), '#settings', f'{w} px: the address stays #settings (red before: #missions?view=registry)', what='address')
         c.ok(c.js("!!document.querySelector('.f-screen')?.checkVisibility()"), '', f'{w} px: the Settings screen shown')
-        c.shot(f'N249_{c.design}_{w}_{c.lang}_settings.png')
+        c.shot(f'N254_{c.design}_{w}_{c.lang}_settings.png')
         c.page.go_back()
         c.until(f"!document.querySelector('.f-screen') && !!document.querySelector('{E} input[data-k=edtitle]')", timeout=15000,
                 what=f'{w} px: Back: the workshop again')
         c.wait(600)
         c.ok(c.hash().startswith('#missions'), c.hash(), f'{w} px: back in Missions')
-        c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.value"), title, f'{w} px: the workshop keeps its work',
+        c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.value"), title, f'{w} px: the workshop as it was left, its title',
              what='title kept')
         c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.scrollIntoView({{block: 'center'}})")
-        c.shot(f'N249_{c.design}_{w}_{c.lang}_back.png')
+        c.shot(f'N254_{c.design}_{w}_{c.lang}_back.png')
         ed_leave(c)
+        c.js(_REG_CLEAR)
+        # (B) the bar (390) or the rail (1 280) to ANOTHER module: the page arrives there and stays
+        to_workshop(w)
+        tab = c.js(other)
+        c.ok(bool(tab), tab, f'{w} px: a tab of another module in the bar or the rail')
+        c.tap(f'#fTabs a[data-tab="{tab}"] >> visible=true')
+        c.until(f"!location.hash.startsWith('#missions') && !document.querySelector('{M}')", timeout=15000,
+                what=f'{w} px: another module reached')
+        c.wait(600)  # red before (390): the stale entry skipped, the address came back to Missions
+        c.ok(not c.hash().startswith('#missions'), c.hash(), f'{w} px: the address stays on the other module (red before: #missions…)')
+        c.ok(c.count(M) == 0 and c.count('.f-modal') == 0, '', f'{w} px: Missions left, no question (the draft kept)')
+        c.shot(f'N254_{c.design}_{w}_{c.lang}_rail.png')
         c.js(_REG_CLEAR)
