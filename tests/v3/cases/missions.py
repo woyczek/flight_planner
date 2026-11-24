@@ -16006,6 +16006,8 @@ def n256(c):
             c.wait(250)
         c.eq(said('Brouillon gardé'), ['Brouillon gardé'], f'{width}: the retried write is confirmed: « Brouillon gardé » is said once', what='kept once')
         c.until("window.SogFrame.memoryOnlyList().length === 0", timeout=5000, what='the sign released at the confirmed write')
+        c.eq(c.js("[...document.querySelectorAll('#fNotes .f-note')].filter(n => n.textContent.includes('Brouillon non gardé')).length"), 0,
+             f'{width}: once the draft is kept, the refusal note is withdrawn (never next to « Brouillon gardé »)', what='refusal note withdrawn')
         c.shot(f'N256_{c.design}_{width}_{c.lang}_garde.png')  # « Brouillon gardé », the sign gone, for the relay
         got = None
         for _ in range(24):

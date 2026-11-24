@@ -5336,6 +5336,9 @@ async function edLeave(s) {
 
 // ---------------------------------------------------------------- le brouillon (SOG-0486 ; voir l'en-tête, « Le brouillon »)
 const DRAFT_MS = 1000; // au plus un écrit du brouillon par seconde
+// la clé de la note « Brouillon non gardé : … » (SOG-0607) : l'écrit confirmé la retire avant de dire « Brouillon gardé » (jamais les deux
+// à l'écran ensemble)
+const DRAFT_NOTE = 'missions:draftRefused';
 // la séance d'un atelier laissé par le démontage du module : rouverte au retour (SOG-0607) ; jamais après « Annuler » ni « Enregistrer »
 let KEPT_ED = null;
 let DRAFT_LIVE = null; // l'état du module dont l'atelier écrit un brouillon : le démontage l'écrit une dernière fois
@@ -5434,6 +5437,7 @@ function edKeptSay(s, e, doc) {
   if (e.keptSaid === doc) return;
   e.keptSaid = doc;
   try {
+    s.ctx.dismissNote?.(DRAFT_NOTE); // le refus d'avant n'est plus vrai : sa note part (SOG-0607)
     s.ctx.notify(s.tt(EDTX.draftKept), 'info');
   } catch {
     // le cadre n'a plus d'écran où le dire : rien de plus à faire
@@ -5454,7 +5458,9 @@ function edDraftFailed(s, e, doc, x) {
   // le signe du cadre, seulement pour une séance qui vit (l'atelier ouvert, ou gardé au démontage) : une séance quittée n'est plus en mémoire
   if (!e.memRelease && ((state() === s && s.ed === e) || KEPT_ED === e)) e.memRelease = s.ctx.memoryOnly?.(EDTX.draftWhat, x) || null;
   try {
-    s.ctx.notify(edFailText(s, x, EDTX.draftNotKept, DF.draftPath(e.draftKey || DF.keyOf(e.mode, e.origId))), 'err');
+    s.ctx.notify(edFailText(s, x, EDTX.draftNotKept, DF.draftPath(e.draftKey || DF.keyOf(e.mode, e.origId))), 'err', {
+      key: DRAFT_NOTE
+    });
   } catch {
     // le cadre n'a plus d'écran où le dire : rien de plus à faire
   }
