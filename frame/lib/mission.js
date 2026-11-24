@@ -1082,6 +1082,39 @@ export function routeNm(mission) {
  *  fermé aussi quand le fichier écrit `zone_shown: true`. Un tiroir fermé ne laisse RIEN : ni talon, ni titre, ni compte. Les
  *  identifiants se comparent comme le lecteur les lit (sans blancs, en capitales). Rien de la mission lue n'est modifié : un nouvel
  *  objet est rendu (la mission elle-même quand elle n'a ni tiroir ni partie écartée). */
+/** Les lieux qu'une clé de tiroir LUE cite (SOG-0624) : leurs identifiants (idWord), sans doublon, bornés — LA fonction que la vue du pilote (pilotView) et le contrôle « À compléter » de l'atelier appellent, jamais recopiée.
+ *  zone : zoneId ; time : point ; arrival : point et chaque required[].id ; object : object.id ; condition : rule.point et rule.object.id (poser, stationnaire, survol, ravitaillement), steps[i].point et
+ *  steps[i].object.id (suite d'étapes, DRAWER_BOUNDS.steps au plus) — ORIGIN et DESTINATION gardés tels quels ; event, hand : aucun. Ne lève jamais : une clé illisible donne []. */
+export function keyPlaces(key) {
+  const out = new Set(),
+    add = v => {
+      const w = idWord(plain(v) ? v.id : v);
+      if (w) out.add(w);
+    },
+    rule = r => {
+      const q = plain(r);
+      if (!q) return;
+      add(q.point);
+      add(q.object);
+    };
+  try {
+    const k = plain(key);
+    if (!k) return [];
+    if (k.kind === 'zone') add(k.zoneId);
+    else if (k.kind === 'time') add(k.point);
+    else if (k.kind === 'arrival') {
+      add(k.point);
+      (Array.isArray(k.required) ? k.required : []).slice(0, DRAWER_BOUNDS.required).forEach(add);
+    } else if (k.kind === 'object') add(k.object);
+    else if (k.kind === 'condition') {
+      rule(k.rule);
+      (Array.isArray(k.steps) ? k.steps : []).slice(0, DRAWER_BOUNDS.steps).forEach(rule);
+    }
+  } catch {
+    return [];
+  }
+  return [...out];
+}
 export function pilotView(mission, opened = [], options = null) {
   const m = plain(mission),
     // `mine` se lit STRICTEMENT (Sécurisation, 18 nov. 2026) : sans options (absentes, null) ou sans `mine`, la mission est la mienne
@@ -1107,9 +1140,7 @@ export function pilotView(mission, opened = [], options = null) {
   for (const d of drawers) {
     const k = plain(d.key) || {};
     if (open.has(d.id)) {
-      cite(k.zoneId);
-      cite(k.point);
-      (Array.isArray(k.required) ? k.required : []).slice(0, DRAWER_BOUNDS.required).forEach(cite);
+      keyPlaces(k).forEach(cite); // SOG-0624 : les lieux de la clé, quelle qu'elle soit (une condition cite son lieu comme les autres)
       (Array.isArray(d.route) ? d.route : []).slice(0, DRAWER_BOUNDS.route).forEach(cite);
     } else if (k.kind === 'zone' && k.shown === true) cite(k.zoneId); // montrée par le fichier : une zone ordinaire
   }

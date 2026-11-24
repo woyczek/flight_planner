@@ -3220,6 +3220,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — the places of a drawer's key: one function (SOG-0624)
+
+- **Fact**: `pilotView` cited, for an open drawer, `key.zoneId`, `key.point` and `key.required`: the place of a CONDITION key (`rule.point`, `rule.object`, the steps of a sequence) was never cited, so the pilot never saw it, the drawer open or not.
+- **Decision** (agreed with Creation): ONE function, `keyPlaces(key)` of `frame/lib/mission.js`, written by the frame and called by `pilotView` and by the workshop's « À compléter » control (Creation: `pilotRows`, the set of objects). Shapes: zone → `zoneId`; time → `point`; arrival → `point` and `required[].id`; object → `object.id`; condition → `rule.point` and `rule.object.id`, `steps[i].point` and `steps[i].object.id` (`DRAWER_BOUNDS.steps` at most); event and hand → none; `ORIGIN` and `DESTINATION` as they are; duplicates removed; an unreadable key gives `[]`, never an error. Only an OPEN drawer cites (the secret of SOG-0459 holds); the shown zone of a closed drawer is unchanged; `d.route` stays apart.
+- **Case A397** (an invented mission: a landing at a rendezvous point): the open drawer keeps the point, the closed one does not; the places of each shape of key; red before (`''` instead of `RDV-1`).
+
 ## 24 November 2026 — a module's watcher, the line of the flight, the name of the source (SOG-0617, the frame's part)
 
 - **Fact**: the judging of the drawers of a mission lived in the sheet of Missions (`ctx.live.watch` is cut by `life` at the unmount) and Missions is `apps: ['company']`: in the pilot application, where one flies, the module does not exist. The split was agreed between Features SOG, Creation and the frame, and validated by the ergonomist: Creation owns the judge (`drawers_run.js`), Features the watcher (`watch.js`) and the line, the frame the generic mechanism.

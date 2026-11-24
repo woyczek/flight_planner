@@ -12649,3 +12649,29 @@ def a396(c):
     c.until("window.SogFrame.live.source === 'xplane'", timeout=40000, what='the simulator gives a position')
     c.eq(c.js("() => window.SogFrame.live.sourceName"), 'X-Plane', 'the proper name of the source', what='X-Plane')
     c.check_errors()
+
+
+@case('A397', 'The places a drawer\'s key cites (SOG-0624): keyPlaces(key) is the ONE function — zone, time, arrival (point and required), object, condition (rule.point and rule.object, the steps of a sequence), none for event and hand, never throws; an OPEN drawer whose key is a condition (a landing at a point) keeps that point in the pilot\'s view, a closed one does not', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0624 (the relay; the ergonomist's rule: these places are cited like the others): pilotView cited key.zoneId, key.point and key.required of an open drawer but never the place of a CONDITION key (rule / steps): the pilot did not see it even with the drawer open; Creation's « À compléter » reads the same function")
+def a397(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => { const M = await import('/frame/lib/mission.js'), kp = M.keyPlaces || (() => null);
+      const doc = { schema: 'helo-xp-mission', mission: { id: 'X-002A', type: 'REG' }, title: 'Test', cruise_speed_kt: 100,
+        origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+        turning_points: [{ id: 'PT1', name: 'Col', lat: 45.2, lon: 1.2 }, { id: 'PT2', name: 'Refuge', lat: 45.35, lon: 1.5 }],
+        rendezvous: [{ id: 'RDV-1', name: 'Secours au sol', lat: 45.33, lon: 1.44 }],
+        phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'RDV-1', duration_sec: 60, max_gap_sec: 10 }, fallback_delay_min: 60 }] };
+      const m = M.readMission(doc), seen = v => Object.keys(v.points).sort().join(' ') + '|' + v.rendezvous.map(z => z.id).join(' ');
+      return { shapes: [kp({ kind: 'zone', zoneId: 'z1' }), kp({ kind: 'time', point: 'ORIGIN' }), kp({ kind: 'arrival', point: 'DESTINATION', required: [{ id: 'PT1' }, { id: 'PT1' }, { id: 'pt2' }] }),
+          kp({ kind: 'object', object: { id: 'OBJ-1' } }), kp({ kind: 'condition', condition: 'landing', rule: { point: 'RDV-1', object: null } }),
+          kp({ kind: 'condition', condition: 'hover', rule: { point: null, object: { id: 'SHIP-1' } } }),
+          kp({ kind: 'condition', condition: 'sequence', steps: [{ point: 'PT1' }, { object: { id: 'OBJ-2' } }, null, 5] }),
+          kp({ kind: 'condition', condition: 'event', event: 'E1' }), kp({ kind: 'hand' }), kp(null), kp('x'), kp({ kind: 'condition', steps: 7 }), kp({ kind: 'arrival', required: 'no' })],
+        key: JSON.stringify(m.drawers[0].key).slice(0, 120), closed: seen(M.pilotView(m, [])), open: seen(M.pilotView(m, ['B'])) } }""")
+    c.ok('RDV-1' not in r['closed'].split('|')[1], r['closed'], 'a drawer that is CLOSED cites nothing: the place of its landing is not in the pilot\'s view (the secret holds)')
+    c.eq(r['open'].split('|')[1], 'RDV-1', 'the OPEN drawer keeps the place of its landing (RDV-1) in the pilot\'s view', what='open drawer')
+    c.eq(r['shapes'], [['Z1'], ['ORIGIN'], ['DESTINATION', 'PT1', 'PT2'], ['OBJ-1'], ['RDV-1'], ['SHIP-1'], ['PT1', 'OBJ-2'], [], [], [], [], [], []],
+         'the places of each shape of key, with no duplicate, never an error (an unreadable key gives [])', what='keyPlaces')
+    c.check_errors()
