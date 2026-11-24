@@ -334,6 +334,11 @@ const TX = {
   draw: ['Tirer au sort', 'Draw at random', 'Zufällig ziehen', 'Sortear'],
   drawAgain: ['Tirer encore', 'Draw again', 'Erneut ziehen', 'Sortear otra'],
   prepare: ['Préparer ce vol', 'Prepare this flight', 'Diesen Flug vorbereiten', 'Preparar este vuelo'],
+  // SOG-0617 (F13) : la mission du vol démarré — épinglée en tête de la liste, dite sur sa fiche, son bouton mène au vol
+  inFlightHead: ['En vol', 'In flight', 'Im Flug', 'En vuelo'],
+  inFlightRow: ['— en vol depuis {t}', '— in flight since {t}', '— im Flug seit {t}', '— en vuelo desde {t}'],
+  inFlightSince: ['En vol depuis {t}', 'In flight since {t}', 'Im Flug seit {t}', 'En vuelo desde {t}'],
+  seeFlight: ['Voir le vol en cours', 'See the flight in progress', 'Laufenden Flug ansehen', 'Ver el vuelo en curso'],
   back: ['Retour', 'Back', 'Zurück', 'Volver'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} missions', '{n} missions', '{n} Missionen', '{n} misiones'],
@@ -1030,6 +1035,7 @@ export async function mount(el, ctx) {
   window.addEventListener('popstate', s.onPop);
   draw(s);
   if (ctx.query?.view === 'registry') regOpen(s); // l'écran Registre par l'adresse (#missions?view=registry, Compagnie › Registre)
+  s.openAsked = typeof ctx.query?.open === 'string' ? ctx.query.open : ''; // SOG-0617 : #missions?open=<id>, ouverte une fois la liste lue
   let got = await yamlFile(ctx, REGISTRY);
   if (S !== s) return;
   if (got.why === 'late') {
@@ -1045,6 +1051,9 @@ export async function mount(el, ctx) {
   await unlisted(s, got.doc);
   if (S !== s) return;
   reopen(s);
+  openAsked(s);
+  flightRead(s);
+  s.unflight = s.ctx.data.watch?.('pilot/', paths => S === s && [].concat(paths || []).includes(flightPath(s)) && flightRead(s));
   s.flown = await flownOf(s);
   if (S === s && !s.open) results(s);
   // SOG-0114 (A) : les affectations de ce pilote, lues une fois ; le groupe posé à sa place sans redessiner la liste
@@ -1069,6 +1078,52 @@ function reopen(s) {
     }
   });
 }
+/** SOG-0617 : le vol courant de ce pilote, pilot/<TRI>/current_flight.json (le trigramme validé : trois lettres) ; '' sans trigramme. */
+const flightPath = s => {
+  const tri = String(s.ctx.identity?.trigram || '').trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(tri) ? `pilot/${tri}/current_flight.json` : '';
+};
+/** SOG-0617 (F13) : la mission du vol DÉMARRÉ, relue (une entrée non fiable : écrite par Carburant et la Carte, d'un autre appareil
+ *  aussi) — s.inFlight = { id, at } ou null ; la liste et la fiche de cette mission redessinées quand elle change. */
+async function flightRead(s) {
+  const path = flightPath(s),
+    f = path ? await Promise.resolve().then(() => s.ctx.data.get(path)).catch(() => null) : null;
+  if (S !== s) return;
+  const at = typeof f?.started?.at === 'string' && Number.isFinite(Date.parse(f.started.at)) ? f.started.at : '',
+    id = at && typeof f.mission === 'string' ? f.mission.trim().toUpperCase().slice(0, 40) : '',
+    next = id ? {
+      id,
+      at: new Date(Date.parse(at)).toISOString()
+    } : null;
+  if (JSON.stringify(next) === JSON.stringify(s.inFlight ?? null)) return;
+  const was = s.inFlight?.id;
+  s.inFlight = next;
+  // la liste, ou la fiche de la mission qui entre en vol ou en sort ; l'atelier, le registre, « Ajouter » et « Déplacer » ne bougent pas
+  if (!s.ed && !s.reg && !s.add && !s.move && (!s.open || [was, next?.id].includes(s.open.row?.id))) draw(s);
+}
+/** SOG-0617 : l'heure du départ du vol en cours, « 14:05Z ». */
+const sinceZ = s => s.inFlight ? `${s.inFlight.at.slice(11, 16)}Z` : '';
+/** SOG-0617 (F13) : la mission du vol démarré, EN PREMIER sur la page — une ligne de la liste, épinglée sous « En vol » ; un toucher
+ *  ouvre sa fiche (la page ne s'y ouvre jamais seule) ; rien sans vol démarré, ni pour une mission que la liste ne connaît pas. */
+function inFlightHtml(s) {
+  const r = s.inFlight && s.rows.find(x => x.id === s.inFlight.id);
+  return r ? `<section class="ms-inflight" data-inflight><h2 class="ms-asshead">${esc(s.tt(TX.inFlightHead))}</h2><div class="f-list"><button type="button" class="f-item ms-mrow" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> · ${esc(r.title)}</span> <span class="f-muted" data-inflight-at>${esc(s.tt(TX.inFlightRow, { t: sinceZ(s) }))}</span></button></div></section>` : '';
+}
+/** SOG-0617 (F13) : le bouton d'une mission — « Préparer ce vol » (#fuel?mission=<id>), ou, pour la mission du vol démarré, « Voir le
+ *  vol en cours » : Carburant, le volet de la mission ouvert (#fuel?focus=mission) ; rien n'est préparé. data-do="prepare" reste (la
+ *  liseuse de reader_view.js se place à côté) : aucun gestionnaire ne l'écoute, c'est un lien. */
+function prepareHtml(s, id) {
+  return s.inFlight?.id === id ? `<a class="f-btn primary" data-do="prepare" data-inflight href="#fuel?focus=mission">${esc(s.tt(TX.seeFlight))}</a>` :
+    `<a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(id)}">${esc(s.tt(TX.prepare))}</a>`;
+}
+/** SOG-0617 : #missions?open=<id> (la note « Ouvrir » et la ligne d'état de l'appli Compagnie) : la fiche de cette mission, une fois la
+ *  liste lue ; un identifiant inconnu : la liste, sans rien dire. */
+function openAsked(s) {
+  const id = String(s.openAsked || '').trim().toUpperCase();
+  s.openAsked = '';
+  const row = id && !s.open && !s.reg ? s.rows.find(r => r.id === id) : null;
+  if (row) openMission(s, row);
+}
 /** SOG-0114 (A) : « Mes missions affectées » en tête de la liste — dès qu'une affectation porte mon trigramme, et seulement alors
  *  (pas de drapeau d'usage) ; chaque ligne : la mission, le décollage (terrain, heure Z), l'aéronef et l'indicatif, le rendez-vous et
  *  les canaux quand l'affectation les porte, « Préparer ce vol » en un geste. Jamais le tirage au sort. */
@@ -1078,7 +1133,7 @@ function assignedPaint(s) {
   const list = s.assigned || [],
     z = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)} ${iso.slice(11, 16)}Z` : '',
     meet = m => `<span class="ms-meet" data-meet="${esc(m.kind)}">${esc(m.label)}${m.url ? ` <a class="f-linkbtn" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" data-meetopen>${esc(s.tt(TX.meetOpen))}</a>` : ''}${m.value ? ` <code>${esc(m.value)}</code> <button type="button" class="f-linkbtn" data-do="meetcopy" data-v="${esc(m.value)}">${esc(s.tt(TX.meetCopy))}</button>` : ''}</span>`,
-    row = a => `<div class="f-item ms-assigned" data-assigned-id="${esc(a.mission)}"><span><b>${esc(a.mission)}</b> ${esc(a.title)}<small class="f-muted">${esc([a.ferry ? s.tt(TX.assignedFerry) : '', a.departure || a.takeoff ? s.tt(TX.assignedOff, { ad: a.departure, t: z(a.takeoff) }).replace(/\s+/g, ' ').trim() : '', [a.registration, a.type].filter(Boolean).join(' '), a.callsign].filter(Boolean).join(' · '))}</small>${a.rdv ? `<small data-rdv>${esc(s.tt(TX.assignedRdv, { t: a.rdv.startsWith('H') ? a.rdv : z(a.rdv) }))}</small>` : ''}${a.meet.length ? `<small class="ms-meets">${a.meet.map(meet).join('')}</small>` : ''}</span><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(a.mission)}">${esc(s.tt(TX.prepare))}</a></div>`;
+    row = a => `<div class="f-item ms-assigned" data-assigned-id="${esc(a.mission)}"><span><b>${esc(a.mission)}</b> ${esc(a.title)}<small class="f-muted">${esc([a.ferry ? s.tt(TX.assignedFerry) : '', a.departure || a.takeoff ? s.tt(TX.assignedOff, { ad: a.departure, t: z(a.takeoff) }).replace(/\s+/g, ' ').trim() : '', [a.registration, a.type].filter(Boolean).join(' '), a.callsign].filter(Boolean).join(' · '))}</small>${a.rdv ? `<small data-rdv>${esc(s.tt(TX.assignedRdv, { t: a.rdv.startsWith('H') ? a.rdv : z(a.rdv) }))}</small>` : ''}${a.meet.length ? `<small class="ms-meets">${a.meet.map(meet).join('')}</small>` : ''}</span>${prepareHtml(s, a.mission)}</div>`;
   box.hidden = !list.length;
   box.innerHTML = list.length ? `<h2 class="ms-asshead">${esc(s.tt(TX.assignedHead))}</h2><div class="f-list">${list.map(row).join('')}</div>` : '';
 }
@@ -1120,6 +1175,7 @@ async function unlisted(s, reg) {
 export function unmount() {
   if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   if (S?.onPop) window.removeEventListener('popstate', S.onPop);
+  S?.unflight?.(); // SOG-0617 : le suivi du vol courant
   S?.reg?.unwire?.(); // SOG-0487 : les gestes du tri du registre et le suivi de sa largeur
   for (const u of S?.urls || []) URL.revokeObjectURL(u);
   DW.stop(); // SOG-0441 : les minuteurs et l'écoute de la section « Tiroirs »
@@ -1255,7 +1311,7 @@ function listHtml(s) {
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
   // retouche de l'ergonome (14/11) : « Mes missions affectées » au-dessus de « Tirer au sort » — pour un pilote affecté, sa mission vient avant le tirage
-  return `<div class="f-card" data-pane="list"><section class="ms-assignedbox" data-assigned hidden></section><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
+  return `<div class="f-card" data-pane="list">${inFlightHtml(s)}<section class="ms-assignedbox" data-assigned hidden></section><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     ${famFilterHtml(s, 'family', 'subtype', mine, s.family, s.subtype)}
@@ -1536,7 +1592,8 @@ function firstHtml(s, r, m, drawn, why) {
   // 1 le titre, l'id et la famille
   // 2 bis l'état (« Volée le … ») rejoint la ligne de catégorie : la première page garde sept éléments avec le résumé (refus de recette
   // de SOG-0051, 10 nov. : « la description courte, avant les risques »)
-  const flownBadge = flown ? `<span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</span>` : '';
+  const flownBadge = (flown ? `<span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</span>` : '') + (
+    s.inFlight?.id === r.id ? `${flown ? ' ' : ''}<span class="f-badge" data-kind="accent" data-inflight-since>${esc(s.tt(TX.inFlightSince, { t: sinceZ(s) }))}</span>` : ''); // SOG-0617 (F13)
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
     ${(() => {
@@ -1554,7 +1611,7 @@ function firstHtml(s, r, m, drawn, why) {
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
     ${m ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section des tiroirs, peinte par drawers_view.js ; SOG-0459 : posée pour TOUTE mission lue — sa présence ne dit rien, elle reste cachée tant que rien n'est ouvert */}
     ${why}
-    <div class="f-row ms-actions" data-f-foot><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a><span class="ms-actslot" data-actslot></span>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
+    <div class="f-row ms-actions" data-f-foot>${prepareHtml(s, r.id)}<span class="ms-actslot" data-actslot></span>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
 }
 /** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */
 const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id)}${Object.entries(extra).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;

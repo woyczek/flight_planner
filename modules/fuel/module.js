@@ -9908,6 +9908,9 @@ export async function mount(el, ctx) {
   S.focus = ['route', 'dep', 'arr'].includes(asked) ? asked : '';
   // « Préparer ce vol » du module Missions (#fuel?mission=<id>) : reprise une fois le vol courant connu (flightReady)
   S.missionAsked = String(q.mission || '').trim();
+  // SOG-0617 : #fuel?focus=mission (« Voir le vol en cours » de Missions, la note « Ouvrir », la ligne « Mission … en cours ») : le volet de
+  // la puce ouvert une fois le vol courant connu, pour un vol qui nomme une mission ; le pas affiché ne change pas
+  S.paneAsked = asked === 'mission';
   S.newAsked = q.new === '1'; // #fuel?new=1 : « Nouveau vol » demandé par l'adresse (sa question comprise)
   S.raltAsked = q.ralt ?? ''; // #fuel?ralt=<index> : un itinéraire choisi sur la Carte seule (INTEGRATION § 3 bis)
   S.altnAsked = /^[A-Z]{4}$/i.test(String(q.altn || '')) ? String(q.altn).toUpperCase() : ''; // SOG-0398 : #fuel?altn=<ICAO> (§ 3 ter)
@@ -10117,6 +10120,8 @@ function flightReady() {
   }
   S.P.applyFocus();
   if (!S.refsPending) resumeFlight();
+  if (S.paneAsked && S.flight.mission) mPaneOpen();
+  S.paneAsked = false;
   if (S.missionAsked) applyMission(S.missionAsked);
   else if (S.newAsked) newFlight();
   else if (S.raltAsked !== '') altsFromAddress(S.raltAsked);

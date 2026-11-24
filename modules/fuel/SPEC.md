@@ -196,7 +196,7 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
   aerodromes (one end moved more than 150 NM, or both ends changed) clears the old route, procedures and OFP (F86; DECISIONS 1 Nov). A new device never waits without end: its current flight is awaited a few seconds at most (said
   above the step), the aircraft registry likewise, then the screen is free (F84; DECISIONS 1 Nov 2026). The address may ask, once (`ctx.query.focus`, kept as `S.focus`): `route` (the Map's « Edit the route »,
   `#fuel?from=maps&focus=route`) opens step 2 with the route field focused; `arr` (the Map's « Change ») or `dep` opens the step that
-  holds that side of the procedure card — step 2 before the start, step 5 after — and focuses its first list (F17). `mission=<id>`
+  holds that side of the procedure card — step 2 before the start, step 5 after — and focuses its first list (F17); `mission` (SOG-0617: « Voir le vol en cours » of Missions, the note « Ouvrir », the line « Mission … en cours ») opens the pane of the mission chip once the flight is read, the step unchanged (N270). `mission=<id>`
   (the Missions module's « Préparer ce vol ») sets the flight of that mission (modules/missions SPEC § 4, case N4); its origin and
   destination are also known points of the flight at the mission's coordinates (`missionFlight` `depAt` / `arrAt`), so that a base
   unknown to the published base keeps its place in the plan and the distance comes from the plan (SOG-0193, N13: never « distance
