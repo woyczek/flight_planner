@@ -8,85 +8,352 @@
 <style>
 /* Maquette SOG-0568 : les trois états d'un pays (à jour ; à jour, relecture possible ; périmé), jour et nuit (les jetons du cadre, tokens.css :
    la nuit suit le système sauf html[data-tone="day"]). Données INVENTÉES (pays imaginaires). Rien ici n'est du produit : le contrat des écrans. */
-* { box-sizing: border-box }
-body { margin: 0; background: var(--sog-bg); color: var(--sog-fg); font: 15px/1.4 system-ui, sans-serif }
-main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px }
-h1 { font-size: 15px; margin: 0 0 10px; color: var(--sog-muted); font-weight: 600 }
-h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--sog-muted); margin: 18px 0 6px }
-.muted { color: var(--sog-muted) }
-.view { display: none }
-body[data-v="liste"] .v-liste, body[data-v="carte"] .v-carte, body[data-v="fiche"] .v-fiche { display: block }
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  font: 15px/1.4 system-ui, sans-serif
+}
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px 40px
+}
+h1 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: var(--sog-muted);
+  font-weight: 600
+}
+h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--sog-muted);
+  margin: 18px 0 6px
+}
+.muted {
+  color: var(--sog-muted)
+}
+.view {
+  display: none
+}
+body[data-v="liste"] .v-liste,
+body[data-v="carte"] .v-carte,
+body[data-v="fiche"] .v-fiche {
+  display: block
+}
 
 /* ---- les trois états : une teinte et UN motif, lisible sans la couleur
    plein  = à jour ; strié = à jour, relecture possible (le vert de « à jour », jamais désaturé ni transparent) ; marron = périmé */
-:root { --stripe-a: var(--sog-ok); --stripe-b: color-mix(in srgb, var(--sog-surface) 100%, transparent) }
-.bar { display: block; width: 8px; align-self: stretch; border-radius: 0; flex: none }
-.bar[data-st="ok"] { background: var(--sog-ok) }
-.bar[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px) }
-.bar[data-st="old"] { background: var(--sog-warn) }
-.bar[data-st="none"] { background: repeating-linear-gradient(0deg, var(--sog-muted) 0 3px, transparent 3px 6px); opacity: .55 }
+:root {
+  --stripe-a: var(--sog-ok);
+  --stripe-b: color-mix(in srgb, var(--sog-surface) 100%, transparent)
+}
+.bar {
+  display: block;
+  width: 8px;
+  align-self: stretch;
+  border-radius: 0;
+  flex: none
+}
+.bar[data-st="ok"] {
+  background: var(--sog-ok)
+}
+.bar[data-st="redo"] {
+  background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px)
+}
+.bar[data-st="old"] {
+  background: var(--sog-warn)
+}
+.bar[data-st="none"] {
+  background: repeating-linear-gradient(0deg, var(--sog-muted) 0 3px, transparent 3px 6px);
+  opacity: .55
+}
 /* la pastille d'une ligne : pleine / anneau (creuse) / pleine marron */
-.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; flex: none }
-.dot[data-st="ok"] { background: var(--sog-ok) }
-.dot[data-st="redo"] { border: 2px solid var(--sog-ok); background: transparent }
-.dot[data-st="old"] { background: var(--sog-warn) }
-.tx[data-st="ok"] { color: var(--sog-ok) }
-.tx[data-st="redo"] { color: var(--sog-ok) }
-.tx[data-st="old"] { color: var(--sog-warn) }
+.dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  vertical-align: -1px;
+  margin-right: 6px;
+  flex: none
+}
+.dot[data-st="ok"] {
+  background: var(--sog-ok)
+}
+.dot[data-st="redo"] {
+  border: 2px solid var(--sog-ok);
+  background: transparent
+}
+.dot[data-st="old"] {
+  background: var(--sog-warn)
+}
+.tx[data-st="ok"] {
+  color: var(--sog-ok)
+}
+.tx[data-st="redo"] {
+  color: var(--sog-ok)
+}
+.tx[data-st="old"] {
+  color: var(--sog-warn)
+}
 
 /* ---- la liste : un paquet, sa bande (un segment par pays, aucun chiffre), ses pays */
-.group { background: var(--sog-surface); border: 1px solid var(--sog-border); padding: 10px 12px 12px; max-width: 760px }
-.group h3 { margin: 0 0 2px; font-size: 16px }
-.group .sub { margin: 0 0 8px; font-size: 13px }
-.strip { display: flex; gap: 2px; height: 10px; margin: 6px 0 10px }
-.strip i { flex: 1; display: block }
-.strip i[data-st="ok"] { background: var(--sog-ok) }
-.strip i[data-st="redo"] { background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px); outline: 1px solid var(--sog-ok); outline-offset: -1px }
-.strip i[data-st="old"] { background: var(--sog-warn) }
-.strip i[data-st="none"] { background: transparent; outline: 1px dashed var(--sog-muted); outline-offset: -1px }
-.bulk[hidden] { display: none }
-.bulk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px }
-.card { display: flex; background: var(--sog-surface); border: 1px solid var(--sog-border); min-height: 52px; color: inherit; text-align: left; font: inherit; padding: 0; cursor: pointer }
-.card > div { padding: 6px 9px }
-.card b { display: block; font-size: 14px }
-.card small { font-size: 12.5px; display: block }
-button.btn, .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--sog-border); background: var(--sog-surface); color: var(--sog-fg); cursor: pointer; border-radius: 0 }
-.btn.primary { background: var(--sog-accent); color: var(--sog-accent-ink); border-color: var(--sog-accent) }
-.btn[disabled] { opacity: .55; cursor: default }
-.link { background: none; border: 0; color: var(--sog-link); text-decoration: underline; font: inherit; padding: 0; cursor: pointer }
-.prog { border: 1px solid var(--sog-border); background: var(--sog-bg); padding: 8px 10px; margin: 0 0 10px; font-size: 14px }
-.prog .track { height: 6px; background: var(--sog-border); margin: 6px 0 }
-.prog .track i { display: block; height: 100%; width: 12%; background: var(--sog-accent) }
+.group {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  padding: 10px 12px 12px;
+  max-width: 760px
+}
+.group h3 {
+  margin: 0 0 2px;
+  font-size: 16px
+}
+.group .sub {
+  margin: 0 0 8px;
+  font-size: 13px
+}
+.strip {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin: 6px 0 10px
+}
+.strip i {
+  flex: 1;
+  display: block
+}
+.strip i[data-st="ok"] {
+  background: var(--sog-ok)
+}
+.strip i[data-st="redo"] {
+  background: repeating-linear-gradient(135deg, var(--sog-ok) 0 3px, var(--sog-surface) 3px 6px);
+  outline: 1px solid var(--sog-ok);
+  outline-offset: -1px
+}
+.strip i[data-st="old"] {
+  background: var(--sog-warn)
+}
+.strip i[data-st="none"] {
+  background: transparent;
+  outline: 1px dashed var(--sog-muted);
+  outline-offset: -1px
+}
+.bulk[hidden] {
+  display: none
+}
+.bulk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px
+}
+.card {
+  display: flex;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  min-height: 52px;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  padding: 0;
+  cursor: pointer
+}
+.card>div {
+  padding: 6px 9px
+}
+.card b {
+  display: block;
+  font-size: 14px
+}
+.card small {
+  font-size: 12.5px;
+  display: block
+}
+button.btn,
+.btn {
+  font: inherit;
+  padding: 7px 12px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  cursor: pointer;
+  border-radius: 0
+}
+.btn.primary {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+.btn[disabled] {
+  opacity: .55;
+  cursor: default
+}
+.link {
+  background: none;
+  border: 0;
+  color: var(--sog-link);
+  text-decoration: underline;
+  font: inherit;
+  padding: 0;
+  cursor: pointer
+}
+.prog {
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  padding: 8px 10px;
+  margin: 0 0 10px;
+  font-size: 14px
+}
+.prog .track {
+  height: 6px;
+  background: var(--sog-border);
+  margin: 6px 0
+}
+.prog .track i {
+  display: block;
+  height: 100%;
+  width: 12%;
+  background: var(--sog-accent)
+}
 
 /* ---- la carte : trois remplissages (aplat vert, vert strié, marron) */
-.mapbox { background: var(--sog-surface); border: 1px solid var(--sog-border); max-width: 760px; padding: 8px }
-.mapbox svg { display: block; width: 100%; height: auto }
-.z[data-st="ok"] { fill: var(--sog-ok) }
-.z[data-st="redo"] { fill: url(#hatch) }
-.z[data-st="old"] { fill: var(--sog-warn) }
-.z { stroke: var(--sog-ok); stroke-width: 1.4 }
-.z[data-st="old"] { stroke: var(--sog-warn) }
-.z[data-st="none"] { fill: var(--sog-muted); fill-opacity: .12; stroke: var(--sog-muted); stroke-dasharray: 3 2 }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 0; font-size: 13px }
-.legend span { display: inline-flex; align-items: center; gap: 6px }
-.legend svg { width: 22px; height: 14px; display: block }
+.mapbox {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  max-width: 760px;
+  padding: 8px
+}
+.mapbox svg {
+  display: block;
+  width: 100%;
+  height: auto
+}
+.z[data-st="ok"] {
+  fill: var(--sog-ok)
+}
+.z[data-st="redo"] {
+  fill: url(#hatch)
+}
+.z[data-st="old"] {
+  fill: var(--sog-warn)
+}
+.z {
+  stroke: var(--sog-ok);
+  stroke-width: 1.4
+}
+.z[data-st="old"] {
+  stroke: var(--sog-warn)
+}
+.z[data-st="none"] {
+  fill: var(--sog-muted);
+  fill-opacity: .12;
+  stroke: var(--sog-muted);
+  stroke-dasharray: 3 2
+}
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 8px 0 0;
+  font-size: 13px
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px
+}
+.legend svg {
+  width: 22px;
+  height: 14px;
+  display: block
+}
 
 /* ---- la fiche d'un pays */
-.sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start }
-.sheet { background: var(--sog-surface); border: 1px solid var(--sog-border); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px }
-.sheet h3 { margin: 0; font-size: 17px }
-.sheet .cap { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--sog-muted) }
-.sheet .st { font-weight: 700; display: flex; align-items: center }
-.gain { border-left: 3px solid var(--sog-border); padding: 2px 0 2px 9px; font-size: 14px }
-.gain p { margin: 0 0 6px }
-.gain .why { color: var(--sog-muted); font-size: 13px }
-.cells { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
-.cell { border: 1px solid var(--sog-border); padding: 5px 8px; font-size: 13px }
-.cell b { display: block; font-size: 14px }
-.verbs { display: flex; flex-direction: column; gap: 6px }
-.notes { font-size: 13px; color: var(--sog-muted); margin: 0 }
-@media (max-width: 520px) { main { padding: 8px 10px 32px } .cards { grid-template-columns: 1fr 1fr } }
+.sheets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  align-items: start
+}
+.sheet {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px
+}
+.sheet h3 {
+  margin: 0;
+  font-size: 17px
+}
+.sheet .cap {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--sog-muted)
+}
+.sheet .st {
+  font-weight: 700;
+  display: flex;
+  align-items: center
+}
+.gain {
+  border-left: 3px solid var(--sog-border);
+  padding: 2px 0 2px 9px;
+  font-size: 14px
+}
+.gain p {
+  margin: 0 0 6px
+}
+.gain .why {
+  color: var(--sog-muted);
+  font-size: 13px
+}
+.cells {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px
+}
+.cell {
+  border: 1px solid var(--sog-border);
+  padding: 5px 8px;
+  font-size: 13px
+}
+.cell b {
+  display: block;
+  font-size: 14px
+}
+.verbs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px
+}
+.notes {
+  font-size: 13px;
+  color: var(--sog-muted);
+  margin: 0
+}
+@media (max-width: 520px) {
+  main {
+    padding: 8px 10px 32px
+  }
+  .cards {
+    grid-template-columns: 1fr 1fr
+  }
+}
 </style>
 </head>
 <body data-v="liste">
