@@ -1345,6 +1345,13 @@ const TX = {
     '{place} hat keinen Code: keine Piste, keine Verfahren, kein Wetter für diesen Platz.',
     '{place} no tiene código: ni pista, ni procedimientos, ni meteorología para este aeródromo.'
   ],
+  // SOG-0618 (c), voie (ii) de l'ergonome : la vitesse de croisière de la mission n'est pas appliquée (Carburant n'a pas de vitesse
+  // sur le vol : celle de la fiche de l'appareil, et son débit, font le devis) ; dit une fois, dans la note de la reprise
+  speedKept: ['Vitesse de la mission ({n} kt) non appliquée : le devis garde celle de l’appareil.',
+    'Mission speed ({n} kt) not applied: the quote keeps the aircraft’s.',
+    'Geschwindigkeit der Mission ({n} kt) nicht übernommen: das Angebot behält die des Luftfahrzeugs.',
+    'Velocidad de la misión ({n} kt) no aplicada: el presupuesto mantiene la de la aeronave.'
+  ],
   endNoPlace: ['{place} n’a ni code ni position : ce lieu n’est pas repris dans la route.',
     '{place} has neither a code nor a position: this place is not taken into the route.',
     '{place} hat weder Code noch Position: dieser Ort wird nicht in die Route übernommen.',
@@ -9051,9 +9058,13 @@ async function applyMission(id) {
   const f = S.flight,
     {
       dep,
-      arr,
-      points
+      arr
     } = mf.route,
+    // SOG-0618 (F12) : la route reprise ne contient que ce que le pilote a le droit de voir — les lieux que la partie visible cite
+    // (MS.pilotView, aucun tiroir ouvert à la reprise) ; sans route_order, missionFlight y mettait TOUS les points de la mission, la
+    // zone-clé d'un tiroir fermé comprise
+    seen = new Set(Object.keys(MS.pilotView(mission, [])?.points || {})),
+    points = mf.route.points.filter(p => seen.has(p.id)),
     type = mf.aircraft.type,
     sheet = type ? S.sheets.find(p => (p.icao || '').toUpperCase() === type) : null,
     // SOG-0618 : un départ ou une arrivée SANS code mais à une position de la mission entre dans la route, en tête ou en fin, par son mot
@@ -9070,7 +9081,7 @@ async function applyMission(id) {
     arr,
     // SOG-0618 : le nom de chaque lieu de la mission que le pilote a le droit de voir, par son mot de coordonnées : la liste des points
     // et la Carte le montrent, la coordonnée reste ce qui s'écrit dans le plan
-    names: missionNames(mission, points, [[depWord, depPlace], [arrWord, arrPlace]]),
+    names: missionNames(points, [[depWord, depPlace], [arrWord, arrPlace]]),
     // SOG-0193 : l'origine et la destination à leur position de la mission, points connus du vol : un terrain que la base ne connaît
     // pas garde sa place dans le plan et dans la distance (aerodb passe toujours d'abord, knownPoints)
     points: [dep && mf.route.depAt ? {
@@ -9125,12 +9136,14 @@ async function applyMission(id) {
   themesDraw();
   markEnds();
   mChipDraw();
-  ctx.notify(tt(TX.missionLoaded, {
+  ctx.notify([tt(TX.missionLoaded, {
     id,
     dep: dep || placeName(depPlace) || '?',
     arr: arr || placeName(arrPlace) || '?',
     n: points.length
-  }), 'ok');
+  }), +mf.speedKt > 0 ? tt(TX.speedKept, {
+    n: Math.round(+mf.speedKt)
+  }) : ''].filter(Boolean).join(' '), 'ok');
   // SOG-0618 : ce qui manque à un bout sans code, dit une fois (un aller-retour sans code : une seule note)
   const told = new Set();
   for (const [code, word, place] of [[dep, depWord, depPlace], [arr, arrWord, arrPlace]]) {
@@ -11030,19 +11043,16 @@ function aidsDraw() {
 // verrouille dans son Édition) ; la liste ne les monte, descend ni retire ; un texte qui en perd un le retrouve à la sortie du champ.
 /** SOG-0618 : le nom d'un lieu de la mission (origine, destination), nettoyé et borné ; '' sans nom. */
 const placeName = p => String(p?.name ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60);
-/** SOG-0618 : les noms des lieux de la mission que le pilote a le droit de voir, par mot de coordonnées de la route
- *  ({ « 4500N00100E » → « Lac … » }) : les bouts sans code (ends : [[mot, lieu]]) et les points de la route cités par la partie visible
- *  (MS.pilotView, aucun tiroir ouvert à la reprise) — jamais le nom d'un lieu caché ; le premier nom d'un mot gardé, 60 mots au plus. */
-function missionNames(mission, points, ends) {
-  const pv = MS.pilotView(mission, []),
-    seen = new Set(Object.keys(pv?.points || {})),
-    out = {},
+/** SOG-0618 : les noms des lieux de la mission, par mot de coordonnées de la route ({ « 4500N00100E » → « Lac … » }) : les bouts sans
+ *  code (ends : [[mot, lieu]]) et les points de la route — déjà réduits par applyMission à ceux que la partie visible cite (MS.pilotView) :
+ *  jamais le nom d'un lieu caché ; le premier nom d'un mot gardé, 60 mots au plus. */
+function missionNames(points, ends) {
+  const out = {},
     add = (w, name) => {
       if (w && name && !Object.hasOwn(out, w) && Object.keys(out).length < 60) out[w] = name;
     };
   for (const [w, p] of ends) add(w, placeName(p));
-  for (const p of points)
-    if (seen.has(p.id)) add(RT.icaoCoord(p.lat, p.lon), placeName(p));
+  for (const p of points) add(RT.icaoCoord(p.lat, p.lon), placeName(p));
   return out;
 }
 /** SOG-0618 : les noms du vol, bornés (la route est relue de pilot/, écrite par la Carte aussi : une entrée non fiable) — un mot de
