@@ -15758,3 +15758,20 @@ def n270(c):
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list again')
     c.wait(1500)
     c.ok(not c.js(f"!!document.querySelector('{M} [data-inflight]')"), '', 'no started flight: no « En vol »')
+
+
+@case('N272', 'Missions › the notes of Features SOG\'s files of the module are given a kind the frame knows (err, warn, ok, info): a failure '
+      'the pilot must read is an « err » (12 s), never « error », which the frame does not know (shown as a plain information, gone in 6 s)',
+      'N', static=True, tags=('missions',),
+      rule='the relay, 24 Nov (follow-up of SOG-0609): modules/missions/module.js passed notify(…, \'error\') at six places; the frame knows '
+      'err, warn, ok and info only (frame/app.js notify; its I58 covers frame/, Création\'s N258 the files of the workshop and the drawers)')
+def n272(c):
+    import re as _re
+    found = []
+    for name in ('module.js', 'registry.js', 'search.js', 'add.js', 'move.js'):
+        text = (c.root / 'modules/missions' / name).read_text(encoding='utf-8')
+        # the kind of a note: the string argument that closes a call `…, 'kind')` or comes before its options `…, 'kind', {`
+        for n, line in enumerate(text.splitlines(), 1):
+            if _re.search(r"[,(]\s*'error'\s*(?:\)|,\s*\{)", line):
+                found.append(f'{name}:{n}')
+    c.eq(found, [], 'no « error » kind in the notes of module.js, registry.js, search.js, add.js and move.js', what='kinds')
