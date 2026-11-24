@@ -641,6 +641,8 @@ function distSeg(x, y, a, b) {
 /** La pastille d'une cochée (rayon), les endroits essayés le long du tracé (part de sa longueur) pour la pastille puis pour le nom, la police du nom. */
 const DISC_R = 9,
   DISC_AT = [.15, .25, .35, .45, .08, .55, .65],
+  // les endroits de repli de la pastille quand aucun des précédents ne la laisse entière dans la carte (SOG-0569, suite : à 1280 deux pastilles étaient coupées par le bord haut)
+  DISC_AT_MORE = [.75, .85, .92, .03],
   // SOG-0569 : le nom glisse le long du tracé jusqu'à une place qui tient dans la carte ; la fin du tracé (.8, .9, près de l'aérodrome) et son début (.1) s'ajoutent aux six places d'origine, car un long tracé (une STAR de plus de 100 NM) peut n'avoir ses places d'origine que hors de la carte
   NAME_AT = [.2, .3, .4, .5, .6, .7, .8, .9, .1],
   NAME_FONT = '600 11px Arial,sans-serif';
@@ -825,10 +827,14 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     if (!t || t.pts.length < 2) continue;
     const others = lone.filter(x => x.it.id !== id).map(x => x.pts);
     let best = null;
-    for (const f of DISC_AT) {
-      const p = along(t.pts, f),
-        score = Math.min(away(p, others) / 14, Math.min(Infinity, ...L.discs.map(d => Math.hypot(p.x - d.x, p.y - d.y))) / 24, ap ? Math
-          .hypot(p.x - ap.x, p.y - ap.y) / 20 : Infinity);
+    // SOG-0569 : une pastille tient entière dans la carte (même rectangle que les noms) : on essaie d'abord les endroits d'origine qui y tiennent, puis les endroits de repli, et si aucun n'y tient les
+    // endroits d'origine comme avant (la meilleure est gardée)
+    const fits = p => !W || !H || p.x - DISC_R >= EDGE && p.y - DISC_R >= EDGE && p.x + DISC_R <= W - EDGE_R && p.y + DISC_R <= H - EDGE,
+      first = DISC_AT.map(f => along(t.pts, f)),
+      pool = [first.filter(fits), DISC_AT_MORE.map(f => along(t.pts, f)).filter(fits), first].find(a => a.length);
+    for (const p of pool) {
+      const score = Math.min(away(p, others) / 14, Math.min(Infinity, ...L.discs.map(d => Math.hypot(p.x - d.x, p.y - d.y))) / 24, ap ? Math
+        .hypot(p.x - ap.x, p.y - ap.y) / 20 : Infinity);
       if (!best || score > best.score) best = {
         x: p.x,
         y: p.y,

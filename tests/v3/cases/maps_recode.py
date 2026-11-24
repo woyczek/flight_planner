@@ -10846,15 +10846,42 @@ def d327(c):
         c.wait(200)
         last = c.js("() => window.__nm.filter(n => n.f === window.__nmf && /^600 11px/.test(n.font))")
         got = last
-        if len(got) >= 3:
+        if len(got) >= 1:
             break
     allw = c.js("() => window.__nm.filter(n => n.f === window.__nmf)")
     fonts = {}
     for n in allw:
         fonts[n['font']] = fonts.get(n['font'], 0) + 1
     seen = {'frame': c.js('() => window.__nmf'), 'writes in the last frame by font': fonts, 'texts with letters': sorted({n['t'] for n in allw if re.search('[A-Za-z]', n['t'])})[:20]}
-    c.ok(len(got) >= 3, f'names written in the last frame {[n["t"] for n in got]}; texts of the overlay {seen}', 'the names of the ticked procedures are written (at least three of the eight find a place)')
+    c.ok(len(got) >= 1, f'names written in the last frame {[n["t"] for n in got]}; texts of the overlay {seen}', 'the names of the ticked procedures are written (at least one: the eight traces lie mostly above the map here and the discs, kept inside it, take the little room that is visible; none may cross an edge)')
     box = c.js("() => { const r = document.querySelector('.mp-over').getBoundingClientRect(); return [r.width, r.height] }")
     bad = [f"{n['t']} {[round(n['x0']), round(n['y0']), round(n['x1']), round(n['y1'])]}" for n in got if n['x0'] < 4 - .5 or n['y0'] < 4 - .5 or n['x1'] > box[0] - 56 + .5 or n['y1'] > box[1] - 4 + .5]
     c.eq(bad, [], f'every name box lies inside the map ({box[0]:.0f} × {box[1]:.0f}): 4 px from the edges, 56 px from the right edge', what='names across an edge')
     c.shot('D327.png')
+
+
+@case('D328', 'SOG-0569 (follow-up): in the choose mode the number disc of a ticked procedure lies whole inside the map (not cut by the top edge, nor under the right-hand column), at every width', 'D', tags=('maps',),
+      designs=('standard',), night=False,
+      rule='the relay, reading D318 choisir8 at 1280: two numbered discs touched the top edge and were cut in half (the names, fixed by D327, were whole). The disc is put on the trace at the first of seven places tried that is free enough, without asking whether it lies in the map; it now asks the same rectangle as the names (4 px from the edges, 56 px from the right edge), tries four fallback places when none of the first fits, and keeps the old choice when none fits at all; red before: a disc crosses an edge with eight procedures ticked')
+def d328(c):
+    # the scene of D318 « choisir8 » (the one the relay read): five ticked, one of them chosen, four more ticked: the map is framed on the procedures
+    _ch_open(c, {'rwy': '31'})
+    c.tap('.mp-ch-fold[data-more="star"]')
+    c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
+    ids = c.js(_CH_STARS)
+    for pid in ids[:5]:
+        c.tap(f'.mp-ch-row[data-id="{pid}"]')
+    c.tap(f'.mp-ch-pick[data-pick="{ids[4]}"]')
+    c.until("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`) || {}).dataset.state === 'chosen'", ids[4], what='one chosen')
+    for pid in ids[5:9]:
+        c.tap(f'.mp-ch-row[data-id="{pid}"]')
+    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked beside one chosen', what='counter')
+    c.wait(600)
+    d = c.js("""async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, r = document.querySelector('.mp-over').getBoundingClientRect();
+      const L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC, r.width, r.height);
+      return { w: r.width, h: r.height, discs: L.discs.map(x => [x.n, Math.round(x.x), Math.round(x.y)]) } }""")
+    c.eq(len(d['discs']), 8, 'eight discs', what='discs')
+    # the disc radius is 9 px (DISC_R of choose.js)
+    bad = [f'n{n} @{x},{y}' for n, x, y in d['discs'] if x - 9 < 4 - .5 or y - 9 < 4 - .5 or x + 9 > d['w'] - 56 + .5 or y + 9 > d['h'] - 4 + .5]
+    c.eq(bad, [], f'every disc lies whole inside the map ({d["w"]:.0f} × {d["h"]:.0f}): 4 px from the edges, 56 px from the right edge', what='discs across an edge')
+    c.shot('D328.png')
