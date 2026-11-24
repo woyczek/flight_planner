@@ -1755,6 +1755,17 @@ p.f-back {
   color: var(--sog-bg);
   box-shadow: var(--sog-shadow)
 }
+/* SOG-0605 : une note qui vient d'apparaître laisse passer les touchers (data-fresh, retiré par app.js après NOTE_ARM_MS) ; ses boutons répondent ensuite.
+   Le conteneur ne prend jamais un toucher à la place de ce qu'il porte : seules les notes (armées) le prennent */
+.f-notes {
+  pointer-events: none
+}
+.f-note {
+  pointer-events: auto
+}
+.f-note[data-fresh] {
+  pointer-events: none
+}
 .f-note[data-kind="err"] {
   background: var(--sog-err);
   color: var(--sog-on-status)

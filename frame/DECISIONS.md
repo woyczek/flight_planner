@@ -3220,6 +3220,13 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — a floating note is born above the bars and never steals a touch (SOG-0605, the ergonomist's rule)
+
+- **Fact** (cause of N196, measured by Creation): on a phone a fresh note sat first on the action bar of a view (`.f-notes` cleared the tab bar only), then `notesClear` lifted it in the next animation frame. A touch between the two, or a tap landing in that frame, was taken by the note: « Annuler » of the workshop opened nothing.
+- **Rule 1 — a note is never born on a bar**: `showNote` calls `notesClear.now()` right after appending the note, so its place (above the tab bar by the CSS, above the highest fixed bar the frame knows by `--f-bar-clear`: `.f-bar`, a `data-f-foot`) is computed before it has a first image. At any width. A bar a module draws later is still followed by the observers (unchanged).
+- **Rule 2 — what appears alone does not steal a touch**: for `NOTE_ARM_MS` = 400 ms (the ergonomist's value, a named constant of `app.js`) a note carries `data-fresh`; `frame.css` gives it `pointer-events: none`, so the touches go to what lies under it; its buttons answer after. The container `.f-notes` has `pointer-events: none` too (it covered the note's box and took the touch for itself), the notes `auto`.
+- **Cases**: A378 (the rectangle of the note read at its first image, before any frame, cuts no bar — foot, `.f-bar`, tab bar — at 390 and 1280) and A379 (the point of « Annuler » read in the same task as the note's birth is « Annuler » and the question opens; a bar unknown to the frame under the note: the touch goes through in the first instant, the note answers after the grace; the constant is 400); red before.
+
 ## 23 November 2026 — the frame never decides « no launcher » because its start finished first (SOG-0603, the ergonomist's screen rule)
 
 - **Fact** (from the cause of A197, SOG-0595): `boot()` took the state remembered on the device and drew at once. With « none » remembered (or never seen and a slow answer) the first screen was mounted while `GET /__setup/status` was still on its way; a module mounted in that window read `ctx.launcher()` as null and chose its no-launcher behaviour for good (the reports screen: the pilot's channel, no pilots block). Measured with the answer held 1.5 s: only `/__setup/status` asked, no job.

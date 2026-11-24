@@ -12099,3 +12099,77 @@ def a377(c):
     src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
     c.ok(re.search(r'notify,\s*dismissNote,\s*ask,\s*askText', src), '', 'the ctx of the modules carries dismissNote (next to notify)')
     c.check_errors()
+
+
+_FOOT_JS = """() => { document.querySelectorAll('[data-test-foot],[data-test-bar]').forEach(x => x.remove());
+  const f = document.createElement('div'); f.dataset.fFoot = ''; f.dataset.testFoot = '';
+  f.style.cssText = 'position:fixed;left:0;right:0;bottom:var(--f-tab-space,0px);height:64px;display:flex;gap:8px;align-items:center;justify-content:flex-end;z-index:10;background:#fff';
+  f.innerHTML = '<button type="button" data-test-cancel style="min-height:44px">Annuler</button><button type="button" style="min-height:44px">Valider</button>';
+  f.querySelector('[data-test-cancel]').onclick = () => window.SogFrame.ask('Quitter sans enregistrer ?');
+  document.getElementById('fView').append(f); dispatchEvent(new Event('resize')) }"""
+
+
+@case('A378', 'A floating note is BORN above every fixed bar the frame knows (SOG-0605): its box, read at its very first image (before any frame is drawn), cuts no bar — a foot declared by data-f-foot, a .f-bar, the tab bar of a phone — at 390 and at 1280; never « put down, then lifted »', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0605 (the ergonomist; cause of N196, measured by Creation): on a phone a fresh note sat first on the action bar of a view, then notesClear lifted it a frame later; a tap between the two was taken by the note. notesClear.now() measures at the birth of the note (showNote), before its first image")
+def a378(c):
+    c.open('hello')
+    c.until('!!window.SogFrame', what='the frame')
+    for w, h in ((390, 800), (1280, 800)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.js("() => document.querySelectorAll('#fNotes .f-note [data-x]').forEach(x => x.click())")
+        c.js(_FOOT_JS)
+        c.js("""() => { const b = document.createElement('div'); b.className = 'f-bar'; b.dataset.testBar = ''; b.style.cssText = 'position:fixed;left:0;right:0;bottom:calc(var(--f-tab-space,0px) + 64px);height:40px;background:#eee';
+                        b.textContent = 'Bloc'; document.getElementById('fView').append(b); dispatchEvent(new Event('resize')) }""")
+        # the rectangle of the note at its first image: a mutation observer runs once the task that added the note has ended, before any frame is drawn
+        c.js("""() => { window.__born = null; const box = document.getElementById('fNotes');
+          new MutationObserver((recs, ob) => { const n = box.querySelector('.f-note'); if (!n) return; ob.disconnect(); const r = n.getBoundingClientRect(), tb = document.querySelector('.f-tabbar');
+            window.__born = { note: [r.top, r.bottom], bars: [...document.querySelectorAll('[data-test-foot],[data-test-bar]')].map(x => x.getBoundingClientRect().top),
+                              tab: tb && tb.getClientRects().length ? tb.getBoundingClientRect().top : null } }).observe(box, { childList: true });
+          window.SogFrame.notify('Brouillon retiré', 'info', { action: { label: 'Annuler', run() {} } }) }""")
+        c.until('!!window.__born', what=f'the first image of the note at {w}')
+        born = c.js('() => window.__born')
+        top = min(born['bars'] + ([born['tab']] if born['tab'] else []))
+        c.ok(born['note'][1] <= top - 7, born, f'{w}: at its first image the note ends at {born["note"][1]:.0f}, above the highest fixed bar ({top:.0f})')
+        if w == 390:
+            c.shot('P_0605_390_note_above_bar.png')
+    c.check_errors()
+
+
+@case('A379', 'What appears alone never steals a touch (SOG-0605): a note raised and, in the same instant, a touch on « Annuler » of the screen’s foot reaches « Annuler » (the question opens); during its first 400 ms a note lets the touches through to what lies under it; after that its button answers — at 390 and at 1280', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0605 (the ergonomist, rule 2): NOTE_ARM_MS = 400, a named constant of frame/app.js; frame.css `.f-note[data-fresh] { pointer-events: none }`; N196 (the workshop's « Annuler » taken by a fresh note)")
+def a379(c):
+    c.open('hello')
+    c.until('!!window.SogFrame', what='the frame')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok(re.search(r'const NOTE_ARM_MS = 400;', src), '', 'the grace is a named constant, 400 ms')
+    for w, h in ((390, 800), (1280, 800)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.js("() => document.querySelectorAll('#fNotes .f-note [data-x], .f-modal [data-no]').forEach(x => x.click())")
+        c.js(_FOOT_JS)
+        # (1) the same instant: the note is raised, then the point of « Annuler » is read in the SAME task (a finger would meet what is there)
+        hit = c.js("""() => { window.SogFrame.notify('Brouillon retiré', 'info', { action: { label: 'Garder', run() {} } });
+          const r = document.querySelector('[data-test-cancel]').getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          const ok = el.dataset.testCancel !== undefined; el.click(); return ok }""")
+        c.ok(hit, hit, f'{w}: a touch on « Annuler » at the instant the note is raised reaches « Annuler »')
+        c.until("!!document.querySelector('.f-modal [data-no]')", what=f'the question opens at {w}')
+        c.js("() => document.querySelector('.f-modal [data-no]').click()")
+        c.js("() => document.querySelectorAll('#fNotes .f-note [data-x]').forEach(x => x.click())")
+        # (2) a bar the frame does not know lies under the note: during the first 400 ms the touch goes through to it; after, the note answers
+        c.js("() => document.querySelectorAll('[data-test-foot]').forEach(x => x.remove())")     # the foot is known to the frame: the note would sit above it
+        c.js("""() => { window.__kept = 0; window.__under = 0; const u = document.createElement('div'); u.dataset.testBar = ''; u.style.cssText = 'position:fixed;left:0;right:0;bottom:0;height:260px;z-index:10;background:#ddd';
+                        const b = document.createElement('button'); b.type = 'button'; b.dataset.testUnder = ''; b.style.cssText = 'width:100%;height:100%'; b.onclick = () => { window.__under++ }; u.append(b); document.body.append(u) }""")
+        first = c.js("""() => { window.SogFrame.notify('Garde sous les doigts', 'info', { action: { label: 'Garder', run() { window.__kept++ } } });
+          const r = document.querySelector('#fNotes .f-note [data-act]').getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return [el.dataset.testUnder !== undefined, !!document.querySelector('#fNotes .f-note[data-fresh]')] }""")
+        c.eq(first, [True, True], f'{w}: the first instant of the note: the point of its button belongs to what lies under it', what='fresh note: the touch goes through')
+        c.until("!document.querySelector('#fNotes .f-note[data-fresh]')", timeout=3000, what='the grace is over')
+        c.wait(100)
+        late = c.js("""() => { const r = document.querySelector('#fNotes .f-note [data-act]').getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                          return el.dataset.act !== undefined }""")
+        c.ok(late, late, f'{w}: after the grace the point of the button is the button')
+        c.tap('#fNotes .f-note [data-act]')
+        c.eq(c.js('() => [window.__kept, window.__under]'), [1, 0], f'{w}: after 400 ms the button of the note answers, the bar under it does not', what='the note answers')
+        c.js("() => document.querySelectorAll('[data-test-bar],[data-test-foot]').forEach(x => x.remove())")
+    c.check_errors()

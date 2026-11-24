@@ -1022,8 +1022,15 @@
         }
       }
     }
+    // `now` : la mesure tout de suite, avant que la note ait une première image (SOG-0605 : une note ne naît jamais sur une barre) ; la mesure en attente devient inutile
+    later.now = () => {
+      if (raf) cancelAnimationFrame(raf);
+      measure();
+    };
     return later;
   })();
+  // SOG-0605 : ce qui apparaît seul ne vole pas un toucher — pendant ses premières 400 ms (valeur de l'ergonome), une note laisse passer les touchers vers ce qu'il y a dessous
+  const NOTE_ARM_MS = 400;
   const NOTE_QUEUE_MAX = 8,
     noteQueue = []; // les notes qui attendent leur tour sur un téléphone (SOG-0131)
   /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
@@ -1106,6 +1113,7 @@
     n.dataset.kind = kind;
     n.dataset.key = key;
     n._note = note;
+    n.dataset.fresh = ''; // frame.css : pas de toucher pendant NOTE_ARM_MS (SOG-0605)
     n.innerHTML = `<span>${esc(text)}</span>${o.action ? `<button type="button" data-act>${esc(o.action.label)}</button>` : ''}<button type="button" data-x aria-label="${esc(t(T.close))}">✕</button>`;
     const drop = () => {
       if (!n.isConnected) return; // déjà partie (une erreur l'a devancée, ou la même note l'a remplacée)
@@ -1119,7 +1127,9 @@
       o.action.run();
     };
     $('fNotes').append(n);
-    notesClear();
+    // sa place au-dessus des barres fixes est calculée ici, avant la première image : plus de « posée puis remontée » (SOG-0605)
+    notesClear.now();
+    setTimeout(() => n.removeAttribute('data-fresh'), NOTE_ARM_MS);
     if (!o.action || o.ms) setTimeout(drop, o.ms || (kind === 'err' ? 12e3 :
       6e3)); // o.ms : une note à action qui s'efface seule (« Annuler » d'un verdict)
   }
