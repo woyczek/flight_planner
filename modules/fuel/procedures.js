@@ -40,6 +40,9 @@ import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import * as RT from '../../frame/lib/route_text.js';
 import {
+  gcNm
+} from '../../frame/lib/geo.js'; // SOG-0569 : la distance de la règle de la liaison (celle de la Carte, procs.js procGap)
+import {
   adLabel
 } from '../../frame/lib/adnames.js';
 import {
@@ -1048,7 +1051,7 @@ export function createProcedures(host) {
   };
   /** Une ligne du côté ouvert (SOG-0308) : son nom, sa valeur en mots, sa source en petit, UN geste « Changer » à droite ; la liste
    *  qu'il ouvre est à sa place, dessous (les listes data-k de toujours). */
-  const rowHtml = (side, row, label, fields) => `<div class="fu-prow" data-prow="${row}"><span class="fu-plab">${esc(tt(label))}</span><span class="fu-pval" data-r="v-${row}"></span><span class="fu-psrc" data-r="s-${row}">${row === 'app' ? '<span class="fu-appaid" data-r="aid" data-appaid hidden></span>' : ''}<span data-r="src-${row}"></span><span data-chart-slot="${row}"></span></span>${row === 'rwy' ? '<p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>' : ''}<button type="button" class="fu-pchange" data-do="procchange" data-side="${side}" data-row="${row}" aria-expanded="false">${esc(tt(TX.procChangeBtn))}</button><div class="fu-plist" data-r="l-${row}" hidden>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}"><span class="fu-pflab">${esc(tt(f.label))}</span><select data-k="${f.k}"></select></label>`).join('')}</div>${row === 'main' ? '<p class="fu-kindcharts f-muted" data-r="kindcharts" data-kindcharts hidden></p>' : ''}${row === 'app' ? '<p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  const rowHtml = (side, row, label, fields) => `<div class="fu-prow" data-prow="${row}"><span class="fu-plab">${esc(tt(label))}</span><span class="fu-pval" data-r="v-${row}"></span><span class="fu-psrc" data-r="s-${row}">${row === 'app' ? '<span class="fu-appaid" data-r="aid" data-appaid hidden></span>' : ''}<span data-r="src-${row}"></span><span data-chart-slot="${row}"></span></span>${row === 'rwy' ? '<p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>' : ''}<button type="button" class="fu-pchange" data-do="procchange" data-side="${side}" data-row="${row}" aria-expanded="false">${esc(tt(TX.procChangeBtn))}</button><div class="fu-plist" data-r="l-${row}" hidden>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}"><span class="fu-pflab">${esc(tt(f.label))}</span><select data-k="${f.k}"></select></label>`).join('')}</div>${row === 'main' ? '<p class="fu-kindcharts f-muted" data-r="kindcharts" data-kindcharts hidden></p>' : ''}${row === 'app' ? '<p class="fu-nolink f-muted" data-r="nolink" data-nolink hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   /** Squelette d'un côté (SOG-0308) : l'en-tête, la phrase du côté replié, puis, déplié, les trois lignes et le pied « Source et
    *  cartes » ; sans donnée, la ligne de lecture seule (« Lire les procédures »), toujours vue. patchSide remplit le tout. */
   const skeleton = (side, m, fields) => {
@@ -1140,6 +1143,27 @@ export function createProcedures(host) {
     return isIcao(icao) ? aidHtml({
       icao
     }) : '';
+  }
+  /** SOG-0569 : « Aucune liaison publiée entre {fin} (fin de {arrivee}) et {debut} (début de l'approche). » — la fin de la STAR choisie
+   *  (son dernier point situé) et le début de l'approche choisie (sa transition si elle en a une, sinon l'approche : son premier point
+   *  situé) ne se rejoignent pas ; la règle de la Carte (procs.js procGap) : même nom à moins de 3 NM, sinon à moins de 0,3 NM. '' quand
+   *  l'approche reprend la fin de la STAR, quand l'une des deux n'est pas choisie ou que ses points ne sont pas lus. Texte brut (textContent). */
+  function noLinkText(m) {
+    const a = CF.proceduresOf(host.flight()).arr || {},
+      recs = adOf(m.icao).recs,
+      get = id => id && recs ? recs.get(id) || null : null,
+      star = get(a.star),
+      app = get(a.appTrans) || get(a.app),
+      at = p => !!p && p.lat !== null && p.lon !== null && Number.isFinite(+p.lat) && Number.isFinite(+p.lon),
+      e = [...(Array.isArray(star?.points) ? star.points : [])].reverse().find(at),
+      b = (Array.isArray(app?.points) ? app.points : []).find(at);
+    if (!get(a.app) || !e?.id || !b?.id) return '';
+    if (gcNm(e, b) < (String(e.id).toUpperCase() === String(b.id).toUpperCase() ? 3 : .3)) return '';
+    return tt(TX.procNoLink, {
+      fin: String(e.id),
+      arrivee: nameOfId(a.star, 'star'),
+      debut: String(b.id)
+    });
   }
   /** Pose la ligne de l'aide (cachée quand elle est vide : pas de place laissée). */
   function setAid(el, m) {
@@ -1302,6 +1326,13 @@ export function createProcedures(host) {
     for (const f of fields) setHtml(el.querySelector(`select[data-k="${f.k}"]`), f.html);
     const aid = el.querySelector('[data-r="aid"]');
     if (aid) setAid(aid, m);
+    // SOG-0569 : la liaison manquante entre l'arrivée et l'approche choisies, dite sous l'approche (jamais un trait inventé)
+    const nl = el.querySelector('[data-r="nolink"]');
+    if (nl) {
+      const t = side === 'arr' ? noLinkText(m) : '';
+      if (nl.textContent !== t) nl.textContent = t;
+      nl.hidden = !t;
+    }
     // SOG-0232 : les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), chacune avec son
     // lien vers la carte (l'adresse composée par aerodb.chartOnly, jamais ici)
     // SOG-0090 : la piste probable d'après le METAR, dite en tête des listes avec son geste ; jamais posée d'office, cachée quand elle

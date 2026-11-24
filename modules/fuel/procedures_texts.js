@@ -2,6 +2,13 @@
 // STAR, approche), la ligne « lu le … · Relire », les motifs d'une lecture refusée et les lignes de l'OFP. Ce fichier ne porte que
 // des rangées ; la langue est choisie par ctx.t (cadre). Les rangées partagées avec l'écran (procTitle) restent dans module.js.
 export const TX = {
+  // SOG-0569 : la liaison manquante entre la fin de l'arrivée choisie et le début de l'approche choisie — la phrase de la Carte
+  // (modules/maps/texts.js procNoLink), MOT POUR MOT dans les quatre langues (cas F323 qui compare les deux tables)
+  procNoLink: ['Aucune liaison publiée entre {fin} (fin de {arrivee}) et {debut} (début de l\'approche).',
+    'No published link between {fin} (end of {arrivee}) and {debut} (start of the approach).',
+    'Keine veröffentlichte Verbindung zwischen {fin} (Ende von {arrivee}) und {debut} (Beginn des Anflugs).',
+    'Ningún enlace publicado entre {fin} (final de {arrivee}) y {debut} (inicio de la aproximación).'
+  ],
   dep: ['Départ', 'Departure', 'Abflug', 'Salida'],
   arr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
   procRwy: ['Piste', 'Runway', 'Piste', 'Pista'],
