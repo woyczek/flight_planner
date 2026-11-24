@@ -15510,6 +15510,8 @@ def n248(c):
       'history entry at 390 only (beside the table at 1 280 it has none): red before at 390, a guard at 1 280')
 def n254(c):
     title = 'Un titre en cours'
+    TITLE_JS = (f"([...document.querySelectorAll('{E} input[data-k=edtitle]')].find(x => x.checkVisibility()) || "
+                f"document.querySelector('{E} input[data-k=edtitle]'))")
     # the Company application at the level Complet: its tab « Flotte » (the module aircraft, level 3) is ANOTHER module in the bar and the
     # rail; at the default level the bar has only Missions and the gear
     other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab]')].find(x => x.checkVisibility() &&
@@ -15523,11 +15525,14 @@ def n254(c):
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what=f'{w} px: X-001A in the workshop')
         if not fill:  # (B) the workshop open is enough: what is tested is the way out of it, not its work
             return
-        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+        # the Cadre unfolded when its title is not SHOWN (at 1 280 the field exists in the folded Cadre: Page.fill waited 15 s on it)
+        if not c.js(f"[...document.querySelectorAll('{E} input[data-k=edtitle]')].some(x => x.checkVisibility())"):
             _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
-        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what=f'{w} px: the Cadre unfolded')
-        _ed_fill(c, 'edtitle', title)
+        c.until(f"[...document.querySelectorAll('{E} input[data-k=edtitle]')].some(x => x.checkVisibility())", what=f'{w} px: the Cadre unfolded')
+        # the title typed in the field that is shown, as the pilot types it
+        c.js(f"""(t) => {{ const i = {TITLE_JS}; i.scrollIntoView({{block: 'center'}}); i.focus(); i.value = t;
+          i.dispatchEvent(new Event('input', {{bubbles: true}})); i.dispatchEvent(new Event('change', {{bubbles: true}})) }}""", title)
 
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -15544,9 +15549,8 @@ def n254(c):
                 what=f'{w} px: Back: the workshop again')
         c.wait(600)
         c.ok(c.hash().startswith('#missions'), c.hash(), f'{w} px: back in Missions')
-        c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.value"), title, f'{w} px: the workshop as it was left, its title',
-             what='title kept')
-        c.js(f"document.querySelector('{E} input[data-k=edtitle]')?.scrollIntoView({{block: 'center'}})")
+        c.eq(c.js(f"{TITLE_JS}?.value"), title, f'{w} px: the workshop as it was left, its title', what='title kept')
+        c.js(f"{TITLE_JS}?.scrollIntoView({{block: 'center'}})")
         c.shot(f'N254_{c.design}_{w}_{c.lang}_back.png')
         ed_leave(c)
         c.js(_REG_CLEAR)
