@@ -13,7 +13,9 @@ Here:
   * a client that closes its connection early (a navigation that moves on) is not an error;
   * no cache (`Cache-Control: no-store`): every run reads the tree as it is.
 
-Usage: python tests/v3/static_server.py <port> <root>
+  * `--parent <pid>`: the server dies with that process (parent_watch.py): a pass killed the hard way leaves no server behind.
+
+Usage: python tests/v3/static_server.py <port> <root> [--parent <pid>]
 """
 import http.server
 import socketserver
@@ -64,6 +66,9 @@ class Server(http.server.ThreadingHTTPServer):
 
 def main():
     port, root = int(sys.argv[1]), sys.argv[2]
+    if len(sys.argv) > 4 and sys.argv[3] == '--parent':
+        import parent_watch
+        parent_watch.watch(int(sys.argv[4]))
     socketserver.TCPServer.allow_reuse_address = False
     with Server(('127.0.0.1', port), partial(Handler, directory=root)) as srv:
         srv.serve_forever()

@@ -4067,3 +4067,94 @@ def i58(c):
                 if kind not in ('err', 'warn', 'ok', 'info'):
                     bad.append(f'{rel}:{line} ({kind})')
     c.eq(bad, [], 'no call of notify with an unknown kind in the corrected perimeters', what='unknown kinds')
+
+
+@case('I60', 'Tests: a pass plays with four workers at most by default (the user\'s rule of 24 Nov 2026, relaxed from two to four by the ergonomist the same day); a wider pass names `--jobs N`', 'I', static=True,
+      rule='the user (24 Nov 2026, after killing a process at 8 GiB): up to 11 headless browsers were open at once, the workers of ONE pass (DEFAULT_JOBS was the physical cores less two); in the daytime a pass plays targeted cases with `--jobs 4` at most (the first rule said 2, relaxed once the real leak was found), a wide pass goes in the evening queue and names its number; red before: DEFAULT_JOBS is an expression of the number of cores')
+def i60(c):
+    import ast
+    tree = ast.parse((c.root / 'tests' / 'v3' / 'run.py').read_text(encoding='utf-8'))
+    node = next((n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'DEFAULT_JOBS' for t in n.targets)), None)
+    c.ok(node is not None, 'DEFAULT_JOBS not found', 'run.py defines DEFAULT_JOBS')
+    try:
+        value = ast.literal_eval(node.value)
+    except ValueError:
+        value = None        # an expression (the number of cores): not a number written down
+    c.ok(isinstance(value, int) and 1 <= value <= 4, f'DEFAULT_JOBS = {ast.unparse(node.value)}', 'DEFAULT_JOBS is a number written down, 4 at most (never a count of cores)')
+
+
+@case('I61', 'Tests: a pass that ends, fails, is asked to stop or is KILLED leaves no static server and no browser behind: the server and the workers die with their parent, a stop request ends the pass by its `finally` blocks', 'I', static=True,
+      rule='the user (24 Nov 2026): « 26 python, 100 chromium » — seven static servers of passes had stayed behind; run.py closed its server by try/finally and atexit, which never run when the pass is killed the hard way (on Windows nothing of Python runs then). Now the static server and the pool workers watch their parent (parent_watch.py) and exit, the worker closing its browser, when it is gone; SIGTERM and Ctrl-Break end the pass by SystemExit (install_exit_handlers); red before: the server of a killed pass lives on')
+def i61(c):
+    import signal
+    import subprocess
+    import time
+    here = str(c.root / 'tests' / 'v3')
+    sys.path.insert(0, here)
+    import heavy_lock as HL
+    left = []                                                 # every process the case starts: none may stay
+
+    def spawn(code, *args, **kw):
+        p = subprocess.Popen([sys.executable, '-c', code, *args], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, **kw)
+        left.append(p)
+        return p
+
+    def pid_of(p):
+        line = p.stdout.readline().strip()
+        n = int(line) if line.isdigit() else 0
+        if n:
+            left.append(n)
+        return n
+
+    def gone(pids, secs=20):
+        end = time.time() + secs
+        while time.time() < end:
+            if not any(HL.pid_alive(x) for x in pids if x):
+                return True
+            time.sleep(0.3)
+        return not any(HL.pid_alive(x) for x in pids if x)
+    pre = f'import sys, time\nsys.path.insert(0, {here!r})\nimport run\n'
+    try:
+        # (1) the pass is killed the hard way: its static server must not live on
+        p = spawn(pre + 'proc, base = run.start_server()\nprint(proc.pid, flush=True)\ntime.sleep(300)\n')
+        server = pid_of(p)
+        c.ok(server > 0 and HL.pid_alive(server), f'server pid {server}', 'the pass started its static server')
+        p.kill()
+        p.wait()
+        c.ok(gone([server]), f'the static server {server} still runs after its pass was killed', 'a killed pass leaves no static server behind')
+        # (2) the pass is asked to stop (Ctrl-Break / SIGTERM): the `finally` blocks run and close the server it was told to keep alive on its own
+        body = pre + 'run.install_exit_handlers()\nproc, base = run.start_server(parent=False)\ntry:\n    print(proc.pid, flush=True)\n    while True:\n        time.sleep(0.2)\nfinally:\n    run.stop_server(proc)\n'
+        kw = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {}
+        p = spawn(body, **kw)
+        server = pid_of(p)
+        c.ok(server > 0 and HL.pid_alive(server), f'server pid {server}', 'the pass started its static server')
+        time.sleep(1.0)                                       # the handlers are installed before the pid is printed: this is the time to sit in sleep()
+        p.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGTERM)
+        c.ok(gone([server]) and gone([p.pid]), f'server {server} / pass {p.pid} still run after a stop request', 'a pass asked to stop closes its server (its finally blocks run) and ends')
+        # (3) a worker that holds a browser: it dies with its pass and closes what it holds (a sleeper stands for the browser)
+        worker = (f'import subprocess, sys, time\nsys.path.insert(0, {here!r})\nimport parent_watch\n'
+                  'b = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"])\nprint(b.pid, flush=True)\n'
+                  'parent_watch.watch(int(sys.argv[1]), b.kill)\ntime.sleep(300)\n')
+        pass_ = ('import os, subprocess, sys, time\n'
+                 f'w = subprocess.Popen([sys.executable, "-c", {worker!r}, str(os.getpid())], stdout=subprocess.PIPE, text=True)\n'
+                 'print(w.pid, flush=True)\nprint(w.stdout.readline().strip(), flush=True)\ntime.sleep(300)\n')
+        p = spawn(pass_)
+        w, b = pid_of(p), pid_of(p)
+        c.ok(w > 0 and b > 0 and HL.pid_alive(w) and HL.pid_alive(b), f'worker {w}, browser {b}', 'the pass started a worker and the worker its browser')
+        p.kill()
+        p.wait()
+        c.ok(gone([w, b]), f'worker {w} / browser {b} still run after their pass was killed', 'a killed pass leaves no worker and no browser behind')
+    finally:
+        for x in left:
+            try:
+                if isinstance(x, int):
+                    os.kill(x, signal.SIGTERM)
+                else:
+                    x.kill()
+            except OSError:
+                pass
+    # (4) the wiring: the pool workers are given their parent, the server too
+    src = (c.root / 'tests' / 'v3' / 'run.py').read_text(encoding='utf-8')
+    c.ok('initargs=(base, os.getpid())' in src and "['--parent', str(os.getpid())]" in src, '', 'run.py gives its pid to the pool workers and to the static server')
+    lib = (c.root / 'tests' / 'v3' / 'lib.py').read_text(encoding='utf-8')
+    c.ok('parent_watch.watch(parent, worker_close)' in lib, '', 'a worker watches its pass and closes its browser when it is gone')

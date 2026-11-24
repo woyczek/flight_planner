@@ -40,7 +40,8 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 | `--tag <tag>` | the cases carrying one of these tags (`overlay`, `sheet`, `maps`, `atmosphere`, `fuel`, `fullscreen`, `design`...) |
 | `--designs a,b`, `--widths 390,1280`, `--langs fr,en` | narrow the combinations each case runs in |
 | `--wait` | a full pass waits for the heavy pass already running on this computer instead of refusing to start |
-| `--jobs N` | worker processes (default: the physical cores less two, `os.cpu_count() // 2 - 2`, 10 on the 12-core workstation; `1` runs in this process, easiest to debug) |
+| `--jobs N` | worker processes (default: 4, the user's rule of 24 Nov 2026; a wide pass names its number and goes in the evening queue; `1` runs in this process, easiest to debug) |
+| (always) | a pass leaves no static server and no browser behind: it closes them by `finally` and its exit handlers (SIGTERM, Ctrl-Break), and the server and every worker watch their pass (`parent_watch.py`) and exit when it is killed the hard way; `--keep-server` leaves the server on purpose |
 | `--failed [IDS]` | replay the failed cases of the last `report.json`, in the combinations that failed (section "Replaying a failure") |
 | `--failed-scope [BASE]` | the full scope of those failures (their areas and journeys, full grid) plus the cases chosen by the files changed since BASE |
 | `--list` | print, run nothing: for paths (`--for`, `--changed`) the areas and the journeys they touch, then the selected cases and how many runs each one has (no browser needed) |

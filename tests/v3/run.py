@@ -24,6 +24,7 @@ import json
 import multiprocessing
 import os
 import queue
+import signal
 import socket
 import subprocess
 import sys
@@ -40,9 +41,9 @@ import journeys  # noqa: E402
 import lib  # noqa: E402
 
 ROOT = lib.ROOT
-# workers by default: the physical cores less two (os.cpu_count() counts the logical ones, two per core); measured on the
-# 12-core workstation (DECISIONS, 30 Oct 2026)
-DEFAULT_JOBS = max(1, (os.cpu_count() or 4) // 2 - 2)
+# workers by default: FOUR (the user's rule of 24 Nov 2026 after a process killed at 8 GiB: up to 11 headless browsers at once, the
+# workers of ONE pass). A wide pass names its number (`--jobs N`) and is played at the end of the day, in Essais's queue (ESSAIS_REGLES.md)
+DEFAULT_JOBS = 4
 # more than CRASH_LIMIT browser crashes in a pass (each replayed once, lib.worker_run): the pass lowers itself to LOW_JOBS
 # runs at a time for the rest, and says so (30 Oct 2026: four « Target crashed » under load, green alone)
 CRASH_LIMIT, LOW_JOBS = 3, 6
@@ -88,11 +89,12 @@ def free_port():
     return port
 
 
-def start_server():
-    """Static server of the repository root; returns (Popen, base url).  The caller terminates it."""
+def start_server(parent=True):
+    """Static server of the repository root; returns (Popen, base url).  The caller terminates it, and the server itself dies with this
+    process (`--parent`: parent_watch.py) whatever the way this one ends, even killed the hard way; `parent=False` (--keep-server) leaves it."""
     port = free_port()
     # our own server (static_server.py): python -m http.server lost loads at random under Windows (its queue of 5)
-    proc = subprocess.Popen([sys.executable, str(Path(__file__).with_name('static_server.py')), str(port), str(ROOT)],
+    proc = subprocess.Popen([sys.executable, str(Path(__file__).with_name('static_server.py')), str(port), str(ROOT)] + (['--parent', str(os.getpid())] if parent else []),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=str(ROOT))
     base = f'http://127.0.0.1:{port}'
     for _ in range(100):                         # wait until it answers
@@ -102,6 +104,30 @@ def start_server():
         except OSError:
             time.sleep(0.1)
     return proc, base
+
+
+def install_exit_handlers():
+    """A pass that is asked to stop (SIGTERM, Ctrl-Break) ends by SystemExit: the `finally` blocks and the exit handlers run, the server and the browsers are closed.
+    (Ctrl-C already raises KeyboardInterrupt.)  A pass killed the hard way is covered by the children, which watch their parent (parent_watch.py)."""
+    def stop(signum, frame):
+        raise SystemExit(128 + signum)
+    for name in ('SIGTERM', 'SIGBREAK'):
+        sig = getattr(signal, name, None)
+        if sig is not None:
+            try:
+                signal.signal(sig, stop)
+            except (ValueError, OSError):
+                pass                                # not the main thread, or a signal this system does not give
+
+
+def wait_result(q):
+    """The next result of the pool.  A wait without end is not woken by a stop request on Windows (the signal handler runs only when the main thread is in Python code again),
+    so the pass waits one second at a time: SIGTERM / Ctrl-Break end it within a second, by SystemExit, and its `finally` blocks run."""
+    while True:
+        try:
+            return q.get(timeout=1)
+        except queue.Empty:
+            pass
 
 
 def stop_server(proc):
@@ -434,7 +460,7 @@ def main():
     ap.add_argument('--wait', action='store_true', help='(kept: waiting is now the rule) a pass waits for the heavy job already running on this computer')
     ap.add_argument('--lock-timeout', type=int, default=HL.DEFAULT_TIMEOUT, metavar='SECONDS', help=f'how long a pass waits for the heavy lock before giving up (exit 3, it does not run anyway); default {HL.DEFAULT_TIMEOUT}, 0: no end')
     ap.add_argument('--no-wait', action='store_true', help='refuse to start (exit 3) instead of waiting when another heavy job runs on this computer')
-    ap.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help=f'worker processes (default {DEFAULT_JOBS}: the physical cores less two; 1 runs in this process)')
+    ap.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help=f'worker processes (default {DEFAULT_JOBS}: a wide pass names its number, at the end of the day; 1 runs in this process)')
     ap.add_argument('--list', action='store_true', help='show the areas, the journeys and the cases chosen, and exit (nothing runs)')
     args = ap.parse_args()
 
@@ -508,7 +534,8 @@ def main():
         PREV_SECS.update({c['id']: c.get('secs', 0) / max(1, c.get('runs', 1)) for c in json.loads(REPORT.read_text(encoding='utf-8'))['cases']})
     except (OSError, ValueError, KeyError, TypeError):
         pass
-    server, base = start_server()
+    install_exit_handlers()
+    server, base = start_server(parent=not args.keep_server)
     if not args.keep_server:
         atexit.register(stop_server, server)
     else:
@@ -530,7 +557,7 @@ def main():
             mp = multiprocessing.get_context('spawn')
             # the longest jobs first (last report's seconds per run): a slow case never starts last, alone
             browser_jobs.sort(key=lambda j: -PREV_SECS.get(j[0], 0))
-            with mp.Pool(n_workers, initializer=lib.worker_init, initargs=(base,)) as pool:
+            with mp.Pool(n_workers, initializer=lib.worker_init, initargs=(base, os.getpid())) as pool:
                 # the runs are given out one by one, at most `limit` at a time: after CRASH_LIMIT crashes the limit drops to LOW_JOBS
                 done, todo, limit, busy, crashes = queue.Queue(), list(browser_jobs), n_workers, 0, 0
                 while todo or busy:
@@ -541,7 +568,7 @@ def main():
                                                                                  'status': 'ERROR', 'measured': f'worker failed: {type(e).__name__}: {str(e)[:160]}',
                                                                                  'expected': 'no crash', 'rule': '', 'secs': 0}))
                         busy += 1
-                    r = done.get()
+                    r = wait_result(done)
                     busy -= 1
                     all_runs.setdefault(r['id'], []).append(r)
                     crashes += 1 if r.get('crashed') else 0

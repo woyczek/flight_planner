@@ -889,12 +889,16 @@ class StaticCtx(Asserts):
 _W = {}
 
 
-def worker_init(base):
-    """Starts a Playwright browser in a worker process (one browser per worker, one fresh context per run)."""
+def worker_init(base, parent=None):
+    """Starts a Playwright browser in a worker process (one browser per worker, one fresh context per run).  `parent`: the pass that owns this worker;
+    when that process is gone (killed the hard way) the worker closes its browser and exits (parent_watch.py), it never lives on alone."""
     from playwright.sync_api import sync_playwright
     load_cases()
     pw = sync_playwright().start()
     _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else pw.chromium.launch(args=['--no-sandbox']))
+    if parent:
+        import parent_watch
+        parent_watch.watch(parent, worker_close)
 
 
 # a file the static server failed to give (not a fault of the page): the run is played once more, and the report says so
