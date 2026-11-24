@@ -152,7 +152,9 @@ const placeOf = p => {
     lon = num(p.lon);
   return name || lat !== null ? {
     name,
-    icao: icaoOf(name),
+    icao: placeIcao(
+      p
+    ), // SOG-0618 : le code ÉCRIT du lieu (son champ `icao`) d'abord, sinon celui de la fin de son nom ; un lieu sans code reste lu (son nom, sa position)
     lat,
     lon
   } : null;

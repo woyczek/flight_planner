@@ -3220,6 +3220,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — a mission's place is read with its explicit icao (SOG-0618 a)
+
+- **Fact**: `readMission` → `placeOf` took the code of a place only from the end of its name (`icaoOf`); `placeIcao` (the written `icao` first, then the name) served the register only. A mission whose origin is `{ name: 'Nantes', icao: 'LFRS', lat, lon }` reached Fuel with no code: « ? → ? ».
+- **Decision**: `placeOf` uses `placeIcao`: the written `icao` when it is a field code (`isCode`), else the code at the end of the name, else `''`; the name and the position are read in every case.
+- **Case A394** (an invented mission: explicit icao without a code in the name, explicit icao that is not a code, a place with no code): red before (`['', '']`), green after.
+
 ## 24 November 2026 — the position that dies in flight is said; the request is bounded; a write that fails is not « written » (SOG-0622)
 
 - **Fact** (the user's flight): 2 min 30 after « Démarrer le vol » the current flight stopped being written; the last position was the one where the simulator was loaded BEFORE a change of place; X-Plane, asked directly, answered right; the launcher's logbook kept writing. Cause read in `tools/sim_position.py` and reproduced by BUGS SOG on a simulated X-Plane: ids of datarefs resolved once and kept; an old id could answer 200 with a null or another dataref's value (204 forever, or a WRONG position). Fixed at the launcher: ids resolved by name at every pass, a position returned only from a fresh read, else 204.

@@ -12563,3 +12563,20 @@ def a393(c):
     c.js("() => { window.__fail = false }")
     c.until("window.__ok >= 1", timeout=40000, what='the write works again: the next fix is written')
     c.check_errors()
+
+
+@case('A394', 'A mission\'s place is read with its EXPLICIT icao (SOG-0618 a): an origin and a destination whose `icao` is written are read with that code even when the name ends with no code; a written icao that is not a field code falls back to the code at the end of the name; a place with neither keeps its name and its position', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0618 (lot 0, the user's flight: « ? → ? » in the notification): frame/lib/mission.js placeOf read only the code in parentheses at the end of the name (icaoOf); the written `icao` field was read only by the register (placeIcao)")
+def a394(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => { const M = await import('/frame/lib/mission.js'), mk = (o, d) => M.readMission({ mission: { id: 'X-001', type: 'regular' }, origin: o, destination: d });
+      const a = mk({ name: 'Nantes', icao: 'LFRS', lat: 47.15, lon: -1.61 }, { name: 'Base de test', icao: 'LFML', lat: 43.43, lon: 5.21 });
+      const b = mk({ name: 'Nantes (LFRS)', icao: 'XX', lat: 47.15, lon: -1.61 }, { name: 'Terrain', lat: 43.43, lon: 5.21 });
+      const e = mk({ name: 'Sans code', lat: 47.0, lon: -1.0 }, { name: 'Sans code non plus' });
+      return { a: [a.origin.icao, a.destination.icao, a.origin.name, a.origin.lat], b: [b.origin.icao, b.destination.icao], e: [e.origin.icao, e.origin.name, e.origin.lat, e.destination.icao, e.destination.name] } }""")
+    c.eq(r['a'], ['LFRS', 'LFML', 'Nantes', 47.15], 'the written icao is read even when the name ends with no code; the name and the position stay', what='explicit icao')
+    c.eq(r['b'], ['LFRS', ''], 'a written icao that is not a field code falls back to the code at the end of the name; no code anywhere: empty', what='fallback')
+    c.eq(r['e'], ['', 'Sans code', 47.0, '', 'Sans code non plus'], 'a place with no code at all keeps its name and its position (read, not dropped)', what='no code')
+    c.check_errors()
