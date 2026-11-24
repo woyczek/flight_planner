@@ -1005,6 +1005,10 @@ export async function mount(el, ctx) {
   // page, la première page à la liste
   s.onPop = () => {
     if (S !== s) return;
+    // SOG-0609 : un popstate qui QUITTE Missions (le ⚙ vers #settings, un écran du cadre posé par-dessus le module, qui reste monté) n'est
+    // pas le sien : rien n'est touché. Le saut de l'entrée périmée ci-dessous y ramenait l'adresse à Missions 3 ms après, et l'atelier se
+    // fermait ; l'entrée reste marquée périmée, sautée au Retour qui revient dans Missions
+    if (!missionsHash(location.hash)) return;
     // SOG-0487 : l'entrée de la fiche, devenue sans objet (on a quitté le registre par un geste, ou cherché) : sautée, le Retour fait ce
     // qu'il aurait fait sans elle
     if (!s.open && s.reg?.staleSheet) {
@@ -2177,6 +2181,10 @@ function regSheetPush(s) {
     missions: 'regsheet'
   }, '', location.href);
   r.sheetPushed = true;
+}
+/** SOG-0609 : l'adresse est-elle celle de Missions (#missions, #missions?…) — ou vide, celle du module montré par défaut ? */
+function missionsHash(h) {
+  return h === '' || h === '#' || /^#missions(?:[?&/]|$)/.test(h);
 }
 /** SOG-0487 : la fiche se ferme sans le Retour du navigateur (un geste quitte le registre, une recherche, un filtre) : son entrée
  *  d'historique, s'il y en a une, devient sans objet et sera sautée au prochain Retour (s.onPop). */
