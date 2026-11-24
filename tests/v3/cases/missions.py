@@ -15793,7 +15793,7 @@ def n249(c):
 
 @case('N250', 'Missions › the yes / no of a file and « something is written » are the reader\'s (SOG-0468, point 4): MS.yes(v, dflt) and MS.written(v) of frame/lib/mission.js '
       'give this truth table, the one the three former copies (editor.js, editor_drawers.js, the reader) all gave', 'N', tags=('missions',), designs=('standard',),
-      screens=False, langs4=False, phone=False, night=False,
+      screens=True, langs4=False, phone=False, night=False,
       rule='SOG-0468 point 4: false, 0, « no », « non », « false », « 0 » (any case, blanks around) say no; nothing written (absent, null, empty) gives the default; a blank text is written')
 def n250(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -15827,7 +15827,7 @@ def n251(c):
 
 @case('N252', 'Missions › the trigram and the mission id of a book are the reader\'s (SOG-0468, point 2): MS.triOf and MS.midOf of frame/lib/mission.js trim, uppercase and test '
       '(three capitals; « A-001A »), and give \'\' for anything else, a non-text included', 'N', tags=('missions',), designs=('standard',),
-      screens=False, langs4=False, phone=False, night=False,
+      screens=True, langs4=False, phone=False, night=False,
       rule='SOG-0468 point 2: one rule for the trigram and the mission id, the one bookPath and the assignment already applied (the two former triOf gave the same answer)')
 def n252(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
