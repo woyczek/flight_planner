@@ -3348,8 +3348,10 @@ export function edAfter(s) {
       DRAFT_LIVE = null;
       if (live?.ed) {
         const dirty = edDirty(live.ed);
-        // SOG-0607 : la mission en cours survit au départ du module (la mémoire de CETTE page, jamais le stockage) : le retour sur Missions la rouvre
-        KEPT_ED = live.ed;
+        // SOG-0607 : la mission en cours survit au départ du module (la mémoire de CETTE page, jamais le stockage) : le retour sur Missions la
+        // rouvre — seulement quand elle a changé ET que le stockage a refusé son brouillon (le cas où le cadre n'a rien demandé et où le
+        // travail serait perdu) ; un atelier intact, ou quitté sur « Quitter sans enregistrer », n'a pas à revenir
+        if (dirty && live.ed.draftRefused) KEPT_ED = live.ed;
         // le cadre a laissé partir un atelier changé (son brouillon le garde, edDeclare) : une seule notification, une fois l'écrit CONFIRMÉ
         if (edDraftLast(live, live.ed) && dirty) edDraftSaid(live, live.ed);
       }
@@ -5378,13 +5380,9 @@ function edDraftWrite(s, e) {
     DF.pruneDrafts(s.ctx, key).catch(() => 0); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
     if (e.draftRefused) { // un refus a été dit : l'écrit confirmé le clôt et le dit (une fois)
       e.draftRefused = false;
-      try {
-        s.ctx.notify(s.tt(EDTX.draftKept), 'info');
-      } catch {
-        // le cadre n'a plus d'écran où le dire : rien de plus à faire
-      }
+      edKeptSay(s, e, doc);
     }
-    return true;
+    return doc; // le document que cet écrit a confirmé (edDraftSaid le lit)
   }, x => {
     edDraftFailed(s, e, doc, x);
     return false;
@@ -5393,11 +5391,23 @@ function edDraftWrite(s, e) {
 }
 
 /** « Brouillon gardé » (une notification), SEULEMENT quand le dernier écrit du brouillon de la séance est CONFIRMÉ (SOG-0607) : un écrit
- *  refusé ne dit jamais « gardé » (il a dit « Mission non enregistrée : … », edDraftFailed). */
+ *  refusé ne dit jamais « gardé » (il a dit « Brouillon non gardé : … », edDraftFailed). */
 function edDraftSaid(s, e) {
-  (e.draftWrite || Promise.resolve(false)).then(ok => {
-    if (ok) s.ctx.notify(s.tt(EDTX.draftKept), 'info');
+  (e.draftWrite || Promise.resolve(false)).then(doc => {
+    if (doc) edKeptSay(s, e, doc);
   }).catch(() => 0);
+}
+
+/** Dit « Brouillon gardé » pour le document `doc` CONFIRMÉ, une seule fois pour ce document : la sortie et la fin d'un épisode de refus
+ *  peuvent confirmer le même écrit (un démontage suivi d'un remontage) — il ne se dit pas deux fois. Un refus remet le compte à zéro. */
+function edKeptSay(s, e, doc) {
+  if (e.keptSaid === doc) return;
+  e.keptSaid = doc;
+  try {
+    s.ctx.notify(s.tt(EDTX.draftKept), 'info');
+  } catch {
+    // le cadre n'a plus d'écran où le dire : rien de plus à faire
+  }
 }
 
 /** L'écrit du brouillon est REFUSÉ (SOG-0607) : le prochain changement réessaie, et l'auteur l'apprend — « Brouillon non gardé : il sera perdu
@@ -5405,6 +5415,7 @@ function edDraftSaid(s, e) {
  *  reste la tête de l'échec du bouton « Enregistrer ». Aucune exception. */
 function edDraftFailed(s, e, doc, x) {
   if (e.draftDoc === doc) e.draftDoc = null;
+  e.keptSaid = null; // un refus : le prochain écrit confirmé se dira de nouveau
   if (e.draftRefused)
     return; // un épisode de refus se dit une fois ; un écrit confirmé le clôt (edDraftWrite), un nouveau refus le dit de nouveau
   e.draftRefused = true;

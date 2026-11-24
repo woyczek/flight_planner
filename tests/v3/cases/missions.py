@@ -15959,16 +15959,25 @@ def n256(c):
         c.eq(len(said('Brouillon non gardé')), 1, f'{width}: a second change, refused again, does not say it again', what='once per episode')
         c.eq(said('Brouillon gardé'), [], f'{width}: « Brouillon gardé » is never said while the writes are refused', what='never kept')
         c.eq(said('Mission non enregistrée'), [], f'{width}: « Mission non enregistrée » is not the head of a draft', what='not the save failure')
-        # leaving Missions: no question, the module is unmounted
+        # leaving the workshop by the gear's address (« #settings »): either Settings opens OVER Missions, which stays mounted (an overlay of
+        # the frame), or the popstate of the registry sends the address back and Missions is mounted again (module.js `s.onPop`, SOG-0609,
+        # measured 24 Nov) — in both, the work is there, without a question
         c.js("location.hash = '#settings'")
-        c.until(f"!document.querySelector('{E}')", timeout=20000, what='Missions left for Settings')
         c.wait(1500)
-        c.eq(c.count('.f-modal'), 0, f'{width}: leaving Missions asks nothing (the question waits for the frame)', what='no question')
+        c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title + ' bis')}", timeout=20000,
+                what='after « #settings », the workshop still holds the changed title')
+        c.eq(c.count('.f-modal'), 0, f'{width}: leaving asks nothing (the question waits for the frame)', what='no question')
         c.eq(said('Brouillon gardé'), [], f'{width}: leaving with refused writes does not say « Brouillon gardé »', what='never kept (leave)')
-        # the return, the quota lifted: the workshop is open again, the title is there, the write is retried
+        # the quota lifted, then ANOTHER MODULE (« #aircraft »): Missions is unmounted for sure — the address stays there, or the popstate of
+        # the registry sends it back (SOG-0609) — and Missions again: the kept workshop comes back in a NEW element, the write is retried
         c.js('window.__failDraft = false')
-        c.js("location.hash = '#missions'")
-        c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title + ' bis')}", timeout=20000, what='the workshop open again with the changed title')
+        c.js(f"window.__edEl = document.querySelector('{E}')")
+        c.js("location.hash = '#aircraft'")
+        c.wait(2000)
+        if not c.js("location.hash.startsWith('#missions')"):
+            c.js("location.hash = '#missions'")
+        c.until(f"!!document.querySelector('{E}') && document.querySelector('{E}') !== window.__edEl && document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title + ' bis')}",
+                timeout=20000, what='Missions mounted again: the kept workshop open again with the changed title')
         for _ in range(40):
             if said('Brouillon gardé'):
                 break
