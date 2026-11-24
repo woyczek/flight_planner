@@ -193,7 +193,7 @@
     /** SOG-0617 (e) : la section de MA mission dont le vol est démarré ne montre QUE la ligne « Position » (ni titre, ni « data-mine ») ; avec elle,
      *  « vide » veut dire : rien des tiroirs. */
     posOnly = () => !!sec() && sec().hidden === false && !sec().hasAttribute('data-mine') && sec().children.length === 1 &&
-      !!sec().querySelector(':scope > p[data-dw-pos]') && !sec().querySelector('h3'),
+    !!sec().querySelector(':scope > p[data-dw-pos]') && !sec().querySelector('h3'),
     askBtn = () => q('[data-actslot] > [data-dw-ask]'),
     /** L'ordre de la rangée des actions : « Préparer ce vol », la place (et ce qu'elle porte), puis le reste. */
     order = () => [...(q('.ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? `slot(${[...e.children].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join()})` : e.dataset.do || e.tagName).join(
@@ -302,7 +302,10 @@
     .synced ===
     1 && sec().hasAttribute('data-mine') && !/Tiroir/.test(sec().textContent), [sec().textContent, ctx.synced]);
   await until(() => !!q('[data-dw="C"][data-open]'));
-  ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre (« ouvert à l\'heure ») ; aucune note « Suite de la mission » : le bloc est à l'écran (SOG-0617, le veilleur de la page dit l'arrivée quand il n'y est pas)',
+  ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre (« ouvert à l\'heure ») ; aucune note « Suite de la mission » : le bloc est à l'
+    écran(SOG - 0617, le veilleur de la page dit l 'arrivée quand il n'
+      y est pas)
+    ',
     q('[data-dw="C"]')?.dataset.open === 'time' && /^ouvert à l'heure, à \d\d:\d\dZ$/.test(text('[data-dw="C"] [data-dw-how]')) && text(
       '[data-dw="C"] [data-dw-text]').includes('CYRANO') && !ctx.notes.some(n => n[0] === 'ok'), [text('[data-dw="C"]'), ctx.notes]);
   ck('après la réponse la commande se repose (désactivée, « data-dw-rest »), puis se réarme d\'elle-même ; le panneau est fermé', askBtn()
@@ -379,8 +382,10 @@
     }
   }));
   await until(() => !!q('[data-dw="D"][data-open]'));
-  ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous — « ouvert au passage de la zone par BBB, à … », aucune note (le bloc est à l'écran) ; reçu dans la minute : pas de « reçu ici »',
-    q('[data-dw="D"]')?.dataset.open === 'zone' && /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ$/.test(text(
+  ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous — « ouvert au passage de la zone par BBB, à … », aucune note (le bloc est à l'
+    écran);
+  reçu dans la minute: pas de« reçu ici» ',
+  q('[data-dw="D"]')?.dataset.open === 'zone' && /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ$/.test(text(
       '[data-dw="D"] [data-dw-how]')) && text('[data-dw="D"] [data-dw-text]').includes('Zone atteinte.') && ctx.notes.length ===
     notesBefore, [text('[data-dw="D"]'), ctx.notes.slice(notesBefore)]);
   await until(() => ctx.store.has(SEEN));
@@ -841,7 +846,8 @@
   ck('le vol de cette mission est démarré, l\'appareil a une position et suit la zone : RIEN à l\'écran (plus de « Cet appareil suit ce passage »)',
     ctx.live.subs.size === 1 && empty() && !/Cet appareil/.test(stage.textContent), sec().outerHTML);
   ck('SOG-0617 (e) : la section ne montre que la ligne « Position : X-Plane, reçue il y a n s », sans titre « Suite de la mission » ni « data-mine »',
-    posOnly() && /^Position : X-Plane, reçue il y a \d+ s$/.test(text('[data-dw-pos]')) && !/Suite de la mission/.test(sec().textContent), sec().outerHTML);
+    posOnly() && /^Position : X-Plane, reçue il y a \d+ s$/.test(text('[data-dw-pos]')) && !/Suite de la mission/.test(sec().textContent),
+    sec().outerHTML);
   ctx.live.emit({
     lat: 44.7,
     lon: -1.5
@@ -921,7 +927,8 @@
   ck('« Demander » à portée (la position revenue) : le constat est écrit (« object », le trajet à portée), « Suite de la mission » l\'ouvre et sa notification le dit',
     ob?.how === 'object' && ob.from?.lat === 44.61 && ob.to?.lat === 44.6 && /^ouvert quand vous avez trouvé l'objet, à \d\d:\d\dZ$/.test(
       text(
-        '[data-dw="B"] [data-dw-how]')) && ctx.notes.slice(nObj).length === 0 && text('[data-dw="B"] [data-dw-msg]') === 'Radeau confirmé.', [ob, ctx.notes.slice(nObj)]);
+        '[data-dw="B"] [data-dw-how]')) && ctx.notes.slice(nObj).length === 0 && text('[data-dw="B"] [data-dw-msg]') ===
+    'Radeau confirmé.', [ob, ctx.notes.slice(nObj)]);
   DV.stop();
   // l'objet que l'auteur ne veut pas déclaré (confirm: false) : la portée ouvre seule
   ctx = fakeCtx({
