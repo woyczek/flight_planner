@@ -12441,3 +12441,28 @@ def a390(c):
     c.wait(500)
     c.eq(c.js("() => [!!document.querySelector('[data-module=hello][data-mark=kept]'), window.__mounts]"), [True, 1], 'the module is the SAME one (not unmounted, not mounted again): its work stays', what='no remount')
     c.check_errors()
+
+
+
+
+@case('A387', 'A notification of a kind the frame does not know is said in the CONSOLE, never to the pilot (the ergonomist, 24 Nov): notify(text, \'error\') shows the note as an information and warns once per kind in the console; the four kinds err, warn, ok, info warn nothing', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="the ergonomist, 24 Nov: the workshop passed the kind 'error' (unknown to the frame): the note was shown without a sound, in the default style, and left after 6 s; frame/app.js NOTE_KINDS, notify()")
+def a387(c):
+    told = []
+    c.page.on('console', lambda m: told.append(m.text) if m.type == 'warning' and m.text.startswith('notify') else None)
+    c.open('hello')
+    c.until("!!window.SogFrame && typeof window.SogFrame.notify === 'function'", timeout=20000, what='the frame')
+    c.wait(500)
+    told.clear()
+    c.js("() => { window.__kinds = {}; window.addEventListener('frame-note', e => { window.__kinds[e.detail.key] = e.detail.kind }) }")
+    c.js("() => { const n = window.SogFrame.notify; for (const k of ['err', 'warn', 'ok', 'info']) n('kind ' + k, k, { key: 'k-' + k }) }")
+    c.wait(300)
+    c.eq(told, [], 'the four known kinds say nothing in the console', what='known kinds')
+    c.js("() => { const n = window.SogFrame.notify; n('unknown kind', 'error', { key: 'k-error' }); n('unknown kind again', 'error', { key: 'k-error2' }); n('another', 'success', { key: 'k-success' }) }")
+    c.until("(window.__notes || []).includes('unknown kind')", what='the note is still shown')
+    c.eq(len(told), 2, 'one warning per unknown kind (error once, success once)', what='warnings')
+    c.ok("error" in told[0] and "success" in told[1], told, 'the warning names the kind and nothing else of the note')
+    c.ok(not any('unknown kind' in x for x in told), told, 'the text of the note is not written in the console')
+    c.eq(c.js("() => window.__kinds"), {'k-err': 'err', 'k-warn': 'warn', 'k-ok': 'ok', 'k-info': 'info', 'k-error': 'info', 'k-error2': 'info', 'k-success': 'info'}, 'the notes of an unknown kind are announced and shown as an information; the four known kinds are kept', what='kinds')
+    c.check_errors()

@@ -3220,6 +3220,13 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — a note of an unknown kind is said in the console; Naviair's promise is withdrawn (the ergonomist; SOG-0615)
+
+- **Fact**: the workshop passed `'error'` to `notify`. The frame knows `err`, `warn`, `ok`, `info`: any other kind was shown in the default style, without a sound, and left after 6 s. 25 calls of the suite did it (modules/missions 9, shared 7, apps/cpco 9); the 16 of `shared/` and `apps/` go through `AppFramework.notify` (V2, frozen, promised to replacement), which already aliases `error` → `err`.
+- **Decision**: the V3 frame does NOT alias (the ergonomist). `notify` shows an unknown kind as an information and says it in the console (`console.warn`, once per kind, the kind only, never the text); the chain is corrected in the modules by their owners.
+- **Cases**: A387 (the four known kinds say nothing; an unknown kind warns once, is announced and shown as `info`; red before: no warning) and the static I58 (no call of `notify` with an unknown string kind in `NOTIFY_KIND_SCOPES`, `['frame']` at first; never red at a push; the whole suite scanned by hand before the owners' lots: 25 lines).
+- **Naviair** (`frame/aerodb/catalogue.js`, SOG-0615): the promise « à déposer ; lecture à venir (le lanceur ne lit rien, le lecteur local n'est pas encore livré) » is withdrawn: the suite is frozen and no reader is planned. The card says « État : non lu par la suite. » ×4; the word is fixed (not tied to the launcher's « no reader » state, which does not exist yet) and is lifted at the thaw (SOG-0614).
+
 ## 24 November 2026 — a module's change of view is the address the Back brings back (SOG-0609, found by Features, case N254)
 
 - **Fact**: `setModuleView(id, name)` (the module's `ctx.view`) pushes `#missions?view=registry` without a `hashchange` (the module stays mounted) but did not update `lastScreen.hash`, which `consumeQuery` and the panes do. `openOver` took `returnHash = '#missions'`; when Settings was closed (Back), `route()` compared `#missions?view=registry` with it, saw another address, and unmounted then mounted the module again: the workshop was lost, at 390 as at 1280.

@@ -1063,9 +1063,20 @@
   const NOTE_ARM_MS = 400;
   const NOTE_QUEUE_MAX = 8,
     noteQueue = []; // les notes qui attendent leur tour sur un téléphone (SOG-0131)
+  // Les quatre genres que le cadre connaît (faute de classe de l'atelier, qui passait 'error' : la note s'affichait sans bruit, dans le style par défaut, et partait en 6 s) : tout autre genre est
+  // montré comme une information ET dit dans la console (une fois par genre), jamais au pilote.
+  const NOTE_KINDS = ['err', 'warn', 'ok', 'info'],
+    kindsTold = new Set();
   /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
    *  { label, run } : un bouton d'action, et la notification reste jusqu'au clic. */
   function notify(text, kind = 'info', o = {}) {
+    if (!NOTE_KINDS.includes(kind)) {
+      if (!kindsTold.has(kind)) {
+        kindsTold.add(kind);
+        console.warn(`notify : le genre « ${String(kind).slice(0, 20)} » est inconnu (err, warn, ok ou info) : la note est montrée comme une information`);
+      }
+      kind = 'info';
+    }
     // une note par clé (par défaut : sa sorte et son texte) : la même note remplace celle qui est affichée (ou celle qui attend) au lieu de s'empiler
     const key = o.key || `${kind}|${text}`;
     for (const old of $('fNotes').querySelectorAll('.f-note'))

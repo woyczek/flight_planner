@@ -1026,8 +1026,9 @@
       'El archivo AIP_OFFLINE.zip (eAIP sin conexión, unos 1 GB), dejado en Descargas: solo se leen algunas páginas.'
     ]
   }, {
-    // Danemark (Naviair) : source déposée à la main, lecture À VENIR (SOG-0189 / SOG-0153, 10 nov. 2026). Rien n'est lu par le lanceur ;
-    // le futur lecteur local écrira dans data/local seulement, jamais dans sia/base (les conditions de l'AIP danois, GEN 0.1 § 6,
+    // Danemark (Naviair) : source déposée à la main, NON LUE par la suite (SOG-0189 / SOG-0153, 10 nov. 2026 ; SOG-0615 : la promesse « lecture à venir » est retirée, la suite est en gel et
+    // aucun lecteur n'est prévu — le mot est fixe, il se lèvera au dégel, SOG-0614). Rien n'est lu par le lanceur ;
+    // un lecteur local, s'il existait, écrirait dans data/local seulement, jamais dans sia/base (les conditions de l'AIP danois, GEN 0.1 § 6,
     // interdisent toute reproduction sans accord écrit de l'autorité : frame/aerodb/NAVIAIR_LICENCE_REQUEST.md).
     id: 'naviair',
     localOnly: true,
@@ -1269,10 +1270,10 @@
     n: ['Naviair (AIP du Danemark)', 'Naviair (AIP Denmark)', 'Naviair (AIP Dänemark)', 'Naviair (AIP de Dinamarca)'],
     url: 'https://aim.naviair.dk/en/',
     gives: [
-      'Les routes (ENR 3.2), les espaces (ENR 2.1) et les procédures (AD 2) du Danemark : à déposer ; lecture à venir (le lanceur ne lit rien, le lecteur local n’est pas encore livré).',
-      'The routes (ENR 3.2), airspaces (ENR 2.1) and procedures (AD 2) of Denmark: to be dropped by hand; reading to come (the launcher reads nothing, the local reader is not delivered yet).',
-      'Die Strecken (ENR 3.2), Lufträume (ENR 2.1) und Verfahren (AD 2) Dänemarks: von Hand abzulegen; Lesen folgt (der Launcher liest nichts, der lokale Leser ist noch nicht geliefert).',
-      'Las rutas (ENR 3.2), los espacios (ENR 2.1) y los procedimientos (AD 2) de Dinamarca: a depositar a mano; lectura por venir (el lanzador no lee nada, el lector local aún no está entregado).'
+      'Les routes (ENR 3.2), les espaces (ENR 2.1) et les procédures (AD 2) du Danemark. État : non lu par la suite.',
+      'The routes (ENR 3.2), airspaces (ENR 2.1) and procedures (AD 2) of Denmark. State: not read by the suite.',
+      'Die Strecken (ENR 3.2), Lufträume (ENR 2.1) und Verfahren (AD 2) Dänemarks. Stand: von der Suite nicht gelesen.',
+      'Las rutas (ENR 3.2), los espacios (ENR 2.1) y los procedimientos (AD 2) de Dinamarca. Estado: no leído por la suite.'
     ],
     pub: 'Naviair (Danemark), pour la Trafikstyrelsen',
     credit: ['Source : Naviair, AIP Danemark', 'Source: Naviair, AIP Denmark', 'Quelle: Naviair, AIP Dänemark',

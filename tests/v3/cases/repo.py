@@ -3918,6 +3918,7 @@ def i57(c):
                 raw.append(f'{rel}:{n}')
     c.eq(cause, [], 'the cause « le stockage de cet appareil » is written only in frame/app.js', what='cause elsewhere')
     c.eq(raw, [], 'no notification of the frame shows the raw message of an error', what='raw message in a notification')
+<<<<<<< HEAD
 
 
 @case('I59', 'Launcher, simulator position (SOG-0622): a WRONG position is worse than none — the ids are resolved by name at each pass, so an old id that answers 200 (a frozen value, no value, the value of another dataref) never makes a position; none is given while the reading is not verified; the right one is given at once after a change of place', 'I', static=True,
@@ -4001,3 +4002,72 @@ def i59(c):
         S._get = saved
         S._down.clear()
         S._last[0], S._last[1] = 0.0, None
+||||||| parent of 7f0577bf4 (:bug: Cadre : un genre de note que le cadre ne connaît pas est dit dans la console, jamais au pilote ; la carte de Naviair ne promet plus de lecteur (décision de l'ergonome, SOG-0615) — l'atelier passait 'error' à notify : le cadre ne connaît que err, warn, ok et info, la note s'affichait sans bruit, dans le style par défaut, et partait en 6 s ; notify la montre maintenant comme une information et le dit dans la console, une fois par genre (le genre seulement, jamais le texte), sans alias (la chaîne se corrige dans les modules) ; cas A387 (rouge avant : aucun avertissement) et I58 (statique : aucun genre inconnu dans les périmètres corrigés, frame/ d'abord ; shared/ et apps/ passent par AppFramework.notify, qui aliase déjà) ; Naviair : « à déposer ; lecture à venir » retiré, « État : non lu par la suite. » ×4, mot fixe jusqu'au dégel (SOG-0614))
+=======
+
+
+def _notify_kind_calls(src):
+    """The calls of notify( … ) whose second argument is a string literal: [(line, kind)]. A small scanner of parentheses (strings, templates and comments skipped), not a parser."""
+    out = []
+    n = len(src)
+    for m in re.finditer(r'\bnotify\s*\??\.?\s*\(', src):
+        i, depth, args, cur = m.end(), 1, [], ''
+        while i < n and depth:
+            ch = src[i]
+            if ch in '\'"`':
+                j = i + 1
+                while j < n and src[j] != ch:
+                    j += 2 if src[j] == '\\' else 1
+                cur += src[i:j + 1]
+                i = j + 1
+                continue
+            if src.startswith('//', i):
+                i = src.find('\n', i)
+                i = n if i < 0 else i
+                continue
+            if src.startswith('/*', i):
+                i = src.find('*/', i) + 2
+                continue
+            if ch in '([{':
+                depth += 1
+            elif ch in ')]}':
+                depth -= 1
+                if depth == 0:
+                    break
+            if ch == ',' and depth == 1:
+                args.append(cur.strip())
+                cur = ''
+            else:
+                cur += ch
+            i += 1
+        args.append(cur.strip())
+        if len(args) >= 2:
+            lit = re.fullmatch(r"""['"]([A-Za-z_-]+)['"]""", args[1])
+            if lit:
+                out.append((src.count('\n', 0, m.start()) + 1, lit.group(1)))
+    return out
+
+
+# The perimeter of this case is the notify of the V3 FRAME (ctx.notify, SogFrame.notify): frame/ first, then the modules as their owners correct their lots (each one adds its folder here).
+# OUT OF PERIMETER: shared/ and apps/ (apps/cpco included): they call AppFramework.notify, the V2 framework, which is frozen and promised to replacement and ALREADY aliases 'error' -> 'err'
+# (shared/app_framework.js, notify): nothing to correct there. The V3 frame does NOT alias (the ergonomist's decision, 24 Nov): the chain is corrected in the modules, the frame's console says an
+# unknown kind, and this case forbids it. The whole suite was red before: 25 calls of 'error' (modules/missions 9, shared 7, apps/cpco 9; the 16 of shared/ and apps/ work through the V2 alias).
+NOTIFY_KIND_SCOPES = ['frame']
+
+
+@case('I58', 'No call of notify passes a kind the frame does not know (err, warn, ok, info) in the perimeters that are corrected (frame/ first; each owner widens NOTIFY_KIND_SCOPES with its lot): « error » was shown without a sound, in the default style, and left after 6 s', 'I', static=True,
+      rule='the ergonomist, 24 Nov: the workshop passed the kind \'error\' to the notify of the V3 frame; the frame says an unknown kind in the console and shows it as an information. Perimeter: the V3 frame notify only (frame/, then the modules as their lots correct them); shared/ and apps/ (apps/cpco included) are OUT of perimeter: they call AppFramework.notify, the frozen V2 framework promised to replacement, which already aliases \'error\' -> \'err\'; the V3 frame does not alias')
+def i58(c):
+    probe = "notify('x', 'error'); ctx.notify?.(t(a, {\n  n: 1\n}), 'warn'); S.ctx.notify(`a ${b}`, kind); notify('y', 'err', { k: 1 });"
+    c.eq(_notify_kind_calls(probe), [(1, 'error'), (1, 'warn'), (3, 'err')], 'the scanner reads the second argument of notify( … ) and only a string literal (the line is the one the call starts on; a variable kind is not read)', what='scanner')
+    bad = []
+    for scope in NOTIFY_KIND_SCOPES:
+        for p in sorted((c.root / scope).rglob('*.js')):
+            rel = p.relative_to(c.root).as_posix()
+            if '/test/' in rel or rel.endswith('docs_bundle.js'):
+                continue
+            for line, kind in _notify_kind_calls(p.read_text(encoding='utf-8')):
+                if kind not in ('err', 'warn', 'ok', 'info'):
+                    bad.append(f'{rel}:{line} ({kind})')
+    c.eq(bad, [], 'no call of notify with an unknown kind in the corrected perimeters', what='unknown kinds')
+>>>>>>> 7f0577bf4 (:bug: Cadre : un genre de note que le cadre ne connaît pas est dit dans la console, jamais au pilote ; la carte de Naviair ne promet plus de lecteur (décision de l'ergonome, SOG-0615) — l'atelier passait 'error' à notify : le cadre ne connaît que err, warn, ok et info, la note s'affichait sans bruit, dans le style par défaut, et partait en 6 s ; notify la montre maintenant comme une information et le dit dans la console, une fois par genre (le genre seulement, jamais le texte), sans alias (la chaîne se corrige dans les modules) ; cas A387 (rouge avant : aucun avertissement) et I58 (statique : aucun genre inconnu dans les périmètres corrigés, frame/ d'abord ; shared/ et apps/ passent par AppFramework.notify, qui aliase déjà) ; Naviair : « à déposer ; lecture à venir » retiré, « État : non lu par la suite. » ×4, mot fixe jusqu'au dégel (SOG-0614))
