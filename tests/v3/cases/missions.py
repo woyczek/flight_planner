@@ -15867,12 +15867,12 @@ def n253(c):
     c.eq(found, [], 'no own trigram / mission-id form, no own triOf / midOf in the module', what='own id rules')
 
 
-@case('N254', 'Missions › « Annuler » when js-yaml does not load still asks the frame\'s question (SOG-0468, point 3): the reader cannot be loaded (its file is refused), '
+@case('N257', 'Missions › « Annuler » when js-yaml does not load still asks the frame\'s question (SOG-0468, point 3): the reader cannot be loaded (its file is refused), '
       'so the registry says it cannot be read and « Créer une mission » is the way into the workshop; a title typed has no draft to keep, so « Annuler » asks '
       '« Quitter sans enregistrer ? Les changements seront perdus. » — never nothing — and « Rester » keeps the workshop', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0468 point 3: modules/missions/editor_view.js `edYamlReady` rejects when the import fails; `edLeave` keeps its own net (`.catch(() => 0)`) so that the exit falls back to `ctx.askLeave()`')
-def n254(c):
+def n257(c):
     title = 'Un titre sans lecteur'
     # every load of the reader is refused, the page's and the frame's service worker's (which keeps its own copy: a route of the page alone
     # let the second pass read that copy)
