@@ -16782,3 +16782,66 @@ def n273(c):
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
     c.js(_DW_CLEAR)
+
+
+@case('N271', 'The mission lives during the flight: with the MAP on screen (Missions not mounted, Pilot application), the drawers of the '
+      'mission of the started flight are judged — the zone crossed opens the first one and writes its finding; the note « Un message de '
+      'la mission est arrivé. » with « Ouvrir » appears (no title: an envelope) and « Ouvrir » leads to the pane of the mission in Fuel; '
+      'the status line says « Mission X-904A en cours › Brief », then the title of the drawer just opened', 'N',
+      tags=('missions', 'maps'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0617 lot 1 (the user\'s P1 in flight; the ergonomist with the mock-up of SOG-0619 for the note): before, the drawers were '
+      'judged only while the sheet of Missions was open; modules/missions/watch.js (meta.watch: the frame starts it once per page, in every '
+      'application) follows the started flight and hands its mission to the judge of drawers_run.js; the launcher and the simulator are '
+      'simulated, invented mission (the X-904A of N83)')
+def n271(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+            'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    fix = lambda lat, lon: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180,
+                            'gsKt': 120, 'source': 'xplane'}
+    now = {'fix': fix(44.9, 1.0)}  # north of the zone (its centre is at 44.8, radius 3 km)
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.context.route(re.compile(r'/__setup/sim/position'),
+                    lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**now['fix'], 'at': at(0)})))
+    BOOK, STATUS = 'pilot/ABC/missions/X-904A.json', 'cache/missions/status.json'
+    # the line of the status block, ready in the four languages (the frame shows the one of the application), and the note
+    brief = ['Mission X-904A en cours › Brief', 'Mission X-904A in progress › Brief', 'Einsatz X-904A läuft › Briefing',
+             'Misión X-904A en curso › Briefing']
+    opened = ['Mission X-904A en cours › Secteur de recherche', 'Mission X-904A in progress › Secteur de recherche',
+              'Einsatz X-904A läuft › Secteur de recherche', 'Misión X-904A en curso › Secteur de recherche']
+    note = {'fr': 'Un message de la mission est arrivé.Ouvrir', 'en': 'A message from the mission has arrived.Open',
+            'de': 'Eine Nachricht der Mission ist eingetroffen.Öffnen', 'es': 'Ha llegado un mensaje de la misión.Abrir'}[c.lang]
+    lines = lambda d: [l.get('text') for l in (d or {}).get('lines') or [] if l.get('flight') is True]
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        now['fix'] = fix(44.9, 1.0)
+        start = at(-12)
+        flight = {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': 'X-904A', 'started': {'at': start},
+                  'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+                  'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0},
+                                                                                          {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
+                            'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_LIVE_REGISTRY], ['missions/X_TIR/X-904A/missionX-904A.yaml', _DW_LIVE]])
+        c.open('maps', wait=False, docs=[['pilot/ABC/current_flight.json', flight, 'document']])
+        d = c.until_doc(STATUS, lambda d: lines(d) == [brief], f'{w} px: the status line « Mission X-904A en cours › Brief » (red before: nothing '
+                        'follows the mission outside its sheet)', timeout=30000)
+        c.eq(c.count(M), 0, f'{w} px: Missions is not mounted, the Map is on screen', what='not mounted')
+        c.wait(11000)  # two fixes at least, outside the zone: nothing opens, nothing is said
+        c.ok((c.doc(BOOK) or {}).get('drawer_B', {}).get('state') != 'open' and note not in c.notes(), c.notes(),
+             f'{w} px: outside the zone, nothing opened, no note')
+        now['fix'] = fix(44.80, 1.0)  # the next fix inside the zone
+        c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', f'{w} px: the zone crossed with the Map on screen: the '
+                    'finding written in my record', timeout=40000)
+        c.until("(w) => (window.__notes || []).includes(w)", note, timeout=15000, what=f'{w} px: the note « Un message de la mission est arrivé. » + « Ouvrir »')
+        c.ok(not any('Secteur de recherche' in n for n in c.notes()), c.notes(), f'{w} px: the note does not say the title (an envelope)')
+        c.until_doc(STATUS, lambda d: lines(d) == [opened], f'{w} px: the status line says the title of the drawer just opened', timeout=15000)
+        c.shot(f'N271_{c.design}_{w}_{c.lang}_note.png')
+        c.tap('#fNotes .f-note [data-act]')
+        c.until("location.hash.startsWith('#fuel')", timeout=10000, what=f'{w} px: « Ouvrir » leads to Fuel')
+        c.until("(() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'); return !!p && !p.hidden })()", timeout=15000,
+                what=f'{w} px: the pane of the mission open')
+        c.shot(f'N271_{c.design}_{w}_{c.lang}_pane.png')
