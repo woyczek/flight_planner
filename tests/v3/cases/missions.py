@@ -16748,6 +16748,16 @@ def n273(c):
         c.tap(f'{M} [data-list] [data-id="X-973A"]')
         c.until(f"!!document.querySelector('{S} [data-dw-now] [data-dw=\"D\"]')", timeout=30000, what='the last message under « Maintenant »')
         c.js(f"document.querySelectorAll('{S} [data-dw-before]').forEach(e => e.open = true)")
+        c.wait(200)
+        # unfolded by the pilot, « Avant » stays unfolded across a repaint of the block (a pass, a fix, the sheet redrawn): before, the repaint
+        # closed it and the « Resceller » of B hid itself (N273 unstable in a busy pass, 24 Nov)
+        # a forced repaint: the window narrows to a phone and back (the block repaints at each crossing of its matchMedia)
+        c.page.set_viewport_size({'width': 390, 'height': c.height})
+        c.wait(500)
+        c.page.set_viewport_size({'width': c.width, 'height': c.height})
+        c.wait(500)
+        kept = c.js(f"[...document.querySelectorAll('{S} [data-dw-before]')].map(e => e.open)")
+        c.ok(len(kept) >= 2 and all(kept), kept, 'the messages of « Avant » unfolded by the pilot stay unfolded after a repaint of the block')
         c.eq(states(), {'B': 'open', 'C': 'open', 'D': 'open'}, 'the three drawers are open in my record', what='before')
         # 1. the question, with the following drawers; « Annuler » changes nothing
         ask_seal('B')

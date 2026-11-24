@@ -500,6 +500,7 @@ function showDrawers(host, {
     askBtn: null, // le bouton « Demander la suite » posé dans la place de la rangée des actions de la fiche
     restTimer: 0,
     restOpen: false,
+    pastOpen: new Set(), // les messages d'« Avant » dépliés par le pilote (leurs clés) : gardés d'un dessin à l'autre
     // ce que le juge appelle : se repeindre, prévenir la fiche, remonter la section, rafraîchir la ligne « Position »
     paint: () => paint(w),
     changed: () => W === w && w.onChanged?.(),
@@ -735,23 +736,33 @@ function paintFlight(w, c) {
   }
   // (5) avant : les messages lus précédents, repliés, le plus récent d'abord ; le débrief y prend sa place comme un message ; l'ordre de mission en dernier
   const before = read.slice(0, -1).map(s => ({
+      key: `d:${s.id}`,
       at: s.at,
       title: s.title || w.tt(TX.envMsg),
       body: rowHtml(w, c, s, true)
     })),
     lines = D.debriefOf(c.states).map(l => ({
+      key: `b:${l.at}`,
       at: l.at,
       title: w.tt(TX.debriefHead),
       body: debriefRow(w, l)
     })),
     rows = [...before, ...lines].sort((a, b) => b.at - a.at);
   if (last && view?.summary) rows.push({
+    key: 'order',
     at: book?.readAt ?? null,
     title: w.tt(RD.TX.kOrder),
     body: `<p>${esc(view.summary)}</p>`
   });
-  const past = rows.length ? `<section class="dw-past" data-dw-past><p class="dw-kick">${esc(w.tt(TX.kPast))}</p>${rows.map(r => `<details class="dw-fold" data-dw-before><summary><span class="t">${esc(r.title)}</span><span class="h">${r.at != null ? esc(hhmm(r.at)) : ''}</span></summary>${r.body}</details>`).join('')}</section>` : '';
+  const past = rows.length ? `<section class="dw-past" data-dw-past><p class="dw-kick">${esc(w.tt(TX.kPast))}</p>${rows.map(r => `<details class="dw-fold" data-dw-before="${esc(r.key)}"${w.pastOpen?.has(r.key) ? ' open' : ''}><summary><span class="t">${esc(r.title)}</span><span class="h">${r.at != null ? esc(hhmm(r.at)) : ''}</span></summary>${r.body}</details>`).join('')}</section>` : '';
   w.host.innerHTML = head + arrived + now + (narrow ? past + acts : acts + past);
+  // un message d'« Avant » déplié le reste à travers les dessins (un passage, un relevé, la fiche redessinée) : sinon son « Resceller » se cachait
+  for (const d of w.host.querySelectorAll('[data-dw-before]')) d.ontoggle = () => {
+    if (W !== w) return;
+    w.pastOpen ??= new Set();
+    if (d.open) w.pastOpen.add(d.dataset.dwBefore);
+    else w.pastOpen.delete(d.dataset.dwBefore);
+  };
   w.askBtn?.remove(); // la rangée des actions de la fiche n'a plus « Demander la suite » : les gestes sont dans le bloc
   w.askBtn = null;
   clearTimeout(w.restTimer);
