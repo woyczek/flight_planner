@@ -205,6 +205,12 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 /* « Préparer ce vol » reste l'action première du Brief : la barre des gestes colle au bas de l'écran tant que la première page défile */
 [data-module="missions"] .ms-actslot{display:contents} /* SOG-0459 : la place des gestes d'« Affectation des missions » (« Demander la suite », « Lire la mission »), après « Préparer ce vol » */
 [data-module="missions"] .ms-first>.ms-actions{position:sticky;bottom:var(--f-tab-space,0px);background:var(--sog-bg,#fff);padding:6px 0;z-index:1}
+/* SOG-0619 (N267, l'ergonome : UN SEUL pied collant, celui de ce que le pilote fait MAINTENANT) : ma mission en vol — la rangée des actions
+   redescend dans le flux, en fin de fiche ; le pied ne garde que la place des gestes du bloc, collant au téléphone, absent tant qu'elle est
+   vide (à l'écran, les gestes restent dans le bloc et la place reste vide : pas de barre collante vide) */
+[data-module="missions"] .ms-first>.ms-actions.ms-actflow{position:static;padding:0}
+[data-module="missions"] .ms-first>.ms-dwfoot:not(:has([data-actslot]>*)){display:none}
+@media (max-width:759px){[data-module="missions"] .ms-first>.ms-dwfoot{position:sticky;bottom:var(--f-tab-space,0px);background:var(--sog-bg,#fff);padding:6px 0;z-index:1}}
 [data-module="missions"] .ms-rbody>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */
 [data-module="missions"] .ms-regbar{align-items:center}
@@ -1597,8 +1603,12 @@ function firstHtml(s, r, m, drawn, why) {
   // de SOG-0051, 10 nov. : « la description courte, avant les risques »)
   const flownBadge = (flown ? `<span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</span>` : '') + (
     s.inFlight?.id === r.id ? `${flown ? ' ' : ''}<span class="f-badge" data-kind="accent" data-inflight-since>${esc(s.tt(TX.inFlightSince, { t: sinceZ(s) }))}</span>` : ''); // SOG-0617 (F13)
+  // SOG-0619 (N267) : ma mission EN VOL (le vol démarré qui la nomme, s.inFlight — la règle du juge des tiroirs) : le bloc « Suite de la
+  // mission » vient en tête, juste sous le titre ; la rangée des actions dans le flux, le pied collant réduit à la place des gestes
+  const fly = !!m && s.inFlight?.id === r.id,
+    dws = '<section class="ms-drawers" data-drawers hidden></section>';
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
-  return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
+  return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>${fly ? dws : ''}
     ${(() => {
       // la catégorie et, dessous, la ligne de choix (SOG-0455 ; SOG-0459 : la seule partie visible) : UN bloc, la règle 13 (sept
       // éléments au plus sur la première page, N9)
@@ -1612,9 +1622,9 @@ function firstHtml(s, r, m, drawn, why) {
     `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
     ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
-    ${m ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section des tiroirs, peinte par drawers_view.js ; SOG-0459 : posée pour TOUTE mission lue — sa présence ne dit rien, elle reste cachée tant que rien n'est ouvert */}
+    ${m && !fly ? dws : '' /* SOG-0441 : la section des tiroirs, peinte par drawers_view.js ; SOG-0459 : posée pour TOUTE mission lue — sa présence ne dit rien, elle reste cachée tant que rien n'est ouvert */}
     ${why}
-    <div class="f-row ms-actions" data-f-foot>${prepareHtml(s, r.id)}<span class="ms-actslot" data-actslot></span>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
+    ${fly ? `<div class="f-row ms-actions ms-actflow">${prepareHtml(s, r.id)}` : `<div class="f-row ms-actions" data-f-foot>${prepareHtml(s, r.id)}<span class="ms-actslot" data-actslot></span>`}${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>${fly ? '<div class="f-row ms-dwfoot" data-f-foot><span class="ms-actslot" data-actslot></span></div>' : ''}`;
 }
 /** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */
 const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id)}${Object.entries(extra).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;
