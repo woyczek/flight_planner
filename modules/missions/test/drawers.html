@@ -411,6 +411,7 @@
       seance: 'A:2026-11-18',
       read_at: null,
       start_at: null,
+      reads: 1,
       drawer_D: {
         state: 'open',
         at: iso(T0 + 20 * MIN),
@@ -901,6 +902,7 @@
       seance: null,
       readAt: null,
       startAt: null,
+      marked: false,
       drawers: {
         C: {
           state: 'open',
@@ -912,7 +914,8 @@
           distNm: null,
           source: ''
         }
-      }
+      },
+      reads: {}
     }), hb);
   ck('readBook : ce qui n\'est pas un carnet de cette mission → null (rien, une liste, un texte, une autre mission, un identifiant illisible)',
     [D.readBook(null, ID), D.readBook([], ID), D.readBook('x', ID), D.readBook({
