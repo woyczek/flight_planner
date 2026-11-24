@@ -12580,3 +12580,72 @@ def a394(c):
     c.eq(r['b'], ['LFRS', ''], 'a written icao that is not a field code falls back to the code at the end of the name; no code anywhere: empty', what='fallback')
     c.eq(r['e'], ['', 'Sans code', 47.0, '', 'Sans code non plus'], 'a place with no code at all keeps its name and its position (read, not dropped)', what='no code')
     c.check_errors()
+
+
+def _hello_watcher(c, watch_js):
+    """The example module (dev only) declares a watcher (meta.watch = 'watch.js') whose file is `watch_js`; a simulated launcher gives the position of the simulator."""
+    mode = {'m': 'fix'}
+    _sim_launcher(c, mode)
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = "  apps: ['pilot'],"
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  watch: 'watch.js',")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.context.route(re.compile(r'/modules/hello/watch\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=watch_js))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    return mode
+
+
+@case('A395', 'A module\'s WATCHER (SOG-0617): a module declares meta.watch (one file of its folder); the frame imports it once per page, in every application, and calls start(ctx) with a ctx that lives as long as the PAGE (not the mounting) plus go(address) and has(id); a start that fails disturbs nothing', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0617 (the ergonomist: the drawers of a mission are judged on EVERY screen during a flight, not only in the sheet of Missions): frame/app.js startWatchers(), pageLife, ctx.go / ctx.has; the example module (hello) stands for Missions")
+def a395(c):
+    watch = """export function start(ctx) {
+  window.__w = (window.__w || 0) + 1; window.__wctx = ctx; window.__wfix = 0;
+  ctx.live.watch(() => { window.__wfix++ });
+  window.__whas = [ctx.has('fuel'), ctx.has('missions'), ctx.has('hello')];
+  window.__wsurface = ['data', 'live', 'notify', 'dismissNote', 't', 'lang', 'identity', 'go', 'has', 'writeFailText', 'memoryOnly'].map(k => k in ctx);
+}"""
+    _hello_watcher(c, watch)
+    c.open('fuel', flight=True, started=True, wait=False)
+    c.until("window.__w === 1", timeout=30000, what='the watcher is started')
+    c.eq(c.count('[data-module=hello]'), 0, 'the module is NOT mounted: the watcher runs without it', what='not mounted')
+    c.eq(c.js("() => [window.__whas, window.__wsurface.every(Boolean)]"), [[True, False, True], True], 'has(id): the modules of this application only (Fuel yes, Missions no, the example yes); the ctx carries the module surface plus go and has', what='ctx')
+    c.until("window.__wfix >= 1", timeout=30000, what='the watcher receives the positions')
+    # the ctx lives as long as the page: moving between modules does not cut its subscription
+    c.js("() => { location.hash = '#weather' }")
+    c.until("location.hash === '#weather'", what='another module')
+    n = c.js("() => window.__wfix")
+    c.until(f"window.__wfix > {n}", timeout=30000, what='the watcher still receives positions after the change of module')
+    c.eq(c.js("() => window.SogFrame.live.watchers()"), 1, 'one subscription: the unmounting of other modules did not cut it', what='subscription')
+    c.eq(c.js("() => window.__w"), 1, 'started once', what='once')
+    # go(address): an address of a module of this application, else false and nothing moves
+    got = c.js("() => [window.__wctx.go('#fuel?focus=mission'), location.hash, window.__wctx.go('#missions'), window.__wctx.go('javascript:alert(1)'), window.__wctx.go(''), location.hash]")
+    c.eq(got, [True, '#fuel?focus=mission', False, False, False, '#fuel?focus=mission'], 'go(address) goes to an address of this application and refuses the others', what='go')
+    c.check_errors()
+
+
+@case('A396', 'The line of the flight and the name of the source (SOG-0617): a line of a module\'s status.json marked `flight: true` is ranged right after « Vol en cours › Carte » (the others after, in their order); ctx.live.sourceName gives the proper name of the source (X-Plane, …), empty without one', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0617: statusLineOf `flight`, statusItems (the lines `flight: true` first), liveApi sourceName (LIVE_NAMES, the only table)")
+def a396(c):
+    _hello_watcher(c, "export function start() {}")
+    c.open('fuel', flight=True, started=True, wait=False)
+    c.until("!!window.FrameData && !!window.SogFrame", timeout=30000, what='the frame')
+    c.js("""async () => { await window.FrameData.adapter({ id: 't0617', writes: ['cache/hello/'] }).put('cache/hello/status.json', { lines: [
+      { text: 'Autre ligne du module', go: '#fuel' }, { text: 'Mission X-001 en cours › Brief', go: '#fuel?focus=mission', flight: true }] }, { policy: 'cache' }) }""")
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens #settings')
+    rows = []
+    for _ in range(40):
+        rows = c.js("() => [...document.querySelectorAll('[data-card=\"status\"] .f-status-list > li')].map(li => ({ k: li.dataset.k, text: (li.innerText || '').replace(/\\s+/g, ' ').trim() }))")
+        if len(rows) >= 3:
+            break
+        c.wait(500)
+    c.ok(len(rows) >= 3, rows, 'the Status block lists the flight, the line of the flight and the other line')
+    texts = [r['text'] for r in rows]
+    i_flight = next(i for i, r in enumerate(rows) if r['k'] == 'flight')
+    c.eq([texts[i_flight + 1].startswith('Mission X-001 en cours'), texts[i_flight + 2].startswith('Autre ligne du module')], [True, True], 'the line of the flight comes right after « Vol en cours › Carte », the other line after it', what='order')
+    c.until("window.SogFrame.live.source === 'xplane'", timeout=40000, what='the simulator gives a position')
+    c.eq(c.js("() => window.SogFrame.live.sourceName"), 'X-Plane', 'the proper name of the source', what='X-Plane')
+    c.check_errors()

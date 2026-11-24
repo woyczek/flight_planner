@@ -3220,6 +3220,15 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — a module's watcher, the line of the flight, the name of the source (SOG-0617, the frame's part)
+
+- **Fact**: the judging of the drawers of a mission lived in the sheet of Missions (`ctx.live.watch` is cut by `life` at the unmount) and Missions is `apps: ['company']`: in the pilot application, where one flies, the module does not exist. The split was agreed between Features SOG, Creation and the frame, and validated by the ergonomist: Creation owns the judge (`drawers_run.js`), Features the watcher (`watch.js`) and the line, the frame the generic mechanism.
+- **Watcher** (`startWatchers`, `frame/app.js`): `meta.watch` names one file of the module's folder; imported once per page, in every application (the modules of ALL the applications, `APPS`, not only the current one), without a query (like the `module.js` of `readLevels`: a stamped `?v=0` built in a template is never rewritten by the launcher and the browser would keep a stale watcher); `start(ctx)` called with `Object.create(ctxFor(…, pageLife))` frozen: the module surface of a mounted module, `life` = the page (never aborted), plus `go(address)` (an address of a module or a screen of this application, validated like a status line's `go`; `false` otherwise) and `has(id)` (`isModule`). One judge: the module's own files import their shared code by the same specifier (`./drawers_run.js?v=0`), the frame shares nothing by itself. A failing `start` is `console.warn`ed.
+- **The line of the flight**: `statusLineOf` keeps `flight: true`; `statusItems` puts those lines right after « Vol en cours › Carte », the others after (`line:<index>` unchanged).
+- **`ctx.live.sourceName`**: `LIVE_NAMES[source]` — proper names, identical in the four languages — or `''`; Creation reads it instead of keeping a copy.
+- **Not decided here**: where « Ouvrir » leads in the pilot application (`#fuel?focus=mission`, Features; `#missions?open=<id>` in the Company application): the frame's `go` accepts any address of a module of the current application.
+- **Cases**: A395 (the watcher starts once, with the module NOT mounted, `has`, `go`, the subscription surviving a change of module) and A396 (the order of the lines, `sourceName`); red before.
+
 ## 24 November 2026 — a mission's place is read with its explicit icao (SOG-0618 a)
 
 - **Fact**: `readMission` → `placeOf` took the code of a place only from the end of its name (`icaoOf`); `placeIcao` (the written `icao` first, then the name) served the register only. A mission whose origin is `{ name: 'Nantes', icao: 'LFRS', lat, lon }` reached Fuel with no code: « ? → ? ».

@@ -2615,7 +2615,8 @@
       go,
       handoff,
       news: l.news === true,
-      attn: l.attn === true
+      attn: l.attn === true,
+      flight: l.flight === true // SOG-0617 : une ligne du vol (« Mission X en cours ») se range juste après « Vol en cours › Carte »
     };
   }
   /** Lignes d'état de tous les modules (50 au plus), lues seulement sur l'appareil (jamais de réseau) ; redessinées si elles
@@ -2720,13 +2721,14 @@
         sub: t(T.info.trailShared)
       } : {})
     });
-    moduleLines.forEach((l, i) => items.push({
+    // les lignes `flight: true` d'abord (juste après « Vol en cours › Carte »), les autres ensuite, chacune gardant son rang d'origine pour son `go`
+    [true, false].forEach(fl => moduleLines.forEach((l, i) => l.flight === fl && items.push({
       k: `line-${l.from}`,
       text: t(l.text),
       go: `line:${i}`,
       news: l.news,
       attn: l.attn
-    }));
+    })));
     // ancien enregistrement de flightlog (schéma 2), tant qu'il ne publie pas son status.json
     if (!statusFiles.has('flightlog')) pendingReports.forEach((f, i) => items.push({
       k: 'report',
@@ -3846,6 +3848,44 @@
     renderMenu();
     paintFixed(current?.id || ''); // le module déjà affiché peut se révéler fixe maintenant
     paintName(); // ... ou avoir un titre
+  }
+  // SOG-0617 : le veilleur de module — un module qui a quelque chose à surveiller HORS de son écran (les tiroirs d'une mission pendant un vol) le déclare : `meta.watch: 'watch.js'` (un fichier de son dossier).
+  // Le cadre l'importe UNE fois par page, dans TOUTES les applis (Missions aussi dans l'appli pilote, où le module n'est pas rangé) et appelle `start(ctx)`. Ce ctx est celui d'un module, mais sa vie est celle de la
+  // PAGE (jamais coupé par un démontage), plus `go(adresse)` (aller à une adresse d'un module ou d'un écran de CETTE appli ; faux sinon) et `has(id)` (ce module est-il rangé dans cette appli ?). Un `start` qui échoue est dit
+  // dans la console et ne gêne ni les autres veilleurs ni la page.
+  const watchersStarted = new Set(),
+    pageLife = new AbortController().signal;
+
+  function startWatchers() {
+    for (const app of Object.values(APPS))
+      for (const m of app.modules || []) {
+        if (watchersStarted.has(m.id)) continue;
+        watchersStarted.add(m.id);
+        (async () => {
+          try {
+            const meta = (await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta || {};
+            if (typeof meta.watch !== 'string' || !/^[\w-]+\.js$/.test(meta.watch)) return;
+            const mod = await import(new URL(`modules/${m.id}/${meta.watch}`, ROOT).href),
+              base = ctxFor(m, meta, Object.freeze({}), null, false, pageLife);
+            await mod.start?.(Object.freeze(Object.create(base, {
+              go: {
+                value: hash => {
+                  const h = String(hash ?? ''),
+                    target = /^#[\w-]+(\?[\w=&%.+-]*)?$/.test(h) ? h.slice(1).split('?')[0] : '';
+                  if (!target || !(isModule(target) || SCREENS.includes(target))) return false;
+                  location.hash = h;
+                  return true;
+                }
+              },
+              has: {
+                value: id => isModule(String(id ?? ''))
+              }
+            })));
+          } catch (e) {
+            console.warn(`watch ${m.id}`, e);
+          }
+        })();
+      }
   }
   /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée ; la
    *  barre d'onglets suit (screen : l'écran du cadre affiché, ou rien). */
@@ -5773,6 +5813,8 @@
       watchers: () => fixWatchers.size,
       status: !live.active ? 'off' : live.source ? 'tracking' : 'waiting',
       source: live.source,
+      sourceName: LIVE_NAMES[live.source] ||
+        '', // SOG-0617 : le nom propre de la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM), le même dans les quatre langues ; '' sans source
       last: live.last,
       // trace du vol en cours, sur cet appareil seulement : { from: started.at, trail: [[lat, lon, altFt, s], …] } ou null
       trail: () => liveTrail.from ? {
@@ -6168,6 +6210,7 @@
     });
     offlineApp();
     levelsP = readLevels();
+    startWatchers(); // SOG-0617
     FD.holdRules(levelsP); // la première synchronisation attend les règles de fusion de tous les modules
     FD.start();
     await landing();
