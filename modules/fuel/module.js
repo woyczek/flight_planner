@@ -9081,7 +9081,10 @@ async function applyMission(id) {
     arr,
     // SOG-0618 : le nom de chaque lieu de la mission que le pilote a le droit de voir, par son mot de coordonnées : la liste des points
     // et la Carte le montrent, la coordonnée reste ce qui s'écrit dans le plan
-    names: missionNames(points, [[depWord, depPlace], [arrWord, arrPlace]]),
+    names: missionNames(points, [
+      [depWord, depPlace],
+      [arrWord, arrPlace]
+    ]),
     // SOG-0193 : l'origine et la destination à leur position de la mission, points connus du vol : un terrain que la base ne connaît
     // pas garde sa place dans le plan et dans la distance (aerodb passe toujours d'abord, knownPoints)
     points: [dep && mf.route.depAt ? {
@@ -9146,7 +9149,10 @@ async function applyMission(id) {
   }) : ''].filter(Boolean).join(' '), 'ok');
   // SOG-0618 : ce qui manque à un bout sans code, dit une fois (un aller-retour sans code : une seule note)
   const told = new Set();
-  for (const [code, word, place] of [[dep, depWord, depPlace], [arr, arrWord, arrPlace]]) {
+  for (const [code, word, place] of [
+      [dep, depWord, depPlace],
+      [arr, arrWord, arrPlace]
+    ]) {
     const name = placeName(place);
     if (code || !name || told.has(name)) continue;
     told.add(name);
