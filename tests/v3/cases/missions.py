@@ -16844,4 +16844,28 @@ def n271(c):
         c.until("location.hash.startsWith('#fuel')", timeout=10000, what=f'{w} px: « Ouvrir » leads to Fuel')
         c.until("(() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'); return !!p && !p.hidden })()", timeout=15000,
                 what=f'{w} px: the pane of the mission open')
+        # the pane hosts the block « Suite de la mission » (the component of the sheet, SOG-0619), first: the drawer just opened is there
+        c.until("(() => { const b = document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]'); return !!b && !b.hidden && "
+                "b.textContent.includes('Secteur de recherche') })()", timeout=15000, what=f'{w} px: the block in the pane, the drawer opened')
         c.shot(f'N271_{c.design}_{w}_{c.lang}_pane.png')
+    # the pane OPEN (the block on screen) when the next drawer opens: it opens in the block, and no note is raised (its envelope is enough)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    now['fix'] = fix(44.9, 1.0)
+    start = at(-12)
+    flight = {**flight, 'updated_at': start, 'started': {'at': start}}
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_LIVE_REGISTRY], ['missions/X_TIR/X-904A/missionX-904A.yaml', _DW_LIVE]])
+    c.open('fuel?focus=mission', wait=False, docs=[['pilot/ABC/current_flight.json', flight, 'document']])
+    c.until("(() => { const b = document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]'); return !!b && !b.hidden && "
+            "b.checkVisibility() })()", timeout=30000, what='1280 px: the pane open, the block on screen (its line of position)')
+    c.wait(11000)
+    said = len(c.notes())
+    now['fix'] = fix(44.80, 1.0)
+    c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', '1280 px: the zone crossed, the pane open: the finding written',
+                timeout=40000)
+    c.until("(() => (document.querySelector('[data-module=fuel] [data-mpane] [data-drawers]')?.textContent || '').includes('Secteur de recherche'))()",
+            timeout=15000, what='1280 px: the drawer opens in the block of the pane')
+    c.wait(2000)
+    c.ok(note not in c.notes()[said:], c.notes()[said:], '1280 px: the block on screen: NO note « Un message de la mission est arrivé. »')
+    c.shot(f'N271_{c.design}_1280_{c.lang}_pane_open.png')
