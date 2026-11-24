@@ -8,7 +8,7 @@ Ce qu'il lit : les lignes de la feuille dont l'espace commence par les deux lett
 à toute heure (H24), une tranche par segment « ---------- » de la cellule. Un plancher n'est pris que s'il est PLAUSIBLE (de FL100 à FL500) et que le texte de la cellule est borné (4 000 signes) : sinon, comme si les lignes du pays ne s'accordaient pas, AUCUN plancher
 (le pays reste « à examiner », jamais un refus inventé). Si les lignes du pays ne donnent pas toutes le même plancher, ou si une cellule n'est pas lisible : aucun plancher non plus.
 Ce qu'il NE lit PAS : l'Allemagne (trois tranches : EDUUFRAW au-dessus de FL245, EDUUFRAN FL285, EDUUFRAE FL315, sans contour pour dire laquelle), la France, l'Espagne (FRA par sous-espace) : dits « non appliqués ».
-Ce que la recherche en fait : RIEN par défaut (`CAP_SEARCH` est faux : la route la plus courte est gardée, et dite) ; vrai, `Nav.routing_graph` ramène le plafond de ces voies au plancher (la route descend alors à FL195 sur les Alpes : légale, absurde).
+Ce que la recherche en fait (SOG-0576, lot C) : `CAP_SEARCH` est vrai : `Nav.routing_graph` ramène le plafond de ces voies au plancher (une voie qui n'existe pas au niveau demandé est évitée) ; si aucune route n'existe ainsi, la recherche est refaite UNE fois sans ce plafond (`_no_fra_cap`) et le contrôle dit l'infraction (jamais une route perdue). Faux (SOG-0401), la route la plus courte était gardée, et dite.
 Python : bibliothèque standard."""
 import re
 
@@ -34,7 +34,7 @@ def unread_issue(legs):
 MAX_ISSUES = 40
 MAX_TEXT = 4000      # un texte de cellule plus long est illisible (à examiner)
 PLAUSIBLE = (100, 500)      # un plancher de route libre est un niveau de vol entre FL100 et FL500 : « ABV FL10 » est une cellule abîmée, pas un plancher
-CAP_SEARCH = False      # SOG-0401 : la recherche garde la route la plus courte (et la dit) ; vrai : le plafond des voies de ces pays est ramené au plancher dans son graphe (la route descend à FL195 sur les Alpes)
+CAP_SEARCH = True      # SOG-0576 (lot C, l'ergonome : « le contrôle est le juge unique ») : le plafond des voies de ces pays est ramené au plancher dans le graphe de la recherche (une voie « basse » est évitée, jamais interdite) ; sans autre route, la recherche est refaite UNE fois sans ce plafond et le contrôle dit l'infraction (SOG-0401 : faux gardait la route la plus courte et la disait)
 CACHE = {}
 
 

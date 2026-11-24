@@ -715,7 +715,7 @@ class Nav:
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
         strict=bool(terminal.get('_level_lock'))      # SOG-0532 : niveau constant (le défaut ; des paliers seulement si l'utilisateur les demande) : le graphe garde TOUTES les voies, la recherche exclut celles dont l'étendue ne contient pas le niveau (sauf montée et descente, avec marge)
-        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid','_no_dep_restrict']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
+        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid','_no_dep_restrict','_no_fra_cap']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
         cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,strict,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
@@ -774,7 +774,8 @@ class Nav:
                         else:unknown+=1
                     g[u]=permitted
                 if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
-            floors=getattr(self,'fra_floors',None)      # SOG-0401 (lot 3) : une voie de la Suisse ou de l'Italie n'existe pas au-dessus du plancher de la route libre (RAD, annexe 3B) : son plafond est ramené à ce plancher (une voie « basse » : évitée, jamais interdite) ; la recherche ne la vole plus à FL350
+            floors=None if terminal.get('_no_fra_cap') else getattr(self,'fra_floors',None)      # SOG-0576 (lot C) : `_no_fra_cap` = le repli (aucune route avec les plafonds ramenés aux planchers : refaite UNE fois sans eux) ; SOG-0401 (lot 3) : une voie de la Suisse ou de l'Italie n'existe pas au-dessus du plancher de la route libre (RAD, annexe 3B) : son plafond est ramené à ce plancher (une voie « basse » : évitée, jamais interdite) ; la recherche ne la vole plus à FL350
+            capped_any=False
             if floors:
                 for u in list(g):
                     capped=None
@@ -782,7 +783,7 @@ class Nav:
                         f=floors.get(e.get('zone'))
                         if f and e.get('route')!='DCT' and not e.get('procedure_id') and e.get('kind') not in ('FRA','FRA_GATE') and isinstance(e.get('upper'),(int,float)) and e['upper']>f*100:
                             if capped is None:capped=list(g[u])
-                            capped[k]=(other,dict(e,upper=f*100,fra_floor_cap=f))
+                            capped[k]=(other,dict(e,upper=f*100,fra_floor_cap=f));capped_any=True
                     if capped is not None:g[u]=capped
             for key in list(g):
                 g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower']]
@@ -822,6 +823,7 @@ class Nav:
             flight0=dict(profile_options or {},departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,strict=strict) if strict and profile_options else None
             link=self.bridge_gap(g,a,b,fl,allow_steps,flight0)      # SOG-0476 : l'arrivée n'est PAS atteignable depuis le départ AU NIVEAU DEMANDÉ (un réseau isolé ou plafonné : l'Islande, à 452 NM de celui du Royaume-Uni, ses voies s'arrêtent à FL285) : jamais une route perdue ; UN direct entre les deux parties, dit
             if restricted and link:return self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal,_no_dep_restrict=True))      # SOG-0547 : l'arrivée n'est pas atteignable depuis les derniers points des SID : ce n'est pas une route (un direct de liaison de 200 NM n'en est pas une) ; le graphe est refait avec les raccords d'avant
+            if capped_any and link:return self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal,_no_fra_cap=True))      # SOG-0576 (lot C) : l'arrivée n'est pas atteignable AVEC les plafonds des voies de la route libre ramenés aux planchers : le graphe est refait sans eux (un direct de liaison n'est pas la route d'une voie qui existe, enfreinte ; si le réseau n'est pas lié non plus sans eux, c'est le même graphe qu'avant)
             if link:
                 gap,u,v=link
                 g.setdefault(u,[]).append((v,dict(route='DCT',nm=gap,connector=True,no_network='gap')))
@@ -839,10 +841,10 @@ class Nav:
                     g.setdefault(waypoint,[]).append((key,edge))
                     g.setdefault(key,[]).append((waypoint,edge))
             g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
-            base=(g,used_procs,a,b,restricted)
+            base=(g,used_procs,a,b,restricted,capped_any)
             self._routing_base[base_key]=base
             if len(self._routing_base)>1:self._routing_base.popitem(last=False)
-        g,used_procs,a,b,restricted=base
+        g,used_procs,a,b,restricted,capped_any=base
         # Apply RAD after SID/STAR and all connectors have been inserted. A rule
         # on a procedure point must affect path finding, not only final checking.
         out={}

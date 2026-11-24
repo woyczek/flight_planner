@@ -15552,7 +15552,7 @@ def k437(c):
     c.eq(others, [], 'no other file of tools/ sets a priority of its own: the decision is in tools/low_priority.py only (route_matrix.py lowers itself by low_priority.lower_self)', what='one place')
     sites = {s: 'low_priority.popen_args' in (tools / s).read_text(encoding='utf-8') for s in ('pdf_guard.py', 'regen/base.py', 'regen/aircraft.py', 'regen/weather.py')}
     c.eq(sites, {'pdf_guard.py': True, 'regen/base.py': True, 'regen/aircraft.py': True, 'regen/weather.py': True}, 'the four heavy sites (the PDF reader, the headless browser of the builds, the aircraft scripts, the world weather) start their child by popen_args', what='sites')
-@case('K332', 'Route engine, SOG-0401 lot 3 (forms of the RAD): (A) a rule « ONLY AVBL FOR TFC » with NUMBERED alternatives of DEP / ARR lists (« 1. ARR (LSGC, LSZH) 2. DEP (LSZA) ») is DECIDED on the flight alone — the alternatives are an OR, a rule of several parts « ---------- » is judged part by part, a time « 05:00-23:00 (03:00-23:00) » is read when both writings say the same —, an ERREUR for a typed route, a block of the search for a calculated one; and the airways of Switzerland and Italy above the FLOOR of the free route (RAD, annex 3B « FRA LIM », « ABV FL195 », « FRA ») are flown at that floor at most: a typed route whose PROFILE puts them above is an ERREUR (PROF407 of Eurocontrol), the search keeps the shortest route and says it (the switch `CAP_SEARCH`, false, would cap their ceiling at the floor); a damaged cell gives no floor; the other countries are not read (said)',
+@case('K332', 'Route engine, SOG-0401 lot 3 (forms of the RAD): (A) a rule « ONLY AVBL FOR TFC » with NUMBERED alternatives of DEP / ARR lists (« 1. ARR (LSGC, LSZH) 2. DEP (LSZA) ») is DECIDED on the flight alone — the alternatives are an OR, a rule of several parts « ---------- » is judged part by part, a time « 05:00-23:00 (03:00-23:00) » is read when both writings say the same —, an ERREUR for a typed route, a block of the search for a calculated one; and the airways of Switzerland and Italy above the FLOOR of the free route (RAD, annex 3B « FRA LIM », « ABV FL195 », « FRA ») are flown at that floor at most: a typed route whose PROFILE puts them above is an ERREUR (PROF407 of Eurocontrol), the search avoids them when another route exists and, with none, keeps the lane and says it (SOG-0576 lot C: the switch `CAP_SEARCH`, true, caps their ceiling at the floor in the graph; case K536); a damaged cell gives no floor; the other countries are not read (said)',
       'K', static=True,
       rule='SOG-0401 lot 3 (ergonomics session, 17 Nov: « règles RAD de forme A, ONLY AVBL FOR TFC à listes DEP/ARR, décidées sur le seul vol » and « planchers de route libre de l\'annexe 3B pour la Suisse et l\'Italie ; l\'Allemagne en trois tranches reste à examiner, dite »). Measured on the exact route of the user (EDDF → LFMN, FL350): of the 11 RAD rules of PROF204/205 present in the RAD of the day, 4 were of the form A and none was decided (« numbered list: not decided »); three now are (LSLI1008, ED3518, LI2088), the fourth carries a FLT-TYPE (not form A). The eight PROF407: three were already said by the band control (SOG-0401, point 4), the five others are airways of Switzerland (T103, Z138, Z651) and Italy (M858, Q712, Z185) that the base gives up to FL660 while the RAD makes the space free route from FL195: they are now said (an ERREUR per run of legs, whatever the descent of the end of the route: Eurocontrol judges the level FILED). On the 18 flights EDDF, EDDM, LFPG ↔ LFMN, LIRF, LEMD the search flew those airways at FL350 9 times (T125, Z651, Z119, N850, Z424): it now says it (a REVUE); capping their ceiling made the route descend to FL195 over the Alps (up to +14 %: legal, absurd, refused by the ergonomics session) and stays a switch. Bench: the fixture RAD with rules written for it (never the text of the workbook) and the fixture base moved to the zone `ch`.')
 def k332(c):
@@ -15660,12 +15660,13 @@ def k332(c):
     res4, view4 = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': []})
     p4 = res4['primary']
     c.eq((p4['ok'], [l for l in p4['legs'] if l.get('fra_floor_cap')], [('plancher FL195' in x and 'PROF407' in x) for x in [i['text'] for i in p4['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']]], sum('Voies au-dessus du plancher de la route libre' in i['text'] for i in p4['issues'] if i['level'] == 'REVUE'), FF.CAP_SEARCH, p4['verdict'], (p4.get('judge') or {}).get('verdict')),
-         (True, [], [True], 1, False, 'violates', 'violates'), 'the CALCULATED route (CAP_SEARCH false): found, the airways are NOT capped, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated) — and, SOG-0576 (the control is the SINGLE judge: the text of the calculated route goes through the control), the answer carries what the control finds in that text: the ERREUR of the run (PROF407) and the verdict « violates » (it was « no ERREUR » before: the calculation did not read its own text; the lane is the only one of the bench, the retry has nothing else to take)', what='calculated floor')
+         (True, [], [True], 1, True, 'violates', 'violates'), 'the CALCULATED route (CAP_SEARCH true since the lot C of SOG-0576: THIS bench has no other lane, so the search is made again without the cap, case K536 has the bench with a second lane): found, the airways are NOT capped, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated) — and, SOG-0576 (the control is the SINGLE judge: the text of the calculated route goes through the control), the answer carries what the control finds in that text: the ERREUR of the run (PROF407) and the verdict « violates » (it was « no ERREUR » before: the calculation did not read its own text; the lane is the only one of the bench, the retry has nothing else to take — this expectation is the state of the bench where NO other route exists: the lot C of SOG-0576 (CAP_SEARCH true) turns it on purpose for the flights that have another route, case K536, and says the cause for those that have none)', what='calculated floor')
+    was = FF.CAP_SEARCH
     FF.CAP_SEARCH = True
     try:
         res6, _ = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': [], 'allow_levels': True})      # SOG-0532 (1): with the steps asked (the level constant excludes a capped airway instead of flying it at its cap)
     finally:
-        FF.CAP_SEARCH = False
+        FF.CAP_SEARCH = was
     capped = [l for l in res6['primary']['legs'] if l.get('fra_floor_cap')]
     c.eq((res6['primary']['ok'], len(capped) >= 1, all(l['upper'] <= 19500 for l in capped)), (True, True, True), 'the switch CAP_SEARCH true: the ceiling of those airways is the floor in the graph of the search (`fra_floor_cap` FL195 on the leg), never above it', what='cap')
     res5, view5 = run('xx', 'ZQ', **{'action': 'compute', 'via': []})
@@ -21426,3 +21427,74 @@ def k662(c):
     c.eq(([g.get('name') for g in p['gaps'] if g.get('name') and 'ens' in g['name'].lower()], [g['name'] for g in p['gaps'] if g.get('name') == 'Vitesses limites' and 'sens' not in g['reason'].lower()]), ([], ['Vitesses limites']), 'the line of the limits of speed keeps its phrase and no longer says « sens » (the false half is gone)', what='speeds')
     d1 = [g for g in p1['gaps'] if g.get('code') == 'direction']
     c.eq((d1, [i for i in p1['issues'] if str(i.get('code', '')).startswith('direction')]), ([{'code': 'direction', 'known': ['KA'], 'unknown': []}], []), 'a route that takes only the airway whose direction the base gives: the State is « known », no point not verified', what='known only')
+
+
+@case('K536', 'Route engine, SOG-0576 (lot C, the family C): the search no longer flies a lane of Switzerland or Italy above the floor of the free route (`CAP_SEARCH` true by default: the ceiling of those lanes is the floor in the graph of the search) — with another route it takes that one and the control finds nothing to say about the floor; with none it searches AGAIN without the cap (never a route lost, never a bridge over a gap that the cap alone makes): the route is the one of the lane and the control says the infraction',
+      'K', static=True,
+      rule='The ergonomist through the relay, 23 Nov 2026 (the family C: 13 flights of the 160 whose computed text the control refuses for a lane above the floor of the free route of Switzerland or Italy; « le contrôle est le JUGE UNIQUE »; `CAP_SEARCH` true with the fallback of SOG-0547). On an invented base: a lane A1 of the zone ch (the short one, OLZOM → BOYNE) that the floor FL195 of the RAD (annex 3B, « LSAAACC ABV FL195 FRA ») puts out of reach at FL350, and, in ANOTHER zone, a longer lane Z1 (DETRA → DETRB → DETRC → DETRD, near the ends of A1). Three runs: the switch true with both lanes (the longer lane, nothing to say about the floor), the switch false (the short lane, the infraction: red before the lot), the switch true with the short lane alone (the same route as before, the infraction said, not a bridge)',
+      )
+def k536(c):
+    import json
+    import os
+    import shutil
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import fra_floor as FF, import_books as I, plan as PL, view as V
+    pad = lambda row: row + [''] * (17 - len(row))
+
+    def run(with_detour, cap, via=()):
+        sheets = []
+        for n, rows in RF.rad_sheets():
+            if n == 'Annex 3B FRA LIM':
+                rows = [RF.RAD_HEAD, pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'X_FRA', 'LSAAACC', 'ABV FL195', 'H24', 'FRA', 'ALW']), pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'X_LOW', 'LSAAACC', 'BLW FL195', 'H24', '0NM', 'NOT ALW'])]
+            sheets.append((n, rows))
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            old = os.path.join(data, 'sia', 'base', 'xx')
+            new = os.path.join(data, 'sia', 'base', 'ch')
+            shutil.move(old, new)
+            d = os.path.join(new, '2026-10-29')
+            for f in os.listdir(d):
+                p = os.path.join(d, f)
+                with open(p, encoding='utf-8') as fh:
+                    doc = json.load(fh)
+                doc['zone'] = 'ch'
+                with open(p, 'w', encoding='utf-8') as fh:
+                    json.dump(doc, fh)
+            if with_detour:
+                z = os.path.join(data, 'sia', 'base', 'zz', '2026-10-29')
+                os.makedirs(z)
+                nodes = {'DETRA': (48.25, 2.35), 'DETRB': (51.5, 4.5), 'DETRC': (54.5, 0.0), 'DETRD': (53.55, -5.2)}
+                node = lambda n: {'id': n, 'lat': nodes[n][0], 'lon': nodes[n][1]}
+                files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': []}, 'navaids': [],
+                         'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()],
+                         'airways': [{'route': 'Z1', 'a': node(a), 'b': node(b), 'lower': 6500, 'upper': 66000} for a, b in (('DETRA', 'DETRB'), ('DETRB', 'DETRC'), ('DETRC', 'DETRD'))]}
+                for k, v in files.items():
+                    with open(os.path.join(z, k + '.json'), 'w', encoding='utf-8') as fh:
+                        json.dump({'schema': 2, 'zone': 'zz', 'cycle': '2026-10-29', 'kind': k, 'data': v}, fh)
+            rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad_file, sheets)
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad_file)[1]]))
+            request = V.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False, 'via': list(via)})
+            before = FF.CAP_SEARCH
+            FF.CAP_SEARCH = cap
+            PL.drop_contexts()
+            try:
+                res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            finally:
+                FF.CAP_SEARCH = before
+                PL.drop_contexts()
+            return res['primary']
+    floor_errors = lambda p: [i['text'] for i in p['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']]
+    on_both, off_both, on_one = run(True, True), run(True, False), run(False, True)
+    c.eq(FF.CAP_SEARCH, True, 'the switch is true by default', what='default')
+    c.eq((on_both['ok'], ' Z1 ' in ' ' + on_both['route'] + ' ', ' A1 ' in ' ' + on_both['route'] + ' ', floor_errors(on_both), any(i.get('code') == 'network_gap' for i in on_both['issues']), on_both['judge']['retries']), (True, True, False, [], False, 0),
+         'CAP_SEARCH true, the short lane above the floor and a longer lane of another zone: the FIRST search takes the longer lane (the control finds nothing to say about the floor, no search again)', what='other route')
+    c.eq((off_both['ok'], ' Z1 ' in ' ' + off_both['route'] + ' ', floor_errors(off_both), off_both['judge']['retries']), (True, True, [], 1),
+         'the switch false (the state before the lot): the search flies the short lane above the floor, the control refuses it (PROF407) and the search is made again without it — one search more for the same route: red before the lot (`judge.retries` 1, not 0)', what='before')
+    c.eq((on_one['ok'], ' A1 ' in ' ' + on_one['route'] + ' ', len(floor_errors(on_one)), on_one['verdict'], 'DETR' in on_one['route'], any('liaison' in i['text'] for i in on_one['issues'])), (True, True, 1, 'violates', False, False),
+         'CAP_SEARCH true and the short lane alone: the cap leaves no route, the search is made AGAIN without it — the route of the short lane, the infraction said, the verdict « violates », and NOT a direct of liaison over a gap that the cap alone made', what='fallback')
