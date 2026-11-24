@@ -5148,6 +5148,9 @@ def l60(c):
       if (!url.includes('sync-status')) return f.call(this, u, o); window.__ss++; return new Promise(r => setTimeout(r, 2500)).then(() => new Response(%s, { status: 200, headers: { 'content-type': 'application/json' } })).finally(() => { window.__ss-- }) } })()""" % json.dumps(body))
     c.page.add_init_script("""(() => { window.__sh = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) { if (!e.hadRecentInput) window.__sh.push([Math.round(e.startTime), +e.value.toFixed(3), (e.sources || []).map(x => { const n = x.node && (x.node.nodeType === 1 ? x.node : x.node.parentElement); return n ? (n.dataset.set || n.dataset.group || n.className || n.nodeName) : '?' }).slice(0, 3)]) } }).observe({ type: 'layout-shift', buffered: true }) } catch (e) {} })()""")
     c.page.add_init_script(_ZHOOK_JS)
+    # the browser keeps only 250 resource entries by default and drops the following ones: the page of the suite loads about that many files before the States map, so MapLibre, asked for LAST, was no longer
+    # listed (the library WAS loaded and drawn). The buffer of the bench is widened at the start, and the case checks that it did not fill up: a measure that is saturated says nothing
+    c.page.add_init_script("performance.setResourceTimingBufferSize(5000)")
     _open(c, _sized(cfg))
     state = c.js("""() => ({ zones: document.querySelectorAll('[data-wmap] path[data-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
       lib: performance.getEntriesByType('resource').some(e => /maplibre|openfreemap/.test(e.name)), ih: innerHeight })""")
@@ -5167,7 +5170,9 @@ def l60(c):
             break
         c.wait(500)
     c.until("!!document.querySelector('[data-zone-map=proc] .d-map-host .maplibregl-canvas')", timeout=10000, what='the States map is drawn once it is in the screen')
-    c.ok(c.js("performance.getEntriesByType('resource').some(e => /maplibre/.test(e.name))"), None, 'MapLibre was asked for when the map came near')
+    n_res = c.js("performance.getEntriesByType('resource').length")
+    c.ok(n_res < 5000, n_res, 'the list of the resources of the page is not saturated (a full list measures nothing)')
+    c.ok(c.js("performance.getEntriesByType('resource').some(e => /maplibre/.test(e.name))"), n_res, 'MapLibre was asked for when the map came near')
     c.check_errors()
 
 
