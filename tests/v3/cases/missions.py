@@ -16432,6 +16432,22 @@ def n265(c):
         c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'] if c.width >= 760 else ['head', 'arrived', 'now', 'past'],
              'the block reads: the state line, what has just arrived, now, the gestures, before (at 390 the gestures are its sticky foot)', what='reading order')
         c.shot(f'N265_{c.design}_{c.width}_{c.lang}_enveloppe.png')  # for the relay: the envelope, nothing opened by itself
+        if c.width >= 760:
+            # the layout of the envelope follows the width of its BLOCK (a container query), never the window's (the relay, 24 Nov: the pane of
+            # Carburant, ~400 px wide at 1280, broke « Un message de la mission » on four lines): the block in a host of 400 px
+            env = f"""(() => {{ const e = document.querySelector('{S} [data-dw-env]'), b = e.querySelector('button'), w = e.querySelector('.dw-what'),
+              lh = parseFloat(getComputedStyle(w.querySelector('b')).lineHeight) || 20;
+              return [Math.round(b.getBoundingClientRect().top) >= Math.round(w.getBoundingClientRect().bottom) - 1,
+                      Math.round(b.getBoundingClientRect().width) >= Math.round(e.getBoundingClientRect().width) - 2,
+                      Math.round(w.getBoundingClientRect().height / lh) <= 2] }})()"""
+            c.js(f"document.querySelector('{S}').style.maxWidth = '400px'")
+            c.wait(300)
+            c.eq(c.js(env), [True, True, True], 'the block in a host of 400 px at 1280: the button UNDER the text, full width, the text on two lines at most',
+                 what='narrow host')
+            c.shot(f'N265_{c.design}_{c.width}_{c.lang}_enveloppe_400.png')  # for the relay: the envelope in a narrow host at 1280
+            c.js(f"document.querySelector('{S}').style.maxWidth = ''")
+            c.wait(300)
+            c.eq(c.js(env)[0], False, 'back to its width: the button beside the text again', what='wide host')
         # the kickers follow the reading order; on a phone the gestures are in the place of the row of actions of the sheet (askSlot), outside the block
         kickers = ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'] if c.width >= 760 else ["Vient d'arriver", 'Maintenant', 'Avant']
         c.eq(c.js(f"[...document.querySelectorAll('{S} .dw-kick')].map(e => e.textContent.trim())"), kickers,
