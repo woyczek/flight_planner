@@ -8,11 +8,13 @@
 //     sans heure en dernier) ; [] sans trigramme ou sans index. rdv : l'heure du rendez-vous (`rendezvous_at`, ISO UTC ou « H±n »)
 //     quand la ligne la porte ; meet : les canaux de l'équipage (`meet[]` : { kind, label, url? (https seulement), value? }, six au plus).
 
+import * as MS from '../../frame/lib/mission.js'; // le trigramme : la règle du lecteur
+
 const KINDS = ['discord', 'srs', 'joinfs', 'teamspeak', 'other'];
 /** Un texte nettoyé (sans caractère de contrôle) et borné ; '' pour ce qui n'est pas un texte. */
 export const cut = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 /** Les règles de lecture d'une ligne, exportées pour qu'assign.js (l'écriture) les réutilise au lieu de les recopier. */
-export const TRI = /^[A-Z]{3}$/, // le pilote
+export const TRI = MS.TRI, // le pilote (la règle du lecteur, frame/lib/mission.js)
   CALLSIGN = /^[A-Z0-9-]{2,12}$/i, // l'indicatif
   TYPE = /^[A-Z0-9]{2,8}$/i, // le type de l'aéronef
   ICAO = /^[A-Z0-9]{4}$/; // le terrain de départ
@@ -60,7 +62,7 @@ export function mine(doc, trigram, now = Date.now()) {
   for (const a of (Array.isArray(doc?.assignments) ? doc.assignments : []).slice(0, 5000)) {
     if (!a || typeof a !== 'object' || String(a.pilot ?? '').toUpperCase() !== me || a.status === 'annulée') continue;
     const mission = cut(a.mission, 12).toUpperCase();
-    if (!/^[A-Z]-\d{3}[A-Z]?$/.test(mission)) continue;
+    if (!MS.MISSION_ID.test(mission)) continue;
     const takeoff = isoOf(a.takeoff);
     if (takeoff && Date.parse(takeoff) < now - 12 * 3600e3) continue;
     const ac = a.aircraft && typeof a.aircraft === 'object' ? a.aircraft : {},

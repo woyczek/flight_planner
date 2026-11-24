@@ -15823,3 +15823,32 @@ def n251(c):
             if m and not (m.group(1) == 'obj' and 'plain(v)' in m.group(2)):
                 found.append(f'{f.name}:{n}')
     c.eq(found, [], 'no own yes / written / has(v) / isObj / plain / obj of the module (isObj and obj are built on plain)', what='own reader rules')
+
+
+@case('N252', 'Missions › the trigram and the mission id of a book are the reader\'s (SOG-0468, point 2): MS.triOf and MS.midOf of frame/lib/mission.js trim, uppercase and test '
+      '(three capitals; « A-001A »), and give \'\' for anything else, a non-text included', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False, phone=False, night=False,
+      rule='SOG-0468 point 2: one rule for the trigram and the mission id, the one bookPath and the assignment already applied (the two former triOf gave the same answer)')
+def n252(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const MS = await import('/frame/lib/mission.js');
+      const tri = ['abc', ' ABC ', 'ABCD', 'AB', 'A1C', 'ÉCO', '', null, undefined, 12, ['ABC'], {}, 'abc\n'];
+      const mid = ['a-001', ' A-001A ', 'A-001AA', 'A-01', 'Z-999Z', 'A-001a', 'A_001', '', null, 7];
+      return { tri: tri.map(v => MS.triOf(v)), mid: mid.map(v => MS.midOf(v)), id: MS.MISSION_ID.test('F-071') && !MS.MISSION_ID.test('F-71'), t: MS.TRI.test('ABC') && !MS.TRI.test('AbC') } }""")
+    c.eq(got['tri'], ['ABC', 'ABC', '', '', '', '', '', '', '', '', '', '', 'ABC'], 'triOf for abc, " ABC ", ABCD, AB, A1C, ÉCO, "", null, undefined, 12, ["ABC"], {}, "abc\n"', what='triOf')
+    c.eq(got['mid'], ['A-001', 'A-001A', '', '', 'Z-999Z', 'A-001A', '', '', '', ''], 'midOf for a-001, " A-001A ", A-001AA, A-01, Z-999Z, A-001a, A_001, "", null, 7', what='midOf')
+    c.eq((got['id'], got['t']), (True, True), 'the two forms themselves', what='MISSION_ID, TRI')
+
+
+@case('N253', 'Missions › no file of modules/missions declares its own trigram or mission-id form (/^[A-Z]{3}$/, /^[A-Z]-[0-9]{3}[A-Z]?$/) nor its own triOf / midOf; they come from '
+      'frame/lib/mission.js (a re-export or an import is allowed) (SOG-0468, point 2)', 'N', static=True, tags=('missions',),
+      rule='SOG-0468 point 2: the rule is written once, in frame/lib/mission.js')
+def n253(c):
+    import re as _re
+    found = []
+    forms = (r'/^[A-Z]{3}$/', r'/^[A-Z]-\d{3}[A-Z]?$/')
+    for f in sorted((c.root / 'modules/missions').glob('*.js')):
+        for n, line in enumerate(f.read_text(encoding='utf-8').splitlines(), 1):
+            if any(x in line for x in forms) or _re.search(r'\bconst (triOf|midOf)\s*=|\bfunction (triOf|midOf)\b', line):
+                found.append(f'{f.name}:{n}')
+    c.eq(found, [], 'no own trigram / mission-id form, no own triOf / midOf in the module', what='own id rules')

@@ -531,5 +531,5 @@ export function slug(title) {
 /** Le chemin du fichier d'un modèle personnel (voir l'en-tête) : un trigramme de trois lettres et un identifiant à forme fermée. */
 export function modelPath(trigram, id) {
   const t = typeof trigram === 'string' ? trigram.trim().toUpperCase() : '';
-  return /^[A-Z]{3}$/.test(t) && idOf(id) ? `pilot/${t}/modeles/${id}.yaml` : null;
+  return MS.TRI.test(t) && idOf(id) ? `pilot/${t}/modeles/${id}.yaml` : null;
 }

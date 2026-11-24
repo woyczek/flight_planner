@@ -89,8 +89,10 @@
 
 import {
   DRAWER_IDS,
-  REFILL_RULE
-} from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M) : une seule liste, jamais recopiée
+  REFILL_RULE,
+  triOf,
+  midOf
+} from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M), le trigramme et l'identifiant de mission : les règles du lecteur, jamais recopiées
 import {
   own
 } from '../../frame/lib/untrusted.js'; // la valeur d'une clé PROPRE d'un objet, jamais une clé héritée (K479, SOG-0468 c : écrite une fois)
@@ -132,9 +134,7 @@ export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight
 export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'refill', 'sequence'];
 export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
-const TRI = /^[A-Z]{3}$/,
-  MID = /^[A-Z]-\d{3}[A-Z]?$/,
-  SEANCE = /^(A:(\d{4}-\d{2}-\d{2}|0)|S:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)$/;
+const SEANCE = /^(A:(\d{4}-\d{2}-\d{2}|0)|S:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)$/;
 /** Une heure d'un autre carnet est refusée au-delà de deux minutes dans le futur (horloges), et plus de douze heures avant la référence. */
 export const FUTURE_MS = 2 * 60e3,
   BEFORE_MS = 12 * 3600e3;
@@ -144,16 +144,6 @@ const CREW_MAX = 12;
 // mission, là où l'utilisateur les a posés — ses mots, via le relais : « toujours valable à 2 nm », « forcément… ± 1 nm ».
 /** Une escale requise d'une arrivée (`key.required`) est passée à cette distance, en milles marins, et non au rayon de l'arrivée. */
 export const TRANSIT_NM = 2;
-/** Un trigramme en majuscules, '' sinon. */
-const triOf = v => {
-  const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
-  return TRI.test(s) ? s : '';
-};
-/** Un identifiant de mission en majuscules, '' sinon. */
-const midOf = v => {
-  const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
-  return MID.test(s) ? s : '';
-};
 /** Le chemin du carnet de ce pilote pour cette mission, ou null (voir l'en-tête). */
 export function bookPath(trigram, missionId) {
   const t = triOf(trigram),

@@ -51,6 +51,10 @@ import {
 import {
   two
 } from '../../frame/lib/time.js'; // deux chiffres
+import {
+  triOf,
+  midOf
+} from '../../frame/lib/mission.js'; // le trigramme et l'identifiant de mission : les règles du lecteur, les mêmes que bookPath
 
 /** Au plus tant de lignes lues dans le fichier : au-delà, rien n'est écrit (jamais les lignes des autres tronquées). */
 export const MAX_LINES = 2000;
@@ -67,12 +71,8 @@ const TRIGRAMS_MAX = 400, // trigrammes proposés dans la liste du champ « Pilo
 // est tout de même REPASSÉE par mine() et seanceOf() (lineOf) : une divergence se voit au banc, jamais dans le fichier.
 const REG = /^[A-Z0-9-]{1,10}$/i; // l'immatriculation (SOG-0443 : facultative, dix signes) : propre à l'affectation
 
-/** Un trigramme en capitales, '' sinon — validé comme drawers_view.js le fait : par bookPath (rogné, trois lettres). */
-const triOf = v => bookPath(typeof v === 'string' ? v : '', 'A-000')?.split('/')[1] || '';
 /** Le trigramme de l'auteur d'une écriture (voir l'en-tête). */
 export const meOf = v => triOf(v);
-/** Un identifiant de mission en capitales, '' sinon — validé par bookPath (la forme des dossiers de missions/). */
-const midOf = v => bookPath('AAA', typeof v === 'string' ? v : '')?.split('/')[3]?.replace(/\.json$/, '') || '';
 
 /** Le fichier relu (voir l'en-tête) : ses lignes telles quelles, ou pourquoi il ne se réécrit pas. Ne lève jamais. */
 export function readIndex(doc) {

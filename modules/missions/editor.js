@@ -105,8 +105,8 @@ export const PLACES_MAX = 60;
 export const TEAMS_MAX = 40;
 export const NODES_MAX = MS.NODES_MAX;
 export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
-/** L'identifiant d'une mission (la forme de add.js) et une famille (mission.type). */
-const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
+/** L'identifiant d'une mission (la règle du lecteur, frame/lib/mission.js) et une famille (mission.type). */
+const MISSION_ID = MS.MISSION_ID,
   FAMILY = /^[A-Z][A-Z0-9_]{1,23}$/;
 
 /** Un texte nettoyé (sans caractère de format invisible : `visible` du lecteur, blancs repliés) et borné — la définition unique de l'atelier

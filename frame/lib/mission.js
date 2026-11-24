@@ -951,8 +951,22 @@ export function readMission(doc) {
 // tel quel ; des segments de lettres, chiffres, « _ », « - » et « . » qui ne commencent pas par un point (ni « .. », ni chemin absolu,
 // ni « \ »), un fichier .yaml ou .yml ; sinon vide, et le lecteur dit « chemin refusé »
 const SEGMENT = /^[\p{L}\p{N}_][\p{L}\p{N}_.-]*$/u;
-/** La forme d'un identifiant de mission (« A-001A », « F-071 ») : celle des dossiers de missions/. */
-const MISSION_FORM = /^[A-Z]-\d{3}[A-Z]?$/;
+/** L'identifiant d'une mission : « A-001A », « F-071 » (la lettre de la famille, trois chiffres, puis la lettre d'un vol lié — A à Y,
+ *  liés à la fiche sans suffixe — ou Z, l'organisation ; ou rien : SOG-0036, Q-0048, jamais « variante »). La forme des dossiers de
+ *  missions/ ; LA règle de la suite (add.js, drawers.js et l'atelier la prennent d'ici : SOG-0468). */
+export const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/;
+/** Le trigramme d'un pilote : trois capitales (le dossier pilot/<TRI>/). */
+export const TRI = /^[A-Z]{3}$/;
+/** Un trigramme en majuscules (rogné), '' sinon ; '' aussi pour ce qui n'est pas un texte. */
+export const triOf = v => {
+  const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
+  return TRI.test(s) ? s : '';
+};
+/** Un identifiant de mission en majuscules (rogné), '' sinon ; '' aussi pour ce qui n'est pas un texte. */
+export const midOf = v => {
+  const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
+  return MISSION_ID.test(s) ? s : '';
+};
 /** Un dossier sûr sous missions/ (« A_COMBAT/A-001A »), ou ''. */
 const safeFolder = f => f && f.length <= 200 && f.split('/').every(p => SEGMENT.test(p)) ? f : '';
 /** Un nom de fichier de mission sûr (« missionA-001A.yaml »), ou ''. */
@@ -983,7 +997,7 @@ export function readRegistry(doc) {
     // court que ce qu'on compare, sinon le plan réécrit ou supprime des lignes (audit 176) ; l'écran la raccourcit à l'affichage seul
     const reg = clean(x.id).slice(0, 40),
       leaf = safeFolder(clean(x.folder)).split('/').pop(),
-      id = MISSION_FORM.test(leaf) && leaf !== reg ? leaf : reg;
+      id = MISSION_ID.test(leaf) && leaf !== reg ? leaf : reg;
     return {
       id,
       formerId: id !== reg ? reg.slice(0, 40) : '',
