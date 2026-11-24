@@ -14119,7 +14119,7 @@ def n196(c):
     c.page.add_init_script("""(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
       if (window.__failDraft && v && typeof v.path === 'string' && v.path.includes('cache/missions/draft_')) throw new DOMException('quota exceeded', 'QuotaExceededError');
       return put.apply(this, arguments) } })()""")
-    failed = lambda: [norm(x) for x in c.note_log() if norm(x).startswith('Mission non enregistrée :')]  # the log of every note, shown or waiting (a phone shows one at a time)  # noqa: E731
+    failed = lambda: [norm(x) for x in c.note_log() if norm(x).startswith('Brouillon non gardé :')]  # the log of every note, shown or waiting (a phone shows one at a time)  # noqa: E731
 
     for width in (390, 1280):
         c.page.set_viewport_size({'width': width, 'height': c.height})
@@ -14188,7 +14188,7 @@ def n196(c):
             _tab(c, 'mission')
             _ed_fill(c, 'edtitle', title)
             if how == 'Annuler':
-                # the draft is written a second after the last keystroke (DRAFT_MS) and refused here: its note « Mission non enregistrée : … »
+                # the draft is written a second after the last keystroke (DRAFT_MS) and refused here: its note « Brouillon non gardé : … »
                 # appears where the bar of the workshop is on a phone, until the frame lifts it above the bar. Appearing between the touch on
                 # « Annuler » and the click the browser makes of it, it takes that click (under load, 390: the workshop stayed, no question,
                 # nothing said — measured with a note shown at the touchend). So that refusal is waited for and the note removed BEFORE the
@@ -14198,11 +14198,11 @@ def n196(c):
                         break
                     c.wait(250)
                 c.ok(len(failed()) == 1, failed(), f'{width} {how}: the draft written after the keystrokes is refused and said, before the exit')
-                first = [x for x in (c.js('window.__noteFirst') or []) if x['text'].startswith('Mission non enregistrée')]
+                first = [x for x in (c.js('window.__noteFirst') or []) if x['text'].startswith('Brouillon non gardé')]
                 c.ok(bool(first) and first[-1]['foot'] is not None, first, f'{width} {how}: the note and the foot of the workshop are measured at the first frame of the note')
                 nr, ft = first[-1]['note'], first[-1]['foot']
                 c.ok(nr[3] <= ft[1] or nr[1] >= ft[3] or nr[2] <= ft[0] or nr[0] >= ft[2], first[-1],
-                     f'{width} {how}: at its first frame the note « Mission non enregistrée » does not cut the foot of the workshop (.ms-atfoot[data-f-foot])')
+                     f'{width} {how}: at its first frame the note « Brouillon non gardé » does not cut the foot of the workshop (.ms-atfoot[data-f-foot])')
                 c.wait(300)
                 c.js(quiet)
                 c.tap(f'{E} [data-do="edcancel"]')
@@ -14217,8 +14217,7 @@ def n196(c):
                 c.wait(250)
             c.wait(1500)
             got = failed()
-            c.eq(len(got), 1, f'{width} {how}: the refused draft is said ONCE (« Mission non enregistrée : … »)', what='the failure')
-            c.ok(any('quota exceeded' in x for x in got), got, f'{width} {how}: the note carries the reason')
+            c.eq(len(got), 1, f'{width} {how}: the refused draft is said ONCE (« Brouillon non gardé : … »)', what='the failure')
             c.js('window.__failDraft = false')
             c.js(_REG_CLEAR)
 
@@ -15920,3 +15919,67 @@ def n255(c):
     code = [n for n, l in enumerate(lines, 1) if 'js-yaml.min.js' in l and not l.lstrip().startswith(('//', '*', '/*'))]
     c.eq(len(code), 1, 'js-yaml.min.js is named once in the code of editor_view.js', what='load sites')
     c.ok(any('function edYamlReady' in x for x in lines[max(0, code[0] - 6):code[0]]), code, 'and that place is inside edYamlReady')
+
+
+_QUOTA_INIT = """(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
+  if (window.__failDraft && v && typeof v.path === 'string' && v.path.includes('cache/missions/draft_')) throw new DOMException('quota exceeded', 'QuotaExceededError');
+  return put.apply(this, arguments) } })()"""
+
+
+@case('N256', 'Missions › the draft says its state, and the mission in progress survives (SOG-0607): with the storage full, « Brouillon non gardé : il sera perdu si la page se ferme. » is said ONCE and '
+      '« Brouillon gardé » never; the pilot leaves Missions for Settings (no question) and comes back: the workshop is open again with the changed title; the quota lifted, the reopening '
+      'retries, « Brouillon gardé » is said once and the draft file holds the title', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0607: modules/missions/editor_view.js `edDraftWrite` (the promise of the write), `edDraftFailed`, `edAfter` (KEPT_ED, the reopening); editor_texts.js `draftNotKept`')
+def n256(c):
+    title = 'Un titre retouché'
+    path = 'cache/missions/draft_X-001A.json'
+    said = lambda t: [norm(x) for x in c.note_log() if norm(x).startswith(t)]  # noqa: E731
+    c.page.add_init_script(_QUOTA_INIT)
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        _tab(c, 'mission')
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+        c.js('window.__failDraft = true')
+        _ed_fill(c, 'edtitle', title)
+        for _ in range(40):
+            if said('Brouillon non gardé'):
+                break
+            c.wait(250)
+        sentence = 'Brouillon non gardé : il sera perdu si la page se ferme.'
+        c.eq(said('Brouillon non gardé'), [sentence], f'{width}: the refused draft says its state, once, with these words', what='the refusal')
+        _ed_fill(c, 'edtitle', title + ' bis')
+        c.wait(2500)
+        c.eq(len(said('Brouillon non gardé')), 1, f'{width}: a second change, refused again, does not say it again', what='once per episode')
+        c.eq(said('Brouillon gardé'), [], f'{width}: « Brouillon gardé » is never said while the writes are refused', what='never kept')
+        c.eq(said('Mission non enregistrée'), [], f'{width}: « Mission non enregistrée » is not the head of a draft', what='not the save failure')
+        # leaving Missions: no question, the module is unmounted
+        c.js("location.hash = '#settings'")
+        c.until(f"!document.querySelector('{E}')", timeout=20000, what='Missions left for Settings')
+        c.wait(1500)
+        c.eq(c.count('.f-modal'), 0, f'{width}: leaving Missions asks nothing (the question waits for the frame)', what='no question')
+        c.eq(said('Brouillon gardé'), [], f'{width}: leaving with refused writes does not say « Brouillon gardé »', what='never kept (leave)')
+        # the return, the quota lifted: the workshop is open again, the title is there, the write is retried
+        c.js('window.__failDraft = false')
+        c.js("location.hash = '#missions'")
+        c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title + ' bis')}", timeout=20000, what='the workshop open again with the changed title')
+        for _ in range(40):
+            if said('Brouillon gardé'):
+                break
+            c.wait(250)
+        c.eq(said('Brouillon gardé'), ['Brouillon gardé'], f'{width}: the retried write is confirmed: « Brouillon gardé » is said once', what='kept once')
+        got = None
+        for _ in range(24):
+            got = c.js(_DRAFT_READ, path)
+            if got and got.get('read') and got['read']['title'] == title + ' bis':
+                break
+            c.wait(250)
+        c.ok(bool(got and got.get('read') and got['read']['title'] == title + ' bis'), got, f'{width}: the draft file holds the title')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

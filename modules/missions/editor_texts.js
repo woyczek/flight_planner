@@ -335,6 +335,10 @@ export const EDTX = {
   dwKey_object: ['un objet à trouver', 'an object to find', 'ein zu findendes Objekt', 'un objeto por encontrar'],
   dwKey_arrival: ['l\'arrivée au terrain', 'the arrival at the aerodrome', 'die Ankunft am Platz', 'la llegada al aeródromo'],
   draftKept: ['Brouillon gardé', 'Draft kept', 'Entwurf gespeichert', 'Borrador guardado'],
+  draftNotKept: ['Brouillon non gardé : il sera perdu si la page se ferme.', 'Draft not kept: it will be lost if the page closes.',
+    'Entwurf nicht gespeichert: Er geht verloren, wenn die Seite geschlossen wird.',
+    'Borrador no guardado: se perderá si se cierra la página.'
+  ],
   dwNotJudged: ['s\'ouvre au geste ou à l\'heure de repli', 'opens by the gesture or at the fallback time',
     'öffnet sich durch die Geste oder zur Ersatzzeit', 'se abre con el gesto o a la hora de reserva'
   ],
