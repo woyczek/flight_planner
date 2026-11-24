@@ -265,6 +265,7 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-dw-ask],[data-drawers] .dw-ask button{min-height:var(--sog-touch,44px);white-space:nowrap}
 [data-drawers] .dw-key{display:block;margin-top:2px}
 [data-drawers] .dw-acts{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 -4px}
+[data-drawers] section[data-dw-acts]{display:block;margin:0}
 [data-drawers] .dw-text{margin:6px 0 0;overflow-wrap:anywhere}
 [data-drawers] .dw-text p{margin:.4em 0;white-space:pre-wrap}
 [data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}

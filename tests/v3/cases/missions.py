@@ -16562,6 +16562,8 @@ def n267(c):
         else:
             c.eq(c.js(f"[{acts}.hasAttribute('data-f-foot'), getComputedStyle({acts}).position]"), [False, 'static'], 'at 1280 the gestures are in the flow: no foot, no sticky', what='in flow')
             c.ok(c.js(f"{acts}.getBoundingClientRect().top >= document.querySelector('{S} [data-dw-now]').getBoundingClientRect().bottom - 1"), 'above', 'at 1280 they sit right under « Maintenant »')
+            c.ok(c.js(f"{acts}.querySelector('.dw-kick').getBoundingClientRect().bottom <= {acts}.querySelector('[data-dw-seen]').getBoundingClientRect().top"), 'beside',
+                 'at 1280 the title « Ce que vous pouvez faire » is ABOVE the two gestures (the mock-up)')
             c.shot(f'N267_{c.design}_{c.width}_{c.lang}_flux.png')  # for the relay: the gestures in the flow at 1280
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
