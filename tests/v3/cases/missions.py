@@ -15852,3 +15852,46 @@ def n253(c):
             if any(x in line for x in forms) or _re.search(r'\bconst (triOf|midOf)\s*=|\bfunction (triOf|midOf)\b', line):
                 found.append(f'{f.name}:{n}')
     c.eq(found, [], 'no own trigram / mission-id form, no own triOf / midOf in the module', what='own id rules')
+
+
+@case('N254', 'Missions › « Annuler » when js-yaml does not load still asks the frame\'s question (SOG-0468, point 3): the reader cannot be loaded (its file is refused), a mission opened and its title '
+      'changed has no draft to keep, so « Annuler » asks « Quitter sans enregistrer ? Les changements seront perdus. » — never nothing — and « Rester » keeps the workshop', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0468 point 3: modules/missions/editor_view.js `edYamlReady` rejects when the import fails; `edLeave` keeps its own net (`.catch(() => 0)`) so that the exit falls back to `ctx.askLeave()`')
+def n254(c):
+    title = 'Un titre retouché'
+    c.page.route('**/frame/lib/js-yaml.min.js', lambda r: r.abort())
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.ok(c.js('() => !globalThis.jsyaml') is True, 'the reader is loaded', f'{width}: the reader is not loaded (its file is refused)')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            _tab(c, 'mission')
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+        _tab(c, 'mission')
+        _ed_fill(c, 'edtitle', title)
+        c.wait(1500)
+        c.eq(c.js("() => window.SogFrame.unsaved()"), True, f'{width}: without the reader no draft is written: the frame knows there is something to lose', what='unsaved')
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question of the frame')
+        c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), 'Quitter sans enregistrer ? Les changements seront perdus.',
+             f'{width}: « Annuler » without the reader asks the question of the frame', what='the question')
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", what='« Rester »')
+        c.eq(c.count(E), 1, f'{width}: « Rester » keeps the workshop', what='stay')
+        c.js(_REG_CLEAR)
+
+
+@case('N255', 'Missions › editor_view.js loads js-yaml in ONE place: the file js-yaml.min.js is named once in the file, outside the comments, inside edYamlReady (SOG-0468, point 3)',
+      'N', static=True, tags=('missions',), rule='SOG-0468 point 3: one load, one failure policy; the two call-site nets (the preload and « Annuler ») are `edYamlReady().catch(...)`')
+def n255(c):
+    src = (c.root / 'modules/missions/editor_view.js').read_text(encoding='utf-8')
+    lines = src.splitlines()
+    code = [n for n, l in enumerate(lines, 1) if 'js-yaml.min.js' in l and not l.lstrip().startswith(('//', '*', '/*'))]
+    c.eq(len(code), 1, 'js-yaml.min.js is named once in the code of editor_view.js', what='load sites')
+    c.ok(any('function edYamlReady' in x for x in lines[max(0, code[0] - 6):code[0]]), code, 'and that place is inside edYamlReady')

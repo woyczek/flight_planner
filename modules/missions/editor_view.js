@@ -201,7 +201,7 @@ async function edCatalog(s) {
   if (!e) return;
   if (!CATALOG) CATALOG = (async () => {
     try {
-      if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+      if (!globalThis.jsyaml) await edYamlReady();
       const r = await s.ctx.net.fetch(new URL('./catalog.yaml', import.meta.url).href, {
         cache: 'no-cache'
       });
@@ -235,7 +235,7 @@ async function edMine(s) {
     paths = (Array.isArray(list) ? list : []).filter(p => typeof p === 'string' && p.startsWith(prefix) && re.test(p)).sort().slice(0,
       CAT.LIMITS.models),
     out = [];
-  if (paths.length && !globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if (paths.length && !globalThis.jsyaml) await edYamlReady();
   for (const p of paths) {
     const r = await Promise.resolve().then(() => s.ctx.data.read(p)).catch(() => null),
       v = r?.value ?? r?.text ?? null,
@@ -348,7 +348,7 @@ async function edModelSave(s) {
       places: srcPlaces
     }),
     dropped = edModelDropped(srcDrawers, srcPlaces, model);
-  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if (!globalThis.jsyaml) await edYamlReady();
   const text = CAT.modelText(model, globalThis.jsyaml);
   // ce qui ne se relirait pas (un nom refusé par le lecteur, une balise) n'est pas écrit
   if (!model.title || CAT.readCatalog(text, globalThis.jsyaml).models[0]?.id !== id) return s.ctx.notify(s.tt(EDTX.mdSaveBad), 'warn');
@@ -754,7 +754,7 @@ function edSubtypes(s, fam, lang) {
 
 /** Lit le fichier d'une mission pour l'éditeur : le texte en schéma CORE (les dates restent des textes) ; { doc, pending } ou { err }. */
 async function edRead(s, path) {
-  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if (!globalThis.jsyaml) await edYamlReady();
   const r = await Promise.resolve().then(() => s.ctx.data.read(path, {
       wait: true
     })).catch(e => ({
@@ -4466,7 +4466,7 @@ async function edSave(s) {
   e.busy = true;
   draw(s);
   try {
-    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    if (!globalThis.jsyaml) await edYamlReady();
     const doc = edDoc(e, c);
     await s.ctx.data.put(path, ED.yamlText(doc, globalThis.jsyaml), {
       module: 'missions'
@@ -5246,9 +5246,22 @@ function edDeclare(s) {
   s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed) && (s.ed.busy || !edDraftWrite(s, s.ed)));
 }
 
+let YAML_LOAD = null; // le chargement de js-yaml en cours (une seule promesse partagée) ; null quand il n'y en a pas, ou après un échec
+/** Charge js-yaml (une seule fois, une seule promesse pour tous) : rend le lecteur (`globalThis.jsyaml`) dès qu'il est là. Un échec REJETTE
+ *  avec l'erreur de l'import et la promesse ratée est oubliée : l'appel suivant retente l'import. */
+function edYamlReady() {
+  if (globalThis.jsyaml) return Promise.resolve(globalThis.jsyaml);
+  YAML_LOAD ??= import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).then(() => globalThis.jsyaml, err => {
+    YAML_LOAD = null;
+    throw err;
+  });
+  return YAML_LOAD;
+}
+
 /** Charge js-yaml (le texte du brouillon) sans l'attendre : l'atelier l'appelle à son ouverture. Jamais d'exception. */
 function edYaml() {
-  if (!globalThis.jsyaml) import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).catch(() => 0);
+  // un préchargement qui échoue ne laisse aucun rejet sans main : l'usage qui a besoin du lecteur le redemande
+  if (!globalThis.jsyaml) edYamlReady().catch(() => 0);
 }
 
 /** « Annuler » (SOG-0454, SOG-0458) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre
@@ -5260,7 +5273,8 @@ async function edLeave(s) {
   let kept = false;
   if (edDirty(e)) {
     // le brouillon d'abord : écrit à l'instant, il garde tout ce qui a changé — rien à demander (décision de l'ergonome, 19 nov.)
-    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).catch(() => 0);
+    if (!globalThis.jsyaml) await edYamlReady().catch(() =>
+      0); // sans le lecteur, aucun brouillon ne s'écrit : la sortie retombe sur la question du cadre, jamais sur rien
     if (state() !== s || s.ed !== e) return;
     kept = !e.busy && edDraftWrite(s, e);
     if (!kept && !(await s.ctx.askLeave())) return;
@@ -5309,7 +5323,7 @@ async function edDraftKeep(s, e, last = false) {
   if (e.busy || !edDirty(e)) return;
   const gen = e.draftGen || 0; // « Enregistrer » pendant l'attente ci-dessous : cet écrit n'a plus lieu d'être
   if (!DF.keyOf(e.mode, e.origId)) return;
-  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if (!globalThis.jsyaml) await edYamlReady();
   if ((e.draftGen || 0) !== gen || e.busy) return;
   edDraftWrite(s, e);
 }
@@ -5395,7 +5409,7 @@ function edDraftDone(s, e) {
 async function edResume(s, key) {
   const path = DF.draftPath(key);
   if (!path || s.ed) return;
-  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if (!globalThis.jsyaml) await edYamlReady();
   const d = DF.readDraft(await Promise.resolve().then(() => s.ctx.data.get(path)).catch(() => null), globalThis.jsyaml);
   if (state() !== s || s.ed) return;
   if (!d || d.key !== key) return s.ctx.notify(s.tt(EDTX.draftUnread), 'warn');
