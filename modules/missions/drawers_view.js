@@ -509,15 +509,21 @@ async function load(v) {
   paint();
   arm(v, peers.length);
   publish(v); // SOG-0448 : les tiroirs ouverts publiés sur l'appareil, la fiche prévenue
-  // le rattrapage au retour de la page : le premier tiroir fermé que l'appareil suit est relu UNE fois sur la trace gardée du vol de
-  // cette mission (depuis l'instant où il est devenu le premier fermé) — la trace d'un autre vol n'est jamais lue
-  const first = states.find(x => !x.open && !x.locked);
-  if (first && followsHere(v, first) && !v.caught.has(first.id)) {
-    v.caught.add(first.id);
-    const trail = v.ctx.live?.trail?.(),
-      f = trail && trail.from === v.startIso ? D.catchUp(first.key, trail, first.since) : null;
-    if (f) record(v, first.id, f, 'trail').catch(() => {});
-  }
+  catchUp(v);
+}
+
+/** Le rattrapage (SOG-0617, c) : le premier tiroir fermé que l'appareil suit est relu UNE fois sur la trace gardée du vol de cette
+ *  mission (depuis l'instant où il est devenu le premier fermé) — la trace d'un autre vol n'est jamais lue. Pendant l'écriture d'un
+ *  constat (busy), rien n'est marqué : record() le rappelle à sa fin, si bien que le tiroir suivant est rattrapé à son tour, tiroir
+ *  après tiroir sur toute la trace (avant : marqué « relu » pendant l'écriture du précédent, il ne l'était jamais). */
+function catchUp(v) {
+  if (V !== v || v.busy || !v.mine || !Array.isArray(v.states)) return;
+  const first = v.states.find(x => !x.open && !x.locked);
+  if (!first || !followsHere(v, first) || v.caught.has(first.id)) return;
+  v.caught.add(first.id);
+  const trail = v.ctx.live?.trail?.(),
+    f = trail && trail.from === v.startIso ? D.catchUp(first.key, trail, first.since) : null;
+  if (f) record(v, first.id, f, 'trail').catch(() => {});
 }
 
 /** L'appareil a-t-il une position en direct qui est celle du vol de cette mission ? */
@@ -624,6 +630,9 @@ async function record(v, id, f, source) {
     Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
   } finally {
     v.busy = false;
+    // le rattrapage qu'un calcul pendant cette écriture n'a pas pu lancer (SOG-0617, c) ; un écrit refusé ne boucle pas : son tiroir,
+    // toujours le premier fermé, est déjà marqué relu
+    catchUp(v);
   }
 }
 

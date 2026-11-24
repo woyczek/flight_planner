@@ -16053,3 +16053,95 @@ def n258(c):
         if wrong:
             bad[f.name] = wrong
     c.eq(bad, {}, 'every notify(…) of the module passes one of the frame\'s kinds (info, ok, warn, err)', what='kinds outside the frame\'s')
+
+
+
+# SOG-0617 (c): an invented mission whose two first drawers open at two zones in a row, south of the base, then an arrival
+_DW_CHAIN_REGISTRY = """missions:
+  - { id: X-961A, family: TESTTIROIR, title: Recherche rattrapée, folder: X_TIR/X-961A, files: [missionX-961A.yaml] }
+"""
+_DW_CHAIN = """mission: { id: X-961A, type: SAR, subtype: RECHERCHE }
+title: Recherche rattrapée
+summary: Deux secteurs inventés au sud de la base, l'un après l'autre.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.4, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.8, lon: 1.0 }, radius_km: 3 }
+  - { id: ZONE-2, name: Secteur sud, kind: search, centre: { lat: 44.6, lon: 1.0 }, radius_km: 3 }
+route_order: [ORIGIN, DESTINATION]
+phases:
+  - id: B
+    title: Secteur nord
+    message: "Rien dans le secteur nord."
+    brief: Continuez vers le secteur sud.
+    trigger_zone: ZONE-1
+    fallback_delay_min: 60
+  - id: C
+    title: Secteur sud
+    message: "Une épave a été vue dans le secteur sud."
+    brief: Orbitez au-dessus.
+    trigger_zone: ZONE-2
+    fallback_delay_min: 90
+  - id: D
+    title: Compte rendu
+    message: "Mission terminée."
+    brief: Rendez compte au centre.
+    trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
+    fallback_delay_min: 120
+"""
+
+
+@case('N261', 'Missions › the catch-up on the kept track opens the drawers one after the other (SOG-0617, c): the flight crossed the two '
+      'zones away from the sheet; opening the sheet with a live position, both drawers are opened from the track, B then C, each with its '
+      'finding « trail » — before, the second was marked « read again » while the first was being written, and never opened',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0617 (c), the ergonomist through the relay, 24 Nov 2026: the catch-up is for the whole track since the start, drawer after '
+      'drawer; the device track device/trail.json ({ from: started.at, trail: [[lat, lon, altFt, s, aglFt, ground]] }), invented, no network')
+def n261(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+            'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    # the live position: past both zones, still in flight, far from the arrival — the live judge opens nothing by itself
+    here = {'lat': 44.5, 'lon': 1.0, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120,
+            'source': 'xplane'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.context.route(re.compile(r'/__setup/sim/position'),
+                    lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**here, 'at': at(0)})))
+    start = at(-12)
+    flight = {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': 'X-961A', 'started': {'at': start},
+              'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+              'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0}, {'id': 'XTSU', 'lat': 44.4, 'lon': 1.0}],
+                        'distanceNm': 36, 'trackDeg': 180}, 'level': {'ft': 1500}}
+    # the kept track of THIS flight: south from the base, a point inside the north zone (180 s), then one inside the south zone (360 s)
+    track = {'from': start, 'trail': [[45.0, 1.0, 1500, 0, 1500, 0], [44.92, 1.0, 2000, 60, 1500, 0], [44.86, 1.0, 2000, 120, 1500, 0],
+                                      [44.80, 1.0, 2000, 180, 1500, 0], [44.74, 1.0, 2000, 240, 1500, 0], [44.68, 1.0, 2000, 300, 1500, 0],
+                                      [44.60, 1.0, 2000, 360, 1500, 0], [44.54, 1.0, 2000, 420, 1500, 0]]}
+    BOOK = 'pilot/ABC/missions/X-961A.json'
+    S = f'{M} [data-drawers]'
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_CHAIN_REGISTRY], ['missions/X_TIR/X-961A/missionX-961A.yaml', _DW_CHAIN]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], ['device/trail.json', track, 'cache']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-961A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-961A"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-961A'", timeout=10000, what='the sheet of X-961A')
+        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', timeout=40000, what='the first drawer caught up')
+        b = book['drawer_B']
+        c.ok(b['how'] == 'zone' and b.get('source') == 'trail' and abs(b['to']['lat'] - 44.80) < 1e-9, b,
+             'the first drawer: opened from the track, at the point inside the north zone')
+        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', timeout=20000,
+                           what='the SECOND drawer caught up from the track (before: never)')
+        k = book['drawer_C']
+        c.ok(k['how'] == 'zone' and k.get('source') == 'trail' and abs(k['to']['lat'] - 44.60) < 1e-9 and 'drawer_D' not in book, book,
+             'the second drawer: opened from the track too, at the point inside the south zone — the arrival is not reached, it stays closed')
+        c.until(f"['B', 'C'].every(x => document.querySelector('{S} [data-dw=\"' + x + '\"]')?.dataset.open === 'zone')", timeout=8000,
+                what='both drawers open under « Suite de la mission »')
+        c.ok(c.count(f'{S} [data-dw="D"]') == 0, c.text(S), 'the arrival drawer stays closed and unseen')
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
