@@ -15832,7 +15832,7 @@ def n251(c):
 def n252(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     got = c.js("""async () => { const MS = await import('/frame/lib/mission.js');
-      const tri = ['abc', ' ABC ', 'ABCD', 'AB', 'A1C', 'ÉCO', '', null, undefined, 12, ['ABC'], {}, 'abc\n'];
+      const tri = ['abc', ' ABC ', 'ABCD', 'AB', 'A1C', 'ÉCO', '', null, undefined, 12, ['ABC'], {}, 'abc\\n'];
       const mid = ['a-001', ' A-001A ', 'A-001AA', 'A-01', 'Z-999Z', 'A-001a', 'A_001', '', null, 7];
       return { tri: tri.map(v => MS.triOf(v)), mid: mid.map(v => MS.midOf(v)), id: MS.MISSION_ID.test('F-071') && !MS.MISSION_ID.test('F-71'), t: MS.TRI.test('ABC') && !MS.TRI.test('AbC') } }""")
     c.eq(got['tri'], ['ABC', 'ABC', '', '', '', '', '', '', '', '', '', '', 'ABC'], 'triOf for abc, " ABC ", ABCD, AB, A1C, ÉCO, "", null, undefined, 12, ["ABC"], {}, "abc\n"', what='triOf')
