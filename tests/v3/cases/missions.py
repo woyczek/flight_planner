@@ -4809,7 +4809,7 @@ def n75(c):
       rule='SOG-0459 over SOG-0441 T2: the section stays hidden and empty until a drawer of MY mission (assigned to me, or the mission of '
       'my current flight) is open; the one gesture « Demander la suite » lives in the place [data-actslot] of the sheet\'s actions row, '
       'writes the pilot\'s own record only, and never opens a time, a zone or an arrival; a drawer that opens is announced once '
-      '(« Suite de la mission : {title} »); another pilot\'s finding opens it for all and is kept on the device, his gesture opens it for '
+      '(no note on the sheet: the block is on screen, the watcher of the page tells it otherwise, SOG-0617); another pilot\'s finding opens it for all and is kept on the device, his gesture opens it for '
       'him only and is not said, a refused opening is not said; « Resceller » at the Full level only; describe() keeps the sentences of '
       'a drawer for the author\'s workshop')
 def n81(c):
@@ -4884,6 +4884,14 @@ _DW_EMPTY = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]')
 # the Current level and above, posed at the END of the place by assign_view.js) is left out of this row — N89 reads it
 _DW_ROW = f"""[...(document.querySelector('{M} .ms-sheet .ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? 'slot:' + [...e.children].filter(x => !x.hasAttribute('data-as-open')).map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join(',') : (e.dataset.do || e.tagName))"""
 _DW_ASK = f'{M} [data-actslot] > [data-dw-ask]'
+# SOG-0617 (e): the section of MY mission while its flight is started — shown, with ONLY the line « Position » (no title, no « data-mine », no row)
+_DW_POS_ONLY = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === false && !s.hasAttribute('data-mine')
+  && s.children.length === 1 && s.children[0].matches('p[data-dw-pos]') && !s.querySelector('h3') }})()"""
+# the line « Position » with a live position from the simulator (its source is « X-Plane »), in the four languages, written in clear
+_POS_LIVE = {'fr': r'Position : X-Plane, reçue il y a \d+ s', 'en': r'Position: X-Plane, received \d+ s ago', 'de': r'Position: X-Plane, vor \d+ s empfangen',
+             'es': r'Posición: X-Plane, recibida hace \d+ s'}
+# what no note must start with: the title of the section (SOG-0617: no note says an opening while the block is on screen)
+_SUITE_HEAD = {'fr': 'Suite de la mission', 'en': 'Rest of the mission', 'de': 'Fortsetzung der Mission', 'es': 'Continuación de la misión'}
 
 
 @case('N82', 'Missions: the sequel of my mission is hidden — before anything opens, the sheet of my assigned mission shows no section, no '
@@ -4961,8 +4969,8 @@ def n82(c):
     c.ok(norm(c.text(f'{S} [data-dw="B"] .dw-top')).startswith('Retour <img') and c.count(f'{S} img') == 0 and c.js('window.__pwn') is None,
          c.text(f'{S} [data-dw="B"]'), 'the title in bold, without « Tiroir n »; shown as text, never interpreted')
     log = [norm(n) for n in c.note_log()]
-    c.ok(norm(row('nowOpen').replace('{title}', 'Nouvel ordre du centre')) in log and any(n.startswith(norm(row('nowOpen').split('{')[0])) and 'Retour' in n for n in log),
-         log, 'each opening has its notification « Suite de la mission : {title} », without a number')
+    c.ok(not any(n.startswith(_SUITE_HEAD[c.lang]) for n in log), log,
+         'no note says « Suite de la mission » (SOG-0617): the block is on screen, the arrival is told only when it is not (by the watcher of the page)')
     c.ok(c.js(f"document.querySelector('{_DW_ASK}').disabled") and c.count(f'{_DW_ASK}[data-dw-rest]') == 1, c.js(_DW_ROW),
          'after the answer the command rests (a minute)')
     c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display === 'none' }})()"),
@@ -5078,9 +5086,10 @@ def n83(c):
         # followed: the mission of my started flight, a live position — and NOTHING on screen (two fixes at least)
         c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=20000, what='« Demander la suite »: the mission of my flight is mine')
         c.wait(11000)
-        c.ok(c.js(_DW_EMPTY) and (c.doc(BOOK) or {}).get('drawer_B') is None and norm(row('followed')) not in norm(c.text(f'{M} .ms-sheet')),
+        c.ok(c.js(_DW_POS_ONLY) and re.fullmatch(_POS_LIVE[c.lang], norm(c.text(f'{S} [data-dw-pos]'))) is not None
+             and (c.doc(BOOK) or {}).get('drawer_B') is None and norm(row('followed')) not in norm(c.text(f'{M} .ms-sheet')),
              c.js(f"document.querySelector('{S}')?.outerHTML"),
-             'while the device follows the zone: the section stays hidden and empty (no « Cet appareil suit ce passage »), nothing opened outside the zone')
+             'while the device follows the zone: the section shows ONLY the line « Position : X-Plane, reçue il y a n s » (SOG-0617, e), no title, no « data-mine », nothing of the drawers (no « Cet appareil suit ce passage »), nothing opened outside the zone')
         frame_it('followed')
         # crossed: the next fix is inside the zone — the finding is written with the two fixes of the leg
         now['fix'] = fix(44.80, 1.0)
@@ -5094,8 +5103,8 @@ def n83(c):
         c.ok(norm(c.text(f'{S} h3')) == norm(row('head')) and head('openZoneMe') in t and 'canot orange' in t and 'Descendez' in t
              and re.search(r'\d\d:\d\dZ', t) is not None and 'Canot en vue' not in t, t,
              'under « Suite de la mission »: « ouvert au passage de la zone, à … », its message and its briefing — nothing of the object still closed')
-        c.ok(any(norm(n) == norm(row('nowOpen').replace('{title}', 'Secteur de recherche')) for n in c.note_log()), c.note_log(),
-             'the notification « Suite de la mission : Secteur de recherche »')
+        c.ok(not any(norm(n).startswith(_SUITE_HEAD[c.lang]) for n in c.note_log()), c.note_log(),
+             'no note « Suite de la mission » (SOG-0617): the block is on screen, so the arrival is not told')
         # the object, out of range: « Demander » answers « Rien de nouveau pour l'instant » and writes nothing
         c.wait(6000)
         ask()
@@ -16170,4 +16179,134 @@ def n261(c):
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+# SOG-0617: the judge of the drawers lives for the page (modules/missions/drawers_run.js). Two invented missions, the second one not mine.
+_DW_P_REGISTRY = """missions:
+  - { id: X-962A, family: TESTTIROIR, title: Recherche à deux onglets, folder: X_TIR/X-962A, files: [missionX-962A.yaml] }
+  - { id: X-963A, family: TESTTIROIR, title: Recherche en vol, folder: X_TIR/X-963A, files: [missionX-963A.yaml] }
+  - { id: X-963B, family: TESTTIROIR, title: Recherche d'un autre, folder: X_TIR/X-963B, files: [missionX-963B.yaml] }
+"""
+# the writes of the record of a mission, counted by page: every put of its path that carries the drawer B
+_PUT_LOG = """(() => { const put = IDBObjectStore.prototype.put; window.__putLog = [];
+  IDBObjectStore.prototype.put = function (v) {
+    try { if (v && typeof v.path === 'string' && v.path.startsWith('pilot/ABC/missions/') && JSON.stringify(v).includes('drawer_B')) window.__putLog.push(v.path) } catch (e) {}
+    return put.apply(this, arguments) } })()"""
+_FIRST_FULL = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+               'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+
+
+def _dw_flight(start, mission):
+    """The started flight of an invented mission, for pilot/ABC/current_flight.json."""
+    return {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': mission, 'started': {'at': start},
+            'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+            'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0}, {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
+                      'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
+
+
+@case('N262', 'Missions › one finding with two tabs (SOG-0617): two pages of the same browser both judge the live position of my started flight on the sheet of the same mission; '
+      'the zone of the first drawer is crossed, the record pilot/ABC/missions/X-962A.json gets the drawer B ONCE — written by one page only (the guard of navigator.locks '
+      're-reads the record) — and both pages show B open',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0617 (the guard between tabs): every tab judges, every write of a finding goes through navigator.locks(\'sog-mission-\' + id), the record is re-read inside the lock and '
+      'nothing is written when the drawer is already open in it; never two findings for one event; invented mission, simulator and launcher simulated, no network')
+def n262(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    fix = lambda lat, lon: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120, 'source': 'xplane'}
+    now = {'fix': fix(44.9, 1.0)}                       # north of the zone (centre 44.8, radius 3 km): outside
+    BOOK = 'pilot/ABC/missions/X-962A.json'
+    S = f'{M} [data-drawers]'
+    open_b = f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'zone'"
+    c.context.add_init_script(_PUT_LOG)                 # in every page of the context, before it loads
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
+    c.context.route(re.compile(r'/__setup/sim/position'),
+                    lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**now['fix'], 'at': at(0)})))
+    p2 = None
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_P_REGISTRY], ['missions/X_TIR/X-962A/missionX-962A.yaml', _DW_LIVE.replace('X-904A', 'X-962A')]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', _dw_flight(at(-12), 'X-962A'), 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-962A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-962A"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-962A' && !!document.querySelector('{_DW_ASK}')", timeout=20000, what='the sheet of X-962A, mine')
+        # the second tab: the same browser, the same documents, the same mission opened
+        p2 = c.context.new_page()
+        p2.goto(f'{c.base}/frame/index.html?app=company#missions', wait_until='load')
+        p2.wait_for_selector(f'{M} [data-list] [data-id="X-962A"]', timeout=20000)
+        p2.click(f'{M} [data-list] [data-id="X-962A"]')
+        p2.wait_for_selector(_DW_ASK, timeout=20000)
+        c.wait(11000)                                    # two fixes outside the zone in both tabs
+        now['fix'] = fix(44.80, 1.0)                     # the zone is crossed
+        c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', timeout=40000, what='the record carries the finding')
+        c.until(open_b, timeout=30000, what='B open in the first tab')
+        p2.wait_for_function(f'() => {open_b}', timeout=30000)
+        c.wait(12000)                                    # time for a second write, were there one
+        writes = [len(pg.evaluate('window.__putLog || []')) for pg in (c.page, p2)]
+        c.eq(sum(writes), 1, 'the finding of the drawer B is written ONCE for the two tabs (one page wrote it, the other re-read the record and wrote nothing)', what='writes of drawer_B')
+        book = c.doc(BOOK)
+        c.ok(book['drawer_B']['how'] == 'zone' and 'drawer_C' not in book, book, 'the record: the drawer B by the zone, nothing else opened')
+    finally:
+        if p2 is not None:
+            p2.close()
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+@case('N263', 'Missions › the line « Position » (SOG-0617, e): on the sheet of MY mission while its flight is started, the first line of the section says « Position : X-Plane, reçue il y a n s » '
+      'with a live position, « Pas de position : la suite de la mission ne s\'ouvrira pas à l\'arrivée sur un lieu. » without one — alone, with no title and no row of drawers; '
+      'a mission that is not mine shows no line',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0617 (e), the ergonomist: the pilot knows whether the rest of the mission can open on arriving at a place; texts in the TX of drawers_view.js; « Position perdue » is the frame\'s (SOG-0622)')
+def n263(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    pos = {'lat': 44.9, 'lon': 1.0, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120, 'source': 'xplane'}
+    S = f'{M} [data-drawers]'
+
+    def phase(position, target):
+        """The sheet of `target` in the company app, the flight started on X-963A; the simulator answers a position (or 404)."""
+        c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
+        c.context.route(re.compile(r'/__setup/sim/position'),
+                        (lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**pos, 'at': at(0)}))) if position
+                        else (lambda r: r.fulfill(status=404, content_type='application/json', body='{}')))
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_P_REGISTRY], ['missions/X_TIR/X-963A/missionX-963A.yaml', _DW_LIVE.replace('X-904A', 'X-963A')],
+                         ['missions/X_TIR/X-963B/missionX-963B.yaml', _DW_LIVE.replace('X-904A', 'X-963B')]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', _dw_flight(at(-12), 'X-963A'), 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"{target}\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="{target}"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{target}'", timeout=10000, what=f'the sheet of {target}')
+
+    def unroute():
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+
+    live_re = r'Position : X-Plane, reçue il y a \d+ s'
+    try:
+        # (A) a live position: the line says the source and the age; the section shows only it
+        phase(True, 'X-963A')
+        c.until(f"/^{live_re}$/.test(document.querySelector('{S} [data-dw-pos]')?.textContent.replace(/\\s+/g, ' ').trim() || '')", timeout=40000, what='the line « Position : X-Plane, reçue il y a n s »')
+        c.ok(c.js(_DW_POS_ONLY), c.js(f"document.querySelector('{S}')?.outerHTML"), 'the section shows ONLY that line: no title, no « data-mine », no row')
+        c.eq(re.fullmatch(live_re, norm(c.text(f'{S} [data-dw-pos]'))) is not None, True, 'the line reads « Position : X-Plane, reçue il y a n s » (n a number)', what='line with a position')
+        unroute()
+        # (B) no position (the simulator answers 404): the line says what it changes for the rest of the mission
+        phase(False, 'X-963A')
+        c.until(f"!!document.querySelector('{S} [data-dw-pos]')", timeout=40000, what='the line « Pas de position »')
+        c.eq(norm(c.text(f'{S} [data-dw-pos]')), "Pas de position : la suite de la mission ne s'ouvrira pas à l'arrivée sur un lieu.",
+             'without a position the line says the rest of the mission will not open on arriving at a place', what='line without position')
+        c.ok(c.js(_DW_POS_ONLY), c.js(f"document.querySelector('{S}')?.outerHTML"), 'and it is alone in the section')
+        unroute()
+        # (C) a mission that is not mine: no line at all, the section hidden and empty
+        phase(True, 'X-963B')
+        c.wait(8000)
+        c.ok(c.count('[data-dw-pos]') == 0 and c.js(_DW_EMPTY), c.js(f"document.querySelector('{S}')?.outerHTML"), 'a mission that is not mine shows no line « Position » (the section stays hidden and empty)')
+    finally:
+        unroute()
     c.js(_DW_CLEAR)

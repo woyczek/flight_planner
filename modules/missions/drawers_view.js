@@ -18,10 +18,16 @@
 //   · le suivi en vol (heure, repli, zone, arrivée, objet sans déclaration, constat d'un équipier) continue en silence.
 // Une mission qu'on feuillette : rien, ni section, ni geste.
 //
-// API : show(host, { ctx, id, mission, passage, notJudged, changed, pollMs, restMs }) — pose la section dans `host` (l'élément
-//   [data-drawers] de la fiche, redessiné avec elle : rappeler show à chaque dessin) ; passage(pointId) et notJudged(key) viennent de
-//   frame/lib/mission.js (passageMin, notJudgedYet) ; restMs : le repos de « Demander la suite » (une minute ; un banc le raccourcit) ;
-//   stop() — la fiche se ferme, le module se démonte.
+// SOG-0617 : ce fichier est l'ÉCRAN seul. Le juge (lecture, position en direct, constats, publication, garde entre onglets) est dans
+// drawers_run.js, qui tourne aussi SANS fiche (le veilleur de la page) : cette vue s'accroche au contrôleur de la mission et le peint.
+// La ligne « Position » (SOG-0617, e), première ligne de la section pour MA mission pendant que son vol est démarré, avec ou sans tiroir :
+// « Position : X-Plane, reçue il y a n s » ou « Pas de position : … » ; seule, elle montre la section SANS titre et sans `data-mine`.
+//
+// API : show(host, { ctx, id, mission, changed, askSlot, readerHost, pollMs, restMs }) — pose la section dans `host` (l'élément
+//   [data-drawers] de la fiche, redessiné avec elle : rappeler show à chaque dessin) ; askSlot : l'élément où va « Demander la suite » (par
+//   défaut [data-actslot] de la fiche) ; readerHost : où s'accrochent l'enveloppe et la liseuse (par défaut la fiche ; `null` : pas de liseuse,
+//   le volet du pilote est déjà le Brief) ; restMs : le repos de « Demander la suite » (une minute ; un banc le raccourcit) ;
+//   stop() — la fiche se ferme, le module se démonte (la vue se décroche ; le juge continue s'il est suivi par le veilleur).
 //   describe(tt, state, drawer, { live, notJudged, inRange }) → { key, note, how, follow } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
 //   « pas encore jugé en vol » ou « sans position en direct », comment et quand il s'est ouvert) — pur : l'aperçu de l'éditeur peut
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
@@ -35,6 +41,7 @@
 //   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
 
 import * as D from './drawers.js';
+import * as RUN from './drawers_run.js'; // le juge : MÊME texte d'import que le veilleur de la page (une seule instance, un seul juge)
 import {
   TIER_TEXT
 } from '../../frame/lib/precision.js';
@@ -47,9 +54,6 @@ import {
   routeNm
 } from '../../frame/lib/mission.js'; // ce que le pilote peut voir : la règle du lecteur, écrite une fois (SOG-0448)
 import * as RD from './reader_view.js'; // l'enveloppe et la liseuse de MA mission (lot T3)
-import {
-  mine as myLines
-} from './assigned.js'; // ma ligne d'affectation, relue bornée (l'enveloppe dit pour qui et quand)
 
 export const TX = {
   // SOG-0459 : l'écran du pilote — rien avant l'ouverture, puis « Suite de la mission » ; un seul geste neutre
@@ -63,7 +67,6 @@ export const TX = {
   ],
   askYes: ['Demander', 'Ask', 'Anfragen', 'Pedir'],
   askNo: ['Pas maintenant', 'Not now', 'Nicht jetzt', 'Ahora no'],
-  nothing: ['Rien de nouveau pour l\'instant', 'Nothing new for now', 'Vorerst nichts Neues', 'Nada nuevo por ahora'],
   // les phrases d'un tiroir (describe : l'atelier de l'auteur s'en sert, cas N79) — sa clé en clair
   keyTimeAt: ['s\'ouvre à {t}', 'opens at {t}', 'öffnet sich um {t}', 'se abre a las {t}'],
   keyTimeDep: ['s\'ouvre {n} min après le départ', 'opens {n} min after departure', 'öffnet sich {n} min nach dem Start',
@@ -219,21 +222,17 @@ export const TX = {
   ],
   more: ['Lire la suite', 'Read more', 'Weiterlesen', 'Leer más'],
   seal: ['Resceller', 'Reseal', 'Wieder versiegeln', 'Resellar'],
-  // les notifications (SOG-0459 : ni numéro ni rang ; un refus d'un autre carnet n'est plus dit — il dirait qu'une suite existe)
-  nowOpen: ['Suite de la mission : {title}', 'Rest of the mission: {title}', 'Fortsetzung der Mission: {title}',
-    'Continuación de la misión: {title}'
+  // la ligne « Position » (SOG-0617, e) : première ligne de la section, pour MA mission pendant que son vol est démarré
+  posLive: ['Position : {source}, reçue il y a {n} s', 'Position: {source}, received {n} s ago',
+    'Position: {source}, vor {n} s empfangen',
+    'Posición: {source}, recibida hace {n} s'
   ],
-  // une écriture refusée par le cadre : dite sans nommer de tiroir
-  noWrite: ['La demande n\'a pas pu être enregistrée : {e}', 'The request could not be saved: {e}',
-    'Die Anfrage konnte nicht gespeichert werden: {e}',
-    'No se pudo guardar la solicitud: {e}'
+  posNone: ['Pas de position : la suite de la mission ne s\'ouvrira pas à l\'arrivée sur un lieu.',
+    'No position: the rest of the mission will not open on arriving at a place.',
+    'Keine Position: Die Fortsetzung der Mission öffnet sich nicht bei der Ankunft an einem Ort.',
+    'Sin posición: la continuación de la misión no se abrirá al llegar a un lugar.'
   ],
-  noRead: ['La mission n\'a pas pu être notée comme lue : {e}', 'The mission could not be marked as read: {e}',
-    'Die Mission konnte nicht als gelesen vermerkt werden: {e}', 'No se pudo marcar la misión como leída: {e}'
-  ],
-  noTrigram: ['aucun trigramme sur cet appareil', 'no trigram on this device', 'kein Trigramm auf diesem Gerät',
-    'ningún trigrama en este dispositivo'
-  ]
+  ...RUN.RTX // « Rien de nouveau… », une écriture refusée, « lu » refusé : les textes que le juge dit lui-même (drawers_run.js)
 };
 
 const STYLE = `[data-drawers]{margin:0 0 12px}
@@ -251,453 +250,14 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-acts{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 -4px}
 [data-drawers] .dw-text{margin:6px 0 0;overflow-wrap:anywhere}
 [data-drawers] .dw-text p{margin:.4em 0;white-space:pre-wrap}
-[data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}`;
+[data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}
+[data-drawers] [data-dw-pos]{margin:0 0 8px}`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-export const POLL_MS =
-  10e3; // un passage de synchronisation toutes les dix secondes pendant qu'un tiroir est attendu, page visible (SOG-0463 : 60 s auparavant ; 10 s et non 5 pour le plafond de 80 requêtes par minute sans lanceur)
-const REST_MS = 60e3; // « Demander la suite » se repose une minute après chaque réponse
-// le repos de « Demander la suite », par mission : l'instant où la commande se réarme (rouvrir la fiche ne le remet pas à zéro)
-const REST = new Map();
-let V = null; // la section posée : une fiche à la fois
-let SHOWN = null; // { id, key } : ce que sees() a rendu à la fiche au dernier dessin (à qui est la mission, quels tiroirs sont ouverts)
-const REPUB_MS = 15 * 60e3; // le document « ouverts » est récrit au moins tous les quarts d'heure tant que la section calcule (son heure)
+export const POLL_MS = RUN.POLL_MS;
+/** Ce que la fiche et son Détail montrent de cette mission (le juge le sait : drawers_run.js). */
+export const sees = RUN.sees;
+let W = null; // la vue accrochée : une fiche à la fois
 
-/** À qui est la mission et quels tiroirs sont ouverts, en un mot comparable. */
-const pubKey = (mine, opened) => `${mine ? 1 : 0}:${opened.join('')}`;
-/** Ce que la section posée sait : la mission est-elle la mienne (et lue), quelles lettres sont ouvertes. */
-const known = v => {
-  const mine = !!v && v.mine === true && Array.isArray(v.states);
-  return {
-    mine,
-    opened: mine ? v.states.filter(s => s.open).map(s => s.id) : []
-  };
-};
-
-/** Ce que la fiche et son Détail montrent de cette mission (voir l'en-tête) : la mission lue passée par pilotView. Pur à l'état de la
- *  section près ; null pour une mission illisible. */
-export function sees(id, mission) {
-  const k = known(V && V.id === id ? V : null);
-  SHOWN = {
-    id,
-    key: pubKey(k.mine, k.opened)
-  };
-  return pilotView(mission, k.opened, {
-    mine: k.mine
-  });
-}
-
-/** Après un calcul : le document « ouverts » de l'appareil (écrit quand il change, ou que son heure a un quart d'heure), puis la fiche
- *  prévenue si ce que sees() lui a rendu n'est plus à jour. Une mission qui n'est pas la mienne n'écrit que pour défaire un document
- *  qui la disait mienne (`old` : le document relu, quand il vient d'être lu). */
-function publish(v, old = null) {
-  const k = known(v),
-    key = `${pubKey(k.mine, k.opened)}:${k.mine ? v.seance?.key ?? '' : ''}`,
-    path = D.openPath(v.id),
-    now = Date.now(),
-    due = k.mine ? v.pub?.key !== key || now - v.pub.at > REPUB_MS : D.readOpen(old, v.id).mine,
-    doc = due && path ? D.openAfter(v.states, {
-      mission: v.id,
-      mine: k.mine,
-      seance: v.seance
-    }, now) : null;
-  if (doc) {
-    v.pub = {
-      key,
-      at: now
-    };
-    Promise.resolve().then(() => v.ctx.data.put(path, doc)).catch(() => {});
-  }
-  // la fiche est prévenue UNE fois par état (une fiche qui ne se redessine pas n'est pas rappelée à chaque calcul)
-  const shown = pubKey(k.mine, k.opened);
-  if (SHOWN?.id !== v.id || SHOWN.key === shown) v.told = null;
-  else if (v.told !== shown) {
-    v.told = shown;
-    v.changed?.();
-  }
-}
-
-/** La fiche se ferme ou le module se démonte : minuteurs et écoute arrêtés, « Demander la suite » retiré de la rangée de la fiche. */
-export function stop() {
-  AV.stop(); // SOG-0443 : « Affecter… » et son formulaire retirés avec la section
-  if (!V) return;
-  clearTimeout(V.dueTimer);
-  clearTimeout(V.restTimer);
-  clearInterval(V.poll);
-  V.askBtn?.remove();
-  V.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
-  V.unwatch?.();
-  V.unlive?.();
-  document.removeEventListener('visibilitychange', onVisible);
-  RD.detach();
-  V = null;
-}
-
-/** Pose la section « Suite de la mission » dans host (voir l'en-tête), puis « Affecter… » dans la rangée de la fiche (SOG-0443,
- *  assign_view.js : pour toute mission lue, au niveau Courant et au-delà). */
-export function show(host, o = {}) {
-  showDrawers(host, o);
-  AV.show(host, o); // SOG-0443 : après la section (qui peut s'arrêter, et arrêter avec elle le formulaire d'une autre mission)
-}
-
-/** La section « Suite de la mission » — pour TOUTE mission, avec ou sans tiroir (SOG-0459 : l'écran ne doit pas dire qu'une mission a
- *  une suite). passage(pointId) : le temps estimé jusqu'à un lieu (frame/lib/mission.js). */
-function showDrawers(host, {
-  ctx,
-  id,
-  mission,
-  passage,
-  notJudged,
-  changed,
-  pollMs,
-  restMs
-} = {}) {
-  const drawers = (Array.isArray(mission?.drawers) ? mission.drawers : []).filter(d => D.LETTERS.includes(d?.id)).slice(0, D.LETTERS
-    .length);
-  if (!host || !ctx || !id) {
-    if (host) {
-      host.hidden = true;
-      host.innerHTML = '';
-    }
-    return stop();
-  }
-  if (V && V.id === id && V.ctx === ctx) { // la fiche redessinée : le même état, un nouvel élément
-    Object.assign(V, {
-      host,
-      mission,
-      drawers,
-      passage,
-      notJudged,
-      changed
-    });
-    bind(host);
-    return paint();
-  }
-  stop();
-  const v = V = {
-    id,
-    ctx,
-    host,
-    mission, // la mission lue, entière : le suivi des clés la lit ; la liseuse n'en reçoit que ce que pilotView montre
-    drawers,
-    passage,
-    notJudged,
-    changed, // la fiche à redessiner quand un tiroir s'ouvre (SOG-0448 : ses lieux apparaissent)
-    pub: null, // { key, at } : le dernier document « ouverts » écrit
-    pollMs: Number.isFinite(pollMs) && pollMs >= 100 ? pollMs : POLL_MS, // la période du passage (un banc la raccourcit)
-    restMs: Number.isFinite(restMs) && restMs >= 100 ? restMs : REST_MS, // le repos de « Demander la suite » (un banc le raccourcit)
-    tt: (row, vars) => ctx.t(row, vars),
-    mine: false,
-    states: null, // null : pas encore lu (la section reste cachée et vide en attendant)
-    asking: false, // le panneau « Demander la suite » est ouvert
-    askBtn: null, // le bouton « Demander la suite » posé dans la place de la rangée des actions de la fiche
-    said: new Set(), // les ouvertures déjà notifiées
-    first: true, // le premier calcul : aucune notification pour ce qui était déjà ouvert
-    flying: false, // le vol démarré de CETTE mission est en cours : une position en direct est la sienne
-    prevFix: null, // le relevé d'avant : le trajet jugé va de lui au relevé reçu
-    inRange: null, // { id, f, seen, source } : le dernier trajet à portée de l'objet du premier tiroir fermé (« Demander » s'en sert)
-    caught: new Set(), // les tiroirs dont la trace gardée a déjà été relue (une fois par tiroir)
-    wasLive: false, // la position en direct au dernier relevé : son arrivée fait relire la section
-    busy: false // un constat est en cours d'écriture
-  };
-  bind(host);
-  paint();
-  document.addEventListener('visibilitychange', onVisible);
-  load(v).then(() => {
-    if (V !== v) return;
-    // un carnet (le mien sur un autre appareil, celui d'un autre) ou le vol changé par une synchronisation : relu
-    v.unwatch = ctx.data.watch?.('pilot/', paths => V === v && [].concat(paths || []).some(p => v.paths?.has(p)) && load(v));
-    // la position en direct : UN abonnement du cadre (ctx.live.watch, un relevé toutes les cinq secondes), jamais un minuteur ici ;
-    // le démontage du module désabonne de lui-même, stop() aussi
-    // (une mission sans tiroir n'a rien à suivre : pas d'abonnement — sans effet à l'écran)
-    v.prevFix = ctx.live?.last || null; // le dernier relevé du cadre : le premier relevé reçu est jugé depuis lui
-    v.unlive = v.drawers.length ? ctx.live?.watch?.(fix => onFix(v, fix)) : null;
-  });
-}
-
-/** L'écoute des gestes sur cet élément (une fois par élément : la fiche est redessinée avec lui). */
-function bind(host) {
-  if (host.dataset.dwBound) return;
-  host.dataset.dwBound = '1';
-  host.addEventListener('click', onClick);
-  if (!document.getElementById('dwStyle')) {
-    const st = document.createElement('style');
-    st.id = 'dwStyle';
-    st.textContent = STYLE;
-    document.head.append(st);
-  }
-}
-
-/** Lit ce qu'il faut (affectations, vol, carnets, « vu »), calcule l'état, écrit ce qui doit l'être, redessine et arme les minuteurs. */
-async function load(v) {
-  const data = v.ctx.data,
-    get = p => Promise.resolve().then(() => data.get(p)).catch(() => null),
-    myPath = D.bookPath(v.ctx.identity?.trigram, v.id),
-    // le trigramme VALIDÉ par bookPath (rogné, trois lettres), jamais celui de l'identité tel quel : tous les chemins partent de lui
-    // (relecture de Sécurisation, 17/11 : « ABC » suivi d'un blanc donnait un chemin de vol « pilot/ABC /… »)
-    me = myPath ? myPath.split('/')[1] : '',
-    flightPath = myPath ? `pilot/${me}/current_flight.json` : null,
-    [idx, flight] = await Promise.all([get('missions/affectations.json'), flightPath ? get(flightPath) : null]);
-  if (V !== v) return;
-  const seance = D.seanceOf({
-      mission: v.id,
-      me,
-      lines: idx?.assignments,
-      flight
-    }),
-    playing = !!flight && typeof flight === 'object' && String(flight.mission || '').toUpperCase() === v.id;
-  v.mine = !!myPath && (seance.assigned || playing);
-  if (!v.mine) {
-    v.states = [];
-    paint();
-    // un document « ouverts » qui disait cette mission mienne (une affectation retirée) est défait
-    const path = D.openPath(v.id),
-      old = path ? await get(path) : null;
-    if (V === v) publish(v, old);
-    return;
-  }
-  const peers = seance.crew.filter(p => p !== me),
-    seenPath = `cache/missions/seen_${v.id}.json`;
-  let [doc, seenDoc, ...theirs] = await Promise.all([get(myPath), get(seenPath), ...peers.map(p => get(D.bookPath(p, v.id)))]);
-  if (V !== v) return;
-  v.paths = new Set([myPath, flightPath, ...peers.map(p => D.bookPath(p, v.id))]);
-  // le départ réel du vol de cette mission : la référence d'heure de la séance, écrite une fois au carnet — pour une mission À TIROIRS
-  // seulement (SOG-0459, relecture : le secret est un secret d'écran ; pas un fichier de plus au dépôt pour chaque vol)
-  const startAt = playing ? Date.parse(flight.started?.at || '') : NaN;
-  if (v.drawers.length && Number.isFinite(startAt) && D.bookFor(D.readBook(doc, v.id), seance)?.startAt !== startAt) {
-    const next = D.withStart(doc, {
-      mission: v.id,
-      me,
-      seance
-    }, startAt);
-    if (next && await put(v, myPath, next)) doc = next;
-    if (V !== v) return;
-  }
-  Object.assign(v, {
-    me,
-    seance,
-    myPath,
-    doc,
-    // ma ligne d'affectation pour cette mission (pas un convoyage), ou null pour une mission jouée seul
-    line: seance.assigned ? myLines(idx, me).find(a => a.mission === v.id && !a.ferry) || {} : null,
-    flying: Number.isFinite(startAt),
-    startIso: Number.isFinite(startAt) ? flight.started.at : ''
-  });
-  const seen = D.readSeen(seenDoc, seance),
-    before = v.states,
-    states = D.stateOf(v.drawers, {
-      me,
-      seance,
-      book: D.readBook(doc, v.id),
-      others: peers.map((pilot, i) => ({
-        pilot,
-        book: D.readBook(theirs[i], v.id)
-      })),
-      seen,
-      now: Date.now(),
-      passage: v.passage
-    });
-  v.states = states;
-  // ce que l'appareil garde : les ouvertures des autres déjà vues (une écriture qui ne change rien n'est pas faite par le cadre)
-  const at = Date.now(),
-    keep = D.seenAfter(seen, states, seance, at);
-  // la première fois qu'une ouverture d'un autre est vue : son heure de réception est celle de ce calcul (gardée dans « vu »)
-  v.gotNow = Object.fromEntries(states.filter(x => x.open && x.by && !x.mine && !Number.isFinite(x.gotAt)).map(x => [x.id, v.gotNow?.[x
-    .id
-  ] ?? at]));
-  if (keep && Object.keys(keep.drawers).length) Promise.resolve().then(() => data.put(seenPath, keep)).catch(() => {});
-  announce(v, before, states);
-  paint();
-  arm(v, peers.length);
-  publish(v); // SOG-0448 : les tiroirs ouverts publiés sur l'appareil, la fiche prévenue
-  catchUp(v);
-}
-
-/** Le rattrapage (SOG-0617, c) : le premier tiroir fermé que l'appareil suit est relu UNE fois sur la trace gardée du vol de cette
- *  mission (depuis l'instant où il est devenu le premier fermé) — la trace d'un autre vol n'est jamais lue. Pendant l'écriture d'un
- *  constat (busy), rien n'est marqué : record() le rappelle à sa fin, si bien que le tiroir suivant est rattrapé à son tour, tiroir
- *  après tiroir sur toute la trace (avant : marqué « relu » pendant l'écriture du précédent, il ne l'était jamais). */
-function catchUp(v) {
-  if (V !== v || v.busy || !v.mine || !Array.isArray(v.states)) return;
-  const first = v.states.find(x => !x.open && !x.locked);
-  if (!first || !followsHere(v, first) || v.caught.has(first.id)) return;
-  v.caught.add(first.id);
-  const trail = v.ctx.live?.trail?.(),
-    f = trail && trail.from === v.startIso ? D.catchUp(first.key, trail, first.since) : null;
-  if (f) record(v, first.id, f, 'trail').catch(() => {});
-}
-
-/** L'appareil a-t-il une position en direct qui est celle du vol de cette mission ? */
-const liveNow = v => v.flying && v.ctx.live?.status === 'tracking';
-
-/** Ce tiroir (le premier fermé) est-il suivi par cet appareil, maintenant ? Une clé que drawers.js sait juger, que le lecteur ne dit
- *  pas « pas encore jugée en vol », un tiroir que je n'ai pas rescellé, et une position en direct. */
-function followsHere(v, st) {
-  const d = v.drawers.find(x => x.id === st.id);
-  return liveNow(v) && !st.sealed && judgedKey(st.key, v.notJudged) && d?.keyWhy !== 'condition';
-}
-
-/** Cette clé se juge-t-elle avec une position en direct ? drawers.js fait foi pour une condition de l'atelier (SOG-0500 : le lecteur,
- *  `notJudgedYet`, les dit encore toutes « pas encore jugées ») ; le lecteur garde le dernier mot pour les autres clés. */
-const judgedKey = (key, notJudged) => D.follows(key) && (key.kind === 'condition' || !notJudged?.(key));
-
-/** Un relevé de la position en direct (toutes les cinq secondes) : le trajet depuis le relevé d'avant est jugé pour le premier
- *  tiroir fermé. Ne lève jamais (un abonné qui rejette n'est pas attrapé par le cadre). */
-function onFix(v, fix) {
-  if (V !== v) return;
-  const live = liveNow(v),
-    turned = live !== v.wasLive,
-    // deux relevés à plus d'une minute l'un de l'autre (ou sans heure) ne font pas un trajet : le relevé est jugé seul, et ce qui
-    // s'est passé entre les deux est l'affaire du rattrapage sur la trace
-    gap = Date.parse(fix?.at) - Date.parse(v.prevFix?.at),
-    prev = gap >= 0 && gap <= D.LEG_MS ? v.prevFix : null;
-  v.prevFix = fix;
-  v.wasLive = live;
-  // la position en direct vient d'arriver (ou de se taire) : la section est relue — sa note le dit, la trace gardée est rattrapée
-  (turned && v.mine ? load(v) : Promise.resolve()).then(() => judge(v, prev, fix)).catch(() => {});
-}
-
-/** Juge un trajet : un constat de zone, d'arrivée, d'atterrissage ou de stationnaire (tenu par holding, v.hold), d'une suite d'étapes (tenue par stepping, v.steps) ou de survol sans confirmation s'écrit tout de suite au carnet ; un objet à portée, ou un survol à confirmer
- *  (confirm : vrai), attend « Demander » (tenu dans v.inRange, rien n'est peint : l'écran ne dit pas qu'un objet est attendu). */
-async function judge(v, prev, fix) {
-  if (!v.mine || !v.states || v.busy) return;
-  const first = v.states.find(x => !x.open && !x.locked),
-    here = !!first && followsHere(v, first);
-  let f = null;
-  const kind = here ? D.judgeKind(first.key) : 'leg';
-  if (kind === 'hold') { // une tenue (atterrissage, stationnaire) : son état est gardé par tiroir
-    const r = D.holding(first.key, v.hold?.id === first.id ? v.hold.hold : null, fix);
-    v.hold = {
-      id: first.id,
-      hold: r.hold
-    };
-    v.steps = null;
-    f = r.f;
-  } else if (kind === 'steps') { // une suite d'étapes : son état (l'étape en cours, la tenue, les constats faits) est gardé par tiroir
-    const r = D.stepping(first.key, v.steps?.id === first.id ? v.steps.state : null, prev, fix);
-    v.steps = {
-      id: first.id,
-      state: r.state
-    };
-    v.hold = null;
-    f = r.f;
-  } else {
-    v.hold = null;
-    v.steps = null;
-    if (here) f = D.finding(first.key, prev, fix, {
-      trail: v.ctx.live?.trail?.()
-    });
-  }
-  if (!f) { // plus à portée depuis une minute : « Demander » ne l'ouvre plus
-    if (v.inRange && (!first || v.inRange.id !== first.id || Date.now() - v.inRange.seen > RANGE_MS)) v.inRange = null;
-    return;
-  }
-  if (f.confirm) {
-    v.inRange = {
-      id: first.id,
-      f,
-      seen: Date.now(),
-      source: fix?.source
-    };
-    return;
-  }
-  await record(v, first.id, f, fix?.source);
-}
-
-/** Écrit un constat (ses deux relevés, l'heure du fait) dans le carnet de ce pilote, redessine et demande un passage. */
-async function record(v, id, f, source) {
-  if (V !== v || v.busy) return;
-  v.busy = true;
-  try {
-    const next = D.withOpen(v.doc, {
-      mission: v.id,
-      me: v.me,
-      seance: v.seance,
-      now: Date.now()
-    }, id, f.how, {
-      from: f.from,
-      to: f.to,
-      last: f.last, // un ravitaillement : le dernier relevé tenu et le relevé de départ (SOG-0521)
-      off: f.off,
-      at: f.at,
-      steps: f.steps,
-      tier: f.tier, // le palier et la distance d'un posé de précision (SOG-0507) : relus bornés par withOpen
-      distNm: f.distNm,
-      source: f.source || source
-    });
-    if (!next || !await put(v, v.myPath, next) || V !== v) return;
-    v.inRange = null;
-    await load(v);
-    Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
-  } finally {
-    v.busy = false;
-    // le rattrapage qu'un calcul pendant cette écriture n'a pas pu lancer (SOG-0617, c) ; un écrit refusé ne boucle pas : son tiroir,
-    // toujours le premier fermé, est déjà marqué relu
-    catchUp(v);
-  }
-}
-
-/** La notification flottante d'un tiroir qui vient de s'ouvrir, une fois : « Suite de la mission : {title} » (SOG-0459 : sans numéro,
- *  et rien pour une ouverture d'un autre carnet qui n'est pas retenue — la dire, ce serait dire qu'une suite existe). */
-function announce(v, before, states) {
-  for (const s of states) {
-    const was = (before || []).find(x => x.id === s.id);
-    if (s.open && !v.first && was && !was.open && !v.said.has(`open:${s.id}`)) {
-      v.said.add(`open:${s.id}`);
-      v.ctx.notify?.(v.tt(TX.nowOpen, {
-        title: s.title
-      }), 'ok');
-    }
-  }
-  v.first = false;
-}
-
-/** Le minuteur de la prochaine échéance (celle du premier tiroir fermé), et le passage de synchronisation BORNÉ qui apporte les carnets
- *  des autres (décision de l'ergonome, 17/11) : toutes les dix secondes, seulement pendant que le premier tiroir fermé est ATTENDU (une clé jugée
- *  en vol : le constat d'un autre peut l'ouvrir à tous — ni l'heure ni le geste) ET que la section est à l'écran (page visible) ET que
- *  la mission a d'autres pilotes (douze au plus, seanceOf) ; il s'arrête à l'ouverture (arm est rappelé à chaque calcul). */
-function arm(v, peers) {
-  clearTimeout(v.dueTimer);
-  clearInterval(v.poll);
-  v.poll = 0;
-  // l'ordre : seul le PREMIER tiroir fermé peut s'ouvrir — son échéance arme le minuteur, sa clé dit s'il est attendu
-  const first = v.states.find(s => !s.open && !s.locked),
-    next = first && first.dueAt != null && !first.sealed ? first.dueAt : NaN;
-  if (Number.isFinite(next)) v.dueTimer = setTimeout(() => V === v && load(v), Math.min(Math.max(next - Date.now(), 0) + 500, 2 ** 31 - 1));
-  const awaited = !!first && !!first.key?.kind && first.key.kind !== 'time' && first.key.kind !== 'hand';
-  if (awaited && peers) v.poll = setInterval(() => pass(v), v.pollMs);
-}
-
-/** Un passage de synchronisation puis la relecture des carnets ; rien quand la page est cachée (onglet caché, appareil en veille : la
- *  relecture est en PAUSE — décision de l'ergonome, 17/11 à 19 h 32) ou que la section n'est plus à l'écran. */
-async function pass(v) {
-  if (V !== v || !v.poll || document.visibilityState === 'hidden' || !v.host?.isConnected) return;
-  // un PASSAGE de synchronisation, pas une simple relecture : sur un poste avec lanceur, relire (revalidate) ne déclenche pas
-  // l'échange avec le dépôt — mesuré au banc à deux appareils le 17/11 : l'ouverture d'un autre n'arrivait qu'au passage de fond
-  // (dix minutes) ; avec un passage, elle arrive à la période du passage (le passage lui-même : une demi-seconde sur un dépôt local).
-  // Sans geste (jamais { gesture: true } sur un minuteur) : le passage de fond du module.
-  await Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
-  if (V === v) load(v);
-}
-
-/** La page redevient visible : un passage tout de suite, sans attendre la période (la relecture était en pause). */
-function onVisible() {
-  if (V && document.visibilityState === 'visible') pass(V);
-}
-
-/** Écrit un document par le cadre ; faux (et une notification) si l'écriture est refusée. */
-async function put(v, path, value, row = TX.noWrite) {
-  try {
-    await v.ctx.data.put(path, value);
-    return true;
-  } catch (e) {
-    v.ctx.notify?.(v.tt(row, {
-      e: String(e?.message || e).slice(0, 120)
-    }), 'err');
-    return false;
-  }
-}
-
-const RANGE_MS = 60e3; // un objet est « à portée » pour « Demander » une minute après le dernier relevé à portée
 const SEVEN = 7; // sept tiroirs ouverts à l'écran, les suivants repliés
 const TITLE_CUT = 120; // un titre de tiroir à l'écran : 120 signes au plus (comme un message d'erreur ailleurs)
 const BRIEF_CUT = 1200; // le briefing (jusqu'à 20 000 signes dans le fichier) : le début, puis « Lire la suite » (la liseuse : lot T3)
@@ -756,7 +316,7 @@ export function describe(tt, s, d, {
   if (k.kind !== 'time') {
     const inFlight = !!k.kind && k.kind !== 'hand',
       // ce que l'appareil sait juger avec une position (drawers.js), hors de ce que le lecteur dit « pas encore jugé en vol »
-      judged = inFlight && judgedKey(k, notJudged) && d?.keyWhy !== 'condition',
+      judged = inFlight && RUN.judgedKey(k, notJudged) && d?.keyWhy !== 'condition',
       // l'heure d'abord, une seule fois ; « H + 1 h 30 » seulement quand l'heure n'est pas connue (pas encore de départ)
       at = Number.isFinite(k.fallbackMin) ? tt(TX.willOpen, {
         t: due ? `${due}${est}` : hPlus(tt, k.fallbackMin)
@@ -800,35 +360,6 @@ export function describe(tt, s, d, {
   };
 }
 
-/** La ligne d'un tiroir OUVERT (SOG-0459 : un tiroir fermé n'a pas de ligne) : son titre, comment et quand, son message, son briefing,
- *  « Resceller » au niveau Complet. Ni rang ni numéro : rien ne dit ce qui reste à venir. Tout texte du fichier passe par esc. */
-function rowHtml(v, s) {
-  const d = v.drawers.find(x => x.id === s.id) || {},
-    t = describe(v.tt, s, d, {
-      live: liveNow(v),
-      notJudged: v.notJudged
-    }),
-    name = s.title ? `<b>${esc(s.title)}</b>` : '',
-    brief = typeof d.brief === 'string' ? d.brief : '',
-    cut = brief.length > BRIEF_CUT ? brief.slice(0, brief.lastIndexOf(' ', BRIEF_CUT) > BRIEF_CUT / 2 ? brief.lastIndexOf(' ', BRIEF_CUT) :
-      BRIEF_CUT) : brief,
-    canSeal = (v.ctx.level || 1) >= 3 && (s.mine || !s.by), // outil d'auteur (Complet) : ma propre ouverture, ou l'heure
-    // l'ouverture d'un autre arrivée plus d'une minute après le fait : « reçu ici à … » (aucun délai n'est promis, il est dit)
-    gotAt = s.by && !s.mine ? (Number.isFinite(s.gotAt) ? s.gotAt : v.gotNow?.[s.id]) : null,
-    got = Number.isFinite(gotAt) && Number.isFinite(s.srcAt) && gotAt - s.srcAt > 60e3 ? ` — ${v.tt(TX.gotHere, { t: fmtZ(new Date(gotAt)) })}` : '';
-  return `<div class="dw-row" data-dw="${esc(s.id)}" data-open="${esc(s.how)}"><div class="dw-top">${name}</div>
-    <small class="f-muted dw-key" data-dw-how>${esc(t.how)}${esc(got)}${s.gone ? ` — ${esc(v.tt(TX.gone, { by: s.by }))}` : ''}</small>
-    ${d.message || brief ? `<div class="dw-text" data-dw-text>${d.message ? `<p class="dw-msg" data-dw-msg>${esc(d.message)}</p>` : ''}${cut ? `<p data-dw-brief>${esc(cut)}${cut.length < brief.length ? '…' : ''}</p>` : ''}${cut.length < brief.length ? `<details class="ms-more" data-dw-more><summary class="f-muted">${esc(v.tt(TX.more))}</summary><p>${esc(brief.slice(cut.length))}</p></details>` : ''}</div>` : ''}
-    ${canSeal ? `<div class="dw-acts"><button type="button" class="f-linkbtn" data-dw-seal="${esc(s.id)}">${esc(v.tt(TX.seal))}</button></div>` : ''}</div>`;
-}
-
-/** La ligne du débrief d'un posé de précision : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », suivie de « — BBB » pour un équipier. Les mots
- *  des paliers sont ceux du cadre (TIER_TEXT), la distance a deux décimales et le séparateur de la langue, l'heure est celle du fait. Tout texte
- *  du fichier (le trigramme) passe par esc. */
-function debriefRow(v, l) {
-  return `<div class="dw-row" data-dwd data-dwd-mine="${l.mine ? 1 : 0}"><small class="f-muted">${esc(debriefLine(v.tt, l))}</small></div>`;
-}
-
 /** Le texte d'une ligne du débrief (pur : le banc le dit dans les quatre langues) : tt(ligne, valeurs) traduit ; l, une ligne de debriefOf. */
 export function debriefLine(tt, l) {
   const title = typeof l.title === 'string' ? l.title.slice(0, TITLE_CUT) :
@@ -842,20 +373,165 @@ export function debriefLine(tt, l) {
   });
 }
 
-/** Le temps de repos qui reste à « Demander la suite » pour cette mission (0 : la commande est prête). */
-function restLeft(v) {
-  const until = REST.get(v.id);
-  return Number.isFinite(until) ? Math.max(0, until - Date.now()) : 0;
+/** La fiche se ferme ou le module se démonte : la vue se décroche (minuteur du repos, bouton retiré, liseuse) ; le juge s'arrête avec elle
+ *  sauf si le veilleur de la page suit la mission. */
+export function stop() {
+  AV.stop(); // SOG-0443 : « Affecter… » et son formulaire retirés avec la section
+  if (!W) return;
+  const w = W;
+  W = null;
+  clearTimeout(w.restTimer);
+  w.askBtn?.remove();
+  w.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
+  RD.detach();
+  RUN.detach(w.id, w);
 }
 
-/** « Demander la suite » dans la place que la fiche lui donne ([data-actslot] de sa rangée des actions, après « Préparer ce vol ») —
- *  pour MA mission seulement, avec ou sans tiroir ; retiré sinon. Hors d'une fiche (pas de place), pas de bouton. Seul NOTRE bouton est
- *  touché : la place peut en porter d'autres (le lot T3). Au repos : désactivé, réarmé par le minuteur du repos. */
-function placeAsk(v) {
-  const slot = v.host.closest?.('.ms-sheet')?.querySelector('[data-actslot]') || null;
-  if (!v.mine || !slot) {
-    v.askBtn?.remove();
-    v.askBtn = null;
+/** Pose la section « Suite de la mission » dans host (voir l'en-tête), puis « Affecter… » dans la rangée de la fiche (SOG-0443,
+ *  assign_view.js : pour toute mission lue, au niveau Courant et au-delà). */
+export function show(host, o = {}) {
+  showDrawers(host, o);
+  AV.show(host, o); // SOG-0443 : après la section (qui peut s'arrêter, et arrêter avec elle le formulaire d'une autre mission)
+}
+
+/** La section « Suite de la mission » — pour TOUTE mission, avec ou sans tiroir (SOG-0459 : l'écran ne doit pas dire qu'une mission a
+ *  une suite). La vue s'accroche au contrôleur de la mission (drawers_run.js attach) et le peint. */
+function showDrawers(host, {
+  ctx,
+  id,
+  mission,
+  changed,
+  pollMs,
+  restMs,
+  askSlot,
+  readerHost
+} = {}) {
+  if (!host || !ctx || !id) {
+    if (host) {
+      host.hidden = true;
+      host.innerHTML = '';
+    }
+    return stop();
+  }
+  if (W && W.id === id && W.ctx === ctx) { // la fiche redessinée : la même vue, un nouvel élément
+    Object.assign(W, {
+      host,
+      onChanged: changed,
+      askSlot,
+      readerHost
+    });
+    RUN.attach(id, {
+      ctx,
+      mission,
+      view: W,
+      pollMs,
+      restMs
+    });
+    bind(host);
+    return paint(W);
+  }
+  stop();
+  const w = W = {
+    id,
+    ctx,
+    host,
+    onChanged: changed, // la fiche à redessiner quand un tiroir s'ouvre (SOG-0448 : ses lieux apparaissent)
+    askSlot, // où va « Demander la suite » (undefined : la place de la rangée des actions de la fiche ; null : nulle part)
+    readerHost, // où s'accrochent l'enveloppe et la liseuse (undefined : la fiche ; null : pas de liseuse)
+    tt: (row, vars) => ctx.t(row, vars),
+    askBtn: null, // le bouton « Demander la suite » posé dans la place de la rangée des actions de la fiche
+    restTimer: 0,
+    restOpen: false,
+    // ce que le juge appelle : se repeindre, prévenir la fiche, remonter la section, rafraîchir la ligne « Position »
+    paint: () => paint(w),
+    changed: () => W === w && w.onChanged?.(),
+    reveal: () => w.host?.scrollIntoView?.({
+      block: 'start'
+    }),
+    tick: () => paintPos(w)
+  };
+  RUN.attach(id, {
+    ctx,
+    mission,
+    view: w,
+    pollMs,
+    restMs
+  });
+  bind(host);
+  paint(w);
+}
+
+/** L'écoute des gestes sur cet élément (une fois par élément : la fiche est redessinée avec lui). */
+function bind(host) {
+  if (host.dataset.dwBound) return;
+  host.dataset.dwBound = '1';
+  host.addEventListener('click', onClick);
+  if (!document.getElementById('dwStyle')) {
+    const st = document.createElement('style');
+    st.id = 'dwStyle';
+    st.textContent = STYLE;
+    document.head.append(st);
+  }
+}
+
+/** La ligne d'un tiroir OUVERT (SOG-0459 : un tiroir fermé n'a pas de ligne) : son titre, comment et quand, son message, son briefing,
+ *  « Resceller » au niveau Complet. Ni rang ni numéro : rien ne dit ce qui reste à venir. Tout texte du fichier passe par esc. */
+function rowHtml(w, c, s) {
+  const d = c.drawers.find(x => x.id === s.id) || {},
+    t = describe(w.tt, s, d, {
+      live: RUN.liveNow(c),
+      notJudged: c.notJudged
+    }),
+    name = s.title ? `<b>${esc(s.title)}</b>` : '',
+    brief = typeof d.brief === 'string' ? d.brief : '',
+    cut = brief.length > BRIEF_CUT ? brief.slice(0, brief.lastIndexOf(' ', BRIEF_CUT) > BRIEF_CUT / 2 ? brief.lastIndexOf(' ', BRIEF_CUT) :
+      BRIEF_CUT) : brief,
+    canSeal = (w.ctx.level || 1) >= 3 && (s.mine || !s.by), // outil d'auteur (Complet) : ma propre ouverture, ou l'heure
+    // l'ouverture d'un autre arrivée plus d'une minute après le fait : « reçu ici à … » (aucun délai n'est promis, il est dit)
+    gotAt = s.by && !s.mine ? (Number.isFinite(s.gotAt) ? s.gotAt : c.gotNow?.[s.id]) : null,
+    got = Number.isFinite(gotAt) && Number.isFinite(s.srcAt) && gotAt - s.srcAt > 60e3 ? ` — ${w.tt(TX.gotHere, { t: fmtZ(new Date(gotAt)) })}` : '';
+  return `<div class="dw-row" data-dw="${esc(s.id)}" data-open="${esc(s.how)}"><div class="dw-top">${name}</div>
+    <small class="f-muted dw-key" data-dw-how>${esc(t.how)}${esc(got)}${s.gone ? ` — ${esc(w.tt(TX.gone, { by: s.by }))}` : ''}</small>
+    ${d.message || brief ? `<div class="dw-text" data-dw-text>${d.message ? `<p class="dw-msg" data-dw-msg>${esc(d.message)}</p>` : ''}${cut ? `<p data-dw-brief>${esc(cut)}${cut.length < brief.length ? '…' : ''}</p>` : ''}${cut.length < brief.length ? `<details class="ms-more" data-dw-more><summary class="f-muted">${esc(w.tt(TX.more))}</summary><p>${esc(brief.slice(cut.length))}</p></details>` : ''}</div>` : ''}
+    ${canSeal ? `<div class="dw-acts"><button type="button" class="f-linkbtn" data-dw-seal="${esc(s.id)}">${esc(w.tt(TX.seal))}</button></div>` : ''}</div>`;
+}
+
+/** La ligne du débrief d'un posé de précision : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », suivie de « — BBB » pour un équipier. Les mots
+ *  des paliers sont ceux du cadre (TIER_TEXT), la distance a deux décimales et le séparateur de la langue, l'heure est celle du fait. Tout texte
+ *  du fichier (le trigramme) passe par esc. */
+function debriefRow(w, l) {
+  return `<div class="dw-row" data-dwd data-dwd-mine="${l.mine ? 1 : 0}"><small class="f-muted">${esc(debriefLine(w.tt, l))}</small></div>`;
+}
+
+/** La phrase de la ligne « Position » (SOG-0617, e) : la source et l'âge du dernier relevé quand la position en direct est reçue, sinon ce que
+ *  l'absence de position change pour la suite de la mission. Rien d'autre : « Position perdue » est la phrase du cadre (SOG-0622). */
+function posText(w, c) {
+  const live = RUN.liveInfo(c);
+  if (!live.tracking) return w.tt(TX.posNone);
+  const age = Math.floor((Date.now() - Date.parse(live.at)) / 1000);
+  return w.tt(TX.posLive, {
+    source: live.source,
+    n: Number.isFinite(age) ? Math.min(Math.max(age, 0), 9999) : 0
+  });
+}
+
+/** La ligne « Position » se rafraîchit à chaque relevé, sans repeindre la section. */
+function paintPos(w) {
+  if (W !== w) return;
+  const c = RUN.stateOf(w.id),
+    p = w.host?.querySelector?.(':scope > [data-dw-pos]');
+  if (c && p) p.textContent = posText(w, c);
+}
+
+/** « Demander la suite » dans la place que la fiche lui donne ([data-actslot] de sa rangée des actions, après « Préparer ce vol »), ou
+ *  dans `askSlot` quand l'appelant la donne — pour MA mission seulement, avec ou sans tiroir ; retiré sinon. Hors d'une fiche (pas de
+ *  place), pas de bouton. Seul NOTRE bouton est touché : la place peut en porter d'autres (le lot T3). Au repos : désactivé, réarmé par
+ *  le minuteur du repos. */
+function placeAsk(w, c) {
+  const slot = (w.askSlot === undefined ? w.host.closest?.('.ms-sheet')?.querySelector('[data-actslot]') : w.askSlot) || null;
+  if (!c.mine || !slot) {
+    w.askBtn?.remove();
+    w.askBtn = null;
     return;
   }
   let b = slot.querySelector(':scope > [data-dw-ask]');
@@ -865,74 +541,77 @@ function placeAsk(v) {
     b.setAttribute('data-dw-ask', '');
     slot.prepend(b);
   }
-  if (v.askBtn && v.askBtn !== b) v.askBtn.remove();
-  v.askBtn = b;
+  if (w.askBtn && w.askBtn !== b) w.askBtn.remove();
+  w.askBtn = b;
   b.onclick = onAsk;
-  b.textContent = v.tt(TX.ask);
-  const left = restLeft(v);
+  b.textContent = w.tt(TX.ask);
+  const left = RUN.restLeft(w.id);
   b.disabled = left > 0;
   b.toggleAttribute('data-dw-rest', left > 0);
-  b.setAttribute('aria-expanded', v.asking ? 'true' : 'false');
-  clearTimeout(v.restTimer);
+  b.setAttribute('aria-expanded', c.asking ? 'true' : 'false');
+  clearTimeout(w.restTimer);
   // le seul minuteur de ce geste : il réarme la commande à la fin du repos (sans geste, jamais { gesture: true })
-  if (left > 0) v.restTimer = setTimeout(() => V === v && paint(), Math.min(left + 50, 2 ** 31 - 1));
+  if (left > 0) w.restTimer = setTimeout(() => W === w && paint(w), Math.min(left + 50, 2 ** 31 - 1));
 }
 
-/** Redessine la section (SOG-0459) : cachée et VIDE tant qu'aucun tiroir de MA mission n'est ouvert et que le panneau « Demander la
- *  suite » est fermé — pour toute mission, avec ou sans tiroir ; sinon le panneau, puis « Suite de la mission » et une ligne par
- *  tiroir ouvert. « data-mine » n'est posé que lorsqu'un tiroir ouvert est montré. */
-function paint() {
-  const v = V;
-  if (!v?.host) return;
-  const opened = v.mine && Array.isArray(v.states) ? v.states.filter(s => s.open) : [],
-    rows = opened.map(s => rowHtml(v, s)),
-    asking = v.mine && v.asking;
-  v.host.hidden = !rows.length && !asking;
+/** Redessine la section (SOG-0459) : cachée et VIDE tant qu'aucun tiroir de MA mission n'est ouvert, que le panneau « Demander la
+ *  suite » est fermé et que la ligne « Position » n'a rien à dire — pour toute mission, avec ou sans tiroir ; sinon la ligne « Position »
+ *  (MA mission, vol démarré), le panneau, puis « Suite de la mission » et une ligne par tiroir ouvert. « data-mine » n'est posé que lorsqu'un
+ *  tiroir ouvert est montré. */
+function paint(w) {
+  const c = RUN.stateOf(w.id);
+  if (W !== w || !w.host || !c) return;
+  const opened = c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open) : [],
+    rows = opened.map(s => rowHtml(w, c, s)),
+    asking = c.mine && c.asking,
+    pos = c.mine && c.flying ? `<p class="f-muted" data-dw-pos>${esc(posText(w, c))}</p>` : '';
+  w.host.hidden = !rows.length && !asking && !pos;
   // pour MA mission, un tiroir ouvert : la section prend la place de la ligne des zones de la première page (STYLE)
-  v.host.toggleAttribute('data-mine', rows.length > 0);
+  w.host.toggleAttribute('data-mine', rows.length > 0);
   // le panneau : les mêmes mots et les mêmes éléments pour toute mission (aucun mot ne dépend des tiroirs)
-  const box = asking ? `<div class="dw-ask" data-dw-askbox><p>${esc(v.tt(TX.askText))}</p><div class="dw-acts"><button type="button" class="primary" data-dw-ask-yes>${esc(v.tt(TX.askYes))}</button><button type="button" data-dw-ask-no>${esc(v.tt(TX.askNo))}</button></div></div>` : '';
+  const box = asking ? `<div class="dw-ask" data-dw-askbox><p>${esc(w.tt(TX.askText))}</p><div class="dw-acts"><button type="button" class="primary" data-dw-ask-yes>${esc(w.tt(TX.askYes))}</button><button type="button" data-dw-ask-no>${esc(w.tt(TX.askNo))}</button></div></div>` : '';
   // sept lignes au plus, puis les suivantes repliées sous « {n} autres » (les ouverts seulement)
-  const list = rows.length ? `<h3>${esc(v.tt(TX.head))}</h3><div class="dw-list" data-dw-list>${rows.slice(0, SEVEN).join('')}${rows.length > SEVEN ?
-    `<details class="ms-more dw-rest" data-dw-rest${v.restOpen ? ' open' : ''}><summary class="f-muted">${esc(v.tt(TX.moreOpen, { n: rows.length - SEVEN }))}</summary><div class="dw-list">${rows.slice(SEVEN).join('')}</div></details>` : ''}</div>` : '';
+  const list = rows.length ? `<h3>${esc(w.tt(TX.head))}</h3><div class="dw-list" data-dw-list>${rows.slice(0, SEVEN).join('')}${rows.length > SEVEN ?
+    `<details class="ms-more dw-rest" data-dw-rest${w.restOpen ? ' open' : ''}><summary class="f-muted">${esc(w.tt(TX.moreOpen, { n: rows.length - SEVEN }))}</summary><div class="dw-list">${rows.slice(SEVEN).join('')}</div></details>` : ''}</div>` : '';
   // le débrief : sous la suite, seulement s'il a au moins une ligne (donc après l'ouverture d'un tiroir) ; visible à tous les niveaux
-  const lines = rows.length ? D.debriefOf(v.states) : [],
-    debrief = lines.length ? `<h3 data-dw-debrief-head>${esc(v.tt(TX.debriefHead))}</h3><div class="dw-list" data-dw-debrief>${lines.map(l => debriefRow(v, l)).join('')}</div>` : '';
-  v.host.innerHTML = box + list + debrief;
-  const rest = v.host.querySelector('[data-dw-rest]');
+  const lines = rows.length ? D.debriefOf(c.states) : [],
+    debrief = lines.length ? `<h3 data-dw-debrief-head>${esc(w.tt(TX.debriefHead))}</h3><div class="dw-list" data-dw-debrief>${lines.map(l => debriefRow(w, l)).join('')}</div>` : '';
+  w.host.innerHTML = pos + box + list + debrief;
+  const rest = w.host.querySelector('[data-dw-rest]');
   if (rest) rest.ontoggle = () => {
-    if (V === v) v.restOpen = rest.open; // gardé à travers les dessins
+    if (W === w) w.restOpen = rest.open; // gardé à travers les dessins
   };
-  placeAsk(v);
-  reader(v, v.mine); // l'enveloppe et la liseuse : MA mission, avec ou sans tiroir (le secret : rien ne dépend des tiroirs)
+  placeAsk(w, c);
+  reader(w, c, c.mine); // l'enveloppe et la liseuse : MA mission, avec ou sans tiroir (le secret : rien ne dépend des tiroirs)
 }
 
 /** L'enveloppe et la liseuse de MA mission (lot T3, reader_view.js) : posées avec la section, retirées pour une mission qui n'est pas
- *  la mienne. La liseuse ne reçoit que la mission passée par pilotView — rien d'un tiroir fermé. */
-function reader(v, full) {
-  const sheet = full ? v.host.closest('.ms-sheet') : null;
-  if (!sheet || !v.mission) return RD.detach();
-  const k = known(v),
-    view = pilotView(v.mission, k.opened, {
+ *  la mienne. La liseuse ne reçoit que la mission passée par pilotView — rien d'un tiroir fermé. `readerHost` : où elles s'accrochent (par
+ *  défaut la fiche ; `null` : nulle part, le volet du pilote est déjà le Brief). */
+function reader(w, c, full) {
+  const sheet = full ? (w.readerHost === undefined ? w.host.closest('.ms-sheet') : w.readerHost) : null;
+  if (!sheet || !c.mission) return RD.detach();
+  const opened = c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open).map(s => s.id) : [],
+    view = pilotView(c.mission, opened, {
       mine: true
     });
   RD.attach(sheet, {
-    ctx: v.ctx,
-    id: v.id,
+    ctx: w.ctx,
+    id: w.id,
     view,
-    states: v.states,
-    line: v.line ? {
-      ...v.line,
-      pilot: v.me
+    states: c.states,
+    line: c.line ? {
+      ...c.line,
+      pilot: c.me
     } : null,
     // l'enveloppe : seulement pour une mission AFFECTÉE que ce pilote n'a pas encore lue dans cette séance
-    unread: !!v.seance?.assigned && D.bookFor(D.readBook(v.doc, v.id), v.seance)?.readAt == null,
-    how: s => describe(v.tt, s, v.drawers.find(d => d.id === s.id), {
-      live: liveNow(v),
-      notJudged: v.notJudged
+    unread: !!c.seance?.assigned && D.bookFor(D.readBook(c.doc, w.id), c.seance)?.readAt == null,
+    how: s => describe(w.tt, s, c.drawers.find(d => d.id === s.id), {
+      live: RUN.liveNow(c),
+      notJudged: c.notJudged
     }).how,
     routeNm: lengthOf(view),
-    onRead: () => markRead(v)
+    onRead: () => RUN.markRead(w.id)
   });
 }
 
@@ -945,101 +624,21 @@ function lengthOf(view) {
   }
 }
 
-/** « Ouvrir l'enveloppe » : « lu » écrit une fois dans MON carnet (read_at), puis la section relue ; faux si rien n'a pu s'écrire. */
-async function markRead(v) {
-  if (V !== v || !v.mine) return false;
-  const next = D.withRead(v.doc, {
-    mission: v.id,
-    me: v.me,
-    seance: v.seance,
-    now: Date.now()
-  });
-  if (!next) {
-    v.ctx.notify?.(v.tt(TX.noRead, {
-      e: v.tt(TX.noTrigram)
-    }), 'err');
-    return false;
-  }
-  if (!await put(v, v.myPath, next, TX.noRead) || V !== v) return false;
-  await load(v);
-  // l'organisateur le lira à sa synchronisation : un passage demandé tout de suite
-  Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
-  return true;
-}
-
 /** « Demander la suite » touché : le panneau s'ouvre (rien n'est écrit). Au repos, ou pour une mission qui n'est pas la mienne : rien. */
 function onAsk(e) {
-  const v = V;
+  const w = W;
   e?.stopPropagation?.();
-  if (!v || !v.mine || restLeft(v) > 0) return;
-  v.asking = true;
-  paint();
-  v.host.querySelector('[data-dw-ask-yes]')?.focus?.();
-}
-
-/** « Demander » (SOG-0459) : ouvre le premier tiroir fermé si sa clé est le geste, ou si c'est un objet que l'appareil suit et a à
- *  portée maintenant (drawers.js asked) ; sinon la même réponse pour toute mission, « Rien de nouveau pour l'instant ». Après toute
- *  réponse, la commande se repose (REST, par mission). */
-async function answer(v) {
-  v.asking = false;
-  REST.set(v.id, Date.now() + v.restMs);
-  const states = Array.isArray(v.states) ? v.states : [],
-    first = states.find(x => !x.open && !x.locked),
-    r = v.inRange,
-    // à portée MAINTENANT : un relevé à portée de moins d'une minute, sur le premier fermé, que l'appareil suit (position connue)
-    near = !!first && !!r && r.id === first.id && Date.now() - r.seen <= RANGE_MS && followsHere(v, first) ? first.id : null,
-    a = v.mine ? D.asked(states, {
-      inRange: near
-    }) : null;
-  if (!a) {
-    v.ctx.notify?.(v.tt(TX.nothing), 'info');
-    return paint();
-  }
-  paint();
-  if (a.how !== 'hand') return void record(v, a.id, { // un objet, ou un survol à confirmer : le constat tenu dans v.inRange
-    ...r.f,
-    at: Date.now()
-  }, r.source).catch(() => {});
-  const next = D.withOpen(v.doc, {
-    mission: v.id,
-    me: v.me,
-    seance: v.seance,
-    now: Date.now()
-  }, a.id, 'hand');
-  if (!next) return void v.ctx.notify?.(v.tt(TX.noWrite, {
-    e: v.tt(TX.noTrigram)
-  }), 'err');
-  if (!await put(v, v.myPath, next) || V !== v) return;
-  await load(v); // la notification « Suite de la mission : … » vient du calcul (announce)
-  // les autres appareils de la mission le liront à leur synchronisation : un passage demandé tout de suite, sans attendre celui de fond
-  Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
+  if (!w || !RUN.ask(w.id)) return;
+  w.host.querySelector('[data-dw-ask-yes]')?.focus?.();
 }
 
 /** Les gestes de la section : « Demander » et « Pas maintenant » du panneau, « Resceller » (niveau Complet). */
 async function onClick(e) {
-  const v = V,
+  const w = W,
     b = e.target.closest?.('[data-dw-ask-yes],[data-dw-ask-no],[data-dw-seal]');
-  if (!v || !b || !v.host.contains(b)) return;
+  if (!w || !b || !w.host.contains(b)) return;
   e.stopPropagation();
-  if (b.hasAttribute('data-dw-ask-no')) { // « Pas maintenant » : le panneau se ferme, sans repos
-    v.asking = false;
-    return paint();
-  }
-  if (b.hasAttribute('data-dw-ask-yes')) return answer(v);
-  const id = b.dataset.dwSeal,
-    next = D.withSeal(v.doc, {
-      mission: v.id,
-      me: v.me,
-      seance: v.seance,
-      now: Date.now()
-    }, id);
-  if (!next) {
-    v.ctx.notify?.(v.tt(TX.noWrite, {
-      e: v.tt(TX.noTrigram)
-    }), 'err');
-    return paint();
-  }
-  if (!await put(v, v.myPath, next) || V !== v) return;
-  await load(v);
-  Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
+  if (b.hasAttribute('data-dw-ask-no')) return RUN.cancelAsk(w.id); // « Pas maintenant » : le panneau se ferme, sans repos
+  if (b.hasAttribute('data-dw-ask-yes')) return RUN.answer(w.id);
+  return RUN.seal(w.id, b.dataset.dwSeal);
 }
