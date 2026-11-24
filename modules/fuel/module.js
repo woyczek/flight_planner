@@ -1339,6 +1339,17 @@ const TX = {
   missionLoaded: ['Mission {id} : {dep} → {arr} ({n} points), à compléter.', 'Mission {id}: {dep} → {arr} ({n} points), to complete.',
     'Mission {id}: {dep} → {arr} ({n} Punkte), zu vervollständigen.', 'Misión {id}: {dep} → {arr} ({n} puntos), por completar.'
   ],
+  // SOG-0618 : un départ ou une arrivée de la mission sans code de terrain, dit une fois à la reprise
+  endNoCode: ['{place} n’a pas de code : ni piste, ni procédures, ni météo pour ce terrain.',
+    '{place} has no code: no runway, no procedures, no weather for this aerodrome.',
+    '{place} hat keinen Code: keine Piste, keine Verfahren, kein Wetter für diesen Platz.',
+    '{place} no tiene código: ni pista, ni procedimientos, ni meteorología para este aeródromo.'
+  ],
+  endNoPlace: ['{place} n’a ni code ni position : ce lieu n’est pas repris dans la route.',
+    '{place} has neither a code nor a position: this place is not taken into the route.',
+    '{place} hat weder Code noch Position: dieser Ort wird nicht in die Route übernommen.',
+    '{place} no tiene ni código ni posición: este lugar no se incluye en la ruta.'
+  ],
   missionReplace: ['Remplacer le vol en préparation par la mission {id} ?', 'Replace the flight being prepared with mission {id}?',
     'Den vorbereiteten Flug durch die Mission {id} ersetzen?', '¿Sustituir el vuelo en preparación por la misión {id}?'
   ],
@@ -7751,7 +7762,7 @@ function renderPts() {
       lock = p.lock === 'mission', // SOG-0193 L3 : ni monté, ni descendu, ni retiré
       off = lock ? ` disabled title="${esc(tt(TX.ptLocked, { id: p.mission || p.id }))}"` : '',
       bad = rc ? rc.find(g => g.state === 'error' && g.to === String(p.id || '').toUpperCase()) : null;
-    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}${mid && holdShown(p) ? ' fu-pthas' : ''}"${p.id ? ` data-hover-pt="${id}"` : ''}${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}${mid && !holdShown(p) ? holdAdd(p, i) : ''}</span>
+    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}${mid && holdShown(p) ? ' fu-pthas' : ''}"${p.id ? ` data-hover-pt="${id}"` : ''}${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid">${p.place ? `<b data-place>${esc(p.place)}</b><small class="f-muted">${id}</small>` : `<b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>`}${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}${mid && !holdShown(p) ? holdAdd(p, i) : ''}</span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
       <button type="button" data-do="ptup" data-i="${i}" ${i && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}"${off} aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button>${mid && holdShown(p) ? holdField(p, i) : ''}</div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
@@ -9044,12 +9055,22 @@ async function applyMission(id) {
       points
     } = mf.route,
     type = mf.aircraft.type,
-    sheet = type ? S.sheets.find(p => (p.icao || '').toUpperCase() === type) : null;
+    sheet = type ? S.sheets.find(p => (p.icao || '').toUpperCase() === type) : null,
+    // SOG-0618 : un départ ou une arrivée SANS code mais à une position de la mission entre dans la route, en tête ou en fin, par son mot
+    // de coordonnées (le champ du terrain reste vide : il ne prend qu'un code ; avant, ce bout était jeté et la note disait « ? ») ;
+    // l'arrivée d'une mission sans destination est son origine (missionFlight)
+    depPlace = mission.origin || null,
+    arrPlace = mission.destination || mission.origin || null,
+    depWord = !dep && mf.route.depAt ? RT.icaoCoord(mf.route.depAt.lat, mf.route.depAt.lon) : '',
+    arrWord = !arr && mf.route.arrAt ? RT.icaoCoord(mf.route.arrAt.lat, mf.route.arrAt.lon) : '';
   f.route = {
     ...emptyFlight().route,
-    text: [dep, ...points.map(p => RT.icaoCoord(p.lat, p.lon)), arr].filter(Boolean).join(' '),
+    text: [dep || depWord, ...points.map(p => RT.icaoCoord(p.lat, p.lon)), arr || arrWord].filter(Boolean).join(' '),
     dep,
     arr,
+    // SOG-0618 : le nom de chaque lieu de la mission que le pilote a le droit de voir, par son mot de coordonnées : la liste des points
+    // et la Carte le montrent, la coordonnée reste ce qui s'écrit dans le plan
+    names: missionNames(mission, points, [[depWord, depPlace], [arrWord, arrPlace]]),
     // SOG-0193 : l'origine et la destination à leur position de la mission, points connus du vol : un terrain que la base ne connaît
     // pas garde sa place dans le plan et dans la distance (aerodb passe toujours d'abord, knownPoints)
     points: [dep && mf.route.depAt ? {
@@ -9106,10 +9127,20 @@ async function applyMission(id) {
   mChipDraw();
   ctx.notify(tt(TX.missionLoaded, {
     id,
-    dep: dep || '?',
-    arr: arr || '?',
+    dep: dep || placeName(depPlace) || '?',
+    arr: arr || placeName(arrPlace) || '?',
     n: points.length
   }), 'ok');
+  // SOG-0618 : ce qui manque à un bout sans code, dit une fois (un aller-retour sans code : une seule note)
+  const told = new Set();
+  for (const [code, word, place] of [[dep, depWord, depPlace], [arr, arrWord, arrPlace]]) {
+    const name = placeName(place);
+    if (code || !name || told.has(name)) continue;
+    told.add(name);
+    ctx.notify(tt(word ? TX.endNoCode : TX.endNoPlace, {
+      place: name
+    }), 'warn');
+  }
   // § 1 ter : une clé de durée que la règle ne reconnaît pas est dite, une fois (rien ne tombe en silence)
   if (mf.holdUnread?.length) ctx.notify(tt(TX.holdUnread, {
     l: mf.holdUnread.slice(0, 6).join(', ')
@@ -10997,26 +11028,60 @@ function aidsDraw() {
 // sur la carte ». Le vol garde route.locks ([{ id : le mot du texte, en coordonnées à la minute ; mid : l'identifiant de la mission ;
 // name }], posé par applyMission) ; chaque relecture de la route marque ces points lock: 'mission' dans route.points (la Carte les
 // verrouille dans son Édition) ; la liste ne les monte, descend ni retire ; un texte qui en perd un le retrouve à la sortie du champ.
+/** SOG-0618 : le nom d'un lieu de la mission (origine, destination), nettoyé et borné ; '' sans nom. */
+const placeName = p => String(p?.name ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60);
+/** SOG-0618 : les noms des lieux de la mission que le pilote a le droit de voir, par mot de coordonnées de la route
+ *  ({ « 4500N00100E » → « Lac … » }) : les bouts sans code (ends : [[mot, lieu]]) et les points de la route cités par la partie visible
+ *  (MS.pilotView, aucun tiroir ouvert à la reprise) — jamais le nom d'un lieu caché ; le premier nom d'un mot gardé, 60 mots au plus. */
+function missionNames(mission, points, ends) {
+  const pv = MS.pilotView(mission, []),
+    seen = new Set(Object.keys(pv?.points || {})),
+    out = {},
+    add = (w, name) => {
+      if (w && name && !Object.hasOwn(out, w) && Object.keys(out).length < 60) out[w] = name;
+    };
+  for (const [w, p] of ends) add(w, placeName(p));
+  for (const p of points)
+    if (seen.has(p.id)) add(RT.icaoCoord(p.lat, p.lon), placeName(p));
+  return out;
+}
+/** SOG-0618 : les noms du vol, bornés (la route est relue de pilot/, écrite par la Carte aussi : une entrée non fiable) — un mot de
+ *  coordonnées à la minute, un nom de 60 signes au plus, sans caractère de contrôle ; 60 au plus. */
+function namesOf(r) {
+  const N = r?.names && typeof r.names === 'object' && !Array.isArray(r.names) ? r.names : {};
+  return Object.fromEntries(Object.entries(N).slice(0, 60).filter(([w, n]) => /^\d{4}[NS]\d{5}[EW]$/.test(w) && typeof n === 'string')
+    .map(([w, n]) => [w, placeName({
+      name: n
+    })]).filter(([, n]) => n));
+}
 /** Les verrous du vol, bornés (la route est relue de pilot/, écrite par la Carte aussi). */
 function locksOf(r) {
   return (Array.isArray(r?.locks) ? r.locks : []).slice(0, 60).filter(l => l && /^\d{4}[NS]\d{5}[EW]$/.test(String(l.id || '')));
 }
-/** route.points avec lock: 'mission' (et l'identifiant de la mission) sur les points imposés, retiré des autres. */
+/** route.points avec lock: 'mission' (et l'identifiant de la mission) sur les points imposés, retiré des autres ; et (SOG-0618) le nom
+ *  du lieu de la mission (`place`) sur un point dont le mot est dans route.names, retiré des autres. */
 function markLocks(r, points) {
-  const by = new Map(locksOf(r).map(l => [l.id, l]));
+  const by = new Map(locksOf(r).map(l => [l.id, l])),
+    names = namesOf(r);
   return (points || []).map(p => {
-    const l = p && by.get(String(p.id || '').toUpperCase());
     if (!p || typeof p !== 'object') return p;
-    const {
-      lock,
-      mission,
-      ...rest
-    } = p;
+    const k = String(p.id || '').toUpperCase(),
+      l = by.get(k),
+      {
+        lock,
+        mission,
+        place,
+        ...rest
+      } = p,
+      base = Object.hasOwn(names, k) ? {
+        ...rest,
+        place: names[k]
+      } : rest;
     return l ? {
-      ...rest,
+      ...base,
       lock: 'mission',
       mission: String(l.mid || '').slice(0, 40)
-    } : rest;
+    } : base;
   });
 }
 /** Remet dans le texte de la route les points imposés qu'il a perdus : chacun juste après l'imposé qui le précède (l'ordre de la
