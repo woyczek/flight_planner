@@ -14177,10 +14177,22 @@ def n196(c):
             c.js('window.__failDraft = true')
             _tab(c, 'mission')
             _ed_fill(c, 'edtitle', title)
-            c.js(quiet)
             if how == 'Annuler':
+                # the draft is written a second after the last keystroke (DRAFT_MS) and refused here: its note « Mission non enregistrée : … »
+                # appears where the bar of the workshop is on a phone, until the frame lifts it above the bar. Appearing between the touch on
+                # « Annuler » and the click the browser makes of it, it takes that click (under load, 390: the workshop stayed, no question,
+                # nothing said — measured with a note shown at the touchend). So that refusal is waited for and the note removed BEFORE the
+                # touch; the exit's own write is refused again and must not be said a second time (checked below: once).
+                for _ in range(80):
+                    if failed():
+                        break
+                    c.wait(250)
+                c.ok(len(failed()) == 1, failed(), f'{width} {how}: the draft written after the keystrokes is refused and said, before the exit')
+                c.wait(300)
+                c.js(quiet)
                 c.tap(f'{E} [data-do="edcancel"]')
             else:
+                c.js(quiet)
                 c.page.go_back()
             c.until(f"!document.querySelector('{E}')", timeout=20000, what=f'{how}: the workshop left')
             c.eq(c.count('.f-modal'), 0, f'{width} {how}: no question (the draft was said kept)', what='no question')
