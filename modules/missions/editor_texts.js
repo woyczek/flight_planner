@@ -335,10 +335,13 @@ export const EDTX = {
   dwKey_object: ['un objet à trouver', 'an object to find', 'ein zu findendes Objekt', 'un objeto por encontrar'],
   dwKey_arrival: ['l\'arrivée au terrain', 'the arrival at the aerodrome', 'die Ankunft am Platz', 'la llegada al aeródromo'],
   draftKept: ['Brouillon gardé', 'Draft kept', 'Entwurf gespeichert', 'Borrador guardado'],
-  draftNotKept: ['Brouillon non gardé : il sera perdu si la page se ferme.', 'Draft not kept: it will be lost if the page closes.',
-    'Entwurf nicht gespeichert: Er geht verloren, wenn die Seite geschlossen wird.',
-    'Borrador no guardado: se perderá si se cierra la página.'
-  ],
+  // SOG-0607 : la tête de la note d'un brouillon refusé ; la cause est celle du cadre (ctx.writeFailText : « {tête} : {cause} ») ; « il
+  // sera perdu si la page se ferme » n'est écrit que par le cadre (décision de l'ergonome, 24 nov.)
+  draftNotKept: ['Brouillon non gardé', 'Draft not kept', 'Entwurf nicht gespeichert', 'Borrador no guardado'],
+  // SOG-0607 : ce que le cadre nomme dans « Travail non gardé : {quoi}. … » tant que le brouillon n'est tenu qu'en mémoire (ctx.memoryOnly)
+  draftWhat: ['brouillon de la mission', 'mission draft', 'Entwurf der Mission', 'borrador de la misión'],
+  // SOG-0606 : la tête de l'échec de « Enregistrer » et de l'écrit d'un modèle ; la cause est celle du cadre (ctx.writeFailText)
+  saveFailed: ['Mission non enregistrée', 'Mission not saved', 'Mission nicht gespeichert', 'Misión no guardada'],
   dwNotJudged: ['s\'ouvre au geste ou à l\'heure de repli', 'opens by the gesture or at the fallback time',
     'öffnet sich durch die Geste oder zur Ersatzzeit', 'se abre con el gesto o a la hora de reserva'
   ],

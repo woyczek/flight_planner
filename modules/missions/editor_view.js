@@ -368,9 +368,7 @@ async function edModelSave(s) {
       name: title
     }), 'ok');
   } catch (x) {
-    s.ctx.notify(s.tt(TX.edFailed, {
-      e: String(x?.message || x).slice(0, 120)
-    }), 'err');
+    s.ctx.notify(edFailText(s, x, EDTX.saveFailed, path), 'err');
   } finally {
     e.busy = false;
     if (state() === s && s.ed === e) draw(s);
@@ -3352,6 +3350,7 @@ export function edAfter(s) {
         // rouvre — seulement quand elle a changé ET que le stockage a refusé son brouillon (le cas où le cadre n'a rien demandé et où le
         // travail serait perdu) ; un atelier intact, ou quitté sur « Quitter sans enregistrer », n'a pas à revenir
         if (dirty && live.ed.draftRefused) KEPT_ED = live.ed;
+        else edMemDone(live.ed); // SOG-0607 : la séance part avec le module, elle n'est plus en mémoire
         // le cadre a laissé partir un atelier changé (son brouillon le garde, edDeclare) : une seule notification, une fois l'écrit CONFIRMÉ
         if (edDraftLast(live, live.ed) && dirty) edDraftSaid(live, live.ed);
       }
@@ -3377,6 +3376,7 @@ export function edAfter(s) {
       kwStop();
       return EM.editing() ? EM.stop() : undefined;
     }
+    if (KEPT_ED && KEPT_ED !== s.ed) edMemDone(KEPT_ED); // SOG-0607 : la séance gardée d'avant ne revient plus, son signe part
     KEPT_ED = null; // un atelier ouvert à neuf : celui d'avant n'a plus lieu de revenir
     s.edReorderOff ||= RO.bind(s.el, { // lot 3 : les flèches du bloc du cadre (UN écouteur délégué sur la racine du module, par séance)
       onMove: m => edReorder(s, m)
@@ -4443,6 +4443,35 @@ function edRefresh(s) {
   edDraftSoon(s); // SOG-0486 : la frappe est gardée sur l'appareil (au plus un écrit par seconde)
 }
 
+/** La phrase d'une écriture refusée (SOG-0606) : « {tête} : {cause} », la cause dite par le cadre (ctx.writeFailText, qui range le texte
+ *  brut et le nom du fichier au diagnostic) ; le texte brut du navigateur n'est jamais montré. Sans le cadre de SOG-0606 : la tête seule. */
+function edFailText(s, x, head, file) {
+  const h = s.tt(head);
+  return s.ctx.writeFailText ? s.ctx.writeFailText(x, h, file) : h;
+}
+
+/** La cause seule d'une écriture refusée, dite par le cadre (ctx.writeFailure, rangée au diagnostic avec la tête et le fichier) ; '' sans
+ *  le cadre de SOG-0606 (le texte brut n'est jamais montré). */
+function edFailCause(s, x, head, file) {
+  return s.ctx.writeFailure ? s.ctx.writeFailure(x, {
+    head: s.tt(head),
+    file
+  }).text : '';
+}
+
+/** Le signe du cadre relâché (SOG-0607) : la séance n'est plus tenue en mémoire seulement — son brouillon est écrit, la mission
+ *  enregistrée, ou la séance n'existe plus. Idempotent. */
+function edMemDone(e) {
+  const release = e?.memRelease;
+  if (!release) return;
+  e.memRelease = null;
+  try {
+    release();
+  } catch {
+    // le cadre n'a plus rien à relâcher
+  }
+}
+
 /** Le registre retouché par l'éditeur : relu d'abord (un autre pilote a pu l'écrire), `change(doc)` → { doc } | { error } ; une seule
  *  écriture, sur l'appareil (elle part avec l'envoi groupé, SOG-0279). → '' ou le mot de l'échec. */
 async function edRegister(s, change) {
@@ -4496,7 +4525,7 @@ async function edSave(s) {
       const list = Array.isArray(reg.missions) ? reg.missions : [],
         idx = cut(list[e.regIdx]?.id, 40) === e.regId ? e.regIdx : list.findIndex(x => cut(x?.id, 40) === e.regId);
       return ED.regEdit(reg, idx, e.regId, c, path);
-    }).catch(x => String(x?.message || x).slice(0, 120));
+    }).catch(x => edFailCause(s, x, EDTX.saveFailed, REGISTRY));
     if (state() !== s || s.ed !== e) return;
     // la mission enregistrée devient celle qu'on modifie (Enregistrer ne ferme pas l'éditeur)
     const line = RG.entries(regErr ? {} : (await yamlFile(s.ctx, REGISTRY)).doc || {}).find(x => x.row.id === c.id);
@@ -4549,9 +4578,7 @@ async function edSave(s) {
       e: regErr
     }) : s.tt(TX.edSaved), regErr ? 'warn' : 'ok');
   } catch (x) {
-    s.ctx.notify(s.tt(TX.edFailed, {
-      e: String(x?.message || x).slice(0, 120)
-    }), 'err');
+    s.ctx.notify(edFailText(s, x, EDTX.saveFailed, path), 'err');
   } finally {
     e.busy = false;
     if (state() === s && s.ed === e) draw(s);
@@ -5293,12 +5320,14 @@ async function edLeave(s) {
     if (!globalThis.jsyaml) await edYamlReady().catch(() =>
       0); // sans le lecteur, aucun brouillon ne s'écrit : la sortie retombe sur la question du cadre, jamais sur rien
     if (state() !== s || s.ed !== e) return;
-    kept = !e.busy && edDraftWrite(s, e);
+    // SOG-0607 : tant que le brouillon est refusé, rien ne garde le travail — la question du cadre est posée (jamais au changement de module)
+    kept = !e.busy && !e.draftRefused && edDraftWrite(s, e);
     if (!kept && !(await s.ctx.askLeave())) return;
   }
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
   if (!kept) edDraftLast(s, e); // sans brouillon écrit, la sortie essaie une dernière fois (edDraftKeep) ; un brouillon gardé l'est déjà
+  if (!kept) edMemDone(e); // SOG-0607 : quittée sans brouillon gardé, la séance n'est plus en mémoire (le signe du cadre part)
   s.ctx.unsaved?.(null); // l'atelier n'existe plus : plus rien à garder (le cadre ne pose pas une seconde question)
   draw(s);
   if (s.reg) regLoad(s);
@@ -5378,6 +5407,7 @@ function edDraftWrite(s, e) {
     module: 'missions'
   })).then(() => {
     DF.pruneDrafts(s.ctx, key).catch(() => 0); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
+    edMemDone(e); // SOG-0607 : écrit et confirmé, le travail n'est plus en mémoire seulement
     if (e.draftRefused) { // un refus a été dit : l'écrit confirmé le clôt et le dit (une fois)
       e.draftRefused = false;
       edKeptSay(s, e, doc);
@@ -5410,17 +5440,21 @@ function edKeptSay(s, e, doc) {
   }
 }
 
-/** L'écrit du brouillon est REFUSÉ (SOG-0607) : le prochain changement réessaie, et l'auteur l'apprend — « Brouillon non gardé : il sera perdu
- *  si la page se ferme. » (la phrase seule, sans le motif), une fois par épisode de refus, jamais en silence ; « Mission non enregistrée »
- *  reste la tête de l'échec du bouton « Enregistrer ». Aucune exception. */
+/** L'écrit du brouillon est REFUSÉ (SOG-0607) : le prochain changement réessaie, et l'auteur l'apprend — « Brouillon non gardé : {cause} »
+ *  (la cause du cadre, ctx.writeFailText), une note d'erreur, au PREMIER refus d'un épisode seulement, jamais en silence ; tant que le refus
+ *  dure, l'atelier ne montre rien de plus : c'est le signe du cadre (ctx.memoryOnly : « Travail non gardé : brouillon de la mission. … »,
+ *  le point du ⚙, la pastille), déclaré tant que la séance vit, relâché au premier écrit confirmé (edMemDone) ; « Mission non enregistrée »
+ *  reste la tête de l'échec du bouton « Enregistrer ». */
 function edDraftFailed(s, e, doc, x) {
   if (e.draftDoc === doc) e.draftDoc = null;
   e.keptSaid = null; // un refus : le prochain écrit confirmé se dira de nouveau
   if (e.draftRefused)
     return; // un épisode de refus se dit une fois ; un écrit confirmé le clôt (edDraftWrite), un nouveau refus le dit de nouveau
   e.draftRefused = true;
+  // le signe du cadre, seulement pour une séance qui vit (l'atelier ouvert, ou gardé au démontage) : une séance quittée n'est plus en mémoire
+  if (!e.memRelease && ((state() === s && s.ed === e) || KEPT_ED === e)) e.memRelease = s.ctx.memoryOnly?.(EDTX.draftWhat, x) || null;
   try {
-    s.ctx.notify(s.tt(EDTX.draftNotKept), 'err');
+    s.ctx.notify(edFailText(s, x, EDTX.draftNotKept, DF.draftPath(e.draftKey || DF.keyOf(e.mode, e.origId))), 'err');
   } catch {
     // le cadre n'a plus d'écran où le dire : rien de plus à faire
   }
@@ -5450,6 +5484,7 @@ function edDraftDone(s, e) {
   e.draftGen = (e.draftGen || 0) + 1;
   e.draftDoc = null;
   e.draftKey = '';
+  edMemDone(e); // SOG-0607 : la mission est enregistrée, elle n'est plus tenue en mémoire seulement
 }
 
 /** « Reprendre » un brouillon (SOG-0486, `data-do="eddraft"`, depuis le registre) : le brouillon de la clé lu et validé (draft.js

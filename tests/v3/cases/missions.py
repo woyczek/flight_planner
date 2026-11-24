@@ -14181,7 +14181,8 @@ def n196(c):
         c.shot(f'P21a_{width}_mobile.png')
         ed_leave(c)
         c.js(_REG_CLEAR)
-        # (E) a draft REFUSED after the exit: « Annuler », then « Back » — the workshop is left without a question, and the failure is said, once, never in silence
+        # (E) a draft REFUSED: « Annuler » asks the frame's question (nothing keeps the work: SOG-0607), « Quitter sans enregistrer » leaves; « Back »
+        # leaves without a question — and the failure is said, once, never in silence
         for how in ('Annuler', 'Back'):
             open_x(_TRIAL_TEXTS)
             c.js('window.__failDraft = true')
@@ -14206,11 +14207,15 @@ def n196(c):
                 c.wait(300)
                 c.js(quiet)
                 c.tap(f'{E} [data-do="edcancel"]')
+                c.until(asked, timeout=8000, what='Annuler: the question of the frame (the draft is refused)')
+                c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), 'Quitter sans enregistrer ? Les changements seront perdus.',
+                     f'{width} {how}: with a refused draft, « Annuler » asks the question of the frame', what='the question')
+                c.tap('.f-modal [data-ok]')
             else:
                 c.js(quiet)
                 c.page.go_back()
             c.until(f"!document.querySelector('{E}')", timeout=20000, what=f'{how}: the workshop left')
-            c.eq(c.count('.f-modal'), 0, f'{width} {how}: no question (the draft was said kept)', what='no question')
+            c.eq(c.count('.f-modal'), 0, f'{width} {how}: no question left on the screen', what='no question')
             for _ in range(24):
                 if failed():
                     break
@@ -14218,6 +14223,7 @@ def n196(c):
             c.wait(1500)
             got = failed()
             c.eq(len(got), 1, f'{width} {how}: the refused draft is said ONCE (« Brouillon non gardé : … »)', what='the failure')
+            c.ok(all(norm(x) == norm('Brouillon non gardé : le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne.') for x in got), got, f'{width} {how}: the note is the head and the frame\'s cause, never the browser\'s text')
             c.js('window.__failDraft = false')
             c.js(_REG_CLEAR)
 
@@ -15926,10 +15932,11 @@ _QUOTA_INIT = """(() => { const put = IDBObjectStore.prototype.put; IDBObjectSto
   return put.apply(this, arguments) } })()"""
 
 
-@case('N256', 'Missions › the draft says its state, and the mission in progress survives (SOG-0607): with the storage full, « Brouillon non gardé : il sera perdu si la page se ferme. » is said ONCE and '
-      '« Brouillon gardé » never; the pilot leaves Missions for Settings (no question) and comes back: the workshop is open again with the changed title; the quota lifted, the reopening '
+@case('N256', 'Missions › the draft says its state, and the mission in progress survives (SOG-0607): with the storage full, « Brouillon non gardé : {cause} » is said ONCE (the frame\'s cause), the frame\'s sign is held and '
+      '« Brouillon gardé » never; « Annuler » asks the frame\'s question; the pilot leaves Missions for Settings (no question) and comes back: the workshop is open again with the changed title; the quota lifted, the reopening '
       'retries, « Brouillon gardé » is said once and the draft file holds the title', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0607: modules/missions/editor_view.js `edDraftWrite` (the promise of the write), `edDraftFailed`, `edAfter` (KEPT_ED, the reopening); editor_texts.js `draftNotKept`')
+      rule='SOG-0607: modules/missions/editor_view.js `edDraftWrite` (the promise of the write), `edDraftFailed`, `edAfter` (KEPT_ED, the reopening), `edMemDone`; editor_texts.js '
+      '`draftNotKept`, `draftWhat`; the frame (f602b118e): ctx.writeFailText (the cause, once), ctx.memoryOnly (the sign, released by the module)')
 def n256(c):
     title = 'Un titre retouché'
     path = 'cache/missions/draft_X-001A.json'
@@ -15952,13 +15959,27 @@ def n256(c):
             if said('Brouillon non gardé'):
                 break
             c.wait(250)
-        sentence = 'Brouillon non gardé : il sera perdu si la page se ferme.'
+        # the head of Missions, then the cause written ONCE by the frame (ctx.writeFailText, SOG-0606): never the browser's text
+        sentence = 'Brouillon non gardé : le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne.'
         c.eq(said('Brouillon non gardé'), [sentence], f'{width}: the refused draft says its state, once, with these words', what='the refusal')
+        c.ok(not any('quota exceeded' in x for x in c.note_log()), c.note_log(), f'{width}: the browser\'s text is never shown')
+        # the frame's sign (ctx.memoryOnly): « Travail non gardé : brouillon de la mission. … » while the draft is in memory only
+        c.eq(c.js("() => window.SogFrame.memoryOnlyList()"), ['brouillon de la mission'], f'{width}: the frame holds the sign of the draft in memory only',
+             what='the sign held')
+        c.shot(f'N256_{c.design}_{width}_{c.lang}_non_garde.png')  # the note and the frame's sign, for the relay
         _ed_fill(c, 'edtitle', title + ' bis')
         c.wait(2500)
         c.eq(len(said('Brouillon non gardé')), 1, f'{width}: a second change, refused again, does not say it again', what='once per episode')
         c.eq(said('Brouillon gardé'), [], f'{width}: « Brouillon gardé » is never said while the writes are refused', what='never kept')
         c.eq(said('Mission non enregistrée'), [], f'{width}: « Mission non enregistrée » is not the head of a draft', what='not the save failure')
+        # « Annuler » while the draft is refused: nothing keeps the work, so the frame's question is asked; « Rester » keeps the workshop
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question of the frame')
+        c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), 'Quitter sans enregistrer ? Les changements seront perdus.',
+             f'{width}: « Annuler » with a refused draft asks the question of the frame', what='the question')
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", what='« Rester »')
+        c.eq(c.count(E), 1, f'{width}: « Rester » keeps the workshop', what='stay')
         # leaving the workshop by the gear's address (« #settings »): either Settings opens OVER Missions, which stays mounted (an overlay of
         # the frame), or the popstate of the registry sends the address back and Missions is mounted again (module.js `s.onPop`, SOG-0609,
         # measured 24 Nov) — in both, the work is there, without a question
@@ -15978,11 +15999,14 @@ def n256(c):
             c.js("location.hash = '#missions'")
         c.until(f"!!document.querySelector('{E}') && document.querySelector('{E}') !== window.__edEl && document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title + ' bis')}",
                 timeout=20000, what='Missions mounted again: the kept workshop open again with the changed title')
+        c.shot(f'N256_{c.design}_{width}_{c.lang}_survie.png')  # the same session back after the unmount, for the relay
         for _ in range(40):
             if said('Brouillon gardé'):
                 break
             c.wait(250)
         c.eq(said('Brouillon gardé'), ['Brouillon gardé'], f'{width}: the retried write is confirmed: « Brouillon gardé » is said once', what='kept once')
+        c.until("window.SogFrame.memoryOnlyList().length === 0", timeout=5000, what='the sign released at the confirmed write')
+        c.shot(f'N256_{c.design}_{width}_{c.lang}_garde.png')  # « Brouillon gardé », the sign gone, for the relay
         got = None
         for _ in range(24):
             got = c.js(_DRAFT_READ, path)
