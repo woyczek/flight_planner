@@ -1347,13 +1347,21 @@ def assess(request,_nav=None,_rad=None,_path=None):
             deposit=belgian_deposit(nav,cycle) if zone=='be' else None      # SOG-0541 lot 2 : le jour du dépôt du jeu belge compilé : Carburant écrit « Routes belges d'un cycle passé (déposées le … ) »
             issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.','stale_cycle',True,zone=zone,cycle=cycle,current=seen_cycle,routes=[v for v,_a,_b in named[:6]],**({'deposited':deposit} if deposit else {}))      # SOG-0532 (6) : un État dont les données sont d'un cycle périmé : « non vérifiable » pour cet État, nommé
     if request.get('fl_basis')=='default':issues.insert(0,dict(level='REVUE',text=f"Niveau du vol absent : le calcul est fait au FL{fl:03d}, le niveau par défaut du moteur ; un autre niveau donne d'autres voies (les voies ont leurs bandes de niveau)."))      # SOG-0517 : la demande n'avait pas de niveau (Carburant : le vol sans niveau) : dit EN TÊTE (l'IFPS de l'utilisateur du 19/11 : calculé au FL180, déposé au FL270)
+    refused=[]      # SOG-0576 (auto-vérification) : les tronçons que le contrôle REFUSE (bande de la voie, plancher de la route libre, erreur verticale) : la recherche les écarte à la reprise ; { via, start, end }, sans doublon
+    for r in [*band_runs,*floor_runs]:
+        for l in r['legs']:
+            x=dict(via=l['via'],start=l['start']['id'],end=l['end']['id'])
+            if x not in refused:refused.append(x)
+    for l in legs:
+        x=dict(via=l['via'],start=l['start']['id'],end=l['end']['id'])
+        if l.get('vertical_errors') and x not in refused:refused.append(x)
     errors=[x for x in issues if x['level']=='ERREUR']
     violations=[dict(code=x.get('code') or 'other',values=x.get('values') or {},text=x['text'][:300]) for x in errors[:MAX_VERDICT_ITEMS]]      # SOG-0532 (3) : les règles CONNUES enfreintes (jamais confondues avec ce qui n'a pas pu être vérifié)
     unverifiable=[dict(code=x['code'],values=x.get('values') or {},text=x['text'][:300]) for x in issues if x['level']=='REVUE' and x.get('unverifiable')][:MAX_VERDICT_ITEMS]      # ce que le contrôle n'a pas pu vérifier, nommé
     warnings=[dict(code=x['code'],values=x.get('values') or {},text=x['text'][:300]) for x in issues if x['level']=='REVUE' and x.get('code') in WARNING_CODES][:MAX_VERDICT_ITEMS]      # SOG-0530 : les avertissements, à part : ni une violation ni un non-vérifiable
     data_gaps=[dict(start=l['start']['id'],end=l['end']['id'],via=l['via'],reason=l['data_gap']) for l in legs if l.get('data_gap')]
     status='ERREURS DÉTECTÉES' if errors else 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if data_gaps else 'CONTRÔLE PARTIEL — À VÉRIFIER'
-    result=dict(ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,warnings=warnings,level_rule=dict(level_stats,warnings=len(level_warnings),undecided=len(level_open)) if legs else None,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
+    result=dict(refused=refused[:MAX_BAND_ISSUES],ok=True,status=status,verdict='violates' if violations else 'unverifiable' if unverifiable or data_gaps else 'conform',violations=violations,unverifiable=unverifiable,warnings=warnings,level_rule=dict(level_stats,warnings=len(level_warnings),undecided=len(level_open)) if legs else None,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
         coverage=nav.coverage,rad_summary=rad_summary,not_verified=not_verified,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,

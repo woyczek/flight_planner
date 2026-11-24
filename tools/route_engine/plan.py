@@ -266,6 +266,62 @@ def rad_repairs(request, nav, rad, primary, check_budget, bounds, started, asses
     return primary, avoids, rad_retries
 
 
+ERROR_MAX = 300      # SOG-0576 (Sécurisation) : un message d'erreur du moteur repris dans `judge.attempts` est coupé (il peut porter des identifiants de la base)
+MAX_JUDGE_RETRIES = 3      # SOG-0576 : les reprises du CONTRÔLE (le même plafond que les reprises RAD)
+VERDICT_RANK = {'conform': 0, 'unverifiable': 1, 'violates': 2}
+
+
+def judge_repairs(request, nav, rad, primary, check_budget, avoids, assess=None):
+    """SOG-0576 (l'ergonome, 23 nov. : « le contrôle est le JUGE UNIQUE ») : le TEXTE de la route calculée est repassé dans le contrôle, comme l'utilisateur le collerait. Refusé (le contrôle a une erreur que le calcul n'avait pas), le calcul est refait en EXCLUANT les tronçons refusés
+    (`_rad_avoid`, la même exclusion que les reprises RAD), au plus MAX_JUDGE_RETRIES fois ; la meilleure route est rendue avec le verdict du CONTRÔLE (jamais meilleur ni pire que celui de son texte) et la réponse dit ce qui a été fait : `judge` { verdict, compute_verdict, retries, attempts, seconds } (`attempts` : pour chaque reprise, les tronçons exclus et la route et le verdict trouvés, ou l'erreur coupée à ERROR_MAX signes).
+    (la route, les exclusions appliquées, le dit)."""
+    import time
+    assess = assess or engine.assess
+    began = time.perf_counter()
+    retries = []
+    judge = None
+    tried = []      # (rang du verdict du CONTRÔLE, nombre d'infractions, route, exclusions, jugement) : la meilleure est rendue, la première à égalité (la route d'origine ne change que si une reprise fait mieux)
+    for attempt in range(MAX_JUDGE_RETRIES + 1):
+        if not primary.get('ok') or not primary.get('route'):
+            return primary, avoids, None
+        judge = assess(dict(request, mode='validate', route=primary['route'], via=[]), nav, rad)
+        tried.append((VERDICT_RANK.get(judge.get('verdict'), 1), len(judge.get('violations') or []), primary, avoids, judge))
+        mine = VERDICT_RANK.get(primary.get('verdict'), 1)
+        if VERDICT_RANK.get(judge.get('verdict'), 1) <= mine or attempt == MAX_JUDGE_RETRIES:
+            break
+        known = {(x.get('via'), x.get('start'), x.get('end')) for x in avoids if x.get('id') == 'CONTROL'}
+        fresh = [dict(id='CONTROL', sheet='Contrôle', kind='segment', via=x['via'], start=x['start'], end=x['end'], lower_ft=None, upper_ft=None) for x in judge.get('refused') or [] if (x['via'], x['start'], x['end']) not in known]
+        if not fresh:
+            retries.append(dict(excluded=[], error="reprise du contrôle non faite : elle n'exclurait rien de neuf"))
+            break
+        wanted = [*avoids, *fresh]
+        try:
+            check_budget()
+            candidate = assess(dict(request, _rad_avoid=wanted), nav, rad)
+        except (ValueError, SearchBudget, engine.Interrupted) as e:
+            retries.append(dict(excluded=[(x['via'], x['start'], x['end']) for x in fresh], error=str(e)[:ERROR_MAX]))
+            break
+        retries.append(dict(excluded=[(x['via'], x['start'], x['end']) for x in fresh], route=candidate.get('route'), verdict=candidate.get('verdict')))
+        if not candidate.get('ok') or not candidate.get('route'):
+            break
+        primary, avoids = candidate, wanted
+        request['_rad_avoid'] = avoids
+    if tried:
+        best = min(range(len(tried)), key=lambda n: (tried[n][0], tried[n][1], n))
+        _, _, primary, avoids, judge = tried[best]
+        request['_rad_avoid'] = avoids
+    say = dict(verdict=judge.get('verdict') if judge else None, compute_verdict=primary.get('verdict'), retries=len(retries), attempts=retries, seconds=round(time.perf_counter() - began, 3))
+    if judge and judge.get('verdict') != primary.get('verdict'):      # le verdict affiché EST celui du texte par le contrôle
+        have = {i.get('text') for i in primary.get('issues') or []}
+        for i in judge.get('issues') or []:
+            if i.get('level') == 'ERREUR' and i.get('text') not in have:
+                primary.setdefault('issues', []).append(i)
+        for k in ('verdict', 'violations', 'unverifiable', 'status'):
+            primary[k] = judge.get(k)
+    primary['judge'] = say
+    return primary, avoids, say
+
+
 def plan(request, root):
     """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
     import time
@@ -362,6 +418,11 @@ def plan(request, root):
             interrupted = True
         except (ValueError, SearchBudget):
             pass
+    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not interrupted:      # SOG-0576 : le contrôle juge le texte de la route calculée
+        try:
+            primary, avoids, _said = judge_repairs(request, nav, rad, primary, check_budget, avoids)
+        except engine.Interrupted:
+            interrupted = True
     if request.get('mode', 'calculate') == 'calculate' and primary.get('ok'):
         # SOG-0532 (3) (l'ergonome, 20 nov.) : plus de rétrogradation. Une règle CONNUE enfreinte est une ERREUR, pour une route calculée comme pour une route tapée ; si les reprises RAD n'ont rien trouvé de conforme, le moteur le DIT (une revue avec le nombre de règles) et rend la meilleure route, marquée fautive (`verdict: violates`) : elle n'est jamais « valide » et « Auto » ne la retient pas
         issue = no_conforming_issue(primary.get('issues', []))

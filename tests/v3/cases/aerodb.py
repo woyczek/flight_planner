@@ -10282,7 +10282,8 @@ def k267(c):
     real = engine.assess
 
     def stepped(request, nav, rad, *a, **k):
-        nav.states_total = getattr(nav, 'states_total', 0) + 3 * P.STATES_PER_S      # each search costs 3 s of the OLD contract (150 000 states): SOG-0524 counts the budgets in states, not on a clock
+        if not (request.get('mode') == 'validate' and '_path' not in k):      # SOG-0576: the control that judges a text (the head route, then each alternative) searches nothing: it costs no state (only a search is charged)
+            nav.states_total = getattr(nav, 'states_total', 0) + 3 * P.STATES_PER_S      # each search costs 3 s of the OLD contract (150 000 states): SOG-0524 counts the budgets in states, not on a clock
         return real(request, nav, rad, *a, **k)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
@@ -11350,6 +11351,8 @@ def k278(c):
     def stepped(request, nav, radbook, *a, **k):
         if not seen:
             fail['s0'] = getattr(nav, 'states_total', 0)
+        if request.get('mode') == 'validate' and '_path' not in k:      # SOG-0576: the control that judges a text (the head route, then each alternative) is not a search: not charged, not counted among the searches seen
+            return real(request, nav, radbook, *a, **k)
         seen.append((request.get('mode'), engine.STATE_CEIL - fail['s0'], getattr(nav, 'states_total', 0) - fail['s0']))
         nav.states_total = getattr(nav, 'states_total', 0) + 20000
         if len(seen) == 1 and fail['head']:
@@ -15634,8 +15637,8 @@ def k332(c):
     # the SEARCH keeps the shortest route and says it (the ergonomics session: a route that descends to FL195 over the Alps is legal and absurd)
     res4, view4 = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': []})
     p4 = res4['primary']
-    c.eq((p4['ok'], [l for l in p4['legs'] if l.get('fra_floor_cap')], [i['text'] for i in p4['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']], sum('Voies au-dessus du plancher de la route libre' in i['text'] for i in p4['issues'] if i['level'] == 'REVUE'), FF.CAP_SEARCH),
-         (True, [], [], 1, False), 'the CALCULATED route (CAP_SEARCH false): found, the airways are NOT capped, no ERREUR, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated)', what='calculated floor')
+    c.eq((p4['ok'], [l for l in p4['legs'] if l.get('fra_floor_cap')], [('plancher FL195' in x and 'PROF407' in x) for x in [i['text'] for i in p4['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']]], sum('Voies au-dessus du plancher de la route libre' in i['text'] for i in p4['issues'] if i['level'] == 'REVUE'), FF.CAP_SEARCH, p4['verdict'], (p4.get('judge') or {}).get('verdict')),
+         (True, [], [True], 1, False, 'violates', 'violates'), 'the CALCULATED route (CAP_SEARCH false): found, the airways are NOT capped, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated) — and, SOG-0576 (the control is the SINGLE judge: the text of the calculated route goes through the control), the answer carries what the control finds in that text: the ERREUR of the run (PROF407) and the verdict « violates » (it was « no ERREUR » before: the calculation did not read its own text; the lane is the only one of the bench, the retry has nothing else to take)', what='calculated floor')
     FF.CAP_SEARCH = True
     try:
         res6, _ = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': [], 'allow_levels': True})      # SOG-0532 (1): with the steps asked (the level constant excludes a capped airway instead of flying it at its cap)
@@ -21001,3 +21004,70 @@ def k532(c):
     c.eq(check((55.0, 14.0), (54.93, 14.0), dct)[:2], ('violates', 2), 'TD placed twice 4 NM apart, a text with no airway to decide: STILL refused, and the ambiguity is said (a homonym is never guessed)', what='guard')
     both = 'XSTA DCT T1 DCT TD DCT T3 DCT T4 L8 HM L8 T5 DCT XEND'
     c.eq(check((55.0, 14.0), (54.98, 14.0), both, homonym=True)[:2], ('unverifiable', 0), 'a text that has BOTH a true homonym lifted by its airway (HM, two positions far apart) AND a point placed twice 1.2 NM apart (TD) joined by DCT on both sides: read — the same place is one point, the homonym is decided by its airway (red before: « Identifiant géographiquement ambigu : TD (2 positions encore possibles) »)', what='both')
+
+@case('K533', 'Route engine, SOG-0576 (self-verification): the TEXT of a computed route goes through the control like a typed one, and the control is the only judge — a text that the control refuses (an error the search did not have) is searched again WITHOUT the refused legs (the same exclusion as the RAD repairs), at most three times; the route returned carries the verdict of the control (never better, never worse than its text), and the answer says what was done (`judge`); a text the control does not find worse costs no new search',
+      'K', static=True,
+      rule='The ergonomist through the relay, 24 Nov 2026 (SOG-0576: « le contrôle est le JUGE UNIQUE : le verdict affiché d\'une route calculée EST le verdict de son texte par le contrôle »; « le calcul repasse son texte dans le contrôle, relance en excluant ce qui est refusé, un nombre BORNÉ de fois, comme rad_repairs; s\'il n\'y arrive pas, il rend la meilleure route avec le verdict du contrôle, et le dit »). Logic case: `judge_repairs` with a control and a search that are invented (the search of an invented world already avoids the low lane, so the refusal cannot be made by data); the round trip of the 160 flights is in the replay (DECISIONS)',
+      )
+def k533(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P
+    refusing = {'R6': ('violates', [('Z6', 'G', 'H'), ('Z7', 'I', 'J')]), 'R1': ('violates', [('Z1', 'A', 'B')]), 'R2': ('violates', [('Z2', 'C', 'D')]), 'R3': ('unverifiable', []), 'R4': ('conform', [])}
+
+    def make(next_route):
+        calls = {'judge': 0, 'search': []}
+
+        def assess(request, nav, rad):
+            if request.get('mode') == 'validate':
+                calls['judge'] += 1
+                verdict, refused = refusing[request['route']]
+                return {'ok': True, 'route': request['route'], 'verdict': verdict, 'violations': [{'code': 'band'}] * len(refused), 'unverifiable': [], 'status': verdict,
+                        'refused': [{'via': v, 'start': a, 'end': b} for v, a, b in refused], 'issues': [{'level': 'ERREUR', 'text': 'tronçon ' + v} for v, a, b in refused]}
+            excluded = [(x['via'], x['start'], x['end']) for x in request['_rad_avoid']]
+            calls['search'].append(excluded)
+            route = next_route(excluded)
+            if route is None:
+                raise ValueError('aucune route')
+            return {'ok': True, 'route': route, 'verdict': 'unverifiable', 'issues': []}
+        return assess, calls
+
+    def run(first, next_route, verdict='unverifiable'):
+        assess, calls = make(next_route)
+        request = {}
+        primary = {'ok': True, 'route': first, 'verdict': verdict, 'issues': []}
+        out = P.judge_repairs(request, None, None, primary, lambda: None, [], assess)
+        return out[0], out[1], calls, request
+
+    # two refusals, then a text that the control accepts: R1 refused (Z1) → R2 refused (Z2) → R3 unverifiable
+    route = lambda excluded: 'R2' if ('Z1', 'A', 'B') in excluded and ('Z2', 'C', 'D') not in excluded else 'R3'
+    primary, avoids, calls, request = run('R1', route)
+    c.eq((primary['route'], primary['verdict'], primary['judge']['retries'], [x['id'] for x in avoids], request['_rad_avoid'] == avoids, calls['search']),
+         ('R3', 'unverifiable', 2, ['CONTROL', 'CONTROL'], True, [[('Z1', 'A', 'B')], [('Z1', 'A', 'B'), ('Z2', 'C', 'D')]]), 'a refused text is searched again without the legs refused (cumulated), twice here, and the text of the third is accepted: its route and verdict are returned, the exclusions are kept for the next phases', what='repair')
+    # never accepted: bounded at MAX_JUDGE_RETRIES, the best route is returned WITH the verdict of the control and its errors
+    n = [0]
+
+    def endless(excluded):
+        n[0] += 1
+        refusing['R%d' % (10 + n[0])] = ('violates', [('Z%d' % (10 + n[0]), 'E', 'F')])
+        return 'R%d' % (10 + n[0])
+    primary, avoids, calls, request = run('R1', endless)
+    c.eq((len(calls['search']), P.MAX_JUDGE_RETRIES, primary['verdict'], primary['judge']['retries'], any('tronçon' in i['text'] for i in primary['issues'])), (P.MAX_JUDGE_RETRIES, 3, 'violates', 3, True), 'a text that stays refused is searched again at most three times, then returned with the verdict of the control (violates) and its errors, never better than its text', what='bounded')
+    # nothing new to exclude, a search that fails: no loop, the verdict of the control
+    primary, avoids, calls, request = run('R1', lambda excluded: 'R1')
+    c.eq((calls['search'], primary['route'], primary['verdict']), ([[('Z1', 'A', 'B')]], 'R1', 'violates'), 'the search that gives the same refused text again excludes nothing new: it stops (one search), the route stays and carries the verdict of the control', what='nothing new')
+    primary, avoids, calls, request = run('R1', lambda excluded: None)
+    c.eq((primary['route'], primary['verdict'], primary['judge']['retries'], 'aucune route' in primary['judge']['attempts'][0]['error']), ('R1', 'violates', 1, True), 'a search that finds no route keeps the route of before with the verdict of the control, and says why', what='no route')
+    # a text that the control does not find worse costs no search; a better verdict of the control is the one shown
+    primary, avoids, calls, request = run('R3', lambda excluded: 'R4')
+    c.eq((calls['search'], calls['judge'], primary['verdict']), ([], 1, 'unverifiable'), 'a text that the control judges like the compute costs one control and no new search', what='same')
+    primary, avoids, calls, request = run('R4', lambda excluded: 'R4', verdict='unverifiable')
+    c.eq((calls['search'], primary['verdict'], primary['judge']['verdict']), ([], 'conform', 'conform'), 'the verdict shown IS the verdict of the text by the control, also when it is better', what='better')
+    # a search again that makes it WORSE (same verdict, more errors) does not replace the route of before: the best of the texts judged is returned, the first on a tie
+    primary, avoids, calls, request = run('R1', lambda excluded: 'R6')
+    c.eq((primary['route'], primary['verdict'], len(primary['violations']) if isinstance(primary['violations'], list) else primary['violations'], avoids, request['_rad_avoid'] == avoids, len(calls['search'])), ('R1', 'violates', 1, [], True, 2), 'a route searched again whose text the control finds worse (two errors against one) is not kept: the route of before is returned, with its exclusions (two searches here: the second finds the same text, which excludes nothing new)', what='not worse')
+    # the message of an error of the engine kept in `judge.attempts` is cut (it can hold identifiers of the base)
+    assess, calls = make(lambda excluded: None)
+    long_assess = lambda request, nav, rad: (_ for _ in ()).throw(ValueError('x' * 1000)) if request.get('mode') != 'validate' else assess(request, nav, rad)
+    out = P.judge_repairs({}, None, None, {'ok': True, 'route': 'R1', 'verdict': 'unverifiable', 'issues': []}, lambda: None, [], long_assess)
+    c.eq(len(out[0]['judge']['attempts'][0]['error']), P.ERROR_MAX, 'the error of a search again is cut at ERROR_MAX signs in the answer (Sécurisation: a text that can hold identifiers of the base)', what='cut')
