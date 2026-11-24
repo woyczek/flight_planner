@@ -29,7 +29,10 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
-import * as MCH from './mission_chip.js'; // SOG-0617 : la puce « Mission <ID> », un seul composant (la Carte l'importe aussi)
+// SOG-0617 : la puce « Mission <ID> », un seul composant (la Carte l'importe aussi)
+import * as MCH from './mission_chip.js';
+// SOG-0617 / SOG-0619 : le bloc « Suite de la mission », hébergé dans le volet (même texte d'import que module.js : une instance)
+import * as DW from '../missions/drawers_view.js';
 import * as MT from '../../frame/lib/mission_themes.js'; // thème et sous-thème du vol (SOG-0202 T2, § 10.48)
 import {
   kindOf
@@ -123,6 +126,10 @@ export const meta = {
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
     'altn_check.js', 'mission_chip.js',
+    // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
+    '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
+    '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
+    '../missions/reader.js', '../missions/reader_view.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
@@ -9220,7 +9227,26 @@ async function mPaneOpen() {
     mission
   } = await loadMission(s.ctx, id);
   if (gone(s) || s.mpane !== id) return;
-  pane.innerHTML = mPaneHead(id, mission?.title || row?.title || '') + (mission ? mPaneBody(id, mission) : `<p class="f-warn">${esc(tt(TX.missionUnread, { id }))}</p>`);
+  // SOG-0617 / SOG-0619 : le bloc « Suite de la mission » (le composant de la fiche, drawers_view.js) en tête du volet ; le volet EST
+  // déjà le brief : ni liseuse ni « Lire la mission » (readerHost null), les gestes dans le bloc (askSlot null). Le corps du volet lit
+  // la mission telle que le pilote a le droit de la voir (sees : pilotView avec les tiroirs ouverts — jamais un lieu caché)
+  const mid = MS.midOf(id) || id,
+    seen = mission ? DW.sees(mid, mission) || mission : null;
+  pane.innerHTML = mPaneHead(id, mission?.title || row?.title || '') + (mission ? `<section class="ms-drawers" data-drawers hidden></section><div data-mbody>${mPaneBody(id, seen)}</div>` :
+    `<p class="f-warn">${esc(tt(TX.missionUnread, { id }))}</p>`);
+  const host = mission ? pane.querySelector('[data-drawers]') : null;
+  if (host) DW.show(host, {
+    ctx: s.ctx,
+    id: mid,
+    mission,
+    // un tiroir s'ouvre : ses lieux apparaissent dans le corps du volet (la règle du lecteur)
+    changed: () => {
+      const b = S === s && s.mpane === id ? pane.querySelector('[data-mbody]') : null;
+      if (b) b.innerHTML = mPaneBody(id, DW.sees(mid, mission) || mission);
+    },
+    askSlot: null,
+    readerHost: null
+  });
   pane.querySelector('[data-do="mclose"]')?.focus();
 }
 /** Ferme le volet ; la puce reprend le focus si le volet l'avait. */
@@ -9228,6 +9254,7 @@ function mPaneClose() {
   const pane = S?.body?.parentElement?.querySelector(':scope > [data-mpane]');
   if (!pane || !S.mpane) return;
   const had = pane.contains(document.activeElement);
+  DW.stop(); // SOG-0617 : la vue du bloc se décroche (le juge continue, suivi par le veilleur)
   S.mpane = null;
   pane.hidden = true;
   pane.innerHTML = '';
@@ -10667,6 +10694,7 @@ async function completeMount(self) {
 
 export function unmount() {
   if (!S) return;
+  if (S.mpane) DW.stop(); // SOG-0617 : la vue du bloc hébergé dans le volet se décroche avec le module
   for (const f of S.stops) try {
     f?.();
   } catch {
