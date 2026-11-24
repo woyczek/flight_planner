@@ -15775,3 +15775,17 @@ def n272(c):
             if _re.search(r"[,(]\s*'error'\s*(?:\)|,\s*\{)", line):
                 found.append(f'{name}:{n}')
     c.eq(found, [], 'no « error » kind in the notes of module.js, registry.js, search.js, add.js and move.js', what='kinds')
+
+
+@case('N249', 'Missions › the distance of the trial of the keys is the great-circle distance of the frame (SOG-0468, point 1): editor_trial.js imports gcNm from frame/lib/geo.js, '
+      'and no file of the module writes its own haversine (no 3440.065, no 6371)', 'N', static=True, tags=('missions',),
+      rule='SOG-0468 point 1: frame/lib/geo.js gcNm is LA distance of the great circle (R = 3440.065 NM); editor_trial.js no longer carries its copy')
+def n249(c):
+    import re as _re
+    mod = c.root / 'modules/missions'
+    src = (mod / 'editor_trial.js').read_text(encoding='utf-8')
+    c.ok(_re.search(r"import\s*\{[^}]*\bgcNm\b[^}]*\}\s*from\s*'\.\./\.\./frame/lib/geo\.js'", src) is not None, 'no import of gcNm',
+         'editor_trial.js imports gcNm from frame/lib/geo.js')
+    # editor_map.js keeps EARTH_KM for a destination point (a bearing and a distance → a position), not for a distance: that one constant is allowed
+    own = sorted(f.name for f in mod.glob('*.js') if _re.search(r'3440\.065|6371', f.read_text(encoding='utf-8').replace('EARTH_KM = 6371.0088', '')))
+    c.eq(own, [], 'no file of the module writes its own haversine (no 3440.065, no 6371 but the destination-point constant of the map)', what='files with their own earth radius')

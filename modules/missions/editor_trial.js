@@ -36,6 +36,9 @@
 import * as CR from '../../frame/lib/crossing.js';
 import * as MS from '../../frame/lib/mission.js';
 import {
+  gcNm
+} from '../../frame/lib/geo.js'; // LA distance du grand cercle de la suite (SOG-0468) : l'essai n'en recopie pas l'haversine
+import {
   AD_NM,
   TRANSIT_NM
 } from './drawers.js'; // les tolérances de l'utilisateur (SOG-0507) : lues du jugement du vol, jamais recopiées
@@ -48,8 +51,7 @@ export const TRIAL = Object.freeze({
   altFt: Object.freeze([-1500, 60000]),
   trail: 240
 });
-const T0 = Date.UTC(2026, 0, 1), // une origine de temps fixe : l'essai n'a pas d'horloge
-  rad = Math.PI / 180;
+const T0 = Date.UTC(2026, 0, 1); // une origine de temps fixe : l'essai n'a pas d'horloge
 
 /** Un nombre fini dans [lo, hi], sinon `dflt` (jamais ramené dans les bornes : hors bornes, c'est la valeur par défaut). */
 const within = (v, lo, hi, dflt) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : dflt;
@@ -58,13 +60,6 @@ const at = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon) && Math.ab
   lat: p.lat,
   lon: p.lon
 } : null;
-/** La distance entre deux positions, en milles marins. */
-const nm = (a, b) => {
-  const h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad /
-    2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
-};
-
 /** Les positions que l'avion de l'essai suit : le départ, les points situés de la route du départ, l'arrivée (la carte de l'atelier
  *  dessine la même route : editor_map.js). */
 export function pathOf(mission) {
@@ -77,7 +72,7 @@ export function pathOf(mission) {
   if (!f) return [];
   const out = [];
   for (const p of [f.route.depAt, ...f.route.points, f.route.arrAt].map(at).filter(Boolean))
-    if (!out.length || nm(out[out.length - 1], p) > 0.01) out.push(p);
+    if (!out.length || gcNm(out[out.length - 1], p) > 0.01) out.push(p);
   return out;
 }
 
@@ -179,7 +174,7 @@ function run(mission, opts) {
   /** L'avion avance de `d` milles marins sur ce qu'il lui reste à suivre ; arrivé au bout, il est posé. */
   const advance = d => {
     while (d > 0 && todo.length) {
-      const leg = nm(pos, todo[0]);
+      const leg = gcNm(pos, todo[0]);
       if (leg <= d) {
         d -= leg;
         pos = todo.shift();
