@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missions : « Suite de la mission », un seul bloc, un ordre de lecture (maquette SOG-0619)</title>
+<style>
+/* Maquette SOG-0619 (24 nov. 2026) : UN bloc « Suite de la mission », le même composant dans trois hôtes (la fiche de l'appli
+   Compagnie, la liseuse « Lire », le volet de l'appli Pilote derrière la puce « Mission » de Carburant). Mission et lieux inventés.
+   Scènes : ?s=a (en vol, rien d'ouvert), b (une enveloppe arrivée), c (un message ouvert, un geste refusé, sa réponse en place),
+   d (trois messages, « Avant » replié), e (la liseuse et son pied) ; &tone=day|night. À 390 : le volet de l'appli Pilote ; à 1280 :
+   la fiche de l'appli Compagnie. Les couleurs sont celles du design « standard » du cadre (jetons --sog-*), jour et nuit. */
+:root {
+  --sog-fg: #1b1f24;
+  --sog-muted: #59636e;
+  --sog-border: #d0d7de;
+  --sog-bg: #fff;
+  --sog-page: #f3f4f6;
+  --sog-soft: #f6f8fa;
+  --sog-accent: #1a6fd8;
+  --sog-accent-fg: #fff;
+  --sog-accent-bg: #eaf2fb;
+  --sog-ok: #1e7d32;
+  --sog-ok-bg: #e6f6ea;
+  --sog-info-bg: #1f2933;
+  --sog-info-fg: #fff;
+  --sog-touch: 44px;
+  --sog-size-s: 14px;
+  --sog-size-xs: 12px
+}
+:root[data-tone="night"] {
+  --sog-fg: #e6e8eb;
+  --sog-muted: #a0a8b3;
+  --sog-border: #3a424c;
+  --sog-bg: #1c2128;
+  --sog-page: #12161b;
+  --sog-soft: #232a32;
+  --sog-accent: #5a9cf0;
+  --sog-accent-fg: #0b1220;
+  --sog-accent-bg: #1d2c40;
+  --sog-ok: #6cc47a;
+  --sog-ok-bg: #1d3323;
+  --sog-info-bg: #e6e8eb;
+  --sog-info-fg: #12161b
+}
+* {
+  box-sizing: border-box
+}
+[hidden] {
+  display: none !important
+}
+body {
+  margin: 0;
+  background: var(--sog-page);
+  color: var(--sog-fg);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+button {
+  font: inherit;
+  min-height: var(--sog-touch);
+  padding: 0 16px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  cursor: pointer
+}
+button.primary {
+  background: var(--sog-accent);
+  border-color: var(--sog-accent);
+  color: var(--sog-accent-fg)
+}
+a {
+  color: var(--sog-accent)
+}
+.muted {
+  color: var(--sog-muted)
+}
+/* le cadre : l'en-tête, la colonne des verbes (écran), la barre du bas (téléphone) */
+.f-head {
+  height: 57px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--sog-bg);
+  border-bottom: 1px solid var(--sog-border);
+  position: sticky;
+  top: 0;
+  z-index: 5
+}
+.f-head .app {
+  font-weight: 700;
+  font-size: 18px;
+  flex: 1
+}
+.f-head .ico {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--sog-border);
+  display: grid;
+  place-items: center;
+  color: var(--sog-muted)
+}
+.f-head .pill {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--sog-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--sog-size-s)
+}
+.f-head .pill i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sog-ok)
+}
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: calc(100vh - 57px)
+}
+.f-nav {
+  border-right: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  padding: 14px 10px
+}
+.f-nav div {
+  padding: 10px 12px;
+  margin-bottom: 4px
+}
+.f-nav .on {
+  background: var(--sog-accent);
+  color: var(--sog-accent-fg)
+}
+main {
+  padding: 16px 24px 40px;
+  min-width: 0
+}
+.crumbs {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+h1 {
+  font-size: 26px;
+  margin: 4px 0 14px
+}
+/* la fiche (1280) : le bloc en tête, la première page de la fiche dessous */
+.sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start
+}
+.first {
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  padding: 16px
+}
+.first h3 {
+  margin: 0 0 8px
+}
+.first .row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap
+}
+/* LE BLOC « Suite de la mission » */
+.dw {
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  display: flex;
+  flex-direction: column
+}
+.dw>header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--sog-border)
+}
+.dw>header h2 {
+  margin: 0;
+  font-size: 20px
+}
+/* (1) l'état : une ligne */
+.dw .state {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap
+}
+.dw .state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok);
+  display: inline-block
+}
+.dw section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sog-border)
+}
+.dw .kick {
+  font-size: var(--sog-size-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--sog-muted);
+  margin: 0 0 8px
+}
+/* (2) ce qui vient d'arriver : l'enveloppe (le bloc de l'ordre de mission, en petit) */
+.env {
+  display: flex;
+  gap: 14px;
+  align-items: center
+}
+.env+.env {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--sog-border)
+}
+.env .shape {
+  position: relative;
+  flex: none;
+  width: 96px;
+  height: 62px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-soft)
+}
+.env .shape::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom right, transparent calc(50% - 1px), var(--sog-border) 50%, transparent calc(50% + 1px)) top left/50% 55% no-repeat, linear-gradient(to bottom left, transparent calc(50% - 1px), var(--sog-border) 50%, transparent calc(50% + 1px)) top right/50% 55% no-repeat
+}
+.env .shape span {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--sog-accent)
+}
+.env .what {
+  flex: 1;
+  min-width: 0
+}
+.env .what b {
+  display: block
+}
+/* (3) maintenant : le dernier message, entier */
+.now h3 {
+  margin: 0
+}
+.now .how {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted);
+  margin: 2px 0 10px
+}
+.now .msg {
+  border-left: 3px solid var(--sog-accent);
+  padding-left: 10px;
+  margin: 0 0 8px
+}
+.now p {
+  margin: 0 0 8px
+}
+.now .route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sog-border)
+}
+.now .route span {
+  flex: 1;
+  min-width: 12em
+}
+/* (4) ce que vous pouvez faire : les deux gestes, côte à côte, toujours là ; la réponse contre eux */
+.acts {
+  background: var(--sog-soft)
+}
+.acts .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px
+}
+.acts .two button {
+  width: 100%
+}
+.answer {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--sog-muted);
+  background: var(--sog-bg);
+  font-size: var(--sog-size-s)
+}
+/* (5) avant : les messages repliés, le plus récent d'abord ; (6) référence, repliée */
+details.fold>summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  min-height: var(--sog-touch);
+  align-items: center
+}
+details.fold>summary::-webkit-details-marker {
+  display: none
+}
+details.fold>summary::after {
+  content: "›";
+  color: var(--sog-muted)
+}
+.past details.fold {
+  border-top: 1px solid var(--sog-border)
+}
+.past details.fold:first-of-type {
+  border-top: 0
+}
+.past summary .t {
+  flex: 1;
+  min-width: 0
+}
+.past summary .h {
+  color: var(--sog-muted);
+  font-size: var(--sog-size-s)
+}
+.ref summary {
+  font-weight: 700
+}
+.ref section {
+  border: 0;
+  padding: 0
+}
+/* le volet de l'appli Pilote (390) */
+.pane {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 70px;
+  bottom: 64px;
+  background: var(--sog-bg);
+  border-top: 1px solid var(--sog-border);
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, .18);
+  display: flex;
+  flex-direction: column
+}
+.pane .bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 14px;
+  border-bottom: 1px solid var(--sog-border);
+  font-weight: 700
+}
+.pane .bar button {
+  border: 0;
+  background: none;
+  min-width: 44px;
+  padding: 0
+}
+.pane .scroll {
+  flex: 1;
+  overflow: auto
+}
+.pane .dw {
+  border: 0
+}
+.pane .acts {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--sog-border);
+  z-index: 2
+}
+.under {
+  padding: 16px;
+  color: var(--sog-muted)
+}
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  background: var(--sog-bg);
+  border-top: 1px solid var(--sog-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  font-size: var(--sog-size-xs);
+  color: var(--sog-muted)
+}
+.tabbar .on {
+  color: var(--sog-accent);
+  font-weight: 700
+}
+/* la note du cadre (b) */
+.f-note {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  width: min(560px, calc(100% - 24px));
+  background: var(--sog-info-bg);
+  color: var(--sog-info-fg);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 9
+}
+.f-note span {
+  flex: 1
+}
+.f-note button {
+  background: transparent;
+  color: inherit;
+  border-color: currentColor
+}
+.phone .f-note {
+  bottom: 76px
+}
+/* la liseuse (e) : les pages, puis le PIED FIXE (le compte, les flèches, les deux gestes) */
+.rd {
+  display: flex;
+  flex-direction: column;
+  gap: 12px
+}
+.rd .top {
+  display: flex;
+  gap: 12px;
+  align-items: center
+}
+.rd .top b {
+  flex: 1
+}
+.rd .pages {
+  display: flex;
+  justify-content: center
+}
+.rd .page {
+  flex: 1;
+  max-width: 36em;
+  min-height: 24em;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  padding: 18px 18px 12px
+}
+.rd .page+.page {
+  border-left: 0
+}
+.rd .page h3 {
+  margin: 2px 0 10px
+}
+.rd .page .msg {
+  border-left: 3px solid var(--sog-border);
+  padding-left: 10px
+}
+.rd .page .kick {
+  font-size: var(--sog-size-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--sog-muted)
+}
+.rdfoot {
+  position: sticky;
+  bottom: 0;
+  background: var(--sog-bg);
+  border: 1px solid var(--sog-border);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px
+}
+.rdfoot .pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: var(--sog-size-s)
+}
+.rdfoot .pager b {
+  color: var(--sog-accent)
+}
+.rdfoot .pager button {
+  min-width: 48px
+}
+/* téléphone */
+.phone main {
+  padding: 12px
+}
+.phone .layout {
+  display: block
+}
+.phone .f-nav {
+  display: none
+}
+.phone h1 {
+  font-size: 22px
+}
+.phone .rd .page+.page {
+  display: none
+}
+.phone .rdfoot {
+  bottom: 64px
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// Mission inventée : X-950A « Recherche du canot », pilote ABC ; aucun lieu ni nom réel.
+const P = new URLSearchParams(location.search),
+  S = P.get('s') || 'a',
+  phone = innerWidth < 760;
+document.documentElement.dataset.tone = P.get('tone') === 'night' ? 'night' : 'day';
+document.body.classList.toggle('phone', phone);
+
+// les messages ouverts, du plus ancien au plus récent (le carnet du pilote)
+const MSG = [{
+  id: 'B',
+  title: 'Secteur nord',
+  how: 'ouvert au passage de la zone, à 14:31Z',
+  at: '14:31Z',
+  msg: 'Un canot orange a été vu au sud du secteur.',
+  brief: 'Descendez à 500 ft et cherchez vers le sud, en lignes espacées d\'un demi-mille.',
+  route: 'PT2 → PT3'
+}, {
+  id: 'C',
+  title: 'Canot en vue',
+  how: 'ouvert à votre demande, à 14:48Z',
+  at: '14:48Z',
+  msg: 'Restez en vue du canot, un navire arrive.',
+  brief: 'Orbitez à 500 ft autour du canot jusqu\'à l\'arrivée du navire ; annoncez sa position.'
+}, {
+  id: 'D',
+  title: 'Rejoindre le navire',
+  how: 'ouvert au passage de la zone, à 15:05Z',
+  at: '15:05Z',
+  msg: 'Le navire a récupéré les naufragés. Rentrez à la base.',
+  brief: 'Remontez à 1500 ft, cap au nord ; posez-vous en XTST.',
+  route: 'PT3 → XTST'
+}];
+const ORDER = {
+  title: 'Ordre de mission',
+  at: '13:55Z',
+  how: 'lu à 13:55Z',
+  text: 'Un canot inventé dérive au sud de la base. Décollez ; la suite vous sera donnée en route.'
+};
+const opened = S === 'c' ? 1 : S === 'd' ? 3 : 0; // les messages ouverts ET lus dans cette scène
+const esc = s => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+
+/** (1) l'état, une ligne */
+const state = () => `<div class="state"><i></i>En vol depuis 14:02Z · Position : X-Plane, reçue il y a 3 s</div>`;
+
+/** (2) ce qui vient d'arriver : l'enveloppe ; rien ne s'ouvre seul (scène b) */
+const arrived = () => S !== 'b' ? '' : `<section data-arrived><p class="kick">Vient d'arriver</p>
+  <div class="env"><div class="shape" role="img" aria-label="Enveloppe fermée"><span></span></div>
+  <div class="what"><b>Un message de la mission</b><span class="muted">arrivé à 14:31Z</span></div>
+  <button class="primary">Ouvrir l'enveloppe</button></div></section>`;
+
+/** (3) maintenant : le dernier message ouvert, entier ; sans message, l'ordre de mission */
+function now() {
+  const m = opened ? MSG[opened - 1] : null;
+  if (!m) return `<section class="now"><p class="kick">Maintenant</p><h3>${ORDER.title}</h3><div class="how">${ORDER.how}</div>
+    <p>${esc(ORDER.text)}</p><a href="#">Lire l'ordre de mission</a></section>`;
+  return `<section class="now"><p class="kick">Maintenant</p><h3>${esc(m.title)}</h3><div class="how">${esc(m.how)}</div>
+    <p class="msg">${esc(m.msg)}</p><p>${esc(m.brief)}</p>
+    ${m.route ? `<div class="route"><span>Suite de route : ${esc(m.route)}</span><button>Prendre la suite de route</button></div>` : ''}</section>`;
+}
+
+/** (4) les deux gestes, toujours là, côte à côte ; la réponse s'affiche contre eux (scène c : « Demander la suite » refusé) */
+const acts = () => `<section class="acts"><p class="kick">Ce que vous pouvez faire</p><div class="two"><button>Objet en vue</button><button>Demander la suite</button></div>
+  ${S === 'c' ? '<p class="answer" role="status">Rien de nouveau pour l\'instant.</p>' : ''}</section>`;
+
+/** (5) avant : les messages précédents repliés (titre et heure), le plus récent d'abord, le débrief comme un message, l'ordre de mission en dernier */
+function past() {
+  const rows = MSG.slice(0, Math.max(0, opened - 1)).reverse().map(m => [m.title, m.at, `<p class="msg">${esc(m.msg)}</p><p>${esc(m.brief)}</p>`]);
+  if (S === 'd') rows.unshift(['Débrief · posé de précision', '15:20Z', '<p>Atterrissage précis (0,1 NM), à 15:20Z.</p>']);
+  if (opened) rows.push([ORDER.title, ORDER.at, `<p>${esc(ORDER.text)}</p>`]);
+  if (!rows.length) return '';
+  return `<section class="past"><p class="kick">Avant</p>${rows.map(([t, h, body]) => `<details class="fold"><summary><span class="t">${esc(t)}</span><span class="h">${h}</span></summary>${body}</details>`).join('')}</section>`;
+}
+
+/** (6) référence, repliée */
+const ref = () => `<section class="ref"><details class="fold"><summary>Référence : objectifs, risques, équipes, zones, détail</summary><p class="muted">…</p></details></section>`;
+
+/** LE BLOC, dans l'ordre de lecture */
+const block = () => `<div class="dw" data-drawers><header><h2>Suite de la mission</h2>${state()}</header>${arrived()}${now()}${acts()}${past()}${ref()}</div>`;
+
+/** la note du cadre à l'arrivée (scène b) : elle dit qu'un message est arrivé, jamais son contenu ; « Ouvrir » mène au bloc */
+const note = () => S === 'b' ? `<div class="f-note" role="status"><span>Un message de la mission est arrivé</span><button>Ouvrir</button></div>` : '';
+
+/** (e) la liseuse : la page en cours ; le pied fixe annonce la nouvelle enveloppe sans tourner la page, et porte les deux gestes */
+function reader() {
+  const page = (k, h, body) => `<div class="page"><div class="kick">${k}</div><h3>${h}</h3>${body}</div>`;
+  return `<div class="rd"><div class="top"><button>← Fiche</button><b>X-950A · Recherche du canot</b></div>
+  <div class="pages">${page('Message · 14:48Z', 'Canot en vue', `<p class="msg">${esc(MSG[1].msg)}</p><p>${esc(MSG[1].brief)}</p>`)}${page('Message · 14:31Z', 'Secteur nord', `<p class="msg">${esc(MSG[0].msg)}</p><p>${esc(MSG[0].brief)}</p><p class="muted">Suite de route : ${MSG[0].route}</p>`)}</div>
+  <div class="rdfoot"><div class="pager"><button aria-label="Page précédente">←</button><span>Page 4 sur 5 · <b>1 nouvelle</b></span><button aria-label="Page suivante">→</button></div>
+  <div class="acts" style="padding:0;background:none"><div class="two"><button>Objet en vue</button><button>Demander la suite</button></div></div></div></div>`;
+}
+
+const frameHead = (app, extra = '') => `<div class="f-head"><span class="app">✈ ${app}</span>${extra}<span class="ico">?</span><span class="ico">⚙</span></div>`;
+let html;
+if (S === 'e') {
+  html = phone ? `${frameHead('Missions')}<main>${reader()}</main><div class="tabbar"><span class="on">Missions</span></div>` :
+    `${frameHead('Compagnie', '<span class="pill"><i></i>Sur cet appareil</span>')}<div class="layout"><nav class="f-nav"><div class="on">Missions</div><div>Registre</div></nav><main><div class="crumbs">Missions › X-950A › Lire</div>${reader()}</main></div>`;
+} else if (phone) {
+  // le volet de l'appli Pilote : derrière la puce « Mission X-950A » de Carburant, le même bloc EN TÊTE, le reste du volet dessous
+  html = `${frameHead('Carburant')}<div class="under">Carburant · XTST → XTSU …</div>
+  <div class="pane"><div class="bar"><span>Mission X-950A · Recherche du canot</span><button aria-label="Fermer">✕</button></div>
+  <div class="scroll">${block()}<div class="under">Le reste du volet : risques, résumé, objectifs, équipes, zones, détail.</div></div></div>
+  <div class="tabbar"><span>Carte</span><span class="on">Carburant</span><span>Vol</span></div>${note()}`;
+} else {
+  // la fiche de l'appli Compagnie : le bloc EN TÊTE dès que la mission est à moi et en vol ; la première page de la fiche à côté
+  html = `${frameHead('Compagnie', '<span class="pill"><i></i>Sur cet appareil</span>')}<div class="layout"><nav class="f-nav"><div class="on">Missions</div><div>Registre</div></nav>
+  <main><div class="crumbs">Missions › Mes missions</div><h1>X-950A · Recherche du canot</h1>
+  <div class="sheet">${block()}<div class="first"><h3>Première page</h3><p class="muted">XTST → XTSU · EC25 · 1500 ft · 36 NM</p><p>Un canot inventé dérive au sud de la base.</p><div class="row"><button class="primary">Lire</button><button>Voir le vol en cours</button></div></div></div></main></div>${note()}`;
+}
+document.getElementById('app').innerHTML = html;
+</script>
+</body>
+</html>
