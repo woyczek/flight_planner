@@ -506,6 +506,9 @@
     ?.start_at ===
     iso(T1 + 2 * MIN) && empty(), ctx.store.get(BOOK));
   await ask();
+  await seeOpen(
+    'B'
+  ); // SOG-0619 : en vol, B ouvert par « Demander » arrive en ENVELOPPE : lue d'abord, « Resceller » est sur le message sous « Maintenant »
   await until(() => !!q('[data-dw-seal="B"]'));
   ck('niveau Complet : « Resceller » sur un tiroir que j\'ai ouvert par « Demander » (avant l\'heure du suivant)', !!q(
       '[data-dw-seal="B"]') &&
@@ -852,8 +855,8 @@
   await until(() => ctx.live.subs.size === 1);
   ck('le vol de cette mission est démarré, l\'appareil a une position et suit la zone : RIEN à l\'écran (plus de « Cet appareil suit ce passage »)',
     ctx.live.subs.size === 1 && empty() && !/Cet appareil/.test(stage.textContent), sec().outerHTML);
-  ck('SOG-0617 (e) : la section ne montre que la ligne « Position : X-Plane, reçue il y a n s », sans titre « Suite de la mission » ni « data-mine »',
-    posOnly() && /^Position : X-Plane, reçue il y a \d+ s$/.test(text('[data-dw-pos]')) && !/Suite de la mission/.test(sec().textContent),
+  ck('SOG-0617 (e), SOG-0619 : le bloc calme montre l\'état avec la ligne « Position : X-Plane, reçue il y a n s », ni enveloppe ni message, sans « data-mine »',
+    posOnly() && /^Position : X-Plane, reçue il y a \d+ s$/.test(text('[data-dw-pos]')) && !q('[data-dw]') && !q('[data-dw-env]'),
     sec().outerHTML);
   ctx.live.emit({
     lat: 44.7,

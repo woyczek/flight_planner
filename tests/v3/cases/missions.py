@@ -16456,7 +16456,7 @@ def n266(c):
     far = {'lat': 44.95, 'lon': 1.0, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120, 'source': 'xplane'}
     S = f'{M} [data-drawers]'
     nothing = {'fr': "Rien de nouveau pour l'instant.", 'en': 'Nothing new for now.', 'de': 'Vorerst nichts Neues.', 'es': 'Nada nuevo por ahora.'}[c.lang]
-    keys = {'X-965A': '    trigger_object: OBJ-1\n    fallback_delay_min: 600', 'X-965B': '    trigger_zone: ZONE-1\n    fallback_delay_min: 600', 'X-965C': '    trigger_delay_min: 600'}
+    keys = {'X-965A': '    trigger_object: OBJ-1\n    fallback_delay_min: 600', 'X-965B': '    trigger_zone: ZONE-1\n    fallback_delay_min: 600', 'X-965C': '    trigger_point: ORIGIN\n    trigger_delay_min: 600'}   # a delay WITHOUT a point is read as a key by hand (« Demander » opens it)
     answer = f"(document.querySelector('{S} [data-dw-acts] [data-dw-answer]')?.textContent || '').replace(/\\s+/g, ' ').trim()"
     try:
         for mid, key in keys.items():

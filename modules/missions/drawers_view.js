@@ -430,7 +430,6 @@ export function stop() {
   W = null;
   clearTimeout(w.restTimer);
   clearTimeout(w.ansTimer);
-  w.ro?.disconnect();
   w.askBtn?.remove();
   w.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
   RD.detach();
@@ -478,7 +477,6 @@ function showDrawers(host, {
       restMs
     });
     bind(host);
-    watchWidth(W);
     return paint(W);
   }
   stop();
@@ -501,7 +499,6 @@ function showDrawers(host, {
     }),
     tick: () => paintPos(w)
   };
-  watchWidth(w);
   RUN.attach(id, {
     ctx,
     mission,
@@ -513,13 +510,13 @@ function showDrawers(host, {
   paint(w);
 }
 
-/** La largeur du bloc suivie (ResizeObserver sur l'hôte) : le bloc est redessiné quand il passe le seuil des 760 px (l'ordre et le pied collant). */
-function watchWidth(w) {
-  if (typeof ResizeObserver !== 'function') return;
-  w.ro?.disconnect();
-  w.ro = new ResizeObserver(() => W === w && w.host && w.narrow !== undefined && narrowOf(w.host) !== w.narrow && paint(w));
-  if (w.host) w.ro.observe(w.host);
-}
+/** Le téléphone (la fenêtre sous 760 px, matchMedia) : les gestes du bloc sont alors un pied collant. Décidé par la LARGEUR DE LA FENÊTRE, jamais par celle de
+ *  l'hôte (dans la fiche à 1280 px le bloc est dans une colonne de moins de 760 px, et c'est un écran : les gestes restent dans le flux). Le changement de
+ *  largeur de la fenêtre redessine le bloc (l'ordre des sections et le pied). */
+const PHONE = typeof matchMedia === 'function' ? matchMedia('(max-width: 759px)') : null;
+PHONE?.addEventListener?.('change', () => {
+  if (W && W.narrow !== undefined && PHONE.matches !== W.narrow) paint(W);
+});
 
 /** L'écoute des gestes sur cet élément (une fois par élément : la fiche est redessinée avec lui). */
 function bind(host) {
@@ -665,15 +662,16 @@ function paintLegacy(w, c) {
 /** Le bloc d'une mission EN VOL (SOG-0619), dans l'ordre de lecture : l'état en une ligne (en vol depuis, position) ; « Vient d'arriver » (une
  *  enveloppe par message ouvert et pas encore lu, le plus ancien d'abord : rien ne s'ouvre seul) ; « Maintenant » (le dernier message lu, entier,
  *  sa suite de route en une ligne ; sans message lu, l'ordre de mission) ; les deux gestes, toujours là, la réponse juste au-dessus ; « Avant » (les
- *  messages précédents repliés, le plus récent d'abord, le débrief comme un message, l'ordre de mission en dernier). Étroit (le bloc, pas la fenêtre,
- *  sous 760 px) : les gestes sont le PIED COLLANT du bloc, déclaré au cadre comme une barre fixe (data-f-foot : aucune note ne naît dessus). */
+ *  messages précédents repliés, le plus récent d'abord, le débrief comme un message, l'ordre de mission en dernier). Sur un TÉLÉPHONE (la fenêtre sous
+ *  760 px, matchMedia : jamais la largeur du bloc, qui est dans une colonne étroite d'une fiche d'écran) : les gestes sont le PIED COLLANT du bloc, déclaré au cadre
+ *  comme une barre fixe (data-f-foot : aucune note ne naît dessus) ; sur un écran ils restent dans le flux, sous « Maintenant ». */
 function paintFlight(w, c) {
   const states = Array.isArray(c.states) ? c.states : [],
     unread = RUN.unreadOf(c),
     unreadIds = new Set(unread.map(s => s.id)),
     read = states.filter(s => s.open && !unreadIds.has(s.id)).sort((a, b) => a.at - b.at),
     last = read.at(-1) || null,
-    narrow = w.narrow = narrowOf(w.host),
+    narrow = w.narrow = !!PHONE?.matches,
     started = Date.parse(c.startIso || ''),
     hhmm = ms => fmtZ(new Date(ms));
   w.host.hidden = false;
@@ -728,12 +726,6 @@ function paintFlight(w, c) {
 }
 
 const ANSWER_MS = 60e3; // la réponse d'un geste reste affichée une minute (celle du repos de « Demander la suite »)
-
-/** Le bloc est-il étroit ? Sa propre largeur (celle de son hôte, jamais celle de la fenêtre) sous 760 px. */
-function narrowOf(host) {
-  const width = host?.getBoundingClientRect?.().width || 0;
-  return width > 0 && width < 760;
-}
 
 /** L'enveloppe et la liseuse de MA mission (lot T3, reader_view.js) : posées avec la section, retirées pour une mission qui n'est pas
  *  la mienne. La liseuse ne reçoit que la mission passée par pilotView — rien d'un tiroir fermé. `readerHost` : où elles s'accrochent (par
