@@ -259,7 +259,8 @@
     empty() && !q('[data-dw]') && !/Tiroir|Recherche|Nouvel ordre|s'ouvre|après le|Cet appareil|Sans position/.test(stage.textContent),
     sec().outerHTML);
   ck('« Demander la suite » est posé DANS la place de la rangée, juste après « Préparer ce vol », « Retour » en dernier ; un seul bouton, neutre (aucun mot des tiroirs)',
-    order() === 'prepare slot(BUTTON,ask) back' && text('[data-dw-ask]') === 'Demander la suite' && qa('[data-dw-ask]').length === 1 && askBtn()
+    order() === 'prepare slot(BUTTON,ask) back' && text('[data-dw-ask]') === 'Demander la suite' && qa('[data-dw-ask]').length === 1 &&
+    askBtn()
     .type === 'button' && !askBtn().disabled, order());
   ck('un titre hostile n\'est pas dans la page tant que son tiroir est fermé ; rien n\'est interprété', !window.__xss && !q('img') && !
     stage.innerHTML.includes('Retour &lt;img'));
@@ -1076,8 +1077,11 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const lb = ctx.store.get(BOOK)?.drawer_B;
   ck('l\'atterrissage : en vol puis posé 5 s, rien ; posé 10 s d\'affilée (relevés espacés de 5 s), le constat « landing » est écrit avec ses deux relevés et « Suite de la mission » dit « ouvert à votre atterrissage, à … »',
-    notYet && lb?.how === 'landing' && lb.from?.onGround === true && lb.to?.onGround === true && Date.parse(lb.to.at) - Date.parse(lb.from.at) === 10e3 && /^ouvert à votre atterrissage, à \d\d:\d\dZ$/.test(text(
-      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Posé'), [notYet, lb, ctx.notes]);
+    notYet && lb?.how === 'landing' && lb.from?.onGround === true && lb.to?.onGround === true && Date.parse(lb.to.at) - Date.parse(lb.from
+      .at) === 10e3 && /^ouvert à votre atterrissage, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Posé'), [notYet, lb, ctx
+      .notes
+    ]);
   DV.stop();
   // ---- SOG-0507 : un posé de PRÉCISION dit son palier et sa distance (deux décimales, le séparateur de la langue) ; sans palier, la phrase d'avant
   const NMV = 1 / (3440.065 * Math.PI / 180), // un mille marin en degrés de latitude (geo.js R_NM)
@@ -1099,9 +1103,14 @@
       ...st
     }, {}, {}).how.replace(/\s+/g, ' ');
   // la ligne d'ouverture d'un posé de précision ne dit que COMMENT et QUAND (le palier et la distance ne sont dits qu'une fois, au Débrief)
-  const LANDME = ['ouvert à votre atterrissage, à 19:20Z', 'opened on your landing, at 19:20Z', 'bei Ihrer Landung geöffnet um 19:20Z', 'abierto a su aterrizaje, a las 19:20Z'],
-    LANDBY = ['ouvert à l\'atterrissage de BBB, à 19:20Z', 'opened when BBB landed, at 19:20Z', 'bei der Landung von BBB geöffnet um 19:20Z', 'abierto al aterrizaje de BBB, a las 19:20Z'],
-    TIERWORDS = /excellent|parfait|réussi|partiel|perfect|good|partial|ausgezeichnet|perfekt|gelungen|teilweise|excelente|perfecto|logrado|parcial|NM/;
+  const LANDME = ['ouvert à votre atterrissage, à 19:20Z', 'opened on your landing, at 19:20Z', 'bei Ihrer Landung geöffnet um 19:20Z',
+      'abierto a su aterrizaje, a las 19:20Z'
+    ],
+    LANDBY = ['ouvert à l\'atterrissage de BBB, à 19:20Z', 'opened when BBB landed, at 19:20Z',
+      'bei der Landung von BBB geöffnet um 19:20Z', 'abierto al aterrizaje de BBB, a las 19:20Z'
+    ],
+    TIERWORDS =
+    /excellent|parfait|réussi|partiel|perfect|good|partial|ausgezeichnet|perfekt|gelungen|teilweise|excelente|perfecto|logrado|parcial|NM/;
   ck('posé de précision, describe : la ligne d\'ouverture est celle sans palier, « ouvert à votre atterrissage, à 19:20Z » et ses trois traductions, sans palier ni « NM »',
     [0, 1, 2, 3].every(i => ['excellent', 'parfait', 'réussi', 'partiel'].every(t => {
       const r = sayIn(i, {
@@ -1197,7 +1206,9 @@
   await sleep(150);
   await ask();
   ck('l\'atterrissage avec une source qui ignore « au sol » (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas ; la clé dit la même chose qu\'une arrivée non suivie',
-    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+      .notes
+    ]);
   DV.stop();
 
   // ---- SOG-0500, lot 2 : le survol de l'atelier jugé en vol. Clé à la forme de holdRule (frame/lib/mission.js) ; hauteurs SOL (aglFt),
@@ -1286,8 +1297,10 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const ob2 = ctx.store.get(BOOK)?.drawer_B;
   ck('le survol sans confirmation : au-dessus de la bande, rien ; le trajet qui coupe le point dans la bande (relevés du simulateur avec hauteur sol) écrit le constat « overflight » (ses deux relevés, hauteur comprise) et « Suite de la mission » dit « ouvert à votre survol, à … »',
-    tooHigh && ob2?.how === 'overflight' && ob2.from?.aglFt === 1000 && ob2.to?.aglFt === 1000 && /^ouvert à votre survol, à \d\d:\d\dZ$/.test(text(
-      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Survol') && !/DESTINATION/.test(stage
+    tooHigh && ob2?.how === 'overflight' && ob2.from?.aglFt === 1000 && ob2.to?.aglFt === 1000 && /^ouvert à votre survol, à \d\d:\d\dZ$/
+    .test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Survol') && !/DESTINATION/
+    .test(stage
       .textContent), [tooHigh, ob2, ctx.notes]);
   DV.stop();
   // avec confirmation (par défaut) : rien avant « Demander la suite », qui l'ouvre ensuite
@@ -1309,7 +1322,8 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const ob3 = ctx.store.get(BOOK)?.drawer_B;
   ck('le survol avec confirmation : le passage dans la bande n\'ouvre rien tout seul ; « Demander la suite » l\'ouvre (constat « overflight », ses deux relevés), « Suite de la mission » le dit',
-    waiting && ob3?.how === 'overflight' && ob3.from?.lat === 45.05 && ob3.to?.lat === 44.95 && /^ouvert à votre survol, à \d\d:\d\dZ$/.test(text(
+    waiting && ob3?.how === 'overflight' && ob3.from?.lat === 45.05 && ob3.to?.lat === 44.95 && /^ouvert à votre survol, à \d\d:\d\dZ$/
+    .test(text(
       '[data-dw="B"] [data-dw-how]')) && JSON.stringify(ctx.notes.slice(nOv)) === JSON.stringify([
       ['ok', 'Suite de la mission : Survol']
     ]), [waiting, ob3, ctx.notes.slice(nOv)]);
@@ -1334,7 +1348,9 @@
     await sleep(150);
     await ask();
     ck(`le survol (confirm ${confirm}) avec une source sans hauteur sol : aucun constat, rien ne s'ouvre, « Demander » ne l'ouvre pas`,
-      empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+      empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+        .notes
+      ]);
     DV.stop();
   }
 
@@ -1432,8 +1448,10 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const hb = ctx.store.get(BOOK)?.drawer_B;
   ck('le stationnaire : en transit puis tenu 5 s, rien ; tenu 10 s d\'affilée (relevés du simulateur espacés de 5 s), le constat « hover » est écrit avec ses deux relevés (hauteur sol comprise) et « Suite de la mission » dit « ouvert à votre stationnaire, à … » sans nommer le lieu',
-    hNotYet && hb?.how === 'hover' && hb.from?.aglFt === 40 && hb.to?.onGround === false && Date.parse(hb.to.at) - Date.parse(hb.from.at) === 10e3 && /^ouvert à votre stationnaire, à \d\d:\d\dZ$/.test(text(
-      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Stationnaire') && !/DESTINATION/.test(stage
+    hNotYet && hb?.how === 'hover' && hb.from?.aglFt === 40 && hb.to?.onGround === false && Date.parse(hb.to.at) - Date.parse(hb.from
+      .at) === 10e3 && /^ouvert à votre stationnaire, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Stationnaire') && !
+    /DESTINATION/.test(stage
       .textContent), [hNotYet, hb, ctx.notes]);
   DV.stop();
   // la source ne donne pas la hauteur sol (GPS du navigateur, IVAO, VATSIM) : la condition n'est jamais remplie, ni par « Demander »
@@ -1455,7 +1473,9 @@
   await sleep(150);
   await ask();
   ck('le stationnaire avec une source sans hauteur sol (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas',
-    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx
+      .notes
+    ]);
   DV.stop();
 
   // ---- SOG-0500, lot 5 : la condition « suite d'étapes » de l'atelier jugée en vol — un survol (sans confirmation) puis un atterrissage
@@ -1512,8 +1532,10 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const sb = ctx.store.get(BOOK)?.drawer_B;
   ck('la suite d\'étapes : le survol fait, l\'atterrissage posé 5 s, rien ; posé 10 s d\'affilée, le constat « sequence » est écrit avec ses deux preuves (survol, atterrissage) et « Suite de la mission » dit « ouvert à la fin de vos étapes, à … » ; la notification le dit, l\'écran ne montre aucun lieu',
-    sNotYet && sb?.how === 'sequence' && sb.steps?.length === 2 && sb.steps[0].how === 'overflight' && sb.steps[1].how === 'landing' && /^ouvert à la fin de vos étapes, à \d\d:\d\dZ$/.test(text(
-      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Les étapes') && !/DESTINATION/.test(stage
+    sNotYet && sb?.how === 'sequence' && sb.steps?.length === 2 && sb.steps[0].how === 'overflight' && sb.steps[1].how === 'landing' &&
+    /^ouvert à la fin de vos étapes, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Les étapes') && !
+    /DESTINATION/.test(stage
       .textContent), [sNotYet, sb, ctx.notes]);
   DV.stop();
   // dans le désordre (l'atterrissage d'abord, jamais le survol) : rien ne s'ouvre
@@ -1718,7 +1740,10 @@
   DV.stop();
   // SOG-0463 : la période est de dix secondes ; un premier tiroir à l'heure ou au geste n'est pas attendu, même avec d'autres pilotes
   ck('la période du passage de synchronisation est de dix secondes (SOG-0463)', DV.POLL_MS === 10000, DV.POLL_MS);
-  for (const [label, list] of [['geste', [HAND, ZONE]], ['heure', [TIME, ZONE]]]) {
+  for (const [label, list] of [
+      ['geste', [HAND, ZONE]],
+      ['heure', [TIME, ZONE]]
+    ]) {
     ctx = fakeCtx({
       docs: {
         'missions/affectations.json': index(T2)
@@ -2146,7 +2171,8 @@
   });
   await until(() => !!q('[data-dw="B"][data-open]'));
   ck('débrief : sans posé de précision jugé (un tiroir ouvert à la main), pas de bloc « Débrief » ni de titre',
-    !!q('[data-dw="B"]') && !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && qa('h3').map(h => h.textContent).join() === 'Suite de la mission', sec().innerHTML);
+    !!q('[data-dw="B"]') && !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && qa('h3').map(h => h.textContent).join() ===
+    'Suite de la mission', sec().innerHTML);
   DV.stop();
   ctx = fakeCtx({
     docs: dDocs(true, true)
@@ -2157,13 +2183,15 @@
   await until(() => qa('[data-dwd]').length === 2);
   const dRows = qa('[data-dwd]').map(e => e.textContent.replace(/\s+/g, ' ').trim());
   ck('débrief : présent après l\'ouverture d\'un tiroir, SOUS « Suite de la mission » ; deux lignes — la mienne (le tier écrit « excellent » ignoré : « réussi », 0,15) puis celle de BBB (« parfait », 0,08), l\'heure du fait, jamais un lieu',
-    qa('h3').map(h => h.textContent).join() === 'Suite de la mission,Débrief' && q('[data-dw-list]').compareDocumentPosition(q('[data-dw-debrief]')) & Node.DOCUMENT_POSITION_FOLLOWING &&
+    qa('h3').map(h => h.textContent).join() === 'Suite de la mission,Débrief' && q('[data-dw-list]').compareDocumentPosition(q(
+      '[data-dw-debrief]')) & Node.DOCUMENT_POSITION_FOLLOWING &&
     dRows.join('|') === `Le point repéré — atterrissage réussi (0,15 NM), à ${z(DT)}|Le point repéré — atterrissage parfait (0,08 NM), à ${z(DT + 60e3)} — BBB` && !/PT1|DESTINATION|45\.|lat/.test(q('[data-dw-debrief]').outerHTML),
     dRows);
   ck('débrief : visible au niveau 1 (Découverte) comme aux autres ; marqué mine / non mine',
     ctx.level === 1 && !q('[data-dw-debrief]').hidden && qa('[data-dwd]').map(e => e.dataset.dwdMine).join() === '1,0');
   DV.stop();
-  ck('débrief : stop() retire le bloc (titre et lignes), avec « Demander la suite »', !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && !askBtn() && !!q('[data-dw-list]'));
+  ck('débrief : stop() retire le bloc (titre et lignes), avec « Demander la suite »', !q('[data-dw-debrief]') && !q(
+    '[data-dw-debrief-head]') && !askBtn() && !!q('[data-dw-list]'));
   stage.innerHTML = '';
   // le texte, dans les quatre langues : espaces normalisés, le séparateur décimal de la langue, l'heure du fait
   const dSay = (i, l) => DV.debriefLine((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''), l).replace(/\s+/g, ' '),
@@ -2177,32 +2205,63 @@
       mine: true
     };
   ck('débrief, texte exact : « Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z » en français ; en anglais « … — landing: good (0.15 NM), at 19:20Z » (point décimal) ; équipier : « — BBB » ; en allemand et en espagnol la virgule',
-    dSay(0, dLn) === 'Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z' && dSay(1, dLn) === 'Le point repéré — landing: good (0.15 NM), at 19:20Z' && dSay(0, {
+    dSay(0, dLn) === 'Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z' && dSay(1, dLn) ===
+    'Le point repéré — landing: good (0.15 NM), at 19:20Z' && dSay(0, {
       ...dLn,
       mine: false
     }) === 'Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z — BBB' && dSay(1, {
       ...dLn,
       mine: false
-    }) === 'Le point repéré — landing: good (0.15 NM), at 19:20Z — BBB' && dSay(2, dLn) === 'Le point repéré — Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
+    }) === 'Le point repéré — landing: good (0.15 NM), at 19:20Z — BBB' && dSay(2, dLn) ===
+    'Le point repéré — Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
       ...dLn,
       mine: false
     }) === 'Le point repéré — aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' && [0, 1, 2, 3].map(i => dSay(i, {
       ...dLn,
       tier: 'partiel',
       distNm: 0.5
-    })).every((t, i) => t.includes(['partiel', 'partial', 'teilweise', 'parcial'][i])) && ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'].every((w, i) => DV.TX.debriefHead[i] === w),
+    })).every((t, i) => t.includes(['partiel', 'partial', 'teilweise', 'parcial'][i])) && ['Débrief', 'Debrief', 'Nachbesprechung',
+      'Informe'
+    ].every((w, i) => DV.TX.debriefHead[i] === w),
     [0, 1, 2, 3].map(i => dSay(i, dLn)));
   // sans titre : la phrase commence par la majuscule, sans « — » d'attaque, dans les quatre langues, moi et l'équipier
-  const dNo = { ...dLn, title: '' };
+  const dNo = {
+    ...dLn,
+    title: ''
+  };
   ck('débrief sans titre : « Atterrissage réussi (0,15 NM), à 19:20Z » (puis « — BBB »), « Landing: good … », « Landung gelungen … », « Aterrizaje logrado … » ; un titre absent ou non texte vaut vide',
-    dSay(0, dNo) === 'Atterrissage réussi (0,15 NM), à 19:20Z' && dSay(0, { ...dNo, mine: false }) === 'Atterrissage réussi (0,15 NM), à 19:20Z — BBB' &&
-    dSay(1, dNo) === 'Landing: good (0.15 NM), at 19:20Z' && dSay(1, { ...dNo, mine: false }) === 'Landing: good (0.15 NM), at 19:20Z — BBB' &&
-    dSay(2, dNo) === 'Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, { ...dNo, mine: false }) === 'Aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' &&
-    dSay(0, { ...dLn, title: undefined }) === dSay(0, dNo) && dSay(0, { ...dLn, title: 7 }) === dSay(0, dNo));
+    dSay(0, dNo) === 'Atterrissage réussi (0,15 NM), à 19:20Z' && dSay(0, {
+      ...dNo,
+      mine: false
+    }) === 'Atterrissage réussi (0,15 NM), à 19:20Z — BBB' &&
+    dSay(1, dNo) === 'Landing: good (0.15 NM), at 19:20Z' && dSay(1, {
+      ...dNo,
+      mine: false
+    }) === 'Landing: good (0.15 NM), at 19:20Z — BBB' &&
+    dSay(2, dNo) === 'Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
+      ...dNo,
+      mine: false
+    }) === 'Aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' &&
+    dSay(0, {
+      ...dLn,
+      title: undefined
+    }) === dSay(0, dNo) && dSay(0, {
+      ...dLn,
+      title: 7
+    }) === dSay(0, dNo));
   // jamais un numéro : un tiroir de rang 3 (pas de rang dans la ligne) ne dit ni « Tiroir » ni « 3 » hors de l'heure et de la distance ; le titre est borné à 120 signes
-  const dNum = [0, 1, 2, 3].map(i => dSay(i, { ...dLn, rank: 3 }).replace(/\d{1,2}:\d{2}Z/, '').replace(/\d[.,]\d{2}/, ''));
+  const dNum = [0, 1, 2, 3].map(i => dSay(i, {
+    ...dLn,
+    rank: 3
+  }).replace(/\d{1,2}:\d{2}Z/, '').replace(/\d[.,]\d{2}/, ''));
   ck('débrief : aucun numéro de tiroir dans la ligne (ni « Tiroir »/« Drawer »/« Schublade »/« Cajón » ni chiffre hors heure et distance), même si la donnée porte un rang ; le titre est borné à 120 signes',
-    dNum.every(t => !/Tiroir|Drawer|Schublade|Cajón|\d/.test(t)) && dSay(0, { ...dLn, title: 'x'.repeat(300) }).startsWith('x'.repeat(120) + ' —') && !dSay(0, { ...dLn, title: 'x'.repeat(300) }).includes('x'.repeat(121)), dNum);
+    dNum.every(t => !/Tiroir|Drawer|Schublade|Cajón|\d/.test(t)) && dSay(0, {
+      ...dLn,
+      title: 'x'.repeat(300)
+    }).startsWith('x'.repeat(120) + ' —') && !dSay(0, {
+      ...dLn,
+      title: 'x'.repeat(300)
+    }).includes('x'.repeat(121)), dNum);
   // un titre hostile est échappé (la phrase entière passe par esc) : du texte, jamais un élément
   DV.stop();
   ctx = fakeCtx({
@@ -2217,7 +2276,8 @@
   });
   await until(() => qa('[data-dwd]').length === 1);
   ck('débrief : un titre hostile (<b>, guillemets) est du texte échappé, jamais un élément',
-    !q('[data-dwx], #dwx') && q('[data-dwd]').textContent.startsWith('<b id="dwx">Le "point"</b> — atterrissage'), q('[data-dwd]').innerHTML);
+    !q('[data-dwx], #dwx') && q('[data-dwd]').textContent.startsWith('<b id="dwx">Le "point"</b> — atterrissage'), q('[data-dwd]')
+    .innerHTML);
   DV.stop();
   stage.innerHTML = '';
 
@@ -2269,7 +2329,8 @@
       headingDeg: 90,
       ...more
     }),
-    rIn = (i, st) => Object.fromEntries(Object.entries(DV.describe((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''), {
+    rIn = (i, st) => Object.fromEntries(Object.entries(DV.describe((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ??
+      ''), {
       key: RFK,
       dueAt: null,
       open: false,
@@ -2313,7 +2374,8 @@
           at: AT,
           srcAt: AT
         }).how;
-      return k && me.includes('19:20Z') && by.includes('BBB') && by.includes('19:20Z') && ![k, me, by].some(t => /[{}]|RF1|Station/.test(t)) && me !== by &&
+      return k && me.includes('19:20Z') && by.includes('BBB') && by.includes('19:20Z') && ![k, me, by].some(t => /[{}]|RF1|Station/
+          .test(t)) && me !== by &&
         k !== rIn(i, {
           key: {
             kind: 'condition',
@@ -2365,9 +2427,12 @@
   await until(() => !!q('[data-dw="B"][data-open]'));
   const rb = ctx.store.get(BOOK)?.drawer_B;
   ck('le ravitaillement : en transit puis tenu 5 s, rien ; tenue complète (10 s d\'affilée) puis un relevé posé qui bouge un peu, rien encore ; au premier relevé en l\'air, le constat « refill » est écrit (from, to, last, off, cap compris) et « Suite de la mission » dit « ouvert à votre ravitaillement en retardant, à … » sans nommer le lieu',
-    rNotYet && rFull && rb?.how === 'refill' && rb.from?.headingDeg === 90 && rb.to?.onGround === true && rb.last?.onGround === true && rb.off?.onGround === false &&
-    Date.parse(rb.to.at) - Date.parse(rb.from.at) === 10e3 && Date.parse(rb.off.at) > Date.parse(rb.last.at) && /^ouvert à votre ravitaillement en retardant, à \d\d:\d\dZ$/.test(
-      text('[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Ravitaillement') && !/RF1|Station du banc/.test(stage
+    rNotYet && rFull && rb?.how === 'refill' && rb.from?.headingDeg === 90 && rb.to?.onGround === true && rb.last?.onGround === true && rb
+    .off?.onGround === false &&
+    Date.parse(rb.to.at) - Date.parse(rb.from.at) === 10e3 && Date.parse(rb.off.at) > Date.parse(rb.last.at) &&
+    /^ouvert à votre ravitaillement en retardant, à \d\d:\d\dZ$/.test(
+      text('[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Ravitaillement') && !
+    /RF1|Station du banc/.test(stage
       .textContent), [rNotYet, rFull, rb, ctx.notes]);
   DV.stop();
   // un cap faux : la tenue n'est jamais complète, rien ne s'ouvre même après un départ
@@ -2389,7 +2454,8 @@
     onGround: false
   }));
   await sleep(200);
-  ck('le ravitaillement au mauvais cap : la tenue n\'est jamais complète, un relevé en l\'air n\'ouvre rien', empty() && !ctx.store.get(BOOK)?.drawer_B, ctx.store.get(BOOK));
+  ck('le ravitaillement au mauvais cap : la tenue n\'est jamais complète, un relevé en l\'air n\'ouvre rien', empty() && !ctx.store.get(
+    BOOK)?.drawer_B, ctx.store.get(BOOK));
   DV.stop();
 
   // ---- 13. lot T3 : l'enveloppe et la liseuse posées avec la section, « lu » écrit dans MON carnet
@@ -2414,7 +2480,8 @@
   });
   await until(() => !!q('[data-rd-read]'));
   ck('MA mission dans une fiche : « Lire la mission » est posé EN TÊTE de la place de la rangée des actions, devant « Demander la suite » ; rien n\'est écrit dans mon carnet',
-    order() === 'prepare slot(BUTTON,ask) back' && q('[data-actslot]').firstElementChild.hasAttribute('data-rd-read') && !ctx.store.has(BOOK), order());
+    order() === 'prepare slot(BUTTON,ask) back' && q('[data-actslot]').firstElementChild.hasAttribute('data-rd-read') && !ctx.store.has(
+      BOOK), order());
   q('[data-rd-read]').click();
   ck('mission affectée pas encore lue : l\'enveloppe — pour moi (mon trigramme), rien du tiroir fermé ni de sa zone', !!q(
       '[data-rd-env]') && text('.rd-lab').includes('AAA') && !q('[data-reader]').innerHTML.includes('Secteur') && !q('[data-reader]')
@@ -2438,7 +2505,8 @@
   q('[data-rd-read]').click();
   while (!q('[data-rd-next]').disabled) q('[data-rd-next]').click();
   ck('le tiroir ouvert a sa page, la dernière : son titre, son message, comment il s\'est ouvert ; « lu » est gardé à l\'écriture du geste',
-    q('.rd-page')?.dataset.rdDrawer === 'B' && text('.rd-page').includes('Secteur') && !/Tiroir|Drawer|Schublade|Cajón/.test(text('.rd-page')) && text('[data-rd-msg]') === 'Message du tiroir.' &&
+    q('.rd-page')?.dataset.rdDrawer === 'B' && text('.rd-page').includes('Secteur') && !/Tiroir|Drawer|Schublade|Cajón/.test(text(
+      '.rd-page')) && text('[data-rd-msg]') === 'Message du tiroir.' &&
     text('[data-rd-how]').startsWith('ouvert à votre demande') && ctx.store.get(BOOK).read_at === readAt && !q('[data-rd-closed]'), text(
       '.rd-page'));
   // une mission qu'on feuillette, dans une fiche : ni bouton ni liseuse

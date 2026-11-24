@@ -283,7 +283,8 @@
     reads === 2 && !q('[data-rd-env]') && q('.rd-page')?.dataset.rdPage === 'order' && text('[data-rd-where]') === 'Page 1 sur 4' && q(
       '[data-rd-prev]').disabled && !q('[data-rd-next]').disabled && qa('.rd-page').length === 1, text('[data-rd-where]'));
   ck('un titre de mission est du texte, jamais interprété ; aucun compte de tiroirs fermés (SOG-0459) ; le titre du tiroir fermé n\'est nulle part',
-    window.__xss === undefined && !q('[data-reader] img') && text('.rd-page h3').includes('<img') && !q('[data-rd-closed]') && !/ferm/.test(text(
+    window.__xss === undefined && !q('[data-reader] img') && text('.rd-page h3').includes('<img') && !q('[data-rd-closed]') && !/ferm/
+    .test(text(
       '.rd-foot')) && !q('[data-reader]').innerHTML.includes('Titre du tiroir fermé'), text('.rd-foot'));
   q('[data-rd-next]').click();
   q('[data-rd-next]').click();

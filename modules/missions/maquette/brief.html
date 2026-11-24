@@ -7,65 +7,296 @@
 <style>
 /* Maquette autonome de SOG-0455 (rien n'est lu ni écrit ; missions inventées). Les règles reprises des maquettes validées (atelier.html,
    tiroirs.html), puis ce que le Brief ajoute : la ligne de choix, les gestes de la ligne du registre, le menu « ⋯ ». */
-:root{
-  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
-  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#7d4e00; --warn-bg:#fff4d1; --accent:#1a6fd8; --accent-bg:#eaf2fb;
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --card: #fff;
+  --bg: #f3f4f6;
+  --ok: #1e7d32;
+  --ok-bg: #e6f6ea;
+  --warn: #7d4e00;
+  --warn-bg: #fff4d1;
+  --accent: #1a6fd8;
+  --accent-bg: #eaf2fb;
 }
-*{box-sizing:border-box}
-[hidden]{display:none !important}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
-.top .sp{flex:1}
-.top .chip{font-weight:400;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--muted)}
-.page{max-width:1280px;margin:0 auto;padding:12px 16px 48px}
-.crumb{font-size:14px;color:var(--muted);margin:4px 0}
-h1{font-size:22px;line-height:1.25;margin:0 0 4px}
-h2{font-size:18px;margin:0 0 6px}
-h3{font-size:16px;margin:0 0 4px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
-.muted{color:var(--muted)}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-button{font:inherit;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer}
-.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0 4px;min-height:44px}
-.search{width:100%;min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:0 0 8px}
+* {
+  box-sizing: border-box
+}
+[hidden] {
+  display: none !important
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700
+}
+.top .sp {
+  flex: 1
+}
+.top .chip {
+  font-weight: 400;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--muted)
+}
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 16px 48px
+}
+.crumb {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 4px 0
+}
+h1 {
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 0 0 4px
+}
+h2 {
+  font-size: 18px;
+  margin: 0 0 6px
+}
+h3 {
+  font-size: 16px;
+  margin: 0 0 4px
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0
+}
+.muted {
+  color: var(--muted)
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center
+}
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer
+}
+.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600
+}
+.link {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  padding: 0 4px;
+  min-height: 44px
+}
+.search {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0 0 8px
+}
 /* la ligne de choix : durée · aéronefs · théâtre — chaque morceau insécable, « ≈ » quand la durée est calculée */
-.choice{display:flex;flex-wrap:wrap;gap:0 .5em;font-size:15px;color:var(--ink);margin:2px 0 6px}
-.choice>span{white-space:nowrap}
-.choice>span+span::before{content:"·";color:var(--muted);margin-right:.5em}
-.choice .est{color:var(--muted)}
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .5em;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 2px 0 6px
+}
+.choice>span {
+  white-space: nowrap
+}
+.choice>span+span::before {
+  content: "·";
+  color: var(--muted);
+  margin-right: .5em
+}
+.choice .est {
+  color: var(--muted)
+}
 /* le registre */
-.rrow{border-bottom:1px solid var(--line)}
-.rrow>summary{list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:10px 0;cursor:pointer}
-.rrow>summary::-webkit-details-marker{display:none}
-.sign{display:inline-block;width:1.4em;text-align:center;color:var(--ok)}
-.sign.warn{color:var(--warn)}
-.rsum b{margin-right:.35em}
-.rsum .second{display:block;font-size:14px;color:var(--muted)}
-.rsum .choice{font-size:14px;margin:0}
-.rbody{padding:0 0 12px 30px}
-.rbody .badge{display:inline-block;font-size:13px;border-radius:4px;padding:1px 8px;background:var(--ok-bg);color:var(--ok)}
-.rbody .badge.warn{background:var(--warn-bg);color:var(--warn)}
-.gestures{position:relative;margin-top:8px}
-.more{position:absolute;right:0;top:48px;z-index:2;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px;min-width:14em}
-.more button{display:block;width:100%;text-align:left;border:0}
-.more .danger{color:#a40e26}
+.rrow {
+  border-bottom: 1px solid var(--line)
+}
+.rrow>summary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 8px;
+  padding: 10px 0;
+  cursor: pointer
+}
+.rrow>summary::-webkit-details-marker {
+  display: none
+}
+.sign {
+  display: inline-block;
+  width: 1.4em;
+  text-align: center;
+  color: var(--ok)
+}
+.sign.warn {
+  color: var(--warn)
+}
+.rsum b {
+  margin-right: .35em
+}
+.rsum .second {
+  display: block;
+  font-size: 14px;
+  color: var(--muted)
+}
+.rsum .choice {
+  font-size: 14px;
+  margin: 0
+}
+.rbody {
+  padding: 0 0 12px 30px
+}
+.rbody .badge {
+  display: inline-block;
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 1px 8px;
+  background: var(--ok-bg);
+  color: var(--ok)
+}
+.rbody .badge.warn {
+  background: var(--warn-bg);
+  color: var(--warn)
+}
+.gestures {
+  position: relative;
+  margin-top: 8px
+}
+.more {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 2;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+  padding: 4px;
+  min-width: 14em
+}
+.more button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0
+}
+.more .danger {
+  color: #a40e26
+}
 /* le Brief : ordre — titre, ligne de choix, résumé, risques, équipes, théâtre, Détail */
-.brief h1{margin-top:4px}
-.lines{list-style:none;margin:0;padding:0}
-.lines li{padding:6px 0;border-bottom:1px solid var(--line)}
-.lines li:last-child{border-bottom:0}
-.theatre{border:1px dashed var(--line);border-radius:8px;background:repeating-linear-gradient(45deg,var(--soft),var(--soft) 10px,#fff 10px,#fff 20px);min-height:120px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:14px;padding:12px}
-details.sec{border-top:1px solid var(--line)}
-details.sec>summary{min-height:44px;display:flex;align-items:center;font-weight:600;cursor:pointer}
-.note{font-size:13px;color:var(--muted);border-left:3px solid var(--accent);padding:4px 10px;margin:8px 0;background:var(--accent-bg)}
-.views{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
-.views a{font-size:14px;color:var(--accent)}
-@media (min-width:980px){
-  .reg-wide{display:grid;grid-template-columns:minmax(0,1fr);max-width:900px}
-  .brief-wide{display:grid;grid-template-columns:minmax(20em,26em) minmax(0,1fr);gap:16px;align-items:start}
-  .brief-wide .first{grid-column:1}
-  .brief-wide .detail{grid-column:2}
+.brief h1 {
+  margin-top: 4px
+}
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.lines li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line)
+}
+.lines li:last-child {
+  border-bottom: 0
+}
+.theatre {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: repeating-linear-gradient(45deg, var(--soft), var(--soft) 10px, #fff 10px, #fff 20px);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 12px
+}
+details.sec {
+  border-top: 1px solid var(--line)
+}
+details.sec>summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer
+}
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  border-left: 3px solid var(--accent);
+  padding: 4px 10px;
+  margin: 8px 0;
+  background: var(--accent-bg)
+}
+.views {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 8px
+}
+.views a {
+  font-size: 14px;
+  color: var(--accent)
+}
+@media (min-width:980px) {
+  .reg-wide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 900px
+  }
+  .brief-wide {
+    display: grid;
+    grid-template-columns: minmax(20em, 26em) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start
+  }
+  .brief-wide .first {
+    grid-column: 1
+  }
+  .brief-wide .detail {
+    grid-column: 2
+  }
 }
 </style>
 </head>
@@ -157,11 +388,17 @@ details.sec>summary{min-height:44px;display:flex;align-items:center;font-weight:
 <script>
 // la vue montrée : #registre (défaut), #brief, #tirage, #menu (le registre, le menu « ⋯ » ouvert) ; rien n'est lu ni écrit
 function show() {
-  const h = (location.hash || '#registre').slice(1), v = h === 'menu' ? 'registre' : h;
-  document.querySelectorAll('[data-view]').forEach(x => { x.hidden = x.dataset.view !== v; });
+  const h = (location.hash || '#registre').slice(1),
+    v = h === 'menu' ? 'registre' : h;
+  document.querySelectorAll('[data-view]').forEach(x => {
+    x.hidden = x.dataset.view !== v;
+  });
   document.querySelector('[data-more]').hidden = h !== 'menu';
 }
-document.querySelector('[data-more-btn]').addEventListener('click', () => { const m = document.querySelector('[data-more]'); m.hidden = !m.hidden; });
+document.querySelector('[data-more-btn]').addEventListener('click', () => {
+  const m = document.querySelector('[data-more]');
+  m.hidden = !m.hidden;
+});
 addEventListener('hashchange', show);
 show();
 </script>

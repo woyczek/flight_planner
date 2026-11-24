@@ -1749,13 +1749,15 @@
     }));
   const s30 = play(LAND, every5(30));
   ck('landing, holding : posé 30 s d\'affilée par relevés de 5 s → un constat « landing » au relevé de 30 s (du premier posé au dernier) ; à 25 s, rien',
-    s30.n === 6 && s30.first?.how === 'landing' && s30.first.at === T0 + 30e3 && s30.first.from.at === iso(T0) && s30.first.to.at === iso(T0 + 30e3) && play(LAND, every5(25)).first === null, s30);
+    s30.n === 6 && s30.first?.how === 'landing' && s30.first.at === T0 + 30e3 && s30.first.from.at === iso(T0) && s30.first.to.at === iso(
+      T0 + 30e3) && play(LAND, every5(25)).first === null, s30);
   const gap = [dn(0), dn(5), dn(10), dn(22), dn(27), dn(32), dn(37), dn(42), dn(47), dn(52)],
     air = [...every5(15), dn(20, {
       onGround: false
     }), ...every5(60).slice(5)];
   ck('landing, holding : un relevé en l\'air au milieu remet la tenue à zéro ; un écart de 12 s avec maxGapSec 10 aussi ; un écart de 10 s exactement tient',
-    play(LAND, air).n === 11 && play(LAND, gap).n === 9 && play(LAND, [dn(0), dn(10), dn(20), dn(30)]).n === 3, [play(LAND, air), play(LAND, gap)]);
+    play(LAND, air).n === 11 && play(LAND, gap).n === 9 && play(LAND, [dn(0), dn(10), dn(20), dn(30)]).n === 3, [play(LAND, air), play(
+      LAND, gap)]);
   ck('landing, holding : « au sol » inconnu ou absent ne compte jamais ; une vitesse au-dessus de speedMaxKt ou inconnue remet à zéro ; un relevé hors du rayon du terrain (2 224 m pour 1 NM = 1 852 m) aussi',
     play(LAND, every5(60, {
       onGround: null
@@ -1854,7 +1856,8 @@
     }, LAND) && !D.stands(lf, ARR) && !D.stands(lf, land({
       confirmation: 'posed'
     })));
-  ck('landing, HOWS et SHARED contiennent « landing » ; howOf apparie la condition et le genre', D.HOWS.includes('landing') && D.SHARED.includes('landing') && D.howOf(LAND) === 'landing' && D.howOf(ARR) === 'arrival' && D.howOf(null) === undefined);
+  ck('landing, HOWS et SHARED contiennent « landing » ; howOf apparie la condition et le genre', D.HOWS.includes('landing') && D.SHARED
+    .includes('landing') && D.howOf(LAND) === 'landing' && D.howOf(ARR) === 'arrival' && D.howOf(null) === undefined);
   // le carnet : un constat landing s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'arrivée)
   const landDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'landing', {
       from: lf.from,
@@ -1895,7 +1898,10 @@
       now: T0 + 41 * MIN
     })[0];
   ck('landing, carnet : le constat s\'écrit avec ses deux relevés et se relit ; celui de BBB ouvre le tiroir chez AAA (« landing », par BBB) ; sur un autre point chez le lecteur, il est refusé (« shape »)',
-    landBook?.drawers?.B?.how === 'landing' && landBook.drawers.B.from?.at === iso(T0) && landSt.open === true && landSt.how === 'landing' && landSt.by === 'BBB' && landSt.refused.length === 0 && landOff.open === false && landOff.refused[0]?.why === 'shape', [landBook, landSt, landOff]);
+    landBook?.drawers?.B?.how === 'landing' && landBook.drawers.B.from?.at === iso(T0) && landSt.open === true && landSt.how ===
+    'landing' && landSt.by === 'BBB' && landSt.refused.length === 0 && landOff.open === false && landOff.refused[0]?.why === 'shape', [
+      landBook, landSt, landOff
+    ]);
 
   // ---- SOG-0500, lot 2 : la condition « survol » de l'atelier jugée en vol (follows, finding, stands, catchUp, asked, HOWS, SHARED).
   // La clé a la forme exacte rendue par holdRule de frame/lib/mission.js ; les hauteurs sont des hauteurs SOL (aglFt). Points inventés.
@@ -1988,15 +1994,20 @@
   const fo = D.finding(OV, ovx(0, N3, 1000), ovx(30, S3, 1000)),
     fc = D.finding(OVC, ovx(0, N3, 1000), ovx(30, S3, 1000));
   ck('overflight, finding : le trajet coupe le point, hauteur sol dans la bande aux deux relevés → constat « overflight » (ses deux relevés, l\'heure du passage entre les deux), confirm faux ; confirm vrai → confirm: true',
-    fo?.how === 'overflight' && fo.confirm === false && fo.from.at === iso(T0) && fo.to.at === iso(T0 + 30e3) && fo.at > T0 && fo.at < T0 + 30e3 && fc?.how === 'overflight' && fc.confirm === true, [fo, fc]);
+    fo?.how === 'overflight' && fo.confirm === false && fo.from.at === iso(T0) && fo.to.at === iso(T0 + 30e3) && fo.at > T0 && fo.at <
+    T0 + 30e3 && fc?.how === 'overflight' && fc.confirm === true, [fo, fc]);
   ck('overflight, finding : un seul relevé (prev null) sur le point dans la bande → constat ; bande aux bornes (500 et 1500) comprise',
-    D.finding(OV, null, ovx(5, 45.0, 1000))?.how === 'overflight' && D.finding(OV, ovx(0, N3, 500), ovx(30, S3, 1500))?.how === 'overflight');
+    D.finding(OV, null, ovx(5, 45.0, 1000))?.how === 'overflight' && D.finding(OV, ovx(0, N3, 500), ovx(30, S3, 1500))?.how ===
+    'overflight');
   ck('overflight, finding : hors rayon (6 NM de côté) → null ; au-dessus du max, sous le min, à un seul des deux relevés → null',
-    D.finding(OV, ovx(0, 45.1, 1000), ovx(30, 45.1, 1000)) === null && D.finding(OV, null, ovx(5, 45.0, 1501)) === null && D.finding(OV, null,
-      ovx(5, 45.0, 499)) === null && D.finding(OV, ovx(0, N3, 1000), ovx(30, S3, 2000)) === null && D.finding(OV, ovx(0, N3, 100), ovx(30, S3,
+    D.finding(OV, ovx(0, 45.1, 1000), ovx(30, 45.1, 1000)) === null && D.finding(OV, null, ovx(5, 45.0, 1501)) === null && D.finding(OV,
+      null,
+      ovx(5, 45.0, 499)) === null && D.finding(OV, ovx(0, N3, 1000), ovx(30, S3, 2000)) === null && D.finding(OV, ovx(0, N3, 100), ovx(30,
+      S3,
       1000)) === null);
   ck('overflight, finding : hauteur sol inconnue (GPS, IVAO, VATSIM : aglFt absent, null ou illisible) → null, à l\'un ou l\'autre relevé ; l\'altitude seule (altFt dans la bande) ne compte pas',
-    D.finding(OV, null, ovx(5, 45.0, undefined)) === null && D.finding(OV, null, ovx(5, 45.0, null)) === null && D.finding(OV, null, ovx(5, 45.0,
+    D.finding(OV, null, ovx(5, 45.0, undefined)) === null && D.finding(OV, null, ovx(5, 45.0, null)) === null && D.finding(OV, null, ovx(
+      5, 45.0,
       'x')) === null && D.finding(OV, ovx(0, N3, undefined), ovx(30, S3, 1000)) === null && D.finding(OV, ovx(0, N3, 1000), ovx(30, S3,
       undefined)) === null && D.finding(OV, null, ovx(5, 45.0, undefined, {
       altFt: 1000
@@ -2131,7 +2142,9 @@
             }
         for (const tr of [null, 7, {}, {
             from: iso(T0),
-            trail: [null, [], [NaN], 'x', [45, 1, 0, 'x', 'y']]
+            trail: [null, [],
+              [NaN], 'x', [45, 1, 0, 'x', 'y']
+            ]
           }]) D.catchUp(OV, tr);
         return D.finding(OV, ovx(0, N3, 1000), null) === null && D.stands({
           how: 'overflight',
@@ -2143,7 +2156,8 @@
       }
     })() === true);
   ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « event » reste « condition » (la suite a son genre depuis le lot 5)',
-    D.HOWS.includes('overflight') && D.SHARED.includes('overflight') && D.howOf(OV) === 'overflight' && D.howOf(LAND) === 'landing' && D.howOf(over({
+    D.HOWS.includes('overflight') && D.SHARED.includes('overflight') && D.howOf(OV) === 'overflight' && D.howOf(LAND) === 'landing' && D
+    .howOf(over({
       kind: 'hover'
     })) === 'overflight' && D.howOf({
       kind: 'condition',
@@ -2187,7 +2201,10 @@
       now: T0 + 41 * MIN
     })[0];
   ck('overflight, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« overflight », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
-    ovBook?.drawers?.B?.how === 'overflight' && ovBook.drawers.B.from?.aglFt === 1000 && ovSt.open === true && ovSt.how === 'overflight' && ovSt.by === 'BBB' && ovSt.refused.length === 0 && ovOff.open === false && ovOff.refused[0]?.why === 'shape', [ovBook, ovSt, ovOff]);
+    ovBook?.drawers?.B?.how === 'overflight' && ovBook.drawers.B.from?.aglFt === 1000 && ovSt.open === true && ovSt.how ===
+    'overflight' && ovSt.by === 'BBB' && ovSt.refused.length === 0 && ovOff.open === false && ovOff.refused[0]?.why === 'shape', [ovBook,
+      ovSt, ovOff
+    ]);
 
   // ---- SOG-0500, lot 4 : la condition « stationnaire » de l'atelier jugée en vol — une TENUE comme l'atterrissage (follows, holding,
   // stands, finding, catchUp, HOWS, SHARED). La clé a la forme exacte rendue par holdRule ; hauteurs SOL (aglFt) ; points inventés.
@@ -2290,7 +2307,8 @@
     }));
   const h30 = play(HOV, hevery5(30));
   ck('hover, holding : en stationnaire 30 s d\'affilée par relevés de 5 s → un constat « hover » au relevé de 30 s (du premier au dernier) ; à 25 s, rien',
-    h30.n === 6 && h30.first?.how === 'hover' && h30.first.at === T0 + 30e3 && h30.first.from.at === iso(T0) && h30.first.to.at === iso(T0 + 30e3) && h30.first.from.aglFt === 40 && play(HOV, hevery5(25)).first === null, h30);
+    h30.n === 6 && h30.first?.how === 'hover' && h30.first.at === T0 + 30e3 && h30.first.from.at === iso(T0) && h30.first.to.at === iso(
+      T0 + 30e3) && h30.first.from.aglFt === 40 && play(HOV, hevery5(25)).first === null, h30);
   ck('hover, holding : posé (onGround vrai) remet la tenue à zéro ; onGround inconnu ou absent ne compte jamais',
     play(HOV, [...hevery5(15), hv(20, {
       onGround: true
@@ -2335,7 +2353,8 @@
       lat: 45.001
     })).first === null && play(HOV, [...hevery5(15), hv(20, {
       lat: 45.001
-    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, [hv(0), hv(5), hv(10), hv(22), hv(27), hv(32), hv(37), hv(42), hv(47), hv(52)]).n === 9 && play(HOV, [hv(0), hv(10), hv(20), hv(30)]).n === 3);
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, [hv(0), hv(5), hv(10), hv(22), hv(27), hv(32), hv(37), hv(42), hv(47), hv(52)])
+    .n === 9 && play(HOV, [hv(0), hv(10), hv(20), hv(30)]).n === 3);
   ck('hover, holding : un objet immobile à la place du point tient aussi',
     play(hobj({
       lat: 45.0,
@@ -2445,7 +2464,8 @@
       heightMaxFt: 40
     })) === true);
   ck('hover, isHold : vrai pour l\'atterrissage et le stationnaire jugés ici, faux pour le reste (survol, zone, objet, stationnaire non jugé)',
-    typeof D.isHold === 'function' && D.isHold(HOV) === true && D.isHold(LAND) === true && D.isHold(OV) === false && D.isHold(ARR) === false && D.isHold(hov({
+    typeof D.isHold === 'function' && D.isHold(HOV) === true && D.isHold(LAND) === true && D.isHold(OV) === false && D.isHold(ARR) ===
+    false && D.isHold(hov({
       maxGapSec: 4
     })) === false && D.isHold(null) === false && D.isHold({
       kind: 'zone'
@@ -2490,7 +2510,8 @@
       now: T0 + 41 * MIN
     })[0];
   ck('hover, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« hover », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
-    hBook?.drawers?.B?.how === 'hover' && hBook.drawers.B.from?.aglFt === 40 && hSt.open === true && hSt.how === 'hover' && hSt.by === 'BBB' && hSt.refused.length === 0 && hOff.open === false && hOff.refused[0]?.why === 'shape', [hBook, hSt, hOff]);
+    hBook?.drawers?.B?.how === 'hover' && hBook.drawers.B.from?.aglFt === 40 && hSt.open === true && hSt.how === 'hover' && hSt.by ===
+    'BBB' && hSt.refused.length === 0 && hOff.open === false && hOff.refused[0]?.why === 'shape', [hBook, hSt, hOff]);
 
   // ---- SOG-0500, lot 5 : la condition « suite d'étapes » de l'atelier jugée en vol (follows, stepping, stands, carnet, judgeKind).
   // Chaque étape est une règle de holdRule (atterrissage, survol, stationnaire) jugée comme la condition seule ; points inventés.
@@ -2577,13 +2598,16 @@
       steps: [null]
     }), [D.follows(seq(L10, OVC))]);
   ck('suite, stepping dans l\'ordre : un survol puis un atterrissage tenu → un constat « sequence » à deux preuves, du premier relevé au dernier, à l\'heure de la dernière',
-    A.n === 3 && A.f?.how === 'sequence' && A.f.steps.length === 2 && A.f.steps[0].how === 'overflight' && A.f.steps[1].how === 'landing' &&
-    A.f.from === A.f.steps[0].from && A.f.to === A.f.steps[1].to && A.f.to.at === iso(T0 + 15e3) && A.f.at === A.f.steps[1].at && A.f.at === T0 + 15e3 &&
+    A.n === 3 && A.f?.how === 'sequence' && A.f.steps.length === 2 && A.f.steps[0].how === 'overflight' && A.f.steps[1].how ===
+    'landing' &&
+    A.f.from === A.f.steps[0].from && A.f.to === A.f.steps[1].to && A.f.to.at === iso(T0 + 15e3) && A.f.at === A.f.steps[1].at && A.f
+    .at === T0 + 15e3 &&
     A.state.i === 2 && A.state.proofs.length === 2, A);
   const B = seqPlay(S_OL, [dn(0), dn(5), dn(10), dn(15), dn(20), dn(25), dn(30)]),
     C = seqPlay(S_OL, [dn(0), dn(5), dn(10), dn(15), dn(20), dn(25), dn(30), ovx(200, 45.0, 1000), dn(205), dn(210), dn(215)]);
   ck('suite, stepping : dans le désordre (l\'atterrissage d\'abord), rien n\'avance ; le survol fait ensuite, l\'atterrissage se tient à son tour',
-    B.f === null && B.state.i === 0 && B.state.proofs.length === 0 && C.n === 10 && C.f?.steps.length === 2 && C.f.steps[1].from.at === iso(T0 + 205e3), [B, C]);
+    B.f === null && B.state.i === 0 && B.state.proofs.length === 0 && C.n === 10 && C.f?.steps.length === 2 && C.f.steps[1].from.at ===
+    iso(T0 + 205e3), [B, C]);
   const I = seqPlay(S_OL, [ovx(0, 45.0, 1000), dn(5), dn(10), dn(15, {
       onGround: false
     })]),
@@ -2591,9 +2615,11 @@
       onGround: false
     }), dn(20), dn(25), dn(30)]);
   ck('suite, stepping : une tenue interrompue repart sans perdre les étapes faites (le survol reste fait, l\'atterrissage recompte à zéro)',
-    I.f === null && I.state.i === 1 && I.state.hold === null && I.state.proofs.length === 1 && J.n === 6 && J.f?.steps[0].how === 'overflight' && J.f.steps[1].from.at === iso(T0 + 20e3), [I, J]);
+    I.f === null && I.state.i === 1 && I.state.hold === null && I.state.proofs.length === 1 && J.n === 6 && J.f?.steps[0].how ===
+    'overflight' && J.f.steps[1].from.at === iso(T0 + 20e3), [I, J]);
   ck('suite, stepping : le relevé qui finit une étape ne compte pas pour la suivante — la tenue de 10 s commence au relevé d\'après, un second survol aussi',
-    seqPlay(S_OL, [X(0), X(10)]).f === null && seqPlay(S_OL, [X(0), X(10)]).state.i === 1 && seqPlay(S_OL, [X(0), X(5)]).f === null && seqPlay(S_OL, [X(0), X(5), X(15)]).n === 2 &&
+    seqPlay(S_OL, [X(0), X(10)]).f === null && seqPlay(S_OL, [X(0), X(10)]).state.i === 1 && seqPlay(S_OL, [X(0), X(5)]).f === null &&
+    seqPlay(S_OL, [X(0), X(5), X(15)]).n === 2 &&
     seqPlay(seq(OV, OV), [X(0)]).f === null && seqPlay(seq(OV, OV), [X(0)]).state.i === 1 && seqPlay(seq(OV, OV), [X(0), X(5)]).n === 1 &&
     seqPlay(seq(OV, OV), [X(0), X(5)]).f.steps.length === 2, [seqPlay(S_OL, [X(0), X(5)]), seqPlay(seq(OV, OV), [X(0)])]);
   const T3 = seqPlay(S_LOH, [dn(0), dn(10), ovx(20, 45.0, 1000), hv(30), hv(40)]);
@@ -2623,7 +2649,8 @@
       }, {
         at: {}
       }, [1]);
-    }) && D.stepping(null, null, null, null).f === null && D.stepping(null, null, null, null).state.i === 0 && D.stepping(S_OL, 'junk', null, null).f === null &&
+    }) && D.stepping(null, null, null, null).f === null && D.stepping(null, null, null, null).state.i === 0 && D.stepping(S_OL, 'junk',
+      null, null).f === null &&
     D.stepping(seq(...Array.from({
       length: 11
     }, () => OV)), null, null, X(0)).state.i === 0);
@@ -2694,10 +2721,12 @@
       trail: [
         [45.0, 1.0, 1000, 0, 1000, 0]
       ]
-    }) === null && D.isHold(S_OL) === false && D.judgeKind(LAND) === 'hold' && D.judgeKind(HOV) === 'hold' && D.judgeKind(S_OL) === 'steps' && D.judgeKind(
-      OV) === 'leg' && D.judgeKind(ARR) === 'leg' && D.judgeKind(null) === 'leg' && D.judgeKind(seq(OVC, L10)) === 'leg' && D.judgeKind(hov({
-      maxGapSec: 4
-    })) === 'leg');
+    }) === null && D.isHold(S_OL) === false && D.judgeKind(LAND) === 'hold' && D.judgeKind(HOV) === 'hold' && D.judgeKind(S_OL) ===
+    'steps' && D.judgeKind(
+      OV) === 'leg' && D.judgeKind(ARR) === 'leg' && D.judgeKind(null) === 'leg' && D.judgeKind(seq(OVC, L10)) === 'leg' && D.judgeKind(
+      hov({
+        maxGapSec: 4
+      })) === 'leg');
   ck('suite, HOWS et SHARED contiennent « sequence » ; howOf apparie la condition et le genre',
     D.HOWS.includes('sequence') && D.SHARED.includes('sequence') && D.howOf(S_OL) === 'sequence' && D.howOf(OV) === 'overflight');
   // le carnet : une suite s'écrit avec ses preuves, se relit, et le constat d'un autre pilote ouvre le tiroir
@@ -2737,7 +2766,8 @@
     sKey = stSeq(seq(OVC, L10)),
     readB = doc => D.readBook(doc, ID)?.drawers?.B;
   ck('suite, carnet : le constat s\'écrit avec ses preuves (heures en texte ISO) et se relit (heures en millisecondes, relevés bornés) ; un ancien constat sans « steps » reste lu comme avant',
-    sBook?.drawers?.B?.how === 'sequence' && sBook.drawers.B.steps?.length === 2 && sBook.drawers.B.steps[0].how === 'overflight' && sBook.drawers.B.steps[0].from.aglFt === 1000 &&
+    sBook?.drawers?.B?.how === 'sequence' && sBook.drawers.B.steps?.length === 2 && sBook.drawers.B.steps[0].how === 'overflight' && sBook
+    .drawers.B.steps[0].from.aglFt === 1000 &&
     sBook.drawers.B.steps[1].at === T0 + 15e3 && typeof sDoc.drawer_B.steps[0].at === 'string' && sDoc.drawer_B.steps.length === 2 &&
     readB(peer('B', T0, 'overflight', {
       from: e5.steps[0].from,
@@ -2747,7 +2777,8 @@
       to: e5.steps[0].to
     })).steps === undefined && readB(peer('B', T0, 'hand')).how === 'hand', [sBook, sDoc]);
   ck('suite, carnet : celui de BBB ouvre le tiroir chez AAA (« sequence », par BBB) ; sur une autre règle chez le lecteur il est refusé (« shape »), sur une suite non jugée (« key »)',
-    sOk.open === true && sOk.how === 'sequence' && sOk.by === 'BBB' && sOk.refused.length === 0 && sOff.open === false && sOff.refused[0]?.why === 'shape' &&
+    sOk.open === true && sOk.how === 'sequence' && sOk.by === 'BBB' && sOk.refused.length === 0 && sOff.open === false && sOff.refused[0]
+    ?.why === 'shape' &&
     sKey.open === false && sKey.refused[0]?.why === 'key', [sOk, sOff, sKey]);
   const mk = steps => readB(peer('B', T0 + 15e3, 'sequence', {
     from: e5.from,
@@ -2815,7 +2846,6 @@
       at: T0
     }).drawer_B.steps === undefined);
 
-
   // ---- SOG-0507 : les tolérances de l'utilisateur (l'utilisateur, 19/11) — chaque seuil, juste dedans et juste dehors ; elles remplacent
   // le rayon du fichier (le rayon du fichier prend ici des valeurs qui ne peuvent PAS donner le même résultat : 0,2 ou 3 NM, 10 m ou 5 000 m).
   const NM = 1 / (3440.065 * Math.PI / 180), // un mille marin en degrés de latitude (le rayon de la Terre du cadre, geo.js R_NM)
@@ -2838,10 +2868,13 @@
       ...key
     });
   ck('tierOf : les bornes sont COMPRISES — 0,05 excellent, 0,0501 parfait ; 0,1 parfait, 0,1001 réussi ; 0,2 réussi, 0,2001 partiel ; 0,5 partiel, 0,5001 manqué',
-    [D.tierOf(0), D.tierOf(0.05), D.tierOf(0.0501), D.tierOf(0.1), D.tierOf(0.1001), D.tierOf(0.2), D.tierOf(0.2001), D.tierOf(0.5), D.tierOf(
-      0.5001)].join() === 'excellent,excellent,parfait,parfait,réussi,réussi,partiel,partiel,', [D.tierOf(0.05), D.tierOf(0.0501)]);
+    [D.tierOf(0), D.tierOf(0.05), D.tierOf(0.0501), D.tierOf(0.1), D.tierOf(0.1001), D.tierOf(0.2), D.tierOf(0.2001), D.tierOf(0.5), D
+      .tierOf(
+        0.5001)
+    ].join() === 'excellent,excellent,parfait,parfait,réussi,réussi,partiel,partiel,', [D.tierOf(0.05), D.tierOf(0.0501)]);
   ck('tierOf : NaN, une distance négative, undefined, l\'infini, un texte ou null → aucun palier ; PRECISION et TIERS : quatre paliers du meilleur au plus large, la liste figée',
-    [NaN, -1, undefined, Infinity, -Infinity, '0.1', null, {}].every(v => D.tierOf(v) === '') && D.TIERS.join() === 'excellent,parfait,réussi,partiel' &&
+    [NaN, -1, undefined, Infinity, -Infinity, '0.1', null, {}].every(v => D.tierOf(v) === '') && D.TIERS.join() ===
+    'excellent,parfait,réussi,partiel' &&
     D.PRECISION.map(p => `${p.tier}:${p.nm}`).join() === 'excellent:0.05,parfait:0.1,réussi:0.2,partiel:0.5' && Object.isFrozen(D.PRECISION) &&
     D.PRECISION.every(Object.isFrozen) && D.TRANSIT_NM === 2 && D.AD_NM === 1);
 
@@ -2863,7 +2896,8 @@
     }
   });
   ck('escale requise : approchée à 1,99 NM → faite, à 2,01 NM → non, avec un rayon d\'arrivée du fichier de 0,5 NM comme de 5 NM (le fichier n\'a plus la main)',
-    [0.5, 5].every(r => stopAt(1.99, r)?.how === 'arrival' && stopAt(2.01, r) === null), [stopAt(1.99, 0.5), stopAt(2.01, 0.5), stopAt(1.99, 5), stopAt(
+    [0.5, 5].every(r => stopAt(1.99, r)?.how === 'arrival' && stopAt(2.01, r) === null), [stopAt(1.99, 0.5), stopAt(2.01, 0.5), stopAt(
+      1.99, 5), stopAt(
       2.01, 5)]);
 
   // l'arrivée posée sur un terrain : 1 NM, quel que soit le rayon du fichier (0,2 ou 3 NM), pour finding, stands et catchUp
@@ -2900,7 +2934,8 @@
       ]
     })?.how === 'arrival';
   ck('arrivée posée (finding) : à 0,99 NM dans la zone, à 1,01 NM non, avec un rayon du fichier de 0,2 NM comme de 3 NM',
-    [0.2, 3].every(r => arrFound(0.99, r) && !arrFound(1.01, r)), [arrFound(0.99, 0.2), arrFound(1.01, 0.2), arrFound(0.99, 3), arrFound(1.01, 3)]);
+    [0.2, 3].every(r => arrFound(0.99, r) && !arrFound(1.01, r)), [arrFound(0.99, 0.2), arrFound(1.01, 0.2), arrFound(0.99, 3), arrFound(
+      1.01, 3)]);
   ck('arrivée posée (stands, le rejeu chez le lecteur) : à 0,99 NM tient, à 1,01 NM non, rayon du fichier 0,2 ou 3 NM',
     [0.2, 3].every(r => arrStands(0.99, r) && !arrStands(1.01, r)));
   ck('arrivée posée (catchUp, la trace gardée) : à 0,99 NM rattrapée, à 1,01 NM non, rayon du fichier 0,2 ou 3 NM ; la vitesse et le sol restent la règle de la clé (trop vite : rien)',
@@ -2916,7 +2951,8 @@
     radiusM
   }), 0.15));
   ck('posé de précision : tenu à 0,15 NM → un constat « landing » avec tier « réussi » et distNm 0,15, radiusM du fichier ignoré (10 m comme 5 000 m : le même)',
-    t15.every(f => f?.how === 'landing' && f.tier === 'réussi' && f.distNm === 0.15) && JSON.stringify(t15[0]) === JSON.stringify(t15[1]), t15);
+    t15.every(f => f?.how === 'landing' && f.tier === 'réussi' && f.distNm === 0.15) && JSON.stringify(t15[0]) === JSON.stringify(t15[1]),
+    t15);
   ck('posé de précision : à 0,04 NM excellent, 0,09 parfait, 0,15 réussi, 0,3 partiel ; à 0,49 NM tenu, à 0,51 NM rien — radiusM de 5 000 m ou de 10 m, même résultat',
     [0.04, 0.09, 0.15, 0.3].map(nm => hold30(PT({
       radiusM: 10
@@ -2926,20 +2962,22 @@
       radiusM
     }), 0.51) === null));
   ck('posé de précision : le constat porte la distance du relevé `to` arrondie au millième de NM (0,1234 → 0,123, « réussi »)',
-    hold30(PT({}), 0.1234)?.distNm === 0.123 && hold30(PT({}), 0.1234)?.tier === 'réussi' && hold30(PT({}), 0.1999)?.tier === 'réussi' && hold30(PT({}), 0.2001)?.tier === 'partiel');
+    hold30(PT({}), 0.1234)?.distNm === 0.123 && hold30(PT({}), 0.1234)?.tier === 'réussi' && hold30(PT({}), 0.1999)?.tier === 'réussi' &&
+    hold30(PT({}), 0.2001)?.tier === 'partiel');
   // sur un terrain de la route : 1 NM, sans palier
   const fieldOk = ['DESTINATION', 'ORIGIN'].map(point => [10, 5000].map(radiusM => hold30(land({
     point,
     radiusM
   }), 0.9))).flat();
   ck('posé sur un terrain de la route (DESTINATION, ORIGIN) : tenu à 0,9 NM sans palier, à 1,1 NM rien, radiusM du fichier ignoré',
-    fieldOk.every(f => f?.how === 'landing' && f.tier === undefined && f.distNm === undefined) && ['DESTINATION', 'ORIGIN'].every(point => hold30(land({
-      point,
-      radiusM: 5000
-    }), 1.1) === null && hold30(land({
-      point,
-      radiusM: 10
-    }), 1.1) === null), fieldOk);
+    fieldOk.every(f => f?.how === 'landing' && f.tier === undefined && f.distNm === undefined) && ['DESTINATION', 'ORIGIN'].every(point =>
+      hold30(land({
+        point,
+        radiusM: 5000
+      }), 1.1) === null && hold30(land({
+        point,
+        radiusM: 10
+      }), 1.1) === null), fieldOk);
   ck('posé de précision : le point visé peut être un objet immobile (même règle des paliers) ; stands rejoue sur la règle du lecteur (0,15 tient, 0,51 non ; au terrain 0,9 tient, 1,1 non)',
     hold30(land({
       at: null,
@@ -3023,7 +3061,8 @@
       }
     }, ID)?.drawers?.B;
   ck('carnet : un constat de précision s\'écrit avec tier et distNm et se relit (« réussi », 0,15) ; un constat d\'un autre genre n\'en écrit pas',
-    tdoc?.drawer_B?.tier === 'réussi' && tdoc.drawer_B.distNm === 0.15 && tbook.drawers.B.tier === 'réussi' && tbook.drawers.B.distNm === 0.15 &&
+    tdoc?.drawer_B?.tier === 'réussi' && tdoc.drawer_B.distNm === 0.15 && tbook.drawers.B.tier === 'réussi' && tbook.drawers.B.distNm ===
+    0.15 &&
     D.withOpen(null, ctx(T0), 'B', 'zone', {
       from: lf15.from,
       to: lf15.to,
@@ -3032,7 +3071,9 @@
       distNm: 0.1
     }).drawer_B.tier === undefined, [tdoc, tbook]);
   ck('carnet : un tier hostile (hors TIERS, un texte, un objet) et un distNm hors bornes (99, -1, NaN, 0,5001, un texte) sont ignorés → null ; les valeurs bornées (0 et 0,5) sont gardées ; un ancien constat sans palier reste lisible',
-    ['nuke', '<b>réussi</b>', {}, ['réussi'], 'toString', 7].every(t => hdoc({
+    ['nuke', '<b>réussi</b>', {},
+      ['réussi'], 'toString', 7
+    ].every(t => hdoc({
       tier: t
     })?.tier === null) && [99, -1, NaN, 0.5001, '0.1', {}, null, Infinity].every(d => hdoc({
       distNm: d
@@ -3139,7 +3180,8 @@
       now: T0 + 41 * MIN
     })[0];
   ck('état d\'un tiroir « atterrissage » : tier et distNm RECALCULÉS chez le lecteur (le constat de BBB écrit « excellent » à 0,001 : on lit « réussi », 0,15) ; le mien de même ; au terrain et pour un ancien constat : aucun',
-    lyS.open && lyS.tier === 'réussi' && lyS.distNm === 0.15 && myS.open && myS.tier === 'réussi' && myS.distNm === 0.15 && fieldS.open && fieldS.tier === null &&
+    lyS.open && lyS.tier === 'réussi' && lyS.distNm === 0.15 && myS.open && myS.tier === 'réussi' && myS.distNm === 0.15 && fieldS.open &&
+    fieldS.tier === null &&
     fieldS.distNm === null && oldS.open && oldS.tier === 'réussi' && by(st({
       drawers: [{
         id: 'B',
@@ -3175,8 +3217,10 @@
     }) : null,
     sread = sdoc ? D.readBook(sdoc, ID)?.drawers?.B : null;
   ck('suite : la preuve d\'une étape « atterrissage » de précision porte tier et distNm (0,15 → « réussi ») ; une étape au terrain (0,9 NM) tient sans palier ; le carnet les écrit et les relit bornés',
-    sq?.how === 'sequence' && sq.steps[0].tier === 'réussi' && sq.steps[0].distNm === 0.15 && sqField?.how === 'sequence' && sqField.steps[0].tier === null &&
-    sqField.steps[0].distNm === null && sdoc?.drawer_B?.steps?.[0]?.tier === 'réussi' && sdoc.drawer_B.steps[0].distNm === 0.15 && sread?.steps?.[0]?.tier ===
+    sq?.how === 'sequence' && sq.steps[0].tier === 'réussi' && sq.steps[0].distNm === 0.15 && sqField?.how === 'sequence' && sqField
+    .steps[0].tier === null &&
+    sqField.steps[0].distNm === null && sdoc?.drawer_B?.steps?.[0]?.tier === 'réussi' && sdoc.drawer_B.steps[0].distNm === 0.15 && sread
+    ?.steps?.[0]?.tier ===
     'réussi' && sread.steps[0].distNm === 0.15 && seqLand(0.51) === null, [sq, sqField, sread]);
   ck('suite : la preuve rejouée chez le lecteur (stands) sur la clé d\'étape à la règle de précision ; replayTier d\'une preuve sur stepKey(règle) rend son palier recalculé ; un tier hostile dans une preuve lue → null',
     sq && D.stands(sread, seqL) && D.replayTier(sread.steps[0], D.stepKey(PT({}).rule)) === 'réussi' && D.readBook({
@@ -3250,22 +3294,42 @@
       now: T0 + 20 * MIN
     }));
   ck('débrief : mes deux posés et l\'étape de la suite, une ligne chacun, dans l\'ordre de `at` (« Posé 1 », « Posé 2 », « Suite »), le palier recalculé (« réussi » 0,15 ; « excellent » 0,04 ; « réussi » 0,15)',
-    dMine.map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' && dMine.every((l, i) => l.how === 'landing' && (i === 0 ||
+    dMine.map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' && dMine.every((l,
+      i) => l.how === 'landing' && (i === 0 ||
       dMine[i - 1].at < l.at)), dMine);
   ck('débrief : le posé de BBB dont le tier écrit ment (« excellent » à 0,001) est RECALCULÉ chez moi (« réussi », 0,15), la ligne de BBB après la mienne à l\'heure du fait',
-    dBoth.map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 1:BBB:false:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15', dBoth);
+    dBoth.map(dLine).join() ===
+    'Posé 1:AAA:true:réussi:0.15,Posé 1:BBB:false:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15', dBoth);
   ck('débrief : chaque ligne porte `title` (le titre du tiroir tel que l\'état le porte) et JAMAIS `rank` ni un numéro de tiroir ; un tiroir sans titre donne un titre vide ; à égalité d\'heure l\'ordre des états reste (tri stable)',
     dBoth.every(l => typeof l.title === 'string' && !('rank' in l)) && !JSON.stringify(dBoth).includes('"rank"') && D.debriefOf([{
       open: true,
       title: 'Zéro',
-      lands: [{ at: 5, tier: 'réussi', distNm: 0.1, by: 'AAA', mine: true }]
+      lands: [{
+        at: 5,
+        tier: 'réussi',
+        distNm: 0.1,
+        by: 'AAA',
+        mine: true
+      }]
     }, {
       open: true,
-      lands: [{ at: 5, tier: 'parfait', distNm: 0.05, by: 'BBB', mine: false }]
+      lands: [{
+        at: 5,
+        tier: 'parfait',
+        distNm: 0.05,
+        by: 'BBB',
+        mine: false
+      }]
     }, {
       open: true,
       title: 7,
-      lands: [{ at: 1, tier: 'parfait', distNm: 0.05, by: 'CCC', mine: false }]
+      lands: [{
+        at: 1,
+        tier: 'parfait',
+        distNm: 0.05,
+        by: 'CCC',
+        mine: false
+      }]
     }]).map(l => `${l.title}|${l.by}`).join() === '|CCC,Zéro|AAA,|BBB', dBoth);
   const dShifted = peer('B', T0 + 35e3, 'landing', {
       from: {
@@ -3289,7 +3353,8 @@
       now: T0 + 20 * MIN
     });
   ck('débrief : la preuve de BBB qui ne tient pas sur ma clé (stands : posée loin du point chez moi) est absente, même avec un tier écrit « excellent » ; la mienne reste',
-    D.debriefOf(dShift).map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' && by(dShift, 'B').refused[0]?.why === 'shape', dShift);
+    D.debriefOf(dShift).map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' &&
+    by(dShift, 'B').refused[0]?.why === 'shape', dShift);
   const dField = st({
     drawers: [{
       id: 'B',
@@ -3341,44 +3406,48 @@
       chain: true,
       now: T0 + MIN
     })).length === 0);
-  const dHostile = [null, undefined, 'x', 5, {}, [], [null, 1, 'x'], [{
-      open: true,
-      lands: 'x'
-    }, {
-      open: true,
-      lands: [null, 3, {
-        tier: 'nuke',
-        distNm: 0.1,
-        at: 1
+  const dHostile = [null, undefined, 'x', 5, {},
+      [],
+      [null, 1, 'x'],
+      [{
+        open: true,
+        lands: 'x'
       }, {
-        tier: 'réussi',
-        distNm: NaN,
-        at: 1
+        open: true,
+        lands: [null, 3, {
+          tier: 'nuke',
+          distNm: 0.1,
+          at: 1
+        }, {
+          tier: 'réussi',
+          distNm: NaN,
+          at: 1
+        }, {
+          tier: 'réussi',
+          distNm: 0.9,
+          at: 1
+        }, {
+          tier: 'réussi',
+          distNm: 0.1,
+          at: 'x'
+        }, {
+          tier: 'réussi',
+          distNm: 0.1,
+          at: 7,
+          by: 'CCC',
+          mine: 'oui'
+        }]
       }, {
-        tier: 'réussi',
-        distNm: 0.9,
-        at: 1
+        get open() {
+          throw new Error('dHostile');
+        }
       }, {
-        tier: 'réussi',
-        distNm: 0.1,
-        at: 'x'
-      }, {
-        tier: 'réussi',
-        distNm: 0.1,
-        at: 7,
-        by: 'CCC',
-        mine: 'oui'
+        open: true,
+        get lands() {
+          throw new Error('dHostile');
+        }
       }]
-    }, {
-      get open() {
-        throw new Error('dHostile');
-      }
-    }, {
-      open: true,
-      get lands() {
-        throw new Error('dHostile');
-      }
-    }]],
+    ],
     dHostileOut = dHostile.map(h => {
       try {
         return D.debriefOf(h);
@@ -3387,11 +3456,12 @@
       }
     });
   ck('débrief : des entrées hostiles ne lèvent jamais (un tier hors TIERS, une distance NaN ou hors bornes, une heure illisible, un accesseur qui lève) ; seule la ligne lisible reste, `mine` strictement vrai',
-    dHostileOut.every(r => Array.isArray(r)) && dHostileOut.slice(0, 7).every(r => r.length === 0) && dHostileOut[7].length === 1 && dHostileOut[7][0].by === 'CCC' &&
+    dHostileOut.every(r => Array.isArray(r)) && dHostileOut.slice(0, 7).every(r => r.length === 0) && dHostileOut[7].length === 1 &&
+    dHostileOut[7][0].by === 'CCC' &&
     dHostileOut[7][0].mine === false && dHostileOut[7][0].title === '', dHostileOut);
   ck('débrief : jamais de lieu — une ligne n\'a que titre, genre, palier, distance, heure, auteur, « mine » ; ni coordonnées ni identifiant de point',
-    dBoth.every(l => Object.keys(l).join() === 'title,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)), dBoth[0]);
-
+    dBoth.every(l => Object.keys(l).join() === 'title,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)),
+    dBoth[0]);
 
   // ---- SOG-0521 : la condition « refill » (ravitaillement en retardant) jugée en vol — une TENUE (posé à la station, au cap, le temps
   // demandé) puis un DÉPART (l'état « rempli »). Tous les seuils sont lus dans REFILL_RULE (le cadre), jamais recopiés ; station inventée.
@@ -3580,7 +3650,8 @@
       headingDeg: d
     });
   ck('refill, cap : cap ± tolérance tenu, ± (tolérance + 1) non (des deux côtés)',
-    rHdgs(100 + TOL) === true && rHdgs(100 - TOL) === true && rHdgs(100 + TOL + 1) === false && rHdgs(100 - TOL - 1) === false && rHdgs(100) === true,
+    rHdgs(100 + TOL) === true && rHdgs(100 - TOL) === true && rHdgs(100 + TOL + 1) === false && rHdgs(100 - TOL - 1) === false && rHdgs(
+      100) === true,
     [rHdgs(100 + TOL), rHdgs(100 - TOL), rHdgs(100 + TOL + 1), rHdgs(100 - TOL - 1)]);
   const rf359 = rf({
     departure: false,
@@ -3607,24 +3678,28 @@
     }) === true));
   const rFull = rplay(RFN, reveryN(DUR));
   ck('refill, durée : durationSec - 5 pas encore, durationSec fait (au relevé de durationSec, du premier au dernier)',
-    rplay(RFN, reveryN(DUR - 5)).first === null && rFull.n === DUR / 5 && rFull.first?.how === 'refill' && rFull.first.at === T0 + DUR * 1000 && rFull
-    .first.from.at === iso(T0) && rFull.first.to.at === iso(T0 + DUR * 1000) && rFull.first.from.headingDeg === 90 && rFull.first.last === undefined &&
+    rplay(RFN, reveryN(DUR - 5)).first === null && rFull.n === DUR / 5 && rFull.first?.how === 'refill' && rFull.first.at === T0 + DUR *
+    1000 && rFull
+    .first.from.at === iso(T0) && rFull.first.to.at === iso(T0 + DUR * 1000) && rFull.first.from.headingDeg === 90 && rFull.first.last ===
+    undefined &&
     rFull.first.off === undefined, rFull);
   const afterHole = (gap, extra = 0) => {
-      const t0 = 50 + gap,
-        list = [...reveryN(50), ...Array.from({
-          length: DUR / 5 + 1
-        }, (_, i) => rv(t0 + i * 5))];
-      return rplay(RFN, list);
-    };
+    const t0 = 50 + gap,
+      list = [...reveryN(50), ...Array.from({
+        length: DUR / 5 + 1
+      }, (_, i) => rv(t0 + i * 5))];
+    return rplay(RFN, list);
+  };
   ck('refill, écart : un trou de maxGapSec tient la tenue (le premier relevé reste), maxGapSec + 0,1 la remet à zéro (le premier relevé est celui d\'après)',
-    afterHole(GAP).first?.from.at === iso(T0) && afterHole(GAP + 0.1).first?.from.at === iso(T0 + Math.round((50 + GAP + 0.1) * 1000)) && afterHole(GAP + 0.1).first.at ===
+    afterHole(GAP).first?.from.at === iso(T0) && afterHole(GAP + 0.1).first?.from.at === iso(T0 + Math.round((50 + GAP + 0.1) * 1000)) &&
+    afterHole(GAP + 0.1).first.at ===
     T0 + Math.round((50 + GAP + 0.1 + DUR) * 1000), [afterHole(GAP), afterHole(GAP + 0.1)]);
   ck('refill, écart : des relevés espacés de maxGapSec tiennent ; espacés de maxGapSec + 0,1 ne complètent jamais la durée',
     rplay(RFN, reveryN(DUR, undefined, GAP)).first !== null && rplay(RFN, reveryN(DUR * 3, undefined, GAP + 0.1)).first === null);
   const stay = rplay(RF, reveryN(DUR + 120));
   ck('refill, départ : rien tant qu\'il est posé dans R (la tenue complète puis deux minutes de plus : « rempli »), l\'état se garde (from, to, last)',
-    stay.first === null && stay.hold?.full === true && stay.hold.from.at === iso(T0) && stay.hold.to.at === iso(T0 + DUR * 1000) && stay.hold.last
+    stay.first === null && stay.hold?.full === true && stay.hold.from.at === iso(T0) && stay.hold.to.at === iso(T0 + DUR * 1000) && stay
+    .hold.last
     .at === iso(T0 + (DUR + 120) * 1000), stay);
   const off1 = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
       onGround: false
@@ -3633,8 +3708,10 @@
       m: RAD + 10
     })]);
   ck('refill, départ : ouvert au premier relevé en l\'air (dans R), le constat porte from, to, last (le dernier tenu) et off (le départ) ; at est celui du départ',
-    off1.first?.how === 'refill' && off1.n === DUR / 5 + 1 && off1.first.at === T0 + (DUR + 5) * 1000 && off1.first.from.at === iso(T0) && off1.first.to
-    .at === iso(T0 + DUR * 1000) && off1.first.last.at === iso(T0 + DUR * 1000) && off1.first.off.at === iso(T0 + (DUR + 5) * 1000) && off1.first.off
+    off1.first?.how === 'refill' && off1.n === DUR / 5 + 1 && off1.first.at === T0 + (DUR + 5) * 1000 && off1.first.from.at === iso(T0) &&
+    off1.first.to
+    .at === iso(T0 + DUR * 1000) && off1.first.last.at === iso(T0 + DUR * 1000) && off1.first.off.at === iso(T0 + (DUR + 5) * 1000) &&
+    off1.first.off
     .onGround === false && off1.hold === null, off1);
   ck('refill, départ : ouvert au premier relevé hors de R (même au sol) ; au sol à R + 0,1 m seulement : un départ, à R - 0,1 m : pas un départ',
     off2.first?.off.onGround === true && D.stands({
@@ -3663,7 +3740,8 @@
     onGround: false
   })]);
   ck('refill, départ : tenue complète, puis deux relevés posés dans R mais trop rapides, puis un relevé en l\'air : le tiroir s\'ouvre, `last` est le dernier relevé trop rapide (posé dans R, tenu ou non), `off` le relevé en l\'air, et le constat tient chez le lecteur (stands vrai)',
-    wob.first?.last.at === iso(T0 + (DUR + 10) * 1000) && wob.first.last.gsKt === SPD + 20 && wob.first.off.at === iso(T0 + (DUR + 15) * 1000) && D.stands(wob.first,
+    wob.first?.last.at === iso(T0 + (DUR + 10) * 1000) && wob.first.last.gsKt === SPD + 20 && wob.first.off.at === iso(T0 + (DUR + 15) *
+      1000) && D.stands(wob.first,
       RF) === true && D.stands({
       ...wob.first,
       last: rv(DUR + 10, {
@@ -3682,7 +3760,8 @@
     })]).hold?.full === true, wob);
   const nodep = rplay(RFN, reveryN(DUR + 30));
   ck('refill, départ : « departure » faux ouvre à la fin de la tenue, comme un atterrissage (sans last ni off), et tant que le tiroir est fermé le constat se répète',
-    nodep.n === DUR / 5 && nodep.first.how === 'refill' && nodep.first.last === undefined && nodep.first.off === undefined && rplay(RFN, [...reveryN(DUR - 5),
+    nodep.n === DUR / 5 && nodep.first.how === 'refill' && nodep.first.last === undefined && nodep.first.off === undefined && rplay(RFN, [
+      ...reveryN(DUR - 5),
       rv(DUR, {
         onGround: false
       })
@@ -3803,7 +3882,8 @@
       maxGapSec: 4
     })) === false && D.judgeKind(RF) === 'hold' && D.HOWS.includes('refill') && D.SHARED.includes('refill') && D.howOf(RF) === 'refill');
   ck('refill, une suite d\'étapes n\'accepte PAS « refill » comme étape (la suite n\'est pas jugée)',
-    !D.follows(seq(RF)) && !D.follows(seq(RF, L10)) && !D.follows(seq(L10, RF)) && D.judgeKind(seq(RF, L10)) === 'leg' && D.follows(seq(L10)));
+    !D.follows(seq(RF)) && !D.follows(seq(RF, L10)) && !D.follows(seq(L10, RF)) && D.judgeKind(seq(RF, L10)) === 'leg' && D.follows(seq(
+      L10)));
   const throwsNot = f => {
     try {
       f();
@@ -3923,11 +4003,14 @@
       now: T0 + 20 * MIN
     })[0];
   ck('refill, carnet : le constat s\'écrit avec from, to, last et off (le cap des relevés compris) et se relit ; le constat d\'un ancien carnet reste lisible ; un last ou un off illisible est ignoré (jamais le constat entier)',
-    rBook?.drawers?.B?.how === 'refill' && rBook.drawers.B.last?.headingDeg === 90 && rBook.drawers.B.off?.onGround === false && rBook.drawers.B.from
-    ?.headingDeg === 90 && rDoc?.drawer_B?.last && rDoc.drawer_B.off && rBad?.drawers?.B?.how === 'refill' && !rBad.drawers.B.last && !rBad.drawers.B.off &&
+    rBook?.drawers?.B?.how === 'refill' && rBook.drawers.B.last?.headingDeg === 90 && rBook.drawers.B.off?.onGround === false && rBook
+    .drawers.B.from
+    ?.headingDeg === 90 && rDoc?.drawer_B?.last && rDoc.drawer_B.off && rBad?.drawers?.B?.how === 'refill' && !rBad.drawers.B.last && !
+    rBad.drawers.B.off &&
     rOld?.drawers?.B?.how === 'landing' && !rOld.drawers.B.last, [rBook, rBad, rOld]);
   ck('refill, carnet : celui de BBB ouvre le tiroir chez AAA (« refill », par BBB) quand il tient sur la clé du lecteur ; sur un cap faux chez le lecteur il est refusé (« shape »)',
-    rSt.open === true && rSt.how === 'refill' && rSt.by === 'BBB' && rSt.refused.length === 0 && rOff.open === false && rOff.refused[0]?.why === 'shape', [rSt, rOff]);
+    rSt.open === true && rSt.how === 'refill' && rSt.by === 'BBB' && rSt.refused.length === 0 && rOff.open === false && rOff.refused[0]
+    ?.why === 'shape', [rSt, rOff]);
 
   window.__bench = {
     done: true,
