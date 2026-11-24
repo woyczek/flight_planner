@@ -872,14 +872,20 @@
     onGround: false,
     gsKt: 120
   });
+  await until(() => !!q('[data-dw-env="B"]'));
+  const zbNew = ctx.store.get(BOOK)?.drawer_B;
+  ck('SOG-0619 : le tiroir ouvert par la zone arrive en ENVELOPPE non lue (constat au carnet sans read_at, rien de son texte a l ecran)',
+    zbNew?.how === 'zone' && !zbNew.read_at && !!q('[data-dw-arrived]') && !q('[data-dw="B"]') && !stage.textContent.includes(
+      'Zone atteinte'), [zbNew, sec().outerHTML]);
   await seeOpen('B');
+  await sleep(100);
   const zb = ctx.store.get(BOOK)?.drawer_B;
   ck('le trajet entre dans la zone : le CONSTAT est écrit au carnet (« zone », ses DEUX relevés à pleine précision, la source), « Suite de la mission » le dit (« ouvert au passage de la zone, à … »), une notification, un passage demandé',
     zb?.how === 'zone' && zb.from?.lat === 44.7 && zb.to?.lat === 44.5 && zb.to.aglFt === 1500 && zb.to.onGround === false && zb
     .source === 'xplane' && text('h3') === 'Suite de la mission' && /^ouvert au passage de la zone, à \d\d:\d\dZ$/.test(text(
       '[data-dw="B"] [data-dw-how]')) && !ctx.notes.some(n => n[1].startsWith('Suite de la mission')) && ctx
     .synced ===
-    syncedBefore + 1 && opened() === 'B:zone', [zb, ctx.notes]);
+    syncedBefore + 2 && opened() === 'B:zone', [zb, ctx.notes]); // deux passages demandés : le constat, puis l'enveloppe lue (SOG-0619)
   DV.stop();
   // l'objet : à portée ET « Demander »
   const OBJD = {

@@ -16420,8 +16420,10 @@ def n265(c):
         c.eq(order, ['head', 'arrived', 'now', 'acts', 'past'] if c.width >= 760 else ['head', 'arrived', 'now', 'past', 'acts'],
              'the block reads: the state line, what has just arrived, now, the gestures, before (at 390 the gestures are its sticky foot)', what='reading order')
         c.shot(f'N265_{c.design}_{c.width}_{c.lang}_enveloppe.png')  # for the relay: the envelope, nothing opened by itself
-        c.eq(c.js(f"[...document.querySelectorAll('{S} .dw-kick')].map(e => e.textContent.trim())"), ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'],
-             'the four kickers of the block, in the language of the pilot', what='kickers')
+        # the kickers follow the reading order: on a phone the gestures are the foot, so « Ce que vous pouvez faire » comes LAST (its title is in the DOM, hidden by the style)
+        kickers = ["Vient d'arriver", 'Maintenant', 'Ce que vous pouvez faire', 'Avant'] if c.width >= 760 else ["Vient d'arriver", 'Maintenant', 'Avant', 'Ce que vous pouvez faire']
+        c.eq(c.js(f"[...document.querySelectorAll('{S} .dw-kick')].map(e => e.textContent.trim())"), kickers,
+             'the four kickers of the block, in the language of the pilot and in the reading order of the width', what='kickers')
         c.eq(c.count(f'{S} [data-dw-env]'), 1, 'ONE envelope: the drawer D', what='envelopes')
         now = norm(c.text(f'{S} [data-dw-now]'))
         c.ok('Canot en vue' in now and 'Restez en vue du canot' in now and 'Secteur de recherche' not in now and 'Mission terminée' not in now, now,
