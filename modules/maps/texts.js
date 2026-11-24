@@ -306,7 +306,7 @@ export const TX = {
     'Tatsächliche Aktivität unbekannt: nur veröffentlichte Zeiten (weder NOTAM noch AZBA gelesen).',
     'Actividad real no conocida: solo horarios publicados (ni NOTAM ni AZBA leídos).'
   ],
-  spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  spMore: ['{n} autre(s)', '{n} more', '{n} weitere', '{n} más'],
   altAge: ['Calculé à {t}', 'Computed at {t}', 'Berechnet um {t}', 'Calculado a las {t}'],
   altStale: ['Périmé : nouvel AIRAC, base changée ou routes NAT d’un autre jour',
     'Stale: new AIRAC, database changed, or NAT tracks of another day',
@@ -354,7 +354,7 @@ export const TX = {
     'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
   directTo: ['Direct vers ce point', 'Direct to this point', 'Direkt zu diesem Punkt', 'Directo a este punto'],
-  atcMore: ['+ {n} autres', '+ {n} more', '+ {n} weitere', '+ {n} más'],
+  atcMore: ['+ {n} autre(s)', '+ {n} more', '+ {n} weitere', '+ {n} más'],
   atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
   atcNet: {
     ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
@@ -648,7 +648,9 @@ export const TX = {
     'Suelo leído con los procedimientos del {d}'
   ],
   gNoMatch: ['Aucun nom ne correspond', 'No name matches', 'Kein Name passt', 'Ningún nombre coincide'],
-  gMore: ['{n} autres : affinez le filtre', '{n} more: narrow the filter', '{n} weitere: Filter eingrenzen', '{n} más: afine el filtro'],
+  gMore: ['{n} autre(s) : affinez le filtre', '{n} more: narrow the filter', '{n} weitere: Filter eingrenzen',
+    '{n} más: afine el filtro'
+  ],
   gDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
   chDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
   chServes: ['{p} sert la {r} —', '{p} serves {r} —', '{p} bedient {r} —', '{p} sirve a la {r} —'],
@@ -664,7 +666,7 @@ export const TX = {
   chTail: ['arrière {n} kt', 'tail {n} kt', 'Rückenwind {n} kt', 'de cola {n} kt'],
   chCross: ['travers {n} kt', 'cross {n} kt', 'Seitenwind {n} kt', 'cruzado {n} kt'],
   chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
-  chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
+  chFold: ['{n} autre(s) · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
   chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
   chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
   chToRoute: ['Vers votre route', 'Towards your route', 'Zu Ihrer Route', 'Hacia su ruta'],

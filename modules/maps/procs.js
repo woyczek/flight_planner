@@ -193,8 +193,9 @@ export function routeLines() {
 }
 /** Une chose à écrire près de q (ou de l'une des places qs, dans l'ordre : un nom qui glisse le long de sa trace), dans un
  *  rectangle de la taille w × h : le premier des quatre coins qui ne recouvre rien de déjà placé, sinon null ; force : posé au
- *  premier coin de la première place quoi qu'il arrive. */
-export function place(pl, q, w, h, force, key = '') {
+ *  premier coin de la première place quoi qu'il arrive. within : le rectangle { x0, y0, x1, y1 } dans lequel la boîte tient tout entière (un nom ne passe pas le bord de la carte : SOG-0569) ; une
+ *  place dont la boîte en sort n'est pas proposée. */
+export function place(pl, q, w, h, force, key = '', within = null) {
   const qs = Array.isArray(q) ? q : [q];
   return MapsRender.kit.ask(pl, {
     layer: 'screenLabels',
@@ -212,7 +213,7 @@ export function place(pl, q, w, h, force, key = '') {
       y0: p.y + dy,
       x1: p.x + dx + w,
       y1: p.y + dy + h
-    })))
+    })).filter(b => !within || b.x0 >= within.x0 && b.y0 >= within.y0 && b.x1 <= within.x1 && b.y1 <= within.y1))
   });
 }
 export const LINE_H = 16;

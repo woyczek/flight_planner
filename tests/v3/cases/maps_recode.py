@@ -1357,7 +1357,7 @@ def d60(c):
     star = _grp(r, 'star')['rows']
     c.eq(len([x for x in star if x['id'] not in (None, 'none')]), 6, 'six compatible STARs shown, the rest folded', what='STAR rows')
     c.ok(not any('S9A' in x['text'] for x in star), f'{star}', 'S9A (runway 13 only) is not shown while 31 is chosen')
-    c.eq(norm(r['folds'].get('star', '')), norm(tx(M, 'chFold', c.lang).replace('{n}', '3')), 'one thin line "3 more · All"', what='fold line')
+    c.eq(norm(r['folds'].get('star', '')), norm(tx(M, 'chFold', c.lang).replace('{n}', '3').replace('(s)', 's')), 'one thin line "3 more · All" (the frame agrees the French at 3: « 3 autres »)', what='fold line')
     c.ok(not r['scrolls'], 'a list scrolls', 'no list scrolls by itself (the sheet is the only scrolling surface)')
     c.tap('.mp-ch-fold[data-more="star"]')
     c.until("() => (document.querySelector('.mp-ch-fold[data-more=\"star\"]') || {}).getAttribute && document.querySelector('.mp-ch-fold[data-more=\"star\"]').getAttribute('aria-expanded') === 'true'",
@@ -10813,3 +10813,48 @@ def d323(c):
         d, v = r['drawn'], r['reserved']
         c.ok(v is not None and v[0] <= d[0] and v[1] <= d[1] and v[2] >= d[2] and v[3] >= d[3], f'{r["k"]}: drawn {d}, reserved {v}',
              f'{r["k"]}: the reserved box contains every drawn pixel of the symbol')
+
+
+# SOG-0569: every text written on the overlay, FRAME by frame, with its font, its alignment and its box (a name is written at x + 2, middle of a 14 px box); the case picks the names of the ticked procedures
+_NAME_HOOK = """() => { window.__nm = []; window.__nmf = 0; const p = CanvasRenderingContext2D.prototype;
+  if (!p.fillText.__nm) { const f = p.fillText, k = p.clearRect;
+    p.clearRect = function (x, y, a, b) { if (this.canvas && this.canvas.classList.contains('mp-over')) { const m = this.getTransform ? this.getTransform() : { a: 1, d: 1 };
+      if (a * m.a >= this.canvas.width - 2 && b * m.d >= this.canvas.height - 2) window.__nmf++ } return k.call(this, x, y, a, b) };
+    p.fillText = function (t, x, y, m) { const s = String(t);
+      if (this.canvas && this.canvas.classList.contains('mp-over')) { const w = this.measureText(s).width + 4;
+        window.__nm.push({ f: window.__nmf, t: s, font: this.font, align: this.textAlign, x0: x - 2, y0: y - 7, x1: x - 2 + w, y1: y + 7 }) } return f.call(this, t, x, y, m) };
+    p.fillText.__nm = true } return true }"""
+
+
+@case('D327', 'SOG-0569: in the choose mode the name of a ticked procedure is never written across the edge of the map (nor under the buttons of the right-hand column): it slides along its trace to a place that holds, else it is not written', 'D', tags=('maps',),
+      designs=('standard',), night=False,
+      rule='SOG-0569 (the ergonomist, reading D318 at 390): the name of the fourth ticked procedure was cut by the top edge of the map: `namesOf` offered the places along the trace without asking whether the box held in the map. `place` now takes the rectangle in which the box must lie (4 px from the edges, 56 px from the right edge) and the choose layer gives it; red before: a name box crosses the top edge with eight procedures ticked')
+def d327(c):
+    _ch_open(c, {'rwy': '31'})
+    c.tap('.mp-ch-fold[data-more="star"]')
+    c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
+    ids = c.js(_CH_STARS)
+    for pid in ids[:8]:
+        c.tap(f'.mp-ch-row[data-id="{pid}"]')
+    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked', what='counter')
+    # the hook is set AFTER the ticks and a drawing is asked: the last frames are those of the eight ticked procedures
+    c.js(_NAME_HOOK)
+    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
+    # the name written along a trace is the FAMILY name (familyText), not the label of the row: it is told by its font (NAME_FONT of choose.js, 600 11px), the only text of the overlay set in it
+    got = []
+    for _ in range(40):
+        c.wait(200)
+        last = c.js("() => window.__nm.filter(n => n.f === window.__nmf && /^600 11px/.test(n.font))")
+        got = last
+        if len(got) >= 3:
+            break
+    allw = c.js("() => window.__nm.filter(n => n.f === window.__nmf)")
+    fonts = {}
+    for n in allw:
+        fonts[n['font']] = fonts.get(n['font'], 0) + 1
+    seen = {'frame': c.js('() => window.__nmf'), 'writes in the last frame by font': fonts, 'texts with letters': sorted({n['t'] for n in allw if re.search('[A-Za-z]', n['t'])})[:20]}
+    c.ok(len(got) >= 3, f'names written in the last frame {[n["t"] for n in got]}; texts of the overlay {seen}', 'the names of the ticked procedures are written (at least three of the eight find a place)')
+    box = c.js("() => { const r = document.querySelector('.mp-over').getBoundingClientRect(); return [r.width, r.height] }")
+    bad = [f"{n['t']} {[round(n['x0']), round(n['y0']), round(n['x1']), round(n['y1'])]}" for n in got if n['x0'] < 4 - .5 or n['y0'] < 4 - .5 or n['x1'] > box[0] - 56 + .5 or n['y1'] > box[1] - 4 + .5]
+    c.eq(bad, [], f'every name box lies inside the map ({box[0]:.0f} × {box[1]:.0f}): 4 px from the edges, 56 px from the right edge', what='names across an edge')
+    c.shot('D327.png')

@@ -641,7 +641,8 @@ function distSeg(x, y, a, b) {
 /** La pastille d'une cochée (rayon), les endroits essayés le long du tracé (part de sa longueur) pour la pastille puis pour le nom, la police du nom. */
 const DISC_R = 9,
   DISC_AT = [.15, .25, .35, .45, .08, .55, .65],
-  NAME_AT = [.2, .3, .4, .5, .6, .7],
+  // SOG-0569 : le nom glisse le long du tracé jusqu'à une place qui tient dans la carte ; la fin du tracé (.8, .9, près de l'aérodrome) et son début (.1) s'ajoutent aux six places d'origine, car un long tracé (une STAR de plus de 100 NM) peut n'avoir ses places d'origine que hors de la carte
+  NAME_AT = [.2, .3, .4, .5, .6, .7, .8, .9, .1],
   NAME_FONT = '600 11px Arial,sans-serif';
 /** Le point à la part f (0 à 1) de la longueur d'une ligne en px. */
 function along(pts, f) {
@@ -886,7 +887,14 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     for (const t of namesOf(C, L)) {
       const w = ctx.measureText(t.text).width + 4,
         qs = [...(t.disc ? [t.disc] : []), ...NAME_AT.map(f => along(t.pts, f))];
-      t.r = place(pl, qs, w, 14, false, `name:${t.it.id}`);
+      // SOG-0569 : un nom ne passe pas le bord de la carte (à 390 le nom de la quatrième cochée était coupé par le bord haut) ni ne se met sous la colonne des boutons de droite : seules les places
+      // dont la boîte tient dans la carte sont proposées, le nom glisse le long de sa trace jusqu'à l'une d'elles, sinon il n'est pas écrit (la pastille dit déjà le numéro)
+      t.r = place(pl, qs, w, 14, false, `name:${t.it.id}`, W && H ? {
+        x0: EDGE,
+        y0: EDGE,
+        x1: W - EDGE_R,
+        y1: H - EDGE
+      } : null);
     }
     L.names = namesOf(C, L).filter(t => t.r);
     // la surlignée d'abord : sa place est la meilleure, les autres l'évitent ; elle est toujours posée

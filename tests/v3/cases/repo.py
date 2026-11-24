@@ -4295,3 +4295,27 @@ def i62(c):
             probe.rmdir()
         except OSError:
             pass
+
+
+@case('I63', 'The « n more » texts of the Map agree with the number (the frame\'s « (s) »): « 1 autre · Toutes », « 2 autres · Toutes » (SOG-0569, seen on D322 at 390: « 1 autres »)', 'I', static=True,
+      rule='the relay, reading D322 at 390: « 1 autres · Toutes » — the French of the fold of the choose mode (and of three more texts of the Map: spMore, atcMore, gMore) wrote the plural for any number; each now carries the mark « autre(s) » that the frame resolves from the number before it (frame/lib/plural.js agree), checked at 1 and at 2 with the frame\'s own function; red before: « 1 autres »')
+def i63(c):
+    import json
+    node = shutil.which('node')
+    if not node:
+        raise Skip('node is not installed: the frame\'s agree() cannot be run')
+    texts = (c.root / 'modules' / 'maps' / 'texts.js').read_text(encoding='utf-8')
+    rows = {k: re.search(r"\b%s: \['([^']*)'" % k, texts).group(1) for k in ('chFold', 'spMore', 'atcMore', 'gMore')}
+    js = ("import { agree } from '" + (c.root / 'frame' / 'lib' / 'plural.js').as_uri() + "';\n"
+          "const rows = " + json.dumps(rows) + ";\nconst out = {};\n"
+          "for (const [k, t] of Object.entries(rows)) out[k] = [1, 2].map(n => agree(t, { n }, 'fr').replace('{n}', n));\nconsole.log(JSON.stringify(out));")
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / 'agree.mjs'
+        f.write_text(js, encoding='utf-8')
+        p = subprocess.run([node, str(f)], capture_output=True, encoding='utf-8', timeout=60)
+    c.ok(p.returncode == 0, p.stderr[-300:], 'the frame\'s agree() runs')
+    got = json.loads(p.stdout)
+    c.eq(got['chFold'], ['1 autre · Toutes', '2 autres · Toutes'], 'the fold of the choose mode: « 1 autre · Toutes » and « 2 autres · Toutes »', what='chFold at 1 and 2')
+    c.eq(got['spMore'], ['1 autre', '2 autres'], 'the airspace list: « 1 autre » / « 2 autres »', what='spMore at 1 and 2')
+    c.eq(got['atcMore'], ['+ 1 autre', '+ 2 autres'], 'the controllers: « + 1 autre » / « + 2 autres »', what='atcMore at 1 and 2')
+    c.eq(got['gMore'], ['1 autre : affinez le filtre', '2 autres : affinez le filtre'], 'the ground list: « 1 autre : affinez le filtre » / « 2 autres : … »', what='gMore at 1 and 2')
