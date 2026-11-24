@@ -4158,3 +4158,140 @@ def i61(c):
     c.ok('initargs=(base, os.getpid())' in src and "['--parent', str(os.getpid())]" in src, '', 'run.py gives its pid to the pool workers and to the static server')
     lib = (c.root / 'tests' / 'v3' / 'lib.py').read_text(encoding='utf-8')
     c.ok('parent_watch.watch(parent, worker_close)' in lib, '', 'a worker watches its pass and closes its browser when it is gone')
+
+
+@case('I62', 'Tool: the source formatter never leaves a .html whose module script no longer passes `node --check` (SOG-0628): a valid long string with escaped apostrophes comes out valid; an invalid script, or one the formatting would break, makes the formatting of THAT file fail — the file stays as it is and the tool says so', 'I', static=True,
+      rule='SOG-0628 (Création, 24 Nov): on modules/missions/test/drawers_view.html two long strings with an apostrophe were cut, a SyntaxError in a <script type="module">, the bench N81 no longer ran and I5 stayed green (the formatted file is stable). What was established: the file was ALREADY invalid before the formatting (« l\'écran » unescaped inside a quoted string) and the formatter laid out the invalid script stably; no cut of a VALID string could be reproduced with the current jsbeautifier (strings with escaped apostrophes, non-breaking spaces, in call arguments). The guard: after the layout of a script, `node --check` (module, else classic); a script that does not pass makes the formatting of the file fail, whether the layout broke it or it was already invalid; the file stays as it is; the exit code is 1; red before: the invalid script is laid out and written. Counter-proof: with the guard switched off the invalid script IS written')
+def i62(c):
+    import contextlib
+    import importlib
+    import io
+    sys.path.insert(0, str(c.root / 'tools'))
+    try:
+        FS = importlib.import_module('format_sources')
+    except ImportError as e:
+        raise Skip(f'the formatter needs jsbeautifier and cssbeautifier ({e})')
+    node = shutil.which('node')
+    if not node:
+        raise Skip('node is not installed: the guard cannot run')
+
+    def passes(code):
+        """The script passes `node --check` as a module (the case's own check: the formatter before SOG-0628 has none)."""
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / 'script.mjs'
+            f.write_text(code, encoding='utf-8', newline='')
+            return subprocess.run([node, '--check', str(f)], capture_output=True).returncode == 0
+    BS = chr(92)
+    q = BS + "'"
+    long_valid = ("ck('l" + q + "heure passée du tiroir 2 joue dès que le 1 s" + q + "ouvre (« ouvert à l" + q + "heure ») ; aucune note « Suite de la mission » : le bloc est à l" + q + "écran (SOG-0617, le veilleur de la page dit l" + q + "arrivée quand il n" + q + "y est pas)',\n"
+                  "  q('[x]')?.dataset.open === 'time' && true);")
+    long_invalid = long_valid.replace(q + "écran", "'écran").replace(q + "arrivée", "'arrivée")   # the apostrophes of the end are no longer escaped: the string ends in the middle
+    page = lambda code: '<!doctype html>\n<script type="module">\nconst ck = (a, b) => b, q = s => document.querySelector(s);\n' + code + '\n</script>\n'
+    probe = Path(FS.ROOT) / 'tests' / 'v3' / '_i62_probe'      # NOT under tools/ nor docs/: they are out of the formatter's scope by name
+    probe.mkdir(parents=True, exist_ok=True)
+    made = []
+
+    def run(name, body, **patch):
+        """Writes the page, formats it with the optional replacements of the formatter; (text after, output, exit code)."""
+        f = probe / name
+        f.write_text(body, encoding='utf-8', newline='')
+        made.append(f)
+        saved = {k: getattr(FS, k, None) for k in patch}     # None: the formatter has no such name (before SOG-0628: no guard)
+        getattr(FS, 'GARDE', {'refus': []})['refus'].clear()
+        for k, v in patch.items():
+            setattr(FS, k, v)
+        out, code = io.StringIO(), 0
+        try:
+            with contextlib.redirect_stdout(out):
+                try:
+                    FS.main([f'tests/v3/_i62_probe/{name}'])
+                except SystemExit as e:
+                    code = e.code or 0
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    delattr(FS, k)
+                else:
+                    setattr(FS, k, v)
+        return f.read_text(encoding='utf-8'), out.getvalue(), code
+    script = lambda text: text.split('<script type="module">')[1].split('</script>')[0]
+    try:
+        # (1) a valid long string with escaped apostrophes: laid out, still valid, the string in one piece
+        body = page(long_valid)
+        after, out, code = run('valid.html', body)
+        c.ok(passes(script(after)), after[:300], 'a valid long string with escaped apostrophes comes out as a valid script')
+        c.ok(long_valid.split(',\n')[0].split("ck(")[1] in after, after[:300], 'and the string is in ONE piece (not cut)')
+        c.eq(code, 0, 'the formatting succeeds (exit 0)', what='exit code')
+        # (2) an INVALID script (the apostrophes of the end unescaped): not laid out, the file stays as it is, said, exit 1
+        body = page(long_invalid)
+        c.ok(not passes(script(body)), 'the probe is invalid', 'the probe script is invalid (apostrophes unescaped inside the string)')
+        after, out, code = run('invalid.html', body)
+        c.eq(after, body, 'an invalid script: the file stays EXACTLY as it is', what='file after')
+        c.ok('REFUSÉE' in out and 'DÉJÀ' in out, out, 'and the tool says the formatting was refused because the script already failed node --check')
+        c.eq(code, 1, 'exit code 1', what='exit code')
+        # (3) the layout BREAKS a valid script (a cut is simulated: the layout of the script puts a line break inside the string): refused, the file stays, said as « no longer passes »
+        body = page(long_valid)
+        after, out, code = run('broken.html', body, js=lambda src: src.replace("l" + q + "heure", "l'" + chr(10) + "heure", 1))
+        c.eq(after, body, 'a layout that breaks a valid script: the file stays as it is', what='file after')
+        c.ok('REFUSÉE' in out and 'ne passe plus' in out, out, 'and the tool says the script no longer passes node --check after the layout')
+        c.eq(code, 1, 'exit code 1', what='exit code')
+        # (5) node does not answer (a timeout, simulated): neither an exception nor a hang: the file is not laid out, said, exit 1
+        body = page(long_valid)
+        real_run = subprocess.run
+
+        def silent(*a, **k):
+            raise subprocess.TimeoutExpired('node', 60)
+        subprocess.run = silent        # FS.subprocess IS this module: restored at once
+        try:
+            after, out, code = run('timeout.html', body)
+        finally:
+            subprocess.run = real_run
+        c.eq(after, body, 'node does not answer in time: the file stays as it is (no exception, no hang)', what='file after')
+        c.ok('REFUSÉE' in out and 'répondu' in out, out, 'and the tool says node did not answer')
+        c.eq(code, 1, 'exit code 1', what='exit code')
+        # (6) a `node` found INSIDE the repository is never run (Windows searches the current folder, the root of the repository, first)
+        root = Path(FS.ROOT)
+        inside, outside = str(root / 'node.exe'), str(Path(tempfile.gettempdir()) / 'elsewhere' / 'node.exe')
+        c.eq([FS.trouver_node(which=lambda n: inside), FS.trouver_node(which=lambda n: outside), FS.trouver_node(which=lambda n: None)], [None, outside, None], 'a node inside the repository is refused (the guard then says « node introuvable hors du dépôt »), one outside is kept', what='node found')
+        # (7) a FAKE node at the root of a temporary repository is not run: the tool is copied into a repository of its own whose root holds a `node` that leaves a mark when it is launched; the formatter
+        # is started there. An older Windows `shutil.which` looks in the current folder, the root, FIRST (Python 3.12 stopped): the lookup is simulated, `which` giving that fake. Not run → no mark; the
+        # guard says « garde NON faite »; without the exclusion of a node inside the repository the same lookup LAUNCHES it (counter-proof)
+        import shutil as _sh
+        import stat as _st
+        import tempfile as _tf
+        with _tf.TemporaryDirectory() as td:
+            def repo(name, patch=()):
+                r = Path(td) / name
+                (r / 'tools').mkdir(parents=True)
+                (r / 'tests').mkdir()
+                text = (c.root / 'tools' / 'format_sources.py').read_text(encoding='utf-8')
+                fake_name = 'node.cmd' if os.name == 'nt' else 'node'
+                for old, new in (('NODE = trouver_node()', f"NODE = trouver_node(which=lambda n: os.path.join(os.getcwd(), '{fake_name}'))"),) + tuple(patch):
+                    assert old in text, f'the line to neutralise is no longer in the formatter: {old}'
+                    text = text.replace(old, new)
+                (r / 'tools' / 'format_sources.py').write_text(text, encoding='utf-8', newline='')
+                (r / 'tests' / 'p.html').write_text(page(long_invalid), encoding='utf-8', newline='')
+                fake = r / fake_name
+                fake.write_text('@echo off\r\necho ran> "%~dp0ran.txt"\r\nexit /b 0\r\n' if os.name == 'nt' else '#!/bin/sh\ntouch "$(dirname "$0")/ran.txt"\nexit 0\n', encoding='utf-8', newline='')
+                fake.chmod(fake.stat().st_mode | _st.S_IEXEC)
+                p = subprocess.run([sys.executable, 'tools/format_sources.py', 'tests/p.html'], cwd=str(r), capture_output=True, encoding='utf-8', errors='replace', timeout=120)
+                return r, (p.stdout + p.stderr)
+            r, out = repo('guarded')
+            c.ok(not (r / 'ran.txt').exists(), out, 'a fake node at the root of the repository is NOT launched')
+            c.ok('garde NON faite' in out and 'hors du dépôt' in out, out, 'and the guard says « garde NON faite : node est introuvable hors du dépôt »')
+            r, out = repo('unguarded', patch=(('return None if dedans else chemin', 'return chemin'),))
+            c.ok((r / 'ran.txt').exists(), out, 'counter-proof: without the exclusion the same lookup LAUNCHES the fake node at the root')
+        # (4) COUNTER-PROOF: without the guard the invalid script IS laid out and written (the file changes, and is still invalid)
+        body = page(long_invalid)
+        after, out, code = run('noguard.html', body, garde=lambda *a: True)
+        c.ok(after != body and not passes(script(after)), after[:200], 'counter-proof: with the guard switched off the invalid script is laid out and written, still invalid (this is what the guard prevents)')
+    finally:
+        for f in made:
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        try:
+            probe.rmdir()
+        except OSError:
+            pass

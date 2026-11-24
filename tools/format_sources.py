@@ -6,6 +6,10 @@ Usage (à la racine du dépôt) :
     python tools/format_sources.py f1.js f2.html   → ces fichiers seulement
     python tools/format_sources.py --check …       → n'écrit rien, liste les fichiers qui changeraient
 
+Garde (SOG-0628) : un script — .js, ou bloc <script> d'un .html — qui ne passe pas `node --check` APRÈS la mise en forme fait échouer la mise en forme de CE fichier : il reste tel quel, l'outil le dit
+(« mise en forme REFUSÉE… », pour un script que la mise en forme casse comme pour un script DÉJÀ invalide : une mise en forme stable d'un script invalide cache l'erreur) et sort avec le code 1 ; sans node,
+la garde n'a pas lieu et l'outil le dit.
+
 Contrôle obligatoire après écriture : le script dépose les paires avant / après dans tools/_verify/pairs.json ;
 ouvrir http://127.0.0.1:8767/tools/verify_format.html (dépôt servi : python -m http.server 8767 --bind 127.0.0.1) :
 chaque JavaScript est analysé avant et après (acorn) et les arbres syntaxiques doivent être identiques (même code,
@@ -16,7 +20,7 @@ Hors champ : bibliothèques minifiées, fichiers générés (apps/planner/map_pl
 tools/build_map_planner.py ; apps/cpco/mission_prompt.js : tools/build_mission_prompt.py ; apps/planner/perf_prompt.js : tools/build_perf_prompt.py ; section générée de
 shared/block_icons.css : tools/build_skeuo_icons_css.py), données.
 """
-import io, json, os, re, subprocess, sys
+import io, json, os, re, shutil, subprocess, sys, tempfile
 import cssbeautifier, jsbeautifier
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -183,6 +187,63 @@ def css(src):
     return cssbeautifier.beautify(src, CSS_OPTS)
 
 
+def trouver_node(which=shutil.which):
+    """Le `node` à lancer, ou None. Jamais un résultat situé DANS le dépôt : sous Windows `shutil.which` cherche d'abord dans le dossier courant, qui est la racine du dépôt, et un `node.exe` ou `node.cmd`
+    posé là par un commit serait exécuté (Sécurisation, SOG-0628)."""
+    chemin = which('node')
+    if not chemin:
+        return None
+    try:
+        dedans = os.path.commonpath([os.path.abspath(chemin), os.path.abspath(ROOT)]) == os.path.abspath(ROOT)
+    except ValueError:      # deux disques : forcément hors du dépôt
+        dedans = False
+    return None if dedans else chemin
+
+
+NODE = trouver_node()
+DELAI = 60   # secondes accordées à un `node --check` (un node qui se bloque ne bloque pas l'outil)
+
+
+def syntaxe_ok(code):
+    """Le JavaScript passe `node --check`, en module (celui d'un <script type="module"> ; les scripts du dépôt le passent tous) ou, à défaut, en script classique ; le même contrôle sert avant et après la
+    mise en forme. None quand node est introuvable (la garde n'a pas lieu et l'outil le dit) ; 'delai' quand node n'a pas répondu en DELAI secondes."""
+    if not NODE:
+        return None
+    with tempfile.TemporaryDirectory() as d:
+        for ext in ('mjs', 'cjs'):
+            f = os.path.join(d, 'script.' + ext)
+            with open(f, 'w', encoding='utf-8', newline='') as w:
+                w.write(code)
+            try:
+                if subprocess.run([NODE, '--check', f], capture_output=True, timeout=DELAI).returncode == 0:
+                    return True
+            except subprocess.TimeoutExpired:
+                return 'delai'
+    return False
+
+
+GARDE = {'sans_node': False, 'refus': []}
+
+
+def garde(nom, avant, apres):
+    """SOG-0628 : un script qui ne passe pas `node --check` APRÈS la mise en forme fait ÉCHOUER la mise en forme de ce fichier (il reste tel quel, l'outil le dit) ; vrai si la mise en forme est sûre. Deux causes, dites
+    à part : le script ne passe plus (la mise en forme l'a cassé), ou il ne passait DÉJÀ pas (une mise en forme stable d'un script invalide cache l'erreur : I5 reste vert, le banc plante)."""
+    if avant == apres:
+        return True
+    ok = syntaxe_ok(apres)
+    if ok is None:
+        GARDE['sans_node'] = True
+        return True
+    if ok is True:
+        return True
+    if ok == 'delai':
+        GARDE['refus'].append(f"{nom} : node --check n'a pas répondu en {DELAI} s (la garde ne peut pas conclure : le fichier n'est pas mis en forme)")
+        return False
+    avant_ok = syntaxe_ok(avant)
+    GARDE['refus'].append(f"{nom} : le script ne passe plus node --check après la mise en forme" if avant_ok is True else f"{nom} : le script ne passait DÉJÀ pas node --check avant la mise en forme (il n'est pas mis en forme)")
+    return False
+
+
 def est_js(attrs):
     """Vrai si les attributs d'un <script> désignent du JavaScript (sans type, ou type JavaScript / module)."""
     m = re.search(r'\btype\s*=\s*["\']?([\w/+-]+)', attrs)
@@ -199,6 +260,8 @@ def mettre_en_forme(chemin, paires):
     nom = os.path.relpath(chemin, ROOT).replace(os.sep, '/')
     if nom.endswith('.js'):
         neuf = js(texte)
+        if not garde(nom, texte, neuf):
+            return nom, None, nl
         paires.append({'nom': nom, 'type': 'js', 'avant': texte, 'apres': neuf})
     elif nom.endswith('.css'):
         if nom.endswith('block_icons.css') and GEN_DEBUT in texte:
@@ -214,6 +277,9 @@ def mettre_en_forme(chemin, paires):
             if not est_js(m.group(2)) or not m.group(3).strip():
                 return m.group(0)
             corps = js(m.group(3).strip('\n'))
+            if not garde(f'{nom} (script)', m.group(3).strip('\n'), corps):
+                bad.append(nom)
+                return m.group(0)
             paires.append({'nom': f'{nom} (script)', 'type': 'module' if 'module' in m.group(2) else 'js', 'avant': m.group(3), 'apres': corps})
             return f'{m.group(1)}\n{corps}\n{m.group(4)}'
 
@@ -224,7 +290,10 @@ def mettre_en_forme(chemin, paires):
             corps = css(m.group(2).strip('\n'))
             paires.append({'nom': f'{nom} (style)', 'type': 'css', 'avant': m.group(2), 'apres': corps})
             return f'{m.group(1)}\n{corps}\n{m.group(3)}'
+        bad = []
         neuf = STYLE.sub(st, SCRIPT.sub(sc, texte))
+        if bad:   # un script ne passe plus : la mise en forme de CE fichier échoue, il reste tel quel (SOG-0628)
+            return nom, None, nl
     else:
         neuf = texte  # SOG-0604 : une autre extension (.py, .md, .json…) n'est PAS du HTML : ses « <script>…</script> » sont des chaînes ou du texte, jamais un bloc à mettre en forme
     if not neuf.endswith('\n') and texte.endswith('\n'):
@@ -259,6 +328,12 @@ def main(args):
     print(f'{len(changes)} fichier(s) {"à mettre" if check else "mis"} en forme ; {len(paires)} bloc(s) à contrôler.')
     for c in changes:
         print('  ' + c)
+    if GARDE['sans_node']:
+        print("  garde NON faite : node est introuvable hors du dépôt (node --check d'un script mis en forme)")
+    for r in GARDE['refus']:
+        print(f'  mise en forme REFUSÉE, le fichier reste tel quel : {r}')
+    if GARDE['refus']:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
