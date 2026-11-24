@@ -9,7 +9,13 @@
    Compagnie, la liseuse « Lire », le volet de l'appli Pilote derrière la puce « Mission » de Carburant). Mission et lieux inventés.
    Scènes : ?s=a (en vol, rien d'ouvert), b (une enveloppe arrivée), c (un message ouvert, un geste refusé, sa réponse en place),
    d (trois messages, « Avant » replié), e (la liseuse et son pied) ; &tone=day|night. À 390 : le volet de l'appli Pilote ; à 1280 :
-   la fiche de l'appli Compagnie. Les couleurs sont celles du design « standard » du cadre (jetons --sog-*), jour et nuit. */
+   la fiche de l'appli Compagnie. Les couleurs sont celles du design « standard » du cadre (jetons --sog-*), jour et nuit.
+   VALIDÉE par l'ergonome le 24 nov. avec retouches : à 390, l'enveloppe en petit à gauche, son texte sur deux lignes au plus, le
+   bouton dessous en pleine largeur ; les deux gestes dans un PIED COLLANT du bloc (la ligne de réponse juste au-dessus), déclaré au
+   cadre comme une barre fixe (aucune note ne naît dessus, SOG-0605) ; à 1280 les gestes restent dans le flux, sous « Maintenant » ;
+   « Prendre la suite de route » sort (SOG-0620), la ligne « Suite de route » reste ; la note d'arrivée dit « Un message de la mission
+   est arrivé. » sans le titre, et n'est levée que si le bloc n'est pas à l'écran. Le chrome imité (en-tête, colonne, volet) n'est
+   qu'un décor : le code prend le vrai cadre, le BLOC seul fait contrat. */
 :root {
   --sog-fg: #1b1f24;
   --sog-muted: #59636e;
@@ -514,6 +520,49 @@ details.fold>summary::after {
 .phone .rdfoot {
   bottom: 64px
 }
+/* 390 : l'enveloppe en petit à gauche, le texte sur deux lignes au plus, le bouton dessous en pleine largeur */
+.phone .env {
+  flex-wrap: wrap;
+  gap: 10px 12px
+}
+.phone .env .shape {
+  width: 64px;
+  height: 42px
+}
+.phone .env .shape span {
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px
+}
+.phone .env .what {
+  flex: 1 1 0
+}
+.phone .env .what b {
+  display: inline
+}
+.phone .env .what span::before {
+  content: " · "
+}
+.phone .env button {
+  flex: 1 0 100%
+}
+/* 390 : les deux gestes dans un PIED COLLANT du bloc, la ligne de réponse juste au-dessus (barre fixe déclarée au cadre) */
+.phone .acts {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border-top: 1px solid var(--sog-border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, .10);
+  display: flex;
+  flex-direction: column
+}
+.phone .acts .kick {
+  display: none
+}
+.phone .acts .answer {
+  order: -1;
+  margin: 0 0 8px
+}
 </style>
 </head>
 <body>
@@ -576,7 +625,7 @@ function now() {
     <p>${esc(ORDER.text)}</p><a href="#">Lire l'ordre de mission</a></section>`;
   return `<section class="now"><p class="kick">Maintenant</p><h3>${esc(m.title)}</h3><div class="how">${esc(m.how)}</div>
     <p class="msg">${esc(m.msg)}</p><p>${esc(m.brief)}</p>
-    ${m.route ? `<div class="route"><span>Suite de route : ${esc(m.route)}</span><button>Prendre la suite de route</button></div>` : ''}</section>`;
+    ${m.route ? `<div class="route"><span>Suite de route : ${esc(m.route)}</span></div>` : ''}</section>`;
 }
 
 /** (4) les deux gestes, toujours là, côte à côte ; la réponse s'affiche contre eux (scène c : « Demander la suite » refusé) */
@@ -596,10 +645,12 @@ function past() {
 const ref = () => `<section class="ref"><details class="fold"><summary>Référence : objectifs, risques, équipes, zones, détail</summary><p class="muted">…</p></details></section>`;
 
 /** LE BLOC, dans l'ordre de lecture */
-const block = () => `<div class="dw" data-drawers><header><h2>Suite de la mission</h2>${state()}</header>${arrived()}${now()}${acts()}${past()}${ref()}</div>`;
+const block = () => phone ? `<div class="dw" data-drawers><header><h2>Suite de la mission</h2>${state()}</header>${arrived()}${now()}${past()}${ref()}${acts()}</div>` :
+  `<div class="dw" data-drawers><header><h2>Suite de la mission</h2>${state()}</header>${arrived()}${now()}${acts()}${past()}${ref()}</div>`;
 
 /** la note du cadre à l'arrivée (scène b) : elle dit qu'un message est arrivé, jamais son contenu ; « Ouvrir » mène au bloc */
-const note = () => S === 'b' ? `<div class="f-note" role="status"><span>Un message de la mission est arrivé</span><button>Ouvrir</button></div>` : '';
+const note = () =>
+  ''; // la note « Un message de la mission est arrivé. » + « Ouvrir » n'est levée que si le bloc n'est PAS à l'écran : ici il l'est
 
 /** (e) la liseuse : la page en cours ; le pied fixe annonce la nouvelle enveloppe sans tourner la page, et porte les deux gestes */
 function reader() {
