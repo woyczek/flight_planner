@@ -10885,3 +10885,36 @@ def d328(c):
     bad = [f'n{n} @{x},{y}' for n, x, y in d['discs'] if x - 9 < 4 - .5 or y - 9 < 4 - .5 or x + 9 > d['w'] - 56 + .5 or y + 9 > d['h'] - 4 + .5]
     c.eq(bad, [], f'every disc lies whole inside the map ({d["w"]:.0f} × {d["h"]:.0f}): 4 px from the edges, 56 px from the right edge', what='discs across an edge')
     c.shot('D328.png')
+
+
+@case('D329', 'SOG-0617: the sheet head of the Map carries the chip « Mission <ID> » when the flight has a mission (no chip otherwise); a touch leads to the mission sheet of Fuel (#fuel?focus=mission)', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0617 (the user, P1): the mission of the flight is on the Map too. Fuel shows « Mission <ID> » in its header (modules/fuel/mission_chip.js, one component for both); the Map puts it in the header line of its sheet, right of Couches, only when the flight carries a mission; it never overlaps the other chips of the line and a touch goes to #fuel?focus=mission; red before: no chip on an invented mission')
+def d329(c):
+    f = flight(mission='SOG-4821')                         # an invented mission
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    c.until("() => !!document.querySelector('.mp-dhead .mp-mslot .fu-mchip')", timeout=10000, what='the mission chip in the header line of the sheet')
+    d = c.js("""() => { const h = document.querySelector('.mp-dhead'), b = document.querySelector('.mp-mslot .fu-mchip'), r = e => { const q = e.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom] };
+      const others = [...h.querySelectorAll('.mp-lchip, .mp-chips .mp-chip, .mp-dclose, .mp-whole')].filter(e => window.__t.shown(e)).map(e => [e.className.split(' ')[0] + (e.dataset.view ? ':' + e.dataset.view : ''), r(e)]);
+      return { text: b.textContent.trim(), head: r(h), chip: r(b), others, shown: window.__t.shown(b), tag: b.tagName, title: b.title } }""")
+    c.ok('SOG-4821' in d['text'], d['text'], 'the chip names the mission of the flight')
+    c.ok(d['shown'] and d['tag'] == 'BUTTON', str(d), 'the chip is a visible button')
+    hx0, hy0, hx1, hy1 = d['head']
+    x0, y0, x1, y1 = d['chip']
+    c.ok(x0 >= hx0 - .5 and x1 <= hx1 + .5 and y0 >= hy0 - .5 and y1 <= hy1 + .5, f"chip {d['chip']} head {d['head']}", 'the chip lies inside the header line of the sheet')
+    over = [n for n, (a0, b0, a1, b1) in d['others'] if a0 < x1 - .5 and a1 > x0 + .5 and b0 < y1 - .5 and b1 > y0 + .5]
+    c.eq(over, [], 'the chip overlaps none of the other buttons of the header line', what='overlapped buttons')
+    c.shot(f'D329_{c.width}_puce.png')                    # the chip, at each width (the shot of the harness, at the end of the case, shows the flight WITHOUT a mission)
+    # a touch leads to the mission sheet of Fuel
+    c.js("() => { window.__hs = []; addEventListener('hashchange', e => window.__hs.push(new URL(e.newURL).hash)) }")
+    c.tap('.mp-mslot .fu-mchip')
+    c.until("() => window.__hs.some(h => h === '#fuel?focus=mission')", timeout=8000, what='the touch goes to #fuel?focus=mission')
+    # no mission, no chip: the slot is empty and takes no room
+    g = flight()
+    g.pop('mission', None)
+    c.open('maps', docs=fdocs(g), flight=False)
+    c.ready('maps', sheet=True)
+    c.wait(600)
+    n = c.js("() => [document.querySelectorAll('.mp-mslot .fu-mchip').length, window.__t.shown(document.querySelector('.mp-mslot'))]")
+    c.eq(n, [0, False], 'a flight without a mission: no chip, the slot takes no room', what='chip count and slot')

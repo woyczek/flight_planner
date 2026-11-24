@@ -3,6 +3,9 @@
 // Le panneau des modes et les icônes des modes sont dans la couche de superposition du cadre (.f-overlay, sœur de la racine) :
 // leurs règles la nomment.
 
+import *
+as MCH from '../fuel/mission_chip.js'; // SOG-0617 : la puce « Mission <ID> » est celle de Carburant (un seul composant : son style est posé ici aussi)
+
 export const STYLE = `
 /* L'ÉCRAN EST FIXE (meta.fixed) : la racine est une colonne à la hauteur de la vue du cadre, rien n'en dépasse ni ne fait
    défiler la page — en-tête du cadre · carte (prend ce qui reste ; ses boutons sont dans la couche de superposition du cadre,
@@ -382,4 +385,9 @@ export const STYLE = `
 /* hors de la vue fixe du cadre, la hauteur de la racine est celle du cadre (frame/INTEGRATION.md § 9.2) : le volet de la vue double et,
    carte à gauche d'un volet, la colonne de la vue ; ici seulement le plancher du module */
 .f-pane>[data-module="maps"],.f-view.f-split>[data-module="maps"]{min-height:420px}
+/* SOG-0617 : la puce de la mission du vol, dans la ligne d'en-tête de la feuille, à droite de Couches ; sans mission, l'emplacement est vide et ne prend aucune place */
+[data-module="maps"] .mp-mslot{position:relative;z-index:2;flex:none;display:flex;align-items:center;padding-left:4px;max-width:42vw}
+[data-module="maps"] .mp-mslot:empty{display:none}
+[data-module="maps"] .mp-mslot .fu-mchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+${MCH.CSS}
 `;

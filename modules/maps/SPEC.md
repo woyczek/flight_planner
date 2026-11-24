@@ -927,6 +927,7 @@ to its size. A new content replaces the open one; opening the airspaces list rel
 - **Expanded, collapsed, in the landscape column, and for every content that is not a drawing** the head carries its
   title (one line, ellipsed, `label` the full text for the tooltip and the reader), the chips at its right in the same
   row for a drawing, the ✕ for a content (Layers, airspaces, aerodrome); the Layers chip first, left of the grip, always.
+- **The mission chip** (SOG-0617): when the flight carries a mission (`route.flight.mission`), the chip "Mission <ID>" of Fuel (`modules/fuel/mission_chip.js`, one component for both pages) is in the head line, right of the Layers chip; no mission, the slot is empty and takes no room; a touch goes to `#fuel?focus=mission` (the mission sheet in Fuel). Written only when its markup changes (`S.mchipHtml`).
 - Title over a drawing: "Profile · FL065 · 427 NM · planned flight" (or "flight in progress"; a mission map: "Profile ·
   I-001A · title · map"), "Weather · FL065 · …"; tooltip: the whole summary ("Vertical profile · LFRS → LFML · alternate
   LFMT · FL065 · 427 NM · C30J · planned flight"). A content's own title: "n airspaces at this point", "LFMN: VFR

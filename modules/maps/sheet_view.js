@@ -2,6 +2,7 @@
 // porte — la ligne d'en-tête (nue ou titrée), les trois puces Profil · Météo · « i », la légende, un contenu à la fois
 // (profil, coupe, Couches, espaces d'un point, terrain), sa fermeture, la touche Échap, la taille arrêtée (onSettle).
 
+import * as MCH from '../fuel/mission_chip.js'; // SOG-0617 : la puce « Mission <ID> », un seul composant avec Carburant
 import {
   OUTDATED,
   colOf
@@ -93,7 +94,7 @@ export function makeSheet(el) {
     head: S.dheadEl,
     grip: S.gripEl,
     pos: keep.sheet,
-    ignore: '[data-dclose], .mp-chips',
+    ignore: '[data-dclose], .mp-chips, .mp-mslot', // la puce de la mission (SOG-0617) n'est pas la feuille non plus : sinon l'appui sur elle saisit le pointeur de l'en-tête et le clic ne lui arrive jamais (à la souris)
     labels: p => gripLabel(p),
     locked: () => el.classList.contains('mp-tuning'),
     onChange: p => {
@@ -131,7 +132,7 @@ function sheetGestures() {
   const mark = e => {
     // les puces d'espaces et la croix sont dans l'en-tête mais ne sont pas la feuille (le `ignore` de createSheet) : leur clic n'est pas un geste sur elle — sinon, juste avant un changement de fenêtre,
     // la position que le code prend d'elle-même passait pour celle du pilote (D4 : la puce « météo », puis 390 × 520)
-    if (S && !e.target.closest?.('[data-dclose], .mp-chips')) S.sheetGestureAt = performance.now();
+    if (S && !e.target.closest?.('[data-dclose], .mp-chips, .mp-mslot')) S.sheetGestureAt = performance.now();
   };
   for (const el of [S.dheadEl, S.gripEl])
     for (const t of ['pointerup', 'click', 'keydown']) el?.addEventListener(t, mark, true);
@@ -346,6 +347,17 @@ export function dataHead() {
     S.shEmpty = empty;
   }
   setPressed(S.layersBtn, lay);
+  // SOG-0617 : la puce « Mission <ID> » du vol (celle de Carburant) dans la ligne d'en-tête ; rien sans mission au vol ; le balisage est produit avec sa valeur par chipHtml, écrit seulement s'il change
+  if (S.mslotEl) {
+    const chip = MCH.chipHtml(tt, S.route?.flight?.mission, {
+      action: 'mission',
+      away: true
+    });
+    if (S.mchipHtml !== chip) {
+      S.mchipHtml = chip;
+      S.mslotEl.innerHTML = chip;
+    }
+  }
   if (S.bare !== bare) {
     S.bare = bare;
     S.dheadEl.classList.toggle('f-sheet-head-bare', !!bare);

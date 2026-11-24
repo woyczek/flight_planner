@@ -245,6 +245,12 @@ export function buildOverlay(ctx, modesHtml) {
   // bouton et ce qu'il ouvre sont voisins) ; le coin de la carte ne garde que les commandes de la vue
   S.layersBtn = S.dheadEl.querySelector('[data-mp="layers"]');
   S.layersBtn.addEventListener('click', () => toggleLayers());
+  // SOG-0617 : la puce « Mission <ID> » de la ligne d'en-tête mène à la fiche de la mission dans Carburant (le volet s'ouvre : #fuel?focus=mission)
+  S.mslotEl.addEventListener('click', e => {
+    if (!e.target.closest('.fu-mchip')) return;
+    closePanels();
+    location.hash = '#fuel?focus=mission';
+  });
   S.undoBtn.disabled = true;
   // panneau des modes, dans la couche (elle a la taille de la carte et suit la feuille)
   const layer = ov.right.parentNode,

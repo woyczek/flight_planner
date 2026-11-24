@@ -173,6 +173,7 @@ export const meta = {
     '../../frame/lib/crossing.js?v=0',
     '../../frame/lib/hit_target.js?v=0', // (a1) : importé par choose.js (cible commune du doigt)
     '../../frame/lib/untrusted.js?v=0',
+    '../fuel/mission_chip.js?v=0', // SOG-0617 : la puce « Mission <ID> » de la ligne d'en-tête, celle de Carburant
     '../../frame/lib/precision.js?v=0', // SOG-0516 : importé par missions/drawers.js
     '../../frame/lib/mission.js?v=0',
     'weather.js?v=0',
@@ -222,7 +223,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-alts f-card" hidden></div>
 </div>
 <div class="mp-follow" hidden></div></div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><span class="mp-mslot" data-mchip></span><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
 <div class="mp-dprof"><p class="mp-gapnote" hidden role="status"></p><div class="mp-prof" hidden role="img" aria-label="${T(TX.profileLabel)}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div><div class="mp-spsel f-card" hidden></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -286,6 +287,7 @@ export async function mount(el, ctx) {
     notesEl: q('.mp-notes'),
     dtitleEl: q('.mp-dtitle'),
     dcloseEl: q('.mp-dclose'),
+    mslotEl: q('.mp-mslot'), // SOG-0617 : la puce de la mission du vol
     segEl: q('.mp-chips:not(.mp-chips-l)'),
     segBtns: [...el.querySelectorAll('.mp-chip[data-view]')],
     legendBtn: q('.mp-chip[data-legend]'),
