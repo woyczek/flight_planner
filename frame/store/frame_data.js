@@ -75,9 +75,15 @@
   const idb = async (store, op, arg) => {
     const d = await open();
     return new Promise((res, rej) => {
-      const q = d.transaction(store, /^get/.test(op) ? 'readonly' : 'readwrite').objectStore(store)[op](arg);
-      q.onsuccess = () => res(q.result);
+      const write = !/^get/.test(op),
+        tx = d.transaction(store, write ? 'readwrite' : 'readonly'),
+        q = tx.objectStore(store)[op](arg);
+      // SOG-0606 : une écriture n'est tenue pour faite qu'à la fin de sa transaction — un disque plein l'abandonne APRÈS le succès de la requête (tx.onabort,
+      // QuotaExceededError) : promettre au succès de la requête perdrait l'échec en silence
+      if (write) tx.oncomplete = () => res(q.result);
+      else q.onsuccess = () => res(q.result);
       q.onerror = () => rej(q.error);
+      tx.onabort = () => rej(tx.error || q.error);
     });
   };
   /** Clés seules d'un magasin (ou d'un index : « magasin.index »), dans une borne : jamais les textes. */

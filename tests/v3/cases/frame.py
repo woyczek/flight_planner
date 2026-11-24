@@ -12173,3 +12173,124 @@ def a379(c):
         c.eq(c.js('() => [window.__kept, window.__under]'), [1, 0], f'{w}: after 400 ms the button of the note answers, the bar under it does not', what='the note answers')
         c.js("() => document.querySelectorAll('[data-test-bar],[data-test-foot]').forEach(x => x.remove())")
     c.check_errors()
+
+
+@case('A380', 'A write refused by the browser is read by its CODE, never shown raw (SOG-0606): ctx.writeFailure / SogFrame.writeFailure says { code: full | unknown, raw, text, say } — QuotaExceededError and the legacy code 22 are « full », anything else « unknown » — the raw text is kept (cut, ten at most) in the diagnostic of the page (page.writeFailures) and nowhere else; the cause is written once by the frame in four languages', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0606 (the ergonomist's screen rule: the browser's raw text is never shown to the pilot; the cause is said in French when its code is known, else « cause inconnue »; the raw text goes to Settings › About › Diagnostic and the report)")
+def a380(c):
+    c.open('hello')
+    c.until("!!window.SogFrame && typeof window.SogFrame.writeFailure === 'function'", timeout=20000, what='the frame answers writeFailure()')
+    got = c.js("""() => { const f = window.SogFrame.writeFailure, q = new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      return [f(q), f({ code: 22, message: 'legacy' }), f(new Error('boom')), f(undefined), f('plain text'), f(new DOMException('x'.repeat(400), 'QuotaExceededError'))] }""")
+    c.eq([g['code'] for g in got], ['full', 'full', 'unknown', 'unknown', 'unknown', 'full'], 'QuotaExceededError and code 22 are « full »; anything else is « unknown »', what='codes')
+    c.eq(got[0]['raw'], 'QuotaExceededError: The quota has been exceeded.', 'the raw text keeps the name and the message', what='raw')
+    c.eq(got[5]['raw'], ('QuotaExceededError: ' + 'x' * 400)[:200], 'the raw text is cut at 200 signs', what='cut')
+    kept = c.js("() => window.SogFrame.writeFailures()")
+    c.ok(len(kept) == 6 and kept[0]['raw'].startswith('QuotaExceededError') and re.match(r'20\d\d-\d\d-\d\dT', kept[0]['at']), kept[:1], 'each failure is kept in the diagnostic with its instant, its code and its raw text')
+    c.js("() => { for (let i = 0; i < 12; i++) window.SogFrame.writeFailure(new Error('n' + i)) }")
+    kept = c.js("() => window.SogFrame.writeFailures()")
+    c.eq((len(kept), kept[-1]['raw']), (10, 'Error: n11'), 'ten at most, the newest last', what='bounded')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok(re.search(r'writeFailures:\s*writeFails\.slice\(\)', src) is not None, 'page.writeFailures missing', 'the page diagnostic (page.writeFailures) carries the list: « Copy the diagnostic » copies it')
+    c.ok(re.search(r'notify,\s*dismissNote,\s*ask,\s*askText,\s*writeFailure,', src) is not None, '', 'the ctx of the modules carries writeFailure')
+    c.ok("String(e.message || e), 'err'" not in src, '', 'the frame’s own handover points no longer show the raw message of the browser')
+    # the cause is written ONCE, by the frame, in four languages (the ergonomist, 24 Nov): `text` of the result, and writeFailText(e, head, file) = « {head} : {cause} » with the head of the OWNER
+    full = c.js("() => { const r = window.SogFrame.writeFailure(new DOMException('q', 'QuotaExceededError')); return { code: r.code, text: r.text } }")
+    unk = c.js("() => { const r = window.SogFrame.writeFailure(new Error('boom')); return { code: r.code, text: r.text } }")
+    causeFull, causeUnknown = tx('frame/app.js', 'causeFull', c.lang), tx('frame/app.js', 'causeUnknown', c.lang)
+    c.eq((norm(full['text']), norm(unk['text'])), (norm(causeFull), norm(causeUnknown)), 'the result carries the cause in the language of the run, as the frame wrote it', what='cause text')
+    join = tx('frame/app.js', 'causeJoin', c.lang)
+    said = c.js("""() => [window.SogFrame.writeFailText(new DOMException('q', 'QuotaExceededError'), 'Route non enregistrée', 'cache/maps/route.json'),
+                         window.SogFrame.writeFailText(new Error('boom'), 'Mission non enregistrée')]""")
+    c.eq([norm(x) for x in said], [norm(join.replace('{head}', h).replace('{cause}', x)) for h, x in (('Route non enregistrée', causeFull), ('Mission non enregistrée', causeUnknown))], 'writeFailText composes « {head} : {cause} » with the head of the owner', what='writeFailText')
+    last = c.js("() => window.SogFrame.writeFailures().slice(-2)")
+    c.eq([sorted(e) for e in last], [['at', 'code', 'file', 'head', 'raw']] * 2, 'an entry of the diagnostic: the time, the head of the module, the code, the raw text, the name of the file (never its content)', what='entry keys')
+    c.eq([(e['head'], e['code'], e['file']) for e in last], [('Route non enregistrée', 'full', 'cache/maps/route.json'), ('Mission non enregistrée', 'unknown', '')], 'the head, the code and the file of the refused write are kept', what='entry values')
+    c.eq(norm(tx('frame/app.js', 'causeFull', 'fr')), 'le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne.', 'the French cause « full » as the ergonomist wrote it', what='French full')
+    c.eq(norm(tx('frame/app.js', 'causeUnknown', 'fr')), 'cause inconnue. Le détail est dans le diagnostic.', 'the French cause « unknown » as the ergonomist wrote it', what='French unknown')
+    for lang in ('en', 'de', 'es'):
+        both = [tx('frame/app.js', row, lang) for row in ('causeFull', 'causeUnknown', 'handoffNone')]
+        same = [tx('frame/app.js', row, 'fr') for row in ('causeFull', 'causeUnknown', 'handoffNone')]
+        c.ok(all(both) and all(x != y for x, y in zip(both, same)), both, f'{lang}: the three sentences are translated')
+    c.check_errors()
+
+
+@case('A381', 'A write is done only when its transaction completes (SOG-0606): a transaction ABORTED with QuotaExceededError after its request succeeded rejects the write of the frame’s data layer (never lost in silence), and the reader says « full »', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0606 (the relay: « un vrai disque plein ne doit pas se perdre en silence »): frame/store/frame_data.js idb() resolved a write at the success of its request; a full disk aborts the transaction AFTER it (tx.onabort, QuotaExceededError)")
+def a381(c):
+    c.page.add_init_script("""(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
+      const r = put.apply(this, arguments);
+      if (window.__abortPut && v && typeof v.path === 'string' && v.path.startsWith('cache/t0606/')) {
+        const tx = this.transaction; Object.defineProperty(tx, 'error', { value: new DOMException('The quota has been exceeded.', 'QuotaExceededError') });
+        r.addEventListener('success', () => tx.abort()) }
+      return r } })()""")
+    c.open('hello')
+    c.until("!!window.FrameData && !!window.SogFrame", timeout=20000, what='the data layer and the frame')
+    c.js('window.__abortPut = true')
+    res = c.js("""async () => { try { await window.FrameData.adapter({ id: 't0606', writes: ['cache/t0606/'] }).put('cache/t0606/a.json', { a: 1 }, { policy: 'cache' }); return { ok: true } }
+                              catch (e) { return { ok: false, name: e && e.name, read: window.SogFrame.writeFailure(e).code } } }""")
+    c.eq(res, {'ok': False, 'name': 'QuotaExceededError', 'read': 'full'}, 'the write is rejected with the abort’s error and the reader says « full »', what='aborted write')
+    c.js('window.__abortPut = false')
+    ok = c.js("""async () => { try { await window.FrameData.adapter({ id: 't0606', writes: ['cache/t0606/'] }).put('cache/t0606/b.json', { a: 2 }, { policy: 'cache' }); return true } catch (e) { return String(e) } }""")
+    c.eq(ok, True, 'a write whose transaction completes still resolves', what='normal write')
+    c.check_errors()
+
+
+@case('A382', 'The cause of a refused write is written ONCE, by the frame, in four languages (SOG-0606): the handover of a flight to report, refused for want of room, says « Rien n’a été transmis à « Compte rendu » : le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne. » — never the browser’s raw text; the note is captured at 390 and 1280', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0606 (the ergonomist, 24 Nov: the cause is written once, by the frame; each owner composes « {tête} : {cause} »): frame/app.js T.causeFull, T.causeJoin, T.handoffNotSaved; the raw text only in the diagnostic")
+def a382(c):
+    c.page.add_init_script("""(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
+      if (window.__failPut && v && v.path === 'pilot/handoff.json') throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      return put.apply(this, arguments) } })()""")
+    c.open('fuel', pending=1)
+    c.wait(1200)
+    c.js('window.__failPut = true')
+    c.tap('#fDevice')
+    c.until("!!document.querySelector('[data-card=\"status\"] .f-status-row[data-go=\"report:0\"]')", what='the Status block has the row of the flight to report')
+    c.tap('.f-status-row[data-go="report:0"]')
+    module = tx('frame/app.js', 'label', c.lang, after="id: 'report'")
+    head = tx('frame/app.js', 'handoffNone', c.lang).replace('{m}', module)
+    cause = tx('frame/app.js', 'causeFull', c.lang)
+    want = norm(tx('frame/app.js', 'causeJoin', c.lang).replace('{head}', head).replace('{cause}', cause))
+    c.until("(window.__notes || []).length > 0", what='the note of the refused handover')
+    got = [norm(x) for x in c.note_log()]
+    c.ok(want in got, got, f'the note says the head, then the cause: {want}')
+    c.ok(not any(re.search(r'quota|exceeded|QuotaExceeded', x, re.I) for x in got), got, 'the browser’s raw text is in no note')
+    c.eq((c.js('() => location.hash'), c.count('[data-module=report]')), ('#settings', 0), 'after the refusal the screen stays where it was: the address does not change, no module is half open', what='nothing moved')
+    last = c.js('() => window.SogFrame.writeFailures().slice(-1)[0]')
+    c.eq((norm(last['head']), last['code'], last['file']), (norm(head), 'full', 'pilot/handoff.json'), 'the diagnostic keeps the head, the code and the name of the refused file; the raw text is there only', what='diagnostic entry')
+    c.ok(last['raw'].startswith('QuotaExceededError'), last['raw'], 'the raw text of the browser is in the diagnostic')
+    c.wait(500)
+    c.shot(f"P_0606_{c.page.viewport_size['width']}_stockage_plein.png")
+    c.check_errors()
+
+
+@case('A383', 'A module holds a work « in memory only » and releases it (SOG-0607): while a declaration holds, the browser’s warning (beforeunload) is armed; released, it is not; with none it is never armed; a change of module asks nothing and the declaration survives the unmount', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0607 (the ergonomist): `ctx.memoryOnly(quoi)` returns the release function; `quoi` = { fr, en, de, es } (« route de la carte », « carte du vol », « brouillon de la mission »); the frame asks NOTHING at a change of module (whoever goes to Settings to free room sees nothing), the unmount of a module releases nothing")
+def a383(c):
+    c.open('hello')
+    c.until("!!window.SogFrame && typeof window.SogFrame.memoryOnly === 'function'", timeout=20000, what='the frame answers memoryOnly()')
+    armed = "() => { const ev = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(ev); return ev.defaultPrevented }"
+    c.eq(c.js(armed), False, 'no declaration: the warning is never armed', what='never armed')
+    c.js("() => { window.__rel = window.SogFrame.memoryOnly({ fr: 'route de la carte', en: 'map route', de: 'Kartenroute', es: 'ruta del mapa' }) }")
+    c.eq(c.js(armed), True, 'declared: the warning is armed', what='armed')
+    c.eq(c.js("() => window.SogFrame.memoryOnlyList()"), [{'fr': 'route de la carte', 'en': 'map route', 'de': 'Kartenroute', 'es': 'ruta del mapa'}[c.lang]], 'the list says what is held, in the language of the screen', what='list')
+    c.js("() => { window.__rel2 = window.SogFrame.memoryOnly(['carte du vol', 'flight map', 'Flugkarte', 'mapa del vuelo']) }")
+    c.js("() => window.__rel()")
+    c.eq(c.js(armed), True, 'two declarations, one released: still armed', what='still armed')
+    c.js("() => window.__rel()")           # releasing twice changes nothing
+    c.eq(c.js(armed), True, 'the same declaration released twice does not release the other', what='idempotent')
+    # a change of module: no question from the frame, the declaration stays (the unmount releases nothing)
+    c.js("() => { location.hash = '#settings' }")
+    c.until("!!document.querySelector('[data-card=\"status\"]')", timeout=15000, what='Settings opens')
+    c.wait(600)
+    c.eq(c.count('.f-modal'), 0, 'a change of module with a declaration held asks nothing', what='no question')
+    c.eq(len(c.js("() => window.SogFrame.memoryOnlyList()")), 1, 'the declaration survived the change of module', what='survives')
+    c.eq(c.js(armed), True, 'still armed in Settings', what='armed in Settings')
+    c.js("() => window.__rel2()")
+    c.eq((c.js(armed), c.js("() => window.SogFrame.memoryOnlyList()")), (False, []), 'all released: the warning is disarmed', what='disarmed')
+    c.check_errors()

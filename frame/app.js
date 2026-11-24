@@ -7,7 +7,7 @@
   //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
   //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
-  //     unique), t, lang, notify, dismissNote, ask, askText, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
+  //     unique), t, lang, notify, dismissNote, ask, askText, writeFailure, writeFailText, memoryOnly, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
   //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
   //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
   //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
@@ -663,6 +663,20 @@
     },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
     // SOG-0603 : le lanceur a répondu après la borne de démarrage (600 ms) alors que l'écran était déjà monté sans lui : la page ne se redessine pas seule, elle propose de recharger
+    // SOG-0606 : la CAUSE d'une écriture refusée s'écrit ici, une seule fois, pour toute la suite (décision de l'ergonome) : chaque écran compose « {tête} : {cause} » et n'écrit jamais la cause
+    causeFull: ['le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne.',
+      'this device’s storage is full. Free up space in Settings › Offline data.',
+      'der Speicher dieses Geräts ist voll. Schaffen Sie Platz unter Einstellungen › Offline-Daten.',
+      'el almacenamiento de este dispositivo está lleno. Libere espacio en Ajustes › Datos sin conexión.'
+    ],
+    causeUnknown: ['cause inconnue. Le détail est dans le diagnostic.', 'unknown cause. The detail is in the diagnostic.',
+      'Ursache unbekannt. Die Einzelheiten stehen in der Diagnose.', 'causa desconocida. El detalle está en el diagnóstico.'
+    ],
+    causeJoin: ['{head} : {cause}', '{head}: {cause}', '{head}: {cause}', '{head}: {cause}'],
+    // la tête des deux points de passation (SOG-0606, décision de l'ergonome) : le nom du module est celui du menu ({m}, pris dans la table du cadre)
+    handoffNone: ['Rien n’a été transmis à « {m} »', 'Nothing was passed to “{m}”', 'An „{m}“ wurde nichts übergeben',
+      'No se ha pasado nada a «{m}»'
+    ],
     launcherFound: ['Lanceur détecté : rechargez la page pour l’utiliser.', 'Launcher detected: reload the page to use it.',
       'Starter erkannt: Laden Sie die Seite neu, um ihn zu verwenden.', 'Lanzador detectado: recargue la página para usarlo.'
     ],
@@ -1077,6 +1091,74 @@
     }
     showNote(note);
   }
+  // SOG-0606 : une écriture refusée par le navigateur ne montre JAMAIS son texte brut au pilote (c'est un texte du navigateur : anglais, non fiable). Le cadre lit la cause par son
+  // CODE (le nom de l'erreur, que la couche d'écriture laisse passer intact), la range, texte brut compris, dans le diagnostic (page.writeFailures, Réglages › À propos › Diagnostic),
+  // et rend { code: 'full' | 'unknown', raw, text } : `text` est la cause dite en quatre langues (écrite ici, une fois) ; `raw` n'est jamais affiché. `writeFailText(e, tête, fichier)` compose « {tête} : {cause} » :
+  // la tête est celle du propriétaire (« Mission non enregistrée »), jamais la cause. Le diagnostic (page.writeFailures, en mémoire, vidé au rechargement, dix au plus) garde pour chacune :
+  // l'heure, la tête, le code, le texte brut coupé à 200 signes et le NOM du fichier refusé (son contenu jamais).
+  const WRITE_FAIL_MAX = 10,
+    WRITE_RAW_MAX = 200,
+    WRITE_HEAD_MAX = 80,
+    writeFails = [];
+
+  function writeFailure(e, o = {}) {
+    const name = String(e?.name || ''),
+      full = name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || e?.code === 22 || e?.code === 1014,
+      msg = String(e?.message ?? (name ? '' : e ?? '')),
+      raw = `${name}${name && msg ? ': ' : ''}${msg}`.slice(0, WRITE_RAW_MAX),
+      code = full ? 'full' : 'unknown',
+      text = t(full ? T.causeFull : T.causeUnknown);
+    writeFails.push({
+      at: new Date().toISOString(),
+      head: String(o.head ?? '').slice(0, WRITE_HEAD_MAX),
+      code,
+      raw,
+      file: String(o.file ?? '').slice(0, 120)
+    });
+    if (writeFails.length > WRITE_FAIL_MAX) writeFails.shift();
+    return {
+      code,
+      raw,
+      text
+    };
+  }
+  /** La phrase d'un écran pour une écriture refusée : « {tête} : {cause} » ; la cause est celle du cadre, la tête celle du propriétaire ; `fichier` : le nom du fichier refusé (au diagnostic seulement). */
+  const writeFailText = (e, head, file) => t(T.causeJoin, {
+    head: String(head ?? ''),
+    cause: writeFailure(e, {
+      head,
+      file
+    }).text
+  });
+  // SOG-0607 : un module DÉCLARE un « travail tenu en mémoire seulement » (un brouillon qui n'a pas pu être écrit) et le RELÂCHE dès qu'une écriture est confirmée. Tant qu'une déclaration tient,
+  // l'avertissement du NAVIGATEUR (beforeunload, le même gestionnaire que celui de ctx.unsaved, plus bas) est armé à la fermeture et au rechargement ; sans déclaration, il ne l'est jamais. Le cadre ne pose aucune question au changement de module
+  // (celui qui va aux Réglages libérer de la place ne doit rien voir) et le démontage d'un module ne relâche rien : c'est le module qui relâche. `quoi` : { fr, en, de, es } ou les quatre textes.
+  const memoryHeld = new Set();
+
+  function memoryOnly(what) {
+    const row = Array.isArray(what) ? what : what && typeof what === 'object' ? [what.fr, what.en, what.de, what.es] : [what, what, what,
+        what
+      ],
+      item = {
+        what: [0, 1, 2, 3].map(i => String(row[i] ?? row[0] ?? '').slice(0, 80))
+      };
+    memoryHeld.add(item);
+    let done = false;
+    return () => {
+      if (done) return;
+      done = true;
+      memoryHeld.delete(item);
+    };
+  }
+  /** Les travaux tenus en mémoire seulement, dans la langue de l'écran (diagnostic, tests). */
+  const memoryOnlyList = () => [...memoryHeld].map(i => t(i.what));
+  /** La tête d'une passation refusée : « Rien n'a été transmis à « {module} » », le module nommé comme le menu l'écrit (la table du cadre, jamais un texte en dur). */
+  const handoffHead = id => {
+    const m = APP.modules.find(x => x.id === id);
+    return t(T.handoffNone, {
+      m: m ? t(m.label) : String(id ?? '')
+    });
+  };
   /** Retire une note par sa clé (SOG-0600 : « pas de position réelle » se retire d'elle-même quand la position arrive) : celle qui est affichée et celle qui attend dans la file d'un téléphone ;
    *  rien si elle n'existe plus. La minuterie de la note affichée s'éteint seule (la note n'est plus dans la page). */
   function dismissNote(key) {
@@ -2949,7 +3031,7 @@
           policy: 'cache'
         });
       } catch (e) {
-        return notify(String(e.message || e), 'err');
+        return notify(writeFailText(e, handoffHead(l.handoff.to), HANDOFF), 'err');
       }
       to = l.go || (l.handoff ? `#${l.handoff.to}?from=${l.from}` : '');
       if (!to) return;
@@ -2973,7 +3055,7 @@
             policy: 'cache'
           });
         } catch (e) {
-          return notify(String(e.message || e), 'err');
+          return notify(writeFailText(e, handoffHead('report'), HANDOFF), 'err');
         }
         to = '#report?from=flightlog';
       } else to = '#flightlog';
@@ -4676,6 +4758,9 @@
       dismissNote,
       ask,
       askText,
+      writeFailure, // SOG-0606 : la cause d'une écriture refusée ({ code: 'full' | 'unknown', raw, text }) ; raw va au diagnostic, jamais dans une phrase
+      writeFailText, // SOG-0606 : « {tête} : {cause} » — le propriétaire donne sa tête (+ le nom du fichier refusé), le cadre écrit la cause et la range au diagnostic
+      memoryOnly, // SOG-0607 : déclare un travail tenu en mémoire seulement ({ fr, en, de, es }), rend la fonction qui le relâche ; l'avertissement du navigateur est armé tant qu'il en tient un
       net,
       weather,
       // le lanceur du poste (INTEGRATION § 15.1) : ce que meta.launcher déclare ({ routes, read }) ; null sans lanceur, sur un
@@ -5074,7 +5159,11 @@
             // SOG-0430 : les tâches de 100 ms et plus du fil de la page (durée, instant, écran) : de cette page (`now`) et des précédentes (`before`), les cent dernières
             longTasks: longState(),
             // SOG-0430 (A2) : le profil de la page pendant une tâche d'une seconde et plus (les quinze fonctions les plus chargées), ou la raison pour laquelle il n'y en a pas
-            profiler: profilerState()
+            profiler: profilerState(),
+            // SOG-0606 : les écritures refusées par le navigateur (les dix dernières : code et texte brut, le texte brut ne va que là)
+            writeFailures: writeFails.slice(),
+            // SOG-0607 : les travaux tenus en mémoire seulement en ce moment (ce que le pilote perdrait en fermant la page)
+            memoryOnly: memoryOnlyList()
           },
           aerodb: a ? {
             source: a.source,
@@ -5901,7 +5990,8 @@
     });
     // SOG-0458 : fermer l'onglet, recharger ou quitter la page avec des changements non enregistrés : l'avertissement du navigateur (son texte, pas le nôtre)
     window.addEventListener('beforeunload', e => {
-      if (!unsavedNow()) return;
+      if (!unsavedNow() && !memoryHeld.size)
+        return; // SOG-0607 : aussi tant qu'un module tient un travail en mémoire seulement (memoryOnly)
       e.preventDefault();
       e.returnValue = '';
     });
@@ -6490,6 +6580,11 @@
     t,
     notify,
     dismissNote,
+    writeFailure,
+    writeFailText,
+    writeFailures: () => writeFails.slice(), // SOG-0606 (diagnostic, tests) : une copie, jamais la liste vivante
+    memoryOnly,
+    memoryOnlyList,
     ask,
     askText,
     net,

@@ -3905,3 +3905,21 @@ def i54(c):
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     c.eq(got, {u: (1, ['shared/unformatted.js']) for u in ('0', '1', None)}, 'one file to reformat, named, with PYTHONUTF8=0, =1 and unset', what='format_sources --check by encoding')
+
+
+@case('I57', 'The cause of a refused write is written ONCE, by the frame (SOG-0606): « le stockage de cet appareil » is in no other file of the frame\'s own code, and no notification of it shows the raw message of an error (e.message, String(e)) — the owners extend this to their files with their lots', 'I', static=True,
+      rule='SOG-0606 (the ergonomist, 24 Nov): the frame writes the cause (frame/app.js T.causeFull / T.causeUnknown); each owner composes « {tête} : {cause} » and never writes the cause nor shows the browser\'s raw text; the frame\'s own files here: frame/*.js, frame/store, frame/lib (Settings and AeroDB files are their owners\')')
+def i57(c):
+    own = [p for g in ('frame/*.js', 'frame/store/*.js', 'frame/lib/*.js') for p in sorted(c.root.glob(g)) if '/test/' not in p.as_posix()]
+    c.ok(len(own) >= 10, len(own), 'the frame\'s own files are found')
+    cause, raw = [], []
+    for p in own:
+        text = p.read_text(encoding='utf-8')
+        rel = p.relative_to(c.root).as_posix()
+        if 'stockage de cet appareil' in text and rel != 'frame/app.js':
+            cause.append(rel)
+        for n, line in enumerate(text.splitlines(), 1):
+            if re.search(r'notify\(\s*(String\()?\s*[A-Za-z]+\??\.message|notify\(\s*String\(\s*[A-Za-z]+\s*\)', line):
+                raw.append(f'{rel}:{n}')
+    c.eq(cause, [], 'the cause « le stockage de cet appareil » is written only in frame/app.js', what='cause elsewhere')
+    c.eq(raw, [], 'no notification of the frame shows the raw message of an error', what='raw message in a notification')
