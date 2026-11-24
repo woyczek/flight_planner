@@ -3220,6 +3220,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — a module's change of view is the address the Back brings back (SOG-0609, found by Features, case N254)
+
+- **Fact**: `setModuleView(id, name)` (the module's `ctx.view`) pushes `#missions?view=registry` without a `hashchange` (the module stays mounted) but did not update `lastScreen.hash`, which `consumeQuery` and the panes do. `openOver` took `returnHash = '#missions'`; when Settings was closed (Back), `route()` compared `#missions?view=registry` with it, saw another address, and unmounted then mounted the module again: the workshop was lost, at 390 as at 1280.
+- **Fix**: one line after the `pushState`: `if (lastScreen?.id === id) lastScreen.hash = location.hash;`. No text of any screen changes.
+- **Case A390**: a module (the example `hello`, patched to count its mounts) changes its view, a screen of the frame is opened over it, Back: the address is the view's, the element is the same, one mount; red before (two mounts).
+
 ## 24 November 2026 — the sign « Non gardé » (SOG-0607, lot B, the ergonomist; contract: `frame/maquette/non_garde.html`)
 
 - **Signs while a work exists only in memory** (`ctx.memoryOnly(quoi, e)`; `e` = the error of the refused write, read by `isFull`): (1) the dot of the ⚙ takes the error red (`#fDevice[data-unsaved]`, every width, ahead of green / amber / the token's red; the dot keeps its three-word vocabulary: green « something applies », amber « have a look », red « open Settings now »); (2) the Status block puts one line per work FIRST, then the token lines (moved up from their old place), then the rest in today's order (green before amber); (3) beyond 760 px the header pill `#fUnsaved` « Non gardé » in the block of « Trigramme ? » (`.f-who`), both pills when both are true; on a phone it is `display: none` like « Trigramme ? » (the dot and the line carry it).

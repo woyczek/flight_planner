@@ -12416,3 +12416,28 @@ def a386(c):
     c.js("() => window.__r1()")
     c.until("!document.getElementById('fDevice').hasAttribute('data-unsaved') && document.getElementById('fUnsaved').hidden", what='all written: the sign goes, without a reload')
     c.check_errors()
+
+
+@case('A390', 'A module that changes its view (ctx.view) is not mounted again when a screen of the frame opened over it is closed (SOG-0609): the address #hello?view=registry is the one the Back brings back, the module is the same element, its view is the one it had', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="Features SOG (case N254, SOG-0609): setModuleView pushed '#missions?view=registry' but left lastScreen.hash at '#missions'; openOver took it as the returnHash; at Back route() found another address, unmounted and mounted the module again: the workshop was lost. consumeQuery and the panes already set lastScreen.hash")
+def a390(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")   # the example module (hello) is offered to developers only
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = 'export async function mount(el, ctx) {'
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  window.__ctx = ctx; window.__mounts = (window.__mounts || 0) + 1; el.dataset.mark = 'kept';")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.open('hello', wait=False)
+    c.until("!!document.querySelector('[data-module=hello]') && window.__mounts === 1", timeout=20000, what='the module mounted')
+    c.js("() => window.__ctx.view('registry')")
+    c.eq(c.js("() => location.hash"), '#hello?view=registry', 'the module changed its view: the address follows, without a remount', what='view address')
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='a screen of the frame opens over the module')
+    c.page.go_back()
+    c.until("location.hash === '#hello?view=registry'", what='Back brings the address of the view back')
+    c.wait(500)
+    c.eq(c.js("() => [!!document.querySelector('[data-module=hello][data-mark=kept]'), window.__mounts]"), [True, 1], 'the module is the SAME one (not unmounted, not mounted again): its work stays', what='no remount')
+    c.check_errors()

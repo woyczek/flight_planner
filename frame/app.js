@@ -3803,6 +3803,8 @@
     v ? q.set('view', v) : q.delete('view');
     const qs = q.toString();
     history.pushState(history.state, '', `#${id}${qs ? `?${qs}` : ''}`); // sans hashchange : le module reste monté ; le retour revient à la vue d'avant
+    if (lastScreen?.id === id) lastScreen.hash = location
+      .hash; // comme consumeQuery et les volets : l'écran du cadre ouvert par-dessus (Réglages) rend la vue d'ICI au Retour, le module n'est pas remonté
     menuView = v;
     renderMenu(id, menuScreen);
     return true;
