@@ -68,6 +68,9 @@ import {
 import {
   altnPoints
 } from './altn.js';
+import {
+  text as safeText
+} from './lib/safe_text.js';
 
 // ---------------------------------------------------------------- vol
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
@@ -252,6 +255,10 @@ export function pointsOf(f) {
       id: p.id || '',
       lat: +p.lat,
       lon: +p.lon,
+      // SOG-0621 / SOG-0618 : le NOM du lieu d'un point venu d'une mission (Carburant l'écrit dans `place` sur le point dont l'identifiant est une coordonnée) : un texte gardé (sans signe de contrôle ni < >, 48 signes au plus), jamais l'objet
+      ...(safeText(p.place, 48).trim() ? {
+        place: safeText(p.place, 48).trim()
+      } : {}),
       ...(+f?.route?.holds?.[p.id]?.count > 0 ? {
         hold: Math.min(1440, Math.round(+f.route.holds[p.id]
           .count)), // le temps sur zone compté à ce point, en minutes (Carburant l'écrit, la Carte le lit : route.holds, § 1 bis)
@@ -472,6 +479,10 @@ export function flownProfilePoints(flown, f) {
       lat: +p.lat,
       lon: +p.lon,
       nm: p.nm,
+      // SOG-0621 : le nom du lieu d'un point de la route (gardé plus haut, `place`) suit jusqu'à la coupe, qui nomme ainsi un point-coordonnée comme la carte
+      ...(p.origin === 'route' && p.place ? {
+        place: p.place
+      } : {}),
       ...(p.origin === 'route' && !ends.has(i) && p.alt_ft != null && +p.alt_ft > 0 ? {
         lvl: {
           ft: +p.alt_ft

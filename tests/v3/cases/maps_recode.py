@@ -10918,3 +10918,68 @@ def d329(c):
     c.wait(600)
     n = c.js("() => [document.querySelectorAll('.mp-mslot .fu-mchip').length, window.__t.shown(document.querySelector('.mp-mslot'))]")
     c.eq(n, [0, False], 'a flight without a mission: no chip, the slot takes no room', what='chip count and slot')
+
+
+# ------------------------------------------------------------------------------------------------------ D324 (SOG-0621)
+def _fb_doc(mid, **pts):
+    """An INVENTED mission (codes X-…, positions in the middle of nowhere): only the points named are there."""
+    d = {'schema': 'helo-xp-mission', 'mission': {'id': mid, 'type': 'REG'}, 'title': 'Essai du repli ' + mid, 'cruise_speed_kt': 100}
+    d.update(pts)
+    return d
+
+
+_FB_POINT = lambda i, lat, lon: {'id': i, 'name': i, 'lat': lat, 'lon': lon}
+_FB_CASES = [
+    # (mission, what it holds, the points of the drawn route, why)
+    ('X-621A', {'target': _FB_POINT('CIBLE', 45.5, 2.0), 'alternate': _FB_POINT('XDEG', 45.9, 2.6), 'rendezvous': [_FB_POINT('RDV-1', 45.2, 1.7)]},
+     [], 'a target, an alternate and a rendezvous, no departure nor arrival: no route point is two, no line'),
+    ('X-621B', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'alternate': _FB_POINT('XDEG', 45.9, 2.6), 'rendezvous': [_FB_POINT('R1', 45.4, 1.5)]},
+     [], 'a departure, an alternate and a rendezvous (code « R1 »), no arrival: one route point, no line'),
+    ('X-621C', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'alternate': _FB_POINT('XDEG', 45.9, 2.6), 'rendezvous': [_FB_POINT('R1', 45.4, 1.5)]},
+     ['XAAA', 'XZZZ'], 'a departure and an arrival: the line joins THEM, not the alternate nor the rendezvous « R1 »'),
+    ('X-621D', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'turning_points': [_FB_POINT('PT1', 45.3, 1.4)], 'alternate': _FB_POINT('XDEG', 45.9, 2.6),
+                'rendezvous': [_FB_POINT('R1', 45.4, 1.5)]},
+     ['XAAA', 'PT1', 'XZZZ'], 'with a turning point the line is the same as before: departure, turning point, arrival'),
+]
+
+
+@case('D324', 'SOG-0621: the mission view draws no line from a mission that holds fewer than two route points, and never joins an alternate or a rendezvous as a route point', 'D', tags=('maps',), designs=('standard',),
+      rule='SOG-0621 (ergonomist, F10): MapsMission.routeTokens fell back on ALL the points of the mission in their order when it found fewer than two route points: the alternate and the rendezvous were joined as route points, a false line; and a rendezvous whose code does not start with « RDV » (« R1 ») joined the route as a turning point. Now: no line without two route points (a false line is worse than none), and a point of the keys rendezvous / rdv has its role « RDV » from the parse. Red before (checked with a stub of the parse): A draws CIBLE XDEG RDV-1, B XAAA R1, C XAAA R1 XZZZ, D XAAA PT1 R1 XZZZ')
+def d324(c):
+    import json as _json
+    for mid, pts, want, why in _FB_CASES:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_RAW_JS, [f'missions/1_ESSAI/{mid}/mission{mid}.yaml', _json.dumps(_fb_doc(mid, **pts))])
+        c.open(f'maps?mission={mid}', docs=fdocs(flight()), airfields=True, wait=False)
+        c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what=f'{mid}: the mission banner')
+        c.js(_STATE_JS)
+        c.until(f"() => !!window.__mp.S.mission && !!window.__mp.S.route && String(window.__mp.S.route.updated).startsWith({_json.dumps(mid + '|')})", timeout=15000, what=f'{mid}: the mission is read and its route built')
+        got = c.js("() => ({ shown: window.__mp.S.route.points.map(p => p.id), kept: window.__mp.S.route.profilePoints.map(p => p.id) })")
+        c.eq(got['shown'], want, f'{mid}: {why}', what=str(got))
+        c.eq(got['kept'], want, f'{mid}: the profile of the mission takes the same points', what=str(got))
+        c.wait(800)
+        c.shot(f'D324_{c.width}_{mid}.png')                   # one capture per scene AND per width (the two widths wrote the same file; a failing run's capture overwrote a good one)
+
+
+# ------------------------------------------------------------------------------------------------------ D325 (SOG-0621, line of SOG-0618)
+@case('D325', 'SOG-0621: a route point whose identifier is a coordinate is drawn under its NAME when it has one (never under the coordinate alone); a point with a real identifier keeps its identifier', 'D', tags=('maps',), designs=('standard',),
+      rule='SOG-0618 (ergonomist, user: « je ne vois que les coordonnées géo »): Fuel writes the place name (`place`) on the route points that come from a mission, whose identifier is a coordinate word; render_route.js took p.id before p.name (except holdName) and data.js did not carry the name at all: the Map showed « 4600N00030E ». Now data.js carries the name (a guarded text) and a point whose identifier is a coordinate is shown under its name; a point with a code keeps its code; a name with « < > » or control signs is cleaned. Red before: the name is never drawn')
+def d325(c):
+    f = flight()
+    f['route']['points'] = [{'id': 'LFRS', 'lat': 47.1569, 'lon': -1.6078},
+                            {'id': '4600N00030E', 'place': 'Col inventé', 'lat': 46.0, 'lon': 0.5},
+                            {'id': '4500N00200E', 'lat': 45.0, 'lon': 2.0},
+                            {'id': 'NEPIX', 'place': 'Nom ignoré', 'lat': 44.5, 'lon': 3.4},
+                            {'id': 'LFML', 'lat': 43.4367, 'lon': 5.215}]
+    f['route']['text'] = 'LFRS 4600N00030E 4500N00200E NEPIX LFML'
+    c.open('maps', docs=fdocs(f), wait=False)
+    c.js(_TEXTS_JS)
+    c.ready('maps', sheet=True)
+    # the point WITHOUT a name keeps its coordinate (it is the only way to say it): once it is drawn the route labels are drawn
+    c.until("() => (window.__mpTexts || []).some(t => t.indexOf('4500N00200E') === 0)", timeout=15000, what='the route labels are drawn (the unnamed coordinate point)')
+    got = [norm(t) for t in c.js("() => window.__mpTexts")]
+    c.ok(any(t.startswith('Col inventé') for t in got), f'drawn {sorted(set(got))[:30]}', 'the coordinate point is drawn under its NAME')
+    c.ok(not any(t.startswith('4600N00030E') for t in got), 'the coordinate was drawn', 'and not under its coordinate')
+    c.ok(any(t.startswith('NEPIX') for t in got) and not any(t.startswith('Nom ignoré') for t in got), 'NEPIX / name', 'a point with a code keeps its code (its name is not drawn)')
+    c.wait(500)
+    c.shot('D325.png')

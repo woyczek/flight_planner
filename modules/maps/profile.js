@@ -126,8 +126,10 @@
   } = {}) {
     // niveaux des points (cheminement d'une mission : lvl, alt) ; sinon le niveau de croisière au départ
     const own = points.some(p => p.lvl || Number.isFinite(p.alt)),
+      // SOG-0621 / SOG-0618 : un point dont l'identifiant est un mot de coordonnées (illisible) est nommé par son nom de lieu quand il en a un (le même mot que la carte : render_route.js)
+      coordId = /^\d{2}(?:\d{2}(?:\d{2})?)?[NS]\d{3}(?:\d{2}(?:\d{2})?)?[EW]$/i,
       pts = points.map((p, i) => ({
-        name: p.id || p.name || '',
+        name: coordId.test(p.id || '') && (p.holdName || p.place) || p.id || p.name || '',
         lat: p.lat,
         lon: p.lon,
         ...(Number.isFinite(p.alt) ? {

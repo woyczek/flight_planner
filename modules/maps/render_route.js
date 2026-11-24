@@ -9,6 +9,8 @@
   const {
     halo
   } = R.kit;
+  /** Un identifiant qui est un mot de coordonnées (« 4630N00130W », « 46N001W », « 463000N0013000W ») : illisible, le point est montré sous son nom quand il en a un (même forme que FPL_COORD de lib/vertical_profile.js). */
+  const COORD_ID = /^\d{2}(?:\d{2}(?:\d{2})?)?[NS]\d{3}(?:\d{2}(?:\d{2})?)?[EW]$/i;
 
   /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : le cartouche d'une voie qui en suit une est
    *  dessiné au-dessus du trait de la route (qui le couvrirait sinon), toujours posé sur son tronçon. */
@@ -93,8 +95,10 @@
         alt = Number.isFinite(h) ? level ? level(h) : h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft` : '',
         // le temps sur zone du point (« ⏱ 0:20 », Carburant : route.holds) à la suite de son nom
         hold = +p.hold > 0 ? `⏱ ${Math.floor(p.hold / 60)}:${String(p.hold % 60).padStart(2, '0')}` : '',
-        // le nom du point dans la mission (« PT1 ») : seul quand l'identifiant est un mot de coordonnées (illisible), sinon à la suite de l'identifiant
-        title = p.holdName ? /^[0-9]{4}[NS][0-9]{5}[EW]$/.test(p.id || '') ? p.holdName : `${p.id || ''} (${p.holdName})` : p.id || p.name || '',
+        // le nom du point dans la mission (« PT1 ») : seul quand l'identifiant est un mot de coordonnées (illisible), sinon à la suite de l'identifiant ;
+        // SOG-0621 : un point dont l'identifiant est une coordonnée est montré sous son NOM (holdName, sinon `place`, le nom du lieu écrit par Carburant) quand il en a un, jamais sous la coordonnée seule
+        coord = COORD_ID.test(p.id || ''),
+        title = coord ? p.holdName || p.place || p.id || '' : p.holdName ? `${p.id || ''} (${p.holdName})` : p.id || p.name || '',
         text = [title, alt, hold].filter(Boolean).join(' · ');
       if (!text) continue;
       const f = end ? 13 * scale : f0,

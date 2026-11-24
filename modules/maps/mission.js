@@ -206,7 +206,11 @@
       p.role ||= id; // le rôle reste connu quand le point porte son propre code (départ « LFBD »)
     }
     for (const key of ['turning_points', 'turningPoints', 'points_tournants', 'waypoints', 'points', 'rendezvous', 'rdv'])
-      for (const p of asList(root[key] ?? meta[key])) addPoint(points, p, keyNorm(key).toUpperCase());
+      for (const p of asList(root[key] ?? meta[key])) {
+        const q = addPoint(points, p, keyNorm(key).toUpperCase());
+        // SOG-0621 : un point des clés « rendezvous » / « rdv » est un rendez-vous, quel que soit son code (« R1 », « PT-RV »…) : son rôle est posé À LA SOURCE, le cheminement ne le prend jamais pour un point de route
+        if (q && /^(rendezvous|rdv)$/.test(keyNorm(key))) q.role ||= 'RDV';
+      }
     const zones = zonesOf(root, meta),
       refs = new Map(roleRefs);
     for (const p of points) {
@@ -303,7 +307,8 @@
     };
   }
   /** Jetons du cheminement de la mission : vertical_profile.route, sinon départ, points tournants (ou cible),
-   *  destination (map_parser.html, vprofDefaultRoute). */
+   *  destination (map_parser.html, vprofDefaultRoute). SOG-0621 : sans au moins deux points de route (départ, points tournants ou cible, destination) il n'y a PAS de cheminement — '' —,
+   *  jamais « tous les points dans l'ordre » : le dégagement et le rendez-vous ne sont pas des points de route, un trait faux est pire que pas de trait. */
   function routeTokens(mission) {
     const v = mission.vprof;
     if (v.route) return v.route;
@@ -311,7 +316,7 @@
       by = role => ps.find(p => p.role === role || p.id === role),
       tps = ps.filter(p => !p.role && !/^(ORIGIN|DESTINATION|TARGET|ALTERNATE)$/.test(p.id) && !/^RDV/i.test(p.id)),
       list = [by('ORIGIN'), ...(tps.length ? tps : [by('TARGET')]), by('DESTINATION')].filter(Boolean);
-    return (list.length >= 2 ? list : ps).map(p => p.id).join(' ');
+    return list.length >= 2 ? list.map(p => p.id).join(' ') : '';
   }
 
   window.MapsMission = {
