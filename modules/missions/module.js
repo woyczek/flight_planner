@@ -44,6 +44,9 @@ import {
 export const meta = {
   id: 'missions',
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
+  // SOG-0617 : le veilleur, importé une fois par page dans TOUTES les applis (frame/app.js startWatchers) : la mission du vol démarré
+  // jugée sur chaque écran, la note d'arrivée et la ligne « Mission … en cours » du bloc d'état (watch.js)
+  watch: 'watch.js',
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
@@ -54,6 +57,7 @@ export const meta = {
     'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
     'drawers.js', 'drawers_view.js',
     'drawers_run.js', // SOG-0617 : le juge des tiroirs (Création), importé par drawers_view.js
+    'watch.js', // SOG-0617 : le veilleur de la mission en vol (meta.watch)
     '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
