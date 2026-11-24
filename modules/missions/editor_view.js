@@ -2071,7 +2071,7 @@ function edMapFeats(s, doc, run = null) {
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
     adPos: name => adPosOf(s, ED.adCodeOf(name)), // le code d'un terrain quelle que soit la casse écrite (SOG-0469)
     // SOG-0506 : la route passe par le départ et l'arrivée là où la carte les montre — la position de la base quand le fichier n'en écrit pas
-    path: TR.pathOf(MS.readMission(ED.endsAt(doc, k => adPosOf(s, k)))),
+    path: TR.pathOf(edLocated(s, doc).m),
     run,
     sel: run ? -1 : edMapSel(e),
     // la suite de route du tiroir choisi, dessinée elle aussi (les identifiants d'aujourd'hui de ses lieux)
@@ -3972,7 +3972,12 @@ const trNum = v => /^\s*-?\d+(\.\d+)?\s*$/.test(String(v ?? '')) ? +v : undefine
 function edTrialRun(s, doc) {
   const t = s.ed.trial;
   if (!t?.on) return null;
-  return TR.trialRun(MS.readMission(doc), {
+  // SOG-0625 : l'essai part du terrain de départ — la mission située par la base comme la carte (edLocated) ; un code que la base lit ENCORE n'est pas « inconnu » :
+  // l'essai attend (why « wait », aucune phrase) et la réponse de la base (adPosOf) redessine ; inconnu, « Pas d'essai : … » (editor_trial.js)
+  const {
+    m,
+    reading
+  } = edLocated(s, doc), run = TR.trialRun(m, {
     untilMin: t.min,
     speedKt: trNum(t.speed),
     altFt: trNum(t.alt),
@@ -3980,6 +3985,25 @@ function edTrialRun(s, doc) {
     hands: t.hands,
     puts: t.puts // « Placer l'avion ici » : les poses de l'auteur (le moteur les borne)
   });
+  return reading && !run.ok ? {
+    ...run,
+    why: 'wait'
+  } : run;
+}
+
+/** La mission lue avec son départ et son arrivée SITUÉS par la base (ED.endsAt, adPosOf) : celle que la carte dessine et que l'essai suit — une seule règle. `reading` : la base
+ *  lit encore un de ces codes (adPosOf répond plus tard et redessine). */
+function edLocated(s, doc) {
+  let reading = false;
+  const m = MS.readMission(ED.endsAt(doc, k => {
+    const p = adPosOf(s, k);
+    if (!p && s.adPos?.has(k) && s.adPos.get(k) === undefined) reading = true;
+    return p;
+  }));
+  return {
+    m,
+    reading
+  };
 }
 
 /** « H + 6 min » : une minute de l'essai. */
@@ -3989,7 +4013,8 @@ const trAt = (s, min) => s.tt(EDTX.trAt, {
 
 /** Le journal de l'essai, en phrases (les faits viennent de editor_trial.js : { min, ev, rank, how, why }). */
 function edTrialLines(s, run) {
-  if (!run.ok) return [s.tt(EDTX.trNoRoute)];
+  if (!run.ok) return run.why === 'wait' ? [] : [s.tt(EDTX
+    .trNoRoute)]; // « wait » : la base lit encore le code du départ ou de l'arrivée (aucune phrase)
   return run.log.map(l => {
     const row = l.ev === 'start' ? EDTX.trStart : l.ev === 'open' ? EDTX[`trOpen_${l.how}`] || EDTX.trOpen_hand : l.ev === 'unknown' ? EDTX[
       `trUnknown_${l.why}`] || EDTX.trUnknown_data : l.ev === 'order' ? EDTX[`trOrder_${l.why}`] || EDTX.trUnknown_data : EDTX[
@@ -4271,10 +4296,14 @@ function adPosOf(s, icao) {
     }) => {
       s.adPos.set(k, v);
       ED.noteAerodrome(k, known); // un texte n'est un terrain que si la base le connaît (SOG-0469)
-      if (known && state() === s && s.ed) {
-        edRecode(s);
-        for (const key of ['dep', 'arr']) edEndFill(s, s.ed, key); // SOG-0506 : la position de la base écrite au terrain saisi
-        edRefresh(s);
+      if (state() === s && s.ed && (known || s.ed.trial?.on)) {
+        if (known) {
+          edRecode(s);
+          for (const key of ['dep', 'arr']) edEndFill(s, s.ed, key); // SOG-0506 : la position de la base écrite au terrain saisi
+        }
+        edRefresh(
+          s
+        ); // SOG-0625 : un essai en attente de la base se redessine à sa réponse, connue ou non (« Pas d'essai » seulement une fois le code dit inconnu)
       }
     });
   }
@@ -4667,7 +4696,7 @@ export function edClick(s, b) {
       return edSave(s);
     case 'edtrial': { // « Essayer les clés » : le volet de l'essai prend la place de la fiche ; rien n'est écrit dans la mission
       const e = s.ed,
-        m = MS.readMission(edDoc(e)),
+        m = edLocated(s, edDoc(e)).m, // le départ et l'arrivée situés par la base, comme la carte et l'essai (SOG-0625)
         full = TR.trialRun(m, {
           untilMin: TR.TRIAL.maxMin
         }),

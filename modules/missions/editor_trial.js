@@ -133,6 +133,15 @@ function run(mission, opts) {
       })),
       log: []
     };
+  // SOG-0625 : l'essai part du TERRAIN DE DÉPART — sans départ ET arrivée situés (un code que la base ne connaît pas, ni position écrite), pas d'essai : il ne part jamais du premier
+  // point en le taisant (la carte, elle, garde son dessin : pathOf ne change pas)
+  let flight = null;
+  try {
+    flight = MS.missionFlight(m);
+  } catch {
+    flight = null;
+  }
+  if (!at(flight?.route?.depAt) || !at(flight?.route?.arrAt)) return none;
   if (path.length < 2) return none;
   const end = path[path.length - 1],
     open = new Map(),

@@ -16928,3 +16928,68 @@ def n274(c):
     c.eq(c.js(_KEYPLACES_OUT), ['PT8'], 'in « Hors itinéraire », only the line of PT8 is marked: what nothing cites', what='Hors itinéraire')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0625: « Essayer les clés » starts from the DEPARTURE FIELD (a departure given by its code is located by the base, as the map and Fuel do); an unlocated departure or arrival refuses.
+_KT_REG = ('schema: mission-registry\nversion: 1\nmissions:\n  - { id: X-001A, family: REG, series: 1, title: Départ par son code, folder: X_REG/X-001A, files: [missionX-001A.yaml] }\n')
+_KT_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Départ par son code
+summary: Un départ donné par son code seul.
+cruise_speed_kt: 120
+origin: { name: %s }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.8 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - { id: B, title: Premier, message: Un message., brief: Une consigne., fallback_delay_min: 60 }
+"""
+# the centres of the dots of the sketch: [the aircraft, the first blue dot (the departure), the grey dot of the turning point]
+_KT_DOTS = f"""(() => {{ const svg = document.querySelector('{E} [data-atmapbody] [data-edthumb]');
+  const c = e => e ? [e.getAttribute('cx'), e.getAttribute('cy')].join() : null, all = [...svg.querySelectorAll('circle')];
+  return {{ plane: c(svg.querySelector('[data-trplane]')), dep: c(all.find(e => !e.hasAttribute('data-trplane') && e.getAttribute('r') === '4')),
+    pt: c(all.find(e => e.getAttribute('r') === '3')) }} }})()"""
+
+
+@case('N275', 'Missions › « Essayer les clés » starts from the DEPARTURE FIELD (SOG-0625): a departure given by its code alone (a field the base knows) is located by the base as the map does, so the aircraft '
+      'of the trial is at the field at minute 0, not at the first point of the route; a departure whose code the base does not know is refused with « Pas d\'essai : la mission n\'a pas de route à suivre '
+      '(un départ et une arrivée situés). »',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0625 (the ergonomist): the trial starts from the departure field; editor_view.js `edLocated` (the same location as the map: ED.endsAt, adPosOf), editor_trial.js `run` (no depAt and arrAt: ok false, why route); '
+      'a code the base is still reading is not unknown: the trial waits for the answer (adPosOf redraws)')
+def n275(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+
+    def trial(origin):
+        c.page.set_viewport_size({'width': 1280, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _KT_REG], [path, _KT_MISSION % origin]])
+        c.open('missions', wait=False, app='company', aero_extra=_LC_BASE_AD)
+        c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+        c.tap(f'{M} [data-do="regopen"]')
+        c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+        _tab(c, 'map')
+        _tab(c, 'map')
+        c.tap(f'{E} [data-trbtn]')
+        c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+
+    # 1. the code alone (XTST, known by the base at 45.0 N, 1.0 E), the first point PT1 elsewhere: the aircraft is at the field at minute 0
+    trial('Base Test (XTST)')
+    c.until(f"!!document.querySelector('{E} [data-atmapbody] [data-trplane]')", timeout=15000, what='the aircraft of the trial (the base has answered)')
+    dots = c.js(_KT_DOTS)
+    c.ok(dots['plane'] is not None and dots['plane'] == dots['dep'] and dots['plane'] != dots['pt'], dots,
+         'at minute 0 the aircraft of the trial is on the departure field (the position of the base), not on the first point PT1')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+    # 2. a code the base does not know: the trial refuses, with its own sentence
+    trial('Base Inconnue (XTZZ)')
+    refusal = norm("Pas d'essai : la mission n'a pas de route à suivre (un départ et une arrivée situés).")
+    c.until(f"[...document.querySelectorAll('{_TR} [data-trlog] li')].map(x => x.textContent.replace(/\\s+/g, ' ').trim()).length === 1", timeout=15000, what='the line of the log')
+    c.eq([norm(x) for x in c.js(_TR_LOG)], [refusal], 'a departure the base does not know: the trial says it has no route to follow (a located departure and arrival), it never starts from the first point', what='refusal')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
