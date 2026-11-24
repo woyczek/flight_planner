@@ -81,6 +81,9 @@
 //   Règle des with… (audit 182, Sécurisation) : seul ce que le pilote a changé est écrit ; « Enregistrer » sans rien toucher n'écrit rien.
 import * as MS from '../../frame/lib/mission.js';
 import {
+  plain
+} from '../../frame/lib/untrusted.js';
+import {
   isCode
 } from '../../frame/lib/ad_field.js'; // SOG-0465 : le motif d'un code de terrain est celui du champ commun (fonction pure, sans instance ni écran)
 
@@ -110,7 +113,7 @@ const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
  *  (editor_drawers.js l'importe). */
 export const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un objet du document, ou {}. */
-const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+const obj = v => plain(v) || {};
 /** Une liste du document comme le lecteur la lit (frame/lib/mission.js list) : un tableau, un objet seul = une entrée, sinon rien
  *  (audit 186 : un « rendezvous: { … } » seul était perdu à la première retouche des Lieux). */
 const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
@@ -445,10 +448,6 @@ const positive = (v, max) => {
 };
 /** Un nombre lu du fichier, en texte pour un champ ('' sinon ; un texte blanc n'est pas zéro). */
 const numText = v => v === null || v === undefined || String(v).trim() === '' || !Number.isFinite(+v) ? '' : String(+v);
-/** Une valeur écrite (ni absente, ni vide). */
-const written = v => v !== undefined && v !== null && v !== '';
-/** Oui ou non écrit dans le fichier, comme le lecteur le lit (false, 0, « non », « no », « false » : non). */
-const yes = (v, dflt) => !written(v) ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v).trim()));
 
 /** Les bornes du nombre de sommets d'un contour (celles du lecteur : frame/lib/mission.js DRAWER_BOUNDS.vertices). */
 export const VERTICES = Object.freeze([3, 100]);
@@ -586,8 +585,8 @@ export function placesOf(doc) {
       range: numText(o.detection_range_nm),
       height: numText(o.detection_height_ft),
       alt: numText(o.altitude_ft),
-      confirm: yes(o.require_confirmation, true),
-      moving: written(o.route_order) || written(o.speed_kt) || written(o.motion)
+      confirm: MS.yes(o.require_confirmation, true),
+      moving: MS.written(o.route_order) || MS.written(o.speed_kt) || MS.written(o.motion)
     });
   });
   return out;
@@ -1942,23 +1941,24 @@ export function mapsNoCentre(doc) {
 /** Les parties qui portent un délai sans point de déclenchement (la trace d'un lieu retiré) : leurs rangs (« 1 » : le premier tiroir).
  *  Une partie sans délai ni point s'ouvre au geste du pilote, à dessein : elle n'est pas dite. */
 export function drawersNoPoint(doc) {
-  const has = v => v !== undefined && v !== null && v !== '';
-  return arrOf(obj(doc).phases).map((p, n) => p && typeof p === 'object' && !Array.isArray(p) && has(p.trigger_delay_min) && !has(p
-    .trigger_point) && !has(p.trigger_zone) && !has(p.trigger_object) && !has(p.trigger_condition) ? String(n + 1) : '').filter(Boolean);
+  const w = MS.written;
+  return arrOf(obj(doc).phases).map((p, n) => p && typeof p === 'object' && !Array.isArray(p) && w(p.trigger_delay_min) && !w(p
+      .trigger_point) &&
+    !w(p.trigger_zone) && !w(p.trigger_object) && !w(p.trigger_condition) ? String(n + 1) : '').filter(Boolean);
 }
 
 /** Les parties restées sans clé (SOG-0445) : leurs rangs. La trace d'une zone de passage retirée — plus aucune clé, et l'heure de
  *  repli ou « zone montrée » sont restées — ou du point d'une arrivée retiré (la condition est restée, sans son point). Une partie
  *  au délai sans point est dite par drawersNoPoint, jamais deux fois. */
 export function drawersNoKey(doc) {
-  const has = v => v !== undefined && v !== null && v !== '';
+  const w = MS.written;
   return arrOf(obj(doc).phases).map((p, n) => {
     if (!p || typeof p !== 'object' || Array.isArray(p)) return '';
     const c = p.trigger_condition,
-      noPoint = c && typeof c === 'object' && !Array.isArray(c) && String(c.kind ?? '').trim().toLowerCase() === 'arrival' && !has(c
+      noPoint = c && typeof c === 'object' && !Array.isArray(c) && String(c.kind ?? '').trim().toLowerCase() === 'arrival' && !w(c
         .point),
-      bare = !has(p.trigger_point) && !has(p.trigger_zone) && !has(p.trigger_object) && !has(c) && !has(p.trigger_delay_min) && (has(p
-        .fallback_delay_min) || has(p.zone_shown));
+      bare = !w(p.trigger_point) && !w(p.trigger_zone) && !w(p.trigger_object) && !w(c) && !w(p.trigger_delay_min) &&
+      (w(p.fallback_delay_min) || w(p.zone_shown));
     return noPoint || bare ? String(n + 1) : '';
   }).filter(Boolean);
 }

@@ -37,6 +37,9 @@
 //   slug(title) → l'identifiant d'un modèle tiré de son nom ('' sinon) ; modelPath(trigram, id) → 'pilot/<TRI>/modeles/<id>.yaml' | null.
 import * as MS from '../../frame/lib/mission.js';
 import {
+  plain
+} from '../../frame/lib/untrusted.js';
+import {
   slug as textSlug
 } from '../../frame/lib/text.js';
 import * as DR from './editor_drawers.js';
@@ -71,8 +74,8 @@ const B = MS.DRAWER_BOUNDS;
 /** Les clés qui regardent l'avion : elles ont une heure de repli (les conditions 1.1 aussi, SOG-0500 (d)). */
 const LIVE_KEYS = Object.freeze(['zone', 'object', 'arrival', ...DR.CONDS]);
 
-/** Un objet du fichier (ni liste, ni valeur nue). */
-const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+/** Un objet du fichier (ni liste, ni valeur nue) : le `plain` du cadre, en booléen. */
+const isObj = v => !!plain(v);
 /** Une liste du fichier, bornée (rien sinon) ; `over` reçoit le nombre d'entrées au-delà de la borne. */
 const listOf = (v, max, over) => {
   const a = Array.isArray(v) ? v : [];

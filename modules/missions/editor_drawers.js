@@ -64,6 +64,9 @@
 //     s'ouvre qu'à la main), routeUnknown (sa suite de route cite un lieu absent), emitIncomplete (un message envoyé sans identifiant
 //     ou sans destinataire : le lecteur ne le lit pas).
 import * as MS from '../../frame/lib/mission.js';
+import {
+  plain
+} from '../../frame/lib/untrusted.js';
 import * as DW from './drawers.js'; // lu, jamais modifié : la période d'un relevé du vol (FIX_PERIOD_SEC, quand Affectation la publie)
 import {
   cut
@@ -138,18 +141,14 @@ const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_obje
 const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? MS.visible(v).replace(/\r\n?/g, '\n').replace(
     /[ \t]+\n/g, '\n').trim()
   .slice(0, n) : '';
-/** Un objet du fichier (ni liste, ni valeur nue). */
-const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
-/** Une valeur écrite (ni absente, ni vide). */
-const has = v => v !== undefined && v !== null && v !== '';
+/** Un objet du fichier (ni liste, ni valeur nue) : le `plain` du cadre, en booléen. */
+const isObj = v => !!plain(v);
 /** Un identifiant ou un nombre écrit nu (jamais un objet). */
 const scalar = v => typeof v === 'string' || typeof v === 'number';
 /** Un nombre lu du fichier, en texte pour un champ ('' sinon ; un texte blanc n'est pas zéro). */
-const numText = v => has(v) && scalar(v) && String(v).trim() !== '' && Number.isFinite(+v) ? String(+v) : '';
+const numText = v => MS.written(v) && scalar(v) && String(v).trim() !== '' && Number.isFinite(+v) ? String(+v) : '';
 /** Un nombre saisi dans [lo, hi] ; null sinon (jamais ramené dans les bornes). */
 const within = (v, lo, hi) => /^\s*-?\d+(\.\d+)?\s*$/.test(String(v ?? '')) && +v >= lo && +v <= hi ? +v : null;
-/** Oui ou non écrit dans le fichier, comme le lecteur le lit. */
-const yes = (v, dflt) => !has(v) ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v).trim()));
 /** Le mot d'une route : un identifiant nu, ou celui d'un objet { id } ; '' sinon. */
 const token = x => scalar(x) ? cut(x, 60) : isObj(x) && scalar(x.id) ? cut(x.id, 60) : '';
 /** Les mots d'une liste de route du fichier (bornée). */
@@ -180,15 +179,15 @@ export const blankRule = () => ({
 /** Une règle du fichier en champs (une condition, ou une étape d'une suite) ; null quand son lieu n'est pas un identifiant nu (une
  *  position écrite dans la règle : la clé est gardée telle quelle). */
 function ruleOf(c) {
-  if (!isObj(c) || has(c.point) && !scalar(c.point) || has(c.object) && !scalar(c.object)) return null;
+  if (!isObj(c) || MS.written(c.point) && !scalar(c.point) || MS.written(c.object) && !scalar(c.object)) return null;
   const r = blankRule();
-  r.point = has(c.point) ? cut(c.point, 40) : '';
-  r.object = has(c.object) ? cut(c.object, 40) : '';
+  r.point = MS.written(c.point) ? cut(c.point, 40) : '';
+  r.object = MS.written(c.object) ? cut(c.object, 40) : '';
   r.label = cut(c.label, B.title);
   for (const [f, [k]] of Object.entries(RULE_NUM)) r[f] = numText(c[k]);
   r.confirmation = scalar(c.confirmation) ? cut(c.confirmation, 24) : '';
-  r.confirm = yes(c.require_confirmation, true);
-  r.depart = yes(c.require_departure, true);
+  r.confirm = MS.yes(c.require_confirmation, true);
+  r.depart = MS.yes(c.require_departure, true);
   return r;
 }
 
@@ -316,14 +315,14 @@ function keyOf(p) {
       steps: [],
       event: ''
     },
-    written = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(k => has(p[k])),
+    written = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(k => MS.written(p[k])),
     kept = why => ({
       ...f,
       key: 'kept',
       keptWhy: why
     });
   if (written.length > 1) return kept('several');
-  if (written[0] === 'trigger_zone') return !scalar(p.trigger_zone) ? kept('inPart') : has(p.trigger_actor) ? kept('actor') : {
+  if (written[0] === 'trigger_zone') return !scalar(p.trigger_zone) ? kept('inPart') : MS.written(p.trigger_actor) ? kept('actor') : {
     ...f,
     key: 'zone',
     zone: cut(p.trigger_zone, 40),
@@ -364,20 +363,20 @@ function keyOf(p) {
       } : kept('condition');
     }
     // un message attendu : son identifiant, un mot nu
-    if (kind === 'event') return !has(c.event) || scalar(c.event) ? {
+    if (kind === 'event') return !MS.written(c.event) || scalar(c.event) ? {
       ...f,
       key: 'event',
-      event: has(c.event) ? cut(c.event, 80) : ''
+      event: MS.written(c.event) ? cut(c.event, 80) : ''
     } : kept('condition');
-    if (!isObj(c) || kind !== 'arrival' || has(c.point) && !scalar(c.point)) return kept('condition');
-    if (has(c.escort_min_sec) && +c.escort_min_sec !== 0) return kept('escort');
+    if (!isObj(c) || kind !== 'arrival' || MS.written(c.point) && !scalar(c.point)) return kept('condition');
+    if (MS.written(c.escort_min_sec) && +c.escort_min_sec !== 0) return kept('escort');
     return {
       ...f,
       key: 'arrival',
       arrPoint: cut(c.point, 40),
       arrRadius: numText(c.radius_nm),
       arrSpeed: numText(c.speed_max_kt),
-      arrGround: yes(c.require_on_ground, false),
+      arrGround: MS.yes(c.require_on_ground, false),
       stops: tokens(c.required_points, B.required)
     };
   }

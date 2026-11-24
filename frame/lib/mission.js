@@ -300,9 +300,11 @@ const positive = (v, hi) => {
 };
 /** La longueur au plus du texte du cheminement du profil vertical (`profileRoute`). */
 const PROFILE_TEXT = 2000;
-/** Oui ou non écrit dans le fichier (false, 0, « non », « no », « false » : non) ; `dflt` quand rien n'est écrit. */
-const yes = (v, dflt) => v === undefined || v === null || v === '' ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v)
-  .trim()));
+/** Une valeur écrite (ni absente, ni vide) : un texte blanc est écrit. Exportée : l'atelier lit comme le lecteur (SOG-0468). */
+export const written = v => v !== undefined && v !== null && v !== '';
+/** Oui ou non écrit dans le fichier (false, 0, « non », « no », « false » : non) ; `dflt` quand rien n'est écrit. Exportée : l'atelier lit
+ *  comme le lecteur (SOG-0468). */
+export const yes = (v, dflt) => !written(v) ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v).trim()));
 /** L'entrée d'une liste du fichier (ou d'un objet seul) qui porte cet identifiant, parmi les `max` premières ; null sinon. */
 const byId = (v, id, max) => id ? (Array.isArray(v) ? v : plain(v) ? [v] : []).slice(0, max).find(x => plain(x) && idWord(x.id) === id) ||
   null : null;

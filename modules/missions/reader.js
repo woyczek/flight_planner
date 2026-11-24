@@ -21,6 +21,10 @@
 //   spreadOf(index, count, two) → { from, to, prev, next } : les pages montrées (une, ou deux côte à côte : la page de gauche a un
 //     rang pair à partir de zéro), et les rangs de la page d'avant et d'après (null au bout).
 
+import {
+  plain
+} from '../../frame/lib/untrusted.js'; // un objet simple : la règle du cadre, jamais recopiée
+
 const MAX_PAGES = 16; // quatre pages de la mission et douze tiroirs au plus
 
 /** Un texte borné, sans blancs autour ; '' pour ce qui n'est pas un texte. */
@@ -29,8 +33,6 @@ const text = (v, n = 20000) => typeof v === 'string' ? v.trim().slice(0, n) : ''
 const texts = (v, max, n) => (Array.isArray(v) ? v : []).slice(0, max).map(x => text(x, n)).filter(Boolean);
 /** Un nombre fini positif, sinon null. */
 const pos = v => typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null;
-/** Un objet simple (ni liste, ni null). */
-const plain = v => !!v && typeof v === 'object' && !Array.isArray(v);
 
 /** Les pages de la liseuse (voir l'en-tête). Ne lève jamais : une mission illisible n'a aucune page. */
 export function pagesOf(view, {

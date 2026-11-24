@@ -15789,3 +15789,37 @@ def n249(c):
     # editor_map.js keeps EARTH_KM for a destination point (a bearing and a distance → a position), not for a distance: that one constant is allowed
     own = sorted(f.name for f in mod.glob('*.js') if _re.search(r'3440\.065|6371', f.read_text(encoding='utf-8').replace('EARTH_KM = 6371.0088', '')))
     c.eq(own, [], 'no file of the module writes its own haversine (no 3440.065, no 6371 but the destination-point constant of the map)', what='files with their own earth radius')
+
+
+@case('N250', 'Missions › the yes / no of a file and « something is written » are the reader\'s (SOG-0468, point 4): MS.yes(v, dflt) and MS.written(v) of frame/lib/mission.js '
+      'give this truth table, the one the three former copies (editor.js, editor_drawers.js, the reader) all gave', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False, phone=False, night=False,
+      rule='SOG-0468 point 4: false, 0, « no », « non », « false », « 0 » (any case, blanks around) say no; nothing written (absent, null, empty) gives the default; a blank text is written')
+def n250(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const MS = await import('/frame/lib/mission.js');
+      const ins = [undefined, null, '', ' ', 0, 1, false, true, 'no', 'NON', ' false ', 'Faux', 'yes', '0', '00', [], {}, NaN];
+      return { dT: ins.map(v => MS.yes(v, true)), dF: ins.map(v => MS.yes(v, false)), w: ins.map(v => MS.written(v)) } }""")
+    T, F = True, False
+    c.eq(got['dT'], [T, T, T, T, F, T, F, T, F, F, F, T, T, F, T, T, T, T], 'yes(v, true) for undefined, null, "", " ", 0, 1, false, true, "no", "NON", " false ", "Faux", "yes", "0", "00", [], {}, NaN', what='yes with a default of yes')
+    c.eq(got['dF'], [F, F, F, T, F, T, F, T, F, F, F, T, T, F, T, T, T, T], 'yes(v, false), the same inputs (only the unwritten ones change)', what='yes with a default of no')
+    c.eq(got['w'], [F, F, F, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T], 'written(v): only undefined, null and "" are not written (a blank text is)', what='written')
+
+
+@case('N251', 'Missions › no file of modules/missions defines its own yes(v, dflt), written / has(v) (a value written) or isObj: they are MS.yes, MS.written and plain of frame/lib/untrusted.js '
+      '(an isObj is only an alias of plain; the object reader of editor.js is plain(v) || {}) (SOG-0468, point 4)', 'N', static=True, tags=('missions',),
+      rule='SOG-0468 point 4: one reader rule per thing; `has(o, k)` of untrusted.js (an own key) is another function and stays')
+def n251(c):
+    import re as _re
+    found = []
+    for f in sorted((c.root / 'modules/missions').glob('*.js')):
+        for n, line in enumerate(f.read_text(encoding='utf-8').splitlines(), 1):
+            if _re.search(r'\bconst yes\s*=|\bfunction yes\b|\bconst written\s*=|\bconst has\s*=\s*v\s*=>|\bfunction isObj\b', line):
+                found.append(f'{f.name}:{n}')
+            m = _re.search(r'\bconst isObj\s*=(.*)', line)
+            if m and 'plain(' not in m.group(1):
+                found.append(f'{f.name}:{n}')
+            m = _re.search(r'\bconst (obj|plain)\s*=\s*v\s*=>(.*)', line)
+            if m and not (m.group(1) == 'obj' and 'plain(v)' in m.group(2)):
+                found.append(f'{f.name}:{n}')
+    c.eq(found, [], 'no own yes / written / has(v) / isObj / plain / obj of the module (isObj and obj are built on plain)', what='own reader rules')
