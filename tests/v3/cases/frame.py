@@ -12339,3 +12339,80 @@ def a383(c):
     c.js("() => window.__rel2()")
     c.eq((c.js(armed), c.js("() => window.SogFrame.memoryOnlyList()")), (False, []), 'all released: the warning is disarmed', what='disarmed')
     c.check_errors()
+
+
+_WORK1 = "{ fr: 'route de la carte', en: 'map route', de: 'Kartenroute', es: 'ruta del mapa' }"
+_WORK2 = "['brouillon de la mission', 'mission draft', 'Missionsentwurf', 'borrador de la misión']"
+_WORKS = {'fr': ('route de la carte', 'brouillon de la mission'), 'en': ('map route', 'mission draft'), 'de': ('Kartenroute', 'Missionsentwurf'), 'es': ('ruta del mapa', 'borrador de la misión')}
+
+
+@case('A385', 'The Status block says a work held in memory only (SOG-0607, lot B): « Travail non gardé : {quoi}. Il sera perdu si la page se ferme. » — one line per work, FIRST (then the token, then the rest as before), in the red of errors, with the cause as a sub-line in the block’s tone (« Touchez pour… »); a touch leads to the remedy (Offline data when the storage is full, the diagnostic when the cause is unknown); the line goes without a reload as soon as the work is written', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0607 (the ergonomist, mock-up of frame/maquette/non_garde.html, 24 Nov): statusItems() puts the unsaved works first, then the token lines (SOG-0362), then the rest in today's order (green before amber); ctx.memoryOnly(quoi, e) gives the cause")
+def a385(c):
+    _expiry_seed(c, own_days=1)
+    c.open('fuel', trigram='', pending=1)
+    c.until("!!window.SogFrame && typeof window.SogFrame.memoryOnly === 'function'", timeout=20000, what='the frame answers memoryOnly()')
+    c.js(f"() => {{ window.__mark = 1; window.__r1 = window.SogFrame.memoryOnly({_WORK1}, new DOMException('q', 'QuotaExceededError')); window.__r2 = window.SogFrame.memoryOnly({_WORK2}, new Error('boom')) }}")
+    rows = open_status(c)
+    keys = [r['k'] for r in rows]
+    c.eq(keys[:2], ['unsaved-0', 'unsaved-1'], 'the two works are the first lines of the Status block', what='unsaved first')
+    c.ok(keys[2].startswith('token-'), keys, 'then the token that expires tomorrow, before everything else')
+    c.ok(keys.index('report') < keys.index('who'), keys, 'the rest keeps today’s order: the green line (report to write) before the amber one (no trigram)')
+    w1, w2 = _WORKS[c.lang]
+    line = tx('frame/app.js', 'unsaved', c.lang, after='whoSub:')
+    full = tx('frame/app.js', 'unsavedFull', c.lang, after='whoSub:')
+    unk = tx('frame/app.js', 'unsavedUnknown', c.lang, after='whoSub:')
+    c.eq([norm(rows[0]['text']), norm(rows[1]['text'])], [norm(line.replace('{w}', w1) + ' ' + full), norm(line.replace('{w}', w2) + ' ' + unk)], 'one line per work, then its cause in the tone of the block', what='texts')
+    dots = c.js("""() => [...document.querySelectorAll('[data-card="status"] li[data-k^="unsaved-"] .f-status-dot, [data-card="status"] li[data-k^="token-"] .f-status-dot')].map(d => [d.hidden, d.hasAttribute('data-attn'), d.dataset.level || '', getComputedStyle(d).color])""")
+    c.ok(len(dots) >= 3 and all(not d[0] and d[1] and d[2] == 'urgent' for d in dots[:3]) and len({d[3] for d in dots[:3]}) == 1, dots, 'the lines of the works have the red of errors, the same as the token line')
+    # a touch on the line of an unknown cause: the diagnostic, opened
+    c.tap('[data-card="status"] li[data-k="unsaved-1"] [data-go]')
+    c.until("!!document.querySelector('[data-card=\"about\"] [data-diagbox]') && document.querySelector('[data-card=\"about\"] [data-diagbox]').open", timeout=8000, what='the diagnostic is opened')
+    # the work released: its line goes, without a reload
+    c.js("() => window.__r2()")
+    c.until("!document.querySelector('[data-card=\"status\"] li[data-k=\"unsaved-1\"]') && !!document.querySelector('[data-card=\"status\"] li[data-k=\"unsaved-0\"]')", what='the released work leaves, the other stays')
+    c.js("() => window.__r1()")
+    c.until("!document.querySelector('[data-card=\"status\"] li[data-k^=\"unsaved-\"]')", what='all written: no line left')
+    c.eq(c.js("() => window.__mark"), 1, 'no reload happened', what='no reload')
+    # the full storage: the line leads to Offline data
+    c.js(f"() => {{ window.__r3 = window.SogFrame.memoryOnly({_WORK1}, new DOMException('q', 'QuotaExceededError')) }}")
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"unsaved-0\"] [data-go]')", what='the line comes back')
+    c.tap('[data-card="status"] li[data-k="unsaved-0"] [data-go]')
+    c.until("location.hash === '#settings?card=offline'", what='the touch leads to Offline data')
+    c.until("!!document.querySelector('[data-card=\"offline\"]')", timeout=10000, what='the Offline data card')
+    c.check_errors()
+
+
+@case('A386', 'The sign of a work held in memory only (SOG-0607, lot B): the gear’s dot takes the red of errors at every width, over the green, the amber and the token’s red, and goes without a reload; beyond 760 px the header pill « Non gardé » (beside « Trigramme ? » when both are true) says the full sentence in a note at a touch; on a phone the pill is not there; the screens are captured, day and night', 'A',
+      designs=('standard',), night=True, langs4=False,
+      rule="SOG-0607 (the ergonomist, mock-up frame/maquette/non_garde.html): `#fDevice[data-unsaved]` (frame.css), `#fUnsaved` in the block of « Trigramme ? » (.f-who), paintUnsaved() and unsavedNote() of app.js")
+def a386(c):
+    c.open('fuel', trigram='', pending=1)
+    c.until("!!window.SogFrame && typeof window.SogFrame.memoryOnly === 'function'", timeout=20000, what='the frame answers memoryOnly()')
+    c.wait(800)
+    dot = "() => { const b = document.getElementById('fDevice'), p = document.createElement('i'); p.style.background = 'var(--sog-err)'; document.body.append(p); const want = getComputedStyle(p).backgroundColor; p.remove(); return [b.hasAttribute('data-unsaved'), getComputedStyle(b, '::after').backgroundColor === want, getComputedStyle(b, '::after').content !== 'none'] }"
+    c.eq(c.js(dot)[0], False, 'no work held: no red sign', what='before')
+    c.js(f"() => {{ window.__r1 = window.SogFrame.memoryOnly({_WORK1}, new DOMException('q', 'QuotaExceededError')) }}")
+    c.until("document.getElementById('fDevice').hasAttribute('data-unsaved')", what='the gear takes the sign')
+    c.eq(c.js(dot), [True, True, True], 'the gear’s dot is the red of errors (over the green and the amber that were there)', what='red dot')
+    pill = "() => { const b = document.getElementById('fUnsaved'), r = b.getBoundingClientRect(), w = document.getElementById('fWho'); return { shown: !b.hidden && getComputedStyle(b).display !== 'none' && r.width > 0, text: b.textContent.trim(), color: getComputedStyle(b).color, who: !w.hidden && getComputedStyle(w).display !== 'none' && w.getBoundingClientRect().width > 0, left: r.left, right: r.right, whoLeft: w.getBoundingClientRect().left } }"
+    p = c.js(pill)
+    if c.phone:
+        c.eq(p['shown'], False, 'on a phone the pill is not in the header: the gear’s dot and the line of the Status block say it', what='no pill on a phone')
+    else:
+        c.ok(p['shown'] and norm(p['text']) == norm(tx('frame/app.js', 'unsavedPill', c.lang, after='whoSub:')), p, 'beyond 760 px the pill « Non gardé » is in the header')
+        c.ok(p['who'] and p['right'] <= p['whoLeft'] + 1, p, 'with « Trigramme ? » true too, the two pills are side by side (« Non gardé » first), neither cut')
+        c.eq(c.js("() => { const h = document.querySelector('.f-head'); return h.scrollWidth <= h.clientWidth + 1 }"), True, 'the header does not overflow', what='header fits')
+        c.tap('#fUnsaved')
+        want = norm(tx('frame/app.js', 'unsaved', c.lang, after='whoSub:').replace('{w}', _WORKS[c.lang][0]) + ' ' + (lambda s: s[:1].upper() + s[1:])(tx('frame/app.js', 'causeFull', c.lang)))
+        c.until("(window.__notes || []).length > 0", what='the pill says its note')
+        c.ok(want in [norm(x) for x in c.note_log()], c.note_log(), 'the touch on the pill says the full sentence: the work, then the cause with its way')
+        c.js("() => document.querySelectorAll('#fNotes .f-note [data-x]').forEach(x => x.click())")
+    c.tap('#fDevice')
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"unsaved-0\"]')", what='Settings: the line of the work')
+    c.wait(500)
+    c.shot(f"P_0607_{c.page.viewport_size['width']}_{c.tone}_reglages.png")
+    c.js("() => window.__r1()")
+    c.until("!document.getElementById('fDevice').hasAttribute('data-unsaved') && document.getElementById('fUnsaved').hidden", what='all written: the sign goes, without a reload')
+    c.check_errors()

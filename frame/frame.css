@@ -484,6 +484,11 @@ html .f-head button.f-stale:focus-visible {
 .f-who[hidden] {
   display: none
 }
+/* SOG-0607 : « Non gardé » — un travail n'existe qu'en mémoire (plus de 760 px ; sur un téléphone le point du ⚙ et la ligne du bloc d'état la remplacent) ; le rouge d'erreur, l'alerte */
+.f-who[data-unsaved] {
+  color: var(--sog-err);
+  font-weight: 600
+}
 /* page servie par le lanceur d'un autre poste du réseau local : « Lanceur de <poste> » (nom tronqué si étroit) */
 .f-host {
   display: inline-flex;
@@ -1833,6 +1838,18 @@ p.f-back {
   height: 8px;
   border-radius: 50%;
   background: var(--sog-ok);
+  box-shadow: 0 0 0 2px var(--sog-surface)
+}
+/* SOG-0607 : le point du ⚙ au rouge d'erreur tant qu'un travail n'existe qu'en mémoire, à toute largeur, devant tous les autres états du point (vert, orange, jeton) */
+#fDevice[data-unsaved]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-err) !important;
   box-shadow: 0 0 0 2px var(--sog-surface)
 }
 /* téléphone : pastille orange quand une chose demande de l'attention (pas de trigramme, écritures en attente, conflits, hors

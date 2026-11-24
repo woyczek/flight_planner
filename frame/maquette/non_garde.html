@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette — signe « Non gardé » (SOG-0607, lot B)</title>
+<!-- Maquette du lot B de SOG-0606 / SOG-0607 (frame/DECISIONS.md, 24 novembre 2026) : le signe « Non gardé » tant qu'un travail n'existe qu'en mémoire.
+     Elle utilise le CSS RÉEL du cadre (../frame.css) : les états actuels du point du ⚙ y sont dessinés par ses propres règles ; seules les règles
+     marquées « PROPOSÉ » sont nouvelles. À ouvrir à 390 px et à 1280 px de large (la mise en page suit la largeur de la fenêtre), jour : ?tone=day,
+     nuit : ?tone=night. Aucun script du cadre, aucune donnée réelle : textes inventés. -->
+<script>
+{
+  const q = new URLSearchParams(location.search),
+    tone = q.get('tone') === 'night' ? 'night' : 'day';
+  document.documentElement.dataset.tone = tone;
+  if (innerWidth > 760) document.documentElement.classList.add('f-desk');
+}
+</script>
+<link rel="stylesheet" href="../frame.css?v=0">
+<style>
+  body {
+    display: block;
+    padding: 12px 0 40px;
+    background: var(--sog-bg);
+    color: var(--sog-fg)
+  }
+  .mq {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 12px
+  }
+  .mq h1 {
+    font-size: 1.1em;
+    margin: 8px 0
+  }
+  .mq section>h2 {
+    font-size: .95em;
+    margin: 22px 0 6px;
+    color: var(--sog-muted)
+  }
+  .mq .scene {
+    margin: 6px 0 14px;
+    border: 1px solid var(--sog-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--sog-bg)
+  }
+  .mq .scene .f-head {
+    position: relative
+  }
+  .mq .f-card>h2 {
+    font-size: 1.05em;
+    margin: 0
+  }
+  .mq .cap {
+    font-size: .8em;
+    color: var(--sog-muted);
+    margin: 3px 2px 0
+  }
+  .mq .cap b {
+    color: var(--sog-fg)
+  }
+  .mq .dots {
+    display: grid;
+    gap: 4px
+  }
+  .mq .pane {
+    padding: 12px
+  }
+  /* PROPOSÉ (lot B) : le point d'erreur du ⚙ tant qu'un travail n'existe qu'en mémoire — à toute largeur, devant tous les autres états du point (jeton, trigramme, vert, orange) */
+  #fDevice[data-unsaved]::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sog-err) !important;
+    box-shadow: 0 0 0 2px var(--sog-surface)
+  }
+  /* PROPOSÉ (lot B) : la pastille « Non gardé » à plus de 760 px, dans le bloc existant (.f-who) ; la couleur d'erreur, l'icône d'alerte */
+  .f-who[data-unsaved] {
+    color: var(--sog-err);
+    font-weight: 600
+  }
+  @media (max-width: 760px) {
+    .f-head .f-who {
+      display: none
+    }
+  }
+</style>
+</head><body>
+<div class="mq">
+<h1 id="title">Maquette — « Non gardé » (jour / nuit, 390 et 1280)</h1>
+
+<section id="s390">
+<h2>390 px — les états du point du ⚙ (les quatre d'aujourd'hui, puis le nouveau), sur un écran quelconque</h2>
+<div class="dots">
+  <div><div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages"><i data-ico="settings"></i></button></header></div>
+    <div class="cap"><b>Aucun point</b> — rien à signaler.</div></div>
+  <div><div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-badge><i data-ico="settings"></i></button></header></div>
+    <div class="cap"><b>Vert</b> (aujourd'hui, à toute largeur) — quelque chose s'applique : un vol en cours, un compte rendu à écrire, une version prête. Montré en temps normal : la couleur est le seul signal.</div></div>
+  <div><div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-attn><i data-ico="settings"></i></button></header></div>
+    <div class="cap"><b>Orange</b> (aujourd'hui, téléphone seulement) — une chose demande de l'attention : pas de trigramme, écritures en attente, conflits, hors ligne, erreur de synchronisation.</div></div>
+  <div><div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-attn data-level="urgent"><i data-ico="settings"></i></button></header></div>
+    <div class="cap"><b>Rouge, déjà là</b> (aujourd'hui) — un jeton qui expire demain ou a expiré (SOG-0362). C'est la couleur d'erreur du cadre.</div></div>
+  <div><div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-unsaved><i data-ico="settings"></i></button></header></div>
+    <div class="cap"><b>Rouge, NOUVEAU</b> (PROPOSÉ) — un travail n'existe qu'en mémoire. Même couleur que le jeton expiré : le point seul ne les distingue pas, la première ligne du bloc d'état (ci-dessous) dit lequel.</div></div>
+</div>
+
+<h2>390 px — l'en-tête des Réglages : « Travail non gardé » d'abord (une ligne par travail), puis le jeton, puis le reste</h2>
+<div class="scene">
+  <header class="f-head"><button type="button" class="f-app"><span class="f-name">Réglages</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-unsaved><i data-ico="settings"></i></button></header>
+  <div class="pane"><div class="f-card f-status" data-card="status"><h2>État</h2><ul class="f-status-list">
+    <li data-k="unsaved-1"><button type="button" class="f-status-row" data-go="card:offline"><i class="f-status-dot" data-attn data-level="urgent"></i><span class="f-status-txt"><span>Travail non gardé : route de la carte. Il sera perdu si la page se ferme.</span><small>Le stockage de cet appareil est plein. Touchez pour libérer de la place.</small></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="unsaved-2"><button type="button" class="f-status-row" data-go="card:diag"><i class="f-status-dot" data-attn data-level="urgent"></i><span class="f-status-txt"><span>Travail non gardé : brouillon de la mission. Il sera perdu si la page se ferme.</span><small>Cause inconnue. Touchez pour voir le détail.</small></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="token"><button type="button" class="f-status-row" data-go="card:identity"><i class="f-status-dot" data-attn data-level="urgent"></i><span class="f-status-txt"><span>Votre jeton GitHub expire demain</span><small>Touchez pour le renouveler</small></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="flight"><button type="button" class="f-status-row" data-go="#maps"><i class="f-status-dot"></i><span class="f-status-txt"><span>Vol en cours › Carte</span></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="who"><button type="button" class="f-status-row" data-go="card:identity"><i class="f-status-dot" data-attn></i><span class="f-status-txt"><span>Trigramme manquant</span><small>Touchez pour le régler</small></span><span aria-hidden="true">›</span></button></li>
+  </ul></div></div>
+</div>
+<div class="cap"><b>Où mène un toucher</b> : la 1re ligne (stockage plein) → Réglages › Données hors ligne (libérer de la place) ; la 2e (cause inconnue) → À propos › Diagnostic ; le jeton → sa carte ; le reste comme aujourd'hui. Le rouge de « Travail non gardé » et celui du jeton sont le même rouge d'erreur : la ligne dit lequel.</div>
+</section>
+
+<section id="s1280">
+<h2>1280 px — la pastille « Non gardé » (le bloc de « Trigramme ? »), seule puis avec « Trigramme ? »</h2>
+<div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" class="f-who" data-unsaved><i data-ico="alert"></i><span>Non gardé</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-unsaved><i data-ico="settings"></i></button></header></div>
+<div class="cap"><b>« Non gardé » seule</b> — le point du ⚙ passe au rouge aussi.</div>
+<div class="scene"><header class="f-head"><button type="button" class="f-app"><span class="f-name">Carburant et niveau</span></button><button type="button" class="f-who" data-unsaved><i data-ico="alert"></i><span>Non gardé</span></button><button type="button" class="f-who"><i data-ico="alert"></i><span>Trigramme ?</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-unsaved><i data-ico="settings"></i></button></header></div>
+<div class="cap"><b>Les deux pastilles</b> quand « Trigramme ? » est vrai en même temps (si la place manque : « Non gardé » seule).</div>
+<h2>1280 px — la ligne dans les Réglages</h2>
+<div class="scene">
+  <header class="f-head"><button type="button" class="f-app"><span class="f-name">Réglages</span></button><button type="button" class="f-who" data-unsaved><i data-ico="alert"></i><span>Non gardé</span></button><button type="button" id="fSignal" aria-label="signaler"><i data-ico="bug"></i></button><button type="button" id="fHelp" aria-label="aide">?</button><button type="button" id="fDevice" aria-label="réglages" data-unsaved><i data-ico="settings"></i></button></header>
+  <div class="pane"><div class="f-card f-status" data-card="status" style="max-width:640px"><h2>État</h2><ul class="f-status-list">
+    <li data-k="unsaved-1"><button type="button" class="f-status-row" data-go="card:offline"><i class="f-status-dot" data-attn data-level="urgent"></i><span class="f-status-txt"><span>Travail non gardé : route de la carte. Il sera perdu si la page se ferme.</span><small>Le stockage de cet appareil est plein. Touchez pour libérer de la place.</small></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="token"><button type="button" class="f-status-row" data-go="card:identity"><i class="f-status-dot" data-attn data-level="urgent"></i><span class="f-status-txt"><span>Votre jeton GitHub expire demain</span><small>Touchez pour le renouveler</small></span><span aria-hidden="true">›</span></button></li>
+    <li data-k="flight"><button type="button" class="f-status-row" data-go="#maps"><i class="f-status-dot"></i><span class="f-status-txt"><span>Vol en cours › Carte</span></span><span aria-hidden="true">›</span></button></li>
+  </ul></div></div>
+</div>
+<div class="cap"><b>Où mène un toucher</b> : la ligne (stockage plein) → Réglages › Données hors ligne ; cause inconnue → À propos › Diagnostic. Ordre : « Travail non gardé », puis le jeton, puis le reste.</div>
+</section>
+</div>
+<script>
+{ // une seule section selon la largeur : 390 (téléphone) ou 1280 (ordinateur)
+  const phone = innerWidth <= 760;
+  document.getElementById(phone ? 's1280' : 's390').hidden = true;
+}
+</script>
+<script type="module">
+import {
+  svg
+} from '../lib/icons.js';
+document.querySelectorAll('i[data-ico]').forEach(i => {
+  i.outerHTML = svg(i.dataset.ico)
+});
+</script>
+</body></html>

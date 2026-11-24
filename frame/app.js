@@ -819,6 +819,22 @@
         'Tippen, um es zu setzen',
         'Toque para definirlo'
       ],
+      // SOG-0607 (lot B) : un travail tenu en mémoire seulement — la ligne en tête du bloc d'état, sa sous-ligne (la cause, au ton du bloc : « Touchez pour… »), la pastille d'en-tête à plus de 760 px
+      unsaved: ['Travail non gardé : {w}. Il sera perdu si la page se ferme.',
+        'Work not kept: {w}. It will be lost if the page closes.',
+        'Arbeit nicht gesichert: {w}. Sie geht verloren, wenn die Seite geschlossen wird.',
+        'Trabajo no guardado: {w}. Se perderá si se cierra la página.'
+      ],
+      unsavedFull: ['Le stockage de cet appareil est plein. Touchez pour libérer de la place.',
+        'This device’s storage is full. Tap to free up space.',
+        'Der Speicher dieses Geräts ist voll. Tippen, um Platz zu schaffen.',
+        'El almacenamiento de este dispositivo está lleno. Toque para liberar espacio.'
+      ],
+      unsavedUnknown: ['Cause inconnue. Touchez pour voir le détail.', 'Unknown cause. Tap to see the detail.',
+        'Ursache unbekannt. Tippen, um die Einzelheiten zu sehen.',
+        'Causa desconocida. Toque para ver el detalle.'
+      ],
+      unsavedPill: ['Non gardé', 'Not kept', 'Nicht gesichert', 'No guardado'],
       // état de la base aéronautique (ligne ajoutée tant qu'elle charge, qu'aucun accès n'est réglé ou que rien n'est publié)
       base: {
         loading: ['Base aéronautique en cours de chargement…', 'Aeronautical database loading…',
@@ -1101,9 +1117,13 @@
     WRITE_HEAD_MAX = 80,
     writeFails = [];
 
+  /** Le disque est-il plein ? Par le NOM de l'erreur (QuotaExceededError, NS_ERROR_DOM_QUOTA_REACHED), ou son code historique (22, 1014). */
+  const isFull = e => ['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].includes(String(e?.name || '')) || e?.code === 22 || e
+    ?.code === 1014;
+
   function writeFailure(e, o = {}) {
     const name = String(e?.name || ''),
-      full = name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || e?.code === 22 || e?.code === 1014,
+      full = isFull(e),
       msg = String(e?.message ?? (name ? '' : e ?? '')),
       raw = `${name}${name && msg ? ': ' : ''}${msg}`.slice(0, WRITE_RAW_MAX),
       code = full ? 'full' : 'unknown',
@@ -1135,23 +1155,53 @@
   // (celui qui va aux Réglages libérer de la place ne doit rien voir) et le démontage d'un module ne relâche rien : c'est le module qui relâche. `quoi` : { fr, en, de, es } ou les quatre textes.
   const memoryHeld = new Set();
 
-  function memoryOnly(what) {
+  function memoryOnly(what, e) {
     const row = Array.isArray(what) ? what : what && typeof what === 'object' ? [what.fr, what.en, what.de, what.es] : [what, what, what,
         what
       ],
       item = {
-        what: [0, 1, 2, 3].map(i => String(row[i] ?? row[0] ?? '').slice(0, 80))
+        what: [0, 1, 2, 3].map(i => String(row[i] ?? row[0] ?? '').slice(0, 80)),
+        code: isFull(e) ? 'full' :
+          'unknown' // la cause, donnée à la déclaration (l'erreur de l'écriture refusée) : elle dit où mène la ligne du bloc d'état
       };
     memoryHeld.add(item);
+    paintStatus(); // la ligne, le point du ⚙ et la pastille : tout de suite, sans rechargement
     let done = false;
     return () => {
       if (done) return;
       done = true;
       memoryHeld.delete(item);
+      paintStatus(); // le signe part dès que tout est écrit, sans rechargement
     };
   }
   /** Les travaux tenus en mémoire seulement, dans la langue de l'écran (diagnostic, tests). */
   const memoryOnlyList = () => [...memoryHeld].map(i => t(i.what));
+  /** Les lignes du bloc d'état : une par travail, EN TÊTE (devant le jeton, devant le reste), au rouge d'erreur ; la toucher mène au remède (Données hors ligne si le stockage est plein, le diagnostic sinon). */
+  const unsavedItems = () => [...memoryHeld].map((it, i) => ({
+    k: `unsaved-${i}`,
+    text: t(T.info.unsaved, {
+      w: t(it.what)
+    }),
+    sub: t(it.code === 'full' ? T.info.unsavedFull : T.info.unsavedUnknown),
+    go: it.code === 'full' ? '#settings?card=offline' : 'diag',
+    attn: true,
+    level: 'urgent'
+  }));
+  const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+  /** La notification d'un travail non gardé (la pastille d'en-tête la rend au toucher) : la phrase du bloc d'état, puis la cause avec son chemin (la phrase des notifications). */
+  const unsavedNote = it => `${t(T.info.unsaved, { w: t(it.what) })} ${cap1(t(it.code === 'full' ? T.causeFull : T.causeUnknown))}`;
+  /** La pastille d'en-tête « Non gardé » (plus de 760 px ; sur un téléphone le point du ⚙ et la ligne la remplacent). Écrit seulement si cela change. */
+  function paintUnsaved() {
+    const b = $('fUnsaved');
+    if (!b) return;
+    const show = memoryHeld.size > 0;
+    if (b.hidden === show) b.hidden = !show;
+    if (!show) return;
+    const html = `${Icons?.svg('alert') || ''}<span>${esc(t(T.info.unsavedPill))}</span>`,
+      title = unsavedItems().map(i => i.text).join(' ');
+    if (b.innerHTML !== html) b.innerHTML = html;
+    if (b.title !== title) b.title = title;
+  }
   /** La tête d'une passation refusée : « Rien n'a été transmis à « {module} » », le module nommé comme le menu l'écrit (la table du cadre, jamais un texte en dur). */
   const handoffHead = id => {
     const m = APP.modules.find(x => x.id === id);
@@ -2631,7 +2681,8 @@
    *  l'erreur, les conflits, les écritures en attente et le hors ligne y sont des lignes : le bouton de synchronisation et la
    *  pastille du trigramme ne sont plus dans l'en-tête du téléphone. */
   function statusItems() {
-    const items = [],
+    // l'ordre (décision de l'ergonome, SOG-0607) : « Travail non gardé » d'abord, puis le jeton, puis le reste dans l'ordre d'avant
+    const items = [...unsavedItems(), ...tokenItems()],
       maps = APP.modules.find(m => m.id === 'maps');
     // une nouvelle version prête, tant qu'elle n'est pas prise : la retrouver à tout moment (pastille du ⚙)
     if (update.ready) items.push({
@@ -2679,7 +2730,7 @@
       attn: true
     });
     items.push(...cycleItems()); // fin de cycle AIRAC de ce qui est publié (base, proc/)
-    items.push(...tokenItems()); // l'expiration des jetons : le sien, et ceux des pilotes sur le poste (SOG-0277)
+    // (l'expiration des jetons, le sien et ceux des pilotes sur le poste — SOG-0277 — est en tête de liste, après « Travail non gardé »)
     // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
     if (baseState) items.push({
       k: 'base',
@@ -2830,7 +2881,8 @@
     news: false,
     attn: false,
     level: '',
-    why: ''
+    why: '',
+    unsaved: false
   };
   /** Pastille d'état (badge) et nom accessible du ⚙ de l'en-tête, dans toutes les applications. Écrit seulement si cela
    *  change. */
@@ -2841,6 +2893,8 @@
     if ((b.dataset.level || '') !== badge.level) badge.level ? b.dataset.level = badge.level : delete b.dataset.level;
     if (b.hasAttribute('data-badge') !== badge.news) badge.news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
     if (b.hasAttribute('data-attn') !== badge.attn) badge.attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
+    if (b.hasAttribute('data-unsaved') !== badge.unsaved) badge.unsaved ? b.setAttribute('data-unsaved', '') : b.removeAttribute(
+      'data-unsaved'); // SOG-0607 : le rouge d'erreur, à toute largeur
     if (b.title !== label) b.title = label;
     if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
   }
@@ -2924,6 +2978,8 @@
     const items = statusItems();
     badge.news = items.some(it => it.news);
     badge.attn = items.some(it => it.attn);
+    badge.unsaved = memoryHeld.size > 0;
+    paintUnsaved();
     const worst = items.find(it => it.attn && (it.level === 'expired' || it.level === 'urgent')) || null,
       first = items.find(it => it.attn) || null;
     badge.level = worst ? worst.level : ''; // rouge quand un jeton expire demain ou a expiré (SOG-0362)
@@ -3002,6 +3058,19 @@
     if (go === 'reload') return void selfNavigate('reload: status line', () => location.reload());
     if (go === 'retry-launcher') return void recheckLauncher().then(ok => notify(t(ok ? T.need.back : T.need.still), ok ? 'ok' :
       'warn'));
+    if (go === 'diag') { // SOG-0607 : la cause est inconnue, le détail est au diagnostic (À propos), ouvert
+      const card = $('fView').querySelector('[data-card="about"]'),
+        d = card?.querySelector('[data-diagbox]');
+      if (d) {
+        d.open = true;
+        d.closest('details.f-group')?.setAttribute('open', '');
+      }
+      card?.scrollIntoView({
+        block: 'start',
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      });
+      return;
+    }
     if (go.startsWith('card:')) {
       const card = go.slice(5).split(',').map(k => $('fView').querySelector(`[data-card="${k}"]`)).find(c => c && !c.hidden);
       card?.scrollIntoView({
@@ -5856,6 +5925,10 @@
     wide.addEventListener('change', onWidth);
     wideAuto.addEventListener('change', onWidth);
     $('fWho').onclick = () => location.hash = '#settings';
+    $('fUnsaved').onclick = () => memoryHeld.forEach((it, i) => notify(unsavedNote(it),
+      'err', { // SOG-0607 : la phrase complète, une note par travail
+        key: `unsaved-${i}`
+      }));
     // un passage qui a lu l'arbre du dépôt peut y trouver un pilot/ANON/ d'avant la règle : repris aussi
     let anonSync = '';
     FD.onStatus(s => {

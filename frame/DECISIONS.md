@@ -3220,6 +3220,14 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 24 November 2026 — the sign « Non gardé » (SOG-0607, lot B, the ergonomist; contract: `frame/maquette/non_garde.html`)
+
+- **Signs while a work exists only in memory** (`ctx.memoryOnly(quoi, e)`; `e` = the error of the refused write, read by `isFull`): (1) the dot of the ⚙ takes the error red (`#fDevice[data-unsaved]`, every width, ahead of green / amber / the token's red; the dot keeps its three-word vocabulary: green « something applies », amber « have a look », red « open Settings now »); (2) the Status block puts one line per work FIRST, then the token lines (moved up from their old place), then the rest in today's order (green before amber); (3) beyond 760 px the header pill `#fUnsaved` « Non gardé » in the block of « Trigramme ? » (`.f-who`), both pills when both are true; on a phone it is `display: none` like « Trigramme ? » (the dot and the line carry it).
+- **One red**: « token expired » and « work not kept » share the error red; the dot does not say which, the first line of the Status block does (the ergonomist refused a second sign: form or ring).
+- **The line**: « Travail non gardé : {quoi}. Il sera perdu si la page se ferme. » + the cause in the block's tone (« … Touchez pour libérer de la place. » / « Cause inconnue. Touchez pour voir le détail. »); the path-bearing sentence stays the notification's. A touch: storage full → `#settings?card=offline`; unknown → the diagnostic, opened (`go: 'diag'`). The pill's touch says the full sentence (the line + the cause with its path) in a note.
+- **Gone without a reload**: `memoryOnly`'s release repaints (`paintStatus`: lines, dot, pill).
+- **Cases**: A385 (the order, the texts, the red of the lines, the touches, the release), A386 (the dot, the pill, « Trigramme ? » beside it, the note, the phone without a pill; captures at 390 and 1280, day and night); red before.
+
 ## 24 November 2026 — a refused write is read by its code; the cause is written once; a work held in memory only (SOG-0606 and SOG-0607, lot A, the ergonomist)
 
 - **Fact**: « Mission non enregistrée : quota exceeded » put the browser's raw text on the screen. The frame's write path (`idb()` of `frame/store/frame_data.js`) already hands the browser's `DOMException` to the module intact (name `QuotaExceededError`), but nobody read the name, and `idb()` settled a write at the success of its REQUEST: a full disk aborts the TRANSACTION after that (`tx.onabort`), so the failure was lost in silence.
