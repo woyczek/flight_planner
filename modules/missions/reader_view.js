@@ -150,8 +150,10 @@ export function attach(sheet, o = {}) {
     });
   }
   // « Lire la mission » : à côté de « Préparer ce vol », une fois par dessin de la fiche
+  // la place des gestes est prise DANS la rangée des actions seulement : en vol (SOG-0619, N267), la place est dans le pied collant de la
+  // fiche (les gestes de la suite seuls) et « Lire la mission » reste dans la rangée, à côté de « Préparer ce vol »
   const row = sheet.querySelector('.ms-actions'),
-    slot = sheet.querySelector('[data-actslot]'),
+    slot = row?.querySelector('[data-actslot]') || null,
     first = row?.querySelector('[data-do="prepare"]');
   if (row && !row.querySelector('[data-rd-read]')) {
     const b = document.createElement('button');
