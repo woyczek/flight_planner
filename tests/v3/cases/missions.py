@@ -15695,3 +15695,66 @@ def n260(c):
     blob = json.dumps(f, ensure_ascii=False)
     c.ok('Zone Secrète' not in blob and 'Point Non Cité' not in blob and '4430N00130E' not in blob, blob[:400],
          'nothing of the hidden places in the flight: neither a name nor a coordinate')
+
+
+@case('N270', 'Missions in flight: the mission of the started flight comes FIRST on the page, one row under « En vol » — « X-002A · '
+      'Second essai — en vol depuis 14:05Z » —, the page never opens it by itself; its sheet says « En vol depuis … » and « Voir le vol en '
+      'cours » takes the place of « Préparer ce vol »: a tap opens Fuel with the pane of the mission and prepares nothing; the row leaves '
+      'with the flight', 'N', tags=('missions', 'fuel'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0617 F13 and the ergonomist\'s addition (24 Nov, the user\'s P1 in flight: « une mission en vol se laisse Préparer à nouveau, '
+      'et le bouton mène à un refus »): before, module.js read neither current_flight nor started; the button keeps data-do="prepare" (no '
+      'handler listens to it: a link; reader_view.js places its button beside it); invented mission')
+def n270(c):
+    import datetime
+    start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=20)).replace(second=0, microsecond=0)
+    at, hm = start.strftime('%Y-%m-%dT%H:%M:%SZ'), start.strftime('%H:%MZ')
+    flight = {'schema': 1, 'by': 'fuel', 'updated_at': at, 'mission': 'X-002A', 'started': {'at': at},
+              'aircraft': {'type': 'C30J', 'registration': 'F-TEST'},
+              'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0},
+                                                                                      {'id': 'XTSU', 'lat': 44.0, 'lon': 2.0}],
+                        'distanceNm': 73, 'trackDeg': 145}, 'level': {'ft': 24000}}
+    words = {'fr': ('En vol', f'X-002A · Second essai — en vol depuis {hm}', f'En vol depuis {hm}', 'Voir le vol en cours'),
+             'en': ('In flight', f'X-002A · Second essai — in flight since {hm}', f'In flight since {hm}', 'See the flight in progress'),
+             'de': ('Im Flug', f'X-002A · Second essai — im Flug seit {hm}', f'Im Flug seit {hm}', 'Laufenden Flug ansehen'),
+             'es': ('En vuelo', f'X-002A · Second essai — en vuelo desde {hm}', f'En vuelo desde {hm}', 'Ver el vuelo en curso')}[c.lang]
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        seed_texts(c)
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what=f'{w} px: the list')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-inflight]')", timeout=10000,
+                what=f'{w} px: the mission in flight pinned (red before: nothing reads the flight)')
+        first = c.js(f"document.querySelector('{M} [data-pane=list]').firstElementChild?.hasAttribute('data-inflight')")
+        c.ok(first, '', f'{w} px: FIRST on the page, above « Mes missions affectées », the draw and the search')
+        c.eq(norm(c.text(f'{M} [data-inflight] h2')), words[0], f'{w} px: its title', what='title')
+        c.eq(norm(c.text(f'{M} [data-inflight] [data-id="X-002A"]')), norm(words[1]), f'{w} px: the row « id · title — since »', what='row')
+        c.wait(800)
+        c.ok(not c.js(f"!!document.querySelector('{M} .ms-sheet')"), '', f'{w} px: the page does not open the sheet by itself')
+        c.shot(f'N270_{c.design}_{w}_{c.lang}_list.png')
+        c.tap(f'{M} [data-inflight] [data-id="X-002A"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-002A'", timeout=10000, what=f'{w} px: one tap opens its sheet')
+        c.until(f"!!document.querySelector('{M} [data-inflight-since]')", timeout=8000, what=f'{w} px: the sheet says it is in flight')
+        c.eq(norm(c.text(f'{M} [data-inflight-since]')), norm(words[2]), f'{w} px: « En vol depuis … »', what='since')
+        b = c.js(f"(() => {{ const b = document.querySelector('{M} .ms-actions [data-inflight]'); return b && [b.textContent.trim(), "
+                 f"b.getAttribute('href'), b.dataset.do, document.querySelectorAll('{M} .ms-actions [data-do=prepare]').length] }})()")
+        c.eq(b, [words[3], '#fuel?focus=mission', 'prepare', 1], f'{w} px: « Voir le vol en cours » in the place of « Préparer ce vol »',
+             what='button')
+        c.js(f"document.querySelector('{M} .ms-actions')?.scrollIntoView({{block: 'center'}})")
+        c.shot(f'N270_{c.design}_{w}_{c.lang}_sheet.png')
+        notes = len(c.js('window.__notes || []'))
+        c.tap(f'{M} .ms-actions [data-inflight]')
+        c.until("location.hash.startsWith('#fuel')", timeout=10000, what=f'{w} px: Fuel')
+        c.until("(() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'); return !!p && !p.hidden && !!p.querySelector('[data-mrisks]') })()",
+                timeout=15000, what=f'{w} px: the pane of the mission open')
+        c.wait(1500)
+        f = c.doc('pilot/ABC/current_flight.json') or {}
+        c.eq([f.get('mission'), (f.get('started') or {}).get('at'), (f.get('route') or {}).get('text')], ['X-002A', at, 'XTST XTSU'],
+             f'{w} px: nothing prepared — the started flight unchanged', what='flight')
+        said = c.js('window.__notes || []')[notes:]
+        c.ok(not any('X-002A' in n for n in said), said, f'{w} px: no refusal (« Vol démarré : la mission … n’est pas reprise »)')
+    # the flight over: the row leaves with it
+    seed_texts(c)
+    c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', {**flight, 'started': None}, 'document']])
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list again')
+    c.wait(1500)
+    c.ok(not c.js(f"!!document.querySelector('{M} [data-inflight]')"), '', 'no started flight: no « En vol »')
