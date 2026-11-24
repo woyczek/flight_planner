@@ -1035,7 +1035,8 @@ export async function mount(el, ctx) {
   window.addEventListener('popstate', s.onPop);
   draw(s);
   if (ctx.query?.view === 'registry') regOpen(s); // l'écran Registre par l'adresse (#missions?view=registry, Compagnie › Registre)
-  s.openAsked = typeof ctx.query?.open === 'string' ? ctx.query.open : ''; // SOG-0617 : #missions?open=<id>, ouverte une fois la liste lue
+  s.openAsked = typeof ctx.query?.open === 'string' ? ctx.query.open :
+    ''; // SOG-0617 : #missions?open=<id>, ouverte une fois la liste lue
   let got = await yamlFile(ctx, REGISTRY);
   if (S !== s) return;
   if (got.why === 'late') {
