@@ -1704,12 +1704,13 @@ R = f'{M} [data-pane=registry]'
 _REG_READ = f"!!document.querySelector('{R} [data-regcount]') && !document.querySelector('{R} [data-rstate=checking]') && !document.querySelector('{R} [data-regcount]').textContent.includes('…')"
 
 
-def reg_open(c, texts=None, target='missions', button=True):
-    """Seeds the invented registry, opens Missions, then the Registry screen (the button, or the address) and waits for every file to be read."""
+def reg_open(c, texts=None, target='missions', button=True, docs=None):
+    """Seeds the invented registry, opens Missions, then the Registry screen (the button, or the address) and waits for every file to be read;
+    docs: JSON documents seeded with the opening (c.open), none by default."""
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_REG_CLEAR)
     c.js(_TEXTS_JS, texts or _REG_TEXTS)
-    c.open(target, wait=False, app='company')
+    c.open(target, wait=False, app='company', **({'docs': docs} if docs else {}))
     if button:
         c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
         c.tap(f'{M} [data-do="regopen"]')
@@ -15509,11 +15510,13 @@ def n248(c):
       'history entry at 390 only (beside the table at 1 280 it has none): red before at 390, a guard at 1 280')
 def n254(c):
     title = 'Un titre en cours'
+    # the Company application at the level Complet: its tab « Flotte » (the module aircraft, level 3) is ANOTHER module in the bar and the
+    # rail; at the default level the bar has only Missions and the gear
     other = """(() => { const a = [...document.querySelectorAll('#fTabs a[data-tab]')].find(x => x.checkVisibility() &&
-      !['missions', 'settings'].includes(x.dataset.landmark) && x.getAttribute('href')?.startsWith('#')); return a ? a.dataset.tab : null })()"""
+      !['missions', 'settings'].includes(x.dataset.landmark)); return a ? a.dataset.tab : null })()"""
 
-    def to_workshop(w):
-        reg_open(c, _TRIAL_TEXTS)
+    def to_workshop(w, docs=None):
+        reg_open(c, _TRIAL_TEXTS, docs=docs)
         c.tap(f'{R} [data-rowid="X-001A"]')  # 390: the sheet full screen, its history entry (made stale when the workshop opens)
         c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
@@ -15546,7 +15549,7 @@ def n254(c):
         ed_leave(c)
         c.js(_REG_CLEAR)
         # (B) the bar (390) or the rail (1 280) to ANOTHER module: the page arrives there and stays
-        to_workshop(w)
+        to_workshop(w, docs=[['device/level.json', {'level': 3}, 'cache']])
         tab = c.js(other)
         c.ok(bool(tab), tab, f'{w} px: a tab of another module in the bar or the rail')
         c.tap(f'#fTabs a[data-tab="{tab}"] >> visible=true')
