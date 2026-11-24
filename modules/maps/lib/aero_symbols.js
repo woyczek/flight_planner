@@ -1483,9 +1483,18 @@
       const kept = adCap > 0 ? ads.filter((x, i) => x.a.end || i < adCap) : ads;
       const shown = kept.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2, sa)));
       adDrawn = shown.map(x => x.a);
+      // SOG-0569 : la place réservée est celle du symbole DESSINÉ tout entier, plus 2 px : les repères d'un terrain ouvert dépassent à 1,95 fois sa taille, le
+      // rectangle d'une longue piste à 1,7 ; réservée à 1,2 fois, un nom de procédure venait se coller à lui
+      const extent = a => a.hardLen > 2300 ? 1.7 : a.public && !a.state ? 1.95 : 1.2;
       shown.forEach(x => {
         drawAerodrome(ctx, x.a, x.p, sa, 0);
-        reserve(sym(x.p, 1.2, sa), 'adSymbol');
+        const r = sym(x.p, extent(x.a), sa);
+        reserve({
+          x0: r.x0 - 2,
+          y0: r.y0 - 2,
+          x1: r.x1 + 2,
+          y1: r.y1 + 2
+        }, 'adSymbol');
       });
       if (adLabels) shown.forEach(x => drawAerodrome(ctx, x.a, x.p, sa, Object.assign(new Number(font * .85), {
         full: pxPerDegree >= 900,

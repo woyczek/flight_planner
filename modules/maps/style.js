@@ -287,6 +287,7 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-item .mp-ch-row{flex:1 1 auto;width:auto;min-width:0;border-bottom:0}
 [data-module="maps"] .mp-ch-pick{flex:none;align-self:center;min-height:32px;margin:0 6px 0 0;padding:0 10px;border-radius:0}
 [data-module="maps"] .mp-ch-cnt{white-space:nowrap;font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-ch-gap{margin:0;padding:2px 8px 6px;font-size:12px;line-height:1.35;color:var(--sog-muted);border-bottom:1px solid var(--sog-border)}
 [data-module="maps"] .mp-gd{display:flex;flex-direction:column;gap:6px;padding:6px 8px}
 [data-module="maps"] .mp-gd-q{box-sizing:border-box;width:100%;min-height:36px;padding:0 8px;border:1px solid var(--sog-border);border-radius:6px;background:var(--sog-surface);color:var(--sog-fg);font:inherit}
 [data-module="maps"] .mp-gd-chips{display:flex;gap:6px;flex-wrap:wrap}

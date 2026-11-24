@@ -66,6 +66,9 @@ import {
   pick as hitPick
 } from '../../frame/lib/hit_target.js';
 import {
+  gcNm
+} from '../../frame/lib/geo.js';
+import {
   openData,
   endData
 } from './sheet_view.js';
@@ -482,6 +485,25 @@ function rowHtml(C, it) {
   // « Choisir » seulement sur une ligne cochée (huit boutons au plus, aucun quand rien n'est coché)
   return n ? `<div class="mp-ch-item" style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}">${row}<button type="button" class="f-btn mp-ch-pick" data-pick="${esc(it.id)}" data-fam="${it.fam}">${esc(tt(TX.chPick))}</button></div>` : row;
 }
+/** La liaison manquante entre l'arrivée choisie et l'approche choisie (SOG-0569, décision 4 : la liste de la scène « Sans raccord » de la maquette EST celle de ce mode) : la
+ *  phrase procNoLink, MOT POUR MOT celle de la note sous le profil (procs.js gapNote), sous la ligne d'état de l'approche ; rien quand l'approche reprend la fin de la STAR (même
+ *  règle que procGap : même nom à moins de 3 NM, sinon à moins de 0,3 NM) ou quand l'une des deux n'est pas choisie. */
+function gapHtml(C) {
+  const star = C.model.rows.find(i => i.fam === 'star' && i.chosen),
+    app = C.model.rows.find(i => i.fam === 'app' && i.chosen);
+  if (!star || !app) return '';
+  const e = ptsOf(star).at(-1),
+    b = ptsOf(app)[0];
+  if (!e?.id || !b?.id) return '';
+  const same = gcNm(e, b) < (e.id.toUpperCase() === b.id.toUpperCase() ? 3 : .3);
+  if (same) return '';
+  const m = star.members ? star.members.find(x => x.chosen) || star.members[0] : star;
+  return `<p class="mp-ch-gap" data-proc-gap>${esc(tt(TX.procNoLink, {
+    fin: e.id,
+    arrivee: m.label.name || labelText(m.label),
+    debut: b.id
+  }))}</p>`;
+}
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
 function subsHtml(C) {
   const subs = C.model.subs;
@@ -505,7 +527,7 @@ function groupHtml(C, fam) {
       icao: g.head.icao
     }) : '',
     rows = (head ? `<div class="mp-ch-subh">${esc(head)}</div>` : '') + shownOf(C, fam).map(it => rowHtml(C, it) + (fam === 'app' && it
-      .chosen ? subsHtml(C) : '')).join('');
+      .chosen ? gapHtml(C) + subsHtml(C) : '')).join('');
   const title = tt((TX.chGrp[fam] || TX.chFam[fam]));
   return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(title)}</h4><div class="mp-ch-list" role="group" aria-label="${esc(title)}">${noneOn ? `<div class="mp-ch-row mp-ch-none" data-state="chosen" data-fam="${fam}" data-id="none" data-hl="0"><span class="mp-ch-name">${esc(tt(TX.chNone))} · ${esc(tt(TX.chChosen))}</span></div>` : `<button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="false"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>`}${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.state.open.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
 }

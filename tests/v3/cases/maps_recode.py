@@ -10761,3 +10761,55 @@ def d326(c):
     c.eq({t: v for t, v in per.items() if len(v) > 1}, {}, 'each runway number is written ONCE in a frame of the overlay (the second write is the doubled, grayed box)', what='numbers written more than once in the last frame')
     c.eq(sorted(per), ['13', '31'], 'and both numbers are written (the vectors keep their numbers)', what='numbers written in the last frame')
     c.shot('D326.png')
+
+
+
+# ------------------------------------------------------------------------------------------------------ D322, D323 (SOG-0569, closes the Map's side)
+@case('D322', 'SOG-0569: under the chosen approach of the choose list, the missing link with the chosen arrival is said with the sentence of the note under the profile', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0569 decision 4 (ergonomist): the list of the mock-up scene « Sans raccord » IS the list of the choose mode: under the status line of the chosen approach, when the chosen arrival does not lead to it (not the same point within 3 NM by name, 0.3 NM otherwise), the sentence procNoLink, word for word the one of the note under the profile (Fuel\'s own sentence stays Features\'); nothing when the approach takes up the end of the STAR or when one of the two is not chosen')
+def d322(c):
+    _ch_open(c, {'rwy': '31'}, file=_CH2_FILE)
+    c.eq(c.count('[data-proc-gap]'), 0, 'nothing chosen: no sentence', what='sentence')
+    star = c.js("() => window.__mp.S.choose.model.rows.find(r => r.fam === 'star' && /SOLO1/.test(r.id)).id")
+    sname = c.js("() => window.__mp.S.choose.model.rows.find(r => r.fam === 'star' && /SOLO1/.test(r.id)).label.name")
+    i31 = 'LFML.APP.I31.RW31.NONE'
+    _ch_keep(c, star)
+    c.eq(c.count('[data-proc-gap]'), 0, 'a STAR alone: no sentence', what='sentence')
+    _ch_keep(c, i31)
+    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=app] [data-proc-gap]')", timeout=10000, what='the sentence under the chosen approach')
+    got = norm(c.js("() => document.querySelector('.mp-ch-grp[data-fam=app] [data-proc-gap]').textContent"))
+    want = norm(tx(M, 'procNoLink', c.lang).replace('{fin}', 'MD31').replace('{arrivee}', sname).replace('{debut}', 'XF01'))
+    c.eq(got, want, 'the sentence of the note under the profile, word for word, with the end of the STAR and the start of the approach', what='sentence')
+    # it sits under the approach row (the status line « choisie pour le vol »), before the transitions
+    c.ok(c.js("() => { const r = document.querySelector('.mp-ch-grp[data-fam=app] .mp-ch-row[data-state=chosen]'), g = document.querySelector('[data-proc-gap]'); return !!r && !!g && !!(r.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) }"),
+         'order', 'under the approach row, not above it')
+    c.js("() => { const g = document.querySelector('[data-proc-gap]'); if (g) g.scrollIntoView({ block: 'center' }); return true }")
+    c.wait(300)
+    c.shot('D322.png')                       # for the relay: the sentence under the chosen approach, in the list of the choose mode (390 and 1280)
+
+
+_AD_EXTENT = """() => { const SA = window.SiaAero, out = [];
+  const kinds = { long: { hardLen: 3000, public: true }, open: { hardLen: 1500, public: true }, small: { hardLen: 600, public: true }, heli: { type: 'HP', public: true }, state: { hardLen: 1500, state: true } };
+  for (const [k, a] of Object.entries(kinds)) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 240; const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 240, 240);
+    const boxes = [], pl = SA.placer(), add = pl.add; pl.add = (r, rank) => { if (rank === 'adSymbol') boxes.push(r); return add.call(pl, r, rank) };
+    SA.drawPoints(ctx, { aerodromes: [{ icao: 'LFXX', lat: 46, lon: 2, bearing: 40, ...a }], navaids: [], obstacles: [] }, () => ({ x: 120, y: 120 }),
+      { W: 240, H: 240, scale: 1.6, aerodromes: true, navaids: false, obstacles: false, adLabels: false, pxPerDegree: 400, placer: pl, adScale: 1 });
+    const d = ctx.getImageData(0, 0, 240, 240).data; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let y = 0; y < 240; y++) for (let x = 0; x < 240; x++) { const i = 4 * (y * 240 + x); if (d[i] < 245 || d[i + 1] < 245 || d[i + 2] < 245) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + 1); y1 = Math.max(y1, y + 1) } }
+    out.push({ k, drawn: [x0, y0, x1, y1], reserved: boxes[0] ? [boxes[0].x0, boxes[0].y0, boxes[0].x1, boxes[0].y1] : null }) }
+  return out }"""
+
+
+@case('D323', 'SOG-0569: the place an aerodrome reserves is that of its whole DRAWN symbol (ticks of an open aerodrome, rectangle of a long runway), so a procedure name never sticks to it', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='SOG-0569 (ergonomist, at 390: « I31 » stuck to the ring of LFML): aero_symbols.js reserved 1.2 times the size of the symbol for the rank adSymbol, while an open aerodrome draws its ticks at 1.95 and a long runway its rectangle at 1.7: the closed list of priorities let a label of the lower rank \'procedure\' come against the drawn symbol. The reserved box now contains every drawn pixel')
+def d323(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.until("() => !!(window.SiaAero && window.SiaAero.drawPoints && window.SiaAero.placer)", timeout=10000, what='the symbols library')
+    for r in c.js(_AD_EXTENT):
+        d, v = r['drawn'], r['reserved']
+        c.ok(v is not None and v[0] <= d[0] and v[1] <= d[1] and v[2] >= d[2] and v[3] >= d[3], f'{r["k"]}: drawn {d}, reserved {v}',
+             f'{r["k"]}: the reserved box contains every drawn pixel of the symbol')
