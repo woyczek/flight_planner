@@ -16369,7 +16369,8 @@ def _dw_book(mission, start_min, opened):
     """A record of my book for a started flight: `opened` = [(letter, minutes after the start, read_after_minutes or None, how)], times in minutes from now."""
     import datetime
     iso = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%S.000Z')
-    book = {'schema': 1, 'mission': mission, 'seance': 'S:' + iso(start_min), 'start_at': iso(start_min), 'by': 'ABC', 'updated_at': iso(0)}
+    # `reads: 1` : the version mark of the new code (SOG-0619) — a record without it is a record from before the envelopes, whose open drawers count as read
+    book = {'schema': 1, 'mission': mission, 'seance': 'S:' + iso(start_min), 'start_at': iso(start_min), 'reads': 1, 'by': 'ABC', 'updated_at': iso(0)}
     for letter, opened_at, read_at, how in opened:
         book[f'drawer_{letter}'] = {'state': 'open', 'at': iso(opened_at), 'how': how, **({'read_at': iso(read_at)} if read_at is not None else {})}
     return book, iso(start_min)
@@ -16527,6 +16528,116 @@ def n267(c):
             c.eq(c.js(f"[{acts}.hasAttribute('data-f-foot'), getComputedStyle({acts}).position]"), [False, 'static'], 'at 1280 the gestures are in the flow: no foot, no sticky', what='in flow')
             c.ok(c.js(f"{acts}.getBoundingClientRect().top >= document.querySelector('{S} [data-dw-now]').getBoundingClientRect().bottom - 1"), 'above', 'at 1280 they sit right under « Maintenant »')
             c.shot(f'N267_{c.design}_{c.width}_{c.lang}_flux.png')  # for the relay: the gestures in the flow at 1280
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+# SOG-0619 (the rule of reading): a drawer is « open for the screen » when it is READ by this pilot; before, only its envelope — nothing else anywhere.
+_DW_R_REGISTRY = """missions:
+  - { id: X-968A, family: TESTTIROIR, title: Recherche cachée à lire, folder: X_TIR/X-968A, files: [missionX-968A.yaml] }
+  - { id: X-969A, family: TESTTIROIR, title: Recherche d'avant les enveloppes, folder: X_TIR/X-969A, files: [missionX-969A.yaml] }
+"""
+_DW_SECRET_B = ('PT2', 'Point de treuillage', 'RDV-1', 'Rendez-vous du navire', 'Navire Test', 'rejoignez le point', 'Descendez', 'Point de recueil')
+_DW_SECRET_C = ('ZONE-2', 'Secteur du naufrage', 'Fouillez', 'Secteur de recherche', 'Balayage')
+
+
+@case('N268', 'Missions › a drawer opened and NOT read shows nothing but its envelope (SOG-0619): no place of it in the Detail of the sheet, in the document cache/missions/open_<ID>.json '
+      '(the Map and Fuel read it) or in the view of the pilot (sees()); after « Ouvrir l\'enveloppe » its places are there; and while it is unread, the position crossing the zone of the '
+      'next drawer opens it in my record, with one more envelope',
+      'N', tags=('missions', 'security'), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0619, the ergonomist: one rule for every screen — a drawer is open for the screen when it is READ by this pilot (modules/missions/drawers_run.js known(), publish(), readIds); '
+      'the finding is written at once and counts for the judge at once (states.open is the truth of the judge): an unread envelope does not hold back the next drawer')
+def n268(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    fix = lambda lat, lon: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120, 'source': 'xplane'}
+    now = {'fix': fix(45.0, 1.0)}                       # far from the zone of the drawer C (centre 44.6, 1.3, radius 4 km)
+    BOOK, OPEN = 'pilot/ABC/missions/X-968A.json', 'cache/missions/open_X-968A.json'
+    S = f'{M} [data-drawers]'
+    book, start_iso = _dw_book('X-968A', -12, [('B', -5, None, 'hand')])      # B opened by hand, NOT read
+    flight = _dw_flight(start_iso.replace('.000Z', 'Z'), 'X-968A')
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
+    c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**now['fix'], 'at': at(0)})))
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_R_REGISTRY], ['missions/X_TIR/X-968A/missionX-968A.yaml', _DW_SECRET % ('X-968A', 'Recherche cachée à lire')]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], [BOOK, book, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-968A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-968A"]')
+        c.until(f"!!document.querySelector('{S} [data-dw-open=\"B\"]')", timeout=30000, what='the envelope of the drawer B (opened by hand, not read)')
+        c.wait(1500)
+        # unread: nothing of B anywhere — the Detail, the published document, the view of the pilot
+        p = c.js(_DW_PLACES)
+        c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 0, ['PT1']], 'the Detail lists neither the point nor the rendezvous of the unread drawer', what='zones, rendezvous, route (unread)')
+        c.eq([w for w in _DW_SECRET_B + _DW_SECRET_C if w in p['html']], [], 'no word of B (title, message, briefing, places) in the sheet before the touch on its envelope', what='words in the page')
+        doc = c.until_doc(OPEN, lambda d: d and d.get('mine') is True, what='the published document')
+        c.eq(doc['opened'], [], 'the published document (the Map and Fuel read it) lists no open drawer: B is not read', what='published (unread)')
+        # while B is unread the position crosses the zone of C: C opens in my record, one more envelope
+        c.wait(11000)
+        now['fix'] = fix(44.6, 1.3)
+        c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', timeout=40000, what='C opened in my record')
+        c.until(f"document.querySelectorAll('{S} [data-dw-env]').length === 2", timeout=15000, what='the second envelope')
+        c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-env]')].map(e => e.dataset.dwEnv)"), ['B', 'C'], 'two envelopes, the oldest on top: an unread envelope does not hold back the next drawer', what='envelopes')
+        c.eq(c.doc(OPEN)['opened'], [], 'the published document still lists nothing: neither B nor C is read', what='published (two unread)')
+        # the touch on the envelope of B: its places are there, in the Detail and in the published document; C stays an envelope
+        c.tap(f'{S} [data-dw-open="B"]')
+        c.until(f"({_DW_PLACES}).rdv === 1", timeout=15000, what='the Detail lists the rendezvous of B once read')
+        p = c.js(_DW_PLACES)
+        c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 1, ['PT1', 'PT2']], 'after « Ouvrir l\'enveloppe »: the point and the rendezvous of B are listed', what='zones, rendezvous, route (read)')
+        c.ok(all(w in p['html'] for w in ('Point de treuillage', 'Rendez-vous du navire')) and [w for w in _DW_SECRET_C if w in p['html']] == [], p['html'][-200:],
+             'B is named; nothing of C, still an envelope')
+        c.eq(c.until_doc(OPEN, lambda d: d and d.get('opened') == ['B'], what='published after the reading')['opened'], ['B'], 'the published document lists B alone', what='published (read)')
+        c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-env]')].map(e => e.dataset.dwEnv)"), ['C'], 'C is still an envelope', what='envelopes after')
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+@case('N269', 'Missions › a record from BEFORE the envelopes counts as read (SOG-0619): a drawer B already open in a record without the version mark, the flight under way — no envelope, B under '
+      '« Maintenant », its places in the Detail; then the first write of the new code (C opened by the zone) puts the mark `reads: 1` and the read_at of B in the record, and only C arrives as an envelope',
+      'N', tags=('missions',), designs=('standard',), langs4=False, phone=False, screens=True, night=False,
+      rule='SOG-0619 (drawers.js baseOf, the migration): a record that EXISTS without `reads: 1` is a record from before — all its open drawers are read, also those a crewmate had opened; at the first '
+      'write of the new code the pure function puts the mark and a read_at (the instant) on every drawer then open; an ABSENT record is new, the rule of the envelopes applies')
+def n269(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    fix = lambda lat, lon: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120, 'source': 'xplane'}
+    now = {'fix': fix(45.0, 1.0)}
+    BOOK = 'pilot/ABC/missions/X-969A.json'
+    S = f'{M} [data-drawers]'
+    book, start_iso = _dw_book('X-969A', -12, [('B', -5, None, 'hand')])
+    del book['reads']                                   # a record of the old code: no version mark, no read_at
+    flight = _dw_flight(start_iso.replace('.000Z', 'Z'), 'X-969A')
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_FIRST_FULL)))
+    c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**now['fix'], 'at': at(0)})))
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_R_REGISTRY], ['missions/X_TIR/X-969A/missionX-969A.yaml', _DW_SECRET % ('X-969A', "Recherche d'avant les enveloppes")]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], [BOOK, book, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-969A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-969A"]')
+        c.until(f"!!document.querySelector('{S} [data-dw-now] [data-dw=\"B\"]')", timeout=30000, what='B under « Maintenant »')
+        c.wait(1500)
+        c.eq(c.count(f'{S} [data-dw-env]'), 0, 'no envelope: the drawer of an old record is read', what='envelopes (old record)')
+        p = c.js(_DW_PLACES)
+        c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 1, ['PT1', 'PT2']], 'the places of B are in the Detail', what='zones, rendezvous, route (old record)')
+        c.ok('reads' not in (c.doc(BOOK) or {}), c.doc(BOOK), 'the record is still the old one: nothing was written yet')
+        # the first write of the new code: C opened by the zone
+        c.wait(11000)
+        now['fix'] = fix(44.6, 1.3)
+        d = c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', timeout=40000, what='C opened in my record')
+        c.eq(d.get('reads'), 1, 'the first write of the new code puts the version mark `reads: 1` in the record', what='mark')
+        c.ok(bool(d['drawer_B'].get('read_at')) and not d['drawer_C'].get('read_at'), d, 'and the read_at of B (already open), none for C (just opened)')
+        c.until(f"!!document.querySelector('{S} [data-dw-open=\"C\"]')", timeout=15000, what='the envelope of C')
+        c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-env]')].map(e => e.dataset.dwEnv)"), ['C'], 'ONLY C arrives as an envelope; B stays read', what='envelopes after the write')
+        c.ok(c.js(f"!!document.querySelector('{S} [data-dw-now] [data-dw=\"B\"]')"), 'gone', 'B is still under « Maintenant »')
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))

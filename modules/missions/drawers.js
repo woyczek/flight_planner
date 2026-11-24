@@ -233,6 +233,8 @@ export function readBook(doc, missionId) {
     seance: typeof s === 'string' && SEANCE.test(s) ? s : null,
     readAt: msOf(own(doc, 'read_at')),
     startAt: msOf(own(doc, 'start_at')),
+    // SOG-0619 : la marque de version — `reads: 1` à la racine du carnet : écrit par le code qui connaît les enveloppes (voir baseOf)
+    marked: own(doc, 'reads') === 1,
     drawers,
     reads
   };
@@ -1345,23 +1347,39 @@ function baseOf(doc, ctx) {
     tri = triOf(ctx?.me);
   if (!id || !tri) return null;
   const key = ctx.seance?.key || null,
-    b = bookFor(readBook(doc, id), ctx.seance) || {
+    found = bookFor(readBook(doc, id), ctx.seance),
+    b = found || {
       mission: id,
       seance: null,
       readAt: null,
       startAt: null,
       drawers: {},
       reads: {}
+    },
+    reads = {
+      ...b.reads
     };
+  // LA MIGRATION d'un carnet d'AVANT les enveloppes (SOG-0619), pure : un carnet qui EXISTE sans la marque `reads: 1` est un carnet d'avant — tous ses
+  // tiroirs ouverts sont LUS, les miens comme ceux qu'un équipier (ou l'heure) avait ouverts, que `ctx.opened` (les lettres ouvertes que l'appelant
+  // connaît) donne. À la PREMIÈRE écriture du nouveau code dans ce carnet (withOpen, withDrawerRead, withStart, withRead, withSeal) la marque est posée
+  // et chaque tiroir alors ouvert reçoit un `read_at` égal à l'instant : rien d'ancien ne redevient une enveloppe. Un carnet ABSENT (ou d'une autre
+  // séance) est neuf : la règle des enveloppes s'applique (un tiroir ouvert et pas lu est une enveloppe). Tout carnet écrit porte la marque.
+  if (found && !found.marked) {
+    const now = Number.isFinite(ctx.now) ? ctx.now : Date.now(),
+      open = new Set([...Object.keys(found.drawers).filter(l => found.drawers[l].state === 'open'),
+        ...(Array.isArray(ctx.opened) ? ctx.opened : [])
+      ]);
+    for (const l of LETTERS)
+      if (open.has(l) && reads[l] == null) reads[l] = now;
+  }
   return {
     ...b,
     seance: key || b.seance,
     drawers: {
       ...b.drawers
     },
-    reads: {
-      ...b.reads
-    },
+    reads,
+    marked: true,
     by: tri
   };
 }
@@ -1373,7 +1391,8 @@ function docOf(b, now) {
     mission: b.mission,
     seance: b.seance,
     read_at: isoOf(b.readAt) || null,
-    start_at: isoOf(b.startAt) || null
+    start_at: isoOf(b.startAt) || null,
+    reads: 1 // la marque de version (SOG-0619, voir baseOf) : les `read_at` des tiroirs sont tenus à jour par ce code
   };
   for (const l of LETTERS) {
     const e = b.drawers[l],

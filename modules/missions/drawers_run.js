@@ -73,9 +73,25 @@ const known = v => {
   const mine = !!v && v.mine === true && Array.isArray(v.states);
   return {
     mine,
-    opened: mine ? v.states.filter(s => s.open).map(s => s.id) : []
+    opened: mine ? readIds(v) : []
   };
 };
+
+/** LA règle de lecture (SOG-0619) : un tiroir est « ouvert pour l'écran » quand il est LU par CE pilote — avant, il n'y a que son enveloppe, et rien
+ *  d'autre nulle part (ni texte, ni lieux au Détail, sur la Carte, dans la liseuse ou le plan de vol). Le constat, lui, est écrit au carnet dès qu'il a
+ *  lieu et compte tout de suite pour le juge (`states.open` reste la vérité du juge : une enveloppe non lue ne retient pas le tiroir suivant). Les lettres
+ *  ouvertes ET lues : la seule source de sees() (la fiche, le Détail, pilotView), du document publié (cache/missions/open_<ID>.json : la Carte,
+ *  Carburant) et de la liseuse. */
+export const readIds = c => (Array.isArray(c.states) ? c.states : []).filter(s => s.open && !isUnread(c, s)).map(s => s.id);
+
+/** Les états des tiroirs tels que l'ÉCRAN les voit : un tiroir ouvert et pas lu y est fermé. */
+export const shownStates = c => (Array.isArray(c.states) ? c.states : []).map(s => isUnread(c, s) ? {
+  ...s,
+  open: false
+} : s);
+
+/** Ce que le juge sait ouvert à un instant (toutes lectures confondues) : le contexte d'une écriture, pour la migration d'un carnet d'avant (drawers.js). */
+const openedOf = c => (Array.isArray(c.states) ? c.states : []).filter(s => s.open).map(s => s.id);
 
 /** Les tiroirs lus de la mission (les lettres connues, douze au plus). */
 const drawersOf = mission => (Array.isArray(mission?.drawers) ? mission.drawers : []).filter(d => D.LETTERS.includes(d?.id)).slice(0, D
@@ -292,7 +308,7 @@ function emit(c) {
       id: c.id,
       mine: !!c.mine,
       flying: !!c.flying,
-      opened: c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open).map(s => ({
+      opened: c.mine && Array.isArray(c.states) ? c.states.filter(s => s.open && !isUnread(c, s)).map(s => ({
         id: s.id,
         title: s.title || ''
       })) : [],
@@ -331,7 +347,7 @@ function publish(c, old = null) {
     path = D.openPath(c.id),
     now = Date.now(),
     due = k.mine ? c.pub?.key !== key || now - c.pub.at > REPUB_MS : D.readOpen(old, c.id).mine,
-    doc = due && path ? D.openAfter(c.states, {
+    doc = due && path ? D.openAfter(shownStates(c), {
       mission: c.id,
       mine: k.mine,
       seance: c.seance
@@ -404,7 +420,8 @@ async function load(c) {
       const next = D.withStart(cur, {
         mission: c.id,
         me,
-        seance
+        seance,
+        opened: openedOf(c)
       }, startAt);
       return next && await put(c, myPath, next) ? next : null;
     });
@@ -436,6 +453,9 @@ async function load(c) {
       passage: c.passage
     });
   c.states = states;
+  // un carnet d'avant les enveloppes : ce qui est ouvert à ce premier calcul est lu (voir isUnread) ; un carnet marqué ou absent : la règle des enveloppes
+  const bk = D.bookFor(D.readBook(doc, c.id), seance);
+  c.legacyRead = bk && !bk.marked ? c.legacyRead || new Set(states.filter(x => x.open).map(x => x.id)) : null;
   // ce que l'appareil garde : les ouvertures des autres déjà vues (une écriture qui ne change rien n'est pas faite par le cadre)
   const at = Date.now(),
     keep = D.seenAfter(seen, states, seance, at);
@@ -575,6 +595,7 @@ async function record(c, id, f, source) {
         mission: c.id,
         me: c.me,
         seance: c.seance,
+        opened: openedOf(c),
         now: Date.now()
       }, id, f.how, {
         from: f.from,
@@ -705,6 +726,7 @@ export async function markRead(id) {
     mission: c.id,
     me: c.me,
     seance: c.seance,
+    opened: openedOf(c),
     now: Date.now()
   };
   if (!D.withRead(c.doc, ctx)) {
@@ -753,6 +775,7 @@ export async function answer(id) {
       mission: c.id,
       me: c.me,
       seance: c.seance,
+      opened: openedOf(c),
       now: Date.now()
     }, a.id, 'hand')) return void c.ctx.notify?.(c.tt(RTX.noWrite, {
     e: c.tt(RTX.noTrigram)
@@ -765,6 +788,7 @@ export async function answer(id) {
       mission: c.id,
       me: c.me,
       seance: c.seance,
+      opened: openedOf(c),
       now: Date.now()
     }, a.id, 'hand');
     return !!next && await put(c, c.myPath, next);
@@ -789,12 +813,12 @@ function nothing(c) {
   paintViews(c);
 }
 
-/** Ce message est-il NON LU par moi ? (SOG-0619) Seulement pour MA mission en vol : un tiroir ouvert, que je n'ai pas lu (`readAt` absent), et
- *  ouvert PENDANT ce vol (son heure d'ouverture n'est pas avant le départ du vol) — un tiroir ouvert avant cette version, ou avant ce départ,
- *  compte comme lu : aucune inondation d'enveloppes. */
+/** Ce message est-il NON LU par moi ? (SOG-0619) Seulement pour MA mission en vol : un tiroir ouvert dont MON carnet n'a pas la marque `read_at` (par pilote :
+ *  le constat d'un équipier ouvre le tiroir pour tous, chacun lit SA enveloppe). Un carnet d'AVANT les enveloppes (il existe, sans la marque `reads: 1`)
+ *  tient pour lus tous ses tiroirs alors ouverts — ceux qu'un équipier avait ouverts aussi : `c.legacyRead`, les lettres ouvertes au premier calcul
+ *  de ce carnet ; la migration écrite (drawers.js baseOf) les rend lus pour de bon à la première écriture. Un carnet absent est neuf. */
 export function isUnread(c, s) {
-  const start = Date.parse(c.startIso || '');
-  return !!c.mine && !!c.flying && !!s?.open && s.readAt == null && Number.isFinite(start) && s.at >= start;
+  return !!c.mine && !!c.flying && !!s?.open && s.readAt == null && !c.legacyRead?.has(s.id);
 }
 
 /** Les messages arrivés et non lus, le plus ANCIEN d'abord (le rattrapage en apporte deux). */
@@ -808,7 +832,8 @@ export async function markDrawerRead(id, letter) {
   const ctx = {
     mission: c.id,
     me: c.me,
-    seance: c.seance
+    seance: c.seance,
+    opened: openedOf(c)
   };
   if (!D.withDrawerRead(c.doc, ctx, letter, Date.now())) {
     c.ctx.notify?.(c.tt(RTX.noRead, {
@@ -859,6 +884,7 @@ export async function seal(id, letter) {
     mission: c.id,
     me: c.me,
     seance: c.seance,
+    opened: openedOf(c),
     now: Date.now()
   }, letter);
   if (!next) {
