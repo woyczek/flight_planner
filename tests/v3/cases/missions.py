@@ -15525,9 +15525,10 @@ def n254(c):
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what=f'{w} px: X-001A in the workshop')
         if not fill:  # (B) the workshop open is enough: what is tested is the way out of it, not its work
             return
-        # the Cadre unfolded when its title is not SHOWN (at 1 280 the field exists in the folded Cadre: Page.fill waited 15 s on it)
+        # the tab « Mission » first, at every width (at 1 280 too the workshop has its tabs, ed_reveal leaves it on the itinerary: the title
+        # field exists there, hidden — as N109 does), then the Cadre unfolded only if its title is still not shown (a second touch folds it)
+        _tab(c, 'mission')
         if not c.js(f"[...document.querySelectorAll('{E} input[data-k=edtitle]')].some(x => x.checkVisibility())"):
-            _tab(c, 'mission')
             c.tap(f'{E} [data-steps] [data-step="cadre"]')
         c.until(f"[...document.querySelectorAll('{E} input[data-k=edtitle]')].some(x => x.checkVisibility())", what=f'{w} px: the Cadre unfolded')
         # the title typed in the field that is shown, as the pilot types it
