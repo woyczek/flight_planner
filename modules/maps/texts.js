@@ -576,11 +576,26 @@ export const TX = {
     app: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
     appTrans: ['Transition de l’approche', 'Approach transition', 'Anflugübergang', 'Transición de la aproximación']
   },
-  chHint: ['Touchez une ligne ou un tracé : le choix s’ajoute et reste sur la carte ; « Terminer » le rend à Carburant.',
-    'Tap a row or a trace: the choice adds up and stays on the map; "Done" hands it to Fuel.',
-    'Zeile oder Spur antippen: die Wahl kommt hinzu und bleibt auf der Karte; „Fertig“ gibt sie an Kraftstoff.',
-    'Toque una línea o un trazado: la elección se suma y queda en el mapa; «Terminar» la entrega a Combustible.'
+  chHint: [
+    'Touchez une procédure, sur la carte ou dans la liste : elle est cochée pour être comparée ; « Choisir » la retient pour le vol ; « Terminer » rend le choix à Carburant.',
+    'Tap a procedure, on the map or in the list: it is ticked to be compared; "Choose" keeps it for the flight; "Done" hands the choice to Fuel.',
+    'Verfahren auf der Karte oder in der Liste antippen: es wird zum Vergleich angekreuzt; „Wählen“ übernimmt es für den Flug; „Fertig“ gibt die Wahl an Kraftstoff.',
+    'Toque un procedimiento, en el mapa o en la lista: se marca para compararlo; «Elegir» lo retiene para el vuelo; «Terminar» entrega la elección a Combustible.'
   ],
+  // (a1) cocher pour comparer (huit au plus), puis « Choisir » : titres de groupe, état de la ligne choisie, refus de la neuvième
+  chGrp: {
+    sid: ['Départs', 'Departures', 'Abflüge', 'Salidas'],
+    star: ['Arrivées', 'Arrivals', 'Ankünfte', 'Llegadas'],
+    app: ['Approches', 'Approaches', 'Anflüge', 'Aproximaciones']
+  },
+  chPick: ['Choisir', 'Choose', 'Wählen', 'Elegir'],
+  chChosen: ['choisie pour le vol', 'chosen for the flight', 'für den Flug gewählt', 'elegida para el vuelo'],
+  chMax: ['Huit procédures à comparer au plus : décochez-en une.', 'At most eight procedures to compare: untick one.',
+    'Höchstens acht Verfahren zum Vergleich: nehmen Sie bei einem das Häkchen weg.',
+    'Ocho procedimientos como máximo para comparar: desmarque uno.'
+  ],
+  chTick: ['Cocher pour comparer', 'Tick to compare', 'Zum Vergleich ankreuzen', 'Marcar para comparar'],
+  chUntick: ['Décocher', 'Untick', 'Häkchen entfernen', 'Desmarcar'],
   // couche « sol » (§ 10.40, ground.js) : voies, postes et points d'attente du départ et de l'arrivée
   gTitle: ['Sol · {icao}', 'Ground · {icao}', 'Boden · {icao}', 'Suelo · {icao}'],
   gBtn: ['Sol', 'Ground', 'Boden', 'Suelo'],
@@ -670,7 +685,6 @@ export const TX = {
   },
   chRwyNotServed: ['Pas desservie par {p}', 'Not served by {p}', 'Nicht bedient von {p}', 'No servida por {p}'],
   chVia: ['{p} via {t}', '{p} via {t}', '{p} über {t}', '{p} vía {t}'],
-  chClear: ['Retirer : {f}', 'Clear: {f}', 'Entfernen: {f}', 'Quitar: {f}'],
   chTrans: ['Transitions de l’approche', 'Approach transitions', 'Anflugübergänge', 'Transiciones de la aproximación'],
   chNoTrans: ['Sans transition', 'No transition', 'Ohne Übergang', 'Sin transición'],
   chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],

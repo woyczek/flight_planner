@@ -257,7 +257,6 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-sum:last-child{border-bottom:0}
 [data-module="maps"] .mp-ch-sum-k{flex:none;min-width:5.5em;min-height:0;margin:0;padding:0 4px 0 0;border:0;background:none;font:inherit;font-size:var(--sog-size-s);color:var(--sog-accent);text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-sum-v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
-[data-module="maps"] .mp-ch-x{flex:none;width:36px;height:32px;margin:0;padding:0;border:0;background:none;color:var(--sog-muted);font:inherit;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
 [data-module="maps"] .mp-ch-dir{flex:none;display:inline-block;width:16px;text-align:center;font-size:14px;font-weight:700;line-height:14px;color:var(--sog-muted);transform:rotate(var(--r))}
 [data-module="maps"] .mp-ch-off{flex:none;font-size:11px;font-weight:600;color:var(--sog-muted)}
@@ -276,6 +275,18 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);min-height:0;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
 [data-module="maps"] .mp-ch-none{color:var(--sog-fg)}
+/* (a1) cocher pour comparer, puis « Choisir » : la pastille (numéro dans la teinte, vide et cerclée tant que la ligne n'est pas cochée), « Choisir » seulement sur une ligne cochée, la choisie en état (l'échantillon de la route et « choisie pour le vol » dessous, ni case ni bouton) */
+[data-module="maps"] .mp-ch-row[data-state]{color:var(--sog-fg);font-weight:600}
+[data-module="maps"] .mp-ch-row[data-state=chosen]{height:auto;min-height:var(--mp-ch-row);padding-top:3px;padding-bottom:3px;cursor:default}
+[data-module="maps"] .mp-ch-row[data-state=chosen] .mp-ch-sw{width:22px;height:4px}
+[data-module="maps"] .mp-ch-row[aria-checked=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
+[data-module="maps"] .mp-ch-n{box-sizing:border-box;flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border:2px solid var(--sog-border);border-radius:50%;font-size:11px;line-height:1;font-weight:700;color:var(--ink,#fff)}
+[data-module="maps"] .mp-ch-n[data-n]:not([data-n="0"]){border-color:var(--c);background:var(--c)}
+[data-module="maps"] .mp-ch-name small{display:block;margin-top:1px;font-size:12px;font-weight:400;color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-item{display:flex;align-items:stretch;border-bottom:1px solid var(--sog-border)}
+[data-module="maps"] .mp-ch-item .mp-ch-row{flex:1 1 auto;width:auto;min-width:0;border-bottom:0}
+[data-module="maps"] .mp-ch-pick{flex:none;align-self:center;min-height:32px;margin:0 6px 0 0;padding:0 10px;border-radius:0}
+[data-module="maps"] .mp-ch-cnt{white-space:nowrap;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-gd{display:flex;flex-direction:column;gap:6px;padding:6px 8px}
 [data-module="maps"] .mp-gd-q{box-sizing:border-box;width:100%;min-height:36px;padding:0 8px;border:1px solid var(--sog-border);border-radius:6px;background:var(--sog-surface);color:var(--sog-fg);font:inherit}
 [data-module="maps"] .mp-gd-chips{display:flex;gap:6px;flex-wrap:wrap}

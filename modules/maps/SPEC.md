@@ -484,9 +484,21 @@ enters it.
   (the model's frame made symmetric around it: an arrival's procedures come from one side, the aerodrome does not stay at the edge)
   and the candidates of the first family not chosen are drawn — the runways with their numbers, then, while only runways are
   touched, the compatible procedures of the next family (SID at departure, STAR at arrival), faded and without cartouches, as
-  « N others ». A faded trace is a trace like the others: touching it chooses it as its row would, and its row is marked (one
-  writer, the choice's state); the gesture of § 10.23 is unchanged (a row or a trace chooses, the selection adds up, hovering
-  highlights); nothing is written before « Done ». The sheet is half the view at most (§ 7.1).
+  « N others ». The sheet is half the view at most (§ 7.1); nothing is written before « Done ».
+- **Tick to compare, then choose** (SOG-0569 (a1), 24 Nov 2026; contract: `maquette/procedures.html`, scenes `#choisir0`, `#choisir5`,
+  `#choisir8`): the procedures of the family touched are **candidates** — thin, neutral grey (`--sog-muted`), no name, no cartouche.
+  A touch on a row, or on a trace (`chooseAt`: the NEAREST trace inside the common target of the pointer, `frame/lib/hit_target.js`,
+  22 px for a finger, 8 px for a mouse, even where several converge: no treatment of the ambiguity), **ticks** it (`tick(id)`, state
+  `S.choose.slot`: id → number); a second touch unticks. A ticked one takes the lowest free number (1–8) and its hue
+  (`--sog-proc-n`), drawn 3.5 px with a halo, a disc with its number on the part of its trace that is alone (`DISC_AT`: far from the
+  other traces, the other discs and the aerodrome), its name beside the disc when there is room (`place`, never forced). **Eight at most**:
+  the ninth is refused by « Huit procédures à comparer au plus : décochez-en une. » (`notify`, key `maps-choose-max`), the counter
+  « n / 8 » in the hint line says the state. **« Choisir »** (`.mp-ch-pick`) is offered only on a ticked row (`choosePick`): the procedure
+  takes the colour and the thickness of the route (`flightCol`, `ROUTE_W`), is no longer ticked (its number is freed), the one it
+  replaces becomes a grey candidate; the chosen row is a state (`data-state="chosen"`, the route's sample and « choisie pour le vol »,
+  no button, a touch changes nothing): **no gesture « remove the choice »**. « Aucune » of the family (the explicit « no procedure », a datum distinct from « not chosen yet ») follows the same rule: offered under each title until it is the choice, then a state « Aucune · choisie pour le vol » (`data-state="chosen"`, no button), replaced by a procedure chosen afterwards; the ✕ of the summary lines is removed (same effect as « Aucune », under a wrong word). The ink of the number in a disc is `inkOn(hue)` (the first of white, #101820, black that holds 4.5 : 1).
+  The chosen trace is not touchable on the map (a candidate under it stays reachable). Group titles: « Départs », « Arrivées »,
+  « Approches » (`TX.chGrp`).
 
 The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
 entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)

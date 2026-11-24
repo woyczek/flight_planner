@@ -40,7 +40,7 @@ import {
  *  dégagements (alts.js) gardent les jetons --sog-map-* de colOf. */
 export const flightCol = () => MapsRender.palette(!!S?.theme?.dark).route;
 /** L'épaisseur de la route (render_route.js : le liseré 7,5 puis le trait 4, à l'échelle 1) : les procédures du vol la prennent. */
-const ROUTE_HALO = 7.5,
+export const ROUTE_HALO = 7.5,
   ROUTE_W = 4;
 export const colOf = origin => {
   const P = MapsRender.palette(!!S?.theme?.dark),
