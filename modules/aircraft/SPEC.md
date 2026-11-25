@@ -26,8 +26,14 @@ L0).
 
 `meta = { id: 'aircraft', apps: ['maintenance'], level: 3, title }`, « Appareils » in Maintenance's rail. Two views in one row of tabs
 (`f-tabs`, `data-view="fleet" | "sheets"`, `aria-pressed`): **Flotte** and **Fiches**; the last one is kept on the terminal
-(`cache/aircraft/ui.json`) (M6). `#aircraft?sheet=<id>` opens the Fiches view on that sheet's editor (M10). A row opens its editor in
-place of the list (one card, « Retour » goes back), one editor at a time; the cards are marked `data-pane`.
+(`cache/aircraft/ui.json`) (M6). `#aircraft?sheet=<id>` opens the Fiches view on that sheet's editor (M10). A row opens the aircraft's SHEET,
+read only, in place of the list (SOG-0635, M53: what the form knows, nothing more; « Modifier » in it opens the editor, « Retour » of the
+editor goes back to the sheet, « Retour » of the sheet to the list), one card at a time; the cards are marked `data-pane` (`fleet`,
+`sheet`, `edit`). The title of a row and of the sheet is the readable name — the model the types catalogue gives
+(`ctx.aerodb.aircraft().label`), else the type code — with the registration, the code second and smaller. A registration is one identity
+written without dash nor space, in capitals (`registry_read.js` `normReg`): two records of the same identity are ONE row, the form with
+the dash shown; the sheet says the second record and offers to keep the one shown (the other removed after the question, never in
+silence); the input is lax (spaces removed, capitals), and a new aircraft whose identity is already in the fleet is refused and said.
 
 | View | What it shows |
 |---|---|

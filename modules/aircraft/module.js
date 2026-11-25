@@ -160,6 +160,19 @@ const TX = {
   save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
   retire: ['Retirer', 'Retire', 'Ausmustern', 'Retirar'],
   back: ['Retour', 'Back', 'Zurück', 'Volver'],
+  // SOG-0635 : la fiche d'un appareil, en lecture ; « Modifier » dedans (la décision (2) de SOG-0190 est retirée)
+  modify: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
+  sheetOut: ['Hors service', 'Out of service', 'Außer Dienst', 'Fuera de servicio'],
+  // SOG-0635 (c), règle SOG-0314 : deux fiches pour une même immatriculation (écrites avec et sans tiret) — dites, une seule gardée sur proposition
+  dupTwo: ['{n} fiches pour la même immatriculation : {l}.', '{n} records for the same registration: {l}.',
+    '{n} Einträge für dasselbe Kennzeichen: {l}.', '{n} fichas para la misma matrícula: {l}.'
+  ],
+  dupKeep: ['Garder {r}, retirer {o}', 'Keep {r}, retire {o}', '{r} behalten, {o} ausmustern', 'Conservar {r}, retirar {o}'],
+  dupAsk: ['Retirer {o} de la flotte ? {r} est gardée, avec ses propres données.',
+    'Retire {o} from the fleet? {r} is kept, with its own data.',
+    '{o} aus der Flotte nehmen? {r} bleibt erhalten, mit seinen eigenen Daten.',
+    '¿Retirar {o} de la flota? Se conserva {r}, con sus propios datos.'
+  ],
   needReg: ['Une immatriculation est nécessaire.', 'A registration is needed.', 'Ein Kennzeichen ist nötig.',
     'Se necesita una matrícula.'
   ],
@@ -225,6 +238,15 @@ const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .fu-sugitem:last-child{border-bottom-width:0}
 [data-module="aircraft"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
 [data-module="aircraft"] .ac-group>legend{font-weight:600;padding:0;margin-bottom:4px}
+/* SOG-0635 : la fiche en lecture — le titre (le nom, l'immatriculation, le code plus petit), puis ce que le formulaire sait, libellé au-dessus de sa valeur */
+[data-module="aircraft"] .ac-title{margin:0 0 8px;font-size:var(--sog-size-l,1.25rem)}
+[data-module="aircraft"] .ac-title small{font-size:var(--sog-size-s);font-weight:400}
+[data-module="aircraft"] .ac-dl{display:grid;gap:8px;margin:0 0 12px}
+[data-module="aircraft"] .ac-dl>div{display:grid;gap:2px}
+[data-module="aircraft"] .ac-dl dt{font-size:var(--sog-size-s);color:var(--sog-muted)}
+[data-module="aircraft"] .ac-dl dd{margin:0}
+[data-module="aircraft"] .ac-dup{display:grid;gap:8px;margin:0 0 12px}
+[data-module="aircraft"] .ac-dup>button{justify-self:start}
 [data-module="aircraft"] .ac-regline{display:grid;gap:4px;margin:8px 0}
 [data-module="aircraft"] .ac-regline p{margin:0}
 [data-module="aircraft"] .ac-regline>button{justify-self:start}
@@ -255,6 +277,9 @@ export async function mount(el, ctx) {
     q: '',
     all: false,
     edit: null, // { was: immatriculation d'origine ('' pour un ajout), draft, rq (recherche du registre), rall, note }
+    sheet: null, // SOG-0635 : { reg } — la fiche en lecture d'un appareil (« Modifier » ouvre l'éditeur par-dessus)
+    models: new Map(), // SOG-0635 : code de type → modèle du catalogue d'AeroDB ('' sans modèle), lu une fois
+    modelsAsked: new Set(),
     regs: new Map() // SOG-0270 : les réponses du registre de la séance, par question ({ wait } pendant l'appel)
   };
   s.sv = createSheetsView({
@@ -418,6 +443,7 @@ function showView(s, view) {
   if (s.view === view) return;
   s.view = view;
   s.edit = null;
+  s.sheet = null;
   Promise.resolve(s.ctx.data.put(UI, {
     view
   }, {
@@ -429,6 +455,63 @@ function showView(s, view) {
 /** Les appareils de la flotte lue, triés par immatriculation. */
 const listOf = s => [...(s.fleet?.aircraft || [])].filter(a => a?.registration).sort((a, b) => String(a.registration).localeCompare(String(
   b.registration)));
+/** SOG-0635 (c) : les fiches d'une même immatriculation (l'identité sans tiret ni espace, en majuscules : RR.normReg) ; la forme montrée
+ *  est la forme enregistrée, en majuscules — celle qui a le tiret quand deux formes existent. [{ shown, all }] dans l'ordre de la liste. */
+function groupsOf(s) {
+  const by = new Map();
+  for (const a of listOf(s)) {
+    const k = RR.normReg(a.registration);
+    if (!k) continue;
+    if (!by.has(k)) by.set(k, []);
+    by.get(k).push(a);
+  }
+  return [...by.values()].map(all => ({
+    shown: all.find(a => String(a.registration).includes('-')) || all[0],
+    all
+  }));
+}
+/** Les appareils montrés : un par immatriculation (SOG-0635). */
+const shownOf = s => groupsOf(s).map(g => g.shown);
+/** SOG-0635 (b) : le modèle d'un code de type, lu une fois dans le catalogue des types d'AeroDB (ctx.aerodb.aircraft().label : « modèle
+ *  (CODE) ») ; '' sans modèle au catalogue ; undefined tant qu'il n'est pas lu (la liste et la fiche se redessinent à sa lecture). */
+function modelOf(s, code) {
+  const k = String(code || '').toUpperCase();
+  if (!k) return '';
+  if (s.models.has(k)) return s.models.get(k);
+  if (!s.modelsAsked.has(k)) {
+    s.modelsAsked.add(k);
+    Promise.resolve().then(() => s.ctx.aerodb?.aircraft?.()).then(A => {
+      const label = String(A?.label?.(k) ?? '').replace(/[\u0000-\u001f]/g, ' ').trim(),
+        m = /^(.*\S)\s+\([A-Z0-9]{2,8}\)$/.exec(label);
+      s.models.set(k, m ? m[1].slice(0, 80) : '');
+    }, () => s.models.set(k, '')).then(() => S === s && s.view === 'fleet' && !s.edit && draw(s));
+  }
+  return undefined;
+}
+/** SOG-0635 (b) : le titre d'un appareil — le nom lisible (le modèle du catalogue, sinon le code du type), l'immatriculation avec lui, le
+ *  code en second, plus petit (seulement quand le nom n'est pas déjà le code) ; jamais un champ vide (sans type : l'immatriculation seule). */
+function titleHtml(s, a) {
+  const code = String(a.type || '').toUpperCase(),
+    model = modelOf(s, code) || '',
+    name = model || code;
+  return name ? `<b data-acname>${esc(name)}</b> ${esc(a.registration)}${model ? ` <small class="f-muted" data-actype>${esc(code)}</small>` : ''}` :
+    `<b data-acname>${esc(a.registration)}</b>`;
+}
+/** SOG-0635 (a) : la fiche d'un appareil en LECTURE — ce que le formulaire sait déjà, rien de plus ; « Modifier » dedans ; deux fiches pour
+ *  la même immatriculation dites, avec le geste qui en garde une (rien n'est retiré sans la question). */
+function sheetHtml(s) {
+  const g = groupsOf(s).find(x => x.all.some(a => a.registration === s.sheet.reg));
+  if (!g) return listHtml(s);
+  const a = g.shown,
+    lab = k => s.tt(TX[k]).replace(/\s*\(.*\)$/, ''),
+    row = (k, v) => v ? `<div data-sf="${k}"><dt>${esc(lab(k))}</dt><dd>${esc(v)}</dd></div>` : '',
+    others = g.all.filter(x => x !== a).map(x => x.registration),
+    dup = others.length ? `<div class="ac-dup" data-dup><p class="f-warn">${esc(s.tt(TX.dupTwo, { n: g.all.length, l: g.all.map(x => x.registration).join(', ') }))}</p><button type="button" data-do="dupkeep">${esc(s.tt(TX.dupKeep, { r: a.registration, o: others.join(', ') }))}</button></div>` : '';
+  return `<div class="f-card" data-pane="sheet" data-reg-sheet="${esc(a.registration)}"><h2 class="ac-title" data-actitle>${titleHtml(s, a)}</h2>${dup}
+    <dl class="ac-dl">${row('registration', a.registration)}${row('type', [String(a.type || '').toUpperCase(), modelOf(s, a.type) || ''].filter(Boolean).join(' · '))}${row('variant', a.variant)}${row('operator', a.operator)}${row('callsigns', (a.callsigns || []).join(', '))}${row('base', a.base)}${row('tactical', a.tacticalNumber)}${row('operational', a.operational === false ? s.tt(TX.sheetOut) : s.tt(TX.operational))}</dl>
+    ${a.location ? `<p class="f-muted">${esc(s.tt(TX.location, { l: a.location, d: a.locationAt ? String(a.locationAt).slice(0, 10) : '' }))}</p>` : ''}
+    <div class="f-row"><button type="button" class="primary" data-do="modify">${esc(s.tt(TX.modify))}</button><button type="button" data-do="sheetback">${esc(s.tt(TX.back))}</button></div></div>`;
+}
 
 /** Dessine la vue en cours : les onglets, puis la liste ou l'éditeur de la flotte, ou les Fiches (dessinées par sheets.js). */
 function draw(s) {
@@ -438,7 +521,7 @@ function draw(s) {
     tabs = s.edit || s.only ? '' : `<div class="f-tabs" role="group" aria-label="${esc(s.tt(meta.title))}">${tab('fleet', TX.fleet)}${tab('sheets', TX.sheets)}</div>`,
     // une seule vue (l'entrée du cadre l'a demandée) : son nom en titre
     title = s.only ? TX[s.only] : meta.title;
-  s.el.innerHTML = `<style>${STYLE}${SHEETS_STYLE}</style><h1>${esc(s.tt(title))}</h1>${tabs}${s.view === 'sheets' ? '<div data-sheets></div>' : s.edit ? editorHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}${SHEETS_STYLE}</style><h1>${esc(s.tt(title))}</h1>${tabs}${s.view === 'sheets' ? '<div data-sheets></div>' : s.edit ? editorHtml(s) : s.sheet ? sheetHtml(s) : listHtml(s)}`;
   if (s.view === 'sheets') {
     const id = s.openSheet;
     s.openSheet = '';
@@ -725,12 +808,12 @@ function listHtml(s) {
   // SOG-0270 : la recherche des fiches (types de la base, fiches du registre) en plus de la flotte ; demandée une fois par saisie
   const tq = s.qTypes?.q === s.q ? s.qTypes.list : [],
     codes = new Set(tq.map(t => t.code)),
-    all = listOf(s),
+    all = shownOf(s), // SOG-0635 : une ligne par immatriculation (deux écritures d'une même immatriculation sont le même appareil)
     hits = all.filter(a => FL.matches(a, s.q, codes)),
     shown = s.all ? hits : hits.slice(0, ROWS),
     // les types qui répondent, après les aéronefs ; « Créer <immatriculation> » seulement quand rien ne répond
     typeRows = s.q.trim() ? tq.map(t => `<button type="button" class="f-item ac-typerow" data-do="addtype" data-type="${esc(t.code)}"><span>${esc(s.tt(TX.addType, { label: t.label, code: t.code }))}</span></button>`).join('') : '',
-    row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span><b>${esc(a.registration)}</b> ${esc(a.type || '')}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
+    row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span>${titleHtml(s, a)}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
   return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc(countText(s, all.length))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
     <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>` : shown.map(row).join('')}${typeRows}${hits.length || tq.length ? '' : noHitActions(s)}</div>
@@ -894,13 +977,14 @@ async function onClick(s, e) {
   if (tab) return showView(s, tab.dataset.view);
   if (s.view === 'sheets') return s.sv.onClick(e);
   const row = e.target.closest('[data-reg]');
-  if (row && !s.edit) {
-    const a = listOf(s).find(x => x.registration === row.dataset.reg);
-    s.edit = {
-      was: a.registration,
-      draft: FL.normalize(a)
+  if (row && !s.edit && !s.sheet) { // SOG-0635 (a) : un toucher ouvre la FICHE en lecture ; « Modifier » est dans la fiche
+    s.sheet = {
+      reg: row.dataset.reg
     };
-    return draw(s);
+    draw(s);
+    return s.el.querySelector('[data-actitle]')?.scrollIntoView?.({
+      block: 'nearest'
+    });
   }
   const pick = e.target.closest('[data-regpick]');
   if (pick && s.edit) { // SOG-0270 : une immatriculation du registre choisie : la fiche se remplit (le type, une suggestion)
@@ -959,9 +1043,23 @@ async function onClick(s, e) {
     case 'more':
       s.all = true;
       return draw(s);
-    case 'back':
+    case 'back': // l'éditeur se ferme : retour à la fiche quand on en venait, sinon à la liste
       s.edit = null;
       return draw(s);
+    case 'modify': { // SOG-0635 : « Modifier » de la fiche ouvre l'éditeur de l'appareil montré
+      const a = listOf(s).find(x => x.registration === s.sheet?.reg) || null;
+      if (!a) return;
+      s.edit = {
+        was: a.registration,
+        draft: FL.normalize(a)
+      };
+      return draw(s);
+    }
+    case 'sheetback':
+      s.sheet = null;
+      return draw(s);
+    case 'dupkeep':
+      return dupKeep(s);
     case 'save':
       return save(s);
     case 'retire':
@@ -974,10 +1072,14 @@ async function save(s) {
   const d = readForm(s),
     by = s.ctx.identity?.trigram || '';
   if (!d.registration) return s.ctx.notify(s.tt(TX.needReg), 'warn');
+  // SOG-0635 (c) : l'identité se juge sans tiret ni espace, en majuscules — « FHABC » est F-HABC déjà dans la flotte ; la fiche modifiée
+  // elle-même (même forme enregistrée) n'est pas un doublon
   const file = await s.ctx.data.get(s.fleetPath),
-    taken = (file?.aircraft || []).some(a => String(a?.registration || '').toUpperCase() === d.registration);
-  if (taken && d.registration !== s.edit.was) return s.ctx.notify(s.tt(TX.dupReg, {
-    r: d.registration
+    was = String(s.edit.was || '').toUpperCase(),
+    taken = (file?.aircraft || []).find(a => RR.normReg(a?.registration) === RR.normReg(d.registration) && String(a?.registration || '')
+      .toUpperCase() !== was);
+  if (taken) return s.ctx.notify(s.tt(TX.dupReg, {
+    r: String(taken.registration).toUpperCase()
   }), 'warn');
   const next = FL.upsert(file, d, {
     was: s.edit.was,
@@ -987,6 +1089,7 @@ async function save(s) {
   if (S !== s) return;
   s.fleet = next;
   s.edit = null;
+  if (s.sheet) s.sheet.reg = d.registration; // SOG-0635 : la fiche montre l'appareil enregistré (son immatriculation a pu changer)
   // SOG-0313 : un appareil créé depuis la recherche (« fnew9 » → F-NEW9) est dans la liste au retour : une recherche qui ne le trouve pas
   // est vidée
   if (!FL.matches(d, s.q)) s.q = '';
@@ -997,6 +1100,35 @@ async function save(s) {
   }), 'ok');
 }
 
+/** SOG-0635 (c), règle SOG-0314 : deux fiches pour une même immatriculation — la montrée est gardée, les autres retirées après la question
+ *  (le fichier relu juste avant ; rien d'autre ne change). */
+async function dupKeep(s) {
+  const g = groupsOf(s).find(x => x.all.some(a => a.registration === s.sheet?.reg));
+  if (!g || g.all.length < 2) return;
+  const keep = g.shown.registration,
+    others = g.all.filter(x => x !== g.shown).map(x => x.registration);
+  if (!await s.ctx.ask(s.tt(TX.dupAsk, {
+      r: keep,
+      o: others.join(', ')
+    }), {
+      ok: s.tt(TX.retire)
+    })) return;
+  let next = await s.ctx.data.get(s.fleetPath);
+  for (const o of others) next = FL.retire(next, o, {
+    by: s.ctx.identity?.trigram || ''
+  });
+  await s.ctx.data.put(s.fleetPath, next);
+  if (S !== s) return;
+  s.fleet = next;
+  s.sheet = {
+    reg: keep
+  };
+  draw(s);
+  publishStatus(s);
+  s.ctx.notify(s.tt(TX.retired, {
+    r: others.join(', ')
+  }), 'ok');
+}
 /** Retire l'appareil de l'éditeur, après la question (sa fiche, s'il en a une, est gardée). */
 async function retire(s) {
   const r = s.edit.was;
@@ -1012,6 +1144,7 @@ async function retire(s) {
   if (S !== s) return;
   s.fleet = next;
   s.edit = null;
+  s.sheet = null; // SOG-0635 : l'appareil retiré n'a plus de fiche
   draw(s);
   publishStatus(s);
   s.ctx.notify(s.tt(TX.retired, {

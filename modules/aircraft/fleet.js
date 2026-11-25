@@ -5,7 +5,8 @@
 // API :
 //   FIELDS : les champs édités, dans l'ordre du formulaire.
 //   normalize(form) → appareil { registration, type, variant, operator, callsigns: [], base, tacticalNumber, operational } ;
-//     immatriculation et type en majuscules, indicatifs séparés par des virgules ou des espaces, sans doublon.
+//     immatriculation et type en majuscules, indicatifs séparés par des virgules ou des espaces, sans doublon ; SOG-0635 : l'immatriculation
+//     saisie large (« f habc », « f-habc ») perd ses blancs — la forme enregistrée est celle tapée, en majuscules, sans espace.
 //   changed(before, after) → [champ] : les champs dont la valeur diffère (indicatifs comparés en liste).
 //   upsert(file, ac, { was, by, now }) → nouveau fichier : l'appareil remplace celui de même immatriculation (ou de `was`,
 //     l'immatriculation d'avant une modification), les champs que l'éditeur ne porte pas (location, locationAt, number…)
@@ -24,7 +25,7 @@ export function normalize(form) {
   const f = form || {},
     calls = Array.isArray(f.callsigns) ? f.callsigns : String(f.callsigns ?? '').split(/[\s,;]+/);
   return {
-    registration: clean(f.registration).toUpperCase(),
+    registration: clean(f.registration).toUpperCase().replace(/\s+/g, ''), // SOG-0635 : sans espace
     type: clean(f.type).toUpperCase(),
     variant: clean(f.variant),
     operator: clean(f.operator),
