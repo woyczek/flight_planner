@@ -1159,8 +1159,9 @@ def d48(c):
     c.until("(w) => ((document.querySelector('.mp-ad-cov') || {}).textContent || '').includes(w)", _COV_TEXTS['held'][lang], timeout=8000,
             what='the coverage line, with the reason from the frame catalogue')
     t = norm(c.text('.mp-ad-cov'))
-    for part in (norm(tx(M, 'green', c.lang, after='covLevel: {')), _COV_TEXTS['held'][lang], '⌛', 'SID 3 · STAR 2 · APP 5'):
+    for part in (norm(tx(M, 'green', c.lang, after='covLevel: {')), _COV_TEXTS['held'][lang], norm(row(c, 'procStale')), 'SID 3 · STAR 2 · APP 5'):
         c.ok(part in t, t, f'the card says "{part}"')
+    c.ok('⌛' not in t, t, 'and never the hourglass, which reads « calculation in progress » (SOG-0602)')
     c.eq(c.attr('.mp-ad-cov', 'data-level'), 'green', 'the line carries its level', what='data-level')
     c.eq(c.js("() => document.querySelector('.mp-ad-cov .mp-cov-dot').style.background"), 'var(--sog-ok)', 'the pin of the line is green', what='dot')
     c.js(_COV_PIN, ['LFAB', 47.30, -1.75])
@@ -1368,7 +1369,8 @@ def d60(c):
     c.eq(len(names), 9, 'the nine published STARs are listed', what=f'rows {names}')
     c.ok(not any('DOUBTX' in n for n in names), f'{names}', 'the record the reading doubted is never listed')
     c.ok(not any('NONAME' in n or 'EN11' in n for n in names), f'{names}', 'a record without a name is never listed (as in Fuel)')
-    c.ok(any('S4A' in n and '⌛' in n for n in names), f'{names}', 'a STAR read under an earlier cycle ends with the hourglass')
+    c.ok(any('S4A' in n and norm(row(c, 'procStale')) in n for n in names), f'{names}', 'a STAR read under an earlier cycle ends with the word « périmé » (SOG-0602)')
+    c.ok(not any('⌛' in n for n in names), f'{names}', 'and never with the hourglass, which reads « calculation in progress »')
     c.ok(any('S9A' in n and '⚠' in n for n in names), f'{names}', 'unfolded, the STAR that does not fit is marked ⚠')
     L = c.js(_CH_LAYOUT, ['LFML.STAR.S3A.RW31.NONE', 'star'])
     hues = [x['c'] for x in star]
@@ -11094,3 +11096,32 @@ def d321(c):
     c.until(f"() => ![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=6000,
             what='the write confirmed: the refusal note is gone (it would say a falsehood)')
     c.shot(f'D321_{c.width}_{c.lang}_retour.png')
+
+
+@case('D331', 'SOG-0602: a procedure read under an earlier cycle is « périmé » in WORDS on the cartouche of the choose mode and in the label of the aerodrome card (procLabel), never the hourglass', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0602 (the ergonomist: « ⌛ » reads « calculation in progress »): the trace already said the word (SOG-0569); the list of the choose mode, its cartouche, the line of a pinned aerodrome, the aerodrome card (procLabel) and the legend still ended with the symbol. S4A (read under an earlier cycle) is ticked: the cartouche, drawn on the overlay, writes the word as a run of its own and no « ⌛ »; procLabel ends with « · <word> »; red before: the cartouche writes « ⌛ » and procLabel ends with it')
+def d331(c):
+    _ch_open(c, {'rwy': '31'})
+    c.js(_STATE_JS)
+    c.tap('.mp-ch-fold[data-more="star"]')
+    c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
+    pid = c.js("() => (([...document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row')].find(b => /S4A/.test(b.textContent)) || {}).dataset || {}).id")
+    c.ok(bool(pid), pid, 'the STAR S4A (read under an earlier cycle) is in the list')
+    stale = norm(row(c, 'procStale'))
+    c.js(_TEXTS_JS)
+    c.tap(f'.mp-ch-row[data-id="{pid}"]')
+    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
+    c.until("() => (window.__mpTexts || []).length > 0", timeout=8000, what='the overlay is drawn with the procedure ticked')
+    c.wait(600)
+    drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
+    like = sorted({t for t in drawn if re.search('péri|veralt|out of date|desactual|⌛', t, re.I)})   # the texts that look like the word (the whole list is ticks and numbers)
+    if c.width > 600:
+        # the cartouche of the mode; at 390 it is left out when it has no room (the group is hidden): the list is the place of the word there
+        c.ok(stale in drawn, f'texts like the word: {like}', f'the cartouche writes the word « {stale} » as a run of its own')
+    c.ok('⌛' not in ''.join(drawn), f'texts like the word: {like}', 'and never the hourglass')
+    c.eq(norm(c.js("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"] .mp-ch-old`) || {}).textContent", pid)), stale, 'the row of the list says the word, in the language of the run', what='row of the list')
+    # the label of the aerodrome card (procLabel): the name, then the tags, the word last
+    lab = c.js("() => window.__pr.procLabel('SID', { name: 'XX1A', outdated: true, status: 'xplane' }, 'LFML.SID.XX1A')")   # a record WITH a name (without one it is « à vérifier »)
+    c.eq(norm(lab), norm(f"SID XX1A · {norm(row(c, 'procX'))} · {stale}"), 'procLabel: the name, the state of the source, then « périmé » (a word, with « · » like the other states)', what='procLabel')
+    c.shot(f'D331_{c.width}_{c.lang}.png')

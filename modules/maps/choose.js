@@ -467,7 +467,7 @@ function fixText(fix) {
 }
 
 // ---------------------------------------------------------------- la feuille : titre, groupes, Terminer
-/** Ligne d'un groupe : l'échantillon de teinte (pas pour les pistes), le nom, le vent (pistes), ⌛ (gris) et ⚠ (orange) en fin de
+/** Ligne d'un groupe : l'échantillon de teinte (pas pour les pistes), le nom, le vent (pistes), « périmé » (gris) et ⚠ (orange) en fin de
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
   const why = it.why.map(whyText),
@@ -481,7 +481,7 @@ function rowHtml(C, it) {
     mark = !proc ? (it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>') : it.chosen ?
     '<i class="mp-ch-sw" aria-hidden="true"></i>' : `<i class="mp-ch-n" data-n="${n}" aria-hidden="true">${n || ''}</i>`,
     kind = !proc ? ` aria-pressed="${it.chosen}"` : it.chosen ? ` aria-pressed="true" data-state="chosen"` : ` role="checkbox" aria-checked="${!!n}" data-state="${n ? 'tick' : 'cand'}"`,
-    row = `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}"${kind}${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}"`}${tip ? ` title="${esc(tip)}"` : ''}>${mark}<span class="mp-ch-name">${esc(labelText(it.label))}${proc && it.chosen ? `<small>${esc(tt(TX.chChosen))}</small>` : ''}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}" data-tail="${it.wind.k.head < 0 ? 1 : 0}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
+    row = `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}"${kind}${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}"`}${tip ? ` title="${esc(tip)}"` : ''}>${mark}<span class="mp-ch-name">${esc(labelText(it.label))}${proc && it.chosen ? `<small>${esc(tt(TX.chChosen))}</small>` : ''}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}" data-tail="${it.wind.k.head < 0 ? 1 : 0}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" title="${esc(tt(TX.procOutdated))}">${esc(tt(TX.procStale))}</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
   // « Choisir » seulement sur une ligne cochée (huit boutons au plus, aucun quand rien n'est coché)
   return n ? `<div class="mp-ch-item" style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}">${row}<button type="button" class="f-btn mp-ch-pick" data-pick="${esc(it.id)}" data-fam="${it.fam}">${esc(tt(TX.chPick))}</button></div>` : row;
 }
@@ -693,8 +693,9 @@ function namesOf(C, L) {
   }
   return L.nameList = out;
 }
-/** Largeur d'une ligne de cartouche : l'échantillon, le nom, ⌛ et ⚠ (la police étant posée). */
-const rowWidth = (ctx, it, g = null) => 12 + ctx.measureText(cartText(it, g)).width + (it.old ? 4 + ctx.measureText('⌛').width : 0) + (it
+/** Largeur d'une ligne de cartouche : l'échantillon, le nom, « périmé » et ⚠ (la police étant posée). */
+const rowWidth = (ctx, it, g = null) => 12 + ctx.measureText(cartText(it, g)).width + (it.old ? 4 + ctx.measureText(tt(TX.procStale))
+  .width : 0) + (it
   .why.length ?
   4 +
   ctx.measureText('⚠').width : 0);
@@ -1040,7 +1041,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
             font,
             gap: 4
           }, ...(it.old ? [{
-            t: '⌛',
+            t: tt(TX.procStale),
             color: S.theme.muted,
             font,
             gap: 4

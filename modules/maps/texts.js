@@ -539,7 +539,7 @@ export const TX = {
     'Un procedimiento de la lista se lee de Little Navmap: fuente local, uso personal.'
   ],
   procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
-  // procédure périmée : le seul symbole « ⌛ » (décision du 29 octobre), jamais le mot ; son sens dans la légende et l'infobulle
+  // procédure périmée : le MOT (procStale, SOG-0602 : « ⌛ » se lit « calcul en cours ») ; ce texte-ci en est le sens, dans l'infobulle
   procOutdated: ['Lue sous un cycle antérieur', 'Read under an earlier cycle', 'Unter einem früheren Zyklus gelesen',
     'Leída bajo un ciclo anterior'
   ],

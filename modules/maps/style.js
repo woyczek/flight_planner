@@ -245,7 +245,7 @@ export const STYLE = `
 /* mode « choisir sur la carte » (choose.js) : le fond MapLibre éteint (les couches de la Carte le sont dans le dessin), puis dans la feuille la
    consigne, puis un groupe par famille du côté (piste, SID ou STAR, approche) : « Aucune » d'abord, sept lignes au plus (--mp-ch-row chacune), le reste replié sous « N autres » (la feuille est la seule
    surface qui défile, V3 § 10.30) ; la ligne
-   porte la teinte de la procédure (--c), ⌛ en gris, ⚠ en orange, la ligne surlignée (data-hl) comme son tracé */
+   porte la teinte de la procédure (--c), « périmé » en gris, ⚠ en orange, la ligne surlignée (data-hl) comme son tracé */
 [data-module="maps"] .mp-choosing .mp-map{opacity:.45}
 [data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:36px}
 [data-module="maps"] .mp-ch-hint{margin:0 0 4px}

@@ -120,17 +120,17 @@ const nameOf = (rec, id, key = null) => displayName(rec, {
   key,
   id
 }) || String(id || '').split('.')[2] || '';
-/** Symbole d'une procédure périmée (lue sous un cycle antérieur) : jamais le mot (décision du 29 octobre). */
-export const OUTDATED = '⌛';
 /** « AMOLO 7A » sur la carte (sa teinte dit la famille), « SID AMOLO 7A » dans une liste (kind), suivi de l'état de la source :
- *  « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est périmée (SPEC § 5). */
+ *  « X-Plane, local », « Little Navmap, local », puis « périmé » (le MOT, jamais « ⌛ » : SOG-0602) quand elle est périmée (SPEC § 5). */
 export function procLabel(kind, rec, id, key = null, withSource = true) {
   const tags = [];
   if (rec && isDoubt(rec)) tags.push(tt(TX.procDoubt)); // une approche en doute choisie à la main : son panonceau « à vérifier » (SOG-0232)
   // la source (X-Plane, Little Navmap) : dite par la fiche du terrain, l'infobulle d'un point et la liste du mode « choisir », jamais sur le tracé (SOG-0569)
   if (withSource && rec?.status === 'xplane') tags.push(tt(TX.procX));
   else if (withSource && rec?.status === 'lnm') tags.push(tt(TX.procLnm));
-  return [`${kind || ''} ${nameOf(rec, id, key)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
+  if (rec?.outdated) tags.push(tt(TX
+    .procStale)); // une donnée gardée après son cycle : le mot (SOG-0602), jamais « ⌛ », qui se lit « calcul en cours »
+  return [`${kind || ''} ${nameOf(rec, id, key)}`.trim(), ...tags].join(' · ');
 }
 
 // ---------------------------------------------------------------- tracé sur la carte
@@ -404,8 +404,6 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       });
     }
   }
-  S.lgOutdated =
-    false; // le tracé dit « périmé » en toutes lettres : la ligne « ⌛ » de la légende n'a plus de signe à expliquer sur lui (SOG-0569)
   const L = {
     flight,
     missCol,

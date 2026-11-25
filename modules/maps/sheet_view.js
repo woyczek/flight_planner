@@ -4,7 +4,6 @@
 
 import * as MCH from '../fuel/mission_chip.js'; // SOG-0617 : la puce « Mission <ID> », un seul composant avec Carburant
 import {
-  OUTDATED,
   colOf
 } from './procs.js';
 import {
@@ -277,11 +276,8 @@ function missionLegend(sw) {
 function legendOf(view) {
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
     d = S.geo?.drawn,
-    // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée ; « ⌛ » quand une procédure tracée est
-    // périmée
-    cov = (S.lgOutdated ? [
-      [`<i class="mp-lg-sym" aria-hidden="true">${OUTDATED}</i>`, esc(tt(TX.procOutdated))]
-    ] : []).concat(covRows(sw));
+    // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée (« périmé » s'écrit en toutes lettres : aucune ligne de signe à expliquer, SOG-0602)
+    cov = covRows(sw);
   const mis = missionLegend(sw).concat(altsLegendRows(),
     altnLegendRows()); // les itinéraires proposés par Carburant (SOG-0134), quand ils sont dessinés
   if (!d) return mis.concat(cov);

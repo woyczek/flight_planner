@@ -540,7 +540,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   `apptrans`). Rows are 36 px, no gap; the group headers thin labels. The selection reads at the top of the pane, one line per
   family (`PR.summaryOf`, the text Fuel shows), each with ✕ setting that family to "Aucune".
 - **Third reading** (§ 10.30, 30 Oct): the highlighted procedure (hovered, touched or chosen) is drawn last, over every trace and
-  label of the mode, with its own label and its full name (placed first); the other traces, from below, ⌛, ⚠, compatible,
+  label of the mode, with its own label and its full name (placed first); the other traces, from below, outdated (« périmé »), ⚠, compatible,
   chosen. One small faded label per family and point, under the family's name ("NIMER 9", `familyOf`: stem, space, digit), the
   families meeting at a point stacked one line each; a label without room is left out (its trace stays). Hovering any row of
   any family highlights its trace and label (drawn even outside the family touched last), leaving it gives the previous state
@@ -579,7 +579,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   procedure dashed. **One label per exit point (SID) or entry point (STAR, approach)** stacking the names that meet there,
   reserved in the placer and kept inside the map.
 - **Hues**: one per procedure, `MapsRender.palette(dark).procHues` (eight, cycled by the procedure's rank in its group), the same on
-  the row, the label and the trace. ⌛ (grey, symbol only) = read under an earlier cycle; ⚠ (orange) = `conflictsOf`, the reason in
+  the row, the label and the trace. « périmé » (grey, the WORD: SOG-0602, « ⌛ » reads « calculation in progress ») = read under an earlier cycle; ⚠ (orange) = `conflictsOf`, the reason in
   the row's `title`.
 - Texts `TX.ch*` (×4); help anchor `maps-choose`; cases D60, D62.
 - **Target form (refactor R-M1, § 10.33; no change of behaviour).** The pane's whole meaning is one pure function of the frame,
