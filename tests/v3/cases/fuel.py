@@ -11560,3 +11560,42 @@ def f326(c):
     got = [w for w in words(d) if w.endswith('EXT')]
     c.eq(got, ['ZCEXT'], 'three SIDs tried in a row: only the exit of the last one stays (red before: ZAEXT, ZBEXT too)', what='exits')
     c.ok('ZAB3C' in words(d) and not any(w in words(d) for w in ('ZAB1A', 'ZAB2B')), words(d), 'and only its name')
+
+
+@case('F325', 'Route: as soon as it is asked for (« Calculer A → B »), an aerodrome of the flight whose procedure catalogue is EMPTY says it next '
+      'to the buttons — with the button of the reading gesture when the State has a reader, without one when it has none; the computation goes '
+      'on', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0638 (the ergonomist, 25 Nov: say it BEFORE the refusal, where the pilot asks for the route, visible on a phone without '
+      'scrolling); the fact of SOG-0612 (empty catalogue) and the reader of the State (SOG-0615, coverageByState); invented aerodromes: LFRS '
+      'without any procedure seeded (France: the SIA, a reader), ESZZ (a State without a reader); a fake launcher')
+def f325(c):
+    want = {'fr': ("Aucune procédure de LFRS n’est dans la base : sans elles, la route est refusée à son raccordement.",
+                   "Aucune procédure de ESZZ n’est dans la base, et la suite n’a pas de lecteur de procédures pour cet État : la route sera "
+                   "refusée à son raccordement."),
+            'en': ('No procedure of LFRS is in the database: without them, the route is refused at its connection.',
+                   'No procedure of ESZZ is in the database, and the suite has no procedure reader for this State: the route will be refused '
+                   'at its connection.'),
+            'de': ('Keine Verfahren von LFRS sind in der Datenbank: ohne sie wird die Route bei ihrer Anbindung abgelehnt.',
+                   'Keine Verfahren von ESZZ sind in der Datenbank, und die Suite hat keinen Verfahrensleser für diesen Staat: die Route wird '
+                   'bei ihrer Anbindung abgelehnt.'),
+            'es': ('Ningún procedimiento de LFRS está en la base: sin ellos, la ruta se rechaza en su enlace.',
+                   'Ningún procedimiento de ESZZ está en la base, y la suite no tiene lector de procedimientos para este Estado: la ruta será '
+                   'rechazada en su enlace.')}[c.lang]
+    st = _route_launcher(c, ['route/compute'])
+    docs, extra = _proc_line_docs('ESZZ', 59.6, 17.9)
+    c.open('fuel', docs=docs, airfields=True, aero_extra=extra)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='« Calculer » (the launcher has the job)')
+    c.eq(c.count(f'{FUEL} [data-rnoproc] [data-noprocad]'), 0, 'nothing before the route is asked for', what='before')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    lines = f"[...document.querySelectorAll('{FUEL} [data-rnoproc] [data-noprocad]')].map(p => [p.dataset.noprocad, p.querySelector('[data-noproctext]')?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), !!p.querySelector('[data-do=procfetch]')])"
+    c.until(f"{lines}.length === 2 && {lines}.every(x => x[1])", timeout=15000, what='one line per aerodrome with an empty catalogue (red before: none)')
+    c.until(f"(() => {{ const x = {lines}; return x[1][2] === false && x[0][2] === true }})()", timeout=12000, what='the reader of each State known')
+    c.eq(c.js(lines), [['LFRS', norm(want[0]), True], ['ESZZ', norm(want[1]), False]],
+         'LFRS: the sentence and the button of the reading gesture; ESZZ (no reader): the other sentence, no button', what='lines')
+    c.ok(any((p.get('args') or {}).get('action') == 'compute' for p in st['posts']), '', 'the computation is asked all the same, never prevented')
+    c.ok(c.js(f"(() => {{ const z = document.querySelector('{FUEL} [data-rnoproc]'), b = document.querySelector('{FUEL} [data-do=rcompute]'); "
+              f"return !!z && z.getBoundingClientRect().top - b.getBoundingClientRect().bottom < 120 }})()"), '', 'right under « Calculer »')
+    c.js(f"document.querySelector('{FUEL} [data-do=rcompute]').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F325_{c.design}_{c.width}_{c.lang}.png')
