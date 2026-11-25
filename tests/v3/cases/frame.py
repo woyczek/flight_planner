@@ -12675,3 +12675,23 @@ def a397(c):
     c.eq(r['shapes'], [['Z1'], ['ORIGIN'], ['DESTINATION', 'PT1', 'PT2'], ['OBJ-1'], ['RDV-1'], ['SHIP-1'], ['PT1', 'OBJ-2'], [], [], [], [], [], []],
          'the places of each shape of key, with no duplicate, never an error (an unreadable key gives [])', what='keyPlaces')
     c.check_errors()
+
+
+@case('A398', 'The watcher costs no module of another application (SOG-0630): a page of the Maintenance application loads NO module.js of a module that is not its own (the frame no longer imports the module.js of every module of every application to read a meta.watch: 75 to 159 files more per page, L60 of Data red at 250 resources); the watchers are declared in the table of the applications', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0630 (the relay; page weight after SOG-0617): startWatchers imported modules/<id>/module.js of ALL the applications; it now reads `watch` of the entries of APPS (no import) and the meta.watch of the modules of the CURRENT application (already read by readLevels)")
+def a398(c):
+    c.page.add_init_script("""(() => { window.__res = []; try { performance.setResourceTimingBufferSize(4000) } catch (e) {}
+      new PerformanceObserver(l => { for (const e of l.getEntries()) window.__res.push(e.name) }).observe({ type: 'resource', buffered: true }) })()""")
+    c.open('data', app='maintenance', wait=False)
+    c.until("!!document.querySelector('[data-module=data]')", timeout=40000, what='the Data module is drawn')
+    c.wait(3000)
+    res = c.js("() => window.__res")
+    own = {'data', 'aircraft'}                       # the modules of the Maintenance application
+    mods = sorted({m.group(1) for u in res for m in [re.search(r'/modules/([\w-]+)/module\.js', u)] if m})
+    foreign = [x for x in mods if x not in own]
+    print('RESOURCES', len(res), 'module.js loaded:', mods, flush=True)
+    c.ok(any(u.endswith('/modules/missions/watch.js') for u in res), len(res), 'the watcher declared in the table of the applications IS loaded in this application: only its file, without the module.js of Missions')
+    c.ok(len(res) > 50, len(res), 'the measure is not saturated: the observer saw the whole load (more than 50 resources)')
+    c.eq(foreign, [], 'no module.js of a module of another application is loaded to find a watcher', what='foreign module.js')
+    c.check_errors()

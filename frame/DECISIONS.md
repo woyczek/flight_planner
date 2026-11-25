@@ -3220,6 +3220,14 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 25 November 2026 — the watcher is declared in the table of the applications, never discovered by importing module.js (SOG-0630)
+
+- **Fact**: SOG-0617's `startWatchers` imported `modules/<id>/module.js` of every module of every application to read `meta.watch`. Their static import graphs (75 to 159 files, 2 to 4 MB, by application) were loaded on every page: the Data page went from about 110 to 250 resources and L60 turned red.
+- **Decision** (the ergonomist, accepted): the frame declares who has a watcher in its own table: `watch: 'watch.js'` on the module's entry of `APPS` — read with no import — and imports only that file, in every application. `meta.watch` of a module of the CURRENT application stays honoured (its meta is already imported by `readLevels`). The watcher file may export `meta` ({ reads, writes, launcher }) for the data prefixes of its ctx; otherwise the module's meta (when known), else none.
+- **Measure** (browser, one page, Data of the Maintenance application, an observer of resources with an enlarged buffer): before 250 (7 foreign `module.js`), without the watcher 110, with Missions' watcher 118. The watcher must stay small outside a flight (its heavy imports dynamic: Features).
+- **Offline**: the file of each watcher of the table is added to the precache of every application (`moduleFiles`); its heavy dynamic imports are kept at their first use by the service worker, like any file a page asks for.
+- **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
+
 ## 24 November 2026 — the places of a drawer's key: one function (SOG-0624)
 
 - **Fact**: `pilotView` cited, for an open drawer, `key.zoneId`, `key.point` and `key.required`: the place of a CONDITION key (`rule.point`, `rule.object`, the steps of a sequence) was never cited, so the pilot never saw it, the drawer open or not.

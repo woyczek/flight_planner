@@ -269,7 +269,8 @@
     modules: [{
       id: 'missions',
       label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-      icon: 'target'
+      icon: 'target',
+      watch: 'watch.js' // SOG-0617, SOG-0630 : le veilleur des tiroirs de la mission en vol, lancé dans TOUTES les applis par la table (jamais par l'import de module.js)
     }, {
       // le registre des missions (SOG-0231 : Features SOG) : le module des missions, ouvert à sa vue Registre (#missions?view=registry)
       id: 'missions',
@@ -3841,6 +3842,8 @@
         moduleLevel[m.id] = levelFrom(meta.level ?? 1);
         moduleFixed[m.id] = meta.fixed === true;
         if (Array.isArray(meta.title)) moduleTitle[m.id] = meta.title;
+        startWatcher(m, meta, meta
+          .watch); // SOG-0630 : sa meta est DÉJÀ lue ici, le veilleur qu'elle déclare ne coûte aucun import de plus
       } catch {
         moduleLevel[m.id] = 1;
       }
@@ -3849,43 +3852,47 @@
     paintFixed(current?.id || ''); // le module déjà affiché peut se révéler fixe maintenant
     paintName(); // ... ou avoir un titre
   }
-  // SOG-0617 : le veilleur de module — un module qui a quelque chose à surveiller HORS de son écran (les tiroirs d'une mission pendant un vol) le déclare : `meta.watch: 'watch.js'` (un fichier de son dossier).
-  // Le cadre l'importe UNE fois par page, dans TOUTES les applis (Missions aussi dans l'appli pilote, où le module n'est pas rangé) et appelle `start(ctx)`. Ce ctx est celui d'un module, mais sa vie est celle de la
-  // PAGE (jamais coupé par un démontage), plus `go(adresse)` (aller à une adresse d'un module ou d'un écran de CETTE appli ; faux sinon) et `has(id)` (ce module est-il rangé dans cette appli ?). Un `start` qui échoue est dit
-  // dans la console et ne gêne ni les autres veilleurs ni la page.
+  // SOG-0617, SOG-0630 : le veilleur de module — un module qui a quelque chose à surveiller HORS de son écran (les tiroirs d'une mission pendant un vol) le déclare, et le cadre importe SON FICHIER (un seul, de son dossier)
+  // UNE fois par page, dans TOUTES les applis (Missions aussi dans l'appli pilote, où le module n'est pas rangé), puis appelle `start(ctx)`. Où il se déclare : (1) dans la TABLE des applis de ce fichier, sur l'entrée du module
+  // (`watch: 'watch.js'`) — la table est déjà lue, AUCUN import : le cadre n'importe JAMAIS le module.js d'un module d'une autre appli pour lire sa meta (le graphe d'import de tous les modules de toutes les applis,
+  // 75 à 159 fichiers de plus par page : SOG-0630) ; (2) dans la `meta.watch` d'un module de l'appli COURANTE, dont readLevels lit déjà la meta (gratuit). Le fichier peut exporter `meta` ({ reads, writes, launcher }) : les préfixes de
+  // données de son ctx. Le ctx est celui d'un module à vie de PAGE (jamais coupé par un démontage), plus `go(adresse)` (un module ou un écran de CETTE appli ; faux sinon) et `has(id)` (ce module est-il rangé dans cette appli ?).
+  // Un `start` qui échoue est dit dans la console et ne gêne ni les autres veilleurs ni la page.
   const watchersStarted = new Set(),
-    pageLife = new AbortController().signal;
+    pageLife = new AbortController().signal,
+    WATCH_FILE = /^[\w-]+\.js$/;
 
+  function startWatcher(m, moduleMeta, file) {
+    if (watchersStarted.has(m.id) || typeof file !== 'string' || !WATCH_FILE.test(file)) return;
+    watchersStarted.add(m.id);
+    (async () => {
+      try {
+        const mod = await import(new URL(`modules/${m.id}/${file}`, ROOT).href),
+          meta = mod.meta && typeof mod.meta === 'object' ? mod.meta : moduleMeta || {},
+          base = ctxFor(m, meta, Object.freeze({}), null, false, pageLife);
+        await mod.start?.(Object.freeze(Object.create(base, {
+          go: {
+            value: hash => {
+              const h = String(hash ?? ''),
+                target = /^#[\w-]+(\?[\w=&%.+-]*)?$/.test(h) ? h.slice(1).split('?')[0] : '';
+              if (!target || !(isModule(target) || SCREENS.includes(target))) return false;
+              location.hash = h;
+              return true;
+            }
+          },
+          has: {
+            value: id => isModule(String(id ?? ''))
+          }
+        })));
+      } catch (e) {
+        console.warn(`watch ${m.id}`, e);
+      }
+    })();
+  }
+  /** Les veilleurs déclarés dans la table des applis (toutes les applis), sans importer un seul module.js. */
   function startWatchers() {
     for (const app of Object.values(APPS))
-      for (const m of app.modules || []) {
-        if (watchersStarted.has(m.id)) continue;
-        watchersStarted.add(m.id);
-        (async () => {
-          try {
-            const meta = (await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta || {};
-            if (typeof meta.watch !== 'string' || !/^[\w-]+\.js$/.test(meta.watch)) return;
-            const mod = await import(new URL(`modules/${m.id}/${meta.watch}`, ROOT).href),
-              base = ctxFor(m, meta, Object.freeze({}), null, false, pageLife);
-            await mod.start?.(Object.freeze(Object.create(base, {
-              go: {
-                value: hash => {
-                  const h = String(hash ?? ''),
-                    target = /^#[\w-]+(\?[\w=&%.+-]*)?$/.test(h) ? h.slice(1).split('?')[0] : '';
-                  if (!target || !(isModule(target) || SCREENS.includes(target))) return false;
-                  location.hash = h;
-                  return true;
-                }
-              },
-              has: {
-                value: id => isModule(String(id ?? ''))
-              }
-            })));
-          } catch (e) {
-            console.warn(`watch ${m.id}`, e);
-          }
-        })();
-      }
+      for (const m of app.modules || []) startWatcher(m, null, m.watch);
   }
   /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée ; la
    *  barre d'onglets suit (screen : l'écran du cadre affiché, ou rien). */
@@ -6763,6 +6770,10 @@
         /* module en échec : il le dira à son ouverture */
       }
     }
+    // SOG-0630 : le fichier de chaque veilleur déclaré dans la table des applis (il tourne dans TOUTES les applis, donc hors ligne aussi) ; ses imports lourds, dynamiques, se gardent à leur premier usage
+    for (const app of Object.values(APPS))
+      for (const m of app.modules || [])
+        if (typeof m.watch === 'string') urls.push(new URL(`modules/${m.id}/${m.watch}`, ROOT).href);
     return [...new Set(urls)];
   }
 
