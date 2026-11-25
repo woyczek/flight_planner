@@ -546,6 +546,19 @@ const TX = {
   // SOG-0554 (l'ergonome) : le pli « Non vérifiable » d'une carte dit ce qu'il ouvre (le verdict est déjà dit en gras au-dessus)
   rSeeWhy: ['Voir pourquoi', 'See why', 'Gründe anzeigen', 'Ver por qué'],
   // SOG-0548 (l'ergonome) : sur la ligne « enfreint » d'un raccord au-delà de sa limite, ce qui manque pour le terrain
+  // SOG-0638 (l'ergonome, 25/11) : dès que la route est demandée, un terrain du vol au catalogue de procédures VIDE, dit contre « Calculer » —
+  // un geste de lecture existe (son bouton suit), ou l'État n'a pas de lecteur
+  noProcRead: ['Aucune procédure de {ad} n’est dans la base : sans elles, la route est refusée à son raccordement.',
+    'No procedure of {ad} is in the database: without them, the route is refused at its connection.',
+    'Keine Verfahren von {ad} sind in der Datenbank: ohne sie wird die Route bei ihrer Anbindung abgelehnt.',
+    'Ningún procedimiento de {ad} está en la base: sin ellos, la ruta se rechaza en su enlace.'
+  ],
+  noProcNone: [
+    'Aucune procédure de {ad} n’est dans la base, et la suite n’a pas de lecteur de procédures pour cet État : la route sera refusée à son raccordement.',
+    'No procedure of {ad} is in the database, and the suite has no procedure reader for this State: the route will be refused at its connection.',
+    'Keine Verfahren von {ad} sind in der Datenbank, und die Suite hat keinen Verfahrensleser für diesen Staat: die Route wird bei ihrer Anbindung abgelehnt.',
+    'Ningún procedimiento de {ad} está en la base, y la suite no tiene lector de procedimientos para este Estado: la ruta será rechazada en su enlace.'
+  ],
   rNoArrRead: ['aucune arrivée lue pour {ad}', 'no arrival read for {ad}', 'keine Ankunft für {ad} gelesen',
     'ninguna llegada leída para {ad}'
   ],
@@ -3113,7 +3126,7 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
-      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
+      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p><div class="fu-rnoproc" data-rnoproc hidden></div>
       <div data-routealts></div><p class="f-row f-warn fu-rage" data-rstale hidden><span data-rstaletext></span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
@@ -4666,6 +4679,8 @@ async function routeAsk(action) {
     box = S.body?.querySelector('[data-routealts]'),
     act = action === 'compute' ? 'compute' : 'check';
   if (!S.routeEngine) return; // sans moteur au montage, les boutons ne sont pas montrés
+  S.noProcAsked = true; // SOG-0638 : la route est demandée — un terrain au catalogue vide le dit, le calcul part quand même
+  noProcPaint();
   // SOG-0208 : jamais un appui sans suite — les terrains manquants, puis le lanceur vérifié à l'appui, dits à la place des itinéraires
   const retry = `<button type="button" class="fu-linkbtn" data-do="${act === 'compute' ? 'rcompute' : 'rcheck'}" data-rretry>${esc(tt(TX.rRetry))}</button>`;
   if (!r.dep || !r.arr) {
@@ -6897,9 +6912,11 @@ function procHave(icao) {
     const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p));
     s.procHave.set(k, {
       SID: l.some(p => p.kind === 'SID'),
-      STAR: l.some(p => p.kind === 'STAR')
+      STAR: l.some(p => p.kind === 'STAR'),
+      any: (Array.isArray(list) ? list : []).length > 0 // SOG-0638 : le catalogue du terrain n'est pas vide
     });
     if (s.ralts?.list?.length) routeAltsDraw();
+    noProcPaint();
   });
   return null;
 }
@@ -6915,6 +6932,28 @@ function noProcHtml(v) {
   const b = typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(ad, false, true) : ''; // l'action et son objet (l'ergonome)
   return `<span class="f-warn" data-noproc> — ${esc(tt(end === 'dep' ? TX.rNoDepRead : TX.rNoArrRead, { ad }))}</span>${b ? ` ${b}` : ''}`;
 }
+/** SOG-0638 (l'ergonome, 25/11) : contre « Calculer », dès que la route est demandée (S.noProcAsked), une ligne par terrain du vol dont le
+ *  catalogue de procédures est VIDE (procHave : la liste d'aerodb, lue une fois) — un geste de lecture existe pour lui : « Aucune procédure
+ *  de {terrain} n'est dans la base : sans elles, la route est refusée à son raccordement. » et le bouton du geste (S.P.readButtonFor, le même
+ *  que la cause de SOG-0612 sur la route refusée) ; l'État n'a pas de lecteur (procStateOf : readable faux) : la seconde phrase, sans bouton.
+ *  Le calcul n'est jamais empêché ; rien tant que le catalogue n'est pas lu. */
+function noProcPaint() {
+  const box = S?.body?.querySelector('[data-rnoproc]');
+  if (!box) return;
+  const r = S.flight?.route || {},
+    ads = S.noProcAsked ? [...new Set([r.dep, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))] : [],
+    html = ads.map(k => {
+      const h = procHave(k);
+      if (!h || h.any) return '';
+      (S.noProcSaid ||= new Set()).add(k);
+      const ps = procStateOf(k),
+        none = !!ps && !ps.readable,
+        b = none ? '' : typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(k, false, true) : '';
+      return `<p class="f-warn fu-noproc" data-noprocad="${esc(k)}"><span data-noproctext>${esc(tt(none || !b ? TX.noProcNone : TX.noProcRead, { ad: k }))}</span>${b ? ` ${b}` : ''}</p>`;
+    }).join('');
+  if (box.innerHTML !== html) box.innerHTML = html;
+  box.hidden = !html;
+}
 /** SOG-0548 : une lecture de procédures finie pour `k` — ce que Carburant en tient relu ; si elle a apporté la procédure d'un raccord
  *  que la liste dit enfreint, la liste est périmée (« Recalculer » : le calcul suivant la prend, jamais un calcul tout seul). */
 async function routeReadDone(k) {
@@ -6926,10 +6965,18 @@ async function routeReadDone(k) {
   const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p)),
     h = {
       SID: l.some(p => p.kind === 'SID'),
-      STAR: l.some(p => p.kind === 'STAR')
+      STAR: l.some(p => p.kind === 'STAR'),
+      any: (Array.isArray(list) ? list : []).length > 0
     },
     R = s.ralts;
   s.procHave.set(k, h);
+  // SOG-0638 : une lecture qui apporte les procédures d'un terrain dit vide : sa ligne part, et la route déjà calculée est dite périmée
+  // (SOG-0572 : « Recalculer », jamais un calcul tout seul)
+  if (h.any && s.noProcSaid?.has(k)) {
+    s.noProcSaid.delete(k);
+    if (R?.list?.length) R.procStale = R.stale = true;
+  }
+  noProcPaint();
   if (R?.list?.some(a => (a.reasons?.violates || []).some(r => r.code === 'connector_limit' && String(r.values?.ad || '')
       .toUpperCase() === k &&
       h[r.values?.end === 'dep' ? 'SID' : 'STAR']))) R.procStale = R.stale = true;
@@ -8464,6 +8511,7 @@ function procGap(icao) {
       }) : '';
     }
     if (gone(s)) return;
+    setTimeout(() => S === s && noProcPaint()); // SOG-0638 : le lecteur de l'État est connu
     s.gapAds.set(k, {
       html,
       readable,
@@ -8518,6 +8566,8 @@ async function autoAirways() {
     f = S.flight,
     r = f.route;
   if (S.flightPending || !r || S.autoBusy) return;
+  S.noProcAsked = true; // SOG-0638 : « Auto » demande aussi la route
+  noProcPaint();
   S.autoBusy = true;
   const btn = S.body?.querySelector('[data-do="rauto"]');
   if (btn) btn.disabled = true;
