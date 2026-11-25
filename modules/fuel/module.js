@@ -31,8 +31,6 @@ import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
 // SOG-0617 : la puce « Mission <ID> », un seul composant (la Carte l'importe aussi)
 import * as MCH from './mission_chip.js';
-// SOG-0617 / SOG-0619 : le bloc « Suite de la mission », hébergé dans le volet (même texte d'import que module.js : une instance)
-import * as DW from '../missions/drawers_view.js';
 import * as MT from '../../frame/lib/mission_themes.js'; // thème et sous-thème du vol (SOG-0202 T2, § 10.48)
 import {
   kindOf
@@ -9205,6 +9203,11 @@ function mChipDraw() {
   });
   if (!id) mPaneClose();
 }
+/** SOG-0617 / SOG-0619 : le bloc « Suite de la mission » (drawers_view.js, et le juge des tiroirs qu'il tire), hébergé dans le volet —
+ *  importé à la PREMIÈRE ouverture du volet seulement (SOG-0630 : le cadre importe module.js de chaque module de l'appli pour lire sa meta ;
+ *  un import statique chargeait le juge sur toute page) ; le même texte d'import que module.js de Missions : une seule instance. */
+let DW = null;
+const dwLoad = async () => DW ||= await import('../missions/drawers_view.js');
 /** Ouvre ou ferme le volet de la mission. */
 function mPaneToggle() {
   return S?.mpane ? mPaneClose() : mPaneOpen();
@@ -9226,23 +9229,24 @@ async function mPaneOpen() {
     row,
     mission
   } = await loadMission(s.ctx, id);
+  const V = mission ? await dwLoad() : null; // le bloc, chargé à la première ouverture du volet (SOG-0630)
   if (gone(s) || s.mpane !== id) return;
   // SOG-0617 / SOG-0619 : le bloc « Suite de la mission » (le composant de la fiche, drawers_view.js) en tête du volet ; le volet EST
   // déjà le brief : ni liseuse ni « Lire la mission » (readerHost null), les gestes dans le bloc (askSlot null). Le corps du volet lit
   // la mission telle que le pilote a le droit de la voir (sees : pilotView avec les tiroirs ouverts — jamais un lieu caché)
   const mid = MS.midOf(id) || id,
-    seen = mission ? DW.sees(mid, mission) || mission : null;
+    seen = mission ? V.sees(mid, mission) || mission : null;
   pane.innerHTML = mPaneHead(id, mission?.title || row?.title || '') + (mission ? `<section class="ms-drawers" data-drawers hidden></section><div data-mbody>${mPaneBody(id, seen)}</div>` :
     `<p class="f-warn">${esc(tt(TX.missionUnread, { id }))}</p>`);
   const host = mission ? pane.querySelector('[data-drawers]') : null;
-  if (host) DW.show(host, {
+  if (host) V.show(host, {
     ctx: s.ctx,
     id: mid,
     mission,
     // un tiroir s'ouvre : ses lieux apparaissent dans le corps du volet (la règle du lecteur)
     changed: () => {
       const b = S === s && s.mpane === id ? pane.querySelector('[data-mbody]') : null;
-      if (b) b.innerHTML = mPaneBody(id, DW.sees(mid, mission) || mission);
+      if (b) b.innerHTML = mPaneBody(id, V.sees(mid, mission) || mission);
     },
     askSlot: null,
     readerHost: null
@@ -9254,7 +9258,7 @@ function mPaneClose() {
   const pane = S?.body?.parentElement?.querySelector(':scope > [data-mpane]');
   if (!pane || !S.mpane) return;
   const had = pane.contains(document.activeElement);
-  DW.stop(); // SOG-0617 : la vue du bloc se décroche (le juge continue, suivi par le veilleur)
+  DW?.stop(); // SOG-0617 : la vue du bloc se décroche (le juge continue, suivi par le veilleur)
   S.mpane = null;
   pane.hidden = true;
   pane.innerHTML = '';
@@ -10694,7 +10698,7 @@ async function completeMount(self) {
 
 export function unmount() {
   if (!S) return;
-  if (S.mpane) DW.stop(); // SOG-0617 : la vue du bloc hébergé dans le volet se décroche avec le module
+  if (S.mpane) DW?.stop(); // SOG-0617 : la vue du bloc hébergé dans le volet se décroche avec le module
   for (const f of S.stops) try {
     f?.();
   } catch {
