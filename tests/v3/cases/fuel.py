@@ -11532,5 +11532,9 @@ def f324(c):
         return [g.dataset.kind, b === neutral, maps.includes(b)] }}) }})()""")
     c.eq(got, [['sid', True, False], ['star', True, False], ['app', True, False]],
          'each group: the neutral border of the suite, never a colour of the Map\'s procedures (red before: SID, STAR, approach coloured)', what='borders')
-    c.js(f"document.querySelector('{FUEL} [data-pts]').scrollIntoView({{block: 'center'}})")
+    # the picture: the list « Points » unfolded (folded at opening), the three group rows on screen
+    c.js(f"(() => {{ const d = document.querySelector('{FUEL} [data-pts]')?.closest('details'); if (d && !d.open) d.querySelector('summary')?.click() }})()")
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-pts] > .fu-ptgrp')].every(g => g.checkVisibility())", timeout=8000,
+            what='the list of points unfolded, the group rows shown')
+    c.js(f"document.querySelector('{FUEL} [data-pts] > .fu-ptgrp').scrollIntoView({{block: 'center'}})")
     c.shot(f'F324_{c.design}_{c.width}.png')
