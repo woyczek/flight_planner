@@ -3130,11 +3130,10 @@ const STYLE = `
 }
 ${PROC_STYLE}
 /* groupes de procédure de la liste des points (§ 10.31) : la teinte de la Carte, jetons du design (refonte § 10.33 R-F3) */
-[data-module="fuel"] .fu-ptgrp{border-left:3px solid currentColor;padding-left:8px;display:block}
+/* SOG-0592 (l'ergonome, 23/11) : la bordure d'un groupe de procédure est NEUTRE — ses couleurs ne répondaient plus à celles de la Carte
+   (la route du vol, les teintes de comparaison) ; le titre du groupe dit ce qu'il est */
+[data-module="fuel"] .fu-ptgrp{border-left:3px solid var(--sog-border);padding-left:8px;display:block}
 [data-module="fuel"] .fu-ptgrp>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
-[data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:var(--sog-map-sid)}
-[data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:var(--sog-map-star)}
-[data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:var(--sog-map-app)}
 [data-module="fuel"] .fu-rrow>label{position:relative} /* la liste de complétion du champ de route s'y pose (§ 10.31) */
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
