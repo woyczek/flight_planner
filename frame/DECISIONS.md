@@ -3220,6 +3220,13 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Only French changed** where the English, German or Spanish text was already right (the diagnostic's « Kopieren nimmt sie mit dem Rest mit »: fine): the ban is on the French calque « emporter ».
 - **Case A371**: no line of the status block names the screen (« Settings » in its own language), in the four languages; red before (« Touchez pour régler l'accès dans les Réglages »).
 
+## 25 November 2026 — a failed module import is replayed once under a new address (SOG-0631)
+
+- **Fact** (BUGS SOG, L128): « Failed to fetch dynamically imported module » once in about 190 openings of the Data module; the loader said « impossible à charger » with no new attempt.
+- **Decision**: one function, `importModule(id)`, for the module of a screen and of a pane. First failure: `console.warn` (logged, never in silence), the id goes to `failedModules`, and the file is asked again once under `?retry=<time>` (the browser keeps the failure of an import for the same address until the page is reloaded). Second failure: the error goes up to the caller, which shows today's card (`loadFailed`: cause, details, « Réessayer », retry every 5 s). No new screen, no new sentence. A module that already failed in this page life is asked under a fresh address from the start (SOG-0267).
+- **Not done**: the import of `readLevels` (the meta of the modules of the current application) is not replayed; a failure there only leaves the level at its default and the module's own mount imports it again with the replay.
+- **Case A399**: first request aborted then served → mounted, second request with `?retry=`, warning logged, no card; every request aborted → the card with its « Réessayer ». Red before.
+
 ## 25 November 2026 — the watcher is declared in the table of the applications, never discovered by importing module.js (SOG-0630)
 
 - **Fact**: SOG-0617's `startWatchers` imported `modules/<id>/module.js` of every module of every application to read `meta.watch`. Their static import graphs (75 to 159 files, 2 to 4 MB, by application) were loaded on every page: the Data page went from about 110 to 250 resources and L60 turned red.

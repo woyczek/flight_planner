@@ -3629,6 +3629,20 @@
    *  alors que la page vient d'une adresse locale), ou le réseau manque, ou une autre erreur dite telle quelle —, garde le diagnostic (écran, adresse demandée, réponse reçue, état du lanceur, erreur) derrière « Copier le
    *  diagnostic », et charge l'écran de lui-même au retour (toutes les 5 s tant que la carte est là et que l'adresse n'a pas changé, et à l'événement frame-launcher). */
   const failedModules = new Set(); // les modules dont l'import a échoué (redemandés sous une adresse neuve)
+  /** Importe le module d'un écran (SOG-0631) : un import qui échoue (liaison faible : « Failed to fetch dynamically imported module », une fois sur ~190 ouvertures mesuré) est rejoué UNE fois, avant que l'écran
+   *  ne dise « impossible à charger » ; le navigateur garde l'échec pour la MÊME adresse, le second essai en prend une neuve (?retry=) ; le premier raté est consigné (console), jamais en silence ; deux échecs : l'erreur
+   *  du second remonte à l'appelant (la phrase d'aujourd'hui). Un module dont un chargement antérieur a déjà échoué est demandé d'emblée sous une adresse neuve (SOG-0267). */
+  async function importModule(id) {
+    const href = new URL(`modules/${id}/module.js`, ROOT).href,
+      fresh = () => `${href}?retry=${Date.now()}`;
+    try {
+      return await import(failedModules.has(id) ? fresh() : href);
+    } catch (e) {
+      console.warn(`module ${id}: import failed, tried again once`, e);
+      failedModules.add(id);
+      return import(fresh());
+    }
+  }
   async function loadFailed(box, id, e, href) {
     const at = location.hash;
     let answer = '';
@@ -4353,7 +4367,7 @@
     paintFixed(entry.id); // vue fixe connue d'avance : pas de saut de mise en page à l'arrivée du module
     try {
       // un module dont le chargement a échoué : le navigateur garde l'échec pour cette adresse jusqu'au rechargement ; on le redemande donc sous une adresse neuve (SOG-0267 : le retour du lanceur le charge sans recharger la page)
-      const mod = await import(new URL(`modules/${entry.id}/module.js${failedModules.has(entry.id) ? `?retry=${Date.now()}` : ''}`, ROOT).href);
+      const mod = await importModule(entry.id);
       if (tok !== navSeq) return; // une autre adresse est arrivée pendant le chargement : rien n'est écrit
       const meta = mod.meta || {};
       if (meta.id && meta.id !== entry.id) throw new Error(`meta.id ${meta.id} ≠ ${entry.id}`);
@@ -4466,7 +4480,7 @@
     $('fView').append(el);
     layoutChanged();
     try {
-      const mod = await import(new URL(`modules/${p.id}/module.js`, ROOT).href);
+      const mod = await importModule(p.id);
       if (pane?.el !== el) return; // fermé entre-temps
       pane.mod = mod;
       if (mod.meta?.fixed === true) sec.dataset.fixed = ''; // module de vue fixe : le cadre lui donne la hauteur du volet (--f-pane-h)

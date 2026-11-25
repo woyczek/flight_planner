@@ -12695,3 +12695,36 @@ def a398(c):
     c.ok(len(res) > 50, len(res), 'the measure is not saturated: the observer saw the whole load (more than 50 resources)')
     c.eq(foreign, [], 'no module.js of a module of another application is loaded to find a watcher', what='foreign module.js')
     c.check_errors()
+
+
+@case('A399', 'A module import that fails is played again ONCE before the screen says « impossible à charger » (SOG-0631): the first failed request of modules/<id>/module.js is logged and asked again under a new address (the browser keeps the failure for the same one), the module mounts; two failures give today\'s sentence, never an empty screen', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0631 (cause of L128, read by BUGS SOG): « Failed to fetch dynamically imported module » once in about 190 openings of the Data module; the loader said « Module « data » impossible à charger » with no new attempt; a pilot on a weak link would see the same")
+def a399(c):
+    mode = {'m': 'first', 'urls': []}
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+
+    def hello(route):
+        mode['urls'].append(route.request.url)
+        if mode['m'] == 'always' or (mode['m'] == 'first' and len(mode['urls']) == 1):
+            return route.abort('failed')
+        return route.fulfill(status=200, content_type='text/javascript', body=src)
+    c.context.route(re.compile(r'/modules/hello/module\.js'), hello)
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    warned = []
+    c.page.on('console', lambda m: warned.append(m.text) if m.type == 'warning' and 'import failed' in m.text else None)
+    # one failure, then the file is served: the module mounts, the failure is logged, the second request has a NEW address
+    c.open('hello', wait=False)
+    c.until("!!document.querySelector('[data-module=hello]')", timeout=30000, what='the module mounts after a first failed request')
+    c.ok(len(mode['urls']) >= 2 and '?retry=' in mode['urls'][1] and '?retry=' not in mode['urls'][0], mode['urls'], 'the request was made again under a new address (the browser keeps a failure for the same one)')
+    c.ok(len(warned) >= 1 and 'hello' in warned[0], warned, 'the first failure is logged (nothing in silence)')
+    c.eq(c.count('[data-loadfail]'), 0, 'no failure card on the screen', what='no failure card')
+    # two failures: today\'s card (the sentence of the failed module), never an empty screen
+    mode.update(m='always', urls=[])
+    c.page.reload(wait_until='domcontentloaded')
+    c.until("!!document.querySelector('[data-loadfail]')", timeout=30000, what='two failures: the card of the failed module')
+    c.ok(any('?retry=' in u for u in mode['urls']), mode['urls'], 'the failure card came after a second request under a new address')
+    c.eq(c.count('[data-loadfail] [data-retry]'), 1, 'the card offers its « Réessayer »: never an empty screen', what='retry button')
+    c.ok(len(c.js("() => document.querySelector('[data-loadfail] p').textContent.trim()")) > 10, None, 'the card says a sentence')
