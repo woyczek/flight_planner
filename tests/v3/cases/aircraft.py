@@ -1629,10 +1629,14 @@ def m52(c):
       '(capitals, no dash nor space), no table of national marks; SOG-0314: nothing removed without the screen saying and proposing it; '
       'invented aircraft')
 def m53(c):
-    words = {'fr': ('2 fiches pour la même immatriculation : F-TST2, FTST2.', 'Garder F-TST2, retirer FTST2', 'Modifier', 'F-TST2 est déjà dans la flotte.'),
-             'en': ('2 records for the same registration: F-TST2, FTST2.', 'Keep F-TST2, retire FTST2', 'Edit', 'F-TST2 is already in the fleet.'),
-             'de': ('2 Einträge für dasselbe Kennzeichen: F-TST2, FTST2.', 'F-TST2 behalten, FTST2 ausmustern', 'Bearbeiten', 'F-TST2 ist bereits in der Flotte.'),
-             'es': ('2 fichas para la misma matrícula: F-TST2, FTST2.', 'Conservar F-TST2, retirar FTST2', 'Editar', 'F-TST2 ya está en la flota.')}[c.lang]
+    words = {'fr': ('2 fiches pour la même immatriculation : F-TST2, FTST2.', 'Garder F-TST2, retirer FTST2', 'Modifier', 'F-TST2 est déjà dans la flotte.',
+                    'Base : Autreville'),
+             'en': ('2 records for the same registration: F-TST2, FTST2.', 'Keep F-TST2, retire FTST2', 'Edit', 'F-TST2 is already in the fleet.',
+                    'Base: Autreville'),
+             'de': ('2 Einträge für dasselbe Kennzeichen: F-TST2, FTST2.', 'F-TST2 behalten, FTST2 ausmustern', 'Bearbeiten', 'F-TST2 ist bereits in der Flotte.',
+                    'Basis: Autreville'),
+             'es': ('2 fichas para la misma matrícula: F-TST2, FTST2.', 'Conservar F-TST2, retirar FTST2', 'Editar', 'F-TST2 ya está en la flota.',
+                    'Base: Autreville')}[c.lang]
     doc = fleet_doc(3)
     doc['aircraft'].append({**doc['aircraft'][1], 'registration': 'FTST2', 'base': 'Autreville'})  # the same aircraft, written without the dash
     for w in (390, 1280):
@@ -1659,6 +1663,16 @@ def m53(c):
         if model:
             c.eq(c.text(f'{M} [data-pane=sheet] [data-actitle] [data-actype]'), 'A400', f'{w} px: the type code second, smaller', what='code')
         c.shot(f'M53_{c.design}_{w}_{c.lang}.png')
+        # the question before removing FTST2 SHOWS what leaves with it: the fields where it differs from F-TST2, « label : value » (here its base)
+        c.tap(f'{M} [data-do="dupkeep"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", what=f'{w} px: a question before removing FTST2')
+        lines = c.js("[...document.querySelectorAll('.f-modal [data-ask-section] li')].map(l => l.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
+        c.eq(lines, [norm(words[4])], f'{w} px: the question lists the field where FTST2 differs, its value (red before: nothing shown)', what='differences')
+        c.shot(f'M53_{c.design}_{w}_{c.lang}_ask.png')
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", what=f'{w} px: « Annuler » closes the question')
+        c.ok(any(a.get('registration') == 'FTST2' for a in (c.doc('airline/fleet.json') or {}).get('aircraft') or []), '',
+             f'{w} px: « Annuler » writes nothing: FTST2 is still there')
         # a type WITH a model in the catalogue (C30J): the title is the name of the model with the registration, the code second, smaller
         named = c.js("""async () => { const A = await window.SogFrame?.aerodb?.aircraft?.(); const l = String(A?.label?.('C30J') ?? '');
           const m = /^(.*\\S)\\s+\\([A-Z0-9]{2,8}\\)$/.exec(l); return m ? m[1] : '' }""")
