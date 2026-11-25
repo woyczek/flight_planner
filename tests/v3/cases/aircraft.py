@@ -49,6 +49,13 @@ def regs(c):
     return c.js(f"[...document.querySelectorAll('{M} [data-reg]')].map(b => b.dataset.reg)")
 
 
+def to_editor(c, reg):
+    """SOG-0635: a tap on an aircraft opens its sheet (read only); « Modifier » in the sheet opens the editor."""
+    c.tap(f'{M} [data-reg="{reg}"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=sheet] [data-do=modify]')", what=f'the sheet of {reg}, « Modifier » in it')
+    c.tap(f'{M} [data-pane=sheet] [data-do="modify"]')
+
+
 def fleet_of(c, pred, what):
     return c.until_doc('airline/fleet.json', pred, what, timeout=8000)
 
@@ -97,7 +104,7 @@ def m2(c):
       designs=('standard',), screens=False, langs4=True, rule='modules/aircraft SPEC 3: changed fields listed; location / number kept; one aircraft changed')
 def m3(c):
     open_fleet(c)
-    c.tap(f'{M} [data-reg="F-TST2"]')
+    to_editor(c, 'F-TST2')
     c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor of F-TST2')
     c.eq(norm(c.text(f'{M} [data-changes]') or ''), norm(row(c, 'noChange')), 'nothing changed yet', what='changes line')
     c.page.fill(f'{M} [data-f="base"]', 'Autreville')
@@ -122,7 +129,7 @@ def m3(c):
       langs4=True, rule='modules/aircraft SPEC 3 and frame INTEGRATION: ctx.ask for every removal; the aircraft leaves the file, nothing else')
 def m4(c):
     open_fleet(c)
-    c.tap(f'{M} [data-reg="F-TST3"]')
+    to_editor(c, 'F-TST3')
     c.until(f"!!document.querySelector('{M} [data-do=retire]')", what='the editor offers « Retirer »')
     c.tap(f'{M} [data-do="retire"]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='a question is asked')
@@ -1582,7 +1589,7 @@ def m52(c):
            wait=False, app='maintenance')
     c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what='the fleet list is drawn')
     help_placed(c)
-    c.tap(f'{M} [data-reg="F-TST2"]')
+    to_editor(c, 'F-TST2')
     c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor of F-TST2')
     sel = f'{M} input[data-f="base"]'
     opts = f"[...document.querySelectorAll('{M} [data-adsug] [role=option]')].map(o => o.dataset.code)"
@@ -1611,3 +1618,67 @@ def m52(c):
     d = fleet_of(c, lambda d: any(a.get('registration') == 'F-TST2' and a.get('base') == 'XQB3' for a in (d or {}).get('aircraft') or []),
                  'the saved aircraft carries the base')
     c.eq([x['base'] for x in d['aircraft'] if x['registration'] != 'F-TST2'], ['Testville', 'Testville'], 'the other aircraft are untouched', what='others')
+
+
+@case('M53', 'Fleet: a tap on an aircraft opens its SHEET, read only — « Modifier » is in it; its title is the readable name (the model of the '
+      'types catalogue, else the type code) with the registration, the code second and smaller; a registration written with or without a dash '
+      'is ONE aircraft: one row, the form with the dash shown, the second record said and its removal proposed; the input is lax', 'M',
+      tags=('aircraft',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0635 lot 1 (the user, 25 Nov: « un clic modifie. on voudrait avoir les détails d\'un appareil », « S210 n\'est pas un titre '
+      'humain », « F-… et F…, c\'est le même ») — decision (2) of SOG-0190 withdrawn; the identity is modules/aircraft/registry_read.js normReg '
+      '(capitals, no dash nor space), no table of national marks; SOG-0314: nothing removed without the screen saying and proposing it; '
+      'invented aircraft')
+def m53(c):
+    words = {'fr': ('2 fiches pour la même immatriculation : F-TST2, FTST2.', 'Garder F-TST2, retirer FTST2', 'Modifier', 'F-TST2 est déjà dans la flotte.'),
+             'en': ('2 records for the same registration: F-TST2, FTST2.', 'Keep F-TST2, retire FTST2', 'Edit', 'F-TST2 is already in the fleet.'),
+             'de': ('2 Einträge für dasselbe Kennzeichen: F-TST2, FTST2.', 'F-TST2 behalten, FTST2 ausmustern', 'Bearbeiten', 'F-TST2 ist bereits in der Flotte.'),
+             'es': ('2 fichas para la misma matrícula: F-TST2, FTST2.', 'Conservar F-TST2, retirar FTST2', 'Editar', 'F-TST2 ya está en la flota.')}[c.lang]
+    doc = fleet_doc(3)
+    doc['aircraft'].append({**doc['aircraft'][1], 'registration': 'FTST2', 'base': 'Autreville'})  # the same aircraft, written without the dash
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', doc, 'document']], wait=False, app='maintenance')
+        c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what=f'{w} px: the fleet list is drawn')
+        help_placed(c)
+        c.eq(regs(c), ['F-TST1', 'F-TST2', 'F-TST3'], f'{w} px: ONE row per registration, the form with the dash (red before: FTST2 a row of its own)',
+             what='rows')
+        # the readable name: the model the types catalogue gives for A400, else its code — never the registration first and the code
+        model = c.js("""async () => { const A = await window.SogFrame?.aerodb?.aircraft?.(); const l = String(A?.label?.('A400') ?? '');
+          const m = /^(.*\\S)\\s+\\([A-Z0-9]{2,8}\\)$/.exec(l); return m ? m[1] : '' }""")
+        c.until(f"(n) => document.querySelector('{M} [data-reg=\"F-TST2\"] [data-acname]')?.textContent.trim() === n", model or 'A400', timeout=8000,
+                what=f'{w} px: the row of F-TST2 opens with its readable name ({model or "A400"})')
+        c.tap(f'{M} [data-reg="F-TST2"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=sheet]')", timeout=8000, what=f'{w} px: a tap opens the SHEET (red before: the editor)')
+        c.eq(c.count(f'{M} [data-pane=edit]'), 0, f'{w} px: read only, no editor', what='no editor')
+        got = c.js(f"""(() => {{ const q = s => document.querySelector('{M} [data-pane=sheet] ' + s); return [q('[data-actitle] [data-acname]')?.textContent.trim(),
+          q('[data-sf=registration] dd')?.textContent.trim(), q('[data-sf=base] dd')?.textContent.trim(), q('[data-do=modify]')?.textContent.trim(),
+          q('[data-dup] p')?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), q('[data-do=dupkeep]')?.textContent.trim()] }})()""")
+        c.eq(got, [model or 'A400', 'F-TST2', 'Testville', words[2], norm(words[0]), words[1]],
+             f'{w} px: the title, what the form knows, « Modifier »; the two records of F-TST2 said, the gesture that keeps one', what='sheet')
+        if model:
+            c.eq(c.text(f'{M} [data-pane=sheet] [data-actitle] [data-actype]'), 'A400', f'{w} px: the type code second, smaller', what='code')
+        c.shot(f'M53_{c.design}_{w}_{c.lang}.png')
+    # « Modifier »: the editor of F-TST2; « Retour »: the sheet again
+    c.tap(f'{M} [data-pane=sheet] [data-do="modify"]')
+    c.until(f"document.querySelector('{M} [data-pane=edit] [data-f=registration]')?.value === 'F-TST2'", what='« Modifier » opens the editor of F-TST2')
+    c.tap(f'{M} [data-pane=edit] [data-do="back"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=sheet]')", what='« Retour » of the editor: back to the sheet')
+    # the second record removed only after the question; F-TST2 kept with its own data
+    c.tap(f'{M} [data-do="dupkeep"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='a question before removing FTST2')
+    c.tap('.f-modal [data-ok]')
+    d = fleet_of(c, lambda d: not any(a.get('registration') == 'FTST2' for a in (d or {}).get('aircraft') or []), 'FTST2 removed, after the question')
+    c.eq([(a['registration'], a['base']) for a in d['aircraft'] if a['registration'] in ('F-TST2', 'FTST2')], [('F-TST2', 'Testville')],
+         'F-TST2 kept, with its own data', what='kept')
+    # lax input: « f tst2 » is F-TST2, already in the fleet; « f new 9 » is saved without its spaces
+    c.tap(f'{M} [data-pane=sheet] [data-do="sheetback"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=fleet] [data-do=add]')", what='back to the list')
+    c.tap(f'{M} [data-do="add"]')
+    c.page.fill(f'{M} [data-f="registration"]', 'f tst2')
+    c.page.fill(f'{M} [data-f="type"]', 'C30J')
+    c.tap(f'{M} [data-do="save"]')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(words[3]), timeout=8000,
+            what='« f tst2 » is F-TST2: already in the fleet')
+    c.page.fill(f'{M} [data-f="registration"]', 'f new 9')
+    c.tap(f'{M} [data-do="save"]')
+    fleet_of(c, lambda d: any(a.get('registration') == 'FNEW9' for a in (d or {}).get('aircraft') or []), '« f new 9 » saved as FNEW9 (capitals, no space)')
