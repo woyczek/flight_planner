@@ -27,6 +27,21 @@ const ms = async () => MS ||= await import('../../frame/lib/mission.js');
 /** Le juge des tiroirs, chargé une fois. */
 const dr = async () => DR ||= await import('./drawers_run.js');
 
+/** Les préfixes de données du contexte du veilleur (SOG-0630 : sa déclaration est dans la table APPS du cadre, qui ne lit plus la meta
+ *  de module.js hors de l'appli courante) : le vol courant et les carnets (pilot/), les missions et leur registre (missions/), ce que
+ *  l'appareil garde des tiroirs et la ligne d'état (cache/missions/) ; il écrit le carnet de CE pilote et cache/missions/ seulement —
+ *  les mêmes règles d'écriture que module.js pour ces préfixes. */
+export const meta = {
+  reads: ['missions/', 'pilot/', 'cache/missions/'],
+  writes: [{
+    prefix: 'pilot/', // le carnet de CE pilote (pilot/<TRI>/missions/<ID>.json), écrit par le juge (drawers_run.js)
+    merge: 'record'
+  }, {
+    prefix: 'cache/missions/', // sur l'appareil seul : la ligne d'état, les ouvertures vues, les tiroirs ouverts publiés
+    policy: 'cache'
+  }]
+};
+
 export const TX = {
   line: ['Mission {id} en cours › {t}', 'Mission {id} in progress › {t}', 'Einsatz {id} läuft › {t}', 'Misión {id} en curso › {t}'],
   brief: ['Brief', 'Brief', 'Briefing', 'Briefing'],

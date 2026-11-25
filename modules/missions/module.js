@@ -44,9 +44,6 @@ import {
 export const meta = {
   id: 'missions',
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
-  // SOG-0617 : le veilleur, importé une fois par page dans TOUTES les applis (frame/app.js startWatchers) : la mission du vol démarré
-  // jugée sur chaque écran, la note d'arrivée et la ligne « Mission … en cours » du bloc d'état (watch.js)
-  watch: 'watch.js',
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
