@@ -163,6 +163,7 @@ const TX = {
   // SOG-0635 : la fiche d'un appareil, en lecture ; « Modifier » dedans (la décision (2) de SOG-0190 est retirée)
   modify: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
   sheetOut: ['Hors service', 'Out of service', 'Außer Dienst', 'Fuera de servicio'],
+  sheetState: ['État', 'State', 'Zustand', 'Estado'], // le libellé de la ligne « En service » / « Hors service » de la fiche
   // SOG-0635 (c), règle SOG-0314 : deux fiches pour une même immatriculation (écrites avec et sans tiret) — dites, une seule gardée sur proposition
   dupTwo: ['{n} fiches pour la même immatriculation : {l}.', '{n} records for the same registration: {l}.',
     '{n} Einträge für dasselbe Kennzeichen: {l}.', '{n} fichas para la misma matrícula: {l}.'
@@ -503,7 +504,7 @@ function sheetHtml(s) {
   const g = groupsOf(s).find(x => x.all.some(a => a.registration === s.sheet.reg));
   if (!g) return listHtml(s);
   const a = g.shown,
-    lab = k => s.tt(TX[k]).replace(/\s*\(.*\)$/, ''),
+    lab = k => s.tt(k === 'operational' ? TX.sheetState : TX[k]).replace(/\s*\(.*\)$/, ''),
     row = (k, v) => v ? `<div data-sf="${k}"><dt>${esc(lab(k))}</dt><dd>${esc(v)}</dd></div>` : '',
     others = g.all.filter(x => x !== a).map(x => x.registration),
     dup = others.length ? `<div class="ac-dup" data-dup><p class="f-warn">${esc(s.tt(TX.dupTwo, { n: g.all.length, l: g.all.map(x => x.registration).join(', ') }))}</p><button type="button" data-do="dupkeep">${esc(s.tt(TX.dupKeep, { r: a.registration, o: others.join(', ') }))}</button></div>` : '';
