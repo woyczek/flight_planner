@@ -220,7 +220,7 @@ export function progressUpdate() {
       if (S) S.selfMove = false;
     });
     S.map.easeTo({
-      center: [nearLon(st.actual.lon, S.map.getCenter().lng), st.actual.lat], // la copie du monde de la vue
+      center: followCenter(st), // jamais le zoom : « Suivre » recentre (SOG-0633)
       duration: 400
     }, MODULE_MOVE);
   }
@@ -581,7 +581,33 @@ export function drawProgressProfile(ctx) {
   }
   ctx.restore();
 }
-/** « Suivre » : la carte reste centrée sur la position réelle à chaque mise à jour ; un mouvement de l'utilisateur l'arrête. */
+/** Une marge entre les deux avions et le bord de la vue (px) : le rayon de l'avion, deux fois, et un peu d'air pour le mot « prévu ». */
+const FOLLOW_PAD = 2 * PLANE_R + 8;
+/** Où « Suivre » centre la carte (SOG-0633, règle de l'ergonome) : le ZOOM ne change jamais ; si l'appareil réel et sa position prévue (le fantôme, « prévu 14:32Z ») tiennent ENSEMBLE dans la vue
+ *  au zoom courant, avec une marge, le centre est leur MILIEU ; sinon c'est l'appareil réel, qui a toujours la priorité. [lng, lat], la copie du monde de la vue. */
+function followCenter(st) {
+  const m = S.map,
+    a = {
+      lng: nearLon(st.actual.lon, m.getCenter().lng),
+      lat: st.actual.lat
+    },
+    g = st.planned && st.planned.phase !== 'arrived' ? {
+      lng: nearLon(st.planned.lon, a.lng),
+      lat: st.planned.lat
+    } : null;
+  if (g) {
+    const box = m.getContainer(),
+      pa = m.project([a.lng, a.lat]),
+      pg = m.project([g.lng, g.lat]);
+    if (Math.abs(pa.x - pg.x) <= box.clientWidth - 2 * FOLLOW_PAD && Math.abs(pa.y - pg.y) <= box.clientHeight - 2 * FOLLOW_PAD) {
+      const mid = m.unproject([(pa.x + pg.x) / 2, (pa.y + pg.y) / 2]);
+      return [mid.lng, mid.lat];
+    }
+  }
+  return [a.lng, a.lat];
+}
+/** « Suivre » : la carte reste centrée sur la position réelle (ou sur le milieu de l'appareil et de son fantôme quand ils tiennent ensemble dans la vue : followCenter) à chaque mise à jour ; un mouvement de
+ *  l'utilisateur l'arrête. */
 export function setFollow(on) {
   S.follow = on;
   setPressed(S.followBtn, on);

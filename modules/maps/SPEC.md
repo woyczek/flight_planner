@@ -1298,7 +1298,8 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
     actual position "GPS or network not enabled" with a button that calls `ctx.live.enable()` (also said once by
     notification);
   - **Follow** (overlay toggle, shown only while started): keeps the map centred on the actual position at each update (a
-    move of the module); any move of the user stops it.
+    move of the module) — never changing the zoom; when the actual position and the planned one (the ghost, `drawProgress`) fit together in the view at the current zoom, with a margin
+    (`FOLLOW_PAD`), the centre is THEIR MIDDLE, else the actual position, which always has priority (SOG-0633, `followCenter`); any move of the user stops it.
   - **Arrived** (`phase` `arrived`): route and actual trail kept, Follow hidden, the note "Arrived".
   - **Diverted** (`started.diverted` set): the diversion aerodrome marked as the arrival, a note says so; nothing else.
 

@@ -236,7 +236,8 @@ function onSheetSettled() {
   if (key === S.settledKey) return;
   S.settledKey = key;
   mapSize();
-  if (S.map && S.fit && !S.userMoved && S.route.points.length) frameFlight(false);
+  // le suivi garde la vue (SOG-0633 : jamais de zoom) : un changement de taille (à 390 la ligne du suivi apparaît et la carte perd 8 px) ne recadre pas le vol sous lui
+  if (S.map && S.fit && !S.userMoved && !S.follow && S.route.points.length) frameFlight(false);
   schedule();
   dataHead();
   drawProfile();

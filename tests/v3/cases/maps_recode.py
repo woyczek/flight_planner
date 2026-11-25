@@ -11125,3 +11125,65 @@ def d331(c):
     lab = c.js("() => window.__pr.procLabel('SID', { name: 'XX1A', outdated: true, status: 'xplane' }, 'LFML.SID.XX1A')")   # a record WITH a name (without one it is « à vérifier »)
     c.eq(norm(lab), norm(f"SID XX1A · {norm(row(c, 'procX'))} · {stale}"), 'procLabel: the name, the state of the source, then « périmé » (a word, with « · » like the other states)', what='procLabel')
     c.shot(f'D331_{c.width}_{c.lang}.png')
+
+
+@case('D332', 'SOG-0633: « Suivre » never changes the zoom; it centres the map on the MIDDLE of the aircraft and its planned position (the ghost, « prévu 14:32Z ») when both fit together in the view, else on the aircraft', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0633 (the user: « carte : bouton « suivre » pour garder l\'appareil (et son fantôme) centré(s) » ; the ergonomist): the ghost IS drawn (drawProgress: the hollow aircraft « prévu <hour> », the planned position at the current time); the follow recentres, never zooms; both fit in the view at the current zoom (with a margin) → the centre is their middle; else the real aircraft, which always has priority; nothing else changes (the four rules of SOG-0207: D312). Invented data: the ghost is read where the Map draws it, the real aircraft is put 0.3° from it (they fit at zoom 8) and then 8° from it (they never do); red before: the map is centred on the aircraft in the first case')
+def d332(c):
+    t0 = now() - datetime.timedelta(minutes=60)
+    FOLLOW = '[data-mp=follow]'
+
+    def write(g):
+        base = datetime.datetime.fromisoformat(g['updated_at'].replace('Z', '+00:00'))
+        g['updated_at'] = iso(max(now(), base) + datetime.timedelta(seconds=1))
+        c.js("""(a) => window.FrameData.adapter({ id: 't-follow', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
+
+    def cam():
+        return c.js("() => { const m = window.__mp.S.map; const p = m.getCenter(); return [p.lng, p.lat, m.getZoom()] }")
+
+    def ghost():
+        return c.js("async () => { const p = (await import('/modules/maps/flight_time.js')).progressState().planned; return p ? [p.lon, p.lat, p.phase || ''] : null }")
+
+    def calm():
+        c.js("() => { document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click()); return true }")
+        c.wait(300)
+
+    f = _legs_flight(start=t0, progress={'phase': 'cruise', 'at': iso(now())})   # with its quote (the legs' minutes): without it there is no planned position at all
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    c.until("!!(window.__mp.S && window.__mp.S.map)", timeout=12000, what='the map is there')
+    c.wait(1200)
+    g0 = ghost()
+    c.ok(bool(g0) and g0[2] != 'arrived', str(g0), 'the planned position (the ghost) exists for this flight at this hour')
+    # the zoom the pilot chose: eight, centred on the ghost; the real aircraft 0.3° east and 0.15° north of it (they fit together in any view)
+    c.js("([lon, lat]) => { window.__mp.S.map.jumpTo({ center: [lon, lat], zoom: 8 }) }", [g0[0], g0[1]])
+    c.wait(600)
+    a1 = [g0[0] + 0.3, g0[1] + 0.15]
+    g = c.doc(PATH)
+    g['progress']['actual'] = {'lat': a1[1], 'lon': a1[0], 'altFt': 24000, 'at': iso(now())}
+    write(g)
+    c.until(f"window.__t.shown(document.querySelector('{FOLLOW}'))", timeout=12000, what='Follow arrives with the position')
+    c.tap(FOLLOW)
+    c.until(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed') === 'true'", what='Follow becomes pressed')
+    c.wait(1500)                                       # the recentring (400 ms) and the next progress update
+    g1 = ghost()
+    mid = [(a1[0] + g1[0]) / 2, (a1[1] + g1[1]) / 2]
+    got = cam()
+    c.ok(abs(got[0] - mid[0]) < .06 and abs(got[1] - mid[1]) < .06, f'centre {got[:2]}, middle of the aircraft {a1} and the ghost {g1[:2]} = {mid}', 'both fit together: the map is centred on THEIR MIDDLE')
+    c.eq(round(got[2], 2), 8.0, 'the zoom is the pilot\'s: never changed by the follow', what='zoom, both fit')
+    calm()
+    c.shot(f'D332_{c.width}_milieu.png')
+    # the aircraft far from its ghost (8° of longitude is wider than any view at zoom 8): the real aircraft has priority
+    a2 = [g1[0] + 8.0, g1[1]]
+    g = c.doc(PATH)
+    g['progress']['actual'] = {'lat': a2[1], 'lon': a2[0], 'altFt': 24000, 'at': iso(now())}
+    write(g)
+    c.wait(2200)
+    got2 = cam()
+    c.ok(abs(got2[0] - a2[0]) < .02 and abs(got2[1] - a2[1]) < .02, f'centre {got2[:2]}, aircraft {a2}', 'they do not fit together: the map is centred on the REAL AIRCRAFT')
+    c.eq(round(got2[2], 2), 8.0, 'the zoom is still the pilot\'s', what='zoom, far')
+    c.eq(c.js(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed')"), 'true', 'the follow is still pressed (nothing else changed)', what='aria-pressed')
+    calm()
+    c.shot(f'D332_{c.width}_reel.png')
