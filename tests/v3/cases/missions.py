@@ -17009,3 +17009,39 @@ def n275(c):
     c.eq([norm(x) for x in c.js(_TR_LOG)], [refusal], 'a departure the base does not know: the trial says it has no route to follow (a located departure and arrival), it never starts from the first point', what='refusal')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+@case('N280', 'The watcher of the mission in flight stays SMALL: on the Map, with no started flight, the page loads watch.js and NOT the judge of '
+      'the drawers (drawers_run.js and what it imports); a started flight that names a mission loads it', 'N', tags=('missions', 'maps'),
+      designs=('standard',), screens=False,
+      rule='SOG-0617 and L60 (the weight of the page, V3 Frame, 25 Nov: the frame imported every module.js of the other applications to read '
+      'meta.watch; the declaration moves into its APPS table): watch.js has no static import — frame/lib/mission.js once the device has a '
+      'trigram, drawers_run.js only for a started flight that names a mission, by the same import text as drawers_view.js; invented mission')
+def n280(c):
+    import datetime
+    loaded = "(n) => performance.getEntriesByType('resource').some(e => new URL(e.name).pathname.endsWith('/modules/missions/' + n))"
+    # the buffer of the resource timings widened before any page (250 by default: a page that loads more forgets the next ones — L60 counted
+    # 250 before the map), then checked NOT full when the case reads it
+    BUF = 5000
+    c.page.add_init_script(f"performance.setResourceTimingBufferSize({BUF})")
+    unsaturated = f"performance.getEntriesByType('resource').length < {BUF}"
+    # no flight: the watcher is there, the judge is not
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.open('maps', wait=False)
+    c.until(loaded, 'watch.js', timeout=30000, what='the watcher of Missions is loaded on the Map')
+    c.wait(3000)
+    c.ok(c.js(unsaturated), c.js("performance.getEntriesByType('resource').length"), 'the buffer of the resource timings is not full: the measure saw every resource')
+    c.ok(not c.js(loaded, 'drawers_run.js'), '', 'no started flight: drawers_run.js is NOT loaded (red before: imported with the watcher)')
+    # a started flight that names a mission: the judge comes
+    start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    flight = {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': 'X-904A', 'started': {'at': start},
+              'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+              'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0},
+                                                                                      {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
+                        'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_LIVE_REGISTRY], ['missions/X_TIR/X-904A/missionX-904A.yaml', _DW_LIVE]])
+    c.open('maps', wait=False, docs=[['pilot/ABC/current_flight.json', flight, 'document']])
+    c.until(loaded, 'drawers_run.js', timeout=30000, what='a started flight that names a mission: the judge of the drawers is loaded')
