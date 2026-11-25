@@ -17104,10 +17104,6 @@ _DRAG_ZONE = """(list) => { const row = document.querySelector('E_ [data-edplace
   for (const el of document.elementsFromPoint(x, innerHeight - 1)) { const a = stuck(el); if (a) ins.bottom = Math.max(ins.bottom, Math.min(innerHeight - a.getBoundingClientRect().top, innerHeight / 2)) }
   return { zone: zone.tagName + (zone.id ? '#' + zone.id : '') + '.' + String(zone.className).trim().replace(/\\s+/g, '.').slice(0, 60), scrollTop: Math.round(zone.scrollTop), clientHeight: zone.clientHeight, scrollHeight: zone.scrollHeight,
     insets: ins, innerHeight, windowScrollTop: Math.round(document.scrollingElement.scrollTop), page: zone === document.scrollingElement } }""".replace('E_', E)
-# the route of the DRAFT of the session (cache/missions/draft_<id>.json follows edDoc, one second after a change): what « Enregistrer » is about to write
-_DRAFT_ROUTE = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
-  const t = await (%s)(p); if (typeof t !== 'string') return null; let env = null; try { env = JSON.parse(t) } catch { return 'broken' }
-  const d = DF.readDraft(env, globalThis.jsyaml); return d ? { route_order: d.doc.route_order ?? null, bytes: t.length } : 'unreadable' }""" % _TEXT_OF
 _DRAG_HELD = "[document.querySelectorAll('[data-reorder-dragging]').length, document.querySelectorAll('[data-reorder-drop]').length, document.querySelectorAll('[data-reorder-active]').length]"
 
 
@@ -17171,25 +17167,22 @@ def n276(c):
     up()
     c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the new order again')
     want = ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION']
-    draft = 'cache/missions/draft_X-001A.json'
-    c.wait(1600)  # the draft follows the session one second after a change: it says the route that « Enregistrer » is about to write
-    dom_before = names()
-    draft_before = c.js(_DRAFT_ROUTE, draft)
+    # measured (a diagnostic probe, removed): with a finger, a touch 64 ms after the handle was released produces NO click (Chrome); a human gesture takes longer
+    c.wait(400)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # on a phone a note born on the bar takes the touch on « Enregistrer » (N196): none is there when it comes
     pre = c.js("""(() => { const b = document.querySelector('E_ [data-do=edsave]'), r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return { rect: [r.left, r.top, r.width, r.height].map(Math.round), disabled: b.disabled, hit: e ? e.tagName + '.' + String(e.className).slice(0, 50) + (e === b || b.contains(e) ? '' : ' (NOT the button)') : null,
-        notes: [...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.trim().slice(0, 80)), modals: document.querySelectorAll('.f-modal').length, innerHeight } })()""".replace('E_', E))
+      return { disabled: b.disabled, hit: e ? e.tagName + '.' + String(e.className).slice(0, 50) + (e === b || b.contains(e) ? '' : ' (NOT the button)') : null } })()""".replace('E_', E))
     c.tap(f'{E} [data-do="edsave"]')
+    saved = "(window.__notes || []).some(n => n.replace(/\\s+/g, ' ').trim().startsWith('Mission enregistrée sur cet appareil'))"
+    c.until(saved, timeout=10000, what='the note of the save: « Mission enregistrée sur cet appareil… »')
     d = {}
-    for _ in range(40):  # the file is WAITED for (it is written after the save, not at the touch)
+    for _ in range(40):  # then the file with the new order (it is written before the note, the read is only waited for)
         d = yaml.safe_load(c.js(_TEXT_OF, path)) or {}
         if d.get('route_order') == want:
             break
         c.wait(250)
-    measured = {'file route_order': d.get('route_order'), 'DOM route before the touch': dom_before, 'DRAFT route before the touch (what the save writes)': draft_before, 'before the touch': pre,
-                'after: DOM route': names(), 'after: DRAFT route': c.js(_DRAFT_ROUTE, draft), 'after: modals': c.count('.f-modal'), 'after: save button disabled': c.js(f"document.querySelector('{E} [data-do=edsave]')?.disabled"),
-                'note log': [x[:100] for x in c.note_log()], 'edit open': c.js(f"!!document.querySelector('{E}')")}
-    c.ok(d.get('route_order') == want, measured, 'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)')
+    c.ok(d.get('route_order') == want, {'file route_order': d.get('route_order'), 'before the touch': pre, 'DOM route': names(), 'note log': [x[:100] for x in c.note_log()]},
+         'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
