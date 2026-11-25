@@ -17,8 +17,15 @@
 // Le titre d'un message n'est dit qu'une fois LU, son enveloppe ouverte (onState du juge ne rend que ceux-là, SOG-0619) : la ligne ne dit
 // rien de ce qui reste à venir, ni d'un message arrivé et pas encore ouvert.
 
-import * as DR from './drawers_run.js'; // le MÊME spécifieur que drawers_view.js : un seul juge par page
-import * as MS from '../../frame/lib/mission.js';
+// Aucun import statique (L60, le poids de la page : V3 Frame, 25/11) : sur une page sans vol, le veilleur ne charge rien. La règle du
+// trigramme (frame/lib/mission.js) vient quand l'appareil a un trigramme ; le juge des tiroirs (drawers_run.js, et ce qu'il tire) seulement
+// pour un vol DÉMARRÉ qui nomme une mission — par le MÊME texte d'import que drawers_view.js : un seul exemplaire une fois chargé.
+let MS = null,
+  DR = null;
+/** frame/lib/mission.js, chargé une fois. */
+const ms = async () => MS ||= await import('../../frame/lib/mission.js');
+/** Le juge des tiroirs, chargé une fois. */
+const dr = async () => DR ||= await import('./drawers_run.js');
 
 export const TX = {
   line: ['Mission {id} en cours › {t}', 'Mission {id} in progress › {t}', 'Einsatz {id} läuft › {t}', 'Misión {id} en curso › {t}'],
@@ -42,7 +49,9 @@ let W = null; // { ctx, id, path, unwatch, line } : le veilleur de cette page
 /** Le point d'entrée du cadre (voir l'en-tête). Ne lève jamais : un fichier illisible laisse le veilleur en attente du suivant. */
 export async function start(ctx) {
   if (W || !ctx?.data) return;
-  const tri = MS.triOf(ctx.identity?.trigram), // la règle du trigramme, écrite une fois (frame/lib/mission.js, SOG-0468 : N253)
+  // sans trigramme, ni vol à suivre ni module chargé
+  if (typeof ctx.identity?.trigram !== 'string' || !ctx.identity.trigram.trim()) return;
+  const tri = (await ms()).triOf(ctx.identity.trigram), // la règle du trigramme, écrite une fois (frame/lib/mission.js, SOG-0468 : N253)
     path = tri ? `pilot/${tri}/current_flight.json` : '';
   W = {
     ctx,
@@ -62,13 +71,15 @@ async function follow() {
     started = typeof f?.started?.at === 'string' && Number.isFinite(Date.parse(f.started.at)),
     id = started ? MS.midOf(f.mission) : ''; // la forme d'un identifiant de mission, celle de la suite
   if (W !== w || id === w.id) return;
-  if (w.id) DR.unfollow(w.id);
+  if (w.id && DR) DR.unfollow(w.id);
   w.id = id;
   if (!id) return void write(w, []);
   const mission = await missionOf(w.ctx, id);
   if (W !== w || w.id !== id) return;
   if (!mission) return void write(w, []); // une mission que l'appareil ne lit pas : ni juge ni ligne (rien n'est inventé)
-  DR.follow({
+  const D = await dr(); // le juge, chargé maintenant : un vol démarré nomme une mission lue
+  if (W !== w || w.id !== id) return;
+  D.follow({
     ctx: w.ctx,
     id,
     mission,
