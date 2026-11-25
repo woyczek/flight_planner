@@ -1637,7 +1637,8 @@ def m53(c):
     doc['aircraft'].append({**doc['aircraft'][1], 'registration': 'FTST2', 'base': 'Autreville'})  # the same aircraft, written without the dash
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
-        c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', doc, 'document']], wait=False, app='maintenance')
+        # the base of the types of the bench (TYPES: C30J has a model, A400 has none)
+        c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', doc, 'document'], TYPES], wait=False, app='maintenance')
         c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what=f'{w} px: the fleet list is drawn')
         help_placed(c)
         c.eq(regs(c), ['F-TST1', 'F-TST2', 'F-TST3'], f'{w} px: ONE row per registration, the form with the dash (red before: FTST2 a row of its own)',
@@ -1658,6 +1659,25 @@ def m53(c):
         if model:
             c.eq(c.text(f'{M} [data-pane=sheet] [data-actitle] [data-actype]'), 'A400', f'{w} px: the type code second, smaller', what='code')
         c.shot(f'M53_{c.design}_{w}_{c.lang}.png')
+        # a type WITH a model in the catalogue (C30J): the title is the name of the model with the registration, the code second, smaller
+        named = c.js("""async () => { const A = await window.SogFrame?.aerodb?.aircraft?.(); const l = String(A?.label?.('C30J') ?? '');
+          const m = /^(.*\\S)\\s+\\([A-Z0-9]{2,8}\\)$/.exec(l); return m ? m[1] : '' }""")
+        c.ok(bool(named), named, f'{w} px: the bench catalogue gives a model for C30J')
+        c.tap(f'{M} [data-pane=sheet] [data-do="sheetback"]')
+        c.until(f"!!document.querySelector('{M} [data-reg=\"F-TST1\"]')", what=f'{w} px: back to the list')
+        c.until(f"(n) => document.querySelector('{M} [data-reg=\"F-TST1\"] [data-acname]')?.textContent.trim() === n", named, timeout=8000,
+                what=f'{w} px: the row of F-TST1 opens with the name of its model')
+        c.tap(f'{M} [data-reg="F-TST1"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=sheet] [data-actitle]')", what=f'{w} px: the sheet of F-TST1')
+        t = c.js(f"""(() => {{ const h = document.querySelector('{M} [data-pane=sheet] [data-actitle]'); return [h.querySelector('[data-acname]')?.textContent.trim(),
+          h.textContent.includes('F-TST1'), h.querySelector('[data-actype]')?.textContent.trim(),
+          parseFloat(getComputedStyle(h.querySelector('[data-actype]')).fontSize) < parseFloat(getComputedStyle(h.querySelector('[data-acname]')).fontSize)] }})()""")
+        c.eq(t, [named, True, 'C30J', True], f'{w} px: the title is the model\'s name with the registration, the code C30J second and smaller',
+             what='title with a model')
+        c.shot(f'M53_{c.design}_{w}_{c.lang}_model.png')
+        c.tap(f'{M} [data-pane=sheet] [data-do="sheetback"]')
+        c.tap(f'{M} [data-reg="F-TST2"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=sheet] [data-dup]')", what=f'{w} px: the sheet of F-TST2 again')
     # « Modifier »: the editor of F-TST2; « Retour »: the sheet again
     c.tap(f'{M} [data-pane=sheet] [data-do="modify"]')
     c.until(f"document.querySelector('{M} [data-pane=edit] [data-f=registration]')?.value === 'F-TST2'", what='« Modifier » opens the editor of F-TST2')
