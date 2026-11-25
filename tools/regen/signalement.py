@@ -6,15 +6,15 @@ Six verbes, ce poste seulement (comme tous les travaux ; la route est la route e
   · `signalement/lister` { q?, offset?, limit? } : { ok, total, searched, items: [ { id, kind, title, excerpt, screen, at, state, fiche?, answer?, refused?, gravity?, frequency?, comments (le nombre) } ] } — les signalements, le plus récent d'abord (`at`), ou ceux qui répondent à `q` ; `limit` 1…300 (300 par défaut), `offset` ; `searched` : le nombre de signalements regardés ;
   · `signalement/detail` { id } : { ok, item: { id, kind, title, text, screen, ctx?, at, state, from?, folder?, images: [noms], fiche?, answer?, refused?, gravity?, frequency?, comments: [ { id, at, text } ] } } ou { ok: false, reason: 'unknown' } ;
   · `signalement/noter` { id, gravity?, frequency? } : { ok, gravity, frequency } — la priorité choisie PAR L'UTILISATEUR (gravity : blocking, annoying, minor ; frequency : always, often, rare ; null efface) ; une valeur hors liste : { ok: false, reason: 'bad-value' } ;
-  · `signalement/commenter` { id, text } : { ok, comment: { id, at, text } } — un commentaire de 1 à 2000 signes (200 par signalement au plus), l'identifiant (COM- et dix chiffres hexadécimaux) fabriqué ici.
+  · `signalement/commenter` { id, text } : { ok, comment: { id, at, text } } — un commentaire de 1 à 5000 signes (200 par signalement au plus), l'identifiant (COM- et dix chiffres hexadécimaux) fabriqué ici.
 Les quatre verbes lisent aussi organisation/SIGNALEMENTS_FICHES.json (l'ergonome seul l'écrit ; ce module ne fait que le LIRE : { schema: 'sog-signalements-fiches/1', items: { SIG-… : { fiche: 'SOG-nnnn', answer?: 300 signes au plus sans caractère de commande, refused?: booléen } } } ; une entrée mal formée est ignorée, jamais fatale)
 et organisation/SIGNALEMENTS_NOTES.json (priorité et commentaires : { schema: 'sog-signalements-notes/1', updated, items: { SIG-… : { gravity?, frequency?, comments?: [ { id, at, text } ] } } } ; ÉCRIT PAR `noter` et `commenter` SEULS, un seul rédacteur : temporaire puis remplacement, 4 Mio et 1000 signalements au plus,
 un fichier illisible ou d'un autre schéma est refusé (reason: 'unreadable'), jamais remplacé ; ce qu'il ne crée pas est gardé tel quel, clés inconnues comprises ; l'identifiant doit être celui d'un signalement de SIGNALEMENTS.json, sinon reason: 'unknown').
 La recherche `q` se fait ICI, sur le texte : sans accent ni majuscule (NFKD sans les signes combinants), chaque mot de `q` (8 mots au plus, 60 signes chacun) doit COMMENCER un mot du titre, du texte, de l'écran, du numéro de fiche ou de la réponse ; `excerpt` : 240 signes du texte autour de la première correspondance (ou le début).
 Tout texte lu dans ces fichiers est NON FIABLE : borné, sans caractère de commande, avant d'être rendu ; ce qui sort d'une liste fermée (sorte, écran, priorité, état) est écarté.
-Forme du fichier : { "schema": "sog-signalements/1", "updated": "<ISO UTC>", "items": { "SIG-0123456789": { kind, title, text, screen, ctx?, images?, at, state, from?, folder?, ref? }, … } } — 1000 entrées au plus ; l'ergonome le lit à chaque tour
+Forme du fichier : { "schema": "sog-signalements/1", "updated": "<ISO UTC>", "items": { "SIG-0123456789": { kind, title, text, screen, ctx?, images?, at, state, from?, folder?, ref? }, … } } — 1000 entrées au plus et 4 Mio au plus (au-delà, `ajouter` refuse `too-big` AVANT d'écrire : l'ancien fichier reste, les captures de ce travail sont retirées ; la lecture refuserait un fichier plus gros : SOG-0647) ; l'ergonome le lit à chaque tour
 et y pose l'état (`state` : new, read, fiche + `fiche` SOG-nnnn) : ce verbe n'efface et ne réécrit JAMAIS ce qu'il ne crée pas (les entrées déjà là sont gardées telles quelles, clés inconnues comprises ; un fichier illisible ou d'un autre schéma est refusé, pas remplacé).
-Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; sorte, écran, langue, design et taille sont des listes fermées ; titre de 80 signes au plus, texte de 2000 (sans caractère de commande, hors tabulation et saut de ligne pour le texte) ;
+Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; sorte, écran, langue, design et taille sont des listes fermées ; titre de 80 signes au plus, texte de 5000 (sans caractère de commande, hors tabulation et saut de ligne pour le texte) ;
 une clé inconnue de l'argument est REFUSÉE ; l'identifiant est fabriqué ici (SIG- et dix chiffres hexadécimaux), jamais reçu.
 CAPTURES (SOG-0316, avis de Sécurisation) : trois au plus, png, jpeg ou webp RECONNUS PAR LEURS OCTETS (signature ; ni le nom ni le type annoncé ne comptent ; svg, html et le reste sont refusés), 1,5 Mio chacune sur les octets réellement reçus, dimensions lues dans l'en-tête (8000 × 8000 et 40 millions de pixels au plus) ;
 le nom est fabriqué ici (SIG-<identifiant>-<n>.<ext>), jamais reçu ; création exclusive dans organisation/images/ (qui ne se crée pas, n'est ni un lien ni une jonction), jamais d'écrasement ; les images d'abord, puis le JSON (.tmp puis remplacement) ; si le JSON échoue, les images CRÉÉES PAR CE TRAVAIL sont retirées, elles seules.
@@ -45,7 +45,7 @@ FICHES_SCHEMA = 'sog-signalements-fiches/1'
 GRAVITIES = ('blocking', 'annoying', 'minor')
 FREQUENCIES = ('always', 'often', 'rare')
 MAX_COMMENTS = 200
-MAX_COMMENT = 2000
+MAX_COMMENT = 5000       # SOG-0647 : 2000 signes étaient trop peu ; la même valeur que la page (frame/help/signaler.js)
 MAX_ANSWER = 300
 MAX_LIST = 300           # `limit` de signalement/lister
 MAX_LOOK = 2000          # signalements regardés au plus (les derniers du fichier) : borne le travail d'une recherche
@@ -55,7 +55,7 @@ MAX_Q = 600
 EXCERPT = 240
 MAX_ITEMS = 1000
 MAX_TITLE = 80
-MAX_TEXT = 2000        # le même que la recette (SOG-0303)
+MAX_TEXT = 5000        # SOG-0647 : la même que la page (frame/help/signaler.js) ; la recette garde ses 2000 (SOG-0303)
 FILE_MAX = 4 * 1024 * 1024
 KINDS = ('bug', 'regression', 'ergonomics', 'performance', 'request')
 LANGS = ('fr', 'en', 'de', 'es')
@@ -337,9 +337,17 @@ def ajouter(job, args, ctx):
         items[sid] = entry
         doc['updated'] = entry['at']
         tmp = path + '.tmp'
+        data = (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
+        if len(data) > FILE_MAX:     # SOG-0647 : le fichier que la lecture refuserait (FILE_MAX) n'est jamais écrit : l'ancien reste, aucune image de ce travail ne reste
+            for p in made:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+            return {'ok': False, 'reason': 'too-big'}
         try:
-            with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
-                f.write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+            with open(tmp, 'wb') as f:
+                f.write(data)
             os.replace(tmp, path)
         finally:
             if os.path.exists(tmp):
@@ -534,7 +542,7 @@ def check_note(a):
 
 
 def check_comment(a):
-    """Contrôle de signalement/commenter : { id, text } et rien d'autre ; texte de 1 à 2000 signes, sans caractère de commande (tabulation et saut de ligne permis)."""
+    """Contrôle de signalement/commenter : { id, text } et rien d'autre ; texte de 1 à 5000 signes, sans caractère de commande (tabulation et saut de ligne permis)."""
     if not isinstance(a, dict) or set(a) != {'id', 'text'} or not isinstance(a['id'], str) or not ID.fullmatch(a['id']) or not _text(a['text'], MAX_COMMENT, CONTROL):
         return None
     text = _no_format(a['text']).strip()

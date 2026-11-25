@@ -17178,7 +17178,7 @@ def k474(c):
         c.eq(run('noter', {'id': 'SIG-%010x' % 999, 'gravity': 'blocking'}, root)['ok'], True, 'a report already in the file can still be noted at 1000', what='1000 ok')
 
 
-@case('K475', 'signalement/commenter, SOG-0410: a comment of 1 to 2000 signs (tab and line break allowed, any other control character refused), the identifier (COM- and ten hexadecimal digits) made here and never received, an unknown key of the argument refused as in signalement/ajouter, 200 comments per report at most, the id must be a report, the reply and the file say the comment',
+@case('K475', 'signalement/commenter, SOG-0410: a comment of 1 to 5000 signs (tab and line break allowed, any other control character refused), the identifier (COM- and ten hexadecimal digits) made here and never received, an unknown key of the argument refused as in signalement/ajouter, 200 comments per report at most, the id must be a report, the reply and the file say the comment',
       'K', static=True, rule=SG_RULE)
 def k475(c):
     import json
@@ -17191,7 +17191,7 @@ def k475(c):
         _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
         notes = org / 'SIGNALEMENTS_NOTES.json'
         good = {'id': 'SIG-00000000a1', 'text': 'Vu aussi sur la tablette.'}
-        for bad, why in (({'id': 'SIG-00000000a1'}, 'no text'), ({'text': 'x'}, 'no id'), ({**good, 'text': ''}, 'an empty text'), ({**good, 'text': '  \n\t '}, 'a blank text'), ({**good, 'text': 'x' * 2001}, 'a text of 2001'), ({**good, 'text': 'a\x00b'}, 'a NUL'),
+        for bad, why in (({'id': 'SIG-00000000a1'}, 'no text'), ({'text': 'x'}, 'no id'), ({**good, 'text': ''}, 'an empty text'), ({**good, 'text': '  \n\t '}, 'a blank text'), ({**good, 'text': 'x' * 5001}, 'a text of 5001'), ({**good, 'text': 'a\x00b'}, 'a NUL'),
                          ({**good, 'text': 'a\x1bb'}, 'an escape'), ({**good, 'text': 'a\rb'}, 'a carriage return'), ({**good, 'text': 'a\x7fb'}, 'a DEL'), ({**good, 'text': 5}, 'a number as text'), ({**good, 'text': ['a']}, 'a list as text'),
                          ({**good, 'id': 'COM-0123456789'}, 'an id that is not a report\'s'), ({**good, 'extra': 1}, 'an unknown key'), ({**good, 'at': '2020-01-01T00:00:00Z'}, 'a date given by the page'), ({**good, 'comment_id': 'COM-0123456789'}, 'an identifier given by the page'), (None, 'no object')):
             c.ok(run('commenter', bad, root) is None, repr(bad)[:60], f'refused: {why}')
@@ -17203,7 +17203,7 @@ def k475(c):
         c.ok(r['ok'] and re.fullmatch(r'COM-[0-9a-f]{10}', cm.get('id', '')) and re.fullmatch(SG_ISO, cm.get('at', '')) and cm['text'] == 'Ligne un\n\tligne deux « é »' and set(r) == {'ok', 'comment'} and set(cm) == {'id', 'at', 'text'}, r, 'the reply: { ok, comment: { id, at, text } }, the id made here, the text trimmed with its tab and line break')
         d = json.loads(notes.read_text(encoding='utf-8'))
         c.eq((d['schema'], d['items'], list(org.glob('*.tmp'))), ('sog-signalements-notes/1', {'SIG-00000000a1': {'comments': [cm]}}, []), 'the file holds the comment under its report, no temporary file', what='file')
-        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': 'y' * 2000}, root)['ok'], '', 'a comment of exactly 2000 signs is accepted')
+        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': 'y' * 5000}, root)['ok'], '', 'a comment of exactly 5000 signs is accepted (SOG-0647: 2000 before)')
         run('noter', {'id': 'SIG-00000000a1', 'gravity': 'minor'}, root)
         run('commenter', {'id': 'SIG-00000000a2', 'text': 'Autre'}, root)
         e = json.loads(notes.read_text(encoding='utf-8'))['items']
@@ -21273,3 +21273,19 @@ def k544(c):
         jobs.last[('weather', 'world')] = 1e12
         s, v = play('status')
         c.ok('started' not in ((v or {}).get('result') or {}), str(v and v.get('result'))[:100], 'an absurd hour is not said either')
+
+
+
+@case('K653', 'signalement/detail, SOG-0647: the reading CUTS at 5000 signs the text of a report and each of its comments (a file written by hand or by an older launcher is never trusted beyond what the writing accepts)',
+      'K', static=True, rule=SG_RULE)
+def k543(c):
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000e1': {'kind': 'bug', 'title': 't', 'text': 'a' * 6000, 'screen': 'fuel', 'at': '2026-11-12T00:00:00Z', 'state': 'new'}}))
+        _sg_put(root, 'SIGNALEMENTS_NOTES.json', {'schema': 'sog-signalements-notes/1', 'items': {'SIG-00000000e1': {'comments': [
+            {'id': 'COM-0000000001', 'at': '2026-11-12T10:00:00Z', 'text': 'b' * 6000}, {'id': 'COM-0000000002', 'at': '2026-11-12T11:00:00Z', 'text': 'c' * 5000}]}}})
+        d = run('detail', {'id': 'SIG-00000000e1'}, root)['item']
+        c.eq((len(d['text']), [len(x['text']) for x in d['comments']]), (5000, [5000, 5000]), 'the text of 6000 signs and the comment of 6000 are cut at 5000; a comment of exactly 5000 is whole', what='cut at the reading')

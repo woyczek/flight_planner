@@ -3400,7 +3400,7 @@ GOOD_SG = {'kind': 'bug', 'title': 'Le bouton ne répond pas', 'text': 'Je touch
            'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'}}
 
 
-@case('K262', 'signalement/ajouter and signalement/lire: organisation/SIGNALEMENTS.json written by the launcher (no organisation folder said and nothing created, closed lists, a title of 80 and a text of 2000 without control characters, an unknown key refused, the identifier made here, 1000 entries, what the file already holds kept as it is, an unreadable file never replaced, a pilot report taken once) (SOG-0316)', 'K',
+@case('K262', 'signalement/ajouter and signalement/lire: organisation/SIGNALEMENTS.json written by the launcher (no organisation folder said and nothing created, closed lists, a title of 80 and a text of 5000 without control characters, an unknown key refused, the identifier made here, 1000 entries, what the file already holds kept as it is, an unreadable file never replaced, a pilot report taken once) (SOG-0316)', 'K',
       static=True, rule='SOG-0316 (the user, Q-0046: his own reports go « direct chez » the ergonomist, in organisation/SIGNALEMENTS.json): a launcher verb on the existing job route, same guards as recette/verdict; Sécurisation (13 Nov): closed lists for kind and screen, no free field, identifier generated here, 1000 entries refused by code, an unreadable file refused not replaced, a pilot text is untrusted (the folder is not an identity: « signalé depuis le dossier de »)')
 def k262(c):
     fn, check, rd, check_rd, G, Job = _sg()
@@ -3409,11 +3409,11 @@ def k262(c):
         ctx = {'root': str(root)}
         ajout = lambda a: fn(Job('signalement', 'ajouter', {}), check(a), ctx)
         for bad, why in ((None, 'none'), ({}, 'empty'), ({**GOOD_SG, 'extra': 1}, 'an unknown key'), ({**GOOD_SG, 'kind': 'feat'}, 'a kind outside the list'), ({**GOOD_SG, 'screen': '../x'}, 'a screen outside the list'),
-                         ({**GOOD_SG, 'title': ''}, 'an empty title'), ({**GOOD_SG, 'title': 'x' * 81}, 'a title of 81'), ({**GOOD_SG, 'title': 'a\nb'}, 'a line break in the title'), ({**GOOD_SG, 'text': 'x' * 2001}, 'a text of 2001'),
+                         ({**GOOD_SG, 'title': ''}, 'an empty title'), ({**GOOD_SG, 'title': 'x' * 81}, 'a title of 81'), ({**GOOD_SG, 'title': 'a\nb'}, 'a line break in the title'), ({**GOOD_SG, 'text': 'x' * 5001}, 'a text of 5001'),
                          ({**GOOD_SG, 'text': 'a\x00b'}, 'a NUL in the text'), ({**GOOD_SG, 'text': 'a\x1bb'}, 'an escape in the text'), ({**GOOD_SG, 'ctx': {'path': 'C:/x'}}, 'a free key in the context'),
                          ({**GOOD_SG, 'ctx': {'design': 'neon'}}, 'a design outside the list'), ({**GOOD_SG, 'ctx': {'version': '../1'}}, 'a version with a path'), ({**GOOD_SG, 'ctx': {'version': 'v' * 41}}, 'a version of 41 signs')):
             c.ok(check(bad) is None, repr(bad)[:50], f'refused: {why}')
-        c.ok(check({**GOOD_SG, 'title': 'x' * 80, 'text': 'y' * 2000}) is not None and check({**GOOD_SG, 'ctx': {'version': 'alpha.6-25-g1a2b3c4d5e'}}) is not None, '', 'a title of 80, a text of 2000 and a version of the form milestone-n-gSHA are accepted')
+        c.ok(check({**GOOD_SG, 'title': 'x' * 80, 'text': 'y' * 5000}) is not None and check({**GOOD_SG, 'ctx': {'version': 'alpha.6-25-g1a2b3c4d5e'}}) is not None, '', 'a title of 80, a text of 5000 and a version of the form milestone-n-gSHA are accepted')
         c.eq((ajout(GOOD_SG).get('reason'), (root / 'organisation').exists(), rd(Job('signalement', 'lire', {}), {}, ctx).get('reason')), ('no-organisation', False, 'no-organisation'),
              'no organisation folder: said, nothing created (the ergonomist poste is the one that has it)', what='no organisation')
         org = root / 'organisation'
@@ -4160,3 +4160,50 @@ def k525(c):
         (zdir / f'{cycle}.new-2-2').mkdir()
         BA.recover_swaps(str(zdir))
         c.eq((sorted(os.listdir(zdir)), {json.loads(t)['tag'] for t in state(folder).values()}), ([cycle], {'new'}), 'an interrupted swap is healed: the folder of the cycle is back in its previous reading, the staging folder is gone', what='recover')
+
+
+@case('K652', 'signalement/ajouter, SOG-0647: a text of 5000 signs (5001 refused); a file that would pass 4 Mio is refused by too-big BEFORE it is written (the old file identical and readable, no capture, no temporary file left); a series of reports of 5000 signs ends by too-big before 1000, the file always readable',
+      'K', static=True, rule='SOG-0647 (the user: 2000 signs are too few for a report; Sécurisation: 5000, FILE_MAX unchanged at 4 Mio): at 5000 signs a thousand reports no longer fit in 4 Mio, and the file would then pass what the reading accepts (FILE_MAX): `ajouter` wrote without counting, so it would have written a file that the launcher then refuses to read, for ever. The guard counts the bytes before the temporary file and answers too-big; the values are written in clear here (5000, 5001, 4 Mio), never read from the constants')
+def k542(c):
+    fn, check, rd, check_rd, G, Job = _sg()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        ctx = {'root': str(root)}
+        ajout = lambda a: fn(Job('signalement', 'ajouter', {}), check(a), ctx)
+        org = root / 'organisation'
+        org.mkdir()
+        img = org / 'images'
+        img.mkdir()
+        f = org / 'SIGNALEMENTS.json'
+        FOUR_MIO = 4 * 1024 * 1024
+        c.ok(check({**GOOD_SG, 'text': 'y' * 5000}) is not None, '', 'a text of exactly 5000 signs is accepted')
+        c.ok(check({**GOOD_SG, 'text': 'y' * 5001}) is None, '', 'a text of 5001 signs is refused at the writing')
+        dump = lambda doc: (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
+        reports = lambda n: {'schema': 'sog-signalements/1', 'updated': '2026-11-10T08:00:00Z', 'items': {f'SIG-{k:010x}': {'kind': 'bug', 'title': 't', 'text': 'a' * 5000, 'screen': 'fuel', 'at': '2026-11-01T10:00:00Z', 'state': 'new'} for k in range(n)}}
+        # a file just below 4 Mio (it is read), the next report of 5000 signs cannot fit
+        n = FOUR_MIO // 5200
+        while len(dump(reports(n + 1))) <= FOUR_MIO - 100:
+            n += 1
+        while len(dump(reports(n))) > FOUR_MIO - 100:
+            n -= 1
+        f.write_bytes(dump(reports(n)))
+        b0 = f.read_bytes()
+        c.ok(FOUR_MIO - 5400 < len(b0) <= FOUR_MIO - 100 and n < 1000, (n, len(b0)), 'the file holds fewer than 1000 reports and is just below 4 Mio (it is read): less than one report of room')
+        before = rd(Job('signalement', 'lire', {}), check_rd({}), ctx)
+        c.ok(before.get('ok') and before.get('count') == n, str(before)[:120], 'it is readable')
+        r = ajout({**GOOD_SG, 'text': 'z' * 5000, 'images': [{'data': _b64(_png(300, 200))}]})
+        after = rd(Job('signalement', 'lire', {}), check_rd({}), ctx)
+        c.eq((r.get('ok'), r.get('reason'), f.read_bytes() == b0, sorted(p.name for p in img.iterdir()), list(org.glob('*.tmp')) + list(org.glob('.*.tmp')), G['held']()[0], after.get('ok'), after.get('count')),
+             (False, 'too-big', True, [], [], 0, True, n), 'a report that would carry the file past 4 Mio: too-big, the old file identical byte for byte and still readable, no capture left on the disk, no temporary file, the reserve emptied', what='too-big')
+        # the series: from a file of 750 reports, reports of 5000 signs are added until the refusal, which comes before 1000 and leaves the file readable
+        f.write_bytes(dump(reports(750)))
+        done, last = 0, None
+        for _ in range(80):
+            last = ajout({**GOOD_SG, 'text': 'q' * 5000})
+            if not last.get('ok'):
+                break
+            done += 1
+            c.ok(f.stat().st_size <= FOUR_MIO, f.stat().st_size, f'after the add number {done}: the file is not above 4 Mio') if done % 10 == 0 else None
+        c.eq((last.get('ok'), last.get('reason')), (False, 'too-big'), 'the series ends by too-big (not by a file that the reading would refuse)', what='end of the series')
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        c.ok(750 < len(doc['items']) < 1000 and f.stat().st_size <= FOUR_MIO and rd(Job('signalement', 'lire', {}), check_rd({}), ctx).get('ok'), (len(doc['items']), f.stat().st_size), 'it ends before 1000 reports, the file is not above 4 Mio and is readable')
