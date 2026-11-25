@@ -1107,12 +1107,26 @@ async function dupKeep(s) {
   const g = groupsOf(s).find(x => x.all.some(a => a.registration === s.sheet?.reg));
   if (!g || g.all.length < 2) return;
   const keep = g.shown.registration,
-    others = g.all.filter(x => x !== g.shown).map(x => x.registration);
+    rest = g.all.filter(x => x !== g.shown),
+    others = rest.map(x => x.registration),
+    // SOG-0635 : ce qui part avec chaque fiche retirée, VU avant le choix — les champs où elle diffère de la fiche gardée, « libellé du
+    // formulaire : valeur de la fiche retirée » (aucune phrase neuve ; rien sans différence ; aucune fusion des données)
+    fr = (s.ctx.lang?.() || 'fr') === 'fr',
+    lab = k => s.tt(k === 'operational' ? TX.sheetState : LABELS[k]).replace(/\s*\(.*\)$/, ''),
+    val = (a, k) => k === 'callsigns' ? (a.callsigns || []).join(', ') : k === 'operational' ? s.tt(a.operational === false ? TX
+      .sheetOut : TX
+      .operational) : String(a[k] ?? ''),
+    sections = rest.map(x => ({
+      id: 'dupdiff',
+      title: x.registration,
+      lines: FL.changed(g.shown, x).filter(k => k !== 'registration').map(k => `${lab(k)}${fr ? '\u202f:' : ':'} ${val(FL.normalize(x), k) || '—'}`)
+    })).filter(x => x.lines.length);
   if (!await s.ctx.ask(s.tt(TX.dupAsk, {
       r: keep,
       o: others.join(', ')
     }), {
-      ok: s.tt(TX.retire)
+      ok: s.tt(TX.retire),
+      sections
     })) return;
   let next = await s.ctx.data.get(s.fleetPath);
   for (const o of others) next = FL.retire(next, o, {
