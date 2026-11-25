@@ -11513,3 +11513,27 @@ def f323(c):
     # no approach: no line
     pick_proc(c, 'p-arr-app', '__none')
     c.until(f"!document.querySelector('{line}')?.checkVisibility()", timeout=8000, what='without an approach: no line')
+
+
+@case('F324', 'The points list: a group row of a procedure (SID, STAR, approach) has a NEUTRAL border — no colour of the Map\'s procedures; its '
+      'title says what it is', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=True,
+      rule='SOG-0592 (the ergonomist, 23 Nov, with SOG-0569: the Map\'s procedures take the route colour and the comparison hues; a coloured '
+      'border in Fuel no longer matched the Map — the group titles already say what they are); red before: the border read --sog-map-sid, '
+      '--sog-map-star, --sog-map-app; invented procedures')
+def f324(c):
+    open_proc(c, procs={'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'},
+                        'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RWALL.NEPIX', 'app': 'LFML.APP.I13R.RW13R.NONE'},
+                        'by': 'fuel', 'at': '2026-10-28T09:00:00Z'},
+              aero_extra={'points': [{'id': 'NT102', 'lat': 46.8, 'lon': -1.35, 'type': 'RNAV'}]})
+    c.until(f"document.querySelectorAll('{FUEL} [data-pts] > .fu-ptgrp').length === 3", timeout=15000, what='three group rows: the SID, the STAR, the approach')
+    # the colour each group border shows, against the neutral border of the suite and the three colours of the Map's procedures, all
+    # resolved by the browser (a token is a colour only once computed)
+    got = c.js(f"""(() => {{ const colour = v => {{ const e = document.createElement('i'); e.style.color = v; document.body.append(e);
+        const x = getComputedStyle(e).color; e.remove(); return x }};
+      const neutral = colour('var(--sog-border)'), maps = ['sid', 'star', 'app'].map(k => colour('var(--sog-map-' + k + ')'));
+      return [...document.querySelectorAll('{FUEL} [data-pts] > .fu-ptgrp')].map(g => {{ const b = getComputedStyle(g).borderLeftColor;
+        return [g.dataset.kind, b === neutral, maps.includes(b)] }}) }})()""")
+    c.eq(got, [['sid', True, False], ['star', True, False], ['app', True, False]],
+         'each group: the neutral border of the suite, never a colour of the Map\'s procedures (red before: SID, STAR, approach coloured)', what='borders')
+    c.js(f"document.querySelector('{FUEL} [data-pts]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F324_{c.design}_{c.width}.png')
