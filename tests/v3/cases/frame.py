@@ -12810,3 +12810,36 @@ def a403(c):
     c.eq(r['cycle'], [[['EV-1', None], ['EV-2', None], ['EV-3', None], ['EV-4', None]], ['EV-2'], []], 'a cycle, a loop on itself and an unknown event give null and never loop; the dependents of a cycle stop at it', what='cycle')
     c.eq(r['plain'], [0, 0, 0, 0], 'nothing read: empty, never an exception; a mission with no event has none in the pilot\'s view', what='nothing')
     c.check_errors()
+
+
+
+@case('A400', 'The text of a report and a comment take 5 000 signs (SOG-0647): the fields cut at 5000 (maxlength), a text of 2500 signs is kept whole in the form and written whole as a comment, the counter « n / 5000 » appears from 4500; a comment of 5001 signs is written cut at 5000 (the bound of the launcher is the same, never below the page)', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0647 (the user, in recette: « 2000 signes, c'est trop peu pour un vrai bug report »; Security said YES to 5000 for the text AND the comment, the same constant on both sides, FILE_MAX 4 Mio unchanged)")
+def a400(c):
+    st = _sg_open_list(c)
+    c.eq((c.attr('[data-text]', 'maxlength'), c.js("document.querySelector('[data-xcount]').hidden")), ('5000', True), 'the text field cuts at 5000 and shows no counter while the text is short', what='text field')
+    c.page.fill('[data-text]', 'a' * 2500)
+    c.wait(400)
+    c.eq((c.js("document.querySelector('[data-text]').value.length"), c.js("document.querySelector('[data-xcount]').hidden")), (2500, True), 'a text of 2500 signs is kept whole (it was cut at 2000), no counter under 4500', what='2500 signs')
+    c.page.fill('[data-text]', 'b' * 4500)
+    c.until("!document.querySelector('[data-xcount]').hidden", timeout=5000, what='the counter appears at 4500')
+    c.ok('4500' in norm(c.text('[data-xcount]')) and '5000' in norm(c.text('[data-xcount]')), c.text('[data-xcount]'), 'the counter says « 4500 / 5000 signes »')
+    # a comment on the sheet of a report (the draft is written 800 ms after the last key: waited, as A269 does)
+    c.wait(1200)
+    c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
+    c.until(f"location.hash === '#signaler?sig={_SG_SLOW}' && !!document.querySelector('[data-cm-text]')", timeout=15000, what='the sheet of the report')
+    c.eq(c.attr('[data-cm-text]', 'maxlength'), '5000', 'the comment field cuts at 5000', what='comment field')
+    c.ok('5000' in (c.attr('[data-cm-text]', 'placeholder') or ''), c.attr('[data-cm-text]', 'placeholder'), 'the hint of the comment says the bound that is in force, from the constant')
+    c.page.fill('[data-cm-text]', 'c' * 2500)
+    c.tap('[data-cmadd]')
+    c.until("document.querySelectorAll('[data-cmlist] li').length === 2", timeout=8000, what='the long comment is listed')
+    sent = [p['args'] for p in st['posts'] if p['verb'] == 'commenter']
+    c.eq([len(a['text']) for a in sent], [2500], 'a comment of 2500 signs is written whole by signalement/commenter', what='2500 sent')
+    # counter-proof: beyond the bound, the page cuts as today (a programmatic value ignores maxlength)
+    c.js("(() => { const x = document.querySelector('[data-cm-text]'); x.value = 'd'.repeat(5001); x.dispatchEvent(new Event('input', { bubbles: true })) })()")
+    c.tap('[data-cmadd]')
+    c.until("document.querySelectorAll('[data-cmlist] li').length === 3", timeout=8000, what='the second comment is listed')
+    sent = [p['args'] for p in st['posts'] if p['verb'] == 'commenter']
+    c.eq([len(a['text']) for a in sent], [2500, 5000], 'a comment of 5001 signs is written cut at 5000: the page never sends more than the launcher takes', what='5001 cut')
+    c.check_errors()

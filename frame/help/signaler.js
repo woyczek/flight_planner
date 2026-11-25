@@ -22,8 +22,8 @@
     VERSION = /^[0-9A-Za-z._+-]{1,40}$/;
   const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
   const MAX_TITLE = 80,
-    MAX_TEXT = 2000,
-    COUNT_FROM = 1800,
+    MAX_TEXT = 5000, // SOG-0647 : la même borne que le lanceur (I64)
+    COUNT_FROM = 4500, // le compteur « n / max signes » paraît à 90 % de la borne
     ROWS_MIN = 4,
     ROWS_MAX = 12,
     MAX_SHOTS = 3,
@@ -37,7 +37,7 @@
     FREQ = ['always', 'often', 'rare'],
     GROUPS = ['now', 'next', 'later', 'unrated'];
   const PAGE = 7, // sept lignes au plus par groupe, puis « Voir les n suivants »
-    MAX_CM = 2000,
+    MAX_CM = 5000, // le commentaire : la même borne que MAX_TEXT (SOG-0647), celle de MAX_COMMENT du lanceur
     MAX_ANSWER = 300,
     MAX_LIST = 300,
     MAX_REPORTS = 1000,
@@ -370,8 +370,8 @@
     cmNone: ['Aucun commentaire.', 'No comment.', 'Kein Kommentar.', 'Ningún comentario.'],
     you: ['Vous', 'You', 'Sie', 'Usted'],
     cmAdd: ['Ajouter un commentaire', 'Add a comment', 'Einen Kommentar hinzufügen', 'Añadir un comentario'],
-    cmHint: ['Votre commentaire (2 000 signes)', 'Your comment (2,000 signs)', 'Ihr Kommentar (2 000 Zeichen)',
-      'Su comentario (2000 signos)'
+    cmHint: ['Votre commentaire ({max} signes)', 'Your comment ({max} signs)', 'Ihr Kommentar ({max} Zeichen)',
+      'Su comentario ({max} signos)'
     ],
     add: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
     cmFail: ['Le commentaire n’a pas été ajouté : le lanceur ne l’a pas écrit. Votre texte reste dans le champ.',
@@ -1766,7 +1766,7 @@
       <p class="f-muted f-sg-axis">${esc(t(T.freqL))}</p><div class="f-sg-seg" role="group" aria-label="${esc(t(T.freqA))}">${FREQ.map(f => `<button type="button" class="f-pill" data-freq="${f}" aria-pressed="${it.frequency === f}">${esc(t(T.freq[f]))}</button>`).join('')}</div>
       <p class="f-sg-gname" data-gname role="status"><b>${esc(t(T.grp[groupOf(it)]))}</b></p></section>
       <section class="f-card f-sg-cms" data-cms><h2>${esc(t(T.comments))} <small class="f-muted" data-cmn>${it.comments.length}</small></h2>${it.comments.length ? '' : `<p class="f-muted" data-cmnone>${esc(t(T.cmNone))}</p>`}<ol class="f-sg-cmlist" data-cmlist>${it.comments.map(cmLi).join('')}</ol>
-      <label class="f-field">${esc(t(T.cmAdd))}<textarea data-cm-text rows="3" maxlength="${MAX_CM}" placeholder="${esc(t(T.cmHint))}"></textarea><small class="f-muted f-rc-count" data-cmcount hidden></small></label>
+      <label class="f-field">${esc(t(T.cmAdd))}<textarea data-cm-text rows="3" maxlength="${MAX_CM}" placeholder="${esc(t(T.cmHint, { max: MAX_CM }))}"></textarea><small class="f-muted f-rc-count" data-cmcount hidden></small></label>
       <div class="f-row"><button type="button" class="primary" data-cmadd disabled>${esc(t(T.add))}</button></div></section></div>`;
     box.innerHTML = `<div class="f-sg-sheet"${poste ? ' data-poste' : ''}><div class="f-sg-main"><p class="f-sg-l1">${it.kind ? `<span class="f-sg-tag">${esc(K.kindLabel(it.kind))}</span> ` : ''}${K.badge(it.pill)}</p><h1 tabindex="-1" data-sheet-title><bdi>${esc(it.title)}</bdi></h1>${line ? `<p class="f-muted f-sg-ctx" data-ctx>${esc(line)}</p>` : ''}${it.folder ? `<p class="f-muted" data-folder>${esc(t(T.pilotsFrom, { tri: it.folder }))}</p>` : ''}${it.text ? `<p class="f-sg-body" data-body><bdi>${esc(it.text)}</bdi></p>` : ''}${it.images.length ? `<p class="f-muted" data-imgs>${esc(t(T.images, { names: it.images.join(', ') }))}</p>` : ''}${fiche}</div>${side}</div>`;
     $('[data-sheet-title]').focus();
@@ -1808,7 +1808,7 @@
         paintPrio();
       });
     };
-    // ---- les commentaires : 2 000 signes (le compteur du formulaire), « Ajouter » écrit par le verbe ; un refus garde le texte dans le champ
+    // ---- les commentaires : MAX_CM signes (le compteur du formulaire), « Ajouter » écrit par le verbe ; un refus garde le texte dans le champ
     const paintCm = () => {
       const x = $('[data-cm-text]'),
         n = x.value.length,

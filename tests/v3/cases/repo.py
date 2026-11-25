@@ -4374,3 +4374,21 @@ def i65(c):
     if prev:
         raised = {k: (prev[k], v) for k, v in CODE_CEILING.items() if k in prev and v > prev[k]}
         c.eq(raised, {}, 'no ceiling went up since the shared branch (a ceiling only goes down)', what='ceiling raised')
+
+
+
+@case('I64', 'Signaler: the bound of a report text and of a comment is the SAME in the page and in the launcher (SOG-0647): frame/help/signaler.js MAX_TEXT / MAX_CM and tools/regen/signalement.py MAX_TEXT / MAX_COMMENT, the page never above the launcher, the counter at 90 %', 'I', static=True,
+      rule="SOG-0647 (Security, condition 3: « ne mets pas la borne de la page au-dessus de celle du lanceur »): the launcher refuses what the page would let through, and a report written with an older bound is cut at reading; two numbers that are the same number")
+def i64(c):
+    js = (c.root / 'frame' / 'help' / 'signaler.js').read_text(encoding='utf-8')
+    py = (c.root / 'tools' / 'regen' / 'signalement.py').read_text(encoding='utf-8')
+
+    def one(rx, s):
+        found = re.findall(rx, s, re.M)
+        return int(found[0]) if len(found) == 1 else found
+    page = {'text': one(r'^\s*MAX_TEXT = (\d+)', js), 'comment': one(r'^\s*MAX_CM = (\d+)', js), 'count': one(r'^\s*COUNT_FROM = (\d+)', js)}
+    launcher = {'text': one(r'^MAX_TEXT = (\d+)', py), 'comment': one(r'^MAX_COMMENT = (\d+)', py)}
+    c.ok(all(isinstance(v, int) for v in [*page.values(), *launcher.values()]), (page, launcher), 'each bound is declared once, as a number, in each file')
+    c.eq((page['text'], page['comment']), (launcher['text'], launcher['comment']), 'the page and the launcher say the same bound for a text and for a comment', what='page vs launcher')
+    c.ok(page['text'] <= launcher['text'] and page['comment'] <= launcher['comment'], (page, launcher), 'the page never lets through more than the launcher takes')
+    c.eq(page['count'] * 10, page['text'] * 9, 'the counter appears at 90 % of the bound', what='counter at 90 %')
