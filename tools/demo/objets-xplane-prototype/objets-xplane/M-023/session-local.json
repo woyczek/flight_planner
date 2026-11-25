@@ -1,0 +1,40 @@
+{
+  "protocol": 1,
+  "session": "0a59ae27-2253-4472-8db8-10351f4ab889",
+  "token": "67e76f895674e4f7a0cf34504a37f0c0c03a0c497a0f430fa0e5f21ffd9699d3",
+  "mission": "M-023",
+  "udp_port": 47910,
+  "http_port": 8790,
+  "objects": [
+    {
+      "id": "OBJ-1",
+      "name": "Véhicule rouge sorti de route",
+      "kind": "vehicle",
+      "motion": "static",
+      "asset": "car-red",
+      "model": {
+        "mode": "file",
+        "path": "Resources/default scenery/1000 roads/objects/cars/static/sedan_2_red.obj"
+      },
+      "lat": 42.17588,
+      "lon": 9.17412,
+      "altitude_mode": "terrain",
+      "altitude_ft": 0,
+      "offset_m": 0,
+      "heading_offset_deg": 0,
+      "course_deg": 110,
+      "speed_kt": 0,
+      "start_delay_min": 0,
+      "lifetime_min": 120,
+      "detection_range_nm": 0.8,
+      "detection_height_ft": 2000,
+      "constraints": {
+        "min_speed_kt": 0,
+        "max_speed_kt": 0,
+        "min_clearance_ft": 50,
+        "require_water": false
+      }
+    }
+  ],
+  "warnings": []
+}

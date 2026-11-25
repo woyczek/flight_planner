@@ -1,0 +1,40 @@
+{
+  "protocol": 1,
+  "session": "cfdb3caf-911c-4e07-b016-58dda96f73f2",
+  "token": "7cc2b8f9d310f1b3061aaa9bdae634ace8317d7d07d406ac4d9ac177fdfe476c",
+  "mission": "DEMO-SHIP",
+  "udp_port": 47910,
+  "http_port": 8790,
+  "objects": [
+    {
+      "id": "SHIP-1",
+      "name": "Voilier de démonstration",
+      "kind": "ship",
+      "motion": "axis",
+      "asset": "sailboat",
+      "model": {
+        "mode": "library",
+        "path": "lib/ships/SailBoat.obj"
+      },
+      "lat": 48.72,
+      "lon": -2.1,
+      "altitude_mode": "water",
+      "altitude_ft": 0,
+      "offset_m": 0,
+      "heading_offset_deg": 0,
+      "course_deg": 65,
+      "speed_kt": 8,
+      "start_delay_min": 0,
+      "lifetime_min": 120,
+      "detection_range_nm": 2,
+      "detection_height_ft": 3000,
+      "constraints": {
+        "min_speed_kt": 0,
+        "max_speed_kt": 15,
+        "min_clearance_ft": 50,
+        "require_water": true
+      }
+    }
+  ],
+  "warnings": []
+}

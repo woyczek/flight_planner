@@ -70,3 +70,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   hors d'atteinte). Une session prend le rôle de son nom ; la session ergonomie répartit, valide et intègre.
 - Chaque session travaille dans son espace et sur sa branche. La refonte v2 vit sur `feature/v2-niveaux`, les comptes
   signés sur `feature/audit-securite` : rien de ces chantiers sur develop sans l'accord de l'utilisateur.
+
+## Ton des missions — décision utilisateur du 19 novembre 2026
+
+Pour toute création ou adaptation de mission, appliquer `organisation/REGLE_HUMOUR_MISSIONS.md`.
+Titre souriant et situation cocasse réaliste dans le briefing ; humour issu de la situation
+opérationnelle, jamais une anecdote artificielle ajoutée. Les exemples validés font référence.
+Cette règle précise la consigne existante du prompt de génération sans en changer le texte.

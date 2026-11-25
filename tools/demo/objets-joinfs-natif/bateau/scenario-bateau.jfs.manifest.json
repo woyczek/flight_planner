@@ -1,0 +1,18 @@
+{
+  "mission": "DEMO-SHIP",
+  "plan_hash": "624eb408ffbdf911640a028510782a9dc96e05a53ad471f34df1569896392f9f",
+  "format": "JoinFS legacy 21003",
+  "single_playback_owner": true,
+  "terrain_profile": false,
+  "warnings": [],
+  "tracks": [
+    {
+      "joinfs_track": 1,
+      "object": "SHIP-1",
+      "kind": "ship",
+      "model": "ZZZZ JFS DF72BEC4BD8F",
+      "start_sec": 0,
+      "end_sec": 900
+    }
+  ]
+}

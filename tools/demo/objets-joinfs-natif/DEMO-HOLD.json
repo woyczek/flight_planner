@@ -1,0 +1,40 @@
+{
+  "schema": "helo-xp-mission",
+  "schema_version": "2.0",
+  "mission": {
+    "id": "DEMO-HOLD"
+  },
+  "title": "Aéronef mobile — démonstration visuelle",
+  "objects": [
+    {
+      "id": "AIR-1",
+      "name": "Cessna visuel de démonstration",
+      "kind": "aircraft",
+      "motion": "racetrack",
+      "lat": 48.72,
+      "lon": -2.1,
+      "course_deg": 90,
+      "speed_kt": 110,
+      "altitude_mode": "msl",
+      "altitude_ft": 4500,
+      "lifetime_min": 120,
+      "detection_range_nm": 3,
+      "detection_height_ft": 3000,
+      "visual": {
+        "asset": "cessna-visual"
+      },
+      "constraints": {
+        "min_speed_kt": 60,
+        "max_speed_kt": 160,
+        "min_clearance_ft": 500,
+        "max_turn_deg_sec": 3
+      },
+      "racetrack": {
+        "axis_deg": 65,
+        "leg_nm": 3,
+        "turn_radius_nm": 1,
+        "turn": "right"
+      }
+    }
+  ]
+}

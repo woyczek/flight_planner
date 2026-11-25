@@ -1,0 +1,8 @@
+Int16 format/protocol constant: 21003
+Int16 format/protocol constant: 21003
+Int16 format/protocol constant: 21023
+Parser object candidates: 2
+Input VERSION=21003
+Aircraft: 901 frames read by installed JoinFS
+Object: 901 frames read by installed JoinFS
+PASS: installed parser reached exact end

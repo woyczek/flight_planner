@@ -1,0 +1,40 @@
+{
+  "protocol": 1,
+  "session": "42f0c8ec-c696-45a1-b0da-882ac9dcc01d",
+  "token": "32162c7f1a6e88ee4ea2713c1f0e5cd2b9446f64e12b67be8eb738ebd933732f",
+  "mission": "DEMO-AIR",
+  "udp_port": 47910,
+  "http_port": 8790,
+  "objects": [
+    {
+      "id": "AIR-1",
+      "name": "Cessna visuel de démonstration",
+      "kind": "aircraft",
+      "motion": "axis",
+      "asset": "cessna-visual",
+      "model": {
+        "mode": "library",
+        "path": "lib/vr/holodeck/C172_static.obj"
+      },
+      "lat": 48.72,
+      "lon": -2.1,
+      "altitude_mode": "msl",
+      "altitude_ft": 4500,
+      "offset_m": 0,
+      "heading_offset_deg": 0,
+      "course_deg": 90,
+      "speed_kt": 110,
+      "start_delay_min": 0,
+      "lifetime_min": 120,
+      "detection_range_nm": 3,
+      "detection_height_ft": 3000,
+      "constraints": {
+        "min_speed_kt": 60,
+        "max_speed_kt": 160,
+        "min_clearance_ft": 500,
+        "require_water": false
+      }
+    }
+  ],
+  "warnings": []
+}

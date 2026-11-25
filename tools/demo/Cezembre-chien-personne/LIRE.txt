@@ -1,0 +1,31 @@
+Démo Cézembre : chien mobile et personne allongée
+
+Un seul fichier de lecture JoinFS contient les deux entités. Chacune a sa position indépendante : le chien avance, la personne reste immobile. Techniquement ce sont donc deux pistes internes dans le même enregistrement, pas deux lectures à lancer.
+
+PRÉPARATION DÉJÀ EFFECTUÉE
+
+Les modèles sont installés dans Resources/plugins/JoinFS/Resources/CSL/DEFA_CEZEMBRE de D:/Jeux/X-Plane 12. Le préparateur est installé dans FlyWithLua/Scripts/DEFA_Cezembre_preparer.lua. Aucun fichier DEFA V3 n’a été modifié. Le préparateur n’affiche rien lui-même : il mesure le terrain et produit l’enregistrement, pour éviter un doublon avec JoinFS.
+
+UTILISATION
+
+1. Démarrer/recharger X-Plane avec le nouveau pack CSL. Se placer près de Cézembre/Saint-Malo afin que le terrain de l’île soit chargé.
+2. Dans Plugins > FlyWithLua > FlyWithLua Macros, choisir « DEFA Cezembre : preparer chien et personne ». Le préparateur relève le relief en quelques secondes, refuse un point dans l’eau ou sans terrain, puis écrit cezembre-chien-personne.jfs dans ce dossier. Le journal FlyWithLua indique le résultat. Si FlyWithLua était déjà lancé avant l’installation, recharger ses scripts pour obtenir la commande.
+3. Ouvrir Ouvrir-Cezembre-JoinFS.cmd dans ce dossier. Une seule lecture JoinFS suffit. Arrêter les démos précédentes pour éviter leur superposition.
+
+Le fichier principal n’est produit qu’après un vrai relevé dans X-Plane. Aucun relief inventé n’est présenté comme mesuré. Un fichier cezembre-provisoire-correction-sol.jfs est également fourni pour diagnostic : il utilise MSL 0 et suppose une correction au terrain par le simulateur ; ce n’est pas le fichier recommandé pour la démo.
+
+CONTENU
+
+- Chien : husky debout de The Handy Objects Library, déplacé à 3 kt (environ 5,6 km/h). Circuit fermé d’environ 1 166 m, un tour en environ 12 min 35 s, répété pendant les 30 minutes de l’enregistrement. Circuit approximatif à l’intérieur du contour littoral, sans prétendre suivre un véritable sentier. Pattes non animées : le modèle se déplace dans une pose fixe.
+- Personne : modèle woman_reclining de 3D_people_library, allongée et immobile vers 48.676252 N, 2.071426 O. Ce modèle est une personne au repos, pas une blessure simulée.
+- Deux pistes transportées comme aéronefs CSL, selon la méthode validée pour le voilier. Apparition dans la carte/TCAS possible, et gestion dans Aircraft de JoinFS.
+- Pour un essai à plusieurs : une seule personne lance la lecture ; chaque poste doit disposer du pack CSL. La diffusion effective reste à vérifier entre deux postes.
+
+CONTRÔLES
+
+Syntaxe LuaJIT vérifiée. Cycle du préparateur testé avec SDK simulé : encodage du fichier et refus d’un terrain aquatique. Le lecteur réel de JoinFS installé a lu les deux pistes de 901 relevés jusqu’à la fin exacte du fichier, aussi bien pour le fichier provisoire que pour le résultat de test du préparateur. Les données de terrain simulées restent dans l’espace de test et ne sont pas livrées comme un relevé de Cézembre. Le rendu et le circuit sur le véritable relief restent à vérifier dans X-Plane.
+
+RESSOURCES
+
+Modèles et textures copiés uniquement depuis les bibliothèques déjà installées sur ce poste, avec remise à zéro du point le plus bas du modèle pour le contact au sol. Sources exactes dans scenario.json. Ne pas redistribuer ce pack sans vérifier les licences des bibliothèques ; les autres pilotes peuvent le constituer depuis leurs propres installations.
+Contour : OpenStreetMap, way 4539598, https://www.openstreetmap.org/way/4539598 — contributeurs OpenStreetMap, ODbL. Le circuit utilise un contour réduit vers le centre de l’île ; il ne représente pas un chemin relevé sur le terrain.

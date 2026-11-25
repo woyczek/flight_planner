@@ -1,0 +1,12 @@
+[
+  {
+    "asset": "sailboat",
+    "model": "ZZZZ JFS DF72BEC4BD8F",
+    "kind": "ship"
+  },
+  {
+    "asset": "cessna-visual",
+    "model": "ZZZZ JFS DF0B62A82DDD",
+    "kind": "aircraft"
+  }
+]

@@ -1,0 +1,5 @@
+=== scenario-coordonne.jfs (0.2 MB)
+  version 21003, tail strings: 3, objects: 2 (aircraft 1), duration 900 s
+  AircraftPosition  frames       901  bytes       86496 (52.7%)  avg 96 B
+  ObjectPosition    frames       901  bytes       77486 (47.3%)  avg 86 B
+  file bytes not in frames: 76

@@ -1,0 +1,15 @@
+/* PDF controls extend the existing workbench without changing saved data. */
+.map-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 16px}
+.pdf-controls{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid #e0e8eb;font-size:11px}
+.pdf-switch{white-space:nowrap;font-weight:600}
+.pdf-controls select{width:auto;min-width:115px;max-width:165px;font-size:11px;padding:6px}
+.range-control{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#496472}
+.range-control input{width:86px;accent-color:#16766e;cursor:pointer}
+.range-control output{min-width:34px;text-align:right;font-variant-numeric:tabular-nums;color:#1c4555}
+#pdfOnly{padding:6px 10px;font-size:11px;white-space:nowrap}
+#pdfOnly[aria-pressed=true]{background:#173e51;border-color:#173e51;color:#fff;box-shadow:0 0 0 2px #bbd6de}
+#pdfStatus{font-size:10px;color:#607a87}
+#sourcePanel{top:var(--map-toolbar-bottom,180px)}
+.maplibregl-ctrl-top-right{top:var(--map-toolbar-bottom,180px)!important}
+#sourceSvg[hidden]{display:none}
+@media(max-width:1150px){.map-toolbar{grid-template-columns:1fr}.tools{flex-wrap:wrap;gap:8px}.pdf-controls{gap:8px 10px}.range-control input{width:72px}}

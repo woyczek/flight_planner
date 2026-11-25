@@ -1,0 +1,10 @@
+{
+  "id": "MO-I18N-01",
+  "date": "2026-11-24",
+  "statut": "differee",
+  "decision": "Interface et messages nouveaux en français uniquement, conformément à la demande explicite de l’utilisateur.",
+  "perimetre": "Moteur générique d’objets, messages du raccordement V3 et script X-Plane commun",
+  "travail_futur": "Externaliser les chaînes et compléter les traductions lorsque demandé.",
+  "responsable_integration": "Agent Claude responsable de DEFA V3",
+  "integration_v3": "Aucune modification appliquée par Codex au dépôt principal ; fiche à reporter dans le suivi technique V3 par Claude."
+}

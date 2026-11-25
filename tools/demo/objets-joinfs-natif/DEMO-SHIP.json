@@ -1,0 +1,32 @@
+{
+  "schema": "helo-xp-mission",
+  "schema_version": "2.0",
+  "mission": {
+    "id": "DEMO-SHIP"
+  },
+  "title": "Bateau mobile — démonstration technique",
+  "objects": [
+    {
+      "id": "SHIP-1",
+      "name": "Voilier de démonstration",
+      "kind": "ship",
+      "motion": "axis",
+      "lat": 48.72,
+      "lon": -2.1,
+      "course_deg": 65,
+      "speed_kt": 8,
+      "altitude_mode": "water",
+      "lifetime_min": 120,
+      "detection_range_nm": 2,
+      "detection_height_ft": 3000,
+      "visual": {
+        "asset": "sailboat"
+      },
+      "constraints": {
+        "require_water": true,
+        "min_speed_kt": 0,
+        "max_speed_kt": 15
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "mission": "DEMO-JFS",
+  "plan_hash": "837d7fd5e59a172c2c76eb8400a702c3696542d1a27f998110278dd1ea578cff",
+  "format": "JoinFS legacy 21003",
+  "single_playback_owner": true,
+  "terrain_profile": false,
+  "warnings": [],
+  "tracks": [
+    {
+      "joinfs_track": 1,
+      "object": "AIR-1",
+      "kind": "aircraft",
+      "model": "ZZZZ JFS DF0B62A82DDD",
+      "start_sec": 0,
+      "end_sec": 900
+    },
+    {
+      "joinfs_track": 2,
+      "object": "SHIP-1",
+      "kind": "ship",
+      "model": "ZZZZ JFS DF72BEC4BD8F",
+      "start_sec": 0,
+      "end_sec": 900
+    }
+  ]
+}

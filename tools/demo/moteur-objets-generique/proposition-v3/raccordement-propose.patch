@@ -1,0 +1,130 @@
+diff --git a/frame/app.js b/frame/app.js
+index 85be43ff3..7ed240592 100644
+--- a/frame/app.js
++++ b/frame/app.js
+@@ -5215,6 +5215,54 @@
+     unwatchFlight = liveData.watch(p, () => liveCheck());
+     liveCheck();
+   }
++  // The generic object controller shares the existing flight lifecycle and local launcher.
++  // A full declaration replaces the previous one; no mission-specific Lua or JFS export.
++  let objectController = null;
++  const objectData = FD.adapter({
++    id: 'frame-mission-objects',
++    reads: ['missions/'],
++    writes: []
++  });
++  import(new URL('frame/lib/mission_objects.js', ROOT).href).then(MO => {
++    objectController = MO.create({
++      data: objectData,
++      request: launcherRequest,
++      local: () => !!launcherHere && !launcherHere.lan,
++      notify,
++      t,
++      onFound: async event => {
++        const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
++        const fresh = await liveData.get(flightPath).catch(() => null);
++        if (!fresh?.started?.at || fresh.mission !== event.mission || Date.parse(fresh.started.at) !== Date.parse(event
++            .started_at)) return false;
++        const contacts = Object.fromEntries(Object.entries(fresh.progress?.object_contacts || {}).filter(([, c]) => c
++          ?.mission === event.mission && Date.parse(c.started_at) === Date.parse(event.started_at)));
++        if (contacts[event.object]?.session === event.session && contacts[event.object]?.seq === event.seq) return;
++        await liveData.put(flightPath, CF.merge(fresh, {
++          progress: {
++            object_contacts: {
++              ...contacts,
++              [event.object]: {
++                mission: event.mission,
++                started_at: event.started_at,
++                session: event.session,
++                seq: event.seq,
++                at: new Date().toISOString(),
++                source: 'xplane-script',
++                position: event.position,
++                pilot: event.pilot
++              }
++            }
++          }
++        }, {
++          progressKeys: ['object_contacts'],
++          by: 'frame-objects'
++        }));
++      }
++    });
++    objectData.watch('missions/', () => objectController.invalidate());
++    objectController.update(lastFlight, identity.trigram);
++  }).catch(e => console.warn('mission objects', e));
+   /** Démarre ou arrête le service selon le vol courant. */
+   async function liveCheck() {
+     const cur = await liveData.get(flightPath).catch(() => null),
+diff --git a/tools/launch.py b/tools/launch.py
+index ad2f38341..454ee3a81 100644
+--- a/tools/launch.py
++++ b/tools/launch.py
+@@ -26,6 +26,7 @@ import csp_policy as cspmod  # politique de sécurité du contenu, commune au si
+ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
+ from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
+ import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
++import mission_objects  # generic simulator-object lifecycle (local launcher only)
+ import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+ import device_access  # appareils appairés, réseau local et relais : un code, une liste, une révocation (R-C2)
+ import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
+@@ -945,6 +946,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
+         except ValueError:
+             return self._json({'error': 'taille invalide'}, 400)
+         limit = LAN_MAX_BODY if self._lan() else self.MAX_UPLOAD
++        if path.startswith('/__setup/mission-objects/'):
++            limit = min(limit, 256 * 1024)
+         if path in JOB_POSTS:          # démarrer, annuler, libérer un travail : jamais plus de quelques Mio (audit 202) ; refusé sur la longueur annoncée, AVANT toute lecture du corps
+             limit = min(limit, JOB_MAX_BODY)
+         if size < 0 or size > limit:
+@@ -1418,6 +1421,49 @@ class Setup(http.server.SimpleHTTPRequestHandler):
+             return self._json(ivao_last_flight(arg('vid'), arg('session')))
+         return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
+ 
++    @route('GET', '/__setup/mission-objects/status', '/__setup/mission-objects/events', public='poste')
++    def _get_mission_objects(self, path):
++        if not self._allowed() or self._lan() or self._relay():
++            return self._json({'error': 'refused'}, 403)
++        state = mission_objects.RUNTIME.status()
++        if path.endswith('/events'):
++            try:
++                after = int((urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('after') or ['0'])[0])
++            except ValueError:
++                return self._json({'error': 'cursor'}, 400)
++            with mission_objects.RUNTIME.lock:
++                state['events'] = [e for e in mission_objects.RUNTIME.events if e['cursor'] > after] if state['active'] else []
++        return self._json(state)
++
++    @route('GET', '/__setup/mission-objects/agent', public='poste')
++    def _get_mission_objects_agent(self, path):
++        if not self._allowed() or self._lan() or self._relay():
++            return self._json({'error': 'refused'}, 403)
++        body = mission_objects.RUNTIME.snapshot().encode('utf-8')
++        self.send_response(200)
++        self.send_header('Content-Type', 'text/plain; charset=utf-8')
++        self.send_header('Content-Length', str(len(body)))
++        self.send_header('Cache-Control', 'no-store')
++        self.send_header('Connection', 'close')
++        self.end_headers()
++        self.wfile.write(body)
++        self.close_connection = True
++        return None
++
++    @route('POST', '/__setup/mission-objects/session', '/__setup/mission-objects/report', public='poste')
++    def _post_mission_objects(self, path, body):
++        if not self._allowed() or self._lan() or self._relay():
++            return self._json({'error': 'refused'}, 403)
++        value, why = safe_json.loads(body)
++        if why:
++            return self._json({'error': 'json'}, 400)
++        try:
++            mission_objects.RUNTIME.configure(DATA)
++            result = mission_objects.RUNTIME.report(value) if path.endswith('/report') else mission_objects.RUNTIME.publish(value)
++            return self._json(result)
++        except (ValueError, TypeError, KeyError, OverflowError):
++            return self._json({'error': 'invalid_object_session'}, 400)
++
+     @route('GET', '/__setup/sim/position', public='lan')
+     def _get_sim_position(self, path):
+         # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,

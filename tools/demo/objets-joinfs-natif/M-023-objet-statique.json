@@ -1,0 +1,211 @@
+{
+  "aircraft": [
+    {
+      "id": "AC1",
+      "type": "H145",
+      "callsign": "DRAGON2B",
+      "role": "aéronef principal"
+    }
+  ],
+  "teams": [
+    {
+      "name": "DRAGON2B",
+      "service": "Sécurité civile",
+      "department": "2B",
+      "type": "H145"
+    },
+    {
+      "name": "Équipe Corte",
+      "service": "SDIS",
+      "department": "2B",
+      "type": "VSAV / secours routier"
+    }
+  ],
+  "risks": [
+    {
+      "hazard": "Terrain accidenté et boisé"
+    },
+    {
+      "hazard": "Lignes et câbles"
+    },
+    {
+      "hazard": "Turbulence locale"
+    },
+    {
+      "hazard": "Fumées/incendie éventuel"
+    },
+    {
+      "hazard": "Circulation et équipes au sol"
+    },
+    {
+      "hazard": "Absence possible de zone de poser"
+    }
+  ],
+  "title": "Mission 23 — Le véhicule est rouge",
+  "mission": {
+    "id": "M-023",
+    "number": 3,
+    "series": 2,
+    "type": "HEMS",
+    "subtype": "Rescue",
+    "former_id": "23",
+    "theatre": "métropole"
+  },
+  "schema": "helo-xp-mission",
+  "schema_version": "1.0",
+  "target": {
+    "id": "TARGET",
+    "name": "Venaco",
+    "lat": 42.176,
+    "lon": 9.172
+  },
+  "turning_points": [
+    {
+      "id": "PT1",
+      "name": "Bastia",
+      "lat": 42.6787,
+      "lon": 9.44843,
+      "role": "départ / point de transit"
+    },
+    {
+      "id": "PT2",
+      "name": "Ponte-Leccia",
+      "lat": 42.464,
+      "lon": 9.203,
+      "role": "point de transit"
+    },
+    {
+      "id": "PT3",
+      "name": "Corte",
+      "lat": 42.306,
+      "lon": 9.151,
+      "role": "point de transit"
+    },
+    {
+      "id": "PT4",
+      "name": "Venaco",
+      "lat": 42.176,
+      "lon": 9.172,
+      "role": "cible / secteur d'intervention"
+    },
+    {
+      "id": "PT5",
+      "name": "LF404",
+      "lat": 42.68222,
+      "lon": 9.42833
+    }
+  ],
+  "maps": [
+    {
+      "id": "general",
+      "filename": "general23.png",
+      "type": "general",
+      "description": "Vue générale des points de transit de la mission",
+      "include": {
+        "turning_points": true,
+        "target": true
+      }
+    },
+    {
+      "id": "cible",
+      "filename": "cible23.png",
+      "type": "target",
+      "centre_ref": "TARGET",
+      "range_km": 50,
+      "description": "Vue locale centrée sur la cible"
+    },
+    {
+      "id": "detail-target",
+      "filename": "detail_cible23.png",
+      "type": "detail",
+      "centre_ref": "TARGET",
+      "width_km": 8,
+      "height_km": 5,
+      "description": "Vue détaillée centrée sur la cible"
+    }
+  ],
+  "rendering": {
+    "north_up": true,
+    "draw_routes": false,
+    "add_markers": false,
+    "attribution_required": true
+  },
+  "notes": [
+    "Mission 23 — Le véhicule est rouge",
+    "Aéronef concerné : H145 — DRAGON2B",
+    "Les coordonnées reprennent uniquement les points utilisés pour la carte générale et la cible existantes.",
+    "Aucun rendez-vous géolocalisé n’est ajouté lorsque les sources ne fournissent pas de coordonnées distinctes."
+  ],
+  "meta": {
+    "received_at": "2026-11-05T20:50:39.837Z",
+    "modified_at": "2026-11-05T20:50:39.837Z",
+    "source": "fichiers",
+    "versions": 0,
+    "history": [
+      {
+        "at": "2026-11-05T20:50:39.837Z",
+        "action": "reçue",
+        "source": "fichiers"
+      }
+    ]
+  },
+  "summary": "Accident routier sur une route de montagne au sud de Corte. Le véhicule a quitté la chaussée et n’est plus visible depuis la route. Le principal élément de repérage transmis est sa couleur rouge.",
+  "detailed_description": "Départ Bastia. Transit par Ponte-Leccia puis Corte, avant descente vers le secteur de Venaco.\n\nUn véhicule est sorti de route dans un secteur boisé et accidenté. Deux occupants sont signalés, dont un hors du véhicule. Les secours terrestres approchent depuis Corte mais ne disposent pas encore d’un accès direct à la voiture.\n\nDRAGON2B effectue une reconnaissance de l’axe routier et des ravins adjacents. La recherche reste méthodique malgré la faible qualité du repère transmis. Une fois le site trouvé, l’équipage identifie une zone compatible avec le poser ou organise une récupération avec les équipes au sol.\n\nAprès prise en charge, évacuation vers la structure adaptée. Une attention particulière est portée aux arbres, falaises, lignes et mouvements de véhicules de secours sur la chaussée.",
+  "zones": [
+    {
+      "id": "ZONE-1",
+      "centre": {
+        "lat": 42.17593,
+        "lon": 9.17212
+      },
+      "radius_km": 0.26
+    },
+    {
+      "id": "ZONE-2",
+      "centre": {
+        "lat": 42.68201,
+        "lon": 9.42839
+      },
+      "radius_km": 0.41
+    }
+  ],
+  "objects": [
+    {
+      "id": "OBJ-1",
+      "lat": 42.17588,
+      "lon": 9.17412,
+      "require_confirmation": true,
+      "name": "Véhicule rouge sorti de route",
+      "kind": "vehicle",
+      "motion": "static",
+      "altitude_mode": "terrain",
+      "course_deg": 110,
+      "detection_range_nm": 0.8,
+      "detection_height_ft": 2000,
+      "visual": {
+        "asset": "car-red",
+        "offset_m": 0
+      },
+      "constraints": {
+        "min_speed_kt": 0,
+        "max_speed_kt": 0
+      }
+    }
+  ],
+  "mission_map": {
+    "base": "relief",
+    "airspaces": true
+  },
+  "phases": [
+    {
+      "id": "B",
+      "title": "Trouvé.",
+      "trigger": "quand l'objet est trouvé",
+      "message": "Patient identifié, faites un posé de précision, et un retour hospitalier.",
+      "trigger_object": "OBJ-1",
+      "route_order": [
+        "DESTINATION"
+      ]
+    }
+  ]
+}

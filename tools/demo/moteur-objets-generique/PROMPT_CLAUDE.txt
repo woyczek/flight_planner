@@ -1,0 +1,85 @@
+Raccordement du moteur générique d’objets de mission à DEFA V3
+
+Tu es responsable de la V3. L’utilisateur interdit à Codex de modifier directement E:\DEFA : aucun raccordement de ce dossier n’y a été appliqué. Les fichiers joints sont une proposition à examiner, adapter et intégrer dans ton espace de travail, en respectant les consignes actuelles du dépôt et les responsabilités des agents. Ne remplace pas aveuglément des fichiers qui ont évolué.
+
+OBJECTIF
+
+Faire communiquer la suite DEFA V3 et un script X-Plane commun, installé une seule fois. Le lancement d’une mission quelconque doit déclarer ses objets, les placer et les déplacer selon les paramètres du fichier mission. Une fin, un abandon ou un changement de mission doit retirer les anciens objets. Aucun export Lua propre à M023 ou à une autre mission ne doit être nécessaire au pilote.
+
+Le travail doit couvrir les objets statiques et mobiles : aéronefs, bateaux, véhicules et autres modèles disponibles dans un catalogue explicite. Pour les mobiles : départ, cap, altitude, vitesse, route avec points de passage et niveaux/vitesses, répétition, éventuellement hippodrome. Prévoir terrain, eau, altitude MSL, hauteur AGL et garde au relief. Ne pas dupliquer un aéronef réellement piloté et déjà présent dans le réseau.
+
+L’utilisateur veut du français. Ne pas entreprendre de traductions maintenant. Enregistrer la dette MO-I18N-01 dans le suivi technique habituel de la V3 ; sa fiche est jointe.
+
+POINT DE RACCORDEMENT
+
+Privilégier les interfaces existantes. L’examen effectué a trouvé le serveur local du lanceur, le cycle de vie global du vol dans frame/app.js, le registre sécurisé des missions et current_flight.merge. Il n’a pas trouvé d’interface existante qui commande arbitrairement des objets X-Plane. La proposition ajoute donc quelques routes au serveur existant et un petit raccordement au suivi global du vol ; elle ne lance pas un second serveur ou un nouveau réseau multijoueur.
+
+Le navigateur lit la mission via le registre et transmet une déclaration limitée au serveur local. Le script commun interroge ce serveur sur la boucle locale. Le serveur calcule les positions souhaitées à partir d’une horloge de session ; le script gère les instances et le relief dans X-Plane. Ne pas dépendre de l’onglet Missions pour maintenir une mission active. Ne rien démarrer depuis une tablette ou un poste distant.
+
+CONTENU DU DOSSIER
+
+Base de préparation : commit 0b11c98b4, branche isolée codex/generic-mission-objects, dans C:\Users\mojan\Documents\Codex\2026-11-17\lis-x20\work\DEFA-generic-objects. Ce n’est pas la V3 principale.
+
+proposition-v3/raccordement-propose.patch : proposition pour frame/app.js et tools/launch.py uniquement. Le patch n’inclut pas les nouveaux fichiers ci-dessous. Il peut être devenu inapplicable : intégrer selon le code actuel.
+
+Fichiers nouveaux proposés, présentés à plat dans proposition-v3 :
+- mission_objects.py -> tools/mission_objects.py
+- test_mission_objects.py -> tools/test_mission_objects.py
+- test_mission_objects_http.py -> tools/test_mission_objects_http.py
+- mission_objects.js -> frame/lib/mission_objects.js
+- mission_objects_client.mjs -> modules/missions/test/mission_objects_client.mjs
+
+Script commun proposé, non installé :
+- script/DEFA_mission_objects.lua
+- script/DEFA_mission_math.lua
+
+Prévoir un moyen d’installation et de diagnostic accessible dans l’interface habituelle. Ne pas imposer au pilote une console ou des manipulations de fichiers pour chaque mission. Les modèles restent à fournir depuis les bibliothèques autorisées : ce dossier ne contient pas leurs assets.
+
+CONTRAT PROPOSÉ À RELIRE DANS LES SOURCES
+
+Le module navigateur publie/renouvelle la session par POST mission-objects/session. Le serveur expose mission-objects/status, mission-objects/events?after=... et mission-objects/agent. Le script rapporte ses événements par POST mission-objects/report. Réutiliser les contrôles d’accès existants du lanceur ; les routes de commande sont locales. Les corps JSON non fiables passent par safe_json avec limites de taille et validation.
+
+La session est liée au pilote, à l’identifiant de mission et à started.at du vol. Elle a une révision, un jeton et un bail court de 18 secondes renouvelé toutes les 5 secondes. La déclaration remplace entièrement la précédente. Expiration, arrêt et remplacement doivent nettoyer les instances, sans accumulation. Ne pas publier le jeton dans le statut public. Les événements sont liés à la session courante, bornés et dédupliqués.
+
+Le snapshot destiné au script est du texte tabulé, sans dépendance Lua à un parseur JSON :
+DEFAOBJ<TAB>1<TAB>session<TAB>revision<TAB>ttl_s<TAB>elapsed_s<TAB>token
+O<TAB>id<TAB>asset<TAB>kind<TAB>lat<TAB>lon<TAB>altitude_mode<TAB>altitude_ft<TAB>heading_deg<TAB>speed_kt<TAB>visual_offset_m<TAB>min_clearance_ft<TAB>detection_range_nm<TAB>detection_height_ft
+M<TAB>asset<TAB>chemin_relatif_OBJ
+Le snapshot vide utilise session et token « - », révision et durées à zéro. Consulter les sources pour les règles précises, sans figer un format avant revue.
+
+Les identifiants de modèles sont logiques. Le serveur les résout par un catalogue local validé ; aucun chemin de modèle arbitraire, code ou URL provenant d’une mission ne doit être exécuté. La proposition sait lire data/local/mission_object_assets.json, mais ne fournit pas encore son écran d’administration. Il faut définir un catalogue utilisable et un signalement clair des modèles absents. Le script actuel attend des chemins physiques OBJ relatifs à X-Plane ; il ne résout pas automatiquement les noms virtuels de library.txt.
+
+CONTACT ET VISIBILITÉ
+
+Le script propose une commande/petite fenêtre « Objet en vue » permettant une déclaration humaine « objet trouvé ». Le serveur vérifie session, objet, séquence, distance et hauteur. Le raccordement proposé enregistre les confirmations dans progress.object_contacts du vol actif, après relecture et fusion via current_flight.merge pour préserver les autres données.
+
+Il ne déclenche PAS encore automatiquement les tiroirs. Raccorder les contacts au moteur existant de validation des étapes, en conservant les conditions du fichier mission et les vérifications d’identité du vol. Prévoir les missions coordonnées : observateur et intervenant peuvent être deux aéronefs avec des départs, arrivées et familles différents.
+
+Ne pas présenter une proximité comme une visibilité réelle. L’utilisateur a précisé : champ de caméra, taille/distance permettant de voir, absence de masque. Le protocole réserve candidate_fov, mais le script générique joint ne produit pas encore cette détection. Une déclaration humaine et une candidature automatique doivent rester distinguées. La gestion de l’occultation reste à concevoir et à tester ; ne pas annoncer qu’elle fonctionne.
+
+JOINFS : LIMITE À DIRE EXPLICITEMENT
+
+Installation examinée : JoinFS-XPLANE 3.2.17, X-Plane dans D:\Jeux\X-Plane 12. Le plugin JoinFS X-Plane examiné publie l’aéronef utilisateur ; il ne reprend pas automatiquement les instances SDK créées par FlyWithLua. Aucune interface générique d’injection d’objets en direct n’a été identifiée. Ne pas prétendre que poser le même objet localement chez plusieurs pilotes assure sa synchronisation.
+
+Le précédent export natif .jfs convient à une trajectoire calculée en amont. Ce n’est pas un raccordement vivant pour une mission qui change en cours de vol. La préférence de l’utilisateur reste JoinFS et l’absence d’un réseau parallèle. Pour une synchronisation en direct, il faut une capacité réelle de JoinFS, ou une extension explicitement conçue et validée. Le statut proposé annonce joinfs_live=false. Préserver cette honnêteté et ne pas ajouter un connecteur multijoueur supposé nécessaire sans examiner cette voie.
+
+ÉTAT ET POINTS À TERMINER
+
+La proposition est une base de développement, pas un composant validé en vol. Les objets et trajectoires sont génériques ; aucune condition spéciale M023 n’est prévue. Toutefois l’extracteur navigateur ne collecte actuellement que les objets de premier niveau : prendre aussi en compte les objets définis dans les phases/trigger_object selon le format réel des missions, dont M023/M036. Réutiliser le parseur existant et éviter deux interprétations divergentes du format.
+
+La route proposée interpole les niveaux et suit les segments avec virages aux points. Elle ne garantit pas des virages ou montées physiquement réalistes. Définir et appliquer les contraintes particulières aux aéronefs et aux bateaux avant d’annoncer ces garanties. Vérifier aussi les unités, l’altitude, la garde au relief et les valeurs par défaut avec la spécification mission.
+
+Le script utilise SDK/FFI et LuaSocket, avec échanges locaux non bloquants, réconciliation des instances et sondage du terrain. Il reste à tester dans la vraie installation : dépendances disponibles, coexistence des définitions FFI, chargement des modèles, rendu, altitude sur terre/eau, comportement sans terrain chargé et nettoyage. Il n’a pas été installé ni exécuté dans X-Plane dans cette préparation.
+
+Les événements serveur sont actuellement gardés en mémoire ; les confirmations humaines sont aussi enregistrées dans le vol par le navigateur. Les erreurs spawn_failed ne sont pas encore toutes montrées par ce dernier. Prévoir un diagnostic compréhensible et ne pas perdre silencieusement un contact important.
+
+VÉRIFICATIONS DÉJÀ EFFECTUÉES SUR LE BROUILLON ISOLÉ
+
+- 13 tests Python du runtime : sessions, expiration, routes, AGL, catalogue, validation et événements.
+- 2 tests HTTP du serveur local : publication/arrêt et contrôles d’accès/entrées invalides.
+- 5 tests Node du client : extraction, publication générique, arrêt, poste distant et contact confirmé.
+- Smoke V3 A1, standard/1280/fr : un cas passé. Cela ne vaut pas validation complète de la V3.
+- Formatage de frame/app.js et frame/lib/mission_objects.js effectué ; vérification AST du rapport de formatage non réalisée.
+- Aucun essai visuel en vol, aucune synchronisation JoinFS à deux postes validée.
+
+Reprendre les vérifications pertinentes dans ta version avant intégration, avec les consignes actuelles du dépôt. Livrer une utilisation simple : activer une mission, constater l’état des objets, déclarer un objet trouvé, terminer/abandonner et vérifier le retrait. Garder l’export natif JoinFS comme fonction distincte tant que le raccordement en direct n’est pas établi.

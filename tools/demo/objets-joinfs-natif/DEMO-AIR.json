@@ -1,0 +1,33 @@
+{
+  "schema": "helo-xp-mission",
+  "schema_version": "2.0",
+  "mission": {
+    "id": "DEMO-AIR"
+  },
+  "title": "Aéronef mobile — démonstration visuelle",
+  "objects": [
+    {
+      "id": "AIR-1",
+      "name": "Cessna visuel de démonstration",
+      "kind": "aircraft",
+      "motion": "axis",
+      "lat": 48.72,
+      "lon": -2.1,
+      "course_deg": 90,
+      "speed_kt": 110,
+      "altitude_mode": "msl",
+      "altitude_ft": 4500,
+      "lifetime_min": 120,
+      "detection_range_nm": 3,
+      "detection_height_ft": 3000,
+      "visual": {
+        "asset": "cessna-visual"
+      },
+      "constraints": {
+        "min_speed_kt": 60,
+        "max_speed_kt": 160,
+        "min_clearance_ft": 500
+      }
+    }
+  ]
+}

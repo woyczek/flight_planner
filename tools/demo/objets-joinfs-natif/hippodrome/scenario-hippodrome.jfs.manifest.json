@@ -1,0 +1,18 @@
+{
+  "mission": "DEMO-HOLD",
+  "plan_hash": "843f646eb90fa69bc2814ac123998b5eb7fc85deb7babb7d60ac63f7c8003c29",
+  "format": "JoinFS legacy 21003",
+  "single_playback_owner": true,
+  "terrain_profile": false,
+  "warnings": [],
+  "tracks": [
+    {
+      "joinfs_track": 1,
+      "object": "AIR-1",
+      "kind": "aircraft",
+      "model": "ZZZZ JFS DF0B62A82DDD",
+      "start_sec": 0,
+      "end_sec": 900
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+✔ DEFA_objects.lua : chaînes et délimiteurs fermés (3.54ms)
+✔ DEFA_objects_core.lua : chaînes et délimiteurs fermés (0.7527ms)
+✔ une seule boucle et un seul nettoyage sont enregistrés (0.4072ms)
+✔ M023 : mapping explicite, original inchangé, sol et modèle rouge (3.4751ms)
+✔ un objet incomplet, sans asset ou de mauvais genre ne reçoit aucun modèle arbitraire (1.5919ms)
+✔ M036 : les noms ne justifient pas de choisir un chien comme personne (0.6364ms)
+✔ aucun chemin de mission ne peut sélectionner le disque : asset symbolique (0.1581ms)
+✔ les liens de modèles sortant du dossier sont refusés (0.6975ms)
+✔ bateau : eau, axe, cap et limite de vitesse (1.0857ms)
+✔ aéronef : altitude MSL et vitesse requises ; aucune duplication cible réseau (0.3779ms)
+✔ statique incompatible avec vitesse ; nombres et périodes bornés (4.3777ms)
+✔ à 8 kt, le bateau parcourt 8 NM en une heure, date et méridien compris (0.3721ms)
+✔ écriture Lua : un texte ne ferme pas son littéral et devient aucune commande (0.3537ms)
+✔ événements : mission, session, objet et token sont contrôlés, token non exposé (1.1916ms)
+✔ une confirmation hors portée ou hors hauteur est rejetée par le pont (0.855ms)
+✔ le pont refuse une position de cible inventée ou hors période (0.5721ms)
+✔ UDP → acquittement → API : doublons dédupliqués, indice et confirmation distincts (52.8405ms)
+✔ runtime : pas de déplacement utilisateur/IA, instances détruites, boucle hors dessin (0.553ms)
+✔ les contraintes déclarées dans la mission limitent la vitesse du bateau (0.286ms)
+✔ le format historique 1.0 de M023 reste intact (1.7779ms)
+✔ journal local : acquittement après écriture et reprise sans doublon au redémarrage (23.803ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 214.207

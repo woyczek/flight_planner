@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="vac-token" content="__VAC_TOKEN__"><title>VAC · Atelier des tracés</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="/vac-app.css">
+<link rel="stylesheet" href="/pdf-overlay.css">
+<script defer src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script><script defer src="/vac-app.js"></script>
+</head><body>
+<header><div class="brand">V<span>AC</span><small>ATELIER DES TRACÉS</small></div><div class="header-note">0.2.0 · Cartes locales · WGS84 · extraction à vérifier</div><span id="globalStatus">Chargement…</span></header>
+<div class="workspace"><aside>
+<section class="inventory"><div class="section-heading"><h2>Aérodromes</h2><span id="count" class="badge">—</span></div>
+<input type="search" id="search" placeholder="OACI ou nom du terrain" aria-label="Rechercher un aérodrome">
+<label class="small"><input type="checkbox" id="testsOnly" checked> Les 4 terrains de test</label><nav id="ads" aria-label="Aérodromes inventoriés"></nav></section>
+<section id="details"><p>Sélectionne un terrain.</p></section>
+<footer><button id="savePatch" disabled>1 · Enregistrer les corrections</button><button id="saveTarget" disabled>2 · Écrire le JSON cible</button><div class="save-row"><button id="undo" disabled>Annuler</button><button id="reset" disabled>Revenir à l’extraction</button></div><p id="saveStatus" role="status" aria-live="polite">Aucune modification.</p></footer>
+</aside><main>
+<div class="map-toolbar"><div><h1 id="adTitle">Atelier VAC / VACH</h1><p id="adSubtitle">Extraction, contrôle et correction des géométries</p></div><div class="tools"><label><input type="checkbox" id="showVAC" checked> <i class="swatch black"></i> VAC</label><label><input type="checkbox" id="showVACH" checked> <i class="swatch green"></i> VACH</label><button id="fit">Recentrer</button><button id="sourceToggle">Carte source</button></div>
+<div class="pdf-controls" aria-label="Superposition du PDF"><label class="pdf-switch"><input type="checkbox" id="showPDF" checked> PDF sous le tracé</label><select id="pdfPage" aria-label="Page PDF superposée"></select><label class="range-control">Opacité <input id="pdfOpacity" type="range" min="0" max="100" value="65" aria-label="Opacité du PDF"><output id="pdfOpacityValue" for="pdfOpacity">65 %</output></label><label class="range-control">Assombrir <input id="pdfDarkness" type="range" min="0" max="80" value="0" aria-label="Assombrissement du PDF"><output id="pdfDarknessValue" for="pdfDarkness">0 %</output></label><button id="pdfOnly" aria-pressed="false" title="Masquer OpenFreeMap, le tracé extrait et les points, sans changer le zoom">PDF seul</button><span id="pdfStatus" aria-live="polite"></span></div></div>
+<div id="map"></div><div id="mapError" hidden></div><div class="map-bottom"><span id="selectionStatus">Choisis un tracé pour déplacer ses sommets.</span><span>OpenFreeMap · OpenStreetMap</span></div>
+<section id="sourcePanel" hidden><div class="source-heading"><select id="sourcePage" aria-label="Page source"></select><a id="pdfLink" target="_blank" rel="noopener">Ouvrir le PDF</a><button id="sourceClose" aria-label="Fermer la carte source">×</button></div><div class="source-help">Points orange : extraction · points rouges : correction. Clique un sommet pour le repérer sur la carte.</div><div id="sourceScroll"><div id="sourceCanvas"><img id="sourceImage" alt="Carte SIA locale"><svg id="sourceSvg" aria-label="Sommets extraits sur la carte source"></svg></div></div></section>
+</main></div></body></html>

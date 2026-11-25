@@ -1,0 +1,17 @@
+{
+  "car-red": {
+    "kind": "vehicle",
+    "mode": "file",
+    "path": "Resources/default scenery/1000 roads/objects/cars/static/sedan_2_red.obj"
+  },
+  "sailboat": {
+    "kind": "ship",
+    "mode": "library",
+    "path": "lib/ships/SailBoat.obj"
+  },
+  "cessna-visual": {
+    "kind": "aircraft",
+    "mode": "library",
+    "path": "lib/vr/holodeck/C172_static.obj"
+  }
+}
