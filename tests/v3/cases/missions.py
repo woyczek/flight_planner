@@ -17092,6 +17092,18 @@ _DRAG_BOX = """([list, i, what]) => { const hs = [...document.querySelectorAll('
 _DRAG_COUNTS = """(() => { const q = s => document.querySelectorAll('E_ [data-edplaces] ' + s).length; return { route: q('.f-reorder-handle[data-list="route"]'), tiroirs: q('.f-reorder-handle[data-list="tiroirs"]'),
   'suite:C': q('.f-reorder-handle[data-list="suite:C"]'), 'suite:E': q('.f-reorder-handle[data-list="suite:E"]'), dep: q('.ms-plrow[data-kind=dep] .f-reorder-handle'), arr: q('.ms-plrow[data-kind=arr] .f-reorder-handle'),
   rows: q('[data-reorder-row]') } })()""".replace('E_', E)
+# the zone that the block scrolls — `scrollerOf` of frame/lib/reorder.js, recomputed from the held row — and what it counts as stuck at the top and the bottom of the window (`probeInsets`)
+_DRAG_ZONE = """(list) => { const row = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list="' + list + '"]').closest('[data-reorder-row]'), SC = /(auto|scroll)/;
+  let zone = document.scrollingElement;
+  for (let p = row.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement)
+    if (SC.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight + 1) { zone = p; break }
+  window.__zone = zone;
+  const r = row.getBoundingClientRect(), x = Math.min(Math.max(r.left + r.width / 2, 1), innerWidth - 1), ins = { top: 0, bottom: 0 };
+  const stuck = el => { for (let a = el; a && a !== document.body && a !== document.documentElement; a = a.parentElement) { const pos = getComputedStyle(a).position; if ((pos === 'fixed' || pos === 'sticky') && !a.contains(row)) return a } return null };
+  for (const el of document.elementsFromPoint(x, 1)) { const a = stuck(el); if (a) ins.top = Math.max(ins.top, Math.min(a.getBoundingClientRect().bottom, innerHeight / 2)) }
+  for (const el of document.elementsFromPoint(x, innerHeight - 1)) { const a = stuck(el); if (a) ins.bottom = Math.max(ins.bottom, Math.min(innerHeight - a.getBoundingClientRect().top, innerHeight / 2)) }
+  return { zone: zone.tagName + (zone.id ? '#' + zone.id : '') + '.' + String(zone.className).trim().replace(/\\s+/g, '.').slice(0, 60), scrollTop: Math.round(zone.scrollTop), clientHeight: zone.clientHeight, scrollHeight: zone.scrollHeight,
+    insets: ins, innerHeight, windowScrollTop: Math.round(document.scrollingElement.scrollTop), page: zone === document.scrollingElement } }""".replace('E_', E)
 _DRAG_HELD = "[document.querySelectorAll('[data-reorder-dragging]').length, document.querySelectorAll('[data-reorder-drop]').length, document.querySelectorAll('[data-reorder-active]').length]"
 
 
@@ -17154,10 +17166,16 @@ def n276(c):
     move(x, r1[1] + r1[3] * 0.8, 8)
     up()
     c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the new order again')
+    want = ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION']
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # on a phone a note born on the bar takes the touch on « Enregistrer » (N196): none is there when it comes
     c.tap(f'{E} [data-do="edsave"]')
-    c.wait(600)
-    d = yaml.safe_load(c.js(_TEXT_OF, path))
-    c.eq(d['route_order'], ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION'], 'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)', what='file')
+    d = {}
+    for _ in range(40):  # the file is WAITED for (it is written after the save, not at the touch)
+        d = yaml.safe_load(c.js(_TEXT_OF, path)) or {}
+        if d.get('route_order') == want:
+            break
+        c.wait(250)
+    c.eq(d.get('route_order'), want, 'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)', what='file')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -17170,28 +17188,40 @@ def n277(c):
     _l3_open(c, c.width)
     _tab(c, 'itin')
     down, move, up = _mgrab(c)
-    sy = lambda: c.js('Math.round(document.scrollingElement.scrollTop)')  # noqa: E731
     names = lambda: c.js(_DRAG_NAMES, 'tiroirs')  # noqa: E731
+    zt = lambda: c.js('Math.round(window.__zone.scrollTop)')  # noqa: E731
     before = names()
-    c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').closest('[data-reorder-row]'); scrollTo(0, scrollY + r.getBoundingClientRect().top - 130) })()".replace('E_', E))
-    c.wait(200)
-    x, y = (lambda b: (b[0] + b[2] / 2, b[1] + b[3] / 2))(c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').getBoundingClientRect(); return [r.left, r.top, r.width, r.height] })()".replace('E_', E)))
-    s0 = sy()
+    z0 = c.js(_DRAG_ZONE, 'tiroirs')
+    # the first drawer is brought 200 px under the top of the view, in the zone the block scrolls (the page or an element of the module)
+    c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').closest('[data-reorder-row]'); window.__zone.scrollTop += r.getBoundingClientRect().top - 200 })()".replace('E_', E))
+    c.wait(250)
+    hb = c.js("(() => { const r = document.querySelector('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]').getBoundingClientRect(); return [r.left, r.top, r.width, r.height] })()".replace('E_', E))
+    x, y = hb[0] + hb[2] / 2, hb[1] + hb[3] / 2
+    hit = c.js("(([x, y]) => { const e = document.elementFromPoint(x, y); return { tag: e?.tagName, cls: String(e?.className || '').slice(0, 60), onHandle: !!e?.closest('.f-reorder-handle') } })", [x, y])
+    c.ok(hit['onHandle'], {'hit': hit, 'at': [round(x), round(y)], 'handle': [round(v) for v in hb], 'zone': z0}, 'the finger lands on the handle (nothing covers it: a touch on anything else would scroll the page natively)')
+    s0 = zt()
+    c.js("window.__samp = []; window.__sampT = setInterval(() => window.__samp.push(Math.round(window.__zone.scrollTop)), 100)")
     down(x, y)
     move(x, y + 40, 4)
     move(x, c.height - 8, 10)
     c.wait(900)
-    s1 = sy()
-    c.ok(s1 > s0 + 20, [s0, s1], 'held near the bottom edge of the view, the page scrolls down by itself')
+    z1 = c.js(_DRAG_ZONE, 'tiroirs')
+    seen = c.js('window.__samp.slice()')
+    measured = {'zone': z0['zone'], 'zoneIsPage': z0['page'], 'scrollTopBefore': s0, 'samplesEvery100ms': seen, 'insets': z1['insets'], 'innerHeight': z1['innerHeight'], 'windowScrollTop': z1['windowScrollTop'],
+                'scrollHeight': z1['scrollHeight'], 'clientHeight': z1['clientHeight']}
+    c.ok(zt() > s0 + 20, measured, 'held near the bottom edge of the view, the zone the block scrolls goes down by itself')
     c.wait(2500)
-    s2 = sy()
+    s2 = zt()
     c.wait(500)
-    c.eq(sy(), s2, 'bounded to the list: the scroll has stopped (the last drawer is in view)', what='bound')
+    c.eq(zt(), s2, 'bounded to the list: the scroll has stopped (the last drawer is in view)', what='bound')
     last_in = c.js("(() => { const rs = [...document.querySelectorAll('E_ [data-edplaces] .f-reorder-handle[data-list=\"tiroirs\"]')].map(h => h.closest('[data-reorder-row]')), r = rs[rs.length - 1].getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight })()".replace('E_', E))
-    c.ok(last_in, 'last drawer out of view', 'the last drawer is in view')
+    c.ok(last_in, {'after': measured, 'samplesAll': c.js('window.__samp.slice()')}, 'the last drawer is in view')
     c.key('Escape')
     up()
-    c.wait(300)
-    c.eq([names(), c.js(_DRAG_HELD)], [before, [0, 0, 0]], 'Esc: nothing landed, the attributes are gone', what='Esc')
+    c.wait(400)
+    s3 = zt()
+    c.wait(400)
+    c.eq([zt() == s3, names(), c.js(_DRAG_HELD)], [True, before, [0, 0, 0]], 'Esc: the zone stops, nothing landed, the attributes are gone', what='Esc')
+    c.js("clearInterval(window.__sampT)")
     ed_leave(c)
     c.js(_REG_CLEAR)
