@@ -561,6 +561,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atpart[data-kind=start]{border-left-color:var(--ok,#1e7e34)}
 [data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--sog-accent,#1a73e8);outline-offset:-2px}
 [data-module="missions"] .ms-atpart>*,[data-module="missions"] .ms-kind>*{pointer-events:none;min-width:0}
+[data-module="missions"] .ms-atpart .f-reorder-handle{pointer-events:auto} /* lot 7b : la poignée du glisser est DANS la ligne-bouton, dont les enfants n'ont pas de pointeur (la touche irait au bouton, et la page défilerait à la main) */
 [data-module="missions"] .ms-atparthead{display:flex;gap:6px;align-items:baseline}
 [data-module="missions"] .ms-atparthead>b{overflow-wrap:anywhere}
 [data-module="missions"] .ms-atpart>.f-muted,[data-module="missions"] .ms-kind>.f-muted{grid-column:1 / -1}
@@ -1377,6 +1378,13 @@ function edPlusHtml(s, at, rows, lines, reader, title, end = false) {
     btn: `<button type="button" class="${end ? 'ms-itin-addplus' : 'ms-itin-plus'}" data-do="edplus" data-at="${esc(at)}" aria-label="${esc(label)}" aria-expanded="${open}">＋</button>`,
     menu: open ? `<div class="ms-itin-menu" data-plusmenu data-at="${esc(at)}">${items.map(([k, tx]) => `<button type="button" data-do="edplusadd" data-add="${k}">${esc(s.tt(tx))}</button>`).join('')}${outs.length ? `<p class="ms-itin-mcap" data-plusout>${esc(s.tt(EDTX.atOut))}</p>${outs.map(l => `<button type="button" class="ms-itin-wide" data-do="edplusadd" data-add="out" data-i="${l.i}">${esc(title(rows[l.i]))}</button>`).join('')}` : ''}</div>` : ''
   };
+}
+
+/** Un clic (ou un toucher qui en fait un) qui tombe SUR une poignée du glisser n'est jamais un geste de la ligne (SOG-0482, lot 7b) : sans cela, la poignée d'un tiroir étant dans son bouton, un
+ *  simple toucher dessus — ou un glisser relâché à son point de départ — remonterait au bouton (edsel) et choisirait la ligne. Arrêté ici, au plus près (écouteur de capture de la racine du module,
+ *  avant le geste délégué du module) ; le glisser lui-même est au bloc (frame/lib/reorder.js), qui ne reçoit que des pointeurs. */
+function edHandleClick(e) {
+  if (e.target instanceof Element && e.target.closest('.f-reorder-handle')) e.stopPropagation();
 }
 
 /** La poignée du glisser d'une ligne de l'itinéraire (SOG-0482, lot 7b ; le bloc frame/lib/reorder.js, handleHtml) : sur CHAQUE ligne des trois listes qui ont les flèches — la route du
@@ -3494,12 +3502,15 @@ export function edAfter(s) {
     }
     if (KEPT_ED && KEPT_ED !== s.ed) edMemDone(KEPT_ED); // SOG-0607 : la séance gardée d'avant ne revient plus, son signe part
     KEPT_ED = null; // un atelier ouvert à neuf : celui d'avant n'a plus lieu de revenir
-    s.edReorderOff ||= RO.bind(s
-      .el, { // lot 3 : les flèches du bloc du cadre, lot 7b : la poignée (UN écouteur délégué sur la racine du module, par séance) ; `edges` : la sonde du bloc suffit
-        onMove: m => edReorder(s,
-          m), // (la rangée d'onglets collante et le pied de l'atelier sont fixed / sticky : le bloc commence le défilement SOUS eux)
+    // lot 3 : les flèches du bloc du cadre ; lot 7b : la poignée du glisser (UN écouteur délégué sur la racine du module, par séance) ; `edges` : la sonde du bloc suffit
+    // (la rangée d'onglets collante et le pied de l'atelier sont fixed / sticky : le bloc commence le défilement SOUS eux) ; un clic sur une poignée ne choisit jamais la ligne
+    if (!s.edReorderOff) {
+      s.el.addEventListener('click', edHandleClick, true);
+      s.edReorderOff = RO.bind(s.el, {
+        onMove: m => edReorder(s, m),
         onDrop: m => edReorderDrop(s, m)
       });
+    }
     kwSync(s); // SOG-0508 : la fenêtre des briques suit l'état (ouverte, fermée, son contenu)
     edDraftSoon(s); // SOG-0486 : ce que ce dessin montre est gardé sur l'appareil (au plus un écrit par seconde)
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée

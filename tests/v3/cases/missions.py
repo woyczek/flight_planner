@@ -17168,6 +17168,9 @@ def n276(c):
     c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the new order again')
     want = ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION']
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # on a phone a note born on the bar takes the touch on « Enregistrer » (N196): none is there when it comes
+    pre = c.js("""(() => { const b = document.querySelector('E_ [data-do=edsave]'), r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { rect: [r.left, r.top, r.width, r.height].map(Math.round), disabled: b.disabled, hit: e ? e.tagName + '.' + String(e.className).slice(0, 50) + (e === b || b.contains(e) ? '' : ' (NOT the button)') : null,
+        notes: [...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.trim().slice(0, 80)), innerHeight } })()""".replace('E_', E))
     c.tap(f'{E} [data-do="edsave"]')
     d = {}
     for _ in range(40):  # the file is WAITED for (it is written after the save, not at the touch)
@@ -17175,7 +17178,9 @@ def n276(c):
         if d.get('route_order') == want:
             break
         c.wait(250)
-    c.eq(d.get('route_order'), want, 'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)', what='file')
+    c.ok(d.get('route_order') == want, {'route_order': d.get('route_order'), 'before the touch': pre, 'note log': [x[:100] for x in c.note_log()],
+                                        'edit open': c.js("!!document.querySelector('E_')".replace('E_', E))},
+         'the file written has the route of the departure in the order of the drop (PT1 and ZONE-1 exchanged)')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
