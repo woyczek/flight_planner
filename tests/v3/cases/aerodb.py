@@ -23746,3 +23746,167 @@ def k630(c):
         c.eq(reader.call_count,0,'unchanged sources reuse only the native extraction cache',what='cache')
         chart.write_bytes(b'%PDF-new bytes')
         c.eq(P.build(root,root/'output',workers=1)['charts'][0]['state'],'failed','a new source cannot inherit old coordinate results',what='changed source')
+@case('K621', 'SWEREF99 TM conversions agree with an independent Gauss-Krüger implementation on invented control points', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented control points; the metres of the file are recomputed IN the case by an independent Gauss-Krüger n-series (not the Redfearn series of ground_geo), to a millimetre; forward and inverse tolerances of ground_geo against them')
+def k621(c):
+    import json
+    import math
+    _reader_modules()
+    from ground_geo import tm_forward, tm_inverse
+    controls=json.loads(_reader_fixture('ground/ESZY-controls.json'))
+    def dms(v): return v[0]+v[1]/60+v[2]/3600
+    def krueger(lat,lon):
+        f=1/298.257222101; n=f/(2-f); a_=6378137.0/(1+n)*(1+n**2/4+n**4/64)
+        al=[n/2-2*n**2/3+5*n**3/16+41*n**4/180,13*n**2/48-3*n**3/5+557*n**4/1440,61*n**3/240-103*n**4/140,49561*n**4/161280]
+        p,l=math.radians(lat),math.radians(lon-15)
+        q=2*math.sqrt(n)/(1+n)
+        t=math.sinh(math.atanh(math.sin(p))-q*math.atanh(q*math.sin(p)))
+        xi,eta=math.atan2(t,math.cos(l)),math.atanh(math.sin(l)/math.sqrt(1+t*t))
+        east=500000+.9996*a_*(eta+sum(al[j-1]*math.cos(2*j*xi)*math.sinh(2*j*eta) for j in range(1,5)))
+        north=.9996*a_*(xi+sum(al[j-1]*math.sin(2*j*xi)*math.cosh(2*j*eta) for j in range(1,5)))
+        return east,north
+    for point in controls['points']:
+        lat,lon=dms(point['lat_dms']),dms(point['lon_dms'])
+        c.ok(math.dist(krueger(lat,lon),[point['easting'],point['northing']])<.001, str(krueger(lat,lon)), 'the stored metres are the independent series, to a millimetre')
+        en=tm_forward(lat,lon)
+        c.ok(math.dist(en,[point['easting'],point['northing']])<.01, str(en), 'the metres agree within one centimetre')
+        actual=tm_inverse(point['easting'],point['northing'])
+        c.ok(abs(actual[0]-lat)<2e-7 and abs(actual[1]-lon)<2e-7, str(actual), 'inverse keeps northing/easting and latitude/longitude roles distinct')
+
+
+@case('K622', 'Rectangular GeoPDF registration follows paired LPTS/GPTS controls and keeps source datum', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented geographic metadata on the model of an LFV native chart (the frame moved in the SWEREF 99 TM grid) plus synthetic WGS84 rectangle arithmetic; source controls and projected axes, no coordinate guess from page size')
+def k622(c):
+    import json
+    _reader_modules()
+    from ground_geo import calibration, position
+    page=json.loads(_reader_fixture('ground/ESZY-native-geopdf.json'))['pages'][0]
+    vp=page['viewports'][0]
+    cal=calibration(vp)
+    c.eq((cal['epsg'],cal['datum']), (3006,'SWEREF99'), 'a source datum is not relabelled WGS84', what='CRS')
+    box=vp['/BBox'];m=vp['/Measure']
+    for i in range(0,8,2):
+        u,v=m['/LPTS'][i:i+2]
+        actual=position(cal,[box[0]+u*(box[2]-box[0]),box[1]+v*(box[3]-box[1])])
+        c.ok(abs(actual[0]-m['/GPTS'][i+1])<5e-8 and abs(actual[1]-m['/GPTS'][i])<5e-8, str(actual), 'each printed geographic control owns its corresponding local corner')
+    synthetic={'/BBox':[10,20,110,220],'/Measure':{'/Subtype':'/GEO','/GCS':{'/EPSG':4326,'/Type':'/GEOGCS'},'/LPTS':[0,0,1,0,0,1,1,1],'/GPTS':[57,12,57,13,58,12,58,13]}}
+    c.eq(position(calibration(synthetic),[60,120]),[12.5,57.5], 'the midpoint follows independent rectangular interpolation', what='WGS midpoint')
+
+
+@case('K623', 'Relative scales, unknown CRS, broken controls, overlaps and extrapolation never position ground labels', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic counterexamples to the invented LFV-style GEO metadata; RL is a distance measure only, geographic controls require a unique valid viewport')
+def k623(c):
+    import copy
+    import json
+    _reader_modules()
+    from ground_geo import calibration, position
+    from ground_pdf import interpret
+    native=json.loads(_reader_fixture('ground/ESZY-native-geopdf.json'))
+    vp=native['pages'][0]['viewports'][0]
+    bad=[]
+    q=copy.deepcopy(vp);q['/Measure']['/Subtype']='/RL';bad.append(q)
+    q=copy.deepcopy(vp);q['/Measure']['/GCS']['/EPSG']=9999;bad.append(q)
+    q=copy.deepcopy(vp);q['/Measure']['/LPTS'][0]=.5;bad.append(q)
+    q=copy.deepcopy(vp);q['/Measure']['/GPTS'][0]=float('nan');bad.append(q)
+    q=copy.deepcopy(vp);q['/Measure']['/GPTS'][0]+=.01;bad.append(q)
+    q=copy.deepcopy(vp);q['/BBox'][2]=q['/BBox'][0];bad.append(q)
+    for q in bad:
+        refused=False
+        try: calibration(q)
+        except ValueError: refused=True
+        c.eq(refused,True,'invalid registration cannot produce plausible-looking coordinates',what='registration refusal')
+    refused=False
+    try: position(calibration(vp),[-100,-100])
+    except ValueError: refused=True
+    c.eq(refused,True,'labels outside the viewport are not extrapolated',what='bounds')
+    overlap=copy.deepcopy(native);overlap['pages'][0]['viewports'].append(copy.deepcopy(vp))
+    c.eq(interpret(overlap)['labels'],[],'two owning viewports are ambiguous even if their coordinates happen to match',what='overlap')
+    rotated=copy.deepcopy(native);rotated['pages'][0]['rotation']=90
+    c.eq(interpret(rotated)['labels'],[],'unsupported page rotation is explicit refusal',what='rotation')
+
+
+@case('K624', 'LFV native chart labels have geographic annotation anchors, distinct from operational ground geometry', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented native labels/ink and vectors on the model of an LFV chart (the content turned half a turn about the page centre, the frame moved in the grid); fourteen printed TWY/apron labels, independent map graticule bounds, black table furniture excluded')
+def k624(c):
+    import json
+    from collections import Counter
+    _reader_modules()
+    from ground_pdf import interpret
+    doc=interpret(json.loads(_reader_fixture('ground/ESZY-native-geopdf.json')))
+    c.eq(Counter(l['name'] for l in doc['labels']),Counter(['G','D','H','K','E','F','Y','Z','Y','Y','L','J','Apron','Y']), 'repeated Y labels are separate source annotations, not duplicated ground objects',what='source labels')
+    g=next(l for l in doc['labels'] if l['name']=='G')
+    c.ok(15+36/60<g['coordinates'][0]<15+37/60 and 57+8/60<g['coordinates'][1]<57+9/60, str(g), 'the independently reviewed chart graticule bounds the G label')
+    c.ok(all('chart-label-anchor' in l['role'] for l in doc['labels']) and not doc['installed'], str(doc['labels']), 'a label centre is not a taxiway centreline or holding position')
+    c.eq([s['native_object'] for s in doc['surface_candidates']],[10], 'the nearby source pavement path remains; the unrelated grey table header does not',what='source vector scope')
+    c.ok(doc['surface_candidates'][0]['holes_and_parent_surface_unresolved'] and 'routing' in doc['partial']['unread'], str(doc), 'filled source shapes never become connected taxi routes by proximity')
+
+
+@case('K625', 'Surface extraction preserves native subpaths and Bezier endpoints without joining islands or resolving holes', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic filled-object geometry, two move operations and an explicit curve; proximity is review evidence only')
+def k625(c):
+    _reader_modules()
+    from ground_pdf import shapes, interpret
+    commands=[['m',[0,0]],['l',[40,0]],['l',[40,40]],['l',[0,40]],['h'],['m',[10,10]],['l',[15,10]],['l',[15,15]],['h']]
+    rings=shapes(commands)
+    c.eq((len(rings),rings[0][0],rings[0][-1],rings[1][0],rings[1][-1]),(2,[0,0],[0,0],[10,10],[10,10]),'a move starts a separate source subpath',what='subpaths')
+    curve=shapes([['m',[0,0]],['c',[0,10],[10,10],[10,0]],['h']])[0]
+    c.ok([10,0] in curve and curve[0]==curve[-1] and max(p[1] for p in curve)>7, str(curve), 'the curve retains endpoints and source curvature rather than becoming a straight guessed route')
+    vp={'/BBox':[0,0,100,100],'/Measure':{'/Subtype':'/GEO','/GCS':{'/EPSG':4326,'/Type':'/GEOGCS'},'/LPTS':[0,0,1,0,0,1,1,1],'/GPTS':[57,12,57,12.01,57.01,12,57.01,12.01]}}
+    doc=interpret({'pages':[{'page':1,'rotation':0,'viewports':[vp],'labels':[{'text':'TWY A','bbox':[19,19,21,21],'fill_rgba':[40,90,120,255]}], 'paths':[{'native_object':7,'fill_rule':1,'fill_rgba':[200,200,200,255],'commands':commands}]}]})
+    c.eq(len(doc['surface_candidates']),2,'both rings retain one native parent rather than a fabricated bridge',what='native parent')
+    c.ok(all(s['native_object']==7 and s['holes_and_parent_surface_unresolved'] and s['label_relation']=='cartographic-proximity-only-not-operational-identity' for s in doc['surface_candidates']),str(doc), 'no fill rule or nearby text is promoted to operational topology')
+
+
+@case('K626', 'The GeoPDF source batch verifies source bytes and resumes only its native cache', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Temporary chart/catalogue/manifest with the invented LFV-style native payload behind the existing timed-PDF seam; no source PDF dependency/network/installation')
+def k626(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import ground_pdf as P
+    from proc_replay import sha,write
+    native=json.loads(_reader_fixture('ground/ESZY-native-geopdf.json'))
+    with tempfile.TemporaryDirectory() as folder:
+        root=Path(folder);(root/'work').mkdir()
+        chart=root/'chart.pdf';chart.write_bytes(b'%PDF-synthetic seam')
+        write(root/'inputs-manifest.json',{'files':{'chart.pdf':{'sha256':sha(chart)}}})
+        write(root/'work/vfr-ground-catalogue.json',{'charts':[{'icao':'ESZY','country':'Sweden','title':'ESZY AD Chart.pdf','file':'chart.pdf','cycle':'unknown','stored':True,'families':['aerodrome']}]})
+        with patch.object(P,'limited',return_value=native):
+            first=P.build(root,root/'output',workers=1)
+        with patch.object(P,'limited',side_effect=AssertionError('unexpected PDF reread')) as reader:
+            again=P.build(root,root/'output',workers=1)
+        c.eq((first['charts'][0]['labels'],again['charts'][0]['labels'],reader.call_count),(14,14,0),'source resumption still reinterprets cached native evidence',what='native cache')
+        chart.write_bytes(b'%PDF-changed bytes')
+        failed=P.build(root,root/'output',workers=1)
+        c.eq(failed['charts'][0]['state'],'failed','a changed PDF cannot retain its old source hash or cached interpretation',what='source integrity')
+
+
+@case('K631', 'The shared roadmap chains ground name, published-coordinate and geometry readers and reports nested chart failure', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic config and builder seams through the actual CLI; relative local root, ordered stages, no installation/noreg claim and nonzero exit for failed source charts')
+def k631(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_roadmap as M
+    import aip_ground_names as N
+    import ground_positions as P
+    import ground_pdf as G
+    calls=[]
+    def names(root,out):calls.append(('names',root));return {'countries':{}}
+    def positions(root,out,**options):calls.append(('positions',root));return {'charts':[{'state':'failed','error':'synthetic source failure'}]}
+    def geometry(root,out,**options):calls.append(('geometry',root));return {'charts':[]}
+    with tempfile.TemporaryDirectory() as folder:
+        base=Path(folder);config=base/'config.json';out=base/'output'
+        config.write_text(json.dumps({'cycle':'2026-11-26','france_regions':[],'ground':{'local':'snapshot'}}))
+        with patch.object(M.sys,'argv',['proc_roadmap.py','--config',str(config),'--out',str(out)]), patch.object(N,'build',side_effect=names), patch.object(P,'build',side_effect=positions), patch.object(G,'build',side_effect=geometry):
+            code=0
+            try:M.main()
+            except SystemExit as error:code=error.code
+        c.eq((code,[n for n,p in calls]),(1,['names','positions','geometry']),'all stages finish, but a nested failed chart makes the CLI fail',what='ground chain')
+        c.ok(all(Path(p)==base/'snapshot' for n,p in calls),str(calls),'source paths resolve beside the config rather than the shell')
+        doc=json.loads((out/'roadmap-report.json').read_text())
+        c.eq((doc['installed'],doc['regression_run']),(False,False),'source-build completion never claims installation or non-regression',what='scope')

@@ -1,0 +1,66 @@
+{
+  "source": "Invented control points: the metres are computed with an independent Gauss-Krüger n-series (the one of the Lantmäteriet publications), not with the series of ground_geo",
+  "column": "Geographic SWEREF99 and planar SWEREF99 TM",
+  "points": [
+    {
+      "id": "A",
+      "lat_dms": [
+        66,
+        41,
+        12.481203
+      ],
+      "lon_dms": [
+        19,
+        33,
+        48.730512
+      ],
+      "northing": 7403836.778,
+      "easting": 701391.672
+    },
+    {
+      "id": "B",
+      "lat_dms": [
+        62,
+        58,
+        41.21764
+      ],
+      "lon_dms": [
+        17,
+        20,
+        5.884217
+      ],
+      "northing": 6985299.523,
+      "easting": 618341.38
+    },
+    {
+      "id": "C",
+      "lat_dms": [
+        59,
+        27,
+        3.650128
+      ],
+      "lon_dms": [
+        15,
+        58,
+        39.402973
+      ],
+      "northing": 6590681.684,
+      "easting": 555428.509
+    },
+    {
+      "id": "D",
+      "lat_dms": [
+        55,
+        48,
+        52.309876
+      ],
+      "lon_dms": [
+        12,
+        44,
+        18.915364
+      ],
+      "northing": 6187751.383,
+      "easting": 358299.503
+    }
+  ]
+}

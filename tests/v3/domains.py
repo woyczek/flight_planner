@@ -80,6 +80,8 @@ RULES = [
     ('tools/proc_inventory.py', ['K', 'I'], 'the read-only census of the local charts and stored procedure documents and its aerodb cases'),
     ('tools/proc_readers.py', ['K', 'I'], 'the register of the procedure readers (layout, State, source, licence of the source, test pages), read by the launcher, and its aerodb cases'),
     ('tools/proc_ie_public.py', ['K', 'I'], 'the public acquisition of the Irish chart inputs and its aerodb cases'),
+    ('tools/ground_geo.py', ['K', 'I'], 'the SWEREF 99 TM and GeoPDF registration of the surface charts and their aerodb cases'),
+    ('tools/ground_pdf.py', ['K', 'I'], 'the native surface-chart candidates and their aerodb cases'),
     ('tools/ground_positions.py', ['K', 'I'], 'the printed stand and holding coordinates of the surface charts and their aerodb cases'),
     ('tools/aip_ground_names.py', ['K', 'I'], 'the named ground facts of the AD 2.8 pages and their aerodb cases'),
     ('tools/chart_catalogue.py', ['K', 'I'], 'the catalogue of the visual and surface charts and its aerodb cases'),

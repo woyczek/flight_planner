@@ -18,5 +18,13 @@
   {
     "fixture": "EIZC-AD2-8.html.txt",
     "reference": "Page inventée, sur le modèle de l'eAIP d'Irlande, AD 2.8, aires de trafic nommées et voies de circulation en tableau (type Shannon). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "ESZY-controls.json",
+    "reference": "Page inventée, sur le modèle de points de contrôle publiés d'un système de référence national (SWEREF 99 TM : coordonnées géographiques et planes). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "ESZY-native-geopdf.json",
+    "reference": "Page inventée, sur le modèle de la charge utile native d'une carte d'aérodrome géoréférencée de l'AIP de Suède (LFV : métadonnées de calage, étiquettes, tracés remplis). Aucune valeur n'est réelle."
   }
 ]
