@@ -21,6 +21,8 @@ official character to their use here: tests of a flight-simulation suite, **not 
 
 A new fixture from a State's AIP other than France's does not come here (each State's copyright: `frame/aerodb/EAD_BASIC.md` § 4);
 synthetic data in the same format instead.
+
+**The register of the readers** (`tools/proc_readers.py`, SOG-0667 lot F3) holds, for each source, the licence under which the SOURCE is read; the pages of `tests/v3/fixtures/procedure_readers/` are all invented (README of that folder), and K632 checks that every directory is registered and every file carries its reference line.
 - **eAIP page sets** (V3 § 10.29 (e); constraint: real fixtures for France only, the SIA's open licence — every other State's pages stay invented, `ead/` below). Each set is regenerated, and checked, by `tools/make_eaip_fixtures.py`; its `manifest.json` gives `{ icao, cycle, source: 'SIA eAIP', generated_at, pages: [{ file, pages, rows, sha256 of the PDF }] }`. Attribution as above (« mise à jour du 1er octobre 2026 (AIRAC 2610) » or « du 29 octobre 2026 (AIRAC 2610-29) »); tests of a flight-simulation suite, **not for navigation**.
   - `eaip/LFPO/` — Paris-Orly, cycle 2026-10-01, the 60 data and coding pages and the AD 2.12 extract. `python tools/make_eaip_fixtures.py LFPO --cache <data/local/eaip/2026-10-01> --ad2 <FR-AD-2.LFPO-fr-FR.html>` (`--check` to compare, `--fetch` to download the missing PDF).
   - `eaip/LFBO/` — Toulouse-Blagnac, cycle 2026-10-01, 21 pages and the AD 2.12 extract. Same command with `LFBO`.

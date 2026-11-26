@@ -28,6 +28,7 @@ if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_cycles  # noqa: E402
 import aim_be_enr  # noqa: E402
+import proc_readers  # noqa: E402
 import regen_jobs  # noqa: E402
 import types  # noqa: E402
 
@@ -40,7 +41,7 @@ def _bs():
 MAX_NAMES = 5000
 DEPOSIT_FILE = re.compile(r'^zones/[a-z]{2,4}/(avians)_[a-z]{2}_enr_dep_(\d{4})(\d{2})(\d{2})\.geojson\Z', re.A)      # le nom d'un dépôt à la main (tools/avians_eaip.deposit_name) : la source, la date du dépôt
 UNAVAILABLE = {'ukmil': '2025-11'}      # SOG-0273 : les sources « indisponibles chez l'éditeur » (le site ne répond plus depuis environ un an, dit l'utilisateur) : le catalogue (`unavailable`) dit la même chose, K185 les compare
-NO_READER_ZONES = {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`)
+NO_READER_ZONES = proc_readers.dropped_unread_sources()      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`) ; la liste vient du REGISTRE des lecteurs (tools/proc_readers.py, une seule vérité), plus d'une liste écrite à la main ici
 EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
 
 # ce que le poste voit dans Téléchargements et que la suite ne lit pas encore : (id, motifs de nom, raison, note)

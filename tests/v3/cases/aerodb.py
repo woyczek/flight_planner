@@ -22731,3 +22731,59 @@ def k549(c):
             refused = True
         c.eq((refused, calls), (True, []), 'a publication of another disc, region or host is refused before any request', what=bad[:50])
     c.eq(bool(__import__('re').fullmatch(r'[0-9a-f]{64}', N.PROCESS_SIGNATURE)), True, 'the signature of the readers is built from the readers present in this repository', what='signature')
+@case('K632', 'Registry of the procedure readers and test pages (SOG-0667, lot F3): ONE register — layout → State, source, licence of the source, directories of test pages — in which every layout of `proc_layouts` has exactly one entry; every directory of `tests/v3/fixtures/procedure_readers/` is registered; EVERY file in it is an INVENTED page and carries its line « Page inventée, sur le modèle de {AIP de tel État, telle rubrique, telle mise en page}. Aucune valeur n\'est réelle. » (never the name of a local file); a directory, a file or a line that breaks the rule is a named problem',
+      'K', static=True, tags=('procedure-readers', 'registry'),
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0667): the user decided, and the ergonomist made it the rule for ALL the sources, France included, that the test files of the repository are pages INVENTED on the same structure; « Un CAS STATIQUE : aucun fichier de procedure_readers sans la ligne « Page inventée… » ». Checks on the real register and the real tree, and on an INVENTED register and tree for the failures',
+      )
+def k632(c):
+    import tempfile
+    import json
+    from pathlib import Path
+    _reader_modules()
+    import proc_layouts as L
+    import proc_readers as R
+    ids = [e['id'] for e in R.READERS]
+    c.eq(len(ids), len(set(ids)), 'each reader has its own identifier', what='ids')
+    layouts = sorted(name for e in R.READERS for name in e['layouts'])
+    c.eq(layouts, sorted(l.name for l in L.LAYOUTS), 'every layout of proc_layouts has exactly one entry in the register, and no entry names a layout that does not exist', what='layouts')
+    c.eq(R.register_problems(), [], 'every entry says its source and the licence of its source (the column is for the SOURCE read on the workstation, no real file enters the repository), and lists its directories of test pages', what='real register')
+    root = ROOT / 'tests' / 'v3' / 'fixtures' / 'procedure_readers'
+    c.eq(R.fixture_problems(root), [], 'the real tree is in order: every directory is registered, every file is an invented page with its reference line, none is missing', what='real tree')
+    c.ok((root / 'README.md').is_file() and 'Aucune valeur n\'est réelle' in (root / 'README.md').read_text(encoding='utf-8'), str(root / 'README.md'), 'the rule of fabrication is written in the README of the test pages')
+    good = 'Page inventée, sur le modèle de l\'AIP de France, AD 2, carte IAC ILS/LOC. Aucune valeur n\'est réelle.'
+    c.eq([R.reference_problem(x) for x in (good, 'Page de l\'AIP de France', good[:-1], 'Page inventée, sur le modèle de AD_2_LFXX_DATA_01.pdf. Aucune valeur n\'est réelle.', 'Page inventée, sur le modèle de data/local/x. Aucune valeur n\'est réelle.', None)],
+         [None, 'reference-not-invented', 'reference-not-invented', 'reference-names-a-local-file', 'reference-names-a-local-file', 'reference-not-invented'], 'the line must be the one of the rule, and must not name a local file', what='reference line')
+    entry = {'id': 'x', 'layouts': (), 'source': {'name': 'S'}, 'licence': {'name': None, 'redistribution': None, 'written_in': None}, 'fixtures': ('inv',)}
+    bare = {'id': 'bare', 'layouts': (), 'source': {}, 'licence': {}, 'fixtures': 'inv'}
+    c.eq(R.register_problems([entry, bare]), ['fixtures-not-a-list-of-directories:bare', 'source-or-licence-missing:bare'], 'an entry with no source or licence, or with a directory list that is not one, is a problem of the register', what='invented register')
+    with tempfile.TemporaryDirectory() as tmp:
+        tree = Path(tmp)
+        (tree / 'inv' / 'sub').mkdir(parents=True)
+        (tree / 'unknown').mkdir()
+        (tree / 'a_file.txt').write_text('not a directory')
+        c.eq(R.fixture_problems(tree, [entry]), ['unregistered-directory:unknown'], 'an empty registered directory passes; a directory the register does not know is named', what='directories')
+        (tree / 'inv' / 'page.rows.txt').write_text('x')
+        (tree / 'inv' / 'sub' / 'other.rows.txt').write_text('x')
+        (tree / 'inv' / 'sub' / 'sources.json').write_text(json.dumps([{'fixture': 'other.rows.txt', 'reference': good}, {'fixture': 'gone.rows.txt', 'reference': good}]))
+        c.eq(R.fixture_problems(tree, [entry]), ['reference-without-file:inv/sub/gone.rows.txt', 'sources-unreadable:inv', 'unregistered-directory:unknown'], 'a directory of pages without its sources.json is unreadable; a line with no file is named', what='sidecar')
+        (tree / 'inv' / 'sources.json').write_text(json.dumps([{'fixture': 'page.rows.txt', 'reference': 'Page inventée, sur le modèle de page.rows.txt. Aucune valeur n\'est réelle.'}]))
+        (tree / 'inv' / 'extra.rows.txt').write_text('x')
+        c.eq(R.fixture_problems(tree, [entry]), ['no-reference:inv/extra.rows.txt', 'reference-names-a-local-file:inv/page.rows.txt', 'reference-without-file:inv/sub/gone.rows.txt', 'unregistered-directory:unknown'], 'a file with no line, a line that names a local file and a line with no file are named; a file with a good line passes', what='lines')
+        (tree / 'inv' / 'sources.json').write_text(json.dumps([{'fixture': 'page.rows.txt', 'reference': 'a real page of the AIP'}, {'fixture': 'extra.rows.txt', 'reference': good}]))
+        c.ok('reference-not-invented:inv/page.rows.txt' in R.fixture_problems(tree, [entry]), 'line not invented', 'a real extract given with another line is not accepted')
+
+@case('K633', 'Registry of the procedure readers (SOG-0667, lot F3): the launcher reads ONE register for « readable / none / unchecked » — the states with no reader (`PROC_NO_READER` of the coverage verb and `NO_READER_ZONES` of the cycle verb, two hand-written lists until now) are derived from it, a state that holds procedures is `readable` whatever the register says, and a state that the register does not know is `unchecked`',
+      'K', static=True, tags=('procedure-readers', 'registry'),
+      rule='SOG-0615 and Sécurisation (note 2 of the reading): two hand-written lists of what the suite does not read must not drift; the register is the one place. The values are the ones the launcher said before this lot (dk, fo, gl, ca, se), so no screen changes',
+      )
+def k633(c):
+    RJ = _regen()
+    cov = RJ.REGISTRY[('base', 'coverage')][0].__globals__
+    cyc = RJ.REGISTRY[('base', 'cycle')][0].__globals__
+    import proc_readers as R
+    c.eq(sorted(R.no_reader_zones()), ['ca', 'dk', 'fo', 'gl', 'se'], 'the register names the five states with no reader of procedures, as the launcher said before', what='no-reader zones')
+    c.eq((sorted(cov['PROC_NO_READER']), tuple(cov['PROC_NO_READER']) == tuple(R.no_reader_zones())), (['ca', 'dk', 'fo', 'gl', 'se'], True), 'the coverage verb takes its list from the register', what='coverage list')
+    c.eq({k: tuple(v) for k, v in cyc['NO_READER_ZONES'].items()}, {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}, 'the cycle verb takes the states whose dropped files are not read from the register (Sweden has no dropped file: its ENR is read)', what='cycle list')
+    c.eq([cov['proc_reader']('dk', 0), cov['proc_reader']('dk', 3), cov['proc_reader']('fr', 0), cov['proc_reader']('fr', 12), cov['proc_reader']('xx', 0)], ['none', 'readable', 'unchecked', 'readable', 'unchecked'], 'readable when procedures are held, none when the register says no reader, unchecked otherwise', what='proc_reader')
+    c.eq(R.status('se', 0, [{'zones': ('se',), 'reader': None}]), 'none', 'the status follows the register that it is given', what='given register')
+    c.eq(R.status('se', 0, []), 'unchecked', 'a state absent from the register is unchecked, never guessed none', what='absent state')

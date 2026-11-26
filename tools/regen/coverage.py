@@ -4,7 +4,7 @@
   { ok, current, zones: { <zone>: { cycle, parserVersion, counts: { aerodromes, navaids, points, airways, airspaces, fir, vrp }, procedures, ground, sources: { declared: [ids], present: [ids] }, has: { points, airways, airspaces, fir, procedures, ground } } } }
   · `counts` : le nombre d'enregistrements de chaque sorte du dernier cycle publié de la zone (`fir` : les espaces de type FIR ou UIR) ;
   · `procedures` : le nombre de terrains de la zone dont le dossier détient des procédures (data/proc/manual/<OACI>.json et les index proc/<cycle>/index.json), d'après les préfixes OACI de la zone ;
-  · `procReader` (SOG-0615, valeurs fermées) : POURQUOI un pays n'a pas de procédures, ou qu'il en a — `readable` (il en détient : un lecteur les a lues), `none` (AUCUN lecteur de procédures pour cet État : PROC_NO_READER, la liste écrite à la main de ce que la suite ne sait pas lire), `unchecked` (rien détenu et aucun lecteur connu pour lui : la lecture n'a jamais été vérifiée) ; en lecture seule, jamais une valeur devinée d'un autre champ ;
+  · `procReader` (SOG-0615, valeurs fermées) : POURQUOI un pays n'a pas de procédures, ou qu'il en a — `readable` (il en détient : un lecteur les a lues), `none` (AUCUN lecteur de procédures pour cet État : PROC_NO_READER, la liste de ce que la suite ne sait pas lire, tirée du registre des lecteurs tools/proc_readers.py), `unchecked` (rien détenu et aucun lecteur connu pour lui : la lecture n'a jamais été vérifiée) ; en lecture seule, jamais une valeur devinée d'un autre champ ;
   · `procSources` : d'où viennent ces procédures (SOG-0264) : les sortes de source (`eaip` : l'eAIP du SIA, `cifp` : la FAA, `ead-basic` : l'EAD d'EUROCONTROL) des enregistrements d'un à trois terrains détenus de la zone ; [] sans procédure (les fiches de Little Navmap, gardées en mémoire de la page, n'y sont pas) ;
   · `ground` : le nombre de terrains de la zone dont la couche sol (data/proc/ground/<OACI>.json) est détenue ;
   · `sources.declared` : les sources que la suite déclare pour la zone (base_sources.sources_of) ; `present` : celles dont un fichier est dans data/sia/ (file_source) ;
@@ -20,6 +20,7 @@ import types
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
+import proc_readers  # noqa: E402
 import regen_jobs  # noqa: E402
 
 KINDS = ('aerodromes', 'navaids', 'points', 'airways', 'airspaces', 'vrp')
@@ -28,12 +29,12 @@ ICAO = re.compile(r'^[A-Z0-9]{4}$')
 MAX_BYTES = 80 * 1024 * 1024        # un fichier de zone plus gros n'est pas lu (le plus gros : ~10 Mo)
 # les États dont la suite n'a AUCUN lecteur de procédures (SOG-0615) : le Danemark, les Féroé et le Groenland (fichiers Naviair déposés à la main, jamais lus ; base_cycle.NO_READER_ZONES), le Canada (AIP de NAV
 # CANADA, idem) et la Suède (l'ENR du LFV est lu, les procédures non) ; l'écran le dit (« La suite n'a pas de lecteur de procédures pour cet État »), il ne laisse pas croire qu'un dépôt sert
-PROC_NO_READER = ('dk', 'fo', 'gl', 'ca', 'se')
+PROC_NO_READER = proc_readers.no_reader_zones()      # tirée du REGISTRE des lecteurs (tools/proc_readers.py : une seule vérité, la liste n'est plus écrite à la main ici ni dans base_cycle.NO_READER_ZONES)
 
 
 def proc_reader(zone, held):
     """`readable` si la zone détient des procédures, `none` si la suite n'a aucun lecteur pour cet État, sinon `unchecked` (jamais vérifié)."""
-    return 'readable' if held > 0 else 'none' if zone in PROC_NO_READER else 'unchecked'
+    return proc_readers.status(zone, held)
 
 
 def _ns(verb):
