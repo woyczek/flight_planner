@@ -23588,3 +23588,96 @@ def k669(c):
     c.ok(any('61' in line and '60' in line for line in said), str(said), 'the console line says why')
     calls, said, stopped = run(60)
     c.eq((len(calls), stopped), (60, None), 'at the cap the whole selection is fetched, each document once', what='at the cap')
+@case('K616', 'Visual and surface chart inventory keeps explicit title families and Irish rowspan ownership', 'K', static=True,
+      tags=('procedure-readers', 'vfr-ground'), rule='Synthetic official-index shape; visual/ground/parking families can overlap, no complete geometry claim or title carried past its explicit rowspan')
+def k616(c):
+    _reader_modules()
+    from chart_catalogue import families, irish_charts
+    c.eq(families('AIRCRAFT GROUND MOVEMENT/PARKING/DOCKING CHART - ICAO'), ['ground', 'parking'], 'one surface chart can cover several published roles', what='surface roles')
+    c.eq(families('ESZT_VAC.pdf'), ['visual'], 'the LFV archive filename identifies a visual chart, not interpreted paths', what='VAC member')
+    c.eq(families('INSTRUMENT APPROACH ILS RWY 26'), [], 'an instrument chart is not a visual chart because it has an approach', what='IFR exclusion')
+    url = 'https://www.airnav.ie/AIRAC/2026-11-26-AIRAC/html/eAIP/EI-AD-2.EIZA-en-IE.html'
+    prefix = '../../graphics/eAIP/EI_AD_2_EIZA_24-'
+    markup = '<table><tr><td rowspan="2">Visual Approach Chart - ICAO</td><td>Published title</td></tr>'
+    markup += '<tr><td><a href="'+prefix+'44_en.pdf">sheet</a></td></tr>'
+    markup += '<tr><td><a href="'+prefix+'45_en.pdf">Unclassified next chart</a></td></tr>'
+    markup += '<tr><td>Aerodrome Chart</td><td><a href="../graphics/eAIP/EI_AD_2_EIYD_24-1_en.pdf">other airport</a></td></tr></table>'
+    c.eq(list(irish_charts(markup, 'EIZA', url)), ['EI_AD_2_EIZA_24-44_en.pdf'], 'title inheritance ends with its rowspan and never borrows another airport', what='index binding')
+
+
+@case('K617', 'Local Swedish chart catalogue keeps manifest identities, unknown cycles and missing files explicit', 'K', static=True,
+      tags=('procedure-readers', 'vfr-ground'), rule='Synthetic archive-member manifest and files only, no PDF/network; filenames classify source charts, never taxiway names or chart geometry')
+def k617(c):
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from chart_catalogue import build
+    from proc_replay import sha, write
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        file = root/'sources/sweden/pdfs/one.pdf'
+        file.parent.mkdir(parents=True)
+        file.write_bytes(b'%PDF-synthetic')
+        entries = {'sources/sweden/pdfs/one.pdf': {'sha256': sha(file), 'bytes': file.stat().st_size, 'archive_member': 'documents/Root/SWEDEN/Charts/AD/ESZT/9. VAC/ESZT_VAC.pdf'},
+                   'sources/sweden/pdfs/missing.pdf': {'sha256': '0'*64, 'bytes': 0, 'archive_member': 'documents/Root/SWEDEN/Charts/AD/ESZT/2. AD Chart/ESZT AD Ground Movement Chart.pdf'}}
+        write(root/'inputs-manifest.json', {'files': entries})
+        result = build(root)
+        c.eq((result['countries']['Sweden']['indexed_charts'], result['countries']['Sweden']['stored_charts']), (2, 1), 'an indexed but missing input is not silently counted as stored', what='stored denominator')
+        c.eq([(p['cycle'], p['interpretation']) for p in result['charts']], [('unknown', 'not-built-by-this-catalogue')]*2, 'the catalogue supplies neither AIRAC nor source-chart interpretation', what='scope')
+
+
+@case('K618', 'AIP semantic taxiway and apron fields retain their published names and native identities', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented page on the model of an AD2.8 of the UK eAIP; six named aprons, nine taxiways, explicit semantic fields rather than geometric or nearby-label inference')
+def k618(c):
+    _reader_modules()
+    from aip_ground_names import read
+    doc = read(_reader_fixture('ground/EGYA-AD2-8.html.txt'), 'EGYA')
+    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'apron'], ['PICUG APRON', 'DELTA APRON', 'EAST APRON', 'MAIN APRON', 'NORTH APRON', 'SOUTH APRON'], 'native TAPRON names are kept as printed', what='Luton aprons')
+    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'twy'], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'K'], 'native TTWY names are not width/surface/strength cells', what='Luton taxiways')
+    c.ok(all(f['position'] is None and f['geometry'] is None for f in doc['items']), str(doc), 'names alone are never placed on the map')
+    c.eq(next(f['native_id'] for f in doc['items'] if f['kind'] == 'twy' and f['name'] == 'A'), 'TTWY;TXT_DESIG;179', 'the source native identity stays attached', what='native source id')
+
+
+@case('K619', 'Irish AD2.8 taxiway columns preserve named ground facts without borrowing checkpoint coordinates', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented pages on the model of the Irish eAIP AD2.8 (a Shannon-like and a Dublin-like section); named aprons and four-column taxiway rows, empty leading rowspan cells, Link/AT/F-Inner typography')
+def k619(c):
+    _reader_modules()
+    from aip_ground_names import read
+    shannon = read(_reader_fixture('ground/EIZC-AD2-8.html.txt'), 'EIZC')
+    c.eq([f['name'] for f in shannon['items'] if f['kind'] == 'twy'], ['A', 'B', 'C', 'D1', 'D2', 'E3', 'G', 'H1', 'H2'], 'all nine printed taxiway designators stay distinct', what='Shannon taxiways')
+    c.eq([f['name'] for f in shannon['items'] if f['kind'] == 'apron'], ['West Apron', 'East Apron', 'East Parking Area', 'Long Term Parking Area'], 'apron headings explicitly precede Surface', what='Shannon aprons')
+    dublin = read(_reader_fixture('ground/EIZA-AD2-8.html.txt'), 'EIZA')
+    names = {f['name'] for f in dublin['items'] if f['kind'] == 'twy'}
+    c.ok({'A', 'B1', 'E1', 'F-Inner', 'F-Outer', 'LINK 7', 'AT 6'} <= names, str(names), 'empty leading cells and printed hyphenated/multiword designators retain source identity')
+    c.ok(all(f['position'] is None for f in shannon['items']+dublin['items']), str(dublin), 'an altimeter or INS checkpoint is not a position for a nearby taxiway name')
+
+
+@case('K620', 'Ground-name source ownership, ambiguity and integrity stay explicit before any geometry is available', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic semantic pairs/prose/files; conflicting native id refused, dimensions/NIL/outside section ignored, changed source hash refuses batch, no installation')
+def k620(c):
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from aip_ground_names import read, build
+    from proc_replay import sha, write
+    def pair(name, key):
+        return '<span class="SD">'+name+'</span><span class="sdParams">'+key+'</span>'
+    markup = '<div id="EGYA-AD-2.8">'+pair('A', 'TTWY;TXT_DESIG;1')+pair('B', 'TTWY;TXT_DESIG;1')+pair('NIL', 'TAPRON;TXT_NAME;2')+pair('23', 'TTWY;VAL_WID;3')+'</div>'
+    markup += '<div id="EGYA-AD-2.9">'+pair('OUTSIDE', 'TTWY;TXT_DESIG;4')+'<p>Holding position A1. Holding point at the runway. TWY Z9.</p></div>'
+    doc = read(markup, 'EGYA')
+    c.eq([(f['kind'], f['name']) for f in doc['items']], [('hold', 'A1')], 'only an explicit named holding reference survives; no guessed list/name/width', what='source roles')
+    c.eq(len(doc['conflicting_native_ids']), 1, 'a repeated native identity with two names is ambiguous', what='native conflict')
+    c.eq(read(markup, 'EGYB')['items'], [], 'another airport section is not inherited', what='airport ownership')
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        page = root/'sources/uk/html/eAIP/EG-AD-2.EGYA-en-GB.html'
+        page.parent.mkdir(parents=True)
+        page.write_text(markup, encoding='utf-8')
+        write(root/'inputs-manifest.json', {'files': {page.relative_to(root).as_posix(): {'sha256': sha(page)}}})
+        result = build(root, root/'output')
+        c.eq(result['countries']['UK']['facts'], {'hold': 1}, 'source batch emits nomenclature candidates only', what='source batch')
+        page.write_text(markup+'changed', encoding='utf-8')
+        refused = False
+        try: build(root, root/'output')
+        except ValueError: refused = True
+        c.eq(refused, True, 'new bytes cannot retain an old provenance hash', what='source integrity')

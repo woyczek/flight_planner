@@ -1,0 +1,175 @@
+<div id="EGYA-AD-2.8"><h4 class="Title" id="ID_12407197"><span class="Numbering">EGYA AD 2.8</span>  APRONS, TAXIWAYS AND CHECK LOCATIONS/POSITIONS DATA</h4><table cellspacing="0" id="ID_20493962"><tbody id="ID_20493963"><tr id="ID_20493964" row_id="1"><td id="ID_20493965" align="left" valign="top" colspan="1" rowspan="1">1</td><td id="ID_20493966" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20493967">
+              <span id="ID_20493968">Apron surface and strength</span>
+            </p>
+          </td><td id="ID_20493969" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20493970">
+              <span class="SD" id="ID_20493972">PICUG APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;3027</span>
+            </p>
+            <p id="ID_20493973">
+              <span id="ID_20493974">Surface:</span> <span class="SD" id="ID_20493976">Concrete and asphalt</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;3027</span></p>
+            <p id="ID_20493977">
+              <span class="SD" id="ID_20493979">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;3027</span>
+            </p>
+            <p id="ID_20493980"/>
+            <p id="ID_20493981">
+              <span class="SD" id="ID_20493983">DELTA  APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;3029</span>
+            </p>
+            <p id="ID_20493984">
+              <span id="ID_20493985">Surface:</span> <span class="SD" id="ID_20493987">Concrete</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;3029</span></p>
+            <p id="ID_20493988">
+              <span class="SD" id="ID_20493990">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;3029</span>
+            </p>
+            <p id="ID_20493991"/>
+            <p id="ID_20493992">
+              <span class="SD" id="ID_20493994">EAST APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;192</span>
+            </p>
+            <p id="ID_20493995">
+              <span id="ID_20493996">Surface:</span> <span class="SD" id="ID_20493998">Concrete</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;192</span></p>
+            <p id="ID_20493999">
+              <span class="SD" id="ID_20494001">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;192</span>
+            </p>
+            <p id="ID_20494002"/>
+            <p id="ID_20494003">
+              <span class="SD" id="ID_20494005">MAIN APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;191</span>
+            </p>
+            <p id="ID_20494006">
+              <span id="ID_20494007">Surface:</span> <span class="SD" id="ID_20494009">Concrete and asphalt or asphalt and block paving</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;191</span></p>
+            <p id="ID_20494010">
+              <span class="SD" id="ID_20494012">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;191</span>
+            </p>
+            <p id="ID_20494013"/>
+            <p id="ID_20494014">
+              <span class="SD" id="ID_20494016">NORTH APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;3028</span>
+            </p>
+            <p id="ID_20494017">
+              <span id="ID_20494018">Surface:</span> <span class="SD" id="ID_20494020">Concrete</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;3028</span></p>
+            <p id="ID_20494021">
+              <span class="SD" id="ID_20494023">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;3028</span>
+            </p>
+            <p id="ID_20494024"/>
+            <p id="ID_20494025">
+              <span class="SD" id="ID_20494027">SOUTH APRON</span><span class="sdParams" style="display: none;">TAPRON;TXT_NAME;3026</span>
+            </p>
+            <p id="ID_20494028">
+              <span id="ID_20494029">Surface:</span> <span class="SD" id="ID_20494031">Concrete</span><span class="sdParams" style="display: none;">TAPRON;CODE_COMPOSITION;3026</span></p>
+            <p id="ID_20494032">
+              <span class="SD" id="ID_20494034">-</span><span class="sdParams" style="display: none;">TAPRON;VAL_PCN_CLASS;3026</span>
+            </p>
+          </td></tr><tr id="ID_20494035" row_id="2_179"><td id="ID_20494036" align="left" valign="top" style="border-bottom:0px; " colspan="1" rowspan="1">2</td><td id="ID_20494037" align="left" valign="top" style="border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494038">
+              <span id="ID_20494039">Taxiway width, surface and strength</span>
+            </p>
+          </td><td id="ID_20494040" align="left" valign="top" style="border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494041">
+              <span id="ID_20494042">Taxiway</span> <span class="SD" id="ID_20494044">A</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;179</span><span id="ID_20494045">:</span> <span class="SD" id="ID_20494047">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;179</span> <span class="SD" id="ID_20494049">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;179</span></p>
+            <p id="ID_20494050">
+              <span id="ID_20494051">Surface:</span> <span class="SD" id="ID_20494053">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;179</span><span id="ID_20494054">.</span> <span class="SD" id="ID_20494056">Between A1-A3: Concrete</span><span class="sdParams" style="display: none;">TTWY;ANNOTATION:90155.eng;179</span><span id="ID_20494057">.</span></p>
+            <p id="ID_20494058">
+              <span class="SD" id="ID_20494060">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;179</span>
+            </p>
+            <p id="ID_20494061"/>
+          </td></tr><tr id="ID_20494062" row_id="2_180"><td id="ID_20494063" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494064" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494065" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494066">
+              <span id="ID_20494067">Taxiway</span> <span class="SD" id="ID_20494069">B</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;180</span><span id="ID_20494070">:</span> <span class="SD" id="ID_20494072">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;180</span> <span class="SD" id="ID_20494074">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;180</span></p>
+            <p id="ID_20494075">
+              <span id="ID_20494076">Surface:</span> <span class="SD" id="ID_20494078">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;180</span></p>
+            <p id="ID_20494079">
+              <span class="SD" id="ID_20494081">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;180</span>
+            </p>
+            <p id="ID_20494082"/>
+          </td></tr><tr id="ID_20494083" row_id="2_181"><td id="ID_20494084" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494085" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494086" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494087">
+              <span id="ID_20494088">Taxiway</span> <span class="SD" id="ID_20494090">C</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;181</span><span id="ID_20494091">:</span> <span class="SD" id="ID_20494093">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;181</span> <span class="SD" id="ID_20494095">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;181</span></p>
+            <p id="ID_20494096">
+              <span id="ID_20494097">Surface:</span> <span class="SD" id="ID_20494099">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;181</span></p>
+            <p id="ID_20494100">
+              <span class="SD" id="ID_20494102">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;181</span>
+            </p>
+            <p id="ID_20494103"/>
+          </td></tr><tr id="ID_20494104" row_id="2_182"><td id="ID_20494105" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494106" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494107" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494108">
+              <span id="ID_20494109">Taxiway</span> <span class="SD" id="ID_20494111">D</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;182</span><span id="ID_20494112">:</span> <span class="SD" id="ID_20494114">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;182</span> <span class="SD" id="ID_20494116">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;182</span></p>
+            <p id="ID_20494117">
+              <span id="ID_20494118">Surface:</span> <span class="SD" id="ID_20494120">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;182</span></p>
+            <p id="ID_20494121">
+              <span class="SD" id="ID_20494123">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;182</span>
+            </p>
+            <p id="ID_20494124"/>
+          </td></tr><tr id="ID_20494125" row_id="2_183"><td id="ID_20494126" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494127" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494128" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494129">
+              <span id="ID_20494130">Taxiway</span> <span class="SD" id="ID_20494132">E</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;183</span><span id="ID_20494133">:</span> <span class="SD" id="ID_20494135">19</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;183</span> <span class="SD" id="ID_20494137">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;183</span></p>
+            <p id="ID_20494138">
+              <span id="ID_20494139">Surface:</span> <span class="SD" id="ID_20494141">Concrete</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;183</span></p>
+            <p id="ID_20494142">
+              <span class="SD" id="ID_20494144">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;183</span>
+            </p>
+            <p id="ID_20494145"/>
+          </td></tr><tr id="ID_20494146" row_id="2_1374"><td id="ID_20494147" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494148" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494149" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494150">
+              <span id="ID_20494151">Taxiway</span> <span class="SD" id="ID_20494153">F</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;1374</span><span id="ID_20494154">:</span> <span class="SD" id="ID_20494156">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;1374</span> <span class="SD" id="ID_20494158">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;1374</span></p>
+            <p id="ID_20494159">
+              <span id="ID_20494160">Surface:</span> <span class="SD" id="ID_20494162">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;1374</span></p>
+            <p id="ID_20494163">
+              <span class="SD" id="ID_20494165">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;1374</span>
+            </p>
+            <p id="ID_20494166"/>
+          </td></tr><tr id="ID_20494167" row_id="2_4209"><td id="ID_20494168" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494169" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494170" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494171">
+              <span id="ID_20494172">Taxiway</span> <span class="SD" id="ID_20494174">G</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;4209</span><span id="ID_20494175">:</span> <span class="SD" id="ID_20494177">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;4209</span> <span class="SD" id="ID_20494179">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;4209</span></p>
+            <p id="ID_20494180">
+              <span id="ID_20494181">Surface:</span> <span class="SD" id="ID_20494183">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;4209</span></p>
+            <p id="ID_20494184">
+              <span class="SD" id="ID_20494186">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;4209</span>
+            </p>
+            <p id="ID_20494187"/>
+          </td></tr><tr id="ID_20494188" row_id="2_518"><td id="ID_20494189" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494190" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494191" align="left" valign="top" style="border-top:0px; border-bottom:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494192">
+              <span id="ID_20494193">Taxiway</span> <span class="SD" id="ID_20494195">H</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;518</span><span id="ID_20494196">:</span> <span class="SD" id="ID_20494198">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;518</span> <span class="SD" id="ID_20494200">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;518</span></p>
+            <p id="ID_20494201">
+              <span id="ID_20494202">Surface:</span> <span class="SD" id="ID_20494204">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;518</span></p>
+            <p id="ID_20494205">
+              <span class="SD" id="ID_20494207">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;518</span>
+            </p>
+            <p id="ID_20494208"/>
+          </td></tr><tr id="ID_20494209" row_id="2_1377"><td id="ID_20494210" align="left" valign="top" style="border-top:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494211" align="left" valign="top" style="border-top:0px; " colspan="1" rowspan="1"> </td><td id="ID_20494212" align="left" valign="top" style="border-top:0px; " colspan="1" rowspan="1">
+            <p id="ID_20494213">
+              <span id="ID_20494214">Taxiway</span> <span class="SD" id="ID_20494216">K</span><span class="sdParams" style="display: none;">TTWY;TXT_DESIG;1377</span><span id="ID_20494217">:</span> <span class="SD" id="ID_20494219">23</span><span class="sdParams" style="display: none;">TTWY;VAL_WID;1377</span> <span class="SD" id="ID_20494221">M</span><span class="sdParams" style="display: none;">TTWY;UOM_WID;1377</span></p>
+            <p id="ID_20494222">
+              <span id="ID_20494223">Surface:</span> <span class="SD" id="ID_20494225">Asphalt</span><span class="sdParams" style="display: none;">TTWY;CODE_COMPOSITION;1377</span></p>
+            <p id="ID_20494226">
+              <span class="SD" id="ID_20494228">-</span><span class="sdParams" style="display: none;">TTWY;VAL_PCN_CLASS;1377</span>
+            </p>
+          </td></tr><tr id="ID_20494229" row_id="3"><td id="ID_20494230" align="left" valign="top" colspan="1" rowspan="1">3</td><td id="ID_20494231" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494232">
+              <span id="ID_20494233">Altimeter checkpoint location and elevation</span>
+            </p>
+          </td><td id="ID_20494234" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494235">
+              <span class="SD" id="ID_20494237">South Apron 529 FT  Picug Apron 514 FT  East Apron 512 FT</span><span class="sdParams" style="display: none;">TAD_HP;ANNOTATION:10272.eng;284</span>
+            </p>
+          </td></tr><tr id="ID_20494238" row_id="4"><td id="ID_20494239" align="left" valign="top" colspan="1" rowspan="1">4</td><td id="ID_20494240" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494241">
+              <span id="ID_20494242">VOR checkpoints</span>
+            </p>
+          </td><td id="ID_20494243" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494244">
+              <span id="ID_20494245">-</span>
+            </p>
+          </td></tr><tr id="ID_20494246" row_id="5"><td id="ID_20494247" align="left" valign="top" colspan="1" rowspan="1">5</td><td id="ID_20494248" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494249">
+              <span id="ID_20494250">INS checkpoints</span>
+            </p>
+          </td><td id="ID_20494251" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494252">
+              <span class="SD" id="ID_20494254">See Aircraft Parking/Docking Chart.</span><span class="sdParams" style="display: none;">TAD_HP;CUSTOM_ATT17;284</span>
+            </p>
+          </td></tr><tr id="ID_20494255" row_id="6"><td id="ID_20494256" align="left" valign="top" colspan="1" rowspan="1">6</td><td id="ID_20494257" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494258">
+              <span id="ID_20494259">Remarks</span>
+            </p>
+          </td><td id="ID_20494260" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20494261">
+              <span class="SD" id="ID_20494263">Longitudinal slopes:<br/>Taxiway Echo exceeds 1.5% slope (1.7%)<br/><br/>Transverse slopes:<br/>Alpha A4 to A6 1.52% to 1.59%<br/>Golf 1 to A4 1.52% to 1.59%<br/>Bravo 1.53% to 1.63%<br/>Between Charlie 1 and RWY 1.53%<br/>Delta 1.51% to 1.65%</span><span class="sdParams" style="display: none;">TAD_HP;CUSTOM_ATT5;284</span>
+            </p>
+          </td></tr></tbody></table></div>

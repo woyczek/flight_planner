@@ -80,6 +80,8 @@ RULES = [
     ('tools/proc_inventory.py', ['K', 'I'], 'the read-only census of the local charts and stored procedure documents and its aerodb cases'),
     ('tools/proc_readers.py', ['K', 'I'], 'the register of the procedure readers (layout, State, source, licence of the source, test pages), read by the launcher, and its aerodb cases'),
     ('tools/proc_ie_public.py', ['K', 'I'], 'the public acquisition of the Irish chart inputs and its aerodb cases'),
+    ('tools/aip_ground_names.py', ['K', 'I'], 'the named ground facts of the AD 2.8 pages and their aerodb cases'),
+    ('tools/chart_catalogue.py', ['K', 'I'], 'the catalogue of the visual and surface charts and its aerodb cases'),
     ('tools/proc_ie_iac.py', ['K', 'I'], 'the Irish final fixes of an ILS and their aerodb cases'),
     ('tools/proc_se.py', ['K', 'I'], 'the Swedish LFV coding tables and their aerodb cases'),
     ('tools/proc_replay.py', ['K', 'I'], 'the immutable snapshot of the local corpus inputs and the offline replay, and their aerodb cases'),
