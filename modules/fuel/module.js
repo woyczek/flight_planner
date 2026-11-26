@@ -133,7 +133,8 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js', 'altn_wx.js', 'auto_limits.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
+    'altn_wx.js', 'auto_limits.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
