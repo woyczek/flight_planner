@@ -1,0 +1,31 @@
+Standard Instrument Departure Coding Tables
+Pozabi Casa Runway 09 GAPUG 1H
+Designator SequenceNumber PathTerm-ruvalo Waypoint WaypointName Fly-over Course/Track°M (°T) TurnDirectionMagneticVariation Distance(NM) NavigationPerformanceLevelConstraint SpeedConstraintCo-ordinates
+513014.67N 092°
+GAPUG 1H 001 CF SES01 Y 0.6 1.1 LEFT +570 -210 RNAV1
+0022329.91E (092.9°)
+513316.42N 024°
+GAPUG 1H 002 CF DIX02 N 0.6 - RIGHT 3000 -210 RNAV1
+0022750.44E (024.8°)
+513346.90N 080°
+GAPUG 1H 003 TF BAV03 N 0.6 3.0 LEFT 3000 -250 RNAV1
+0023236.66E (080.3°)
+513623.75N 064°
+GAPUG 1H 004 TF GAPUG N 0.6 6.1 - 3000 -250 RNAV1
+0024128.43E (064.6°)
+Pozabi Casa Runway 27 GAPUG 1A
+Designator SequenceNumber PathTerm-ruvalo Waypoint WaypointName Fly-over Course/Track°M (°T) TurnDirectionMagneticVariation Distance(NM) NavigationPerformanceLevelConstraint SpeedConstraintCo-ordinates
+513024.40N 272°
+GAPUG 1A 001 CF KAM01 Y 0.6 1.5 RIGHT +1102 -210 RNAV1
+0021820.78E (272.9°)
+513408.09N
+GAPUG1A 002 DF SOG02 N - 0.6 - - 3000 -210 RNAV1
+0021743.89E
+513608.68N 074°
+GAPUG 1A 003 TF GIF06 N 0.6 7.5 RIGHT 3000 -250 RNAV1
+0022918.82E (074.4°)
+513623.75N 087°
+GAPUG 1A 004 TF GAPUG N 0.6 7.6 - 3000 -250 RNAV1
+0024128.43E (088.0°)
+CHANGE (13/22): PAGE NUMBER MOXOBEL.
+AD 2-EGYD-6-5AERO INFO DATE 10 OCT 22

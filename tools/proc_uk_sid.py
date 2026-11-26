@@ -272,6 +272,77 @@ def read_chart(text, title, icao):
     read = {p['name'] for p in more}
     warnings = [w for w in warnings if w.split(':', 1)[0] not in read] + [w for w in why if w.split(':', 1)[0] not in names]
     out += more
+    native, native_warnings = read_conventional(text, title, icao)
+    keys = {(p['name'], tuple(p['runways'])) for p in native}
+    out = [p for p in out if (p['name'], tuple(p['runways'])) not in keys] + native
+    names = {p['name'] for p in native}
+    warnings = [w for w in warnings if w.split(':', 1)[0] not in names] + native_warnings
     if not out and not warnings:
         warnings.append('aucune SID reconnue sur la carte')
+    return out, warnings
+
+
+def read_conventional(text, title, icao):
+    """Measured Heathrow prose: published exit/constraints, never an inferred SID track."""
+    if 'RNAV SUBSTITUTION ONLY' not in title.upper():
+        return [], []
+    wanted = {d['name']: d['exit'] for d in designators(title)}
+    rows = _lines(text)
+    rows = [re.sub(r'^\d{1,4}\s+(?=[A-Z]{3,5} \d[A-Z] (?:Climb|Straight ahead)\b)', '', r) for r in rows]
+    # Native drawing grid labels may precede the actual runway row.
+    rows = [re.sub(r'^(?:\d{4}[NS]|[A-Z](?:\s+[A-Z]){1,3})\s+(?=RWY\s+\d{2})', '', r) for r in rows]
+    out, warnings, seen = [], [], set()
+    for name, rev, body in _blocks(rows):
+        sid = name+' '+rev
+        if sid not in wanted or not re.search(r'\b(?:Straight ahead|Climb straight ahead)\b', ' '.join(body[:2]), re.I):
+            continue
+        rws = {m[1] for r in body[1:3] for m in [RUNWAY_HEAD.match(r)] if m}
+        if len(rws) != 1:
+            continue
+        runway = next(iter(rws)); flat = ' '.join(body)
+        exit_name = wanted[sid]
+        proof = re.search(r'\b(?:cross|to)\s+'+re.escape(exit_name)+r'(?:\s+(?:VOR|NDB))?(?=\s+(?:at|or)\b|\s*\.)', flat, re.I)
+        if not proof or (sid, runway) in seen:
+            continue
+        seen.add((sid, runway))
+        levels = []
+        for m in re.finditer(r'\bcross\s+'+re.escape(exit_name)+r'(?:\s+(?:VOR|NDB))?\s+at\s+(\d{4,5})(?:\s+(or above|or below))?(?=\s*[.,]|\s+or\b)', flat, re.I):
+            qualifier = (m[2] or '').lower()
+            levels.append(('min' if qualifier == 'or above' else 'max' if qualifier == 'or below' else 'at', int(m[1])))
+        for m in re.finditer(r'\bMaintain\s+(\d{4,5})\s+to\s+'+re.escape(exit_name)+r'(?:\s+(?:VOR|NDB))?\s*\.', flat, re.I):
+            levels.append(('at', int(m[1])))
+        levels = set(levels)
+        alt = {'type': next(iter(levels))[0], 'ft': next(iter(levels))[1]} if len(levels) == 1 else None
+        point = {'seq': 1, 'id': exit_name, 'leg': 'TF'}
+        if alt:
+            point['alt'] = alt
+        # Name then coordinate (or coordinate then name) must be adjacent native rows.
+        positions = set()
+        for i, row in enumerate(rows):
+            if re.search(r'\b'+re.escape(exit_name)+r'$', row, re.I) and i+1 < len(rows):
+                coord = COORD.fullmatch(rows[i+1].strip())
+            elif i+1 < len(rows) and rows[i+1].upper() == exit_name:
+                coord = COORD.fullmatch(row.strip())
+            else:
+                coord = None
+            if coord:
+                lat, lon = _deg2(coord[1], coord[2], 2), _deg2(coord[3], coord[4], 3)
+                if lat is not None and lon is not None and 49 <= lat <= 61 and -9 <= lon <= 3:
+                    positions.add((round(lat, 6), round(lon, 6)))
+        if len(positions) == 1:
+            point['lat'], point['lon'] = next(iter(positions))
+        refs = []
+        for m in re.finditer(r'\b([A-Z]{2,3})\s+D\s*(\d+(?:\.\d+)?)\s+at\s+(?:(or above|or below)\s+)?(\d{4,5})(?:\s+(or above|or below))?', flat):
+            qualifier = m[3] or m[5]
+            refs.append({'station': m[1], 'dme_nm': float(m[2]), 'printed_level_ft': int(m[4]),
+                         'alt': {'type': 'min' if qualifier == 'or above' else 'max', 'ft': int(m[4])} if qualifier else None})
+        ceiling = re.search(r'do not\s+climb above\s+(\d{4,5})\s+until cleared by ATC', text, re.I)
+        out.append({'id': f'{icao}.SID.{sid.replace(" ", "")}.RW{runway}', 'icao': icao, 'kind': 'SID', 'name': sid,
+                    'runways': [runway], 'transition': exit_name, 'points': [point], 'status': 'check',
+                    'partial': {'read': ['exit', 'runway', 'source-instructions'] + (['level'] if alt else []),
+                                'unread': ['path', 'radial-intercepts', 'turn-geometry'] + ([] if alt else ['terminal-level'])
+                                          + ([] if len(positions) == 1 else ['exit-position'])},
+                    'chart_data': {'scope': 'uk-conventional-prose-facts', 'instruction_rows': body,
+                                   'dme_level_references': refs,
+                                   'clearance_ceiling': {'ft': int(ceiling[1]), 'condition': 'until cleared by ATC'} if ceiling else None}})
     return out, warnings

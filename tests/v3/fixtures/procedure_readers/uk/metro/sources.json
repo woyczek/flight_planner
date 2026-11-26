@@ -1,0 +1,42 @@
+[
+  {
+    "fixture": "EGYB-8-1.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-8-10.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-8-2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments LOC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-8-4.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-8-7.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-AD2-12.html.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, rubrique AD 2.12 (caractéristiques physiques des pistes), page HTML. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYC-6-18.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, table de codage des départs aux instruments (SID). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYD-6-5.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, table de codage des départs aux instruments (SID). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYD-8-1.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYD-AD2-12.html.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, rubrique AD 2.12 (caractéristiques physiques des pistes), page HTML. Aucune valeur n'est réelle."
+  }
+]

@@ -16,6 +16,7 @@ import re
 PAGE_MAX = 8 * 1024 * 1024            # la page d'EGLL fait 0,7 Mo
 PDF_MAX = 4 * 1024 * 1024             # une carte SID fait 0,5 Mo
 MAX_CHARTS = 12
+MAX_PROCEDURE_CHARTS = 200           # coding tables and IACs, in addition to the legacy SID charts
 MAX_DEPTH = 3
 NAME_HINT = re.compile(r'airac|aip|nats|(?<![a-z])uk(?![a-z])', re.I)      # le MOT « uk » entier (jamais « duke »)
 MAX_TOTAL = 3000                      # entrées parcourues au TOTAL par une recherche (tous dossiers, tous niveaux)
@@ -189,6 +190,57 @@ def sid_charts(index):
     return [c for c in index if 'STANDARD DEPARTURE CHART' in c['title'].upper() and '(SID)' in c['title'].upper()][:MAX_CHARTS]
 
 
+def procedure_charts(index):
+    """Documents useful for ONE aerodrome: legacy SID charts, coding tables and approaches.
+
+    Keep the full selection here: the caller refuses an excessive count explicitly rather than
+    silently losing the IACs at the end of the index. No chart number implies its document kind.
+    """
+    def useful(c):
+        title = c.get('title', '').upper()
+        return ('STANDARD DEPARTURE CHART' in title and '(SID)' in title or
+                'CODING TABLE' in title or 'INSTRUMENT APPROACH CHART' in title or
+                'INITIAL APPROACH PROCEDURE' in title or 'APPROACH TRANSITIONS' in title)
+    return [c for c in index if useful(c)]
+
+
+def runways(page, icao):
+    """Published THR positions and true axes from the UK AD 2.12 table, no diagram measurements."""
+    from proc_sia import _SectionTables
+    page = re.sub(r'(?is)<span\b[^>]*class="sdParams"[^>]*>.*?</span>', '', page)
+    parser = _SectionTables(f'{icao}-AD-2.12')
+    parser.feed(page)
+    out = []
+    for table in parser.tables:
+        head = next((row for row in table if any('co-ordinates' in cell.lower() for cell in row)), None)
+        if not head:
+            continue
+        pos_col = next(i for i, cell in enumerate(head) if 'co-ordinates' in cell.lower())
+        brg_col = next((i for i, cell in enumerate(head) if 'true bearing' in cell.lower()), None)
+        elev_col = next((i for i, cell in enumerate(head) if 'thr elevation' in cell.lower()), None)
+        for row in table[table.index(head) + 1:]:
+            if not row or not re.fullmatch(r'\d{2}[LRC]?', row[0]) or len(row) <= pos_col or brg_col is None:
+                continue
+            pos = re.search(r'(\d{6}(?:\.\d+)?)N\s+(\d{7}(?:\.\d+)?)([EW])', row[pos_col])
+            brg = re.match(r'(\d{1,3}(?:\.\d+)?)', row[brg_col])
+            if not pos or not brg:
+                continue
+            def deg(value, width):
+                d, m, sec = int(value[:width]), int(value[width:width+2]), float(value[width+2:])
+                return d + m / 60 + sec / 3600 if m < 60 and sec < 60 else None
+            lat, lon, true = deg(pos[1], 2), deg(pos[2], 3), float(brg[1])
+            if lat is None or lon is None or not 49 <= lat <= 61 or not 0 <= lon <= 9 or not 0 <= true <= 360:
+                continue
+            if abs((true - int(row[0][:2]) * 10 + 180) % 360 - 180) > 30:
+                continue
+            out.append({'id': row[0], 'lat': round(lat, 8), 'lon': round(-lon if pos[3] == 'W' else lon, 8),
+                        'true': true, 'source': 'ukpkg'})
+            elevation = re.search(r'\bTHR\s+(\d+(?:\.\d+)?)\s*FT\b', row[elev_col], re.I) if elev_col is not None and len(row) > elev_col else None
+            if elevation:
+                out[-1]['elevation_ft'] = float(elevation[1])
+    return out
+
+
 def online_base(cycle):
     """La base de l'AIP en ligne de NATS pour un cycle : NATS_EAIP_BASE + « AAAA-MM-JJ-AIRAC/ », ou None si `cycle` n'est pas exactement une date ISO en chiffres ASCII (jamais un autre texte dans l'adresse)."""
     if not isinstance(cycle, str) or not CYCLE.fullmatch(cycle):
@@ -218,12 +270,12 @@ def canonical(icao, chart):
     return f'ukpkg_{icao}_{chart["part"]}-{chart["number"]}.pdf'
 
 
-def copy_charts(root, icao, charts, dest):
+def copy_charts(root, icao, charts, dest, limit=MAX_CHARTS):
     """Recopie les PDF des cartes données dans `dest` sous leur nom canonique (ukpkg_EGLL_6-1.pdf) : ([noms posés], [refus dits]). Jamais un nom ni un chemin pris ailleurs que dans l'index (chiffres seulement) ;
     un PDF absent, lié, trop gros ou qui ne commence pas par « %PDF- » est un refus dit, les autres sont posés."""
     os.makedirs(dest, exist_ok=True)
     done, refused = [], []
-    for c in charts[:MAX_CHARTS]:
+    for c in charts[:min(limit, MAX_PROCEDURE_CHARTS)]:
         src = os.path.join(root, 'graphics', c['pdf'] + '.pdf')
         name = canonical(icao, c)
         if _link(src) or not os.path.isfile(src):

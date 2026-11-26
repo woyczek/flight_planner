@@ -1,0 +1,299 @@
+{
+  "schema": 1,
+  "icao": "EGYA",
+  "package_cycle": "2026-10-29",
+  "method": "Independent transcription of rendered source charts; decimal positions rounded to 6 places.",
+  "cases": [
+    {
+      "id": "sid-memak-3y",
+      "chart": "AD 2.EGYA-6-10",
+      "name": "MEMAK 3Y",
+      "kind": "SID",
+      "runways": [
+        "25"
+      ],
+      "points": [
+        {
+          "seq": 1,
+          "id": null,
+          "leg": "CA",
+          "lat": null,
+          "lon": null,
+          "crs": 253,
+          "trk": 254.4,
+          "nm": null,
+          "turn": "L",
+          "alt": {
+            "type": "min",
+            "ft": 1030
+          },
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 2,
+          "id": "MET01",
+          "leg": "DF",
+          "lat": 51.85555,
+          "lon": -2.720697,
+          "crs": null,
+          "trk": null,
+          "nm": null,
+          "turn": null,
+          "alt": null,
+          "kt": 220,
+          "over": false
+        },
+        {
+          "seq": 3,
+          "id": "ZUM06",
+          "leg": "TF",
+          "lat": 51.784953,
+          "lon": -2.791225,
+          "crs": 211,
+          "trk": 211.8,
+          "nm": 5,
+          "turn": "L",
+          "alt": {
+            "type": "min",
+            "ft": 3000
+          },
+          "kt": 220,
+          "over": false
+        },
+        {
+          "seq": 4,
+          "id": "DAN12",
+          "leg": "TF",
+          "lat": 51.782458,
+          "lon": -2.628994,
+          "crs": 90,
+          "trk": 91.4,
+          "nm": 6,
+          "turn": "R",
+          "alt": {
+            "type": "min",
+            "ft": 3000
+          },
+          "kt": 220,
+          "over": false
+        },
+        {
+          "seq": 5,
+          "id": "NUD16",
+          "leg": "TF",
+          "lat": 51.772789,
+          "lon": -2.562994,
+          "crs": 102,
+          "trk": 103.3,
+          "nm": 2.5,
+          "turn": null,
+          "alt": {
+            "type": "max",
+            "ft": 4000
+          },
+          "kt": 250,
+          "over": false
+        },
+        {
+          "seq": 6,
+          "id": "PEG19",
+          "leg": "TF",
+          "lat": 51.761267,
+          "lon": -2.484689,
+          "crs": 102,
+          "trk": 103.3,
+          "nm": 3,
+          "turn": null,
+          "alt": {
+            "type": "at",
+            "ft": 5000
+          },
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 7,
+          "id": "BEP",
+          "leg": "TF",
+          "lat": 51.749736,
+          "lon": -2.406736,
+          "crs": 102,
+          "trk": 103.4,
+          "nm": 3,
+          "turn": "L",
+          "alt": {
+            "type": "at",
+            "ft": 5000
+          },
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 8,
+          "id": "MEMAK",
+          "leg": "TF",
+          "lat": 51.779222,
+          "lon": -2.05,
+          "crs": 81,
+          "trk": 82.3,
+          "nm": 13.5,
+          "turn": null,
+          "alt": {
+            "type": "at",
+            "ft": 5000
+          },
+          "kt": null,
+          "over": false
+        }
+      ]
+    },
+    {
+      "id": "star-laser-1n",
+      "chart": "AD 2.EGYA-7-10",
+      "name": "LASER 1N",
+      "kind": "STAR",
+      "runways": [],
+      "points": [
+        {
+          "seq": 1,
+          "id": "LASER",
+          "leg": "IF",
+          "lat": 51.677056,
+          "lon": -0.226017,
+          "crs": null,
+          "trk": null,
+          "nm": null,
+          "turn": null,
+          "alt": {
+            "type": "at",
+            "ft": 22000
+          },
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 2,
+          "id": "SUBUL",
+          "leg": "TF",
+          "lat": 51.897706,
+          "lon": -0.414422,
+          "crs": 331,
+          "trk": 332.2,
+          "nm": 15,
+          "turn": "L",
+          "alt": {
+            "type": "at",
+            "ft": 18000
+          },
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 3,
+          "id": "COXUB",
+          "leg": "TF",
+          "lat": 52.162297,
+          "lon": -0.929183,
+          "crs": 309,
+          "trk": 310.0,
+          "nm": 24.8,
+          "turn": "L",
+          "alt": null,
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 4,
+          "id": "DUPOK",
+          "leg": "TF",
+          "lat": 52.175314,
+          "lon": -1.092936,
+          "crs": 276,
+          "trk": 277.4,
+          "nm": 6.1,
+          "turn": null,
+          "alt": null,
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 5,
+          "id": "KEVID",
+          "leg": "TF",
+          "lat": 52.217231,
+          "lon": -1.641731,
+          "crs": 276,
+          "trk": 277.3,
+          "nm": 20.4,
+          "turn": null,
+          "alt": {
+            "type": "at",
+            "ft": 14000
+          },
+          "kt": 250,
+          "over": false
+        },
+        {
+          "seq": 6,
+          "id": "FEGUK",
+          "leg": "TF",
+          "lat": 52.251169,
+          "lon": -2.113492,
+          "crs": 276,
+          "trk": 276.9,
+          "nm": 17.5,
+          "turn": null,
+          "alt": null,
+          "kt": null,
+          "over": false
+        },
+        {
+          "seq": 7,
+          "id": "COGON",
+          "leg": "TF",
+          "lat": 52.267872,
+          "lon": -2.356117,
+          "crs": 275,
+          "trk": 276.5,
+          "nm": 9,
+          "turn": "R",
+          "alt": null,
+          "kt": 220,
+          "over": false
+        },
+        {
+          "seq": 8,
+          "id": "SOMAN",
+          "leg": "TF",
+          "lat": 52.328772,
+          "lon": -2.708419,
+          "crs": 285,
+          "trk": 285.9,
+          "nm": 13.5,
+          "turn": "R",
+          "alt": null,
+          "kt": null,
+          "over": true
+        },
+        {
+          "seq": 9,
+          "id": "LIZIP",
+          "leg": "CF",
+          "lat": 52.303603,
+          "lon": -2.531261,
+          "crs": 148,
+          "trk": 149.3,
+          "nm": null,
+          "turn": null,
+          "alt": {
+            "type": "at",
+            "ft": 8000
+          },
+          "kt": 220,
+          "over": false
+        }
+      ]
+    }
+  ]
+}

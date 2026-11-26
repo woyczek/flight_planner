@@ -1,0 +1,10 @@
+[
+  {
+    "fixture": "EGYB-6-2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte de départ normalisée (SID) conventionnelle, texte natif. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "source.json",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, titre de la carte de départ normalisée conventionnelle. Aucune valeur n'est réelle."
+  }
+]

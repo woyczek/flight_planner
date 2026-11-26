@@ -1,0 +1,22 @@
+[
+  {
+    "fixture": "runways.html",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, rubrique AD 2.12 (caractéristiques physiques des pistes), page HTML. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "uk-expected.json",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, tables de codage SID et STAR (valeurs attendues, transcrites des tables). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "uk_ils25.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, carte d'approche aux instruments (IAC) ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "uk_sid.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, table de codage des départs aux instruments (SID). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "uk_star.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, table de codage des arrivées aux instruments (STAR). Aucune valeur n'est réelle."
+  }
+]

@@ -21835,7 +21835,7 @@ def _reader_modules():
     import importlib
     import sys
     sys.path.insert(0, str(ROOT / 'tools'))
-    return tuple(importlib.import_module(n) for n in ('proc_records', 'proc_layouts', 'proc_sia'))
+    return tuple(importlib.import_module(n) for n in ('proc_records', 'proc_layouts', 'uk_package', 'proc_uk_iac'))
 
 
 def _fr_iac_fixture(icao):
@@ -22842,3 +22842,138 @@ def k581(c):
     c.eq((row['format_entries_read'], row['format_entries_unread']), (1, 1), 'an unread source entry remains visible beside read entries', what='formats')
     c.eq(sorted(e['reason'] for e in result['errors']), ['JSONDecodeError', 'folder-missing'], 'unavailable census inputs are reported', what='unread inputs')
     c.ok('not national coverage' in markdown(result) and result['national_completeness'] is None, str(result), 'the generated report preserves the limits of the count')
+@case('K550', 'UK native coding tables preserve the 8 MEMAK legs and 9 LASER legs, including SOMAN fly-over', 'K', static=True,
+      tags=('procedure-readers',), rule='User 25 Nov 2026: read national charts, then register independent expected results in the suite; EGYA AD 2 6-10 and 7-10')
+def k550(c):
+    import json
+    R, L, U, I = _reader_modules()
+    expected = json.loads(_reader_fixture('uk/uk-expected.json'))['cases']
+    for filename, reference in zip(('uk/uk_sid.rows.txt', 'uk/uk_star.rows.txt'), expected):
+        rows = _reader_fixture(filename).splitlines()
+        doc = R.build_pdf_dir('EGYA', [filename], lambda name: [rows], '2026-10-29')
+        proc = next((p for p in doc['procedures'] if p['name'] == reference['name']), None)
+        c.ok(proc is not None, str(doc['warnings']), reference['name'] + ' is read')
+        c.eq((proc['kind'], proc['runways'], len(proc['points'])),
+             (reference['kind'], reference['runways'], len(reference['points'])), 'the printed kind, runway and number of legs', what=reference['name'])
+        for point, wanted in zip(proc['points'], reference['points']):
+            actual = {k: bool(point.get(k)) if k == 'over' else point.get(k) for k in wanted}
+            c.eq(actual, wanted, 'every printed coordinate, course, distance, turn and constraint is preserved', what=f'{reference["name"]} leg {wanted["seq"]}')
+
+
+@case('K552', 'UK ILS profile: published threshold, zero-ranged DME, three-degree glide and later-of missed condition', 'K', static=True,
+      tags=('procedure-readers',), rule='EGYA AD 2 8-4 and AD 2.12; user 25 Nov 2026: preserve printed ILS facts and never invent manoeuvre geometry')
+def k552(c):
+    R, L, U, I = _reader_modules()
+    runways = U.runways(_reader_fixture('uk/runways.html'), 'EGYA')
+    by = {r['id']: r for r in runways}
+    c.eq((by['25']['true'], by['25']['lat'], by['25']['lon']), (254.4, 51.87704444, -2.65448611),
+         'AD 2.12 prints THR 515237.36N 0023916.15W and the true axis 254.50 degrees', what='runway 25 source')
+    rows = _reader_fixture('uk/uk_ils25.rows.txt').splitlines()
+    proc = I.read_chart(rows, 'EGYA', runways, 'ukpkg_EGYA_8-4.pdf', '2026-10-29')
+    c.ok(proc is not None, str(proc), 'the measured ILS profile template is read')
+    facts = proc['chart_data']
+    c.eq((facts['localizer'], facts['inbound_course_magnetic_deg'], facts['glide_path_deg'], facts['rdh_ft'], facts['threshold_elevation_ft']),
+         ({'ident': 'I-TU', 'frequency_mhz': 109.35, 'channel': '28Y'}, 253, 3.0, 55, 508), 'the independent chart facts, with their units', what='ILS facts')
+    c.eq((facts['ad_elevation_ft'], facts['transition_altitude_ft'], facts['recommended_profile']),
+         (527, 6000, [{'dme_nm': n, 'altitude_ft': a} for n, a in [(7,2780),(6,2460),(5,2150),(4,1830),(3,1510),(2,1200),(1,890)]]),
+         'the printed altitude profile is retained; aerodrome elevation is distinct from threshold elevation', what='vertical reference')
+    missed = facts['missed_approach']
+    c.eq((missed['target_altitude_ft'], missed['straight_ahead_until'], missed['then']),
+         (3000, {'logic': 'later_of', 'dme_outbound_nm': 2.3, 'minimum_altitude_ft': 1500}, {'turn': 'L', 'track_magnetic_deg': 87}),
+         'the turn waits for BOTH D2.3 outbound and 1500 ft; the RCF variant is separate', what='missed approach')
+    c.eq([p['id'] for p in proc['points']], ['BUMES', 'FAF25', 'RW25'], 'only the justified final is plotted, no invented turn endpoint', what='final points')
+    c.ok('missed-path' in proc['partial']['unread'], str(proc.get('partial')), 'the missed geometry stays explicitly unread')
+    c.eq(I.read_chart(rows, 'EGYA', [], 'x.pdf', '2026-10-29'), None, 'without the published threshold no final position is invented', what='missing threshold')
+    changed = [r.replace('zero ranged to THR RWY', 'referenced to antenna RWY') for r in rows]
+    c.eq(I.read_chart(changed, 'EGYA', runways, 'x.pdf', '2026-10-29'), None, 'an antenna-referenced DME cannot be projected from the threshold', what='DME reference guard')
+
+
+@case('K598', 'Native Pozabi SID tables may start with CF only with a unique source runway and complete first-leg evidence', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Nebutot BEZ 1Z / FOTIT 1Z and Casa GAPUG source coding; no invented runway-to-first-fix leg')
+def k598(c):
+    _reader_modules()
+    import proc_layouts as L
+    rows = _reader_fixture('uk/metro/EGYC-6-18.rows.txt').splitlines()
+    q = L.parse_uk_coding(rows)
+    c.eq([(t['name'], t['runways'], len(t['legs'])) for t in q['tables']], [('BEZ 1Z', ['08R'], 7), ('FOTIT 1Z', ['08R'], 6)], 'CF is a printed terminator, with source runway binding', what='native SID groups')
+    leg = q['tables'][0]['legs'][0]
+    c.eq((leg['id'], leg['leg'], leg['crs'], leg['true'], leg['nm'], leg['alt'], leg['kt']),
+         ('POL02', 'CF', 76, 77.7, 3.7, {'type': 'min', 'ft': 2000}, 250), 'the first CF retains all measured fields', what='POL02')
+    c.ok('runway-to-first-fix-geometry' in q['tables'][0]['partial']['unread'], str(q), 'the missing runway anchor stays explicit')
+    bad = L.parse_uk_coding([r.replace('Runway 08R', 'Runway unknown') for r in rows])
+    c.eq(bad['tables'], [], 'an unbound first CF does not get a guessed runway', what='runway guard')
+    bad = L.parse_uk_coding([r for r in rows if '0022210.13W' not in r])
+    c.eq([t['name'] for t in bad['tables']], ['FOTIT 1Z'], 'one incomplete block does not consume its neighbour', what='coordinate guard')
+    city = L.parse_uk_coding(_reader_fixture('uk/metro/EGYD-6-5.rows.txt').splitlines())
+    c.eq([(t['name'], len(t['legs'])) for t in city['tables']], [('GAPUG 1H', 4), ('GAPUG 1A', 4)], 'the second measured CF-first family remains distinct', what='Casa')
+
+
+@case('K599', 'UK ILS profile facts retain Sezatipi localizer identities and Casa steep-approach conditions without reading LOC as ILS', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Four Sezatipi native charts plus measured Casa 5.5 degree profile; RCF and diagram manoeuvres remain source text, never normal missed geometry')
+def k599(c):
+    _reader_modules()
+    import proc_uk_iac as I
+    for chart, rw, ident, freq, elevation in [('8-1', '09L', 'I-AA', 110.5, 79), ('8-4', '09R', 'I-BB', 109.7, 75),
+                                             ('8-7', '27L', 'I-KI', 109.7, 77), ('8-10', '27R', 'I-FU', 110.5, 78)]:
+        rows = _reader_fixture('uk/metro/EGYB-'+chart+'.rows.txt').splitlines()
+        p = I.read_profile(rows, 'EGYB', 'ukpkg_EGYB_'+chart+'.pdf', '2026-10-29')
+        c.eq((p['runway'], p['chart_data']['localizer'], p['chart_data']['glide_path_deg'], p['chart_data']['threshold_elevation_ft']),
+             (rw, {'ident': ident, 'frequency_mhz': freq}, 3.0, elevation), 'parallel runways sharing a frequency retain their different identifiers', what=rw)
+        c.eq(I.read_profile(rows, 'EGYB', 'fixture.pdf', '2026-01-01'), None, 'future source facts are refused in an earlier cycle', what=rw+' date')
+    rows = _reader_fixture('uk/metro/EGYD-8-1.rows.txt').splitlines()
+    p = I.read_profile(rows, 'EGYD', 'ukpkg_EGYD_8-1.pdf', '2026-10-29')
+    c.eq((p['chart_data']['glide_path_deg'], p['chart_data']['rdh_ft'], p['chart_data']['aircraft_categories']), (5.5, 35, ['A', 'B', 'C']), 'steep angle and printed aircraft scope are retained', what='Casa')
+    c.ok('aircraft-eligibility' in p['partial']['unread'] and bool(p['chart_data']['source_operating_conditions']), str(p), 'printed certification conditions remain visible and unverified')
+    loc = _reader_fixture('uk/metro/EGYB-8-2.rows.txt').splitlines()
+    c.eq(I.read_profile(loc, 'EGYB', 'ukpkg_EGYB_8-2.pdf', '2026-10-29'), None, 'a LOC chart does not acquire glide semantics', what='LOC guard')
+
+
+@case('K600', 'UK advisory axis samples preserve independent runway context, rounded THR elevation, RDH and category identity', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Sezatipi 09L 78.6 ft rounds to printed 79, RDH51 => 130 crossing; independent 3D vector rotation supplies the 7 NM expected position')
+def k600(c):
+    import copy
+    _reader_modules()
+    import proc_uk_iac as I
+    import uk_package as U
+    runways = U.runways(_reader_fixture('uk/metro/EGYB-AD2-12.html.txt'), 'EGYB')
+    c.eq((runways[0]['lat'], runways[0]['lon'], runways[0]['true'], runways[0]['elevation_ft']), (51.4775, -2.78499167, 89.67, 78.6), 'physical AD2.12 values are source inputs, not derived from the IAC', what='physical context')
+    rows = _reader_fixture('uk/metro/EGYB-8-1.rows.txt').splitlines()
+    p = I.read_profile(rows, 'EGYB', 'ukpkg_EGYB_8-1.pdf', '2026-10-29')
+    record = I.profile_record(p, runways)
+    c.eq((record['points'][0]['lat'], record['points'][0]['lon'], record['points'][-1]['alt']),
+         (51.4766795, -2.9721786, {'type': 'at', 'ft': 130}), 'axis samples are explicitly approximate; threshold crossing includes RDH', what='independent geometry')
+    c.eq((record['points'][0]['alt'], record['points'][0]['profile_altitude']), (None, {'ft': 2360, 'semantics': 'recommended'}), 'a recommended profile is not a fix altitude constraint', what='vertical role')
+    bad = copy.deepcopy(runways); bad[0]['elevation_ft'] += 100
+    c.eq(I.profile_record(p, bad), None, 'inconsistent physical elevation refuses derived geometry', what='elevation guard')
+    bad = copy.deepcopy(runways); bad[0]['true'] += 90
+    c.eq(I.profile_record(p, bad), None, 'an inconsistent axis refuses derived geometry', what='axis guard')
+    city = I.read_profile(_reader_fixture('uk/metro/EGYD-8-1.rows.txt').splitlines(), 'EGYD', 'fixture.pdf', '2026-10-29')
+    cr = U.runways(_reader_fixture('uk/metro/EGYD-AD2-12.html.txt'), 'EGYD')
+    d = copy.deepcopy(city); d['chart_data']['aircraft_categories'] = ['D']
+    c.ok(I.profile_record(city, cr)['id'] != I.profile_record(d, cr)['id'], 'synthetic CAT D counterexample', 'different aircraft scopes cannot silently merge')
+
+
+@case('K613', 'Sezatipi conventional SID prose retains published exits and typed levels without inventing a track', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Frozen native EGYB6-2 text and owned title; SEMOX/XIRAT DMS conversions, at6000, GUZ D18/D15 minimums; runway, ownership and coordinate ambiguity counterexamples')
+def k613(c):
+    import json
+    _reader_modules()
+    from proc_uk_sid import read_conventional
+    text = _reader_fixture('uk/conventional/EGYB-6-2.rows.txt')
+    title = json.loads(_reader_fixture('uk/conventional/source.json'))['title']
+    records, _ = read_conventional(text, title, 'EGYB')
+    c.eq([(p['name'], p['runways']) for p in records], [('SEMOX 1J', ['09R']), ('SEMOX 1K', ['09L']), ('XIRAT 1F', ['27R']), ('XIRAT 1G', ['27L'])], 'each prose block owns its runway', what='SID identities')
+    for p in records:
+        point = p['points'][0]
+        c.eq((len(p['points']), point['id'], point['alt']), (1, p['name'].split()[0], {'type': 'at', 'ft': 6000}), 'cross at is an exact level, distinct from the ATC clearance ceiling', what=p['name'])
+        c.ok('path' in p['partial']['unread'] and 'turn-geometry' in p['partial']['unread'], str(p), 'no radial or turn geometry is fabricated')
+    c.eq((records[0]['points'][0]['lat'], records[0]['points'][0]['lon']), (51.233611, -2.786111), '511401N 0024710W is independently converted', what='SEMOX position')
+    c.eq((records[2]['points'][0]['lat'], records[2]['points'][0]['lon']), (51.249722, -2.861944), '511459N 0025143W is independently converted', what='XIRAT position')
+    refs = records[0]['chart_data']['dme_level_references']
+    c.eq([(r['station'], r['dme_nm'], r['alt']) for r in refs[:2]], [('GUZ', 18.0, {'type': 'min', 'ft': 4000}), ('GUZ', 15.0, {'type': 'min', 'ft': 5000})], 'intermediate DME constraints are metadata, not guessed waypoint legs', what='GUZ levels')
+    c.eq(records[2]['chart_data']['dme_level_references'][0]['alt'], None, 'the interleaved LON7.7 qualifier is unconfirmed', what='interleaved qualifier')
+    c.eq(read_conventional(text, 'Unowned chart title', 'EGYB')[0], [], 'title ownership is required', what='owned title')
+    c.eq([p['name'] for p in read_conventional(text.replace('RWY 09R Cross GUZ', 'Unknown runway Cross GUZ'), title, 'EGYB')[0]], ['SEMOX 1K', 'XIRAT 1F', 'XIRAT 1G'], 'the missing runway is not supplied by the title suffix', what='runway refusal')
+    c.eq([p['name'] for p in read_conventional(text.replace('cross SEMOX at 6000', 'cross OTHER at 6000'), title, 'EGYB')[0]], ['XIRAT 1F', 'XIRAT 1G'], 'a different exit is not renamed to match the procedure', what='exit refusal')
+    ambiguous = read_conventional(text+'\nSEMOX\n511402N 0024710W\n', title, 'EGYB')[0]
+    c.ok('lat' not in ambiguous[0]['points'][0] and 'exit-position' in ambiguous[0]['partial']['unread'], str(ambiguous[0]), 'conflicting adjacent coordinates stay unknown')

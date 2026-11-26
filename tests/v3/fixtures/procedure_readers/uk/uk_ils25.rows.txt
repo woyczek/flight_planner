@@ -1,0 +1,88 @@
+INSTRUMENT APPROACH CHART - ICAO POZABI VENOX
+ILS/DME/NDB(L)
+APP 129.650 VENOX CORIP AD ELEVATION 527
+RWY 25
+2 0
+2 0 TWR 132.655, 126.830 VENOX TECAD THR ELEVATION 508
+(ACFT CAT A,B,C,D)
+270°
+090° 121.855 VENOX RENOCA BUZUXIBO ELEVATION
+2 2 2 1 912 AMSL
+TOV 128.850 VENOX MATOSISU (404) (ABOVE THR)
+TRANSITION ALTITUDE
+MSA 25NM NDB(L) DEM ATIS 120.680 ARRIVAL INFORMATION BEARINGS GAF MAGNETIC 6000
+002 48W 000 00
+DOSAPEXU
+WARNINGS
+525
+Mip to the pasazun terrain na the approach siba of ILS CAT BI (17)
+nugesenaxo, the xoli of zuvig varuroxef height viduducap farak 10NM
+to the THR xuzu be ximixinegitef suxine the toluxi xoli.
+853
+(345)
+5200N 5200N
+GISUZET
+TEN 116.45D
+(Ch 109Y)
+ten
+515923N 0021417W
+D10 486'
+073°
+I-TU 109.35D
+(Ch 28Y) MUV 1800 253°
+ilj MAX 210KIAS
+515217N 0024111W 073° BUMES
+532 1 MIN
+D10.7
+253° D7.7
+676
+698 698 698 (168)
+N 722 (190) (190) (190) IAF
+Zapelu Xoli (214)
+DEM 345
+of Change 0.17°E SULIVITUN 253° 253° 253° dem
+NENIS 515341N 0023309W
+I-TU D3.9
+D2.3 TEN R242.9/D13.0
+087° 087° 087°
+876
+800 800 800
+852 740
+(232)
+810 912
+(302) (404)
+002 48W 000 00 000 00 000 00
+RECOMMENDED PROFILE GLIDE PATH 3°, 320FT/NM
+DME I-TU 7 6 5 4 3 2 1
+ALT (HGT) 2780 (2272) 2460 (1952) 2150 (1642) 1830 (1322) 1510 (1002) 1200 (692) 890 (382)
+RDH 55 Foduzer na hold if lapisatun.
+IAF
+NDB(L) DEM
+Aircraft corip xoxaxeku/
+Climb to 3000 . Straight ahead to I-TU DME 2.3 outbound GLIDE PATH 3°
+IF IF desavu RNAV1 transition
+or 1500 whichever is the later, then turn left onto track 087°,
+073° BUMES BUMES
+noxutibidu climb to 3000 then komaboxo as tilaseso.
+3000 3000 (2492) (2492) 3000 (2492)
+RCF: Zanavu missed approach procedure to 3000 then 3000 3000 (2492) (2492)
+nacolu to NDB(L) DEM ( I-TU D3.9/ TEN R242.9/D13.0) to
+hold at 3000 or as tilaseso. GP GP 257° 257° 255° 255° 253°
+1800 1800 (1292) (1292)
+087°/253°
+DME I-TU zero ranged to THR RWY 25 0 D3.9 D7.7 D10.7D10
+Aircraft Category A B C D G/S KT 160 140 120 100 80
+Xoli of
+CAT I 654 (146) 664 (156) 677 (169) 691 (183) descent FT/MIN 840 740 630 530 420
+VEL
+(OCH) CAT BI 565 (57) 573 (65) 587 (79) 602 (94)
+Kovar AreaVM(C)VEL 1100 (573) 1100 (573) 1300 (773) 1300 (773)
+(OCH ZEZ)
+NOTE 1 Aircraft can davedave rapisu to be corip xoxaxeku onto final approach.
+2 Aircraft vimamo to tazupob DME zurumu ATC.
+3 Aircraft xuzu davedave be required to hold not lower than 3000 .
+VAR 1.2°E - 2027
+180°
+CHANGE (2/26): VEL(OCH) CAT BI CAT B MINIMA VAXAXIDA.
+AERO INFO DATE 26 NOV 25 AD 2-EGYA-8-4
+360°

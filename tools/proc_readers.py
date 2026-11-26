@@ -38,9 +38,9 @@ STATE_COPYRIGHT = {'name': "copyright of the State's AIP (nothing written that a
 EAD = {'name': "AIP of the State, a copy read through EAD Basic (EUROCONTROL)", 'id': 'ead-basic'}
 
 
-def _ead(id, layouts, zones, prefixes, state):
+def _ead(id, layouts, zones, prefixes, state, fixtures=()):
     return {'id': id, 'reader': 'proc_layouts', 'layouts': layouts, 'zones': zones, 'prefixes': prefixes, 'state': state,
-            'source': EAD, 'licence': STATE_COPYRIGHT, 'fixtures': ()}
+            'source': EAD, 'licence': STATE_COPYRIGHT, 'fixtures': fixtures}
 
 
 READERS = (
@@ -53,7 +53,7 @@ READERS = (
      'source': {'name': 'FAA CIFP (Coded Instrument Flight Procedures)', 'id': 'faa-cifp'},
      'licence': {'name': 'public domain', 'redistribution': True, 'written_in': SOURCES_MD},
      'fixtures': (), 'page': 'ARINC 424 file'},
-    _ead('ead-uk', ('uk-coding', 'uk-app'), ('gb',), ('EG',), 'United Kingdom'),
+    _ead('ead-uk', ('uk-coding', 'uk-app'), ('gb',), ('EG',), 'United Kingdom', ('uk',)),
     _ead('ead-at', ('at-coding',), ('at',), ('LO',), 'Austria'),
     _ead('ead-be', ('be-coding',), ('be',), ('EB',), 'Belgium'),
     _ead('ead-ge', ('ge-coding',), ('ge',), ('UG',), 'Georgia'),

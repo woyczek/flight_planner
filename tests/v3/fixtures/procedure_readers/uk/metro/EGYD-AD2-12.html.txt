@@ -1,0 +1,129 @@
+<div id="EGYD-AD-2.12"><h4 class="Title" id="ID_12386763"><span class="Numbering">EGYD AD 2.12</span>  RUNWAY KETEMIRU MUNISAKADOMUMOD</h4><table cellspacing="0" id="ID_20483427"><thead id="ID_20483428"><tr id="ID_20483429" row_id=""><th id="ID_20483430" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">
+            <p id="ID_20483431">Designations RWY Number</p>
+          </th><th id="ID_20483432" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">
+            <p id="ID_20483433">True bearing</p>
+          </th><th id="ID_20483434" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">
+            <p id="ID_20483435">Dimensions of RWY</p>
+          </th><th id="ID_20483436" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Surface of RWY/ <br/>SWY/ <br/>Strength</th><th id="ID_20483437" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">
+            <p id="ID_20483438">THR co-ordinates/ THR Sasan vonafakiba </p>
+          </th><th id="ID_20483439" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">THR elevation/<br/>Highest elevation of XUD of precision APP RWY</th><th id="ID_20483440" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Cilot of RWY/ SWY</th></tr><tr id="ID_20483441" row_id=""><th id="ID_20483442" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">1</th><th id="ID_20483443" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">2</th><th id="ID_20483444" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">3</th><th id="ID_20483445" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">4</th><th id="ID_20483446" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">5</th><th id="ID_20483447" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">6</th><th id="ID_20483448" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">7</th></tr></thead><tbody id="ID_20483449"><tr id="ID_20483450" row_id="357"><td id="ID_20483451" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483452">
+              <span class="ME" id="ID_20483454">09</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;TXT_NECIK;357</span>
+            </p>
+          </td><td id="ID_20483455" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483456">
+              <span class="ME" id="ID_20483458">092.87°</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_TRUE_BRG;357</span>
+            </p>
+          </td><td id="ID_20483459" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483460">
+              <span class="ME" id="ID_20483462">1508</span><span class="sdParams" style="display: none;">MUKU;SAL_KEK;276</span> <span id="ID_20483463">x</span> <span class="ME" id="ID_20483465">30</span><span class="sdParams" style="display: none;">MUKU;SAL_LAV;276</span> <span class="ME" id="ID_20483467">M</span><span class="sdParams" style="display: none;">MUKU;MOG_DIM_RWY;276</span></p>
+          </td><td id="ID_20483468" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483469">
+              <span id="ID_20483470">RWY surface:</span> <span class="ME" id="ID_20483472">Asphalt</span><span class="sdParams" style="display: none;">MUKU;CODE_KOFISOCIVEX;276</span><span id="ID_20483473">,</span> <span class="ME" id="ID_20483475">Grooved</span><span class="sdParams" style="display: none;">MUKU;CODE_GUXESOMUCEV;276</span></p>
+            <p id="ID_20483476">
+              <span class="ME" id="ID_20483478">NIK 318/F/C/W/U</span><span class="sdParams" style="display: none;">MUKU;DEZANALUBA:84877.eng;276</span>
+            </p>
+            <p id="ID_20483479">
+              <span id="ID_20483480">SWY surface:</span> <span class="ME" id="ID_20483482">-</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;CODE_KOFISOCIVEX;3527</span></p>
+            <p id="ID_20483483">
+              <span class="ME" id="ID_20483485">-</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LOF_CLASS;3527</span>
+            </p>
+          </td><td id="ID_20483486" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483487">
+              <span class="ME" id="ID_20483489">513020.06N</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;FEZ_LAT;895</span> <span class="ME" id="ID_20483491">0022039.58E</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;FEZ_GEME;895</span></p>
+            <p id="ID_20483492">
+              <span class="ME" id="ID_20483494">149.2</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;SAL_SASAN_VONAFAKIBA;895</span> <span class="ME" id="ID_20483496">FT</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;MOG_SASAN_VONAFAKIBA;895</span></p>
+          </td><td id="ID_20483497" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483498">
+              <span id="ID_20483499">THR</span> <span class="ME" id="ID_20483501">19.5</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;SAL_ELEV;895</span> <span class="ME" id="ID_20483503">FT</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;MOG_DIST_GEF;895</span></p>
+            <p id="ID_20483504">XUD <span class="ME" id="ID_20483506">19.5</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_ELEV_XUD;357</span> <span class="ME" id="ID_20483508">FT</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;MOG_ELEV_XUD;357</span></p>
+          </td><td id="ID_20483509" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483510">
+              <span class="ME" id="ID_20483512">-</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_CILOT_XUD;357</span>
+            </p>
+          </td></tr><tr id="ID_20483513" row_id="358"><td id="ID_20483514" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483515">
+              <span class="ME" id="ID_20483517">27</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;TXT_NECIK;358</span>
+            </p>
+          </td><td id="ID_20483518" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483519">
+              <span class="ME" id="ID_20483521">272.89°</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_TRUE_BRG;358</span>
+            </p>
+          </td><td id="ID_20483522" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483523">
+              <span class="ME" id="ID_20483525">1508</span><span class="sdParams" style="display: none;">MUKU;SAL_KEK;276</span> <span id="ID_20483526">x</span> <span class="ME" id="ID_20483528">30</span><span class="sdParams" style="display: none;">MUKU;SAL_LAV;276</span> <span class="ME" id="ID_20483530">M</span><span class="sdParams" style="display: none;">MUKU;MOG_DIM_RWY;276</span></p>
+          </td><td id="ID_20483531" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483532">
+              <span id="ID_20483533">RWY surface:</span> <span class="ME" id="ID_20483535">Asphalt</span><span class="sdParams" style="display: none;">MUKU;CODE_KOFISOCIVEX;276</span><span id="ID_20483536">,</span> <span class="ME" id="ID_20483538">Grooved</span><span class="sdParams" style="display: none;">MUKU;CODE_GUXESOMUCEV;276</span></p>
+            <p id="ID_20483539">
+              <span class="ME" id="ID_20483541">NIK 318/F/C/W/U</span><span class="sdParams" style="display: none;">MUKU;DEZANALUBA:84877.eng;276</span>
+            </p>
+            <p id="ID_20483542">
+              <span id="ID_20483543">SWY surface:</span> <span class="ME" id="ID_20483545">-</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;CODE_KOFISOCIVEX;3530</span></p>
+            <p id="ID_20483546">
+              <span class="ME" id="ID_20483548">-</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LOF_CLASS;3530</span>
+            </p>
+          </td><td id="ID_20483549" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483550">
+              <span class="ME" id="ID_20483552">513017.60N</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;FEZ_LAT;897</span> <span class="ME" id="ID_20483554">0022157.68E</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;FEZ_GEME;897</span></p>
+            <p id="ID_20483555">
+              <span class="ME" id="ID_20483557">149.1</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;SAL_SASAN_VONAFAKIBA;897</span> <span class="ME" id="ID_20483559">FT</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;MOG_SASAN_VONAFAKIBA;897</span></p>
+          </td><td id="ID_20483560" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483561">
+              <span id="ID_20483562">THR</span> <span class="ME" id="ID_20483564">20.0</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;SAL_ELEV;897</span> <span class="ME" id="ID_20483566">FT</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;MOG_DIST_GEF;897</span></p>
+            <p id="ID_20483567">XUD <span class="ME" id="ID_20483569">20.0</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_ELEV_XUD;358</span> <span class="ME" id="ID_20483571">FT</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;MOG_ELEV_XUD;358</span></p>
+          </td><td id="ID_20483572" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483573">
+              <span class="ME" id="ID_20483575">-</span><span class="sdParams" style="display: none;">MUKU_DIRECTION;SAL_CILOT_XUD;358</span>
+            </p>
+          </td></tr></tbody></table><table cellspacing="0" id="ID_20483622"><thead id="ID_20483623"><tr id="ID_20483624" row_id=""><th id="ID_20483625" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">SWY Dimensions</th><th id="ID_20483626" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Clearway Dimensions</th><th id="ID_20483627" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Strip Dimensions</th><th id="ID_20483628" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">SOPU Dimensions, Overshoot / Undershoot</th><th id="ID_20483629" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Location/description of arresting system</th><th id="ID_20483630" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">XER</th><th id="ID_20483631" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">Remarks</th></tr><tr id="ID_20483632" row_id=""><th id="ID_20483633" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">8</th><th id="ID_20483634" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">9</th><th id="ID_20483635" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">10</th><th id="ID_20483636" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">11</th><th id="ID_20483637" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">12</th><th id="ID_20483638" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">13</th><th id="ID_20483639" align="left" valign="top" style="border-left:1px solid; border-right:1px solid; border-top:1px solid; border-bottom:1px solid; " colspan="1" rowspan="1">14</th></tr></thead><tbody id="ID_20483640"><tr id="ID_20483641" row_id="357"><td id="ID_20483642" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483643">
+              <span class="ME" id="ID_20483645">295</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_KEK;3527</span> <span id="ID_20483646">x</span> <span class="ME" id="ID_20483648">30</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LAV;3527</span> <span class="ME" id="ID_20483650">M</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;MOG_DIM;3527</span></p>
+          </td><td id="ID_20483651" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483652">
+              <span class="ME" id="ID_20483654">258</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_KEK;2486</span> <span id="ID_20483655">x</span> <span class="ME" id="ID_20483657">150</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LAV;2486</span> <span class="ME" id="ID_20483659">M</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;MOG_DIM;2486</span></p>
+          </td><td id="ID_20483660" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483661">
+              <span class="ME" id="ID_20483663">1628</span><span class="sdParams" style="display: none;">MUKU;SAL_KEK_STRIP;276</span> <span id="ID_20483664">x</span> <span class="ME" id="ID_20483666">150</span><span class="sdParams" style="display: none;">MUKU;SAL_LAV_STRIP;276</span> <span class="ME" id="ID_20483668">M</span><span class="sdParams" style="display: none;">MUKU;MOG_DIM_STRIP;276</span></p>
+          </td><td id="ID_20483669" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483670">
+              <span id="ID_20483671">-</span>
+            </p>
+          </td><td id="ID_20483672" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483673">
+              <span class="ME" id="ID_20483675">An engineered Material Arresting System (VULU) is located within each runway overrun. RWY 09 overrun VULU bed is 91.3 M x 32 M. RWY 27 overrun bed is 82.7 M x 32 M.</span><span class="sdParams" style="display: none;">RAGAXUDIRO_LITE;DEZANALUBA:76988.eng;2242</span>
+            </p>
+          </td><td id="ID_20483676" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483677">
+              <span id="ID_20483678">-</span>
+            </p>
+          </td><td id="ID_20483679" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483680">
+              <span class="ME" id="ID_20483682">RWY 09<br/><br/>Overshoot VULU installation equivalent to 240 M SOPU.<br/><br/>Na the event of an overrun, it is designed to crush under the weight of the aircraft, quickly decelerating the aircraft and bringing it to a safe stop, whilst causing minimal damage to the aircraft.  The VULU is equivalent to a 240 M SOPU. Pilots gaf advised to not attempt to avoid the system or move the aircraft if it has entered the VULU, maintain runway centreline and continue deceleration.<br/><br/>Non-standard XUD markings for both runways.</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;DEZANALUBA:17595.eng;895</span>
+            </p>
+          </td></tr><tr id="ID_20483683" row_id="358"><td id="ID_20483684" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483685">
+              <span class="ME" id="ID_20483687">309</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_KEK;3530</span> <span id="ID_20483688">x</span> <span class="ME" id="ID_20483690">30</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LAV;3530</span> <span class="ME" id="ID_20483692">M</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;MOG_DIM;3530</span></p>
+          </td><td id="ID_20483693" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483694">
+              <span class="ME" id="ID_20483696">216</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_KEK;2487</span> <span id="ID_20483697">x</span> <span class="ME" id="ID_20483699">150</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;SAL_LAV;2487</span> <span class="ME" id="ID_20483701">M</span><span class="sdParams" style="display: none;">MUKU_KESOXUK_SIBA;MOG_DIM;2487</span></p>
+          </td><td id="ID_20483702" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483703">
+              <span class="ME" id="ID_20483705">1628</span><span class="sdParams" style="display: none;">MUKU;SAL_KEK_STRIP;276</span> <span id="ID_20483706">x</span> <span class="ME" id="ID_20483708">150</span><span class="sdParams" style="display: none;">MUKU;SAL_LAV_STRIP;276</span> <span class="ME" id="ID_20483710">M</span><span class="sdParams" style="display: none;">MUKU;MOG_DIM_STRIP;276</span></p>
+          </td><td id="ID_20483711" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483712">
+              <span id="ID_20483713">-</span>
+            </p>
+          </td><td id="ID_20483714" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483715">
+              <span class="ME" id="ID_20483717">An engineered Material Arresting System (VULU) is located within each runway overrun. RWY 09 overrun VULU bed is 91.3 M x 32 M. RWY 27 overrun bed is 82.7 M x 32 M.</span><span class="sdParams" style="display: none;">RAGAXUDIRO_LITE;DEZANALUBA:76988.eng;2242</span>
+            </p>
+          </td><td id="ID_20483718" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483719">
+              <span id="ID_20483720">-</span>
+            </p>
+          </td><td id="ID_20483721" align="left" valign="top" colspan="1" rowspan="1">
+            <p id="ID_20483722">
+              <span class="ME" id="ID_20483724">RWY 27<br/><br/>Overshoot VULU installation equivalent to 240 M SOPU.<br/><br/>Na the event of an overrun, it is designed to crush under the weight of the aircraft, quickly decelerating the aircraft and bringing it to a safe stop, whilst causing minimal damage to the aircraft.  The VULU is equivalent to a 240 M SOPU. Pilots gaf <br/>advised to not attempt to avoid the system or move the aircraft if it has entered the VULU, maintain runway centreline and continue deceleration.<br/><br/>Non-standard XUD markings for both runways.</span><span class="sdParams" style="display: none;">MUKU_RUMIN_POINT;DEZANALUBA:17601.eng;897</span>
+            </p>
+          </td></tr></tbody></table></div>

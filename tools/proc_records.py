@@ -44,6 +44,11 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK', layout=None
                 p['coords_from'] = lg['coords_from']
             if lg['over']:
                 p['over'] = True
+            if lg.get('phase') == 'missed':
+                missed = True
+            for key in ('gap', 'speed'):
+                if lg.get(key) is not None:
+                    p[key] = lg[key]
             if missed:
                 p['phase'] = 'missed'
             if re.fullmatch(r'RW\d{2}[LRC]?', lg['id'] or '') or 'MAPt' in lg['remark']:
@@ -58,6 +63,10 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK', layout=None
         out.append({'id': '.'.join([icao, kind, norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': kind, 'name': name,
                     'runways': t['runways'], 'transition': t['transition'], 'points': pts,
                     'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'file': os.path.basename(str(source)), 'cycle': cycle, 'at': at}, 'status': 'check'})
+        if t.get('partial'):
+            out[-1]['partial'] = t['partial']
+        if t.get('chart_data'):
+            out[-1]['chart_data'] = t['chart_data']
         warnings += G.review(out[-1], positions, basis)
     return out, warnings
 

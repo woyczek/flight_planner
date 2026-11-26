@@ -263,17 +263,23 @@ def parse_uk_coding(rows):
             elif tf and (true is None or not decs):
                 bad.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: tronçon TF sans cap vrai ou sans distance')
             legs.append({'id': None if fixless else lg.group(5), 'leg': term, 'over': over, 'alt': level, 'kt': speed, 'lat': lat, 'lon': lon, 'crs': int(mag.group(1)) if mag else None,
-                         'true': float(true.group(1)) if true else None, 'nm': decs[-1] if tf and decs else None, 'turn': turn, 'seq': int(lg.group(3)), 'remark': ''})
+                       'true': float(true.group(1)) if true else None, 'nm': decs[-1] if (tf and decs or term == 'CF' and len(decs) >= 2) else None, 'turn': turn, 'seq': int(lg.group(3)), 'remark': ''})
         if bad:
             warnings.append(f'{t["title"][:60]}: {len(bad)} tronçon(s) incomplet(s) ({"; ".join(bad[:3])}), table NON retenue')
             continue
         first = legs[0]['leg'] if legs else None
-        if len(legs) < 2 or (first != 'IF' if kind == 'STAR' else not (first in FIXLESS or first in ('IF', 'DF', 'TF'))):
-            warnings.append(f'{t["title"][:60]}: {len(legs)} tronçon(s) lu(s), premier tronçon {first or "absent"} ({"IF" if kind == "STAR" else "tronçon sans point, IF, DF ou TF"} attendu), table NON retenue')
+        if len(legs) < 2 or (first != 'IF' if kind == 'STAR' else not (first in FIXLESS or first in ('IF', 'DF', 'TF', 'CF'))):
+            warnings.append(f'{t["title"][:60]}: {len(legs)} tronçon(s) lu(s), premier tronçon {first or "absent"} ({"IF" if kind == "STAR" else "tronçon sans point, IF, DF, TF ou CF"} attendu), table NON retenue')
             continue
         if any(x['over'] is None and x['id'] is not None for x in legs):
             warnings.append(f'{t["title"][:60]}: survol non lu (OCR)')
-        out.append({'title': t['title'], 'kind': kind, 'name': name, 'runways': sorted(set(rwy)), 'transition': None, 'legs': legs})
+        item = {'title': t['title'], 'kind': kind, 'name': name, 'runways': sorted(set(rwy)), 'transition': None, 'legs': legs}
+        if kind == 'SID' and first == 'CF':
+            if len(set(rwy)) != 1 or legs[0]['crs'] is None or legs[0]['true'] is None:
+                warnings.append(f'{t["title"][:60]}: CF initial sans piste unique, table NON retenue')
+                continue
+            item['partial'] = {'read': ['native-coded-legs'], 'unread': ['runway-to-first-fix-geometry', 'chart-operating-conditions']}
+        out.append(item)
     return {'kind': kind, 'tables': out, 'warnings': warnings}
 
 
