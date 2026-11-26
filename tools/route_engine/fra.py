@@ -46,6 +46,8 @@ def parity(value,fl,role):
     return fl%10==0 and (fl//10)%2==(1 if value=='ODD' else 0)
 
 class Fra:
+    _neigh=None      # SOG-0587 : par défaut dans la CLASSE (un Fra fait sans __init__, comme celui du cas K373, n'a ni cache ni compteur)
+    near_pairs=0
     def __init__(self,nav,date,nm):
         self.nav=nav;self.nm=nm;self.records=[];self.by_key=collections.defaultdict(list);self.book=None
         self.near_pairs=0

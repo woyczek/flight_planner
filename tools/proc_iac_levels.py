@@ -6,6 +6,8 @@ Short native bars distinguish min/max/at; unbarred procedure levels stay advisor
 """
 import re
 
+import safe_json
+
 
 def levels_from_fragments(fragments, strokes, axis):
     context = axis['_positions']
@@ -68,7 +70,9 @@ def read_levels(rows, references, fixes, threshold_elevation):
     if len(values) != 1 or len(values[0]) > 1500:
         return {}, {}, True
     try:
-        data = json.loads(values[0])
+        data, why = safe_json.loads(values[0])      # SOG-0468 (a) : le texte vient d'un PDF (non fiable) : la lecture bornée de safe_json (K469), jamais une garde propre
+        if why:
+            return {}, {}, True
         if (set(data) != {'schema', 'method', 'station', 'threshold_reference', 'fixes', 'faf_role'}
                 or type(data['schema']) is not int or data['schema'] != 1 or data['method'] != 'native-text-and-bars'
                 or data['station'] != references.get('station') or data['threshold_reference'] != references.get('threshold_reference')
@@ -94,7 +98,7 @@ def read_levels(rows, references, fixes, threshold_elevation):
                 return {}, {}, True
             roles['FAF'] = role
         return {'IF': level}, roles, False
-    except (AttributeError, KeyError, TypeError, ValueError, OverflowError, RecursionError):
+    except (AttributeError, KeyError, TypeError, ValueError, OverflowError):
         return {}, {}, True
 
 

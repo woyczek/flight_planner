@@ -5,10 +5,10 @@ references stay distinct, and named variants are not used to relabel DATA geomet
 """
 from datetime import date
 import copy
-import json
 import math
 import re
 
+import safe_json
 from proc_arc import destination
 from proc_geometry import bearing_nm
 from proc_iac_levels import attach_levels, read_levels
@@ -139,7 +139,9 @@ def _positioned_axis(rows):
     if len(items) != 1 or len(items[0]) > 4000:
         return None
     try:
-        axis = json.loads(items[0])
+        axis, why = safe_json.loads(items[0])      # SOG-0468 (a) : le texte vient d'un PDF (non fiable) : la lecture bornée de safe_json (K469), jamais une garde propre
+        if why:
+            return None
         if (not isinstance(axis, dict) or set(axis) != {'schema', 'method', 'station', 'threshold_reference', 'columns', 'fix_columns'}
                 or type(axis['schema']) is not int or axis['schema'] != 1 or axis['method'] != 'native-text-operands'
                 or not re.fullmatch(r'[A-Z]{2,3}', axis['station']) or axis['threshold_reference'] not in ('THR', 'DTHR')):
@@ -164,7 +166,7 @@ def _positioned_axis(rows):
         if not all(isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(columns) for i in markers.values()) or len(set(markers.values())) != len(markers):
             return None
         return axis
-    except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
+    except (KeyError, TypeError, ValueError, OverflowError):
         return None
 
 
