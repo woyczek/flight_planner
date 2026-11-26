@@ -7056,6 +7056,7 @@ function levelAutoOn() {
   saveFlight();
   refresh();
 }
+const TFL = AL.create(() => S, () => refresh()); // SOG-0653 : le plancher du relief, lu une fois par route (auto_limits.js)
 /** Le niveau « Auto » après un calcul (SOG-0056) : tant que level.auto, le niveau qui brûle le moins (FuelLevels.autoLevel sur la série
  *  déjà chiffrée, bornée par le plafond de la fiche et par la plus haute contrainte d'une procédure choisie) est posé s'il a changé, puis
  *  redessiné (deux fois au plus de suite : un vent au nouveau niveau ne fait jamais osciller) ; le bouton dit pourquoi il est inactif ;
@@ -7073,13 +7074,15 @@ function levelAuto(C) {
     b.title = tt(why || TX.levelAutoHint);
     b.setAttribute('aria-pressed', String(!!f.level?.auto));
   }
-  const lim = AL.autoLimits(f.route?.constraints, ceilOf(C)), // modules/fuel/auto_limits.js (SOG-0653, extrait de ce fichier)
+  const lim = AL.autoLimits(f.route?.constraints, ceilOf(C), TFL.floorFt()), // SOG-0653 : jamais sous le relief (auto_limits.js)
     cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
       ...lim,
       max: RE.LEVELS_MAX
     }) : [],
     // SOG-0530 lot C : sans moteur, le choix d'avant — le moins gourmand de la parité du cap (« route non vérifiée », dit)
     blind = cands.length ? window.FuelLevels.autoLevel?.(C.D, +f.route?.trackDeg || 0, lim) || cands[0] : null;
+  const over = f.level?.auto && C.D && !cands.length ? AL.overCeilWhy(lim, TFL.floorFt(), tt) : null; // SOG-0653 : dit, jamais tu
+  if (over) return lvlLines(line, '', over), false;
   // SOG-0529 : le moteur de route juge les candidats (route/levels, une demande par clé du vol) ; le choix se fait ici
   const J = cands.length ? autoJudge(cands, blind) : null;
   if (J?.held) {
