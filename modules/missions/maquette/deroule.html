@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missions : un seul déroulé, événements et tiroirs (maquette SOG-0620)</title>
+<style>
+/* Maquette SOG-0620 (26 nov. 2026), sur le MODÈLE arrêté par l'ergonome avec l'utilisateur le 25/11 : UN déroulé dans l'atelier ; chaque
+   ligne est un ÉVÉNEMENT (prévu au brief : une heure par rapport à un REPÈRE, une tolérance, une heure imposée ou non ; il se constate par la
+   présence sur son lieu, sans geste) ou un TIROIR (un événement étendu : caché jusqu'à ce que sa clé joue, déclencheur large, heure de
+   repli, enveloppe). Communs : le propos (titre, consigne), un lieu facultatif, les équipes concernées. Le fichier ne change pas de forme :
+   timeline.events (plus des clés facultatives que la V2 ignore) et phases. Mission et lieux inventés. Scènes : ?s=a (le déroulé, un
+   événement choisi), b (l'événement « RDV + 10 min », repère = un autre événement), c (un tiroir choisi), d (ajouter : « ＋ Événement »
+   et « ＋ Tiroir »), e (côté pilote : les constats d'événements, sans outil de coordination). Le décor (en-tête, colonne) est imité : le
+   BLOC du déroulé et ses fiches font contrat. */
+:root {
+  --sog-fg: #1b1f24;
+  --sog-muted: #59636e;
+  --sog-border: #d0d7de;
+  --sog-bg: #fff;
+  --sog-page: #f3f4f6;
+  --sog-soft: #f6f8fa;
+  --sog-accent: #1a6fd8;
+  --sog-accent-fg: #fff;
+  --sog-ok: #1e7d32;
+  --sog-warn: #8a5300;
+  --sog-warn-bg: #fff4d1;
+  --ev: #0b6b5c;
+  --ev-bg: #e3f4f0;
+  --dw: #6b3fb8;
+  --dw-bg: #f1ebfb;
+  --sog-touch: 44px;
+  --sog-size-s: 14px;
+  --sog-size-xs: 12px
+}
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: var(--sog-page);
+  color: var(--sog-fg);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+button,
+input,
+select {
+  font: inherit
+}
+button {
+  min-height: var(--sog-touch);
+  padding: 0 14px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  color: var(--sog-fg)
+}
+button.primary {
+  background: var(--sog-accent);
+  border-color: var(--sog-accent);
+  color: var(--sog-accent-fg)
+}
+.muted {
+  color: var(--sog-muted)
+}
+.f-head {
+  height: 57px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--sog-bg);
+  border-bottom: 1px solid var(--sog-border);
+  font-weight: 700;
+  font-size: 18px
+}
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr)
+}
+.f-nav {
+  border-right: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  padding: 14px 10px;
+  min-height: calc(100vh - 57px)
+}
+.f-nav div {
+  padding: 10px 12px
+}
+.f-nav .on {
+  background: var(--sog-accent);
+  color: var(--sog-accent-fg)
+}
+main {
+  padding: 14px 20px 30px;
+  min-width: 0
+}
+.crumbs {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+h1 {
+  font-size: 24px;
+  margin: 2px 0 12px
+}
+.atelier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start
+}
+.card {
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg)
+}
+.card>h2 {
+  margin: 0;
+  padding: 10px 14px 4px;
+  font-size: 17px
+}
+.card>.def {
+  margin: 0;
+  padding: 0 14px 10px;
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted);
+  border-bottom: 1px solid var(--sog-border)
+}
+/* LE DÉROULÉ : une ligne par événement ou tiroir, dans l'ordre du déroulé prévu */
+.row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 4px 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sog-border);
+  cursor: pointer
+}
+.row[aria-current] {
+  background: #eef4fd;
+  box-shadow: inset 3px 0 0 var(--sog-accent)
+}
+.when {
+  font-size: var(--sog-size-s);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3
+}
+.when b {
+  display: block
+}
+.kind {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  margin-right: 6px
+}
+.kind.ev {
+  color: var(--ev);
+  background: var(--ev-bg)
+}
+.kind.dw {
+  color: var(--dw);
+  background: var(--dw-bg)
+}
+.row.dw {
+  box-shadow: inset 3px 0 0 var(--dw)
+}
+.row.dw[aria-current] {
+  box-shadow: inset 3px 0 0 var(--dw);
+  background: #f6f1fd
+}
+.what b {
+  font-size: 16px
+}
+.what .sub {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  border: 1px solid var(--sog-border);
+  padding: 0 6px;
+  margin-right: 4px
+}
+.adds {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  flex-wrap: wrap
+}
+.menu {
+  margin: 0 14px 12px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg)
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--sog-border);
+  padding: 8px 12px;
+  min-height: 0
+}
+.menu button small {
+  display: block;
+  color: var(--sog-muted)
+}
+/* LA FICHE d'une ligne */
+.sheet {
+  padding: 12px 14px
+}
+.sheet h3 {
+  margin: 0 0 2px;
+  font-size: 18px
+}
+.field {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0
+}
+.field>span {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.field input,
+.field select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-bg);
+  width: 100%
+}
+.inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap
+}
+.inline input {
+  width: 80px
+}
+.inline select {
+  width: auto;
+  flex: 1;
+  min-width: 10em
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0
+}
+.check input {
+  width: 20px;
+  height: 20px
+}
+.read {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  background: var(--sog-soft);
+  border-left: 3px solid var(--ev);
+  font-size: var(--sog-size-s)
+}
+.read.dw {
+  border-left-color: var(--dw)
+}
+.teams .chip {
+  font-size: 14px;
+  padding: 4px 10px
+}
+/* CÔTÉ PILOTE (e) : les constats des événements, dans « Suite de la mission » */
+.pilot {
+  max-width: 640px
+}
+.pilot section {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sog-border)
+}
+.kick {
+  font-size: var(--sog-size-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--sog-muted);
+  margin: 0 0 6px
+}
+.ev-line {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 6px 0
+}
+.state {
+  font-size: var(--sog-size-s)
+}
+.state.ok {
+  color: var(--sog-ok)
+}
+.state.late {
+  color: var(--sog-warn)
+}
+/* téléphone */
+.phone .layout {
+  display: block
+}
+.phone .f-nav {
+  display: none
+}
+.phone main {
+  padding: 10px
+}
+.phone .atelier {
+  display: block
+}
+.phone .atelier>.card+.card {
+  margin-top: 12px
+}
+.phone h1 {
+  font-size: 20px
+}
+.phone .row {
+  grid-template-columns: 62px minmax(0, 1fr)
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// Mission inventée : X-980A « Exercice coordonné Blue / Red ». Aucun lieu ni nom réel.
+const P = new URLSearchParams(location.search),
+  S = P.get('s') || 'a',
+  phone = innerWidth < 760;
+document.body.classList.toggle('phone', phone);
+const esc = s => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+
+// le déroulé, dans l'ordre prévu : événements (prévus au brief) et tiroirs (cachés jusqu'à leur clé)
+const ROWS = [{
+  id: 'EV-1',
+  k: 'ev',
+  when: 'H+45',
+  tol: '± 10 min',
+  title: 'Rendez-vous au point ROMEO',
+  sub: 'ROMEO · 2 500 ft · « Blue : orbite gauche ; Red : orbite droite »',
+  teams: ['Blue', 'Red']
+}, {
+  id: 'EV-2',
+  k: 'ev',
+  when: 'RDV + 10',
+  tol: '± 2 min',
+  title: 'Blue : silence radio',
+  sub: 'aucun lieu · jusqu\'au largage',
+  teams: ['Blue']
+}, {
+  id: 'EV-3',
+  k: 'ev',
+  when: 'RDV + 12',
+  tol: 'imposée',
+  title: 'Red : largage sur la zone SIERRA',
+  sub: 'SIERRA · heure imposée',
+  teams: ['Red']
+}, {
+  id: 'T1',
+  k: 'dw',
+  when: 'clé',
+  tol: 'repli H+90',
+  title: 'Tiroir 1 · Cible affinée',
+  sub: 'clé : passage de la zone SIERRA · caché jusque-là',
+  teams: ['Blue', 'Red']
+}, {
+  id: 'T2',
+  k: 'dw',
+  when: 'clé',
+  tol: 'repli H+120',
+  title: 'Tiroir 2 · Changement de zone',
+  sub: 'clé : objet trouvé (canot) · caché jusque-là',
+  teams: ['Blue']
+}, {
+  id: 'EV-4',
+  k: 'ev',
+  when: 'T2 + 20',
+  tol: '± 5 min',
+  title: 'Retour groupé à la base',
+  sub: 'XTST · après le tiroir 2',
+  teams: ['Blue', 'Red']
+}];
+const sel = S === 'b' ? 'EV-2' : S === 'c' ? 'T1' : 'EV-1';
+
+/** Une ligne du déroulé : l'heure (repère et décalage, puis tolérance) ; la sorte ; le propos, le lieu, les équipes. */
+const row = r => `<div class="row ${r.k}"${r.id === sel ? ' aria-current="true"' : ''}><div class="when"><b>${esc(r.when)}</b><span class="muted">${esc(r.tol)}</span></div>
+  <div class="what"><span class="kind ${r.k}">${r.k === 'ev' ? 'Événement' : 'Tiroir'}</span><b>${esc(r.title)}</b><div class="sub">${esc(r.sub)}</div>
+  <div>${r.teams.map(t => `<span class="chip">${t}</span>`).join('')}</div></div></div>`;
+
+/** Le bloc du déroulé : un titre, la ligne qui dit les deux sortes, les lignes, l'ajout. */
+const list = () => `<div class="card"><h2>Déroulé</h2><p class="def">Un événement est prévu au brief et se constate sur son lieu ; un tiroir reste caché jusqu'à ce que sa clé joue.</p>
+  ${ROWS.map(row).join('')}
+  <div class="adds"><button>＋ Événement</button><button>＋ Tiroir</button></div>
+  ${S === 'd' ? `<div class="menu"><button><b>＋ Événement</b><small>prévu au brief : une heure par rapport à un repère, une tolérance</small></button><button><b>＋ Tiroir</b><small>caché jusqu'à ce que sa clé joue ; reçu en enveloppe</small></button></div>` : ''}</div>`;
+
+/** La fiche d'un ÉVÉNEMENT : le propos, le REPÈRE et le décalage, la tolérance, l'heure imposée, le lieu, les équipes ; ce que le pilote lira. */
+function eventSheet(r) {
+  const rdv = r.id === 'EV-2';
+  return `<div class="card sheet"><span class="kind ev">Événement</span><h3>${esc(r.title)}</h3><p class="muted" style="margin:0">prévu au brief · se constate, sans geste</p>
+  <label class="field"><span>Titre</span><input value="${esc(r.title)}"></label>
+  <label class="field"><span>Consigne</span><input value="${rdv ? 'Silence radio jusqu\'au largage' : 'Blue : orbite gauche ; Red : orbite droite'}"></label>
+  <div class="field"><span>Heure prévue</span><div class="inline"><select><option${rdv ? '' : ' selected'}>le décollage</option><option>la réception de l'ordre</option><option>le passage à un point</option><option${rdv ? ' selected' : ''}>un autre événement</option></select>
+  ${rdv ? '<select><option selected>EV-1 · Rendez-vous au point ROMEO</option></select>' : ''}<span>+</span><input value="${rdv ? '10' : '45'}"><span>min</span></div></div>
+  <div class="field"><span>Tolérance</span><div class="inline"><span>avance</span><input value="${rdv ? '2' : '10'}"><span>retard</span><input value="${rdv ? '2' : '10'}"><span>min</span></div></div>
+  <label class="check"><input type="checkbox"><span>Heure imposée (l'avance ne se rattrape pas en attendant)</span></label>
+  <label class="field"><span>Lieu (facultatif)</span><select><option${rdv ? ' selected' : ''}>aucun lieu</option><option${rdv ? '' : ' selected'}>ROMEO · rendez-vous</option></select></label>
+  <div class="field teams"><span>Équipes concernées</span><div>${['Blue', 'Red'].map(t => `<span class="chip"${r.teams.includes(t) ? ' style="border-color:var(--ev);background:var(--ev-bg)"' : ''}>${t}</span>`).join('')}</div></div>
+  <p class="read">Le pilote lira : « ${rdv ? '10 min après le rendez-vous (± 2 min)' : 'H+45 (± 10 min)'} · ${esc(r.title)} ». Son heure suit l'heure RÉELLE de son repère dès qu'elle est constatée${rdv ? ' (le rendez-vous tenu à 14:52Z → 15:02Z)' : ''}.</p></div>`;
+}
+
+/** La fiche d'un TIROIR : inchangée dans son principe (clé, heure de repli, message, briefing, suite de route), avec les communs. */
+const drawerSheet = r => `<div class="card sheet"><span class="kind dw">Tiroir</span><h3>${esc(r.title)}</h3><p class="muted" style="margin:0">caché jusqu'à ce que sa clé joue · reçu en enveloppe</p>
+  <label class="field"><span>Clé</span><select><option selected>une zone de passage · SIERRA</option><option>un objet à trouver</option><option>l'arrivée au terrain</option><option>le geste du pilote seul</option></select></label>
+  <div class="field"><span>Heure de repli</span><div class="inline"><span>H+</span><input value="90"><span>min</span></div></div>
+  <label class="field"><span>Message</span><input value="La cible est à 2 NM au nord du point SIERRA."></label>
+  <label class="field"><span>Briefing</span><input value="Affinez la recherche vers le nord, 1 500 ft."></label>
+  <div class="field teams"><span>Équipes concernées</span><div><span class="chip" style="border-color:var(--dw);background:var(--dw-bg)">Blue</span><span class="chip" style="border-color:var(--dw);background:var(--dw-bg)">Red</span></div></div>
+  <p class="read dw">Les tiroirs s'attendent dans l'ordre ; à l'heure de repli, le tiroir s'ouvre même si sa clé n'a pas joué.</p></div>`;
+
+/** (e) côté pilote : les constats, des mots seulement (le pilote a la radio ; la coordination a l'écran du CPCO) */
+const pilot = () => `<div class="card pilot"><section><p class="kick">Prévu</p>
+  <div class="ev-line"><b>H+45</b><div>Rendez-vous au point ROMEO<div class="state ok">tenu à 14:52Z, 7 min de retard (dans la tolérance)</div></div></div>
+  <div class="ev-line"><b>15:02Z</b><div>Blue : silence radio<div class="state muted">dans 3 min · 10 min après le rendez-vous</div></div></div>
+  <div class="ev-line"><b>15:04Z</b><div>Red : largage sur la zone SIERRA · heure imposée<div class="state late">sur site dans 6 min : en retard de 2 min</div></div></div>
+  </section><section><p class="kick">Ce que vous pouvez faire</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button>Objet en vue</button><button>Demander la suite</button></div></section></div>`;
+
+let body;
+if (S === 'e') body = `<div class="crumbs">Missions › Mes missions</div><h1>X-980A · Exercice coordonné Blue / Red</h1>${pilot()}`;
+else {
+  const r = ROWS.find(x => x.id === sel);
+  body = `<div class="crumbs">Missions › Registre › Atelier</div><h1>X-980A · Exercice coordonné Blue / Red</h1>
+  <div class="atelier">${list()}${S === 'd' ? '' : r.k === 'ev' ? eventSheet(r) : drawerSheet(r)}</div>`;
+}
+document.getElementById('app').innerHTML = `<div class="f-head">✈ ${S === 'e' ? 'Missions' : 'Compagnie'}</div><div class="layout"><nav class="f-nav"><div class="on">Missions</div><div>Registre</div></nav><main>${body}</main></div>`;
+</script>
+</body>
+</html>
