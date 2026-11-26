@@ -470,7 +470,9 @@ const drawerSheet = r => `<div class="card sheet"><span class="kind dw">Tiroir</
 
 /** (e) côté pilote, équipe Blue, décollage réel 14:00Z, il est 14:55Z : le bloc « Suite de la mission » avec « Prévu » entre « Maintenant » et
  *  « Avant » ; des heures d'horloge ; le dernier événement constaté et les deux suivants, le reste replié ; le brief commun, l'équipe du pilote
- *  en puce pleine ; l'heure imposée du largage ne glisse pas (14:57Z, celle du plan) ; un événement passé et constaté rejoint « Avant ». */
+ *  en puce pleine ; l'heure imposée du largage ne glisse pas (14:57Z, celle du plan) ; un événement passé et constaté rejoint « Avant ».
+ *  L'état EN DIRECT (arrivée estimée, retard en cours) n'est dit que pour les événements de SON équipe ; pour une autre équipe : l'heure
+ *  prévue, puis « tenu à … » au constat partagé — le suivi des autres est l'écran du CPCO (l'ergonome, 26/11). */
 const team = t => `<span class="chip ${t === 'Blue' ? 'mine' : 'other'}">${t}</span>`;
 const pilot = () =>
   `<div class="card pilot"><header class="phead"><b>Suite de la mission</b><div class="muted" style="font-size:14px">En vol depuis 14:00Z · Position : X-Plane, reçue il y a 3 s</div></header>
@@ -478,7 +480,7 @@ const pilot = () =>
   <section><p class="kick">Ce que vous pouvez faire</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button>Objet en vue</button><button>Demander la suite</button></div></section>
   <section><p class="kick">Prévu</p>
   <div class="ev-line"><b>14:45Z</b><div>Rendez-vous au point ROMEO ${team('Blue')}${team('Red')}<div class="state ok">tenu à 14:52Z, 7 min de retard (dans la tolérance)</div></div></div>
-  <div class="ev-line"><b>14:57Z</b><div>Red : largage sur la zone SIERRA · heure imposée ${team('Red')}<div class="state late">Red sur site dans 6 min : en retard de 4 min</div></div></div>
+  <div class="ev-line"><b>14:57Z</b><div>Red : largage sur la zone SIERRA · heure imposée ${team('Red')}<div class="state muted">prévu à 14:57Z · « tenu à … » viendra du constat partagé de Red</div></div></div>
   <div class="ev-line"><b>15:02Z</b><div>Blue : silence radio ${team('Blue')}<div class="state muted">dans 7 min · 10 min après le rendez-vous tenu</div></div></div>
   <details class="more"><summary class="muted">1 autre</summary><div class="ev-line"><b>15:40Z</b><div>Red : retour à XTSU ${team('Red')}</div></div></details></section>
   </div>`; // « Avant » viendra sous « Prévu » dès qu'un message aura été lu (ici, l'ordre de mission est encore sous « Maintenant »)
