@@ -3256,6 +3256,7 @@ def k279(c):
             for n, text in (('avians_is_enr_4.4.html', F.points_page()), ('avians_is_enr_3.2_UT587.html', F.UT587), ('avians_is_enr_3.2_Y25.html', F.Y25), *extra):
                 (up / n).write_text(text, encoding='utf-8')
         orig_pause = AF._pause
+        real_avians = AF.avians
         AF._pause = lambda s: None
         try:
             # a deposit dated in the FUTURE (clock, copy) is capped at today; no edition, no cycle
@@ -3333,6 +3334,9 @@ def k279(c):
             got, day = A.deposited([str(up)], today)
             c.eq(len([k for k in got if k != 'points']), 100, 'more than 100 route pages deposited: 100 are kept (as the summary of the site)', what='100 routes')
             # the card of a failed taking (audit 217 addendum): the sentence with the address, `pages` and `stopped` reach the view and `failed`
+            # the clock is the case's own (16 Nov 2026), as everywhere above: the verb `fetch` calls aero_fetch.avians without a date, so it read the DAY's one and, from 26 Nov, took
+            # an edition of the site that the fixture does not hold (red since 26 Nov); the date is given here for the three takings below, the expectations are the same
+            AF.avians = lambda data_, downloads=None, today_=None, **kw: real_avians(data_, downloads, today_ or today, **kw)
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
                 data2 = _repo(DS, td2)
                 z = data2 / 'sia' / 'zones' / 'is'
@@ -3359,6 +3363,7 @@ def k279(c):
                 c.ok(src.get('state') == 'failed' and 'https://eaip.avians.is/' in str(src.get('message')) and len(src['message']) <= 240, str(src), 'a site that does not answer: the sentence carries the address tried')
         finally:
             AF._pause = orig_pause
+            AF.avians = real_avians
 
 
 def _sg():
