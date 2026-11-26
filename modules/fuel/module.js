@@ -53,6 +53,7 @@ import * as ATIS from './atis.js';
 import * as DIR from './direct.js';
 import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ de la route (extrait de resolveRoute)
 import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle ne couvre pas » (extrait)
+import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (extrait)
 import {
   copyAndTell,
   copyText
@@ -129,7 +130,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -1417,13 +1418,6 @@ const TX = {
   // les niveaux des points et celui du plan différents (SOG-0020 : « 5 min de vol » — la montée vers le plan mangeait la route)
   lvlMix: ['Points à {p}, plan à {l}', 'Points at {p}, plan at {l}', 'Punkte auf {p}, Plan auf {l}', 'Puntos a {p}, plan a {l}'],
   // SOG-0562 (l'ergonome) : un niveau au-dessus du plafond de l'aéronef — dit, jamais refusé
-  lvlCeil: ['Au-dessus du plafond du {type} (FL{c}).', 'Above the ceiling of the {type} (FL{c}).',
-    'Über der Dienstgipfelhöhe der {type} (FL{c}).',
-    'Por encima del techo del {type} (FL{c}).'
-  ],
-  rAboveCeil: ['au-dessus du plafond (FL{c})', 'above the ceiling (FL{c})', 'über der Dienstgipfelhöhe (FL{c})',
-    'por encima del techo (FL{c})'
-  ],
   lvlMixTimes: [' : {c} de montée pour {k} de croisière', ': {c} of climb for {k} of cruise', ': {c} Steigflug für {k} Reiseflug',
     ': {c} de ascenso para {k} de crucero'
   ],
@@ -6247,15 +6241,14 @@ function routeAltsDraw() {
   // « Auto », avant un choix, aucune (seul le niveau est appliqué, la pastille « Auto » le dit)
   const applied = i => i === A.chosen;
   // les motifs d'une ligne (pourquoi une meilleure n'est pas gardée), sur leur ligne, en orange, séparés par « · »
-  const ceil = ceilOf(S.C),
-    motifs = a => {
-      const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
-        a.connector === 'direct' ? `<span data-direct>${esc(tt(TX.rDirect))}</span>` : '',
-        // SOG-0562 : une route à un niveau au-dessus du plafond de l'aéronef
-        ceil && Number.isInteger(a.fl) && a.fl * 100 > ceil ? `<span data-ceil>${esc(tt(TX.rAboveCeil, { c: flTxt3(Math.floor(ceil / 100)) }))}</span>` : ''
-      ].filter(Boolean);
-      return parts.length ? `<span class="f-warn fu-rh3" data-motifs>${parts.join(' · ')}</span>` : '';
-    };
+  const motifs = a => {
+    const parts = [a.semiOut || (a.levelWarn || []).some(r => r.code === 'level_semicircular') ? `<span data-semicirc>${esc(tt(RR.ROWS.levelOutside))}</span>` : '',
+      a.connector === 'direct' ? `<span data-direct>${esc(tt(TX.rDirect))}</span>` : '',
+      // SOG-0562 : une route à un niveau au-dessus du plafond de l'aéronef
+      ceilMotif(a.fl)
+    ].filter(Boolean);
+    return parts.length ? `<span class="f-warn fu-rh3" data-motifs>${parts.join(' · ')}</span>` : '';
+  };
   // le geste d'une ligne (SOG-0545, l'ergonome) : « choisie » sans bouton sur la ligne prise (la liste revue) ; en « Auto », la ligne
   // qu'« Auto » garde : la pastille « Auto » et « Choisir », tant que sa route n'est pas dans le champ Route ; sinon « Choisir »
   const gest = (a, i) => {
@@ -7519,25 +7512,20 @@ function setConstraint(input) {
   saveFlight();
   refresh();
 }
-/** SOG-0562 : le plafond de l'aéronef, en pieds — le plus bas de celui de la fiche (cruise.ceilingFt) et de celui du modèle de
- *  performance (perf.ceiling : il lit le plafond EUROCONTROL du type) ; null sans l'un ni l'autre. */
-function ceilOf(C = S.C) {
-  const v = [+C?.sheet?.cruise?.ceilingFt, +C?.perf?.ceiling].filter(x => x > 0);
-  return v.length ? Math.min(...v) : null;
-}
-/** SOG-0562 (l'ergonome) : sous le champ Niveau, toujours visible quand le niveau du vol (tapé, d'un OFP, de la fiche) dépasse le
- *  plafond de l'aéronef : « Au-dessus du plafond du {type} (FL{plafond}). » — dit, jamais refusé ; masquée sinon. */
+/** SOG-0562 : sur la carte d'une route à un niveau au-dessus du plafond, le motif (ceiling.js ceilMotif) ; '' sinon. */
+const ceilMotif = fl => {
+  const m = CEIL.ceilMotif(S.C, fl, tt);
+  return m ? `<span data-ceil>${esc(m)}</span>` : '';
+};
+/** SOG-0562 : le plafond de l'aéronef, en pieds (modules/fuel/ceiling.js, SOG-0674 : extrait de ce fichier). */
+const ceilOf = (C = S.C) => CEIL.ceilOf(C);
+/** SOG-0562 (l'ergonome) : sous le champ Niveau, la ligne du plafond (ceiling.js ceilLine) ; masquée sans elle. */
 function lvlCeil(C) {
   const el = S.body?.querySelector('[data-lvlceil]');
   if (!el) return;
-  const ceil = ceilOf(C),
-    lv = +C?.levelFt || 0,
-    type = String(C?.sheet?.icao || C?.sheet?.type || S.flight?.aircraft?.type || '').toUpperCase().slice(0, 12);
-  el.hidden = !(ceil && lv > ceil);
-  el.textContent = el.hidden ? '' : tt(TX.lvlCeil, {
-    type,
-    c: String(Math.floor(ceil / 100)).padStart(3, '0')
-  });
+  const text = CEIL.ceilLine(C, +C?.levelFt || 0, String(C?.sheet?.icao || C?.sheet?.type || S.flight?.aircraft?.type || ''), tt);
+  el.hidden = !text;
+  el.textContent = text;
 }
 /** Les niveaux posés sur les points de la route (hors départ et arrivée) qui ne sont pas celui du plan : une ligne près du niveau, avec
  *  ce que la montée et la croisière durent alors, et un geste (SOG-0020 ; rien de modal) ; masquée sinon. */
