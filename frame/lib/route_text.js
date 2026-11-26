@@ -10,7 +10,8 @@
 //     d'une voie ou d'une procédure, à garder tel quel s'il n'est pas un point connu) ; DCT écarté. SOG-0679 : un mot de l'item 15 que la
 //     suite sait lire porte sa forme — form 'rule' (« VFR », « IFR » : la règle de vol change), 'cruise' (« C/XPB/N0450F350F390 », la
 //     montée en croisière : point, speed, levels), 'brgdist' (« TOU180040 », un point par relèvement et distance : point, brg, nm) ; un
-//     mot sans forme n'est pas compris. speed : la vitesse d'un groupe (« N0450 »), jamais appliquée au devis.
+//     mot sans forme n'est pas compris. speed : la vitesse d'un groupe (« N0450 ») ou écrite avec le niveau d'un point
+//     (« LUGEN/N0280F150 »), jamais appliquée au devis ; word : le mot d'un groupe.
 //   textFromTokens(tokens, { dct }) : texte normalisé de jetons { pt: point } | { keep: mot } (une ligne) ; avec dct, en forme OACI :
 //     « DCT » entre deux points de route qui se suivent sans voie ni procédure (jamais contre le départ ni l'arrivée) (§ 10.31).
 //   withProcedures(text, o), proceduresOfText(text, o) : les noms de SID et de STAR dans le texte, posés depuis le choix et relus
@@ -128,7 +129,9 @@ export function tokenize(text) {
     const word = words[i],
       lv = /(?:^|\/)(?:[NKM]\d{3,4})?F(\d{3})$/.exec(word),
       alt = lv ? +lv[1] * 100 : 0,
-      tok = word.split('/')[0];
+      tok = word.split('/')[0],
+      // SOG-0679 : la vitesse écrite avec le niveau d'un point (« LUGEN/N0280F150 »), lue, jamais appliquée au devis
+      speed = word.includes('/') ? SPEED.exec(word.slice(word.lastIndexOf('/') + 1))?.[1] || '' : '';
     let m;
     const ns = NAT_SLASH.exec(word),
       nlat = ns ? +ns[1] + (ns[2] ? +ns[2] / 60 : 0) : NaN,
@@ -166,7 +169,8 @@ export function tokenize(text) {
     else if (GROUP.test(tok)) out.push({
       kind: 'group',
       alt_ft: alt,
-      speed: SPEED.exec(tok)?.[1] || '' // SOG-0679 : lue, jamais appliquée au devis
+      speed: SPEED.exec(tok)?.[1] || '', // SOG-0679 : lue, jamais appliquée au devis
+      word: tok // SOG-0679 : le groupe de tête reste écrit dans le texte
     });
     else if (tok === 'DCT') continue;
     else if ((m = ICAO_LL.exec(tok))) out.push({
@@ -174,7 +178,10 @@ export function tokenize(text) {
       id: tok,
       lat: (+m[1] + (+m[2] || 0) / 60) * (m[3] === 'S' ? -1 : 1),
       lon: (+m[4] + (+m[5] || 0) / 60) * (m[6] === 'W' ? -1 : 1),
-      alt_ft: alt
+      alt_ft: alt,
+      ...(speed ? {
+        speed
+      } : {})
     });
     else if ((m = NAT_LL.exec(tok))) {
       const q = NAT_Q[m[3] || m[5]];
@@ -198,7 +205,10 @@ export function tokenize(text) {
       kind: 'name',
       id: tok,
       alt_ft: alt,
-      airway: AIRWAY.test(tok) || PROC.test(tok)
+      airway: AIRWAY.test(tok) || PROC.test(tok),
+      ...(speed ? {
+        speed
+      } : {})
     });
     else out.push({
       kind: 'word',
@@ -238,7 +248,8 @@ const pointWord = p => {
     name = NAME.test(id) || ICAO_LL.test(id) || natSlashKept(id, p) ? id : Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) ?
     icaoCoord(+p
       .lat, +p.lon) : id;
-  return `${name}${p?.alt_ft > 0 ? `/F${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`;
+  const sp = typeof p?.speed === 'string' && /^(?:[NK]\d{4}|M\d{3})$/.test(p.speed) ? p.speed : ''; // SOG-0679
+  return `${name}${p?.alt_ft > 0 ? `/${sp}F${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`;
 };
 
 /** Texte normalisé de jetons { pt } | { keep } : une ligne, en forme OACI (V3 § 10.31) : « DCT » entre deux points qui se suivent

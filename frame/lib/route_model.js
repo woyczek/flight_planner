@@ -4,8 +4,9 @@
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
 //   routeModel(text, { dep, arr, known, chain, base, procs, nat }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks,
-//   natDirect, notUnderstood, rules } (voir la fonction ; SOG-0679 : notUnderstood, les mots non compris dans l'ordre du texte ; rules,
-//   [{ rule: 'VFR' | 'IFR', after: le point qui précède ou null }] ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
+//   natDirect, reading } (voir la fonction ; SOG-0679 : reading = { notUnderstood (les mots non compris dans l'ordre du texte, « C/… »
+//   compris), unplaced (les points par relèvement et distance, pas placés), rules ([{ rule: 'VFR' | 'IFR', after: le point qui précède
+//   ou null }]), speeds (les vitesses écrites), headLevel (le niveau du groupe de tête, 0 sans lui), steps (un niveau écrit à un point) } ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
 //   jour lues et valides, [{ id, points: [{ id, lat, lon }] }] — aerodb.natTracks() —, null si elles ne le sont pas ; natDirect : les routes
 //   NAT gardées NON dépliées, [{ l, why: 'unread' | 'gone' | 'ends' }]).
 //   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
@@ -13,6 +14,8 @@
 //   far : les noms dont le seul lieu connu (ou le plus proche) est plus loin de la route que 2 × la distance directe + FAR_EXTRA_NM —
 //   non placés, jamais pris en silence (SOG-0142, « LFRS PAM LFBD » : la seule PAM du cycle était aux États-Unis).
 //   AIRWAY_WORD : la forme d'un désignateur de voie, composé compris (UN460, G54-R66).
+//   flightRules(rules, { dep, arr }) → { letter: 'I' | 'V' | 'Y' | 'Z', start, changes: [{ rule, at }] } | null : la règle de vol de
+//   la route, déduite des « VFR » / « IFR » écrits (SOG-0679 : elle ne se saisit pas) ; null sans eux.
 
 import {
   tokenize
@@ -62,7 +65,11 @@ export async function routeModel(text, {
     // SOG-0679 : les mots que la suite ne comprend pas (dits sous la route, jamais un silence), et chaque changement de règle de vol
     // avec le point qu'il suit (null en tête)
     notUnderstood = [],
-    rules = [];
+    rules = [],
+    // SOG-0679 : les points par relèvement et distance (lus, pas placés), les vitesses écrites, le niveau du groupe de tête
+    unplaced = [],
+    speeds = [];
+  let headLevel = 0;
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
   const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
   const homonyms = [];
@@ -149,14 +156,18 @@ export async function routeModel(text, {
       lon: k.lon
     }) : null;
   };
-  /** Ajoute un point (et son jeton) ; son niveau s'il en a un. */
-  const add = (id, c, alt) => {
+  /** Ajoute un point (et son jeton) ; son niveau s'il en a un, et la vitesse écrite avec lui (SOG-0679, jamais appliquée). */
+  const add = (id, c, alt, speed = '') => {
+    if (speed) speeds.push(speed);
     const p = {
       id,
       lat: c.lat,
       lon: c.lon,
       ...(alt ? {
         alt_ft: alt
+      } : {}),
+      ...(alt && speed ? {
+        speed
       } : {})
     };
     if (via && points.length) {
@@ -224,14 +235,23 @@ export async function routeModel(text, {
       continue;
     }
     if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
+      if (t.speed) speeds.push(t.speed);
+      // SOG-0679 : en tête (avant le départ ou contre lui), le groupe reste écrit et son niveau est dit non appliqué ; au milieu, sa
+      // vitesse suit le niveau du point qui le précède (« TOU N0450F370 » s'écrit « TOU/N0450F370 »)
+      if (points.length <= 1) {
+        if (t.alt_ft && !headLevel) headLevel = t.alt_ft;
+        if (t.word) tokens.push({
+          keep: t.word
+        });
+      } else if (t.alt_ft && t.speed) points.at(-1).speed = t.speed;
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
-    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
+    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft, t.speed);
     else if (t.kind === 'name') {
       // le départ et l'arrivée du vol écrits dans le texte sont ces terrains : jamais jugés « trop loin » du point qui les précède (une
       // arrivée écrite après un point de l'Atlantique était écartée, gardée en mot, puis l'arrivée ajoutée : « … LFML LFML », garde F216)
       const own = t.id === dep || t.id === arr,
         c = await find(t.id, own ? null : points.at(-1) || mid);
-      if (c) add(t.id, c, t.alt_ft);
+      if (c) add(t.id, c, t.alt_ft, t.speed);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
         if (AIRWAY_WORD.test(t.id)) via = t.id;
@@ -251,6 +271,8 @@ export async function routeModel(text, {
       'cruise') { // SOG-0679 : la montée en croisière ; son point est un point de la route, ses niveaux ne s'appliquent pas
       const inner = tokenize(t.point)[0],
         c = inner?.kind === 'coord' ? inner : inner?.kind === 'name' ? await find(inner.id, points.at(-1) || mid) : null;
+      notUnderstood.push(t.id); // SOG-0679 (l'ergonome) : « Non compris : C/… », son point reste un point de la route
+      if (t.speed) speeds.push(t.speed);
       if (c) {
         add(t.point, c, 0);
         points.at(-1).cruise = t.id;
@@ -262,7 +284,8 @@ export async function routeModel(text, {
       }
     } else {
       if (AIRWAY_WORD.test(t.id)) via = t.id; // voie composée (G54-R66)
-      else notUnderstood.push(t.id); // SOG-0679 : relèvement-distance compris (pas placé), et tout mot sans forme
+      else if (t.form === 'brgdist') unplaced.push(t.id); // SOG-0679 : lu, pas placé (relèvement magnétique), dit en avertissement
+      else notUnderstood.push(t.id); // SOG-0679 : tout mot sans forme
       tokens.push({
         keep: t.id
       });
@@ -332,7 +355,10 @@ export async function routeModel(text, {
   let prev = points[0]?.alt_ft;
   points.forEach((p, i) => {
     const a = p.alt_ft;
-    if (!i || i === points.length - 1 || a === prev) delete p.alt_ft;
+    if (!i || i === points.length - 1 || a === prev) {
+      delete p.alt_ft;
+      delete p.speed; // SOG-0679 : la vitesse suit le niveau écrit
+    }
     if (a) prev = a;
   });
   // les homonymes ne se disent que pour les points de route, jamais pour le départ et l'arrivée du vol (SOG-0154)
@@ -350,8 +376,15 @@ export async function routeModel(text, {
   return {
     points,
     unresolved,
-    notUnderstood,
-    rules,
+    // SOG-0679 : la lecture en clair de la route (route_lines.js de Carburant) ; steps : un niveau écrit à un point, tenu en palier
+    reading: {
+      notUnderstood,
+      unplaced,
+      rules,
+      speeds,
+      headLevel,
+      steps: points.slice(1, -1).some(p => p.alt_ft > 0)
+    },
     tokens,
     badAirways,
     homonyms,
@@ -431,3 +464,43 @@ function unfoldNat(points, natAt, nat) {
 export const NAT_TRACK = /^NAT[A-Z]$/;
 /** SOG-0372 : un texte qui porte un nom de route NAT (« NATG ») : les routes du jour sont alors lues pour le déplier. */
 export const NAT_IN_TEXT = /(^|\s)NAT[A-Z](\s|$)/i;
+
+/** SOG-0679 : la règle de vol déduite des « VFR » / « IFR » du texte (reading.rules) — la règle au départ (écrite en tête ou contre le
+ *  départ ; sinon le contraire du premier changement, qui ne se dit que si la règle change), les changements le long de la route (un
+ *  changement qui répète la règle en cours ne compte pas ; deux au même point : le dernier ; à l'arrivée : aucun), et la lettre de
+ *  l'item 8 : I ou V sans changement, Y d'IFR vers VFR, Z de VFR vers IFR. null sans règle écrite. */
+export function flightRules(rules, {
+  dep = '',
+  arr = ''
+} = {}) {
+  const list = (Array.isArray(rules) ? rules : []).filter(r => r && (r.rule === 'VFR' || r.rule === 'IFR'));
+  if (!list.length) return null;
+  const D = String(dep || '').toUpperCase(),
+    A = String(arr || '').toUpperCase(),
+    raw = [];
+  let start = null;
+  for (const r of list) {
+    const at = typeof r.after === 'string' && r.after ? r.after.toUpperCase() : null;
+    if ((!at || at === D) && !raw.length) start = r.rule;
+    else if (at && at !== A) {
+      if (raw.length && raw.at(-1).at === at) raw.at(-1).rule = r.rule;
+      else raw.push({
+        rule: r.rule,
+        at
+      });
+    }
+  }
+  if (!start) start = raw.length ? raw[0].rule === 'VFR' ? 'IFR' : 'VFR' : null;
+  const changes = [];
+  let cur = start;
+  for (const c of raw)
+    if (c.rule !== cur) {
+      changes.push(c);
+      cur = c.rule;
+    }
+  return {
+    letter: changes.length ? start === 'IFR' ? 'Y' : 'Z' : start === 'IFR' ? 'I' : 'V',
+    start,
+    changes
+  };
+}
