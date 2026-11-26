@@ -15,18 +15,19 @@ import {
 export const TX = {
   // SOG-0669 (l'ergonome, 26/11) : le sens des voies, par État — vérifié où la base l'a, inconnu ailleurs ; la partie « Inconnu » ne
   // s'écrit que s'il y en a ; les limites de vitesse ont leur propre ligne (celle du moteur)
-  dirAll: ['Sens des voies : vérifié sur toute la route.', 'Airway direction: checked along the whole route.',
-    'Richtung der Luftstraßen: auf der ganzen Route geprüft.', 'Sentido de las aerovías: verificado en toda la ruta.'
+  // les phrases arrêtées par l'ergonome (26/11) : sans préposition (les États en liste), un point-virgule avant la conséquence
+  dirAll: ['Sens des voies vérifié sur toute la route.', 'Airway direction checked along the whole route.',
+    'Richtung der Luftstraßen auf der ganzen Route geprüft.', 'Sentido de las aerovías verificado en toda la ruta.'
   ],
-  dirBoth: ['Sens des voies : vérifié en {k}. Inconnu en {u} : une voie peut y être prise à contresens.',
-    'Airway direction: checked in {k}. Unknown in {u}: an airway may be flown the wrong way there.',
-    'Richtung der Luftstraßen: geprüft in {k}. Unbekannt in {u}: eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
-    'Sentido de las aerovías: verificado en {k}. Desconocido en {u}: una aerovía puede tomarse allí en sentido contrario.'
+  dirBoth: ['Sens des voies vérifié : {k}. Inconnu : {u} ; une voie peut y être prise à contresens.',
+    'Airway direction checked: {k}. Unknown: {u}; an airway may be flown the wrong way there.',
+    'Richtung der Luftstraßen geprüft: {k}. Unbekannt: {u}; eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
+    'Sentido de las aerovías verificado: {k}. Desconocido: {u}; una aerovía puede tomarse allí en sentido contrario.'
   ],
-  dirNone: ['Sens des voies : inconnu en {u} : une voie peut y être prise à contresens.',
-    'Airway direction: unknown in {u}: an airway may be flown the wrong way there.',
-    'Richtung der Luftstraßen: unbekannt in {u}: eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
-    'Sentido de las aerovías: desconocido en {u}: una aerovía puede tomarse allí en sentido contrario.'
+  dirNone: ['Sens des voies inconnu : {u} ; une voie peut y être prise à contresens.',
+    'Airway direction unknown: {u}; an airway may be flown the wrong way there.',
+    'Richtung der Luftstraßen unbekannt: {u}; eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
+    'Sentido de las aerovías desconocido: {u}; una aerovía puede tomarse allí en sentido contrario.'
   ]
 };
 
