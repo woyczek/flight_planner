@@ -11801,7 +11801,7 @@ _DIR_WORDS = {
       '« Non vérifiable » each airway whose direction is unknown, in the language of the screen, as text', 'F', tags=('fuel', 'aerodb'),
       designs=('standard',), screens=False, langs4=True,
       rule='SOG-0669 (the ergonomist, 26 Nov: the line « Sens autorisés et limites de vitesse absents des fichiers airways » is false for '
-      'France, Germany and the United Kingdom; AeroDB 2f7c05bbe: gaps { code: direction, known, unknown } in ICAO prefixes, « Vitesses '
+      'France, Germany and the United Kingdom; AeroDB, SOG-0669: gaps { code: direction, known, unknown } in ICAO prefixes, « Vitesses '
       'limites » with its sentence, issues direction_unknown { via, state } and direction_unknown_more { count }); a fake launcher')
 def f329(c):
     st = _route_launcher(c, ['route/compute'])

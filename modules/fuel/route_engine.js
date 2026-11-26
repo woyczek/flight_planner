@@ -819,7 +819,7 @@ export function normalize(res, action = 'compute', asked = null) {
     status: ['computed', 'proposal', 'none', 'faulty'].includes(res.status) ? res.status : !plans.length ? 'none' : plans[0].proposal ?
       'proposal' : plans[0].faulty ? 'faulty' : 'computed', // SOG-0532 (3) : 'faulty', la meilleure route rendue fautive
     cache: cacheOf(res.cache),
-    // SOG-0669 (AeroDB 2f7c05bbe) : le sens des voies est une entrée sans phrase — { code: 'direction', known, unknown }, les États en
+    // SOG-0669 (AeroDB) : le sens des voies est une entrée sans phrase — { code: 'direction', known, unknown }, les États en
     // préfixes OACI (quarante au plus, deux à quatre signes) ; écrite par l'écran dans sa langue (route_limits.js)
     gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => own(g, 'code') === 'direction' ? {
       code: 'direction',

@@ -80,7 +80,7 @@ export const ROWS = {
   rad_unread1: ['{zone} : {n} règle du RAD concerne cette route', '{zone}: {n} RAD rule applies to this route',
     '{zone}: {n} RAD-Regel betrifft diese Route', '{zone}: {n} regla del RAD se aplica a esta ruta'
   ],
-  // SOG-0669 (AeroDB 2f7c05bbe) : une voie dont la base n'a pas le sens dans un État — l'État d'abord, comme les lignes du RAD (SOG-0556)
+  // SOG-0669 (AeroDB) : une voie dont la base n'a pas le sens dans un État — l'État d'abord, comme les lignes du RAD (SOG-0556)
   direction_unknown: ['{zone} : sens de {via} inconnu.', '{zone}: direction of {via} unknown.', '{zone}: Richtung von {via} unbekannt.',
     '{zone}: sentido de {via} desconocido.'
   ],
