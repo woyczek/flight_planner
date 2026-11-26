@@ -22787,3 +22787,58 @@ def k633(c):
     c.eq([cov['proc_reader']('dk', 0), cov['proc_reader']('dk', 3), cov['proc_reader']('fr', 0), cov['proc_reader']('fr', 12), cov['proc_reader']('xx', 0)], ['none', 'readable', 'unchecked', 'readable', 'unchecked'], 'readable when procedures are held, none when the register says no reader, unchecked otherwise', what='proc_reader')
     c.eq(R.status('se', 0, [{'zones': ('se',), 'reader': None}]), 'none', 'the status follows the register that it is given', what='given register')
     c.eq(R.status('se', 0, []), 'unchecked', 'a state absent from the register is unchecked, never guessed none', what='absent state')
+@case('K580', 'Local chart inventory deduplicates byte-identical PDF copies and overlapping roots, but keeps different content under the same filename', 'K', static=True,
+      tags=('procedure-readers', 'ead-inventory'), rule='Invented disk census with PDF-shaped bytes; no PDF parser or network and no national-completeness claim')
+
+def k580(c):
+    from pathlib import Path
+    import tempfile
+    _reader_modules()
+    from proc_inventory import inventory
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        name = 'EG_AD_2_EGGW_6-10_en.pdf'
+        for folder, content in [('one', b'%PDF sample A'), ('two', b'%PDF sample A'), ('three', b'%PDF sample B')]:
+            path = root / folder / name
+            path.parent.mkdir()
+            path.write_bytes(content)
+        vac = root / 'vac'
+        vac.mkdir()
+        (vac/'AD-2.LFZW.pdf').write_bytes(b'%PDF VAC sample')
+        result = inventory({'all': root, 'overlap': root/'one'}, {name: {'INSTRUMENT APPROACH CHART ILS RWY25'}})
+    uk = next(r for r in result['countries'] if r['state'] == 'EG')
+    fr = next(r for r in result['countries'] if r['state'] == 'LF')
+    c.eq((uk['pdf_copies'], uk['unique_pdf_content'], uk['airports'], uk['document_hints']), (3, 2, ['EGGW'], {'APP': 2}),
+         'three physical paths, two actual contents; overlapping roots add no copy and source title provides a hint', what='duplicates')
+    c.eq((fr['pdf_copies'], fr['airports']), (1, ['LFZW']), 'French dotted VAC filenames retain their aerodrome', what='VAC identity')
+    c.eq((result['national_completeness'], result['scope']), (None, 'supplied-local-folders-only'), 'a local file census cannot establish national procedure coverage', what='scope')
+
+
+@case('K581', 'Stored procedure census keeps partial records, cycles and unread formats separate and reports missing or unread inputs', 'K', static=True,
+      tags=('procedure-readers', 'ead-inventory'), rule='Synthetic stored documents include an OCR alternative and an older cycle; raw document counts are never treated as installed or current coverage')
+
+def k581(c):
+    from pathlib import Path
+    import json
+    import tempfile
+    _reader_modules()
+    from proc_inventory import inventory, markdown
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        for folder in ('now', 'copy', 'old'):
+            (root/folder).mkdir()
+        doc = {'icao': 'EIDW', 'cycle': '2026-10-29', 'procedures': [{'kind': 'SID'}, {'kind': 'APP', 'partial': {'unread': ['missed-path']}}],
+               'formats': [{'ok': True}, {'ok': False}]}
+        text = json.dumps(doc)
+        (root/'now/EIDW.json').write_text(text, encoding='utf-8')
+        (root/'copy/EIDW.json').write_text(text, encoding='utf-8')
+        (root/'now/EIDW.ocr.json').write_text(json.dumps({'icao': 'EIDW', 'cycle': '2026-10-29', 'procedures': [{'kind': 'APP'}]}), encoding='utf-8')
+        (root/'old/EIDW.json').write_text(json.dumps({'icao': 'EIDW', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR'}]}), encoding='utf-8')
+        (root/'now/LFXX.json').write_text('{ unread', encoding='utf-8')
+        result = inventory({'documents': root, 'missing': root/'missing'})
+    row = next(r for r in result['countries'] if r['state'] == 'EI')
+    c.eq((row['procedure_documents'], row['procedure_records'], row['partial_records'], row['cycles']),
+         (3, 4, 1, ['2026-10-01', '2026-10-29']), 'identical documents are counted once; OCR alternative and old cycle remain raw census records', what='stored documents')
+    c.eq((row['format_entries_read'], row['format_entries_unread']), (1, 1), 'an unread source entry remains visible beside read entries', what='formats')
+    c.eq(sorted(e['reason'] for e in result['errors']), ['JSONDecodeError', 'folder-missing'], 'unavailable census inputs are reported', what='unread inputs')
+    c.ok('not national coverage' in markdown(result) and result['national_completeness'] is None, str(result), 'the generated report preserves the limits of the count')

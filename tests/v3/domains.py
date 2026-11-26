@@ -77,6 +77,8 @@ RULES = [
     ('tools/proc_iac_positions.py', ['K', 'I'], 'the positioned text of the IAC pages (DME / threshold columns, IF / FAF labels) and its aerodb cases'),
     ('tools/proc_iac_levels.py', ['K', 'I'], 'the IF levels of the IAC pages and its aerodb cases'),
     ('tools/pdf_rows_child.py', ['K', 'I'], 'the bounded child process of the PDF reading and its aerodb cases'),
+    ('tools/proc_inventory.py', ['K', 'I'], 'the read-only census of the local charts and stored procedure documents and its aerodb cases'),
+    ('tools/proc_readers.py', ['K', 'I'], 'the register of the procedure readers (layout, State, source, licence of the source, test pages), read by the launcher, and its aerodb cases'),
     ('tools/proc_national.py', ['K', 'I'], 'the national source build of the SIA (workstation tool, injected get) and its aerodb cases'),
     ('tools/proc_geometry.py', ['K', 'I'], 'the geometry check and the doubt policy and their aerodb cases'),
     ('tools/make_eaip_fixtures.py', ['K', 'I'], 'the page sets of the French aerodromes and their regeneration tool'),
