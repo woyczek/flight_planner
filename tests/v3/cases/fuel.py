@@ -11767,36 +11767,34 @@ def f334(c):
 
 # SOG-0669: the words, written in clear (the States named from aerodb's table of ICAO prefixes, SOG-0556)
 _DIR_WORDS = {
-    'fr': {'both': 'Sens des voies : vérifié en Allemagne, France. Inconnu en Suisse, Italie : une voie peut y être prise à contresens.',
-           'all': 'Sens des voies : vérifié sur toute la route.',
-           'none': 'Sens des voies : inconnu en Suisse : une voie peut y être prise à contresens.',
+    'fr': {'both': 'Sens des voies vérifié : Allemagne, France. Inconnu : Suisse, Italie ; une voie peut y être prise à contresens.',
+           'all': 'Sens des voies vérifié sur toute la route.',
+           'none': 'Sens des voies inconnu : Suisse ; une voie peut y être prise à contresens.',
            'via': ['Suisse : sens de XN850 inconnu.', 'Italie : sens de <b>X</b> inconnu.', 'et 3 autres voies au sens inconnu'],
            'speeds': 'Vitesses limites'},
-    'en': {'both': 'Airway direction: checked in Germany, France. Unknown in Switzerland, Italy: an airway may be flown the wrong way there.',
-           'all': 'Airway direction: checked along the whole route.',
-           'none': 'Airway direction: unknown in Switzerland: an airway may be flown the wrong way there.',
+    'en': {'both': 'Airway direction checked: Germany, France. Unknown: Switzerland, Italy; an airway may be flown the wrong way there.',
+           'all': 'Airway direction checked along the whole route.',
+           'none': 'Airway direction unknown: Switzerland; an airway may be flown the wrong way there.',
            'via': ['Switzerland: direction of XN850 unknown.', 'Italy: direction of <b>X</b> unknown.',
                    'and 3 other airways of unknown direction'],
            'speeds': 'Vitesses limites'},
-    'de': {'both': 'Richtung der Luftstraßen: geprüft in Deutschland, Frankreich. Unbekannt in Schweiz, Italien: eine Luftstraße kann dort in '
-                   'Gegenrichtung beflogen werden.',
-           'all': 'Richtung der Luftstraßen: auf der ganzen Route geprüft.',
-           'none': 'Richtung der Luftstraßen: unbekannt in Schweiz: eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
+    'de': {'both': 'Richtung der Luftstraßen geprüft: Deutschland, Frankreich. Unbekannt: Schweiz, Italien; eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
+           'all': 'Richtung der Luftstraßen auf der ganzen Route geprüft.',
+           'none': 'Richtung der Luftstraßen unbekannt: Schweiz; eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
            'via': ['Schweiz: Richtung von XN850 unbekannt.', 'Italien: Richtung von <b>X</b> unbekannt.',
                    'und 3 weitere Luftstraßen mit unbekannter Richtung'],
            'speeds': 'Vitesses limites'},
-    'es': {'both': 'Sentido de las aerovías: verificado en Alemania, Francia. Desconocido en Suiza, Italia: una aerovía puede tomarse allí en '
-                   'sentido contrario.',
-           'all': 'Sentido de las aerovías: verificado en toda la ruta.',
-           'none': 'Sentido de las aerovías: desconocido en Suiza: una aerovía puede tomarse allí en sentido contrario.',
+    'es': {'both': 'Sentido de las aerovías verificado: Alemania, Francia. Desconocido: Suiza, Italia; una aerovía puede tomarse allí en sentido contrario.',
+           'all': 'Sentido de las aerovías verificado en toda la ruta.',
+           'none': 'Sentido de las aerovías desconocido: Suiza; una aerovía puede tomarse allí en sentido contrario.',
            'via': ['Suiza: sentido de XN850 desconocido.', 'Italia: sentido de <b>X</b> desconocido.',
                    'y 3 aerovías más de sentido desconocido'],
            'speeds': 'Vitesses limites'},
 }
 
 
-@case('F329', 'Route: « Ce que le contrôle ne couvre pas » says the direction of the airways per State — « Sens des voies : vérifié en '
-      'Allemagne, France. Inconnu en Suisse, Italie : une voie peut y être prise à contresens. », « vérifié sur toute la route » when the '
+@case('F329', 'Route: « Ce que le contrôle ne couvre pas » says the direction of the airways per State — « Sens des voies vérifié : '
+      'Allemagne, France. Inconnu : Suisse, Italie ; une voie peut y être prise à contresens. », « … vérifié sur toute la route » when the '
       'base has it everywhere, the « Inconnu » part only when there is one; the speed limits keep their own line, never « Sens et »; under '
       '« Non vérifiable » each airway whose direction is unknown, in the language of the screen, as text', 'F', tags=('fuel', 'aerodb'),
       designs=('standard',), screens=False, langs4=True,
