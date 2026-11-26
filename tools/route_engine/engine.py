@@ -114,6 +114,7 @@ def written_route(dep,legs,via=(),marks=None):
     marks=marks or {}; words=[[dep,None]]; last=None
     for n,leg in enumerate(legs):
         name=leg['via']; end=leg['end']['id']
+        if end==words[-1][0]:continue      # SOG-0668 : jamais deux points identiques de suite (ROUTE138) : un tronçon qui revient au point écrit n'est pas écrit
         if n>0 and n in marks:words[-1][1]=marks[n]
         if last==name and last!='DCT' and words[-1][0] not in via and words[-1][1] is None:words[-1][0]=end
         else:words.extend([[name,None],[end,None]])
@@ -893,6 +894,7 @@ class Nav:
         words=[dep]; last=None
         for u,v,e in path:
             if e.get('kind')=='FRA_GATE': continue
+            if self.nodes[v]['id']==words[-1]: continue      # SOG-0668 : jamais deux points identiques de suite (ROUTE138 : un direct d'un point vers LUI-MÊME ; deux points de la base de même nom, à quelques mètres) : le tronçon qui revient au point écrit n'est pas écrit
             if last==e['route'] and last!='DCT' and words[-1] not in via: words[-1]=self.nodes[v]['id']
             else: words.extend([e['route'],self.nodes[v]['id']])
             last=e['route']

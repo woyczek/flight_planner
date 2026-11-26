@@ -21329,3 +21329,48 @@ def k641(c):
         doc = json.load(open(os.path.join(folder, 'last_results.json'), encoding='utf-8'))
         c.eq(sorted(doc), sorted('x/v%d' % n for n in range(8)), 'eight jobs that end together: the eight entries are in the journal', what='eight entries')
         c.ok(not [f for f in os.listdir(folder) if f.endswith('.tmp')], os.listdir(folder), 'no temporary file left')
+
+
+
+@case('K661', 'Route engine, SOG-0668 (ROUTE138): never two identical points in a row in a route — the text of a route that the search writes, and the text that the control rebuilds from its legs, do not write a leg that comes back to the point just written (a direct from a point to ITSELF: two points of the base of the same name, a few metres apart); the control already refuses a typed route that repeats a point',
+      'K', static=True,
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0668, a user trial at Eurocontrol: « ROUTE138 CANNOT HAVE A ROUTE BETWEEN THE SAME POINT; ROUTE: DCT »; « jamais deux points identiques de suite »). The two writers of the text of a route (`Nav.format_path`, the text of the search; `written_route`, the text rebuilt from the legs) wrote every leg, even one whose end has the name of the point just written. On an invented base: the pure writer on legs, the writer of the search on two points of the base of the same name, and the control on a typed route',
+      )
+def k661(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import engine as E, import_books as I, plan as P, view
+    leg = lambda via, a, b: {'via': via, 'start': {'id': a}, 'end': {'id': b}}
+    c.eq((E.written_route('A', [leg('DCT', 'A', 'P'), leg('DCT', 'P', 'P'), leg('DCT', 'P', 'B')]), E.written_route('A', [leg('DCT', 'A', 'A'), leg('B1', 'A', 'P'), leg('B1', 'P', 'P'), leg('B1', 'P', 'B')]), E.written_route('A', [leg('DCT', 'A', 'P'), leg('DCT', 'P', 'B')])),
+         ('A DCT P DCT B', 'A B1 B', 'A DCT P DCT B'), 'the text rebuilt from the legs does not write a leg that comes back to the point just written (a direct, or a leg of an airway, from a point to itself) — red before: « A DCT P DCT P DCT B »; a route with no such leg is written as before', what='written route')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+            doc = json.load(f)
+        doc['data'] += [{'id': 'DUP', 'type': 'ICAO', 'lat': 50.0, 'lon': -3.0}, {'id': 'DUP', 'type': 'ICAO', 'lat': 50.0, 'lon': -2.99}]
+        with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+            json.dump(doc, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        E.DATA_DIR, E.RAD_FILE = data, os.path.join(data, 'route', 'rad.json.gz')
+        P.drop_contexts()
+        try:
+            nav, rd = P.context({'date': '2026-11-10T12:00'}, data)
+            k1, k2 = nav.add({'id': 'DUP', 'lat': 50.0, 'lon': -3.0}), nav.add({'id': 'DUP', 'lat': 50.0, 'lon': -2.99})
+            a, b = nav.add({'id': 'AAA', 'lat': 49.0, 'lon': -3.0}), nav.add({'id': 'BBB', 'lat': 51.0, 'lon': -3.0})
+            c.ok(k1 != k2, (k1, k2), 'the two points of the base of the same name are TWO nodes (the case of the bug)')
+            path = [(a, k1, {'route': 'DCT'}), (k1, k2, {'route': 'DCT'}), (k2, b, {'route': 'DCT'})]
+            c.eq(nav.format_path('AAA', path), 'AAA DCT DUP DCT BBB', 'the text of the search does not write the direct between the two nodes of the same name — red before: « AAA DCT DUP DCT DUP DCT BBB »', what='format path')
+            res = P.compute(view.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False, 'route': 'LFPO DCT DUP DCT DUP DCT EIDW'}), data, os.path.join(data, 'route', 'rad.json.gz'), None)['primary']
+            c.eq([i['text'] for i in res['issues'] if i['level'] == 'ERREUR' and 'répété' in i['text']], ['Point répété sans déplacement : DUP'], 'the CONTROL (unchanged: the repeat of a point is already an ERREUR for a typed route; the two nodes of a name resolve to the same node there)', what='control')
+        finally:
+            E.DATA_DIR = E.RAD_FILE = None
+            P.drop_contexts()
