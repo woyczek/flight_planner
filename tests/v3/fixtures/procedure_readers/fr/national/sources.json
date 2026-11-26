@@ -1,0 +1,110 @@
+[
+  {
+    "fixture": "FMZK-IAC.rows.txt",
+    "file": "AD_2_FMZK_IAC_RWY14_ILS_Z_LOC_Z.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France (région Réunion), AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZB-IAC.rows.txt",
+    "file": "AD_2_LFZB_IAC_RWY30R_ILS_Y_LOC_Y.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZL-DATA.rows.txt",
+    "file": "AD_2_LFZL_DATA_01.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZL-IAC.rows.txt",
+    "file": "AD_2_LFZL_IAC_RWY13_ILS_LOC.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZL-ILS-CODE.rows.txt",
+    "file": "AD_2_LFZL_DATA_RWY13_ILS_LOC_CODE.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC d'une approche ILS (CODE). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZL-runways.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZM-DATA.rows.txt",
+    "file": "AD_2_LFZM_DATA_01.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZM-IAC.rows.txt",
+    "file": "AD_2_LFZM_IAC_RWY27_ILS.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZM-ILS-CODE.rows.txt",
+    "file": "AD_2_LFZM_DATA_RWY27_ILS_CODE.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC d'une approche ILS (CODE). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZM-runways.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZN-layout.rows.txt",
+    "file": "AD_2_LFZN_DATA_RWY21_ILS_Z_CAT1_2_3_LOC_Z_CODE.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC (tableau CODE, mise en page à en-tête perdu). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZO-FNA-IAC.rows.txt",
+    "file": "AD_2_LFZO_IAC_RWY14L_FNA_ILS_Y_LOC_Y.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZP-IAC.rows.txt",
+    "file": "AD_2_LFZP_IAC_RWY05_ILS_LOC.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZQ-layout.rows.txt",
+    "file": "AD_2_LFZQ_DATA_STAR_RWY18_RNAV_CODE_01.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC (tableau CODE, mise en page à en-tête perdu). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZR-layout.rows.txt",
+    "file": "AD_2_LFZR_DATA_SID_RWY18_RNAV_CODE_03.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC (tableau CODE, mise en page à en-tête perdu). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZS-IAC.rows.txt",
+    "file": "AD_2_LFZS_IAC_RWY13L_FNA_ILS_Z_LOC_Z.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZT-IAC.rows.txt",
+    "file": "AD_2_LFZT_IAC_RWY07_FNA_ILS_CAT1_LOC.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZW-IAC.rows.txt",
+    "file": "AD_2_LFZW_IAC_RWY22_ILS_LOC.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZX-IAC.rows.txt",
+    "file": "AD_2_LFZX_IAC_RWY26_ILS_LOC.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "NTXA-IAC.rows.txt",
+    "file": "AD_2_NTXA_IAC_RWY04_ILS_Y_LOC_Y.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France (région Pacifique (Polynésie)), AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "NWXB-IAC.rows.txt",
+    "file": "AD_2_NWXB_IAC_RWY11_ILS_Y_LOC_Y.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France (région Pacifique (Nouvelle-Calédonie)), AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "TFXC-IAC.rows.txt",
+    "file": "AD_2_TFXC_IAC_RWY12_ILS_Y_LOC_Y.pdf",
+    "reference": "Page inventée, sur le modèle de l'AIP de France (région Caraïbes-Amérique du Sud-Amérique du Nord), AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  }
+]

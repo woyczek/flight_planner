@@ -1,0 +1,25 @@
+AD 2 LFZM DA T A RWY27 ILS CODEAIP
+19 FEB 2026FRANCE
+SESUZACE ROSIDOFA XUBEPAPU
+PRECODING ILS RWY 27
+AMDT 02/26© Tedatod de b'fatumadicol Malomibaruba, France
+ILS RWY 27
+RMK - MAG VAR 2025 1.4°E REF NAVAID : -
+Leg Path Waypoint
+sequence Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Fugegefidogaf MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle(°) / TCH (ft) NavigationAccuracy (NM)
+IF ZM271 - - - - - 2500 4400 185 - -
+INA ZM271
+TF IZM27 - 183 184.5 5.1 - 2500 2500 185 - 1.0
+IF ZM272 - - - - - 2500 4000 185 - -
+INA ZM272
+TF IZM27 - 003 004.5 5.1 - 2500 2500 185 - 1.0
+IF ZM090 Yes - - - - 2500 5000 210 - -
+DF ZM276 - - - - - 2500 4000 185 - 1.0
+INA ZM090
+TF ZM272 - 093 094.5 5.0 - 2500 4000 185 - 1.0
+TF IZM27 - 003 004.5 5.1 - 2500 2500 185 - 1.0
+IF IZM27 - - - - - 2500 2500 185 - -
+See chart ILS RWY 27
+APCH - ZM280 Yes - - - - - 2500 180 - 1.0
+DF ZM274 - - - - L - 2500 185 - 1.0
+TF ZM272 - 093 094.3 12.7 - 2500 2500 185 - 1.0

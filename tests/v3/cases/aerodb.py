@@ -22486,3 +22486,248 @@ def k583(c):
     font = {'/Encoding': {'/Differences': [2, '/MT49', '/MT46', '/MT53', '/Unknown']}}
     c.eq(_native_map(font), {2: '1', 3: '.', 4: '5'}, 'native positions use explicit glyph names and original byte advances, never a shifted guess', what='native numeric mapping')
     c.eq(_native_map({**font, '/ToUnicode': 'opaque'}), {}, 'the numeric-name fallback does not replace a different encoding layer', what='encoding guard')
+@case('K584', 'Current French direct ILS and ILS/LOC coding titles retain their initial and missed groups', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Le Minizak and Sesuzace real 26 November source tables; expected 10/10 and 11/11 leg rows and explicit See chart boundary')
+def k584(c):
+    _reader_modules()
+    import proc_sia as S
+    for code, title, count in [('LFZL', 'ILS RWY 13', 10), ('LFZM', 'ILS RWY 27', 11)]:
+        rows = _reader_fixture('fr/national/'+code+'-ILS-CODE.rows.txt').splitlines()
+        table = S.parse_code_table(rows)
+        c.eq((table['title'], table['kind'], table['read'], table['rows']), (title, 'APP', count, count), 'the table owns an ILS title without requiring an INA/FNA prefix', what=code)
+        final = next(g for g in table['groups'] if g['label'] == 'APCH')
+        c.eq((final['gap'], [l.get('phase') for l in final['legs'][final['gap']:]]), (1, ['missed', 'missed']), 'See chart separates the unknown final from the two coded missed legs', what=code+' phases')
+    c.eq(S._title(['See chart ILS RWY 13'])[0], None, 'a reference to another chart is never a procedure title', what='reference guard')
+
+
+@case('K585', 'French civil profile facts enrich the matching coded threshold without closing a See chart gap', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Le Minizak DATA/CODE/IAC and current AD 2.12: THR 19 + RDH 49 = 68 ft, glide 3 degrees; initial routes and coded missed legs stay separate')
+def k585(c):
+    import json
+    _reader_modules()
+    import proc_sia as S
+    code = 'AD_2_LFZL_DATA_RWY13_ILS_LOC_CODE.pdf'
+    data = 'AD_2_LFZL_DATA_01.pdf'
+    iac = 'AD_2_LFZL_IAC_RWY13_ILS_LOC.pdf'
+    source = {code: _reader_fixture('fr/national/LFZL-ILS-CODE.rows.txt').splitlines(), data: _reader_fixture('fr/national/LFZL-DATA.rows.txt').splitlines()}
+    rows = _reader_fixture('fr/national/LFZL-IAC.rows.txt').splitlines()
+    runways = json.loads(_reader_fixture('fr/national/LFZL-runways.json'))
+    doc = S.build_aerodrome('LFZL', [code, data, iac], lambda n: source.get(n, []), 'fixture', '2026-11-26', ad2=runways, iac_pages_of=lambda n: [rows])
+    coded = [p for p in doc['procedures'] if p['source']['file'] == code]
+    c.eq(len(coded), 4, 'three initial transitions plus the final/missed core are retained', what='coded variants')
+    for record in coded:
+        threshold = next(p for p in record['points'] if p['id'] == 'RW13')
+        c.eq((threshold['alt'], threshold['vpa']), ({'type': 'at', 'ft': 68}, -3.0), 'verified physical threshold plus printed RDH and glide, without guessing FAF altitude', what=record['transition'])
+        missed = [p for p in record['points'] if p.get('phase') == 'missed']
+        c.ok(missed and missed[0].get('gap') and 'final-profile' in record['partial']['unread'], str(record), 'the unencoded segment is not silently drawn as a coded leg')
+
+
+@case('K586', 'Same-cycle ENR coordinate resolution refuses conflicting identities and out-of-range coordinates', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Synthetic published-table forms matching current ENR 4.4 and 4.1; no borrowing an old cached base for a new source cycle')
+def k586(c):
+    _reader_modules()
+    from proc_national import enr_coordinates
+    points = '<table><tr><td>ABADO</td><td>45°39\'21.0"N 005°17\'35.0"E</td></tr><tr><td>BADAA</td><td>99°00\'00.0"N 001°00\'00.0"E</td></tr></table>'
+    navaids = '<table><tr><td>NAME</td><td>VOR-DME</td><td>AAA</td><td>110 MHz</td><td>H24</td><td>50°00\'00.0"N 001°00\'00.0"E</td></tr></table>'
+    positions, conflicts = enr_coordinates(points, navaids)
+    c.eq((positions['ABADO'], positions['AAA'], 'BADAA' in positions, conflicts), ((45.655833, 5.293056), (50.0, 1.0), False, []), 'source columns identify points and radio aids, with coordinate bounds', what='ENR roles')
+    changed = points.replace('45°39', '46°39')
+    positions, conflicts = enr_coordinates(points+changed, navaids)
+    c.eq(('ABADO' in positions, conflicts), (False, ['ABADO']), 'two distinct published positions cannot choose an arbitrary identity', what='conflicting name')
+
+
+@case('K587', 'National source build resumes cached sources and records a missing IAC rather than claiming it read', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Synthetic transport/PDF boundary only; actual discovery/build/provenance remain in the ordinary national builder')
+def k587(c):
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from proc_national import build_one
+    name = 'AD_2_LFZL_IAC_RWY13_ILS_LOC.pdf'
+    html = ('<a href="Cartes/LFZL/'+name+'">ILS</a>').encode()
+    calls = []
+    def get(url):
+        calls.append(url)
+        return html if url.endswith('.html') else b'%PDF-fixture'
+    with tempfile.TemporaryDirectory() as tmp:
+        first = build_one('LFZL', '2026-11-26', tmp, get, 'fixture-reader', page_reader=lambda p: [[]])
+        count = len(calls)
+        second = build_one('LFZL', '2026-11-26', tmp, get, 'fixture-reader', page_reader=lambda p: [[]])
+        c.eq((count, len(calls), first['acquired_files'], second['records']), (2, 2, 1, 0), 'resume uses acquired bytes and the unchanged source/reader signatures', what='resume')
+    def missing(url):
+        if url.endswith('.html'):
+            return html
+        raise OSError('source missing')
+    with tempfile.TemporaryDirectory() as tmp:
+        result = build_one('LFZL', '2026-11-26', tmp, missing, 'fixture-reader', page_reader=lambda p: [[]])
+        c.eq((result['acquired_files'], result['missing'], bool(result['errors'])), (0, [name], True), 'an indexed but unavailable chart is an explicit missing source', what='missing source')
+
+
+@case('K590', 'IAC threshold enrichment refuses stale cycle, LOC-only role, different threshold and conflicting coded altitude', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Le Minizak source profile and official runway context; only matching ILS variant/cycle/position may supply threshold RDH/glide')
+def k590(c):
+    import copy
+    import json
+    _reader_modules()
+    import proc_fr_iac as F
+    rows = _reader_fixture('fr/national/LFZL-IAC.rows.txt').splitlines()
+    profile = F.read_profile(rows, 'LFZL', 'AD_2_LFZL_IAC_RWY13_ILS_LOC.pdf', '2026-11-26')
+    runways = json.loads(_reader_fixture('fr/national/LFZL-runways.json'))
+    threshold = next(r for r in runways if r['id'] == '13')
+    base = {'kind': 'APP', 'name': 'ILS RWY 13', 'runways': ['13'], 'source': {'cycle': '2026-11-26'},
+            'points': [{'id': 'RW13', 'lat': threshold['lat'], 'lon': threshold['lon'], 'alt': None}]}
+    for label in ('stale', 'LOC', 'position'):
+        rec = copy.deepcopy(base)
+        if label == 'stale': rec['source']['cycle'] = '2026-10-29'
+        if label == 'LOC': rec['name'] = 'LOC RWY 13'
+        if label == 'position': rec['points'][0]['lat'] += 0.1
+        F.attach_profile([rec], profile, runways)
+        c.eq(rec['points'][0]['alt'], None, 'unproved association supplies no threshold altitude', what=label)
+    rec = copy.deepcopy(base)
+    rec['points'][0]['alt'] = {'type': 'at', 'ft': 4000}
+    F.attach_profile([rec], profile, runways)
+    c.eq((rec['points'][0]['alt'], rec['chart_data']['threshold_profile_conflict']), ({'type': 'at', 'ft': 4000}, True), 'existing source constraints are preserved and conflict reported', what='coded altitude')
+
+
+@case('K592', 'SIA indexed chart filenames with interior spaces are URL-quoted while the local source name remains unchanged', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Mebareso national-build discovery found a valid CAT_ 1_2_3 filename; source transport must quote the path component without changing chart identity')
+def k592(c):
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from proc_national import build_one
+    name = 'AD_2_LFZO_IAC_RWY14R_FNA_ILS_Y_CAT_ 1_2_3_LOC_Y.pdf'
+    page = ('<a href="Cartes/LFZO/'+name+'">ILS Y</a>').encode()
+    calls = []
+    def get(url):
+        calls.append(url)
+        return page if url.endswith('.html') else b'%PDF-fixture'
+    with tempfile.TemporaryDirectory() as tmp:
+        result = build_one('LFZO', '2026-11-26', tmp, get, 'fixture', page_reader=lambda path: [[]])
+        c.eq((result['acquired_files'], (Path(tmp)/'raw/LFZO'/name).exists(), '%20' in calls[-1], ' ' in calls[-1]),
+             (1, True, True, False), 'a bounded local filename can contain spaces, its HTTP path cannot', what='transport identity')
+
+
+@case('K593', 'Civil FNA ILS profile uses its own Y variant and printed localizer, RDH and threshold facts', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Mebareso 14L current indexed Y chart: RI 109.1, 3 degrees, RDH 50, THR 489; chart dated 1 October 2026')
+def k593(c):
+    _reader_modules()
+    import proc_fr_iac as F
+    rows = _reader_fixture('fr/national/LFZO-FNA-IAC.rows.txt').splitlines()
+    name = 'AD_2_LFZO_IAC_RWY14L_FNA_ILS_Y_LOC_Y.pdf'
+    profile = F.read_profile(rows, 'LFZO', name, '2026-11-26')
+    data = profile['chart_data']
+    c.eq((profile['variant'], profile['runway'], profile['source']['at']), ('Y', '14L', '2026-10-01'), 'FNA does not hide the final chart identity', what='identity')
+    c.eq((data['localizer'], data['glide_path_deg'], data['rdh_ft'], data['threshold_elevation_ft']),
+         ({'ident': 'RI', 'frequency_mhz': 109.1}, 3.0, 50, 489), 'printed profile facts retain distinct roles', what='profile facts')
+    c.eq(F.read_profile(rows, 'LFZO', name.replace('_Y_', '_Z_'), '2026-11-26'), None, 'an indexed Z chart cannot borrow the Y profile', what='variant guard')
+
+
+@case('K594', 'Headerless SIA coding needs its own DATA/CODE identity; displaced Calvi columns remain unread', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Birerala page 03: five SID groups and 25 legs; Xafadot CAT I/II/III ILS Z: 7 legs; Calvi missing waypoint cells are not repaired from another column')
+def k594(c):
+    _reader_modules()
+    import proc_layouts as L
+    import proc_sia as S
+    rows = _reader_fixture('fr/national/LFZR-layout.rows.txt').splitlines()
+    c.eq(L._detect_sia_code(rows), True, 'a continuation page is still explicitly a SIA CODE source', what='source identity')
+    table = S.parse_code_table(rows)
+    c.eq((table['read'], table['rows'], [g['label'] for g in table['groups']]),
+         (25, 25, ['RAXEX 2L', 'VOKUK 2L', 'FOL 2L', 'KOCEP 2L', 'MIK 2L']), 'no first group is lost while looking for an absent header', what='continuation groups')
+    c.eq([p['id'] for p in table['groups'][0]['legs']], ['ZR620', 'ZR621', 'TOFES', 'RANOX', 'VOKUK', 'RAXEX'], 'source order is retained', what='RAXEX 2L')
+    c.eq(L._detect_sia_code(rows[3:]), False, 'leg-shaped prose without a coding identity cannot trigger the fallback', what='identity guard')
+    other = S.parse_code_table(_reader_fixture('fr/national/LFZN-layout.rows.txt').splitlines())
+    c.eq((other['title'], other['read'], other['rows']), ('ILS Z RWY 21', 7, 7), 'CAT wording does not hide the named ILS variant', what='Xafadot')
+    bad = S.parse_code_table(_reader_fixture('fr/national/LFZQ-layout.rows.txt').splitlines())
+    c.eq((bad['read'], bad['rows'], bad['groups'], bool(bad['warnings'])), (0, 27, [], True), 'the printed procedure-column labels are not guessed to be missing waypoint cells', what='Calvi refusal')
+
+
+@case('K595', 'French regional IAC headers retain their actual chart date, known ICAO and named variant', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Measured RUN, CAR/SAM/NAM, PAC-P and PAC-N charts; split NT AA is normalised only against the requested identity, never another airport')
+def k595(c):
+    _reader_modules()
+    import proc_fr_iac as F
+    for code, rw, variant, dated, ident, frequency, elevation, rdh in [
+            ('FMZK', '14', 'Z', '2026-10-01', 'ME', 110.5, 28, 58),
+            ('TFXC', '12', 'Y', '2026-08-06', 'NU', 110.5, 5, 50),
+            ('NTXA', '04', 'Y', '2025-09-04', 'PT', 110.1, 5, 50),
+            ('NWXB', '11', 'Y', '2025-07-10', 'RU', 110.1, 29, 50)]:
+        rows = _reader_fixture('fr/national/'+code+'-IAC.rows.txt').splitlines()
+        name = f'AD_2_{code}_IAC_RWY{rw}_ILS_{variant}_LOC_{variant}.pdf'
+        p = F.read_profile(rows, code, name, '2026-11-26')
+        c.eq((p['source']['at'], p['chart_data']['localizer'], p['chart_data']['threshold_elevation_ft'], p['chart_data']['rdh_ft']),
+             (dated, {'ident': ident, 'frequency_mhz': frequency}, elevation, rdh), 'regional publication date and source roles are preserved', what=code)
+        c.eq(F.read_profile(rows, 'XXXX', name, '2026-11-26'), None, 'spacing normalisation cannot substitute another ICAO', what=code+' identity')
+        c.eq(F.read_profile(rows, code, name, '2020-01-01'), None, 'a future chart stays refused in an older source cycle', what=code+' future')
+
+
+@case('K597', 'Civil profile typography retains exact date, RDH/TCH, transition altitude and glide roles', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Measured Tisubovig date-before-FRANCE, spaced TA at Civoxobigec/Kifu, Nitukun RDH/TCH, Mizomusi missing comma and Mosuzu percent-before-angle')
+def k597(c):
+    import json
+    _reader_modules()
+    import proc_fr_iac as F
+    sources = json.loads(_reader_fixture('fr/national/sources.json'))
+    for code, ident, frequency, glide, rdh, elevation in [
+            ('LFZS', 'FO', 110.5, 3.0, 55, 8), ('LFZB', 'FG', 108.75, 3.0, 50, 6),
+            ('LFZT', 'LAN', 109.7, 3.0, 50, 155), ('LFZW', 'TUK', 109.55, 3.5, 55, 60),
+            ('LFZP', 'DO', 109.55, 3.0, 49, 639), ('LFZX', 'KI', 111.1, 3.0, 49, 1034)]:
+        fixture = code+'-IAC.rows.txt'
+        name = next(s['file'] for s in sources if s.get('fixture') == fixture)
+        rows = _reader_fixture('fr/national/'+fixture).splitlines()
+        profile = F.read_profile(rows, code, name, '2026-11-26')
+        d = profile['chart_data']
+        c.eq((d['localizer'], d['glide_path_deg'], d['rdh_ft'], d['threshold_elevation_ft'], d['transition_altitude_ft']),
+             ({'ident': ident, 'frequency_mhz': frequency}, glide, rdh, elevation, 5000), 'source typography does not change the physical values or their roles', what=code)
+        if code == 'LFZX':
+            bad = [r.replace('5.2% - 3.0°', '5.2% - 9.0°') for r in rows]
+            c.eq(F.read_profile(bad, code, name, '2026-11-26'), None, 'a reversed printed order does not bypass the glide range guard', what='glide guard')
+
+
+@case('K549', 'National source build of the SIA (SOG-0667, lot F2; INVENTED menu, page and chart, no network): the run asks ONLY the injected `get`, and only for the publication it was given; a publication URL of another disc, region or host is refused before any request; the AD 2 denominator comes from the menu; an unreadable chart is an explicit error of the aerodrome, never a record; the report and the progress are written',
+      'K', static=True, tags=('procedure-readers', 'fr-national'),
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0667, lot F2): `proc_national` is the tool of the workstation WITH network, tested with an injected `get`. INVENTED menu (aerodrome LFZY), invented page and chart link, a fake PDF that no reader can open; the expected numbers are those chosen when the fixtures were written',
+      )
+def k549(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_national as N
+    url = N.S.eaip_url('2026-11-26')
+    chart = 'AD_2_LFZY_IAC_RWY05_ILS_Z_LOC_Z.pdf'
+    calls = []
+
+    def get(u):
+        calls.append(u)
+        if u.endswith('FR-menu-fr-FR.html'):
+            return b'<a href="FR-AD-2.LFZY-fr-FR.html">LFZY</a> <a href="FR-AD-2.LFZZ-fr-FR.html">LFZZ</a>'
+        if u.endswith(N.S.page_name('LFZY')):
+            return ('<a href="Cartes/LFZY/' + chart + '">ILS Z</a>').encode()
+        if u.endswith(N.S.page_name('LFZZ')):
+            return b'<p>no chart</p>'
+        if u.endswith('/' + chart):
+            return b'%PDF-1.4 this is not a readable document'
+        raise OSError('unexpected request ' + u)
+    unreadable = patch.object(N, 'iac_pages_rows', side_effect=ValueError('unreadable fixture'))
+    with tempfile.TemporaryDirectory() as tmp, unreadable:
+        out = Path(tmp)
+        report = N.run('2026-11-26', out, workers=1, codes=['LFZY'], get=get, resolve=lambda name: None, publication_url=url)
+        c.eq((report['indexed_aerodromes'], report['selected_aerodromes'], report['source_url']), (['LFZY', 'LFZZ'], ['LFZY'], url), 'the denominator comes from the menu, the selection from the request', what='menu')
+        c.ok(calls and all(u.startswith(url + '/') for u in calls), str(calls), 'every request goes to the publication that was given, nothing else')
+        row = report['results']['LFZY']
+        c.eq((row['state'], row['wanted_files'], row['acquired_files'], row['records'], row['final_iacs_indexed'], chart in row['errors'] or bool(row['formats_unread'])), ('source-build-finished', 1, 1, 0, 1, True), 'the chart is acquired, indexed as a final one and, unreadable, says so: no record, an explicit error', what='unreadable chart')
+        c.ok((out / 'report.json').is_file() and (out / 'progress.json').is_file() and (out / 'procedures' / '2026-11-26' / 'LFZY.json').is_file(), str(sorted(p.name for p in out.iterdir())), 'the report, the progress and the build of the aerodrome are written under the folder asked')
+        again = len(calls)
+        N.run('2026-11-26', out, workers=1, codes=['LFZY'], get=get, resolve=lambda name: None, publication_url=url)
+        c.eq(len(calls), again, 'a second run with the same sources asks nothing (the bytes kept on disk)', what='resume')
+    for bad in (url.replace('/FRANCE/', '/RUN/'), 'https://example.invalid/eAIP/FRANCE/AIRAC-2026-11-26', url + '/../x'):
+        calls.clear()
+        refused = False
+        try:
+            N.run('2026-11-26', tempfile.gettempdir() + '/never-written-k549', get=get, publication_url=bad)
+        except ValueError:
+            refused = True
+        c.eq((refused, calls), (True, []), 'a publication of another disc, region or host is refused before any request', what=bad[:50])
+    c.eq(bool(__import__('re').fullmatch(r'[0-9a-f]{64}', N.PROCESS_SIGNATURE)), True, 'the signature of the readers is built from the readers present in this repository', what='signature')

@@ -1,0 +1,108 @@
+AIP AD 2 FMZK IAC RWY14 ILS Z LOC Z
+RUN 01 OCT 2026
+APPROCHE AUX INSTRUMENTS LA LUGULAV- REGOGA VEKUPE
+Instrument approach
+CAT A B C D
+ALT AD : 66, DTHR : 28 (1 hPa) ILS Z ou /or LOC Z RWY 14
+ATIS LA LUGULAV 126.900 ILS - DME VAR
+APP : REGOGA VEKUPE Approche/ Approach 127.300 ME 110.5 19° W
+TWR : REGOGA VEKUPE Deti/ Susut 118.500 RDH : 58 (2025)
+15 NM NOB
+ALTMNM 25 NM NOB
+VOR-DME HLDG 3000
+REPER
+MAX IAS 220 kt 11NM NOB
+20°
+R 330 NOB 7500
+40' 133° Left
+3000 289°109°
+12-17 NM NOB
+17NMSDG
+FL 140
+ALTMNM
+3000
+12200
+3000 313°
+R 320 NOB
+MAX IAS 220 kt
+R 313 NOB
+Zokilavisi / Vogisenef 133°
+CAT A B C D : 17 NM NOB
+FAF LOC
+3000
+IAF
+NOB 113.1
+REPER
+20° 136° Cacelig GP/ GP Didolef Ch 76 X
+50' AVERTISSEMENTS / WARNINGS 85 (57)
+VOR et /and DME requis/ required
+OM MAX IAS 185 kt
+5500
+ME Ch 40 BOK Ch 40 X ME Ch 40 X
+(110.5)(110.5) (110.5)
+Nufac/ Xicu Cacelig/ Didolef
+R 4 424 (396) 1133 (1105)
+1000 ASFC
+SFC
+Nufac/ Xicu Zuzoze/ Zizef
+R 011 NOB
+723 (695) 1165 (1137)
+21°
+00'
+D 1D 1 D 1
+ALT / HGT : ft UNLUNL UNL
+Distances : NM
+SFCSFC SFC
+MOCA
+0 5 NM
+5500
+057° 28' 057° 38' 057° 38' 057° 38' 057° 48' 057° 48' 057° 48' 057° 58' 057° 58' 057° 58'
+TA : 12000 Pataki dans l’axe , à 1.5 NM DME NOB , domegon à vikasi (MAX IAS 185 kt)
+3500 FAF
+pour kupikoxemox et neseta le R 011 NOB (011°) en sureba vers 3000 (2972).
+LOC 1310
+MAPT A 15 NM DME NOB , domegon à vikasi (MAX IAS 220 kt) pour kupikoxemox et neseta
+136° (1282)
+3000 OM LOC l’arc DME 17 NM NOB gave de perecufase l’attente ou bopugebin l’axe d’approche finale.
+(2972) 136°3.0° - 5.2%
+Pataki à 1200 (1172) avant d’paxunozir en zobefo.
+ME
+1500 Climb straight ahead, at 1.5 NM DME NOB, turn left (MAX IAS 185 kt)
+to zifamofox and zanavu R 011 NOB (011°) vupacaro up
+MDA to 3000 (2972). At 15 NM DME NOB , turn left (MAX IAS 220 kt) to zifamofox
+860 860 and zanavu DME arc 17 NM NOB in order to xicosidodun HLDG or to join final
+(832) (832) approach axis.
+DA Climb up to 1200 (1172) farak to level favegisasuta.
+ME (NM) 9.3 4 011.1
+NOB (NM) 9.4 4.1
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva./ Vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+ILS z ILS z ILS z DME NOB
+LOC z MVL / Nozicuco
+API 2.5% API 4% API 5% NM 9 8 7 6 5 4 3 2 1
+ALT 2880 2560 2240 1920 1600 1290 970 650 330
+DA (H) OCH DA (H)RVR RVR OCH DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS
+(HGT) (2852) (2532) (2212) (1892) (1572) (1262) (942) (622) (302)
+A 460 (430) 1500 429 240 (210) 1200 210 230 (200) 1200 188 460 (430) 1500 429 1450 (1420) 1500 DME ME
+B 470 (450) 1500 442 250 (230) 1200 222 230 (200) 1200 200 470 (450) 1500 442 1450 (1420) 1600 NM 9 8 7 6 5 4 3 2 1
+C 480 (450) 2100 450 260 (240) 1200 231 240 (210) 1200 208 480 (450) 2100 450 2050 (2020) 2400 ALT 2900 2590 2270 1950 1630 1310 990 670 350
+D 490 (460) 2100 460 270 (250) 1300 241 250 (220) 1200 218 490 (460) 2100 460 2050 (2020) 3600 (HGT) (2872) (2562) (2242) (1922) (1602) (1282) (962) (642) (322)
+Sapituxalugi/ Remarks : MVL dukavivivi au Sud des pistes - MVL dukavivivi en l’polatob d’rarepurega PAPI.
+Nozicuco turikuvezu S of RWY - Nozicuco turikuvezu without PAPI.
+70 kt 85 kt 100 kt 115 kt 130 kt 145 kt 160 kt 185 kt
+FAF - MAPT 8.3 NM 3 min 18 2 min 43 2 min 19 2 min 01 1 min 47 1 min 36 1 min 27 1 min 15
+VSP (ft/min) 370 450 530 610 685 765 845 980
+AMDT 10/26 CHG : MDA MVL/ cabobeda , getuzapoka ninim DUZE vasivesim/ DUZE kases getuzapoka gicoreb . © SIA
+C A T
+12NM
+NOB
+0 9.4NM
+NOB
+9.3NM
+ME
+3500
+4.1NMSDG4NMSD
+1.1NMSDG
+1.5NM
+NOB
+3500
+1500

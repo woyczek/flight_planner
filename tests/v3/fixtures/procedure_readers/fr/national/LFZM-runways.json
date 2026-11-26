@@ -1,0 +1,62 @@
+[
+  {
+    "id": "09",
+    "lat": 44.825272,
+    "lon": 2.804869,
+    "elev": 166,
+    "qfu": 93,
+    "true": 94.34,
+    "length": 2205,
+    "width": 45,
+    "displaced": 686,
+    "dthr": {
+      "lat": 44.825131,
+      "lon": 2.807514,
+      "elev": 170
+    },
+    "source": "eaip"
+  },
+  {
+    "id": "27",
+    "lat": 44.823772,
+    "lon": 2.832672,
+    "elev": 161,
+    "qfu": 273,
+    "true": 274.34,
+    "length": 2205,
+    "width": 45,
+    "displaced": 802,
+    "dthr": {
+      "lat": 44.823942,
+      "lon": 2.829578,
+      "elev": 162
+    },
+    "source": "eaip"
+  },
+  {
+    "id": "09R",
+    "lat": 44.824233,
+    "lon": 2.808661,
+    "elev": 169,
+    "qfu": 93,
+    "true": 94.32,
+    "length": 770,
+    "width": 60,
+    "displaced": 0,
+    "dthr": null,
+    "source": "eaip"
+  },
+  {
+    "id": "27L",
+    "lat": 44.823711,
+    "lon": 2.818367,
+    "elev": 168,
+    "qfu": 273,
+    "true": 274.32,
+    "length": 770,
+    "width": 60,
+    "displaced": 0,
+    "dthr": null,
+    "source": "eaip"
+  }
+]

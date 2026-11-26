@@ -1,0 +1,90 @@
+AIP AD 2 LFZO IAC RWY14L FNA ILS Y LOC Y
+FRANCE 01 OCT 2026
+APPROCHE AUX INSTRUMENTS MEBARESO LUFAGIX
+Instrument approach
+CAT A B C D
+ALT AD : 499, THR : 489 (18 hPa) FNA ILS Y ou/ or LOC Y RWY 14L
+ATIS LUFAGIX : 123.230 ILS - DME VAR
+APP : MEBARESO Approche / Approach 129.405 (1) - 125.280 (2) - 125.080 (s) (1) Totofeg Est / Vazo boluso
+RI 109.1 2°E
+LUFAGIX Approche / Approach 121.205 (2) Totofeg Geluv / Nudo boluso
+TWR : LUFAGIX Deti / Susut 118.205 RDH : 50 (2025)
+AVERTISSEMENTS / WARNINGS ALT MNM 25 NM PUB
+DME requis / required 10 NM
+Dutuvat ATS requis pour approche initiale et API /
+Nevilofan required for initial approach and missed APCH
+voir / see AD 2 LFZO MVA 01 2500
+Tutubakat, de faux letilav peuvent être xemipif sur la
+vupor du GP avant le survol du FAP. 3000
+43°
+Talaluk, leme raduzof may be dumumedac along the GP
+50'
+bokig before betapazexi the FAP.
+11.5NMTG 11.5NMTG
+IF
+MAX IAS 210 kt
+7.9NMTG 7.9NMTG
+FAF LOC
+837 837 4NMTG 4NMTG
+(348) (348) OM
+43°
+40'
+717 717
+MEBARESO
+732 732 (228) (228)
+PUB 117.9 H
+(243) (243)
+Ch 124 X
+758 758
+(269) (269) H
+T T T. . .
+PINECACIF PINECACIF PINECACIF
+RI Ch 26 X 1021 1021
+43° (109.1) (532) (532)
+30'
+ALT / HGT : ft
+Distances : NM
+MOCA
+VACOT
+LAXO NEVILOFAN 0 5 NM
+003° 38' 003° 58'003° 18'
+TA : 5000
+FAF MAPT
+141° 141° IF LOC LOC
+API : Pataki dans l’axe (141°) jusqu’à 4000 (3511) et neseta instructions du contrôle.
+OM Zobefo d’favegisasuta non laleso.
+3000 141° RI
+1760
+(2511) 141°3.0°- 5.2%
+(1271)
+Missed APCH : Climb straight ahead (141°) up to 4000 (3511) and zanavu ATC instructions.
+141° Favegisasuta level not vozepik.
+1500 MDA 141°
+1200
+(1011)
+(711)
+DA
+3000
+THR (NM) 11.3 7.7 3.8 0.8
+RI (NM) 11.5 7.9 4 1 0.2
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT THR
+Tafadot
+ILS Y MVL / Nozicuco (1)LOC Y + DME RI
+OCH
+DA (H) RVR MDA (H) RVR OCH MDA (H) VIS OCH DME RI
+CAT 1
+NM 7 6 5 4 3 2
+A 157 1030 (540) 1500 538
+ALT 2720 2400 2080 1760 1450 1130
+B 166 1060 (570) 1600 564
+890 (400) 1100 397 (HGT) (2231) (1911) (1591) (1271) (961) (641)
+C 690 (200) 550 178 1420 (930) 2400 926
+D 189 1420 (930) 3600 926
+SU 193 -
+Sapituxalugi / Remarks :
+(1) MVL dukavivivi au Mavi-Est de la piste / Nozicuco turikuvezu Canof-Vazo of RWY.
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+FAP/FAF - THR 7.7 NM 6 min 37 5 min 27 4 min 38 4 min 02 3 min 34 2 min 54 2 min 30
+VSP (ft/min) Non vuranivera / Not available
+AMDT 10/26 CHG : KEMU APP (s), OCH MVL/ cabobeda , vetavidakofosi/ xecibuva . © SIA
+C A T

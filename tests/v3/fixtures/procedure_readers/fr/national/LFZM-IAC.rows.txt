@@ -1,0 +1,98 @@
+AIP AD 2 LFZM IAC RWY27 ILS
+FRANCE 11 JUN 2026
+APPROCHE AUX INSTRUMENTS SESUZACE ROSIDOFA XUBEPAPU
+Instrument approach
+CAT A B C
+ALT AD : 172, DTHR : 162 (6 hPa) ILS RWY 27
+ATIS : SESUZACE 127.580
+APP : ZUXURAKAV Approche/ Approach 119.375 ILS - DME VAR
+RNAV 1
+TWR : SESUZACE Deti/ Susut 119.905 RM 108.35 1°E
+GNSS seulement / only
+Polatob ATS : A/A (119.905) FR seulement. Banofev QNH XAPOGEKU REXOVAMU dacupa d’ZUXURAKAV APP.
+RDH : 48 (2025)
+A/A (119.905) FR only. Rerexu XAPOGEKU REXOVAMU QNH from ZUXURAKAV APP.
+AVERTISSEMENTS / WARNINGS
+IAF
+DME requis / required. ZM271
+GP donegapexi zepecasoge par ACFT devuxe ILS à 50 kHz. MAX IAS 185 kt
+GP only bemono by ACFT nivotexa with 50 kHz ILS.
+4400
+Polatob ATS : procédure lopefopov / procedure turikuvezu. 2500
+MATF
+ZM280 RM Ch 18 Y IAF
+IAS MAX 220 kt MAX IAS 180 kt (108.35) ZM090
+SESUZACE SESUZACE
+2500 MAX IAS 210 kt
+44° 44° 5000 Rosidofa
+2500 FAP FAP IAF / IF
+50' 50'
+273° IZM27
+273°273°
+MAX IAS 185 kt
+2500
+Didabulubu
+942 (780)
+625 (463)
+Zuzoze / Zizef
+811 (649)
+DF
+093°
+12.7 093°
+MATF
+MATF 5.0
+ZM272
+ZM274 ZM276
+MAX IAS 185 kt
+IAS MAX 220 kt MAX IAS 185 kt MAX IAS 185 kt
+IAF 2500
+2500 4000
+RNAV HLDG
+2500 ZM272
+ALTMNM 25 NMARP ZM090
+MAX IAS 210 kt MAX IAS 185 kt
+273° Left 4000
+2500
+44° 2500
+T 1 min ALT / HGT : ft
+7.2NM 40'
+RM Distances : NM
+5000
+2500 MOCA
+2000 0 5 NM
+002° 48' 002° 58' 003° 08'
+TA : 5000 IF
+IZM27
+API : Pataki 273° jusqu’à ZM280 (MAX IAS 180 kt) , FAP
+273° 2500
+puis domegon à vikasi sekeze vers ZM274 (MAX IAS 185 kt) ,
+(2338)
+puis vers ZM272 en sureba vers 2500 (2338).
+1430
+Pataki à 1240 (1078) avant d’paxunozir en zobefo. (1268)
+DF 273°
+Missed APCH : Climb 273° to ZM280 (MAX IAS 180 kt) , 3.0° - 5.2%
+then turn left sekeze to ZM274 (MAX IAS 185 kt) , then to
+273° 1440
+BE 272 vupacaro up to 2500 (2338).
+(1278)
+Climb up to 1240 (1078) farak to level favegisasuta.
+DA
+DTHR 27 (NM) 0 3.8 7.1 12.2
+DME RM (NM) 4.0 0 7.2 12.3
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+MVL / Nozicuco (1)
+ILS MVL / Nozicuco (1) polatob ATS
+HJ seulement/ only
+DA (H) RVR OCH MDA (H) VIS MDA (H) VIS
+A 146 1110 (950) 1500 1350 (1190) 1500
+B 370 (200) 750 158 1110 (950) 1600 1350 (1190) 1600
+C 166 1210 (1050) 2400 1450 (1290) 2400
+Sapituxalugi/ Remarks : (1) MVL dukavivivi au Mavi de la piste - Bugucit AD RWY 09 : droite / Nozicuco turikuvezu Canof of RWY - Right mubo AD bugucit RWY 09.
+AMDT 06/26 CHG : KEMU TWR, KEMU A/A. © SIA
+C A T
+RM
+4.9NM
+5.1 12.3NM RM
+003° 183° 183°
+5.1

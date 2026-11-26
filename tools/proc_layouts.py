@@ -1361,7 +1361,12 @@ def _detect_de_route(rows):
 def _detect_sia_code(rows):
     low = _view(rows)[1]
     # table ARINC du SIA (en-tête « Path Terminator » ou « Leg sequence » et « Waypoint » ; mots répartis sur plusieurs lignes selon la page)
-    return ('path' in low and 'terminator' in low or 'leg sequence' in low) and 'waypoint' in low and ('fly' in low or 'altitude' in low)
+    header = ('path' in low and 'terminator' in low or 'leg sequence' in low) and 'waypoint' in low and ('fly' in low or 'altitude' in low)
+    if header:
+        return True
+    identity = re.sub(r'\s+', '', ' '.join(rows[:4])).upper()
+    typed_rows = sum(bool(re.search(r'\b(?:IF|TF|CF|DF|CA|RF)\s+(?:[A-Z][A-Z0-9]{1,5}|-)\s', row)) for row in rows)
+    return bool(re.search(r'AD2[A-Z]{4}DATA.*CODE', identity)) and typed_rows >= 2
 
 
 def _detect_uk_app(rows):

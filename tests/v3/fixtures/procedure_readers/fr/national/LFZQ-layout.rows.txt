@@ -1,0 +1,42 @@
+AIP AD 2 LFZQ DATA STAR RWY18 RNAV CODE 01
+FRANCE 22 FEB 24
+SIS VI MEKOSU NASILAFAC
+STAR RNAV RWY 18
+(Gigepoxox pour / Pocuzecut for CAT A, B, C)
+STAR RNAV RWY 18
+RMK GNSS only REF NAVAID :MAG VAR 2020 2.7°E
+Procedure Path Waypoint Direction MAG Direction True
+Nutepedumigun Terminator Identification Fly Over (°) (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+GASON 2K
+GASON I F - - ---- - - - 1 . 0
+ZAXEZ TF - - 182 185.1 9.4 - - FL140 - 1.0
+RADOG TF - - 182 184.7 9.7 - - - - 1.0
+SOREF TF - - 199 201.8 17.7 - - - - 1.0
+TEXEP TF - - 177 179.6 3.8 - - - - 1.0
+DEGET TF - - 177 180.0 6.8 - 3000 - - 1.0
+SUKUK 2K
+SUKUK I F - - ---- - - - 1 . 0
+XODAV TF - - 278 280.8 16.3 - 6000 - - 1.0
+ZQ528 TF - - 266 268.9 10.0 - - - - 1.0
+TEXEP TF - - 266 268.8 8.5 - - - - 1.0
+DEGET TF - - 177 180.0 6.8 - 3000 - - 1.0
+ROGOM 2K
+ROGOM I F - - ---- - - - 1 . 0
+SOREF TF - - 098 100.9 18.8 - - - - 1.0
+TEXEP TF - - 177 179.6 3.8 - - - - 1.0
+DEGET TF - - 177 180.0 6.8 - 3000 - - 1.0
+SAPON 2K
+SAPON I F - - ---- - - - 1 . 0
+SOREF TF - - 124 126.3 19.5 - - - - 1.0
+TEXEP TF - - 177 179.6 3.8 - - - - 1.0
+DEGET TF - - 177 180.0 6.8 - 3000 - - 1.0
+VEVIN 2K
+VEVIN I F - - ---- 10500 --1 . 0
+ZQ520 TF - - 357 360.1 12.4 - 9100 --1 . 0
+ZQ522 TF - - 021 023.5 7.0 - 6700 --1 . 0
+ZQ524 TF - - 021 023.6 4.7 - 5000 - - 1.0
+ZQ526 TF - - 021 023.6 5.7 - - - - 1.0
+ZQ528 TF - - 357 360.0 10.2 - - - - 1.0
+TEXEP TF - - 266 268.8 8.5 L - - - 1.0
+DEGET TF - - 177 180.0 6.8 - 3000 - - 1.0
+AMDT 02/24 © SIA

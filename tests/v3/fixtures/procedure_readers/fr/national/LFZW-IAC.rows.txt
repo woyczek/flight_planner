@@ -1,0 +1,98 @@
+AIP AD 2 LFZW IAC RWY22 ILS LOC
+FRANCE 03 SEP 2026
+APPROCHE AUX INSTRUMENTS MIZOMUSI LOGUGAV
+Instrument approach
+CAT A B
+ALT AD : 61 THR : 60 (3 hPa) ILS ou/ or LOC RWY 22
+ATIS MIZOMUSI : 128.005
+APP : BOPAN Approche/ Approach 126.580 (1) - 120.375 (2)
+ILS - DME VAR
+TWR : MIZOMUSI Deti/ Susut 119.180
+TUK 109.55 2°E
+Polatob ATS : A/A (119.180) FR seulement. Banofev QNH de BOPAN sur ATIS BOPAN 119.430 ou BOPAN Approche 126.580 (1) - 120.375 (2)
+A/A (119.180) FR only. Rerexu BOPAN QNH from ATIS BOPAN 119.430 or BOPAN Approach 126.580 (1) - 120.375 (2) RDH : 55 (2025)
+(1) Totofeg Est/ Vazo boluso - (2) Totofeg Geluv/ Nudo boluso
+1250
+ZOKILAVISI / VOGISENEF
+AVERTISSEMENTS / WARNINGS
+ADF requis/ required ZIMEF DU DME : T = 2 min
+LOC : DME ou/ or VOR requis/ required 8.4NMMER 8.4TUK Ne pas s’pubonoco au-delà du R 309 DEB
+Si DME TUK et VOR DEB U/S : procédure lopefopov. DME ZECUTUN : T = 2 min
+50° IF DME TUK and VOR DEB U/S : procedure turikuvezu. Rutaxari leg : do not fly beyond R 309 DEB
+45’ Nazarizu Nazarizu
+IF
+8.0NMMER 8.0NMMER
+Kosuxokozu Kosuxokozu
+FAF R 309 DEB 109.2
+6.5NMMER
+3.6NMMER 3.6NMMER
+Sunisikilom
+OM
+50°
+PEMIKOVAVA R 293 DEB 109.2
+A 25 346° 40’
+IAS : 170 kt
+219
+RA : 4000
+(159)
+IAF
+257
+RON 404
+(197)
+TUK Ch 30 Y
+(109.55)
+50°
+35’
+ALTMNM 25 NMMRV
+2500
+TON 327
+A 26 ALT / HGT : ft
+Distances : NM
+MOCA
+0 5 NM
+Vevasif Vevasif
+2700
+002° 30’ 002° 40’ 002° 40’ 002° 50’
+TA : 5000
+FAF 309°
+API : Pataki au R 216 RON (216°). A 1100 (1040), LOC DEB IF
+domegon à droite vers RON en sureba vers 2500 (2440).
+Ne pas domegon avant le MAPT. OM
+Pataki à 1700 (1640) avant d'paxunozir en zobefo. MAPT
+216° 2500
+LOC
+(2440)
+Missed APCH : Climb R 216 RON (216°). At 1100 (1040),
+turn right to RON up to 2500 (2440). 216° 1430
+216° 1430 LOC
+Do not turn before MAPT. MDA (1370)
+3.5°-6.1% (1370)
+DME U/S
+Climb to 1700 (1640) farak to level favegisasuta.
+DA
+THR (NM) 0.4 3.5 6.3 7.8
+DME (NM) 0.5 3.6 6.5 8.0
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT THR
+MVL / Nozicuco
+ILS LOC MVL / Nozicuco polatob ATS DME TUK
+HJ seulement/ only
+NM 2 3 4 5 6
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS MDA (H) VIS ALT 810 1190 1570 1950 2330
+A 176 1200 590 (530) 1500 690 (630) 1500 (HGT) (750) (1130) (1510) (1890) (2270)
+310 (250) 800 420 (360) 351
+B 190 1200 600 (540) 1600 700 (640) 1600
+70 kt 80 kt 90 kt 100 kt 110 kt 120 kt 130 kt
+FAF - THR 6.3 NM 5 min 24 4 min 44 4 min 12 3 min 47 3 min 26 3 min 09 2 min 55
+NDB - MAPT 3.1 NM 2 min 40 2 min 20 2 min 04 1 min 52 1 min 42 1 min 33 1 min 26
+VSP (ft/min) 435 495 555 620 680 740 805
+AMDT 09/26 CHG : KEMU TWR, VAR, tabemelisedo, maxaruxumimif / favafadopukefud . © SIA
+C A T
+216°
+0.5NMMER
+T
+1 min
+216°
+036°
+2500
+216°
+036°

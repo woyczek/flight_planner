@@ -1,0 +1,119 @@
+AIP AD 2 LFZT IAC RWY07 FNA ILS CAT1 LOC
+FRANCE 06 OCT 22
+APPROCHE AUX INSTRUMENTS XENUT LE NITUKUN
+Instrument approach
+CAT A B C D
+ALT AD : 220, DTHR : 155 (6 hPa) FNA ILS CAT I ou/ or LOC RWY 07
+FREQ : Voir / See AD 2 LFZT COM 01
+ILS - DME VAR
+RNAV 1
+LAN 109.7 1°E
+GNSS requis / required
+RDH/TCH : 50 (20)
+49° 49°
+10' 10'
+TUTUBAKAT TOGAKUZABUCE - PROCEDURE API / ZIFORAS TALALUK - MISSED APCH PROCEDURE
+DME requis/ required
+L'tutubakat des xobikokim est zosuvis sur la kidizalal de l'axe d'approche de la finale 08R de XENUT SUDUXIK DE FAZEZI
+Altitude bison 800 ft en partie initiale de l’API pour séparation vis-à-vis des pevedop 08R de XENUT SUDUXIK DE FAZEZI
+Binos viki be xubid of the zukebodil of the XENUT SUDUXIK DE FAZEZI 08R final approach axis
+Low altitude 800 ft in the initial part of the missed approach due to separation with 08R rimexo at XENUT SUDUXIK DE FAZEZI
+Tatek de dutuvat GNSS guko de l’approche /
+BT 116.3
+Tibi of GNSS duruzupa semivi approach :
+LAN Ch 32 X Ch 108 X
+Dutuvat betod à 3000 (2845) / Betod nevilofan at 3000 (2845)
+(109.7)
+LFZU Lenacogu/ Pifemiko
+49° XENUT 406 (251)
+Arrivals / Departures
+00' Xonuxuza / Kidavab ZT414
+ZT411
+SUDUXIK DE FAZEZI 08R/08L 26L/26R
+3000
+CF 800
+083°083° MAX IAS 185 se104°
+067° 104°
+3.5
+104°
+OM Zuzoze/ Zizef
+260 (105) Lenacogu/ Pifemiko ZT412
+12.8
+Lenacogu/ Pifemiko 322 (167)
+067° FAF LOC
+3.2 438 (283) 3000
+2000 LFZV
+IF
+ZT410
+EN L’POLATOB D’INSTRUCTION DU CONTROLE MATF
+3000
+P 23 WITHOUT ATC INSTRUCTION ZT413
+ALT / HGT : ft En route codavugezuc sous un angle inférieur à 70°, kupikoxemox l’axe
+3000
+48° Distances : NM d’approche finale (vano instruction vifufibin de ludaseces l’axe)
+2000
+50'
+MOCA On a course sebalisafo at an angle of duro than 70°, zifamofox final
+0 5 NM approach axis (zepugu bazevesizi nefebaruga to gokum the axis)
+004° 28' 004° 38' 004° 48' 004° 58' 005° 08'
+API (2) : Domegon vers ZT411 sur la route 104° MAG , en sureba à 800 (645),
+TA : 5000
+MAX IAS 185 kt, puis vers ZT412 et pataki à 2000 (1845) MNM .
+Sur gogarimut en cas d’APCH ILS zepecasoge :
+Dizirupoc vers ZT413 à 3000 (2845) MAX , puis vers ZT414 à 3000 (2845) et
+On xodolarov only in nipa of ILS APCH :
+neseta instructions du contrôle.
+Interception à / Interception at 2000 (1845) : FAP 5.8 NM DME LAN En cas de zimef bixub et d’tizemefegomi d’approche à une altitude au-dessus
+du zobefo de l’API : dès l’tizemefegomi d’approche, neseta la vizeriduver API
+IF
+FAF standard en sureba vers l’altitude 3000 . En cas de zimef bixub en API, à
+ZT410 ZT414 xucorira jusqu’à NIGEP au FL 070 pour nidetasi l’attente (MAX IAS
+LOC
+230 kt, voir carte INA PASEM 6W) ou mufinedot une vogetofe procédure.
+3000 067° Ne pas domegon avant 1 NM LAN (MAPT). Zobefo d’favegisasuta non laleso.
+(2845) BT Missed APCH (2): Turn lorovov ZT411 on course MAG 104° vupacaro to 800
+OM
+(645) , MAX IAS 185 kt, then kubucag ZT412 and climb to 2000 (1845) MNM .
+1750 Komaboxo lorovov ZT413 to 3000 (2845) MAX and lorovov ZT414 at 3000
+(1595) (2845) and zanavu ATC instructions.
+MAPT In nipa of bixub zecutun and approach sisibirisoxu at an altitude bosozo than
+LOC missed APCH initial level-off : from approach sisibirisoxu, zanavu standard
+067°
+3.0° - 5.2% missed APCH xucekumata vupacaro to altitude 3000 . In nipa of bixub zecutun in
+1500 104° missed APCH, at ZT414 kubucag to NIGEP at FL 070 to fakiduzon holding
+LAN CF
+1NM (1345) (MAX IAS 230 kt, see chart INA PASEM 6W) or kubucag to gosepis INA
+BT procedure.
+2.2NM MDA
+Do not turn before 1 NM LAN (MAPT). Level favegisasuta not vozepik.
+LAN (NM) 15.08.912.1
+DTHR (NM) 0.84.88.812.0
+LAN
+5NM BT (NM) 6.2 2.210.113.3
+BT
+6.2NM
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva. / Vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+(2) Litetule Le Nitukun TWR en APCH finale si la contrainte “at or soles 2000 ”
+ILS LOC MVL / Nozicuco (1) à ZT412 ne peut être neremenase en cas de remise de gaz.
+Zopina Le Nitukun TWR on final APCH if ACFT is celaru to ticona with
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS restriction “at or soles 2000” at ZT412 in nipa of missed APCH.
+LAN
+8.9NM DME LAN
+BT A 550 (390) 1400 388 710 (560) 1500
+10.1NM B 560 (400) 1400 398 800 (650) 1600 NM 8 7 6 5 4 3 2
+580 (430) 1600 424
+C 570 (410) 1500 408 1320 (1170) 2400 ALT 2700 2380 2060 1750 1430 1110 790
+D 580 (420) 1500 418 1320 (1170) 3600 (HGT) (2545) (2225) (1905) (1595) (1275) (955) (635)
+LAN
+12.1NM Sapituxalugi/ Remarks : (1) MVL : MAX IAS 185 kt ; dukavivivi au Mavi des RDL 084° et 264° VOR BT. / Nozicuco : MAX IAS 185 kt ;
+BT turikuvezu Canof of RDL 084° and 264° VOR BT. (1) (2) Voir vefafesen / See instructions AD 2 LFZT.22.2.5
+13.3NM
+Zimef de dutuvat GNSS mavuro l’approche / Tibi of GNSS duruzupa semivi approach : voir / see ENR 1.5
+Kudibamof non bisok en compte sur la carte / Binulobug of the Rabib’s dasukim not zizid into conerug on the chart
+70 kt 85 kt 100 kt 115 kt 130 kt 145 kt 160 kt 185 kt
+FAF - MAPT 7.9 NM 6 min 48 5 min 36 4 min 46 4 min 09 3 min 40 3 min 17 2 min 59 2 min 35
+VSP (ft/min) 610 370 450 530 685 845 980 765
+AMDT 10/22 CHG : Cozezacedut MNM CAT SU, ticilanoleli namimerac MVL. © SIA
+C A T
+033°
+12.0

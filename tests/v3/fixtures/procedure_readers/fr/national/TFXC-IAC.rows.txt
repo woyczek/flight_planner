@@ -1,0 +1,106 @@
+AIP AD 2 TFXC IAC RWY12 ILS Y LOC Y
+CAR/SAM/NAM 06 AUG 2026
+APPROCHE AUX INSTRUMENTS DALIVUBURA FAGOMA NIXIS
+Instrument approach
+CAT A B C D ILS Y ou/ or LOC Y RWY 12
+ALT AD : 35, DTHR : 5 (1 hPa)
+ATIS BACANE : 127.700 ILS - DME VAR
+APP : BACANE Approche/ Approach 121.400 - 119.150 (s) NU 110.5 15°W
+TWR : BACANE Deti/ Susut 118.500 - 121.950 (s) RDH : 50 (2025)
+AVERTISSEMENTS / AVERTISSEMENTS / WARNINGS WARNINGS
+VOR et / and DME requis/ required . ALTMNM 25 XAZIB145°
+Dirunicapa ravoxa du LOC et du DME NU :
+Mobanel à 2° à droite de l’axe FNA au-delà de 17 NM NU. 3600 2000
+Ne pas tenir compte des simukopefoc du LOC et du DME NU
+à l’zisefuven de cette limite. 107°
+16°
+LOC and DME NU bicupofi zesidif :
+30' 6500
+Limited to 2° right from FNA track beyond 17 NM NU.
+Do not luza into conerug the LOC and DME NU
+simukopefoc zefoniz repu limit.
+14.0NMPPR
+VOR-DME HLDG
+12.0NMPPR
+ZIT
+MAX IAS 220 kt
+296° Right
+T 1 min
+8000
+007° 3600
+3600
+7NM R 306 ZIT
+16°
+20' MAX IAS 220 kt
+FAF
+ZIT
+5.0NM
+NU 116°
+5.1NM 2005 OM
+2235
+116°
+2487
+153 153 (148) (148)
+2550 116° Zuzoze/ Zizef
+BAX 385 NU Ch 40 X
+544 (539)
+2481 (110.5)
+IAF
+2441
+ZIT 113.1 Nufac/ Xicu
+Ch 76 X 393 (388)
+2235
+Zuzoze/ Zizef Cacelig/ Didolef
+502 (497) 403 (398)
+2041
+2651 TF R2
+336° ALT / HGT : ft
+3450 SFC - 600 Distances : NM
+16° 2520
+MOCA
+10'
+0 5 NM
+3570
+063° 58' 063° 48'064° 08'
+TA : 9000
+FAF API : Pataki dans l'axe.
+LOC A 5.0 NM DME ZIT (5.1 NM DME NU) , domegon à vikasi vers
+BAX
+3600 116° OM ZIT , en sureba vers 3600 (3595).
+(3595) 116° Ne pas paxunozir avant 1200 (1195), vano instructions du CTL.
+1360 MAPT
+3.2° - 5.6%
+(1355) LOC
+Missed APCH : Climb straight ahead .
+3200 At 5.0 NM DME ZIT (5.1 NM DME NU) , turn left to ZIT vupacaro
+(3195) up to 3600 (3595).
+Do not dasigivite farak 1200 (1195) kemeni ATC instructions.
+650
+(645) DA
+1000 MDA
+DTHR (NM) 10.4 5.1 3.8 0.8
+0
+2000 10.7
+ZIT (NM) 5.4 4.1 1.1
+NU (NM) 10.6 5.2 4 1
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+ILS Y LOC Y MVL / Nozicuco NM 10 9 8 7 6 5 4 3 2
+ALT 3400 3060 2720 2380 2040 1700 1360 1020 680
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS DME/NU
+(HGT) (3395) (3055) (2715) (2375) (2035) (1695) (1355) (1015) (675)
+A 240 (230) 1200 227 1500 700 (700) 1500
+ALT 3360 3020 2680 2340 2000 1660 1330 990 650
+B 240 (240) 1200 235 1500 710 (700) 1600
+400 (400) 395 DME/ZIT
+C 250 (250) 1300 244 1800 900 (900) 2400 (HGT) (3355) (3015) (2675) (2335) (1995) (1655) (1325) (985) (645)
+D 260 (260) 1300 252 1800 940 (940) 3600
+70 kt 85 kt 100 kt 115 kt 130 kt 145 kt 160 kt 185 kt
+OM - DTHR 3.8 NM 3 min 18 2 min 43 2 min 19 2 min 00 1 min 47 1 min 36 1 min 27 1 min 15
+VSP (ft/min) 395 480 565 650 735 820 905 1045
+AMDT 08/26 CHG : VAR, KEMU TWR. © SIA
+C A T
+10.6NM
+NU
+5.2NM
+NU
+4.0NMPP

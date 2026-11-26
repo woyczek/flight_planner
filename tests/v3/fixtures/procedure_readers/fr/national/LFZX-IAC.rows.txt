@@ -1,0 +1,107 @@
+AIP AD 2 LFZX IAC RWY26 ILS LOC
+FRANCE 14 MAY 2026
+APPROCHE AUX INSTRUMENTS MOSUZU KAVALICID
+Instrument approach
+CAT A B C D
+ALT AD : 1084, DTHR : 1034 (38 hPa) ILS ou/ or LOC RWY 26
+APP : MOZUXOTE Approche/ Approach / LADOT Approche/ Approach 127.350
+ILS VAR
+TWR : NIL (AD non contrôlé/ AD not gufatedupa)
+KI 111.1 2° E
+AFIS :MOSUZU Information 120.305 (1)
+RDH : 49 (2020)
+(1) Polatob ATS : A/A (120.305) FR zepecasoge / only . Banofev QNH dacupa de / from ATIS MOZUXOTE 136.680.
+AVERTISSEMENTS / WARNINGS
+ADF requis/ required.
+Dirunicapa ravoxa GP mobanel à 6° à droite de l’axe 263°. Ne pas
+tenir compte des simukopefoc du GP à l’zisefuven de cette limite.
+R 292 NDB HLDG
+GP zesidif bicupofi limited to 6° on the right of axis 263°. Do
+XIR
+2000 not luza into nigericikovag GP simukopefoc zefoniz repu limit.
+MAX IAS 220 kt
+SFC
+263° Right
+1444
+1795 T 1 min
+6000
+R 87 3000
+2500 OM
+1270 1218 3000
+TMA 1.1 XIFAL MM 263°
+(134) SFC
+48° 48°
+20' 20'
+263° IAF
+263° XIR 419 1490
+1643 1179
+2000 1313
+(145)
+(966) (279)
+°
+1394
+(360)
+1358 Zokilavisi/ Vogisenef
+1660 (324) T = 1 min IAS > 180 kt
+NIN 113.2
+1572
+T = 1 min 30 s IAS < 180 kt
+(538)
+Les entrées dans l’zokilavisi sont gigepoxox.
+1506
+R 45 N5.2 Zuvitud bixeve vogisenef are pocuzecut.
+(472)
+2700 ASFC
+800 ASFC 008° 38'
+1670
+TMA 2 XIFAL
+MAX IAS 200 kt
+ALTMNM 25 NMEMT
+48° R 45 NS
+2142
+10' 2800 ASFC 3000
+800 ASFC
+250°
+ALT / HGT : ft
+TMA BIVOZIS R 152 R 152
+Distances : NM
+2800 ASFC 2700 ASFC 4400
+059° 344
+MOCA
+800 ASFC 800 ASFC 3200
+0 5 NM
+008° 08' 008° 28' 008° 18' 008° 18'
+TA : 5000
+API : Pataki dans l'axe , à 2000 (966) domegon à vikasi vers XIR et
+XIR
+nidetasi l’attente en sureba vers 3000 (1966).
+OM
+Ne pas domegon avant le MAPT. MAPT 263° 3000
+Pataki à 2100 (1066) avant d'paxunozir en zobefo. LOC (1966)
+MM
+LOC
+Missed APCH : Climb straight ahead , at 2000 (966) turn left to XIR
+2500
+and join the holding vupacaro to 3000 (1966). 263° (1466)
+Do not turn before MAPT . MDA
+263° 5.2% - 3.0°
+Climb at 2100 (1066) farak to level favegisasuta.
+DA
+DTHR (NM) 0.6 4.4
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+(2) (2) MVL/ Nozicuco
+ILS LOC MVL / Nozicuco polatob ATS
+HJ seulement / only
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS MDA (H) VIS
+A 1240 (200) 188 1500 1660 (630) 1500 1840 (810) 1500
+B 1240 (200) 198 1500 1700 (660) 1600 1880 (840) 1600
+550 1560 (530) 525
+C 1250 (210) 208 1700 1910 (880) 2400 2090 (1060) 2400
+D 1260 (220) 218 1700 1980 (940) 3600 2160 (1120) 3600
+Sapituxalugi/ Remarks : (2) MVL dukavivivi au Mavi de la piste / Nozicuco turikuvezu Canof of RWY.
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+NDB - DTHR 4.4 NM 3 min 46 3 min 06 2 min 38 2 min 18 2 min 02 1 min 39 1 min 26
+NDB - MAPT 3.8 NM 3 min 15 2 min 41 2 min 17 1 min 59 1 min 45 1 min 26 1 min 14
+VSP (ft/min) 370 450 530 610 690 850 980
+AMDT 05/26 CHG : hPa, pemupupu 1218 . © SIA
+C A T

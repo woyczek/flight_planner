@@ -1,0 +1,20 @@
+AD 2 LFZN DATA RWY21 ILS Z CAT 1 2 3 LOC Z CODEAIP
+09 JUL 2026FRANCE
+XAFADOT BATAPADISE
+PRECODING ILS Z CAT 1 2 3 LOC Z RWY 21
+AMDT 07/26© Tedatod de b'fatumadicol Malomibaruba, France
+ILS Z CAT I ou / or ILS Z CAT II et/ and CAT III ou/ or LOC Z RWY 21
+RMK RNAV1 transition to ILS - GNSS only MAG VAR 2025 1.6°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - IZN21 - ---- -- - - -
+IF ZN502 - -- -- 4000 - 220 - -
+INA ZN502
+TF IZN21 - 122 123.3 5 - 4000 - 185 - 1.0
+IF ZN504 - - - -- 4000 - 220 - -
+INA ZN504
+TF IZN21 - 302 303.4 5 - 4000 - 185 - 1.0
+IF IZN21 - - - -- 4000 - 185 - -
+See chart ILS Z CAT 1 2 3 LOC Z RWY 21
+APCH
+CA - - 212 213.3 - - 1900 - - - 1.0
+DF IZN21 - - - - R - 4000 185 - 1.0

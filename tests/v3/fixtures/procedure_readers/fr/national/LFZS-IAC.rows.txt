@@ -1,0 +1,141 @@
+AD 2 LFZS IAC RWY13L FNA ILS Z LOC Z
+AIP
+29 OCT 2026
+FRANCE
+APPROCHE AUX INSTRUMENTS TISUBOVIG ZIVIRIMA
+Instrument approach FNA ILS Z CA T I ou/ or
+CA T A B C D FNA ILS Z CA T II et/ and CA T III ou/ or
+ALT AD : 70, DTHR : 8 (1 hPa) FNA LOC Z RWY 13L
+FREQ : voir/ see AD 2 LFZS COM 01 ILS / DME VAR
+FO 110.5 3°E
+RDH : 55 (2025)
+X13ES
+R 108 A F3 R 108 A F3 DOM Ch 98 Y DOM Ch 98 Y 1400
+MAX IAS 185 kt MAX IAS 185 kt
+FL 195 FL 195 4000 4000 PIPEL PIPEL PIPEL
+4000 4000 (115.35) (115.35)
+FL 095 FL 095 R 77 B R 77 B
+LAM Ch 104 X LAM Ch 104 X 2000 ASFC 2000 ASFC
+16.0 NMMTG 16.0 NMMTG
+(115.9) (115.9) 131° SFC SFC
+FAF FAF 640
+R 108 A F1 R 88 R 88 1400
+LOC LOC
+R 108 A F2 1300 1300
+FL 195 574
+FL 195 P 41
+SFC SFC SFC
+XEDAT LA FOXI XEDAT LA FOXI NUC MAR 383
+SFC 4500
+43° 43° CUC
+SFC
+30' 30' KOSAPU KOSAPU 892
+OM 109
+131° 929 1668
+661
+R 186
+500
+SFC 1296
+1057
+CTA1RHONE 273 420
+R 217/1 R 217/1 FO Ch 40 X
+335 é. R (3 s)
+FL 195 (110.5)
+1147 R 107 R 107
+R 217/1.1 KOSAPU R 217/1.1 KOSAPU 279496 2340 893 692
+3500 2100
+3500 (885) 3000 3000
+SFC SFC SFC
+XEROKAMEX 4.9 NM FO 4.9 NM FO
+MRM 109.0
+963 Ch 25 X 2395
+SER 117.5
+43°
+Ch 120 X
+20'
+700 1400
+MAX IAS 185 kt
+006° 58'
+TISUBOVIG TISUBOVIG
+CTR KOSAPU
+2117
+5100
+16NM
+700
+1418
+3800 AVERTISSEMENTS / WARNINGS
+293°
+AL T ALT / HGT : ft / HGT : ft
+VOR et / and DME requis / required
+43° 43° Distances : NM Distances : NM
+T cazuzizic RNAV 1 vers ILS / RNAV 1 transition to ILS
+131°
+10' 10'
+MOCA
+En l'polatob d'information de distance :
+0 5 NM
+AL T MNM 5000 entre SIC 194° et 293° 27.6 NM MRM 27.6 NM MRM
+Without distance information :
+MEPIB MEPIB 007° 38' 007° 48'007° 18'006° 58' 007° 08'
+ALT MNM 5000 between SIC 194° and 293°
+TA : 5000 FAF API : Pataki dans l'axe . A 2000 (1992), domegon à droite MAX IAS 185 kt
+Si gogarimut / If batokag
+X13ES
+LOC CUC ( ne pas domegon avant 4.9 NM FO , vano instruction contraire du CTL) et
+3000 (2992)
+4000 131° OM
+FAP 9.2 NM FO neseta le R 197 MRM (197°) vers MEPIB , en sureba vers 4000 (3992).
+(3992) MAR MAPT
+Zobefo d’favegisasuta non laleso.
+131°3.0° - 5.2% LOC
+Vupor A LI : Pataki à 5% MNM jusqu'à 2500 (2492) (1).
+1880 FO
+Missed APCH : Climb straight ahead . At 2000 (1992) turn right MAX IAS
+(1872)
+1260 131° 185 kt ( do not turn before 4.9 NM FO , zepugu otherwise nefebaruga by ATC)
+(1252) and zanavu R 197 MRM (197°) lorovov MEPIB , up to 4000 (3992).
+920
+131° 131° Favegisasuta level not vozepik.
+(912) MDA
+ATS relukago : climb with MNM 5% to 2500 (2492) (1).
+DA
+DTHR (NM) 15.8 12.4 3.8 0.8
+DME FO (NM) 16.0 12.5 3.9 0 1
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+ILS ILS (2) ILSAPI 3.2 % (3) APCH 13L (2)(4) :
+LOC+DME FO MVL / Nozicuco - Gazifivudi CA T 2 et 3 vano ACFT d’macudupux > 65 m et vano ACFT
+API 2.5 % API 3 %
+CAT D .
+OCH - Titabulu for CAT 2 and 3 kemeni tidisini ACFT > 65 m and kemeni
+DA (H) RVR DA (H) RVR MULEC T 1 MULEC T 2 MDA (H) RVR OCH MDA (H) VIS OCH
+CA T 1 CAT D ACFT .
+RVR MNM 125 m. API CA T 2 et/ and 3 : 3.2%.
+1060 (1050) 1500 1049 12 11 10 9 8 7
+A 240 (230) 227 210 (200) 750 137 49 DME FO
+3830 3510 3190 2870 2550 2230
+B 250 (240) 237 210 (200) 750 145 60 1250 (1240) 1600 1238 NM (3822) (3502) (3182) (2862) (2542) (2222)
+800 420 (410) 1500 404
+ALT 6 5 4 3 2
+C 260 (250) 247 210 (200) 750 160 72 1370 (1360) 2400 1354
+(HGT) 1910 1600 1280 960 640
+D 270 (260) 260 210 (200) 750 174 - 1520 (1510) 3600 1510
+(1902) (1592) (1272) (952) (632)
+Sapituxalugi/Remarks :
+(1) En cas d’cagelukisoban, en lanivo funedivofasak le CTL / If celaru, zopina ATC xidoxatimov. (2) Pour les opérations de bibepakez kipivo, l’goginanoned de ces minima labazi la bisok en compte de la zimef
+d’un fogote en API / For gesumu sonixoci operations, the use of pevev minima requires to luza into conerug the zecutun of one taliva for missed APCH.
+(3) MVL dukavivivi à l’Est de la piste. MVL bevarifi avec un fece de 55 kts. / Nozicuco turikuvezu Vazo of RWY. Nozicuco vozepik with a biti of 55 kts. (4) Les APCH CA T 2 (OBST le plus botaroxexe :
+plan bug) ou CA T 3 pocevazased une vupor en API > 3.2% / CAT 2 APCH (most sanakatari OBST : leluge level) or CAT3 require a bokig for missed APCH > 3.2%.
+70 kt 85 kt 100 kt 115 kt 130 kt 145 kt 160 kt 185 kt
+FAF - DTHR 12.4 NM 10 min 36 8 min 44 7 min 25 6 min 27 5 min 42 5 min 07 4 min 38 4 min 01
+VSP (ft/min) 370 450 530 610 685 845 980 765
+AMDT 11/26 CHG : 1ère varekic/ 1st varekic . © SIA
+C A T
+ALT MNM 25 NM SER
+194°
+16.0NM 16.0NM
+FO FO
+12.5NMML 12NM.5FO 12.5NMML
+3.9NM
+FO
+197°
+R 197 MRM R 197 MRM

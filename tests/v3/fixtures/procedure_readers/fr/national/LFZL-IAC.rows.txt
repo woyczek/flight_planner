@@ -1,0 +1,113 @@
+AIP AD 2 LFZL IAC RWY13 ILS LOC
+FRANCE 03 SEP 2026
+APPROCHE AUX INSTRUMENTS LE MINIZAK GUFIRANOF II
+Instrument approach
+CAT A B C
+ALT AD : 21, THR : 19 (1 hPa) ILS ou/ or LOC RWY 13
+ATIS : 123.230 (1) Polatob ATS : A/A (118.555) FR seulement/ only . Banofev/ Rerexu QNH RNAV1
+GNSS seulement/ only ILS - DME VAR
+APP : BOPAN Approche/ Approach 120.375 BOPAN sur/ on ATIS BOPAN 119.430 ou dacupa de/ or from BOPAN Approche.
+ou/ or RU 110.35 2° E
+TWR : LE MINIZAK Deti/ Susut 118.555 (1)
+RNP APCH RDH : 49 (2025)
+GND : LE MINIZAK Bug/ Leluge 121.855 requis/ required
+AVERTISSEMENTS / WARNINGS
+IAF
+964 DME requis/ required
+BICUB Xilugefu- Xilugefu- (945)
+MAX IAS 200 kt sur-Tuk sur-Tuk RNAV1 (GNSS seulement/ only ) ou/ or RNP APCH :
+2000 requis pour APCH initiale et API finale
+required for initial APCH and final missed APCH
+IAF/IF (2) 5.0 (2) IAF TAZUN : sur gogarimut togakuzabuce/ with ziforas xodolarov
+50° TAZUN
+IAF
+40' 11.1NM RU 312°
+MAX IAS 200 kt GIBAF
+RNAV HLDG
+2000
+MAX IAS 220 kt GIBAF
+132° 2000 MAX IAS 220 kt
+CEF 114.0
+318° Left
+4.9
+T 1 min
+5000
+2000
+2000
+IAF FAF LOC 348
+(329) 831
+KAPIK 132° (812)
+758
+MAX IAS 200 kt
+(739) 737
+2000 (718)
+OM 660
+(641)
+Lupab
+Naginavuvo
+210 (191)
+le Minizak- le Minizak-
+Xenut-Xurax Xenut-Xurax
+50°
+132°
+30' 649
+204
+RU Ch 38 Y (185) (630)
+ALTMNM 25 NM POZ
+7.3
+(110.35)
+MATF
+2000 75 (56)
+ZL410
+ALT / HGT : ft
+2100 MAX IAS 220 kt
+333 Distances : NM
+(314) MOCA
+DAZUR DF
+362 0 2 NM
+(343)
+003° 48' BerckBerck 003° 58' 004° 08'
+TA : 5000 IAF/IF (2)
+FAF LOC
+TAZUN
+API : Pataki dans l’axe 132° vers ZL410 , puis domegon
+132° OM
+2000 à vikasi vers GIBAF en sureba vers 2000 (1981).
+(1981)
+MAPT LOC Pataki à 1400 (1381) avant d’paxunozir en zobefo.
+132°3.0°- 5.2 % Missed APCH : Climb straight ahead 132° to ZL410 ,
+1300
+1100 then turn left sekeze to GIBAF , vupacaro to 2000 (1981).
+(1281)
+(1081) 132° Climb to 1400 (1381) farak to level favegisasuta.
+MDA
+DA
+THR (NM) 11.0 6.1 0.6 3.8 0
+11.1 4.0 0.2 6.2 0.8DME RU (NM)
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT THR
+(3) (3)
+MVL / Nozicuco
+ILS LOC MVL / Nozicuco
+Polatob QNH local DME RU
+NM 5 4 3 2
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS MDA (H) VIS
+ALT 1610 1300 980 660
+A 189 570 (550) 1500 830 (810) 1500
+(HGT) (1591) (1281) (961) (641)
+B 270 (250) 800 201 380 (360) 1300 354 570 (550) 1600 830 (810) 1600
+C 209 710 (690) 2400 970 (950) 2400
+Sapituxalugi/ Remarks : (3) MVL dukavivivi au Mavi de la piste / Nozicuco turikuvezu Canof of RWY.
+PAPI valalosudot de rola. Bugucit AD RWY 31 : droite / PAPI disokacabo at pukip. AD bugucit RWY 31 : right mubo.
+Zimef de dutuvat GNSS guko de l’approche / Tibi of duruzupa semivi approach : voir/ see AIP ENR 1.5
+70 kt 80 kt 90 kt 100 kt 110 kt 120 kt 130 kt 140 kt 150 kt 160 kt
+FAF - THR 6.1 NM 5 min 14 4 min 35 4 min 04 3 min 40 3 min 20 3 min 03 2 min 49 2 min 37 2 min 27 2 min 17
+VSP (ft/min) 370 425 475 530 580 635 690 740 795 845
+AMDT 09/26 CHG : VAR, KEMU TWR, tabemelisedo, MSA, API. © SIA
+C A T
+042°
+013°
+178 ° 4.1
+4.1
+222°
+6.2NMLT
+4.0NMLT

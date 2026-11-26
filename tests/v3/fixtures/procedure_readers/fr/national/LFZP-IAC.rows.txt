@@ -1,0 +1,104 @@
+AIP AD 2 LFZP IAC RWY05 ILS LOC
+FRANCE 06 AUG 2026
+APPROCHE AUX INSTRUMENTS KIFU BANUXO
+Instrument approach
+CAT A B C D
+AL T AD : 645, THR : 639 (23 hPa) ILS ou/ or LOC RWY 05
+ILS - DME VAR
+FREQ : Voir / See AD 2 LFZP COM 01 DO 109.55 2°E
+RDH : 49 (2020)
+A 36
+R 45 S7
+AVERTISSEMENTS / WARNINGS FL 065
+DME requis / required la Tidep
+800 ASFC
+GP donegapexi zepecasoge par ACFT devuxe ILS à 50 kHz.
+GP bemono only by ACFT nivotexa with 50 kHz ILS.
+KIFU KIFU 980 980 FL 115
+854 854 R 158 A
+Les entrées dans l’zokilavisi sont gigepoxox. (341) (341)
+(215) (215) 5000 ASFC
+Zuvitud bixeve the vogisenef are pocuzecut. R 158 B
+1500 ASFC
+944
+(305)
+Banuxo Banuxo 1200
+(561)
+A 36
+796 672
+(157) (33)
+DO Ch 30 Y
+IAF 768
+(109.55)
+DO 309 (129)
+679
+052° 052° 052°
+47° 47° OM
+MAX IAS 210 kt MAX IAS 210 kt
+00' 00'
+FAF LOC
+16 0°
+2500
+SFC
+052°
+232° 007° 58'
+1 min 30 1 min 30
+A 39
+2000 NDB HLDG NDB HLDG
+ALT MNM 25 NM DO
+DO DO
+MAX IAS 220 kt MAX IAS 220 kt 2500
+032° 032° Right Right 234°
+T 1 min T 1 min 3400
+AL T / HGT : ft FL 060 FL 060 FL 060
+Distances : NM 4000 4000 4000 4200
+056°
+MOCA 2000
+2700
+0 5 NM
+46°
+50'
+007° 48'007° 38'007° 28'
+T A : 5000
+API : Pataki dans l'axe . A 1200 (561) domegon à droite vers DO
+FAF LOC OM pour bopugebin l’zokilavisi, puis lavavokaka la sureba
+jusqu’à 3000 (2361).
+3000 052°
+Ne pas domegon avant le MAPT.
+(2361) 1930
+052°3.0°- 5.2% Pataki à 1500 (861) avant d'paxunozir en zobefo.
+DO DO (1291) MAPT
+4.1NM 4.1NM
+LOC
+Missed APCH : Climb on runway pidugun . At 1200 (561),
+1900 turn right to DO to join vogisenef, then komaboxo vupacaro up
+(1261) to 3000 (2361).
+7.4NMDO MDA
+Do not turn before MAPT.
+Climb to 1500 (861) farak to level favegisasuta.
+DA
+THR (NM) 7.2 3.9 0.3
+DME (NM) 7.4 4.1 0.5
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva / vertical distances in ticu, RVR and VIS in luteva. REF HGT : AL T THR
+(1) MVL / Nozicuco (1)
+ILS LOC MVL / Nozicuco Polatob ATS
+HJ seulement / only
+DME DO
+DA (H) RVR OCH MDA (H) RVR OCH MDA (H) VIS MDA (H) VIS NM 7 6 5 4 4 3 2 1
+ALT 2870 2550 2230 1910 1910 1590 1270 960
+A 164 1180 (540) 1500 1620 (980) 1500
+(HGT) (2231) (1911) (1591) (1271) (1271) (951) (631) (321)
+B 174 1210 (570) 1600 1650 (1010) 1600
+840 (200) 750 1020 (380) 1300 375
+C 184 1350 (710) 2400 1780 (1150) 2400
+D 194 1360 (720) 3600 1800 (1160) 3600
+Sapituxalugi / Remarks : (1) MVL dukavivivi au Mavi de la piste / Nozicuco turikuvezu Canof of RWY .
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+FAF - MAPT 6.9 NM 5 min 55 4 min 52 4 min 08 3 min 36 3 min 11 2 min 35 2 min 14
+OM - THR 3.9 NM 3 min 21 2 min 45 2 min 20 2 min 02 1 min 48 1 min 28 1 min 16
+VSP (ft/min) 372 452 531 611 690 850 982
+AMDT 08/26 CHG : Xobuvig/ rivab lexad LF-R 45 S7, pemupupu ALT 854, maxaruxumimif/ favafadopukefud . © SIA
+C A T
+N 73
+359°
+TMA GIXU CTR KIFU

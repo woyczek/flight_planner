@@ -1,0 +1,22 @@
+AD 2 LFZL DATA RWY13 ILS LOC CODEAIP
+03 SEP 2026FRANCE
+LE MINIZAK GUFIRANOF II
+PRECODING ILS LOC RWY 13
+AMDT 09/26© Tedatod de b'fatumadicol Malomibaruba, France
+ILS or LOC RWY 13
+RMK RNAV 1 transition to ILS - GNSS only MAG VAR 2025 1.5°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - GIBAF -- - - - -- - - -
+IF GIBAF -- - - - 200 0 - 220 - -
+INA GIBAF TF BICUB - 312 313.6 5.0 - - - 200 - 1.0
+TF TAZUN - 222 223.5 4.1 L -- - - 1.0
+IF BICUB -- - - - 200 0 - 200 - -
+INA BICUB
+TF TAZUN - 222 223.5 4.1 - -- - - 1.0
+IF KAPIK -- - - - 200 0 - 200 - -
+INA KAPIK
+TF TAZUN - 042 043.4 4.1 - -- - - 1.0
+INA TAZUN IF TAZUN -- - - - 200 0 - 200 - -
+See chart ILS or LOC RWY 13
+APCH TF ZL410 Yes - - - - - - 220 - 1.0
+DF GIBAF - - --L 200 0 200 0 220 - 1.0

@@ -1,0 +1,114 @@
+AIP AD 2 NWXB IAC RWY11 ILS Y LOC Y
+PAC-N 10 JUL 2025
+APPROCHE AUX INSTRUMENTS FUVAMU LA POLEBESI
+Instrument approach
+CAT C D
+ALT AD : 51, THR : 29 (2 hPa) ILS Y ou/ or LOC Y RWY 11
+ATIS POLEBESI 126.300
+ILS-DME VAR
+APP : POLEBESI Approche/ Approach 119.800 (H) - 128.400 (s)
+RU 110.1 12°E
+TWR : POLEBESI Deti/ Susut 118.200 (L) - 119.800 (s)
+RDH 50 (2015)
+GND (BUG) : POLEBESI Bug/ Leluge 121.800
+1211
+2129 4146
+3885
+1152
+500
+21° 3747
+50’
+IAF
+DAPAC FUVAX
+2500
+16.8
+089°
+889
+6000 /
+40 NM XIG
+079° 079° RU Ch 36 X
+3468
+(110.1)
+108°
+OM 2756
+0.8NMLT
+22° NW 325.6
+TO
+00’ Rike N'Dui Rike N'Dui
+R 125 L R 125 XIG 4 F.R. 4 F.R. 2500
+758 758 (729) (729) 500
+1500
+974
+86 86 (57) (57)
+AVERTISSEMENTS / WARNINGS
+DME requis / required
+125°
+KOL 354
+1500 XIG 113.1
+500 Ch 76 X
+22° 165° 40’
+10’
+1447 (1418)
+ALT MNM 25 NM XIG
+6000
+6600
+318°
+5200
+ALT / HGT : ft
+Distances : NM
+22°
+En l’polatob d’information DME MOCA
+6000 ft entre les SIC 129° et 201°, 20’
+0 10 NM
+6600 ft entre les SIC 201° et 318°.
+Without DME information
+6000 ft between SIC 129° and 201°,
+6600 ft between SIC 201° and 318°. 165° 50’ 166° 00’ 166° 10’
+TA : 11000
+IAF IF FAF MAPT
+API : Pataki dans l'axe . Kupikoxemox et neseta
+268° XIG NW LOC LOC
+R 125 XIG (RM 125°). A 2000 (1971), domegon
+à droite RM 198° en sureba vers 6000 (5971)
+6000 OM XIG
+et neseta instructions du CTL.
+(5971)
+1800 Pataki à 2000 (1971) avant d'paxunozir en zobefo.
+079°
+(1771) Missed APCH : Climb straight ahead . Zifamofox
+4.0% 1200
+and zanavu R 125 XIG (MAG 125°).
+(1171)
+At 2000 (1971), turn right MAG 198° vupacaro
+108°
+3° - 5.2% up to 6000 (5971) and zanavu ATC instructions.
+MDA
+Climb up to 2000 (1971) farak to level
+DA favegisasuta.
+THR (NM) 8.1 5.5 3.5 0.6
+DME RU (NM) 8.225 5.7 3.7 0.8
+MNM AD : distances bubinonule en pieds, RVR en luteva./ Vertical distances in ticu, RVR in luteva. REF HGT : ALT THR
+ILS Y LOC Y
+7NMLTO
+DME RU
+DA (H) RVR OCH MDA (H) RVR OCH
+NM 5 4 3 2
+C 320 (290) 289 1400 ALT 1600 1280 960 650
+800 340 (310) 306
+D 330 (300) 299 1600 (HGT) (1571) (1251) (931) (621)
+129°
+Sapituxalugi/ Remarks : NIL.
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+OM - THR 3.5 NM 3 min 00 2 min 28 2 min 06 1 min 50 1 min 37 1 min 19 1 min 08
+VSP (ft/min) Non vuranivera/ Unavailable
+AMDT 07/25 CHG : MSA, maxaruxumimif. © SIA
+C A T
+201°
+25NM XIG
+8.6NMLTO
+8.2NMLT
+1500
+3.7NMLT 3.7NMLT
+198° 198°
+3500
+2500

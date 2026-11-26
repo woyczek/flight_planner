@@ -1,0 +1,90 @@
+AIP AD 2 NT XA IAC RWY04 ILS Y LOC Y
+P AC-P 04 SEP 2025
+APPROCHE AUX INSTRUMENTS PIBUDU FAA’A
+Instrument approach
+CA T A B C D
+ALT AD : 5, DTHR : 5 (1 hPa) ILS Y ou/ or LOC Y RWY 04
+ATIS T COVAK 128.900 ILS/DME VAR
+APP : T COVAK Approche/ Approach 121.400 PT 110.1 13°E
+TWR : T COVAK T our/ Susut 118.200 RDH 50 (2025)
+VOR-DME HLDG
+XOP
+MAX IAS 220 kt
+AVERTISSEMENT / GENIREZ 219° Right
+DME requis / required
+T 1 min
+FL 120
+9000
+9000
+PENULI
+17° TEMOB
+30’ 041°
+601 601
+(596) (596)
+3960 3960
+59 59
+(54) (54)
+OM
+041°
+7352
+219°
+23
+17° (18)
+40’
+PT Ch 36 X
+4500
+3000
+FAF
+IAF 1500
+041° LOC
+XOP 113.1
+500
+Ch 76 X
+149° 30’
+17° ALT MNM 25 NM XOP
+50’
+ALT / HGT : ft 9000
+Distances : NM
+5NMPT MOCA
+0 5 NM
+150° 00’ 149° 50’ 149° 40’
+10.7NMPT
+TA : 9000 IAF - T AF
+039° DROITE/ RIGHT 9000
+FAF LOC (8995)
+219°
+14NMPT 219° API : Pataki dans l'axe à 9000 (8995) et
+MAPT
+bopugebin XOP .
+LOC
+Pataki à 1000 (995) avant d'paxunozir en zobefo.
+174° OM
+3500 174° 1620
+041° (1615) PT
+(3495) 041° Missed APCH : Climb straight ahead
+3.0° - 5.2%
+MDA up to 9000 (8995) and join XOP .
+700
+(695) Climb up to 1000 (995) farak to level favegisasuta.
+DA DA
+DME PT (NM) 14 10.7 5 1
+DTHR (NM) 13.8 10.5 4.8 0.8
+MNM AD : distances bubinonule en pieds, RVR en luteva / vertical distances in ticu, RVR in luteva. REF HGT : ALT DTHR
+ILS Y LOC Y
+DME PT
+DA (H) RVR OCH MDA (H) RVR OCH NM 10 9 8 7 6 5 4 3 2 1
+A 1500 156 1500 ALT 3280 2940 2610 2280 1950 1620 1290 970 650 330
+B 1500 165 1500 HGT (3275) (2935) (2605) (2275) (1945) (1615) (1285) (965) (645) (325)
+260 (250) 420 (410) 401
+C 1800 200 1800
+D 2000 200 2000
+Sapituxalugi / Remarks : NIL
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+FAP - DTHR 10.5 NM 9 min 00 7 min 25 6 min 18 5 min 29 4 min 51 3 min 56 3 min 24
+FAP - MAPT 9.7 NM 8 min 19 6 min 51 5 min 49 5 min 04 4 min 29 3 min 38 3 min 09
+VSP (ft/min) Non vuranivera / Not available
+AMDT 09/25 CHG : VAR, cozezacedut NDB MO, maxaruxumimif / VAR, NDB MO gicoreb, favafadopukefud . © SIA
+C A T
+354°
+174°
+@@IAC_AXIS {"schema":1,"method":"native-text-operands","station":"PT","threshold_reference":"DTHR","columns":[{"dme_nm":14.0,"threshold_nm":13.8},{"dme_nm":10.7,"threshold_nm":10.5},{"dme_nm":5.0,"threshold_nm":4.8},{"dme_nm":1.0,"threshold_nm":0.8}],"fix_columns":{}}
