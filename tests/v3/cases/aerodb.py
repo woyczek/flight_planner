@@ -23549,10 +23549,12 @@ def k555(c):
             rows = [d for d in docs if key in d[2]]
             return {'rows': rows, 'count': len(rows), 'pages': 1, 'warning': None}
         def fetch(self, row): calls.append(row[0]); return None
+    said = []
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp, patch.object(E, 'row_summary', lambda row: row[:2]):
-        E.fetch_ad(Library(), 'GCZA', temp, say=lambda *a: None)
+        E.fetch_ad(Library(), 'GCZA', temp, say=lambda *a: said.append(' '.join(map(str, a))))
     c.eq(authorities, ['LE'], 'GC uses the Spanish authority, not a fictitious GC authority', what='EAD authority')
     c.eq(sorted(calls), sorted(d[0] for d in docs), 'a coding table never removes the ILS from the selection; each document is fetched once', what='selected documents')
+    c.ok(any('2 documents à télécharger' in line and '1 carte' in line and 'ne remplace plus' in line for line in said), str(said), 'the screen says that the user now downloads the charts too (IT1: a coding table no longer replaces them)')
 @case('K669', 'EAD selection (Sécurisation, IT1): a search that returns more documents than the cap for one aerodrome refuses the WHOLE selection — nothing is downloaded, the message says why — and never truncates it in silence; at the cap, everything is fetched once',
       'K', static=True, tags=('procedure-readers', 'security'),
       rule='Sécurisation, 26 Nov 2026 (lot IT1): « MAX_DOCS = 60 ; au-delà, say(...) le dit et RIEN n\'est téléchargé, jamais une sélection tronquée en silence ; un cas avec un lib factice qui rend 61 documents : aucun lib.fetch appelé, le message dit pourquoi ; rouge avant »')
