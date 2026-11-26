@@ -106,6 +106,15 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
             known += 1
             fp = fingerprint(rows)
             parsed = read_page(layout, rows, kind_hint=last_kind, known=ei_known)       # l'analyseur de la disposition (proc_layouts.LAYOUTS) ; le type et les noms confirmés viennent des pages déjà lues
+            if layout == 'se-coding':
+                headings = ' '.join(pages_of[f][0][:20])
+                source_runways = sorted(set(re.findall(r'\b(?:SID|STAR)\s+RWY\s+(\d{2}[LRC]?)\b', headings)))
+                for table in parsed['tables']:
+                    if not table['runways'] and source_runways:
+                        table['runways'] = source_runways
+                        table.setdefault('chart_data', {})['runway_binding'] = 'same-document chart header'
+                    elif not table['runways']:
+                        table.setdefault('partial', {}).setdefault('unread', []).append('runway-binding')
             kinds_read = {t.get('kind') for t in parsed['tables']}
             if len(kinds_read) == 1 and None not in kinds_read:
                 last_kind = kinds_read.pop()

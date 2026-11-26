@@ -1,0 +1,10 @@
+[
+  {
+    "fixture": "ESZY-GAFOV-3M.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de Suède, AD 2, table de codage ARINC des départs (SID) (extrait). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "ESZY-XUTIV-5L.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de Suède, AD 2, table de codage ARINC des arrivées (STAR) (extrait). Aucune valeur n'est réelle."
+  }
+]

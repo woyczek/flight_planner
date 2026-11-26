@@ -23322,3 +23322,30 @@ def k612(c):
             return {'results': {}}
         M.run({'cycle': '2026-11-26', 'france_regions': ['FRANCE'], 'publications': {'FRANCE': url}}, out/'coordinator', offline=True, national_run=national)
         c.eq(calls, [(url, True)], 'the repeatable coordinator preserves both offline boundaries', what='offline wiring')
+@case('K588', 'LFV native SID coding retains the waypoint-free altitude leg, fly-over, signed constraints and true/magnetic courses', 'K', static=True,
+      tags=('procedure-readers', 'se-coding'), rule='Measured GAFOV 3M excerpt: CF ZY401, CA to at least 900, left DF ZY901 at maximum 210 kt, then ZY902 and GAFOV')
+def k588(c):
+    _reader_modules()
+    import proc_se
+    rows = _reader_fixture('se/ESZY-GAFOV-3M.rows.txt').splitlines()
+    table = proc_se.parse(rows)['tables'][0]
+    c.eq((table['kind'], table['name'], [p['id'] for p in table['legs']]), ('SID', 'GAFOV 3M', ['ZY401', None, 'ZY901', 'ZY902', 'GAFOV']), 'the altitude leg has no invented fix', what='source sequence')
+    c.eq((table['legs'][0]['over'], table['legs'][0]['crs'], table['legs'][0]['true'], table['legs'][1]['alt']),
+         (True, 22.0, 26.0, {'type': 'min', 'ft': 900}), 'fly-over, separate tracks and signed minimum', what='constraints')
+    c.eq((table['legs'][2]['turn'], table['legs'][2]['speed']), ('L', {'type': 'max', 'kt': 210}), 'the signed speed limit is not an exact speed', what='speed role')
+
+
+@case('K589', 'LFV STAR split minus sign means maximum FL170; missing coding cells do not join neighbouring legs', 'K', static=True,
+      tags=('procedure-readers', 'se-coding'), rule='Measured XUTIV 5L excerpt and explicit incomplete-row counterexample; same-document runway binding, unresolved coordinates and operating conditions stay visible')
+def k589(c):
+    _reader_modules()
+    import proc_se
+    from proc_records import build_pdf_dir
+    rows = _reader_fixture('se/ESZY-XUTIV-5L.rows.txt').splitlines()
+    table = proc_se.parse(rows)['tables'][0]
+    c.eq(table['legs'][0]['alt'], {'type': 'max', 'ft': 17000}, 'the separated minus sign belongs to FL170, not an empty lower column', what='maximum FL')
+    broken = [r.replace('TF ZY733 - ', 'TF ZY733 ') for r in rows]
+    parsed = proc_se.parse(broken)
+    c.eq((parsed['tables'], bool(parsed['warnings'])), ([], True), 'a missing fly-over cell refuses its block instead of shifting the remaining cells', what='incomplete row')
+    doc = build_pdf_dir('ESZY', ['fixture.pdf'], lambda n: [rows], 'unknown')
+    c.eq((doc['procedures'][0]['runways'], doc['procedures'][0]['status']), (['03'], 'doubt'), 'source runway header is bound before constructing identity; absent coordinates are a doubt', what='source binding')

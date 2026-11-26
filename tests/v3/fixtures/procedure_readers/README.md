@@ -30,6 +30,7 @@ the sources, France included, by the ergonomist).
 - `fr/` — pages on the model of the French AIP (AD 2: DATA pages, ARINC coding tables, IAC ILS / LOC charts and their positioned text); the
   folders `fr/iac/` and `fr/national/` hold the pages of the cases on the final approach and on the national build.
 - `uk/` — pages on the model of the UK AIP (AD 2: coding tables, IAC ILS / LOC charts, AD 2.12, a conventional SID chart); the longitude is moved by 2°18′ with a sign chosen per aerodrome (a page may straddle the Greenwich meridian), the other rules are the same.
+- `se/` — two excerpts on the model of the Swedish AIP (ARINC coding tables of a SID and a STAR); the page has no coordinates, so only names, prose and frequencies are invented.
 - `fr_invented/` — pages written from scratch on the layout of an IAC ILS page (an aerodrome and a station that exist nowhere).
 
 Each folder has a `sources.json`: `{ fixture, reference, … }` for every page (`file` when the case needs the name of the chart).

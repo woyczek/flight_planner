@@ -1,0 +1,10 @@
+SID RWY 03
+GAFOV 3M
+Path Waypoint Fly- Course °M(°T) Dist Turn Rest Alts Speed V PA/ Rec Navigation
+Te rm Identifier over (NM) Dir (ft AMSL) Limits (kt) RDH (°/ft) Navaid Specification
+CF ZY401 Y 022°(026.0°) 1.0 - - - - NEV RNAV 1
+CA - - 022°(026.0°) - - +900 - - - RNAV 1
+DF ZY901 - - - L - -210 - - RNAV 1
+TF ZY902 - 279°(283.3°) 3.9 - - - - - RNAV 1
+TF GAFOV - 248°(251.9°) 34.2 - - - - - RNAV 1
+SID instruction: Climb on track 022° to ZY401 (MNM 900 ft misose turn) – ZY901 (max IAS 210 kt runum 124.780

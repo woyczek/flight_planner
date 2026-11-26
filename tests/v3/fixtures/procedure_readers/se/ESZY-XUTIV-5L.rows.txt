@@ -1,0 +1,11 @@
+STAR RWY 03
+XUTIV 5L
+Path Waypoint Fly- Course °M(°T) Dist Turn Rest Alts Speed V PA/ Rec Navigation
+Term Identifier over (NM) Dir (ft AMSL) Limits (kt) RDH (°/ft) Navaid Specification
+IF XUTIV - - - - - FL170 - - - RNAV 1
+TF ZY733 - 084°(087.9°) 6.1 - - - - - RNAV 1
+TF ZY716 - 084°(088.0°) 6.2 - - - - - RNAV 1
+TF ZY717 - 072°(075.8°) 3.8 - +5000 - - - RNAV 1
+TF ZY713 - 022°(025.7°) 6.7 - - - - - RNAV 1
+TF ZY708 - 022°(025.8°) 3.3 - +3000 - - - RNAV 1
+STAR instruction: XUTIV (FL170 or tikob) – ZY733 – ZY716 – ZY717 (5000 ft or soles) – ZY713 – ZY708 (3000 ft or soles).

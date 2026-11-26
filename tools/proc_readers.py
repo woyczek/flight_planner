@@ -61,6 +61,9 @@ READERS = (
     _ead('ead-ie', ('ei-coding',), ('ie',), ('EI',), 'Ireland'),
     _ead('ead-de', ('de-route',), ('de',), ('ED',), 'Germany'),
     _ead('ead-icao-tab', ('icao-tab',), (), (), 'several States (an ICAO table printed without coordinates: the layout is not tied to one State)'),
+    {'id': 'lfv-local', 'reader': 'proc_se', 'layouts': ('se-coding',), 'zones': (), 'prefixes': ('ES',), 'state': 'Sweden (the coding tables of a local archive of the LFV package: read on the workstation, not wired in the launcher: `none-lfv` below stays)',
+     'source': {'name': 'LFV AIP package, a local archive read on the workstation (proc_local_corpus)', 'id': 'lfv-local'}, 'licence': {'name': None, 'redistribution': None, 'written_in': None},
+     'fixtures': ('se',)},
     # the States with NO reader of procedures (SOG-0615): the screen says so (« La suite n'a pas de lecteur de procédures pour cet État »)
     {'id': 'none-naviair', 'reader': None, 'layouts': (), 'zones': ('dk', 'fo', 'gl'), 'prefixes': ('EK', 'BG'), 'state': 'Denmark, Faroe Islands, Greenland',
      'source': {'name': 'Naviair files dropped by hand', 'id': 'naviair'}, 'licence': {'name': None, 'redistribution': None, 'written_in': None},

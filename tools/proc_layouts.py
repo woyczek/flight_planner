@@ -9,6 +9,7 @@ Ajouter une disposition, c'est écrire son analyseur et UNE entrée ; ce module 
 import datetime
 import hashlib
 import re
+from proc_se import detect as detect_se_coding, parse as parse_se_coding
 from collections import namedtuple
 
 
@@ -1381,6 +1382,7 @@ def _detect_uk_app(rows):
 
 
 LAYOUTS = [
+    Layout('se-coding', detect_se_coding, parse_se_coding, frozenset(), None, False, kind_hint=True, positions='required'),
     Layout('uk-coding', _detect_uk_coding, parse_uk_coding, frozenset(), normalize_uk_coding, True),
     Layout('at-coding', _detect_at_coding, parse_at_coding, frozenset(), normalize_at_coding, True),
     Layout('be-coding', _detect_be_coding, parse_be_coding, frozenset(), normalize_be_coding, True, positions='required'),
