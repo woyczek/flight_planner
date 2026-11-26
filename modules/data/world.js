@@ -115,7 +115,9 @@ function gapHtml() {
 function autoHtml() {
   const a = S.world.status?.auto;
   if (!a) return '';
-  return `<p class="f-muted" data-world-auto data-due="${a.due ? 'yes' : 'no'}">${esc(tt(a.due ? TX.world.auto : TX.world.autoWait, { t: M.clockOf(a.next) }))}</p>`;
+  // « À jour » ne se dit que d'un synoptique qui l'est : plus de 12 h ou absent, la ligne ne donne que l'heure de la prochaine lecture (la ligne de l'état dit déjà « Plus de 12 h »)
+  const fresh = M.worldState(S.world.status, S.now ?? Date.now()).state === 'ok';
+  return `<p class="f-muted" data-world-auto data-due="${a.due ? 'yes' : 'no'}">${esc(tt(a.due ? TX.world.auto : fresh ? TX.world.autoWait : TX.world.autoNext, { t: M.clockOf(a.next) }))}</p>`;
 }
 /** La fin d'une construction en phrases : ce qu'elle a publié, ou la raison de l'échec. */
 function resultHtml() {

@@ -938,6 +938,10 @@ export const TX = {
       'Aktuell. Nächster NOAA-Lesevorgang um {t}.',
       'Al día. Próxima lectura de la NOAA a las {t}.'
     ],
+    // le synoptique a plus de 12 h ou manque : jamais « À jour », seulement l'heure de la prochaine lecture
+    autoNext: ['Prochaine lecture de la NOAA à {t}.', 'Next NOAA read at {t}.', 'Nächster NOAA-Lesevorgang um {t}.',
+      'Próxima lectura de la NOAA a las {t}.'
+    ],
     gapLine: ['Lecture lancée à {t}. Nouvelle demande possible à {u}.', 'Read started at {t}. A new request is possible at {u}.',
       'Lesevorgang um {t} gestartet. Neue Anfrage ab {u} möglich.', 'Lectura iniciada a las {t}. Nueva solicitud posible a las {u}.'
     ],

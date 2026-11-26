@@ -12120,10 +12120,10 @@ def l184(c):
     c.check_errors()
 
 
-def _l185_open(c, started_ago_s, auto=None):
+def _l185_open(c, started_ago_s, auto=None, built_ago_h=48):
     """The synoptic row on a launcher whose `weather/world status` says the last start of a read `started_ago_s` seconds ago (the gap of ten minutes between two starts): returns (st, started epoch, now)."""
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
-    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    old = (now - datetime.timedelta(hours=built_ago_h)).isoformat().replace('+00:00', 'Z')
     started = int(now.timestamp()) - started_ago_s
     res = {'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000, 'started': started}
     if auto:
@@ -12170,7 +12170,7 @@ def l186(c):
     WT = lambda key: _trow(key, lang, after='  world: {')
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     nxt = int(now.timestamp()) + 2400
-    st, started, now = _l185_open(c, 900, auto={'next': nxt, 'due': False, 'fails': 0})
+    st, started, now = _l185_open(c, 900, auto={'next': nxt, 'due': False, 'fails': 0}, built_ago_h=1)      # a synoptic built an hour ago: it IS up to date
     c.until("!!document.querySelector('[data-set=world] [data-world-auto]')", timeout=8000, what='the row says the next read of the NOAA')
     c.eq(c.count('[data-set=world] [data-world-gap]'), 0, 'fifteen minutes after the start: no gap line', what='gap line')
     c.eq(c.count('[data-set=world] [data-verb=world-build]'), 1, 'the button is back', what='button')
@@ -12179,4 +12179,23 @@ def l186(c):
         c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()
         c.wait(400)
         c.shot(f'L186_{c.width}_{lang}_ajour.png')
+    c.check_errors()
+
+
+@case('L187', 'Données: a synoptic that is over 12 h old is never said « À jour »: the row keeps « Plus de 12 h » and the line of the next read gives only its hour (SOG-0666, the relay reading L186)', 'L',
+      designs=('standard',), night=False,
+      rule='SOG-0666 (the relay, reading the capture of L186: « À jour. Prochaine lecture de la NOAA à 20:29 » beside « Plus de 12 h » and « construit il y a 48 h »): the line of the next read of the launcher said « À jour » whatever the age of the data; it now says « À jour. » only for a synoptic that is (state ok), else « Prochaine lecture de la NOAA à hh:mm. »; red before: « À jour » on a synoptic built two days ago')
+def l187(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    nxt = int(now.timestamp()) + 2400
+    st, started, now = _l185_open(c, 900, auto={'next': nxt, 'due': False, 'fails': 0})      # built two days ago
+    c.until("!!document.querySelector('[data-set=world] [data-world-auto]')", timeout=8000, what='the row says the next read of the NOAA')
+    c.eq(norm(c.text('[data-world-auto]')), norm(WT('autoNext')).replace('{t}', c.js(_HM_JS, nxt)), 'a synoptic of two days: « Prochaine lecture de la NOAA à hh:mm. », never « À jour »', what='auto line')
+    c.ok('À jour' not in c.text('[data-world-auto]') and 'Up to date' not in c.text('[data-world-auto]'), c.text('[data-world-auto]'), 'the line of the next read does not say « À jour » of a synoptic that is over 12 h old')
+    if c.width in (390, 1280):
+        c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()
+        c.wait(400)
+        c.shot(f'L187_{c.width}_{lang}_vieux.png')
     c.check_errors()
