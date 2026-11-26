@@ -23431,3 +23431,67 @@ def k614(c):
     approach = L.parse_ei_coding(rows('EIZB', 8))
     c.eq([(t['name'], len(t['legs'])) for t in approach['tables']], [('RNP RWY 26 Approach via DOCUB', 7)], 'a split RWY title is accepted only when every coding row is readable', what='Knock RNP')
     c.eq(L.parse_ei_coding(rows('EIZB', 13))['tables'], [], 'known layout is not permission to guess malformed holding or initial cells', what='Knock refused groups')
+@case('K604', 'Public Irish acquisition checks the cycle and source prefix, retains provenance and uses the real builder behind a PDF seam', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Synthetic transport/PDF seam with invented rows; no account, network or PDF library required')
+def k604(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from proc_ie_public import chart_links, build_one
+    url = 'https://www.airnav.ie/AIRAC/2026-11-26-AIRAC/html/eAIP/EI-AD-2.EIZA-en-IE.html'
+    name = 'EI_AD_2_EIZA_24-27.1_en.pdf'
+    markup = '<meta name="EM.effectiveDateStart" content="2026-11-26"/><a href="../../graphics/eAIP/'+name+'">ILS</a>'
+    markup += '<a href="https://www.airnav.ie/old-cycle/'+name+'">old</a><a href="https://example.org/'+name+'">foreign</a>'
+    c.eq(len(chart_links(markup, 'EIZA', url)), 1, 'a source link cannot escape the established publication prefix', what='source boundaries')
+    rows = _reader_fixture('ie/metro/EIZA-27.1-p2.rows.txt').splitlines()
+    def get(u): return markup.encode() if u.endswith('.html') else b'%PDF-fixture'
+    with tempfile.TemporaryDirectory() as tmp:
+        result = build_one('2026-11-26', 'EIZA', tmp, get, page_reader=lambda p: [rows])
+        doc = json.loads((Path(tmp)/'procedures/2026-11-26/EIZA.json').read_text())
+        c.eq((result['wanted_files'], result['acquired_files'], doc['procedures'][0]['source']['kind']), (1, 1, 'airnav'), 'public source provenance is not labelled EAD Basic', what='acquisition and provenance')
+    with tempfile.TemporaryDirectory() as tmp:
+        failed = False
+        try: build_one('2026-11-26', 'EIZA', tmp, lambda u: markup.replace('2026-11-26', '2026-10-29').encode(), page_reader=lambda p: [rows])
+        except ValueError: failed = True
+        c.eq(failed, True, 'another effective cycle cannot label current candidates', what='cycle guard')
+
+
+@case('K606', 'Irish country discovery derives its AD2 denominator from the effective publication index, never a hard-coded airport list', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Synthetic official-index shape: distinct AD2 links only, effective-cycle check, explicit empty-index refusal; no network or source PDF required')
+def k606(c):
+    _reader_modules()
+    from proc_ie_public import indexed_airports
+    page = '<meta name="EM.effectiveDateStart" content="2026-11-26"/><a href="EI-AD-2.EIZA-en-IE.html">Metro</a><a href="EI-AD-2.EIYD-en-IE.html">Coastal</a><a href="EI-AD-2.EIZA-en-IE.html">duplicate</a><a href="EI-AD-3.EIAB-en-IE.html">heliport</a>'
+    c.eq(indexed_airports(page, '2026-11-26'), ['EIYD', 'EIZA'], 'published AD2 links, with duplicates removed, define the source denominator', what='discovery')
+    for html in [page.replace('2026-11-26', '2026-10-29'), '<meta name="EM.effectiveDateStart" content="2026-11-26"/>']:
+        refused = False
+        try: indexed_airports(html, '2026-11-26')
+        except ValueError: refused = True
+        c.eq(refused, True, 'a wrong-cycle or empty index is not a successful zero-airport build', what='index guard')
+
+
+@case('K607', 'Published NIL in the aerodromes own AD2.24 section is distinct from an unread or empty chart index', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Synthetic shapes on the model of the Irish private/VFR aerodromes; only explicit NIL may finish with no chart inputs')
+def k607(c):
+    import tempfile
+    _reader_modules()
+    from proc_ie_public import published_nil, build_one
+    section = '<div id="EIZF-AD-2.24"><h4>Charts Related To An Aerodrome</h4><p>NIL</p></div>'
+    c.eq((published_nil(section, 'EIZF'), published_nil(section, 'EIZA'), published_nil(section.replace('NIL', 'Charts unavailable'), 'EIZF')), (True, False, False), 'only the aerodrome own explicit NIL establishes the absence', what='NIL scope')
+    page = '<meta name="EM.effectiveDateStart" content="2026-11-26"/>'+section
+    with tempfile.TemporaryDirectory() as tmp:
+        r = build_one('2026-11-26', 'EIZF', tmp, lambda u: page.encode())
+        c.eq((r['index_status'], r['wanted_files'], r['records']), ('published-NIL', 0, 0), 'published absence is retained as evidence, not treated as a failed download', what='NIL build')
+
+
+@case('K609', 'Weston dot-numbered and space-bearing official chart filenames keep safe local identity and quoted transport', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Invented index names on the model of the two forms of the Irish AD2.24 index: 24.1_en and EI_AD_ 2...24.2.pdf; same-cycle flat graphics directory and exact ICAO remain required')
+def k609(c):
+    _reader_modules()
+    from proc_ie_public import chart_links
+    url = 'https://www.airnav.ie/AIRAC/2026-11-26-AIRAC/html/eAIP/EI-AD-2.EIZE-en-IE.html'
+    page = '<a href="../../graphics/eAIP/EI_AD_2_EIZE_24.1_en.pdf">ADC</a><a href="../../graphics/eAIP/EI_AD_ 2_EIZE_24.2.pdf">AOC</a><a href="../../graphics/other/EI_AD_2_EIZE_24.3_en.pdf">other</a>'
+    links = chart_links(page, 'EIZE', url)
+    c.eq(sorted(links), ['EI_AD_ 2_EIZE_24.2.pdf', 'EI_AD_2_EIZE_24.1_en.pdf'], 'both indexed naming forms are accepted without interpreting unrelated directories', what='Weston names')
+    c.ok('%20' in links['EI_AD_ 2_EIZE_24.2.pdf'] and ' ' not in links['EI_AD_ 2_EIZE_24.2.pdf'], str(links), 'the transport quotes the source space while the local filename keeps it')
