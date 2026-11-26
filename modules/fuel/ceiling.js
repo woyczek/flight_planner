@@ -4,7 +4,8 @@
 //
 // API : ceilOf(C) → le plafond en pieds, ou null ; ceilLine(C, levelFt, type, tt) → « Au-dessus du plafond du {type} (FL…). » ou « » ;
 //   ceilMotif(C, fl, tt) → « au-dessus du plafond (FL…) » ou « » ; C : le devis de module.js (sheet, perf) ; tt(rangée, valeurs) : la
-//   traduction du module. TX : les textes.
+//   traduction du module. ceilingsOf(C) → { declared, calc } (SOG-0674 : le plafond déclaré et la limite que le modèle calcule). TX : les
+//   textes.
 
 export const TX = {
   lvlCeil: ['Au-dessus du plafond du {type} (FL{c}).', 'Above the ceiling of the {type} (FL{c}).',
@@ -13,7 +14,12 @@ export const TX = {
   ],
   rAboveCeil: ['au-dessus du plafond (FL{c})', 'above the ceiling (FL{c})', 'über der Dienstgipfelhöhe (FL{c})',
     'por encima del techo (FL{c})'
-  ]
+  ],
+  // SOG-0674 (l'ergonome, 26/11) : la limite que le modèle de performance calcule (le vario y tombe au vario résiduel) n'est jamais dite
+  // « plafond » ; français seul (SOG-0680, dette de traduction)
+  lvlCalc: ['Au-dessus de la limite de montée calculée du {type} (FL{c}).'],
+  lvlCalcD: ['Au-dessus de la limite de montée calculée du {type} (FL{c}) ; plafond déclaré : FL{d}.'],
+  rAboveCalc: ['au-dessus de la limite de montée calculée (FL{c})']
 };
 
 /** Un niveau de vol sur trois chiffres (« FL055 » s'écrit « 055 »). */
@@ -26,20 +32,55 @@ export function ceilOf(C) {
   return v.length ? Math.min(...v) : null;
 }
 
-/** SOG-0562 (l'ergonome) : sous le champ Niveau, toujours visible quand le niveau du vol (tapé, d'un OFP, de la fiche) dépasse le
- *  plafond de l'aéronef : « Au-dessus du plafond du {type} (FL{plafond}). » — dit, jamais refusé ; « » sinon. */
-export function ceilLine(C, levelFt, type, tt) {
-  const ceil = ceilOf(C);
-  return ceil && +levelFt > ceil ? tt(TX.lvlCeil, {
-    type: String(type || '').toUpperCase().slice(0, 12),
-    c: fl3(ceil)
-  }) : '';
+/** SOG-0674 (l'ergonome) : les deux limites d'un niveau, en pieds — declared, le plafond que la fiche DÉCLARE (cruise.ceilingFt), sinon
+ *  le plafond EUROCONTROL du type (perf.ceilingGiven) ; calc, la limite de montée que le modèle de performance calcule (perf.modelCeiling),
+ *  seulement quand elle est plus basse que le plafond déclaré ; null pour une limite absente. */
+export function ceilingsOf(C) {
+  const sheet = +C?.sheet?.cruise?.ceilingFt,
+    given = +C?.perf?.ceilingGiven,
+    model = +C?.perf?.modelCeiling,
+    declared = sheet > 0 ? sheet : given > 0 ? given : null;
+  return {
+    declared,
+    calc: model > 0 && (!declared || model < declared) ? model : null
+  };
 }
 
-/** SOG-0562 : sur la carte d'une route à un niveau (fl, en centaines de pieds) au-dessus du plafond : « au-dessus du plafond (FL…) ». */
+/** SOG-0562 (l'ergonome) : sous le champ Niveau, toujours visible quand le niveau du vol (tapé, d'un OFP, de la fiche) dépasse une
+ *  limite : au-dessus du plafond déclaré, « Au-dessus du plafond du {type} (FL{plafond}). » ; SOG-0674 : au-dessus de la seule limite que
+ *  le modèle calcule, « Au-dessus de la limite de montée calculée du {type} (FL{c}) ; plafond déclaré : FL{d}. » — dit, jamais refusé ;
+ *  « » sinon. */
+export function ceilLine(C, levelFt, type, tt) {
+  const {
+    declared,
+    calc
+  } = ceilingsOf(C),
+    lv = +levelFt || 0,
+    t = String(type || '').toUpperCase().slice(0, 12);
+  if (declared && lv > declared) return tt(TX.lvlCeil, {
+    type: t,
+    c: fl3(declared)
+  });
+  if (calc && lv > calc) return tt(declared ? TX.lvlCalcD : TX.lvlCalc, {
+    type: t,
+    c: fl3(calc),
+    d: declared ? fl3(declared) : ''
+  });
+  return '';
+}
+
+/** SOG-0562 : sur la carte d'une route à un niveau (fl, en centaines de pieds) au-dessus du plafond déclaré : « au-dessus du plafond
+ *  (FL…) » ; SOG-0674 : au-dessus de la seule limite calculée : « au-dessus de la limite de montée calculée (FL…) » ; « » sinon. */
 export function ceilMotif(C, fl, tt) {
-  const ceil = ceilOf(C);
-  return ceil && Number.isInteger(fl) && fl * 100 > ceil ? tt(TX.rAboveCeil, {
-    c: fl3(ceil)
+  const {
+    declared,
+    calc
+  } = ceilingsOf(C);
+  if (!Number.isInteger(fl)) return '';
+  if (declared && fl * 100 > declared) return tt(TX.rAboveCeil, {
+    c: fl3(declared)
+  });
+  return calc && fl * 100 > calc ? tt(TX.rAboveCalc, {
+    c: fl3(calc)
   }) : '';
 }
