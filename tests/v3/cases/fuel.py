@@ -7789,10 +7789,10 @@ _PROP_HELD = {'XQPB': {'SID': 1, 'STAR': 1, 'APP': 2}, 'XQPC': {'SID': 1, 'STAR'
               'XQPF': {'SID': 1, 'APP': 1}}
 
 
-def _prop_open(c, target='fuel', more=(), held=None, tafs=None, planned=True):
+def _prop_open(c, target='fuel', more=(), held=None, tafs=None, planned=True, raws=None):
     """The seeded flight (alternate LFMT) with a C30J sheet asking 5000 ft, the aerodromes above, their coverage (`held`, _PROP_HELD by
     default), TAFs kept fresh (`tafs` {ICAO: category}; by default XQPB, XQPC, XQPF VFR and XQPE LIFR); `planned=False` (SOG-0544): the
-    flight without its date."""
+    flight without its date; `raws` {ICAO: text} (SOG-0660): the raw text of their TAF (« TAF <ICAO> TEST » otherwise)."""
     held = _PROP_HELD if held is None else held
     tafs = {'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'} if tafs is None else tafs
     import time as _t
@@ -7812,6 +7812,7 @@ def _prop_open(c, target='fuel', more=(), held=None, tafs=None, planned=True):
     for icao, cat in tafs.items():
         t = _altn_taf(cat, now)
         t['icaoId'] = icao
+        t['rawTAF'] = (raws or {}).get(icao) or f'TAF {icao} TEST'
         docs.append([f'cache/weather/taf/{icao}.json', {'at': 4102444800000, 'source': 'launcher', 'data': t}, 'cache'])
     c.open(target, docs=docs + list(more), airfields=True,
            aero_extra={'aerodromes': _PROP_ADS, 'cells': {str(y): [[-2, 7]] for y in range(43, 47)}})
@@ -11929,3 +11930,32 @@ def f331(c):
         c.ok(norm(want) in got, got, f'HTTP {status}: {want} (red before: « SimBrief n’a pas répondu ({status}). »)')
         c.ok(not any('pas répondu' in x for x in got), got, 'never « n’a pas répondu » for an answer')
     c.eq(c.count('#fNotes b'), 0, 'the status of SimBrief is text, never markup', what='esc')
+
+
+@case('F332', '« Proposer un dégagement »: the TEXT of the TAF of each aerodrome proposed, folded under its line (closed first, « TAF »), as '
+      'text — never markup; an aerodrome without a TAF read has no fold', 'F', tags=('fuel', 'weather', 'security'), designs=('standard',),
+      screens=True, langs4=False,
+      rule='SOG-0660 (SIG-88a5feb299, 25 Nov: « le taf n\'est toujours pas affiché sur les terrains proposés »; the fact of 26 Nov: read and '
+      'judged, its text shown nowhere; the relay, by the precedent of SOG-0559 (the METAR observed under the alternate\'s line): the text '
+      'folded under the line, no new sentence); French only (SOG-0680); invented aerodromes and TAFs')
+def f332(c):
+    raws = {'XQPB': 'TAF XQPB 261100Z 2612/2712 27008KT 9999 FEW040', 'XQPC': 'TAF XQPC 261100Z 2612/2712 <b>BKN008</b>',
+            'XQPE': 'TAF XQPE 261100Z 2612/2712 0500 FG OVC002'}
+    _prop_open(c, raws=raws)
+    B = f'{FUEL} [data-altnchk]'
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand] details[data-candtaf]').length === 3", timeout=10000,
+            what='a TAF fold under each line (red before: none)')
+    got = c.js(f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => {{
+        const d = li.querySelector('details[data-candtaf]');
+        return [li.dataset.cand, !!d && d.open, (d?.querySelector('summary')?.textContent || '').trim(),
+          (d?.querySelector('[data-tafraw]')?.textContent || '').trim()] }})""")
+    c.eq(got, [[k, False, 'TAF', raws[k]] for k in ('XQPB', 'XQPC', 'XQPE')], 'each line: its TAF folded, closed, its text as read',
+         what='folds')
+    c.eq(c.count(f'{B} [data-altnprop] li[data-cand] b'), 0, 'the text of a TAF is text, never markup', what='esc')
+    c.js(f"document.querySelector('{B} [data-altnprop] li[data-cand] details[data-candtaf]').open = true")
+    c.js(f"document.querySelector('{B} [data-altnprop]').scrollIntoView({{block: 'start'}})")
+    c.wait(300)
+    c.shot(f'F332_{c.design}_{c.width}_{c.lang}.png')
