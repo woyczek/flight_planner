@@ -11896,3 +11896,36 @@ def f330(c):
     c.until(f"!!document.querySelector('{FUEL} [data-lvlceil]:not([hidden])')", timeout=8000, what='the line under the Level field')
     c.eq(norm(c.text(f'{FUEL} [data-lvlceil]') or ''), 'Au-dessus du plafond du C30J (FL600).', 'above the declared ceiling: the '
          'ceiling the sheet declares', what='declared')
+
+
+@case('F331', 'Load my OFP: an ERROR answer of SimBrief is read and its cause said in French — « aucun plan », « utilisateur inconnu », '
+      'any other status quoted as text with its HTTP code, an answer without a cause by its HTTP code — never « SimBrief n\'a pas répondu » '
+      'for an answer', 'F', tags=('fuel', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0677 (the user, 25 Nov: « ce 400 est arrivé au moment où j\'ai voulu importer le dernier plan simbrief », the launcher\'s log '
+      '« échec relais : …/api/xml.fetcher.php : HTTP 400 »; the ergonomist, 26 Nov: the cause read, said in French, never a silence): the '
+      'body of an answer that is not ok was never read, the screen said « SimBrief n\'a pas répondu (400) »; the status of SimBrief is an '
+      'untrusted text, written as text; French only (SOG-0680); invented answers')
+def f331(c):
+    answers = [
+        (400, {'fetch': {'userid': '123456', 'status': 'Error: No flight plan on file for the specified user'}},
+         'SimBrief n’a aucun plan pour l’utilisateur 123456 : générez un plan sur SimBrief, puis recommencez.'),
+        (400, {'fetch': {'userid': '123456', 'status': 'Error: Unknown UserID'}},
+         'SimBrief ne connaît pas l’utilisateur 123456 : vérifiez votre identifiant SimBrief dans les Réglages.'),
+        (400, {'fetch': {'status': '<b>Error: odd</b>'}}, 'SimBrief a refusé la demande (HTTP 400) : <b>Error: odd</b>.'),
+        (500, None, 'SimBrief a répondu par une erreur (HTTP 500).'),
+    ]
+    c.open('fuel', docs=proc_docs() + proc_flight(), airfields=True, identity={'simbrief': '123456'})
+    wait_rows(c)
+    to_step(c, 1)
+    for status, body, want in answers:
+        c.page.unroute('**/www.simbrief.com/**')
+        c.page.route('**/www.simbrief.com/**', lambda r, s=status, b=body: r.fulfill(
+            status=s, content_type='application/json' if b is not None else 'text/plain', headers={'Access-Control-Allow-Origin': '*'},
+            body=json.dumps(b) if b is not None else ''))
+        n0 = len(c.note_log())
+        c.tap(f'{FUEL} [data-do="simbrief"]')
+        c.until(f"(window.__notes || []).length > {n0}", timeout=10000, what=f'a line for the HTTP {status} answer')
+        got = [norm(x) for x in c.note_log()[n0:]]
+        c.ok(norm(want) in got, got, f'HTTP {status}: {want} (red before: « SimBrief n’a pas répondu ({status}). »)')
+        c.ok(not any('pas répondu' in x for x in got), got, 'never « n’a pas répondu » for an answer')
+    c.eq(c.count('#fNotes b'), 0, 'the status of SimBrief is text, never markup', what='esc')
