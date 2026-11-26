@@ -8,7 +8,7 @@
 //   request({ action, dep, arr, points, text, fl, date, depRunway, arrRunway }) → la demande (champs du contrat seulement, jamais
 //     null) : compute = via, les points saisis entre les terrains (passages imposés, huit au plus) ; check = route, le texte saisi.
 //   run(launcher, args) → Promise<object | null> : le résultat du travail, null sans réponse.
-//   normalize(result, action, asked) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason }],
+//   normalize(result, action, asked) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason } | { code: 'direction', known, unknown }],
 //     level } : level = { fl, basis: 'request' | 'default' } (SOG-0389 : le niveau du calcul et d'où il vient — sections.fl / fl_basis
 //     du moteur d'abord, puis `level` d'une réponse gardée, puis la demande `asked` : sans `fl`, le niveau par défaut du moteur) ou null ;
 //     plan = { role ('primary' | 'alternative'), name, route, distanceNm, fl, accepted, errors: [texte], faults, sid, star,
@@ -625,6 +625,11 @@ function notVerifiedOf(list) {
     };
   }).filter(x => /^[A-Z]{2}$/.test(x.state));
 }
+/** SOG-0669 : une liste d'États du moteur (une entrée non sûre) — des préfixes OACI (« LF », ou le code d'une zone sans aérodrome),
+ *  majuscules, deux à quatre signes, chacun une fois, quarante au plus. */
+function statesOf(list) {
+  return [...new Set((Array.isArray(list) ? list : []).filter(x => typeof x === 'string' && /^[A-Z0-9]{2,4}$/.test(x)))].slice(0, 40);
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -814,9 +819,15 @@ export function normalize(res, action = 'compute', asked = null) {
     status: ['computed', 'proposal', 'none', 'faulty'].includes(res.status) ? res.status : !plans.length ? 'none' : plans[0].proposal ?
       'proposal' : plans[0].faulty ? 'faulty' : 'computed', // SOG-0532 (3) : 'faulty', la meilleure route rendue fautive
     cache: cacheOf(res.cache),
-    gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => ({
+    // SOG-0669 (AeroDB 2f7c05bbe) : le sens des voies est une entrée sans phrase — { code: 'direction', known, unknown }, les États en
+    // préfixes OACI (quarante au plus, deux à quatre signes) ; écrite par l'écran dans sa langue (route_limits.js)
+    gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => own(g, 'code') === 'direction' ? {
+      code: 'direction',
+      known: statesOf(own(g, 'known')),
+      unknown: statesOf(own(g, 'unknown'))
+    } : {
       name: text(g?.name, 80),
       reason: text(g?.reason, 300)
-    })).filter(g => g.name)
+    }).filter(g => g.code === 'direction' ? g.known.length + g.unknown.length > 0 : g.name)
   };
 }

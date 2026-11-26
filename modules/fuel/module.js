@@ -5443,7 +5443,8 @@ const RLMH = {
   esc,
   TX,
   ROWS: RR.ROWS,
-  perfDefault: () => perfDefaultHtml()
+  perfDefault: () => perfDefaultHtml(),
+  states: () => eadStates() // SOG-0669 : les noms des États du sens des voies (SOG-0556)
 };
 const limitsHtml = n => RLM.limitsHtml(n, RLMH);
 /** SOG-0401 : le détail du contrôle RAD, écrit à l'ouverture du pli seulement (la liste peut compter 1 500 conditions) — les espaces

@@ -80,6 +80,16 @@ export const ROWS = {
   rad_unread1: ['{zone} : {n} règle du RAD concerne cette route', '{zone}: {n} RAD rule applies to this route',
     '{zone}: {n} RAD-Regel betrifft diese Route', '{zone}: {n} regla del RAD se aplica a esta ruta'
   ],
+  // SOG-0669 (AeroDB 2f7c05bbe) : une voie dont la base n'a pas le sens dans un État — l'État d'abord, comme les lignes du RAD (SOG-0556)
+  direction_unknown: ['{zone} : sens de {via} inconnu.', '{zone}: direction of {via} unknown.', '{zone}: Richtung von {via} unbekannt.',
+    '{zone}: sentido de {via} desconocido.'
+  ],
+  direction_unknown_more: ['et {n} autres voies au sens inconnu', 'and {n} other airways of unknown direction',
+    'und {n} weitere Luftstraßen mit unbekannter Richtung', 'y {n} aerovías más de sentido desconocido'
+  ],
+  direction_unknown_more1: ['et 1 autre voie au sens inconnu', 'and 1 other airway of unknown direction',
+    'und 1 weitere Luftstraße mit unbekannter Richtung', 'y 1 aerovía más de sentido desconocido'
+  ],
   // les règles qui visent un espace aérien entier : UNE ligne, hors compte, sans nombre (SOG-0538 : le moteur compte des États que la
   // route ne traverse pas) ; SOG-0552 (l'ergonome, 23/11) : toujours sous « Aucune infraction trouvée », jamais deux fois ; sous
   // « non vérifiable » et « enfreint » quand la route en croise
@@ -258,7 +268,7 @@ function isDay(d) {
 /** SOG-0556 : le nom de l'État d'un PRÉFIXE OACI du RAD (« EB » → « Belgique ») d'après la table d'aerodb (EAD_STATES : préfixe →
  *  [fr, en, de, es], passée par l'appelant) — jamais Intl : un préfixe n'est pas un code de pays (EH n'est pas le Sahara occidental, EG
  *  pas l'Égypte, LK pas le Sri Lanka) ; un préfixe hors de la table (YX, NM…) : son code en capitales. */
-function stateName(p, t, names) {
+export function stateName(p, t, names) {
   const code = String(p).toUpperCase(),
     row = names && typeof names === 'object' && Object.hasOwn(names, code) ? names[code] : null;
   return Array.isArray(row) && row.length === 4 && row.every(x => typeof x === 'string' && x) ? t(row) : code;
@@ -416,6 +426,15 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
       return has(v.state) && Number.isInteger(v.flown) && v.flown > 0 ? t(v.flown === 1 ? ROWS.rad_unread1 : ROWS.rad_unread, {
         zone: stateName(v.state, t, ctx?.states),
         n: v.flown
+      }) : fallback;
+    case 'direction_unknown': // SOG-0669 : l'État d'après son préfixe OACI (ctx.states), jamais Intl
+      return has(v.via) && has(v.state) ? t(ROWS.direction_unknown, {
+        zone: stateName(v.state, t, ctx?.states),
+        via: v.via
+      }) : fallback;
+    case 'direction_unknown_more': // SOG-0669 : au-delà des quarante lignes, le reste compté
+      return Number.isInteger(v.count) && v.count > 0 ? t(v.count === 1 ? ROWS.direction_unknown_more1 : ROWS.direction_unknown_more, {
+        n: v.count
       }) : fallback;
     case 'network_gap':
       return has(v.from_point) && has(v.to_point) && has(v.nm) ? t(ROWS.network_gap, {
