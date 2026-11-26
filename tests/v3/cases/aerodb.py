@@ -3104,6 +3104,24 @@ def _d5_modules():
     return RJ, _D5Mod(fn.__globals__), fn, check
 
 
+def _d5_frozen_clock(B, day):
+    """Une HORLOGE FIGÉE pour le travail base/build (une date injectée, jamais celle du jour) : le cycle AIRAC « en vigueur » du lanceur (`aero_cycles.airac_start`
+    et `base.airac_in_force`, que le travail appelle sans date) est celui du jour `day`. Un cas qui compare le cycle de chaque zone au cycle en vigueur ne dépend
+    plus de la date de l'essai (K63 devenait rouge le jour où un cycle de plus commençait : la zone de NATS passait de « à jour » à « bloquante »)."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def frozen():
+        cycles, start, force = B.aero_cycles, B.aero_cycles.airac_start, B.airac_in_force
+        cycles.airac_start = lambda d=None: start(d or day)
+        B.airac_in_force = lambda today=None: force(today or day)
+        try:
+            yield
+        finally:
+            cycles.airac_start, B.airac_in_force = start, force
+    return frozen()
+
+
 def _d5_git(data, *a):
     import importlib
     import subprocess
@@ -4891,6 +4909,7 @@ def k62(c):
 @case('K63', 'Build job: the cycle of a zone is its own dated source\'s (fr SIA, gb NATS), a zone without one has none; the blocking zone named', 'K', static=True,
       rule='Simplification 1 Nov 2026 (Features SOG on the user\'s workstation: every build wrote 2610 everywhere from the French SIA files): a zone\'s cycle is its own dated source\'s; a source without AIRAC has no cycle (never « out of date »); stale per zone, the blocking zone named')
 def k63(c):
+    import datetime as _dt
     import json
     import tempfile
     RJ, B, fn, check = _d5_modules()
@@ -4899,10 +4918,12 @@ def k63(c):
         (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
         (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')   # NATS : le cycle 2611
         _d5_modes(fake, {'fr': 'ok', 'gb': 'ok', 'de': 'ok'})
-        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'fr'], 'personal': ['nats']})      # NATS is read only when the personal-licence box declares it (SOG-0077)
-        view = run.wait()
+        with _d5_frozen_clock(B, _dt.date(2026, 11, 2)):      # SOG-0667 / Essais, 26 Nov 2026: the clock is FROZEN inside the cycle of 29 Oct (a date injected, not today's): the expected values were written inside that cycle and were red from 26 Nov, when a new cycle began and the NATS cycle of 29 Oct stopped being the one in force
+            run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'fr'], 'personal': ['nats']})      # NATS is read only when the personal-licence box declares it (SOG-0077)
+            view = run.wait()
+            cur = B.airac_in_force()
         res = view['result']
-        cur = B.airac_in_force()
+        c.eq(cur, '2026-10-29', 'the frozen clock: the cycle in force is the one of 29 Oct, whatever the day of the run', what='frozen cycle')
         offer = json.loads(_d5_lines(fake, 'claim.json')[0])
         c.eq(offer['cycles'], {'fr': '2026-10-01', 'gb': '2026-10-29', 'de': cur}, 'the page is told each zone\'s cycle: fr its SIA, gb its NATS, de (no dated source) the cycle in force', what='offer')
         c.eq((res['cycles'], res['folders']), ({'fr': '2026-10-01', 'gb': '2026-10-29', 'de': None}, {'fr': '2026-10-01', 'gb': '2026-10-29', 'de': cur}),
