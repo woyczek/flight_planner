@@ -11,7 +11,18 @@
 //     'done' | 'error' | 'cancelled'), step, done, total, unit, log, result } ; POST <route>/cancel { id } ; GET <route>
 //     sans id → le travail en cours ou le dernier ({ job: null } sans travail). Déclarer la route d'un travail (« regen/job »)
 //     déclare aussi son annulation (« regen/job/cancel ») : elle fait partie du protocole (29 oct. 2026).
+//   · busy { text(refus), later(libellé, relance) } (SOG-0658, frame/lib/busy.js) : `text` dit « Le poste est occupé : {opération}, depuis {heure}. Votre demande partira dès qu'il aura fini. » d'après le `running` d'un
+//     refus 409 ; `later` met LA demande de l'écran en attente (« En attente : … », « Annuler ») et la relance seule quand le poste est libre (une seule par écran ; le démontage l'abandonne).
 // Ni page ni stockage ; fetch et racine donnés (le banc frame/lib/test/launcher.html les simule).
+
+import {
+  busyText,
+  waiter,
+  WORDS
+} from './busy.js';
+import {
+  fmtZ
+} from './time.js';
 
 const ROUTE_RX = /^[a-z0-9][a-z0-9/_-]*$/i;
 
@@ -110,6 +121,8 @@ export function launcherClient({
   before =
   null, // SOG-0279 : appelé (et attendu) avant de lancer un travail du lanceur, qui lit data/ : le cadre y envoie ce qui attend, pour que le travail ne lise pas une copie vieille de cinq minutes
   beforeMax = BEFORE_MAX_MS, // SOG-0400 : l'attente de `before` ne dépasse jamais cette borne (ms)
+  ui = [], // SOG-0658 : [notify(texte, genre, options), dismissNote(clé), t(ligne, jetons)] du cadre : la phrase « poste occupé » et la demande en attente
+  busyEvery = 5000, // l'attente d'un poste occupé interroge le lanceur toutes les 5 s
   onWait =
   () => {}, // SOG-0400 : { route, set, verb, ms, skipped, late } après chaque travail : le cadre garde le repère de temps (diagnostic) et dit une attente trop longue
   poll = 1000
@@ -487,10 +500,42 @@ export function launcherClient({
         x.send(file);
       });
     }
+    // SOG-0658 : le poste est occupé — la phrase d'un refus 409 et LA demande en attente de cet écran (le même objet pour tous les modules ; sans `ui`, la phrase seule)
+    const noteKey = `busy-wait:${++busySeq}`,
+      [uiNotify, uiDismiss, uiT] = Array.isArray(ui) ? ui : [],
+      say = (text, kind, o) => uiNotify?.(text, kind, o),
+      tr = (row, v) => uiT ? uiT(row, v) : String(row?.[0] ?? '').replace(/\{(\w+)\}/g, (m, k) => v?.[k] ?? m),
+      wait = waiter({
+        every: busyEvery,
+        life,
+        free: async () => {
+          const res = await request('regen/job'),
+            b = res?.body,
+            job = b?.job && typeof b.job === 'object' ? b.job : b?.state ? b : null;
+          return !!res && res.status < 400 && (!job || job.state !== 'running');
+        },
+        show: (label, cancel) => say(tr(WORDS.waiting, {
+          label
+        }), 'info', {
+          key: noteKey,
+          action: {
+            label: tr(WORDS.cancel),
+            run: cancel
+          }
+        }),
+        hide: () => uiDismiss?.(noteKey)
+      });
+    const busy = Object.freeze({
+      text: res => busyText(res?.running, tr, fmtZ),
+      later: wait.later,
+      cancel: wait.cancel,
+      pending: wait.pending
+    });
     return Object.freeze({
       info: () => info ? {
         ...info
       } : null,
+      busy,
       call,
       job,
       resume,
@@ -506,3 +551,4 @@ export function launcherClient({
     forModule
   };
 }
+let busySeq = 0; // un numéro par ctx.launcher : la clé de la note « En attente » (une par écran)

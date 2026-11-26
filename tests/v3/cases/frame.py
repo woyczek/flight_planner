@@ -12901,3 +12901,100 @@ def a402(c):
         c.until("/4 Mi[oB]/.test(document.body.innerText)", timeout=15000, what='the sentence of a file that is full, with its size')
         c.eq((f.read_bytes() == before, list((root / 'organisation').glob('*.tmp'))), (True, []), 'the file is untouched and no temporary file is left', what='untouched')
     c.check_errors()
+
+
+@case('A404', 'The station is busy (SOG-0658): ONE sentence from the `running` of a refusal — « Le poste est occupé : Base · Télécharger (fr, gb), depuis 16:30Z. Votre demande partira dès qu\'il aura fini. » — and ONE pending request per screen: « En attente : … » with « Annuler », polled every few seconds, started alone when the station is free (and still waiting when it is refused again), dropped by « Annuler » or by the unmount; ctx.launcher.busy', 'A',
+      designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0658 (the ergonomist, from BUGS' fact: the launcher knows the operation that runs — a 409 carries `running`, relayed by launcher.js runningOf — but Fuel and the Weather threw it away): one function of the frame says it and holds the request, French only (translation debt SOG-0680)")
+def a404(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => {
+      const L = await import('/frame/lib/launcher.js');
+      const st = { free: false, again: 0, posts: 0, gets: 0 };
+      const started = Date.UTC(2026, 10, 26, 16, 30) / 1000;
+      const running = { id: 'j1', set: 'base', verb: 'fetch', args: { zones: ['fr', 'gb'] }, started, alive: 'alive' };
+      const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+      const fake = async (url, init) => {
+        const u = new URL(url), post = (init?.method || 'GET') === 'POST';
+        if (!u.pathname.endsWith('/__setup/regen/job')) return json({}, 404);
+        if (post) { st.posts++; if (st.free && st.again > 0) { st.again--; st.free = false; return json({ ok: false, reason: 'busy', running }, 409); } return st.free ? json({ job: 'j2' }) : json({ ok: false, reason: 'busy', running }, 409); }
+        st.gets++; return json(st.free ? { job: null } : { job: { id: 'j1', state: 'running', set: 'base', verb: 'fetch' } });
+      };
+      const notes = [], gone = [];
+      const mk = (life) => L.launcherClient({ root: location.origin + '/', fetch: fake, busyEvery: 40, ui: [(text, kind, o) => notes.push([text.replace(/[\\u202f\\u00a0]/g, ' '), kind, o.key, o.action && o.action.label, o.action && o.action.run]), k => gone.push(k), (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v[k] ?? m)] })
+        .forModule({ routes: ['regen/job'] }, { life });
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const out = {};
+      // 1. the sentence
+      const lc = mk();
+      const refused = await lc.call('regen/job', { set: 'base', verb: 'fetch' });
+      out.refused = [refused.status, refused.reason, refused.running && refused.running.verb];
+      out.sentence = lc.busy.text(refused).replace(/[\\u202f\\u00a0]/g, ' ');
+      out.noTime = lc.busy.text({ running: { id: 'j9', set: 'weather', verb: 'world' } }).replace(/[\\u202f\\u00a0]/g, ' ');
+      out.unknown = lc.busy.text({}).replace(/[\\u202f\\u00a0]/g, ' ');
+      out.odd = lc.busy.text({ running: { id: 'j8', set: 'zz', verb: 'qq' } }).replace(/[\\u202f\\u00a0]/g, ' ');
+      // 2. one pending request per screen, started alone when the station is free
+      let ran = 0;
+      const run = async () => { ran++; return lc.call('regen/job', { set: 'base', verb: 'fetch', n: ran }); };
+      lc.busy.later('Calcul de la route', run);
+      lc.busy.later('Calcul de la route (2)', run);   // replaces the first: ONE per screen
+      out.pending = [lc.busy.pending(), notes.map(n => n.slice(0, 4)), notes.every(n => n[2] === notes[0][2])];
+      await wait(150);
+      out.stillWaiting = [ran, st.posts, lc.busy.pending(), st.gets > 0];
+      st.free = true; await wait(200);
+      out.started = [ran, st.posts, lc.busy.pending(), gone.length >= 1 && gone[gone.length - 1] === notes[0][2]];
+      // 3. refused again when it starts: still waiting (another job took the place)
+      st.free = false; ran = 0; st.posts = 0; gone.length = 0;
+      lc.busy.later('Relecture', run);
+      st.again = 1; st.free = true; await wait(150);
+      out.again = [ran, st.posts, lc.busy.pending()];
+      st.free = true; await wait(150);
+      out.againDone = [ran, lc.busy.pending()];
+      // 4. « Annuler » and the unmount: nothing is started
+      st.free = false; ran = 0; gone.length = 0; notes.length = 0;
+      lc.busy.later('À annuler', run);
+      notes[0][4]();           // the button
+      st.free = true; await wait(200);
+      out.cancelled = [ran, lc.busy.pending(), gone.length];
+      st.free = false; ran = 0; gone.length = 0;
+      const ac = new AbortController(), l2 = mk(ac.signal);
+      l2.busy.later('Démonté', async () => { ran++; return {}; });
+      ac.abort(); st.free = true; await wait(200);
+      out.unmounted = [ran, l2.busy.pending(), gone.length];
+      return out; }""")
+    c.eq(r['refused'], [409, 'busy', 'fetch'], 'the refusal of a busy station carries the operation that runs', what='refusal')
+    c.eq(r['sentence'], 'Le poste est occupé : Base · Télécharger (fr, gb), depuis 16:30Z. Votre demande partira dès qu’il aura fini.', 'the sentence, with the operation in words, its zones and the UTC time it started', what='sentence')
+    c.eq(r['noTime'], 'Le poste est occupé : Météo · Prévision mondiale. Votre demande partira dès qu’il aura fini.', 'no time said by the launcher: no « depuis »', what='no time')
+    c.eq(r['unknown'], 'Le poste est occupé par une autre opération. Votre demande partira dès qu’il aura fini.', 'no readable operation: said so, never an empty or broken sentence', what='unknown')
+    c.eq(r['odd'], 'Le poste est occupé : zz · qq. Votre demande partira dès qu’il aura fini.', 'a set and a verb the table does not know are said as the launcher names them', what='unknown words')
+    c.eq((r['pending'][0], r['pending'][1][-1], r['pending'][2]), ('Calcul de la route (2)', ['En attente : Calcul de la route (2)', 'info', r['pending'][1][-1][2], 'Annuler'], True), 'ONE pending request per screen (the second replaces the first), said « En attente : … » with « Annuler », under one key', what='pending')
+    c.eq(r['stillWaiting'], [0, 1, 'Calcul de la route (2)', True], 'while the station is busy: nothing is sent again (the one refused post is the first), the launcher is only asked', what='still waiting')
+    c.eq(r['started'], [1, 2, None, True], 'free: the request starts ALONE, once (one more post), and the note goes', what='started')
+    c.eq((r['again'], r['againDone']), ([1, 1, 'Relecture'], [2, None]), 'refused again when it starts: still waiting, then started when the station is really free', what='again')
+    c.eq((r['cancelled'], r['unmounted']), ([0, None, 1], [0, None, 1]), '« Annuler » and the unmount: nothing is started, the note goes', what='cancel')
+    # the two scenes the ergonomist reads (real notifications of the frame): the sentence a module says, and the pending note with its « Annuler »
+    c.js("""async () => {
+      const L = await import('/frame/lib/launcher.js'), F = window.SogFrame;
+      const started = Date.UTC(2026, 10, 26, 16, 30) / 1000;
+      const running = { id: 'j1', set: 'base', verb: 'fetch', args: { zones: ['fr', 'gb'] }, started, alive: 'alive' };
+      const fake = async (url, init) => (init?.method || 'GET') === 'POST' ? new Response(JSON.stringify({ ok: false, reason: 'busy', running }), { status: 409 })
+        : new Response(JSON.stringify({ job: { id: 'j1', state: 'running', set: 'base', verb: 'fetch' } }), { status: 200 });
+      const lc = L.launcherClient({ root: location.origin + '/', fetch: fake, busyEvery: 600000, ui: [F.notify, F.dismissNote, F.t] }).forModule({ routes: ['regen/job'] });
+      window.__a404 = lc;
+      const refused = await lc.call('regen/job', { set: 'base', verb: 'fetch' });
+      F.notify(lc.busy.text(refused), 'warn', { key: 'a404-busy' });
+    }""")
+    c.until("!!document.querySelector('#fNotes .f-note')", timeout=8000, what='the sentence is shown')
+    c.wait(500)
+    c.eq(norm(c.text('#fNotes .f-note')).replace('✕', '').strip(), 'Le poste est occupé : Base · Télécharger (fr, gb), depuis 16:30Z. Votre demande partira dès qu’il aura fini.', 'the note says the sentence', what='scene sentence')
+    c.shot(f'A404_busy_{c.width}_{c.lang}_delivered.png')
+    c.js("() => { window.SogFrame.dismissNote('a404-busy'); window.__a404.busy.later('Calcul de la route', async () => ({})); }")
+    c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.includes('En attente'))", timeout=8000, what='the pending note is shown')
+    c.wait(500)
+    c.eq(norm(c.text('#fNotes .f-note')).startswith('En attente : Calcul de la route'), True, 'the note says « En attente : … »', what='scene waiting')
+    c.eq(c.js("[...document.querySelectorAll('#fNotes .f-note button')].map(b => b.textContent.trim()).filter(x => x !== '✕')"), ['Annuler'], 'with its « Annuler » button (and the cross of every note)', what='button')
+    c.shot(f'A404_wait_{c.width}_{c.lang}_delivered.png')
+    c.js("() => { [...document.querySelectorAll('#fNotes .f-note button')].find(b => b.textContent.trim() === 'Annuler').click(); }")
+    c.until("![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.includes('En attente'))", timeout=8000, what='« Annuler » removes the note')
+    c.check_errors()

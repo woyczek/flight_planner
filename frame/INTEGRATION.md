@@ -1349,6 +1349,7 @@ launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] 
 | Call | Gives |
 | --- | --- |
 | `info()` | `{ host, data, dataGit, lan }` (a copy of the frame's survey) |
+| `busy` | « Le poste est occupé » (SOG-0658): `busy.text(refusal)` → « Le poste est occupé : Base · Télécharger (fr, gb), depuis 16:30Z. Votre demande partira dès qu'il aura fini. » from the `running` of a 409 refusal; `busy.later(label, run)` holds THE request of the screen (one per screen, a new one replaces the old one): « En attente : {label} » with « Annuler », it starts alone when the station is free (a new refusal keeps it waiting) and is dropped by « Annuler » or by the unmount; `busy.cancel()`, `busy.pending()` (the label or null). Use it where a refusal `res.running` / `res.reason === 'busy'` used to be dropped. |
 | `call(route, body?)` | GET without a body, POST with one (JSON). The route's JSON, or a refusal (below); a 404 says `message: 'unknown route'` (a launcher older than the module: « relancez-le à jour ») |
 | `job(route, body, { onProgress, signal })` | starts a long job and follows it to its end: `{ ok, state, result, … }` |
 | `resume(route, { onProgress, signal })` | follows the job running on that route (a reloaded page), or gives the last one's end; null without a job |

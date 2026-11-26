@@ -1628,8 +1628,8 @@
         info: launcherHere,
         fetch: launcherFetch,
         onLost: () => setLauncherDown(true),
-        before: () => FD.sendPending?.
-          (), // un travail du lanceur lit data/ : ce qui attend part d'abord (SOG-0279), sauf pour un travail en lecture seule et au plus 4 s (SOG-0400)
+        before: () => FD.sendPending?.(), // ce qui attend dans data/ part d'abord (SOG-0279, SOG-0400)
+        ui: [notify, dismissNote, t], // SOG-0658 : la phrase « poste occupé » et la demande en attente (frame/lib/busy.js)
         onWait: w => {
           FD.noteJobWait?.(w); // le repère de temps, dans le diagnostic du cadre
           if (w.late) notify(t(T.jobLate), 'warn', {
