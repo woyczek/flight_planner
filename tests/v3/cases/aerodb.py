@@ -7889,6 +7889,7 @@ def k404(c):
         for i in range(95):
             j2.start('x', 'v' + str(i), {})
             wait(j2)
+            journal('x/v' + str(i))   # the journal of a job is written just AFTER its state turns done: the next job waits for it, two writers never overlap on the same temporary file (a loaded pass lost the whole journal once)
         doc = journal('x/v94')
         mine = {k: v for k, v in doc.items() if k.startswith('x/')}
         c.ok(0 < len(mine) and len(doc) <= 80 and all(len(str(v.get('message') or '')) <= 300 for v in mine.values()), str(len(doc)) + ' verbs, ' + str(len(mine)) + ' of them x/', 'a verb that is not a base one is kept too, at most 80 verbs in the file, a message at most 300 signs')
