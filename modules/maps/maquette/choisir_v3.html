@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte : choisir, troisième version (maquette SOG-0654)</title>
+<link rel="stylesheet" href="../../../frame/design/tokens.css">
+<style>
+/* Maquette SOG-0654, « choisir, troisième version » : elle REMPLACE le contrat de la deuxième version (cocher pour comparer, puis « Choisir », huit au plus).
+   Décision de l'ergonome (26 nov.) : toutes les candidates sont identifiées dès l'ouverture, chacune par sa TEINTE (les huit jetons, dans l'ordre) ET sa PASTILLE
+   NUMÉROTÉE — le NUMÉRO fait l'identité, la teinte suit le trait ; la liste donne le même numéro et la même teinte ; UN toucher (le trait ou la ligne) CHOISIT :
+   la procédure prend la couleur de la route et la ligne dit « choisie pour le vol » ; en toucher une autre la remplace ; « Aucune » reste ; plus de case, plus de bouton
+   « Choisir », plus de plafond de huit ; LE CHEMIN : la piste d'abord quand le terrain en a plusieurs, une piste choisie ne laisse dessinées que les procédures qui la desservent.
+   Données INVENTÉES (deux terrains imaginaires, LFXA et LFXB), rien n'est lu ni écrit, aucun code de la carte : le contrat des écrans. Jour / nuit : les jetons du cadre
+   (tokens.css), la nuit suit le système sauf html[data-tone="day"] ; les boutons « Jour / Nuit » de la barre du haut forcent l'un ou l'autre. */
+:root {
+  --route: #8e24aa;
+  --land: #eef0e6;
+  --water: #d6e6f2;
+  --grid: #00000012;
+  --halo: #fffffff0;
+  --sog-proc-1: #1565c0;
+  --sog-proc-2: #d84315;
+  --sog-proc-3: #2e7d32;
+  --sog-proc-4: #00838f;
+  --sog-proc-5: #8f6a00;
+  --sog-proc-6: #6d4c41;
+  --sog-proc-7: #4f7500;
+  --sog-proc-8: #c62828;
+  --badge-ink: #fff
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-tone="day"]) {
+    --route: #d68cf0;
+    --land: #1f2a2a;
+    --water: #14222f;
+    --grid: #ffffff14;
+    --halo: #101820e6;
+    --sog-proc-1: #64b5f6;
+    --sog-proc-2: #ffa65c;
+    --sog-proc-3: #7bd88a;
+    --sog-proc-4: #4dd0e1;
+    --sog-proc-5: #f0c24b;
+    --sog-proc-6: #c8a38f;
+    --sog-proc-7: #b4e04a;
+    --sog-proc-8: #ff7b72;
+    --badge-ink: #101820
+  }
+}
+[data-tone="night"] {
+  --route: #d68cf0;
+  --land: #1f2a2a;
+  --water: #14222f;
+  --grid: #ffffff14;
+  --halo: #101820e6;
+  --sog-proc-1: #64b5f6;
+  --sog-proc-2: #ffa65c;
+  --sog-proc-3: #7bd88a;
+  --sog-proc-4: #4dd0e1;
+  --sog-proc-5: #f0c24b;
+  --sog-proc-6: #c8a38f;
+  --sog-proc-7: #b4e04a;
+  --sog-proc-8: #ff7b72;
+  --badge-ink: #101820
+}
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  font: 15px/1.4 system-ui, sans-serif
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.top b {
+  font-size: 13px;
+  color: var(--sog-muted);
+  margin-right: 4px
+}
+.top button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 9px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  cursor: pointer;
+  border-radius: 0
+}
+.top button[aria-pressed="true"] {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+.principle {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--sog-muted);
+  border-bottom: 1px solid var(--sog-border)
+}
+.wrap {
+  display: flex;
+  flex-direction: column
+}
+@media (min-width: 1000px) {
+  .wrap {
+    flex-direction: row;
+    align-items: stretch
+  }
+  .panel {
+    width: 360px;
+    flex: none;
+    border-left: 1px solid var(--sog-border)
+  }
+}
+.mapbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--water)
+}
+svg.map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 78vh
+}
+.land {
+  fill: var(--land)
+}
+.gridl {
+  stroke: var(--grid);
+  stroke-width: 1;
+  fill: none
+}
+.rwy {
+  stroke: var(--sog-fg);
+  stroke-width: calc(7px * var(--k, 1));
+  stroke-linecap: butt;
+  opacity: .85
+}
+.rwyin {
+  stroke: var(--land);
+  stroke-width: 1.5
+}
+.ad {
+  font: 700 calc(13px * var(--k, 1)) system-ui, sans-serif;
+  fill: var(--sog-fg);
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 4px;
+  stroke-linejoin: round
+}
+.lab {
+  font: 600 calc(11.5px * var(--k, 1)) system-ui, sans-serif;
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 4px;
+  stroke-linejoin: round
+}
+.fix {
+  fill: var(--halo);
+  stroke-width: 2
+}
+.trace {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round
+}
+.hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: calc(22px * var(--k, 1));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  cursor: pointer;
+  pointer-events: stroke
+}
+.badge {
+  cursor: pointer
+}
+.badge circle {
+  stroke: var(--halo);
+  stroke-width: 1.5
+}
+.badge text {
+  font: 700 calc(11px * var(--k, 1)) system-ui, sans-serif;
+  fill: var(--badge-ink);
+  text-anchor: middle;
+  dominant-baseline: central
+}
+.panel {
+  background: var(--sog-surface);
+  padding: 10px 12px 14px
+}
+.panel h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--sog-muted);
+  margin: 12px 0 4px;
+  font-weight: 600
+}
+.panel h2:first-child {
+  margin-top: 0
+}
+/* une ligne : UN toucher choisit ; plus de case, plus de bouton « Choisir » ; le numéro et la teinte sont ceux du trait */
+.row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 2px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--sog-border);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer
+}
+.row[data-state="chosen"] {
+  background: color-mix(in srgb, var(--route) 12%, transparent)
+}
+.row .n {
+  font-size: 12px;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--c);
+  color: var(--badge-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none
+}
+.row .sw {
+  width: 24px;
+  height: 0;
+  border-top: 5px solid var(--route);
+  flex: none
+}
+.row .nm {
+  flex: 1;
+  min-width: 0
+}
+.row .nm small {
+  display: block;
+  color: var(--sog-muted);
+  font-size: 12px
+}
+.row .st {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--route);
+  white-space: nowrap
+}
+.row .none {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1px solid var(--sog-border);
+  border-radius: 50%
+}
+.note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--sog-muted)
+}
+</style>
+</head>
+<body>
+<div class="top" role="toolbar" aria-label="Maquette">
+  <b>Maquette SOG-0654 · v3</b>
+  <button data-go="huit">Huit candidates</button>
+  <button data-go="plus">Plus de huit</button>
+  <button data-go="piste">Piste choisie</button>
+  <button data-go="choisie">Une choisie</button>
+  <button data-go="aucune">« Aucune »</button>
+  <span style="flex:1"></span>
+  <button data-tone-btn="day">Jour</button>
+  <button data-tone-btn="night">Nuit</button>
+</div>
+<p class="principle" id="principle"></p>
+<div class="wrap">
+  <div class="mapbox" id="mapbox"><svg class="map" id="svg" role="img" aria-label="Carte : procédures candidates"></svg></div>
+  <aside class="panel" id="panel"></aside>
+</div>
+<script>
+'use strict';
+/* ---------- données inventées (deux terrains imaginaires) : l'arrivée à LFXB, deux pistes (27 et 09) ---------- */
+const FLIGHT = {
+  route: [
+    [350, 256],
+    [440, 232],
+    [480, 214]
+  ],
+  sid: [
+    [110, 330],
+    [150, 330],
+    [190, 330],
+    [235, 300],
+    [260, 285],
+    [300, 272],
+    [350, 256]
+  ],
+  dep: {
+    id: 'LFXA',
+    name: 'Alpha',
+    up: true,
+    x: 110,
+    y: 330,
+    rwy: [
+      [110, 330],
+      [150, 330]
+    ]
+  },
+  arr: {
+    id: 'LFXB',
+    name: 'Bravo',
+    x: 690,
+    y: 190,
+    lx: 728,
+    ly: 168,
+    end: true,
+    rwy: [
+      [668, 190],
+      [706, 190]
+    ]
+  }
+};
+/* les candidates, dans l'ordre de la liste : le NUMÉRO est leur identité (jamais la teinte seule) ; rwy : les pistes qu'elles desservent */
+const CAND = [{
+  id: 'c1',
+  fam: 'star',
+  name: 'NORTH 1B',
+  rwy: ['27', '09'],
+  note: 'entrée NORTH',
+  pts: [
+    [400, 90],
+    [470, 118],
+    [525, 168],
+    [560, 190]
+  ]
+}, {
+  id: 'c2',
+  fam: 'star',
+  name: 'BRAVO 3A',
+  rwy: ['27'],
+  note: 'entrée BRAVO',
+  pts: [
+    [610, 380],
+    [600, 300],
+    [575, 240],
+    [545, 200]
+  ]
+}, {
+  id: 'c3',
+  fam: 'star',
+  name: 'TANIK 1E',
+  rwy: ['09'],
+  note: 'entrée TANIK',
+  pts: [
+    [330, 400],
+    [400, 330],
+    [455, 275],
+    [500, 232]
+  ]
+}, {
+  id: 'c4',
+  fam: 'star',
+  name: 'ZULU 2A',
+  rwy: ['27', '09'],
+  note: 'entrée ZULU',
+  pts: [
+    [250, 120],
+    [330, 150],
+    [400, 190],
+    [445, 215]
+  ]
+}, {
+  id: 'c5',
+  fam: 'star',
+  name: 'MIKE 5C',
+  rwy: ['09'],
+  note: 'entrée MIKE',
+  pts: [
+    [790, 330],
+    [740, 290],
+    [700, 240],
+    [676, 200]
+  ]
+}, {
+  id: 'c6',
+  fam: 'app',
+  name: 'RNP Y 27',
+  rwy: ['27'],
+  note: 'finale 27',
+  pts: [
+    [505, 268],
+    [560, 236],
+    [605, 204],
+    [668, 190]
+  ]
+}, {
+  id: 'c7',
+  fam: 'app',
+  name: 'LOC 27',
+  rwy: ['27'],
+  note: 'finale 27',
+  pts: [
+    [430, 160],
+    [520, 162],
+    [600, 180],
+    [668, 190]
+  ]
+}, {
+  id: 'c8',
+  fam: 'app',
+  name: 'VOR Z 09',
+  rwy: ['09'],
+  note: 'finale 09',
+  pts: [
+    [790, 250],
+    [740, 230],
+    [706, 190]
+  ]
+}, {
+  id: 'c9',
+  fam: 'app',
+  name: 'ILS 09',
+  rwy: ['09'],
+  note: 'finale 09',
+  pts: [
+    [800, 150],
+    [760, 168],
+    [706, 190]
+  ]
+}, {
+  id: 'c10',
+  fam: 'app',
+  name: 'RNP Z 09',
+  rwy: ['09'],
+  note: 'finale 09',
+  pts: [
+    [780, 110],
+    [750, 150],
+    [706, 190]
+  ]
+}, {
+  id: 'c11',
+  fam: 'star',
+  name: 'OSCAR 1D',
+  rwy: ['27'],
+  note: 'entrée OSCAR',
+  pts: [
+    [560, 440],
+    [540, 360],
+    [520, 290],
+    [500, 232]
+  ]
+}];
+const FAMS = [{
+  id: 'rwy',
+  title: 'Pistes'
+}, {
+  id: 'star',
+  title: 'Arrivées'
+}, {
+  id: 'app',
+  title: 'Approches'
+}];
+const SCENES = {
+  huit: {
+    t: 'Huit candidates au plus : chacune a sa teinte (les huit jetons, dans l’ordre) ET sa pastille numérotée sur le trait ; la liste donne le même numéro et la même teinte. Rien n’est coché, rien à choisir en deux temps : UN toucher, sur le trait, sur la pastille ou sur la ligne, CHOISIT.',
+    ids: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8']
+  },
+  plus: {
+    t: 'Plus de huit : plus de plafond, plus de note. Au-delà du huitième, la teinte reprend dans l’ordre (le 9 a la teinte du 1…) : le NUMÉRO fait l’identité, la teinte seule ne le fait jamais ; deux candidates de même teinte ne se touchent pas sur la carte (la pastille glisse sur la partie qui est à elle).',
+    ids: CAND.map(c => c.id)
+  },
+  piste: {
+    t: 'LE CHEMIN : la piste d’abord quand le terrain en a plusieurs. Une piste choisie (ici la 27) ne laisse dessinées, sur la carte et dans la liste, que les procédures qui la desservent ; les numéros restent ceux de l’ouverture (le 3 et le 5 ne reviennent pas sur la 27, le 8 à 10 non plus).',
+    ids: CAND.map(c => c.id),
+    rwy: '27'
+  },
+  choisie: {
+    t: 'Une choisie : la STAR prend la couleur et l’épaisseur de la route, sa ligne dit « choisie pour le vol » ; les autres restent candidates (leur teinte et leur numéro) et en toucher une AUTRE remplace la choisie, sans geste de retrait.',
+    ids: CAND.map(c => c.id),
+    rwy: '27',
+    chosen: {
+      star: 'c1'
+    }
+  },
+  aucune: {
+    t: '« Aucune » reste : pas de STAR pour ce vol, la ligne « Aucune » dit « choisie pour le vol » et les STAR restent des candidates estompées (on peut en choisir une à tout moment) ; l’approche, elle, est choisie.',
+    ids: CAND.map(c => c.id),
+    rwy: '27',
+    chosen: {
+      star: 'none',
+      app: 'c7'
+    }
+  }
+};
+/* ---------- état ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+let scene = 'huit',
+  chosen = {},
+  runway = null,
+  K = 1;
+const $ = id => document.getElementById(id);
+const el = (p, n, a = {}, t) => {
+  const e = document.createElementNS(NS, n);
+  for (const k in a) e.setAttribute(k, a[k]);
+  if (t != null) e.textContent = t;
+  p.appendChild(e);
+  return e
+};
+const pl = pts => pts.map(p => p.join(',')).join(' ');
+const num = id => CAND.findIndex(c => c.id === id) +
+  1; /* le numéro est celui de l'ouverture : il ne change pas quand une piste en écarte */
+const hueN = n => ((n - 1) % 8) + 1;
+const tok = n => `var(--sog-proc-${hueN(n)})`;
+const shown = () => CAND.filter(c => SCENES[scene].ids.includes(c.id) && (!runway || c.rwy.includes(runway)));
+
+/* ---------- géométrie de placement : une pastille est TOUJOURS visible, jamais sur une autre pastille ni sur un autre tracé ; un nom n'est écrit que s'il a la place ---------- */
+const segD = (p, a, b) => {
+  const dx = b[0] - a[0],
+    dy = b[1] - a[1],
+    L2 = dx * dx + dy * dy || 1,
+    t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2));
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+};
+const lineD = (p, line) => {
+  let d = Infinity;
+  for (let i = 0; i < line.length - 1; i++) d = Math.min(d, segD(p, line[i], line[i + 1]));
+  return d
+};
+const along = (line, f) => {
+  const L = [];
+  let tot = 0;
+  for (let i = 0; i < line.length - 1; i++) {
+    const l = Math.hypot(line[i + 1][0] - line[i][0], line[i + 1][1] - line[i][1]);
+    L.push(l);
+    tot += l
+  }
+  let w = f * tot;
+  for (let i = 0; i < L.length; i++) {
+    if (w <= L[i]) {
+      const t = L[i] ? w / L[i] : 0;
+      return [line[i][0] + t * (line[i + 1][0] - line[i][0]), line[i][1] + t * (line[i + 1][1] - line[i][1])]
+    }
+    w -= L[i]
+  }
+  return line.at(-1)
+};
+const hit = (a, b, pad = 2) => a.x < b.x + b.width + pad && a.x + a.width + pad > b.x && a.y < b.y + b.height + pad && a.y + a.height +
+  pad > b.y;
+const boxHitsLine = (b, line) => {
+  for (let i = 0; i < line.length - 1; i++) {
+    const n = Math.ceil(Math.hypot(line[i + 1][0] - line[i][0], line[i + 1][1] - line[i][1]) / 4);
+    for (let k = 0; k <= n; k++) {
+      const x = line[i][0] + (line[i + 1][0] - line[i][0]) * k / n,
+        y = line[i][1] + (line[i + 1][1] - line[i][1]) * k / n;
+      if (x > b.x - 2 && x < b.x + b.width + 2 && y > b.y - 2 && y < b.y + b.height + 2) return true
+    }
+  }
+  return false
+};
+
+function trace(g, pts, color, w, opacity) {
+  return el(g, 'polyline', {
+    class: 'trace',
+    points: pl(pts),
+    stroke: color,
+    'stroke-width': w * K,
+    opacity: opacity ?? 1
+  })
+}
+
+function label(g, text, x, y, color, boxes, anchor) {
+  const t = el(g, 'text', {
+    class: 'lab',
+    x,
+    y,
+    fill: color,
+    'text-anchor': anchor || 'start'
+  }, text);
+  boxes.push(t.getBBox());
+  return t
+}
+
+function airport(g, a, boxes) {
+  el(g, 'line', {
+    class: 'rwy',
+    x1: a.rwy[0][0],
+    y1: a.rwy[0][1],
+    x2: a.rwy[1][0],
+    y2: a.rwy[1][1]
+  });
+  el(g, 'line', {
+    class: 'rwyin',
+    x1: a.rwy[0][0] + 3,
+    y1: a.rwy[0][1],
+    x2: a.rwy[1][0] - 3,
+    y2: a.rwy[1][1],
+    'stroke-dasharray': '4 4'
+  });
+  const t = el(g, 'text', {
+    class: 'ad',
+    x: a.lx ?? a.x - 6,
+    y: a.ly ?? a.y + (a.up ? -14 : 24),
+    'text-anchor': a.end ? 'end' : 'start'
+  }, a.id + ' ' + a.name);
+  boxes.push(t.getBBox())
+}
+
+/* ---------- la carte ---------- */
+function draw() {
+  const svg = $('svg'),
+    narrow = innerWidth < 700,
+    list = shown();
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', '70 50 740 430');
+  K = narrow ? 1.7 : 1;
+  svg.style.setProperty('--k', K);
+  el(svg, 'path', {
+    class: 'land',
+    d: 'M0 0H900V520H0Z'
+  });
+  for (let x = 0; x <= 900; x += 60) el(svg, 'line', {
+    class: 'gridl',
+    x1: x,
+    y1: 0,
+    x2: x,
+    y2: 520
+  });
+  for (let y = 0; y <= 520; y += 60) el(svg, 'line', {
+    class: 'gridl',
+    x1: 0,
+    y1: y,
+    x2: 900,
+    y2: y
+  });
+  el(svg, 'path', {
+    d: 'M0 470C160 450 260 500 420 485S700 440 900 470V520H0Z',
+    fill: 'var(--water)'
+  });
+  const gC = el(svg, 'g'),
+    gF = el(svg, 'g'),
+    gB = el(svg, 'g'),
+    gH = el(svg,
+      'g'
+    ); /* les candidates dessous, la route et la choisie dessus, les pastilles au-dessus de tout, les zones de toucher tout au-dessus */
+  const RW = 4.5,
+    R = 'var(--route)',
+    boxes = [],
+    lines = [];
+  trace(gF, FLIGHT.route, R, RW);
+  trace(gF, FLIGHT.sid, R, RW);
+  lines.push(FLIGHT.route, FLIGHT.sid);
+  airport(gF, FLIGHT.dep, boxes);
+  airport(gF, FLIGHT.arr, boxes);
+  const isChosen = c => chosen[c.fam] === c.id,
+    faded = c => chosen[c.fam] === 'none',
+    drawn = list.filter(c => !isChosen(c)).concat(list.filter(isChosen));
+  const badges = [],
+    others = c => [...lines, ...list.filter(o => o !== c).map(o => o.pts)];
+  for (const c of drawn) {
+    const n = num(c.id),
+      ch = isChosen(c),
+      col = ch ? R : tok(n),
+      oth = others(c);
+    let best = null,
+      bestScore = -Infinity;
+    for (const f of [.5, .35, .65, .2, .8, .1, .9, .05, .95]) {
+      const p = along(c.pts, f),
+        dl = Math.min(...oth.map(l => lineD(p, l))),
+        db = Math.min(Infinity, ...badges.map(b => Math.hypot(p[0] - b.x, p[1] - b.y))),
+        inBox = boxes.some(b => p[0] > b.x - 9 * K && p[0] < b.x + b.width + 9 * K && p[1] > b.y - 9 * K && p[1] < b.y + b.height + 9 * K);
+      const score = Math.min(dl / (14 * K), db / (26 * K)) - (inBox ? 5 : 0);
+      if (score > bestScore) {
+        bestScore = score;
+        best = p
+      }
+      if (score >= 1) break;
+    }
+    badges.push({
+      x: best[0],
+      y: best[1],
+      n,
+      col,
+      id: c.id,
+      op: faded(c) ? .45 : 1
+    });
+    /* le nom : à côté de la pastille, seulement s'il a la place (ni sur un nom ou un point du vol, ni sur un autre tracé, ni sur une pastille) */
+    const probe = el(gC, 'text', {
+        class: 'lab',
+        x: 0,
+        y: 0,
+        fill: col
+      }, c.name),
+      pb = probe.getBBox(),
+      w = pb.width,
+      h = pb.height;
+    probe.remove();
+    const d = 15 * K,
+      cands = [
+        [best[0] + d, best[1] - 4 * K],
+        [best[0] + d, best[1] + 14 * K],
+        [best[0] - d - w, best[1] - 4 * K],
+        [best[0] - d - w, best[1] + 14 * K],
+        [best[0] - w / 2, best[1] - d],
+        [best[0] - w / 2, best[1] + d + 8 * K]
+      ];
+    for (const [x, y] of cands) {
+      const b = {
+        x,
+        y: y - h * .8,
+        width: w,
+        height: h
+      };
+      if (b.x < 72 || b.x + b.width > 808 || b.y < 52 || b.y + b.height > 478) continue;
+      if (boxes.some(o => hit(b, o))) continue;
+      if (oth.some(l => boxHitsLine(b, l)) || boxHitsLine(b, c.pts)) continue;
+      if (badges.some(q => q.id !== c.id && q.x > b.x - 12 * K && q.x < b.x + b.width + 12 * K && q.y > b.y - 12 * K && q.y < b.y + b
+          .height + 12 * K)) continue;
+      boxes.push(b);
+      el(ch ? gF : gC, 'text', {
+        class: 'lab',
+        x,
+        y,
+        fill: col,
+        opacity: faded(c) ? .45 : 1
+      }, c.name);
+      break;
+    }
+    trace(ch ? gF : gC, c.pts, col, ch ? RW : 3.5, faded(c) ? .45 : 1);
+    el(gH, 'polyline', {
+      class: 'hit',
+      points: pl(c.pts),
+      'data-pick': c.id
+    })
+  }
+  for (const b of badges) {
+    const g = el(gB, 'g', {
+      class: 'badge',
+      opacity: b.op,
+      'data-pick': b.id
+    });
+    el(g, 'circle', {
+      cx: b.x,
+      cy: b.y,
+      r: 10 * K,
+      fill: b.col
+    });
+    el(g, 'text', {
+      x: b.x,
+      y: b.y + .5
+    }, String(b.n))
+  }
+  panel(list);
+}
+
+/* ---------- la liste : le même numéro, la même teinte ; UN toucher choisit ---------- */
+function panel(list) {
+  const P = $('panel');
+  let h = '';
+  for (const f of FAMS) {
+    h += `<h2>${f.title}</h2>`;
+    if (f.id === 'rwy') {
+      for (const r of ['27', '09']) {
+        const on = runway === r;
+        h += `<button type="button" class="row" data-rwy="${r}" ${on ? 'data-state="chosen"' : ''}><span class="${on ? 'sw' : 'none'}"></span><span class="nm">Piste ${r}</span>${on ? '<span class="st">choisie pour le vol</span>' : ''}</button>`;
+      }
+      continue
+    }
+    const none = chosen[f.id] === 'none';
+    h += `<button type="button" class="row" data-pick-none="${f.id}" ${none ? 'data-state="chosen"' : ''}><span class="${none ? 'sw' : 'none'}"></span><span class="nm">Aucune</span>${none ? '<span class="st">choisie pour le vol</span>' : ''}</button>`;
+    for (const c of list.filter(x => x.fam === f.id)) {
+      const ch = chosen[f.id] === c.id,
+        n = num(c.id),
+        fd = chosen[f.id] === 'none';
+      h += `<button type="button" class="row" data-pick="${c.id}" ${ch ? 'data-state="chosen"' : ''} style="${fd ? 'opacity:.55' : ''}"><span class="n" style="--c:${ch ? 'var(--route)' : tok(n)}">${n}</span><span class="nm">${c.name}<small>${c.note} · piste ${c.rwy.join(' / ')}</small></span>${ch ? '<span class="st">choisie pour le vol</span>' : ''}</button>`;
+    }
+  }
+  P.innerHTML = h;
+}
+
+/* un toucher CHOISIT : la procédure ; en toucher une autre dans la famille la REMPLACE ; « Aucune » la retire ; une piste ne laisse que les procédures qui la desservent */
+function pick(id) {
+  const c = CAND.find(x => x.id === id);
+  if (!c || !shown().includes(c)) return;
+  chosen = {
+    ...chosen,
+    [c.fam]: id
+  };
+  draw()
+}
+
+function go(name) {
+  scene = name;
+  const S = SCENES[name];
+  runway = S.rwy || null;
+  chosen = {
+    ...(S.chosen || {})
+  };
+  $('principle').textContent = S.t;
+  document.querySelectorAll('[data-go]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === name)));
+  draw();
+}
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-pick]'),
+    n = e.target.closest('[data-pick-none]'),
+    r = e.target.closest('[data-rwy]');
+  if (p) return pick(p.dataset.pick);
+  if (n) {
+    chosen = {
+      ...chosen,
+      [n.dataset.pickNone]: 'none'
+    };
+    return draw()
+  }
+  if (r) {
+    runway = runway === r.dataset.rwy ? null : r.dataset.rwy;
+    chosen = {};
+    draw()
+  }
+});
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  location.hash = b.dataset.go;
+  go(b.dataset.go)
+}));
+document.querySelectorAll('[data-tone-btn]').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.tone = b.dataset.toneBtn;
+  document.querySelectorAll('[data-tone-btn]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  draw()
+}));
+addEventListener('hashchange', () => go(SCENES[location.hash.slice(1)] ? location.hash.slice(1) : 'huit'));
+addEventListener('resize', draw);
+/* ?tone=day|night force la teinte à l'ouverture (les captures) */
+{
+  const q = new URLSearchParams(location.search).get('tone');
+  if (q === 'day' || q === 'night') {
+    document.documentElement.dataset.tone = q;
+    document.querySelectorAll('[data-tone-btn]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.toneBtn === q)))
+  }
+}
+go(SCENES[location.hash.slice(1)] ? location.hash.slice(1) : 'huit');
+</script>
+</body>
+</html>

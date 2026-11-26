@@ -24,3 +24,13 @@ Invented data (two imaginary aerodromes, LFXA and LFXB); nothing is read or writ
 - **No segment between the end of an arrival (A) and the start of a non-contiguous approach (B)**: on the map no annotation at all, the two end points with their name and the void between them (scene `#ecart`); the sentence is in the list (« Aucune liaison publiée entre TANIK et LUMEN. », wording to be validated).
 - **A procedure whose points cannot be ordered** keeps the common regime (its hue, its number, its active box, no « ! » disc, no grey box): its points are hollow rings of its hue with their code, the name alone on the map; the sentence « Ordre des points inconnu : points dessinés sans tracé. » is only in the list (scene `#ordre`).
 - **Captures**: `procedures_<scene>_<width>_<tone>.png` — widths 390 and 1280, day and night for `vol`, `compare`, `detail`, `huit`, `ordre`; `ecart` at 1280 (day, night) and 390 (day).
+
+# Mock-up of choosing a procedure, version 3 (SOG-0654)
+
+`choisir_v3.html` (standalone file, invented data, two imaginary airports LFXA and LFXB, nothing read or written, no code of the Map). It **replaces the contract of version 2** (tick to compare, then « Choose », eight at most). To be read by the ergonomist; scenes by `#huit`, `#plus`, `#piste`, `#choisie`, `#aucune`; the « Day / Night » buttons force the tone, otherwise it follows the system.
+
+- **Every candidate is identified when the mode opens**: its **number** (the identity, never the hue alone) on a disc on the trace, its hue (the eight tokens `--sog-proc-1..8`, in order; the ninth takes the hue of the first), its name next to the disc **only when there is room** (never over another trace, name or disc). The list gives the same number and the same hue.
+- **One touch chooses**: on the trace, the disc or the row. The chosen procedure takes the route colour and thickness, its row says « choisie pour le vol »; touching another one of the same family **replaces** it. No box, no « Choose » button, no cap of eight (scene `#plus`).
+- **« Aucune »** stays as the first row of each family: chosen, the candidates of the family stay drawn, faded (scene `#aucune`).
+- **The way**: the runway first when the airport has several (rows « Pistes »); a chosen runway leaves drawn, on the map and in the list, only the procedures that serve it; the numbers stay those of the opening (scene `#piste`).
+- **Captures**: `choisir_v3_<scene>_<width>_<tone>.png` — widths 390 and 1280, day and night.
