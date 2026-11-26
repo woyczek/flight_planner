@@ -800,6 +800,15 @@ def level_summary(level, res):
 LEVELS_BUDGET_S = 300      # SOG-0529 (relecture de Sécurisation) : le temps de l'appel ENTIER (douze niveaux de 120 s au pire tiendraient le verrou des calculs pendant 24 minutes) ; testé AVANT chaque niveau
 
 
+def _release_neighbours():
+    """SOG-0587 : les voisins de route libre d'un clic ne restent pas en mémoire quand il est fini. Sous le verrou du solveur (un RLock : `context()` modifie `_CONTEXTS` sous lui, et `levels` ne le tient que pendant chaque `compute`, pas entre deux niveaux) et sur une COPIE des contextes : un autre calcul qui modifie `_CONTEXTS` ne fait jamais lever « mutated during iteration » depuis le `finally` d'un clic (Sécurisation, 26 nov.)."""
+    with SOLVER_LOCK:
+        for hit in list(_CONTEXTS.values()):
+            route_free = getattr(hit['nav'], 'fra', None)
+            if route_free is not None:
+                route_free.release()
+
+
 def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=None, budget_s=LEVELS_BUDGET_S, clock=time.monotonic, on_level=None, known=None, judged=None):
     """SOG-0529 : le calcul d'UNE demande à chaque niveau de `levels` (dans l'ordre de l'appelant), en un appel : { levels: [level_summary], first_valid: le premier niveau VALIDE ou None, stopped: 'first-valid' | 'end' | 'cancelled' | 'time', asked }.
     Chaque niveau est la route de TÊTE seule (ni alternatives ni propositions) avec le budget d'états de la tête (HEAD_STATES : `compute` le pose à chaque appel) ; `first_valid` : on s'arrête au premier niveau valide.
@@ -807,6 +816,15 @@ def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=N
     wanted = check_levels(levels)
     out, first, why = [], None, 'end'
     begin = clock()
+    fra.LEVEL_HINT = frozenset(wanted)      # SOG-0587 (une variable de module que lit tout calcul : un autre calcul qui tourne entre deux niveaux la voit, sans conséquence sur son résultat puisque la sélection est refaite par niveau) : les voisins de route libre sont calculés UNE fois pour tous les niveaux du clic (la sélection est refaite par niveau : le résultat est celui du niveau seul)
+    try:
+        return _levels_loop(template, wanted, out, first, why, begin, data, rad_file, fra_file, first_valid, stop, budget_s, clock, on_level, known, judged)
+    finally:
+        fra.LEVEL_HINT = None
+        _release_neighbours()
+
+
+def _levels_loop(template, wanted, out, first, why, begin, data, rad_file, fra_file, first_valid, stop, budget_s, clock, on_level, known, judged):
     for level in wanted:
         if stop is not None and stop():
             why = 'cancelled'

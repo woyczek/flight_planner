@@ -23912,3 +23912,115 @@ def k631(c):
         c.ok(all(Path(p)==base/'snapshot' for n,p in calls),str(calls),'source paths resolve beside the config rather than the shell')
         doc=json.loads((out/'roadmap-report.json').read_text())
         c.eq((doc['installed'],doc['regression_run']),(False,False),'source-build completion never claims installation or non-regression',what='scope')
+@case('K670', 'Route engine, SOG-0587: the free-route neighbours of every point are computed ONCE for all the levels of a click and sorted by distance on the points admissible at one of the levels; the selection (24 nearest, 8 per goal, 4 per sector, the exits, the mandatory points) is redone PER LEVEL on the filtered list: the graph of every level is IDENTICAL edge by edge, so is the route at every level, with and without — and the work (the pairs examined) is bounded',
+      'K', static=True, tags=('route', 'perf'),
+      rule='SOG-0587 (26 Nov 2026, the ergonomist: « le résultat est IDENTIQUE par construction »): a synthetic free-route world of 96 points on a grid in two areas (bands FL195-285 / FL245-660 / FL305-660 / FL195-360, entry and exit parities, a shared intermediate column, points closed at 12:00 or with a remark); four levels; the proof is the equality of the graphs and of the routes, the bound is a count of work (never seconds: a time bound is red under load)')
+def k670(c):
+    import datetime as dt
+    import gzip
+    import json
+    import os
+    import tempfile
+    import route_fixture as RF
+    from route_engine import engine, fra, import_books as I, plan as PL, view
+    bands = ['FL195 / FL285', 'FL245 / FL660', 'FL305 / FL660', 'FL195 / FL360']
+    roles = ['E', 'X', 'I', 'EX', 'I']
+    flos = ['ODD', 'EVEN', '-', 'EVEN/ODD']
+    dms = lambda v, hemi: f"{hemi}{int(abs(v)):0{2 if hemi in 'NS' else 3}d}{int(round((abs(v) - int(abs(v))) * 60)):02d}00"
+    rows = []
+    for i in range(8):
+        for j in range(12):
+            lat, lon = 49.0 + .5 * i, -4.0 + .5 * j
+            area = 'TESTA' if j < 7 else 'TESTB'
+            role = roles[(i * 3 + j) % 5]
+            time = '00:00 - 06:00' if (i + j) % 17 == 5 else '08:00 - 18:00' if (i + j) % 7 == 2 else 'H24'      # the first one is closed at 12:00 (never a member), the second one is open
+            remark = 'closed' if (i * j) % 29 == 11 else ''
+            terminal, arr, dep = '-', '', ''
+            if i == 0 and j >= 9:
+                terminal, dep = 'D', 'LFPO'
+            if i == 7 and j <= 2:
+                terminal, arr = 'A', 'EIDW'
+            rows.append(['', '', f'FA{i:02d}{j:02d}', dms(lat, 'N'), dms(lon, 'E') if lon >= 0 else dms(lon, 'W'), area, role, terminal, arr, dep, flos[(i + j) % 4], bands[(i + 2 * j) % 4], time, 'XXXX', remark])
+    for i in range(8):      # a column of intermediate points that BOTH areas hold: the chaining of the areas
+        for area in ('TESTA', 'TESTB'):
+            rows.append(['', '', f'FS{i:02d}', dms(49.0 + .5 * i + .1, 'N'), dms(-0.5 + .05, 'W'), area, 'I', '-', '', '', '-', 'FL195 / FL660', 'H24', 'XXXX', ''])
+    for ident, pos, role, band in (('SITET', (50.2, .2), 'E', 'FL195 / FL285'), ('KEPAD', (52.0, -3.0), 'X', 'FL195 / FL660'), ('OLZOM', (48.15, 2.26), 'E', 'FL305 / FL660'), ('BOYNE', (53.62, -5.35), 'X', 'FL195 / FL660')):      # the points of the base itself: the free route joins the airway A1 there (an entry or exit that is a node of the base)
+        rows.append(['', '', ident, dms(pos[0], 'N'), dms(pos[1], 'E') if pos[1] >= 0 else dms(pos[1], 'W'), 'TESTA', role, '-', '', '', '-', band, 'H24', 'XXXX', ''])
+    book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': n + 2, 'v': v} for n, v in enumerate(rows)]}
+    levels = [250, 300, 350, 400]
+    canon = lambda g: {u: [(v, tuple(sorted((k, repr(x)) for k, x in e.items()))) for v, e in es] for u, es in g.items()}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([book], f)
+        radf, fraf = os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz')
+        request = PL.check_request(view.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': True, 'fra_preference': .5, 'alternatives': False, 'proposals': False}))
+        engine.DATA_DIR, engine.RAD_FILE, fra.FRA_FILE = data, radf, fraf
+        try:
+            PL.drop_contexts()
+            nav, _rad = PL.context(request, data)
+            when = dt.datetime.fromisoformat('2026-11-10T12:00')
+
+            def build(fl, hint):
+                fra.LEVEL_HINT = hint
+                try:
+                    return nav.fra.graph(nav.graph(None), 'LFPO', 'EIDW', fl, when, (), False, 'normal')
+                finally:
+                    fra.LEVEL_HINT = None
+            nav.fra.release()
+            before = nav.fra.near_pairs
+            shared = {fl: build(fl, frozenset(levels)) for fl in levels}
+            work_shared = nav.fra.near_pairs - before
+            kept = nav.fra._neigh is not None
+            nav.fra.release()
+            before = nav.fra.near_pairs
+            plain = {fl: build(fl, None) for fl in levels}
+            work_plain = nav.fra.near_pairs - before
+            edges = {fl: sum(len(v) for v in plain[fl].values()) for fl in levels}
+            c.ok(len(set(edges.values())) > 2 and min(edges.values()) > 50, str(edges), 'the world is not trivial: the levels see different graphs (the bands, the parities) and each graph has edges')
+            c.eq([canon(shared[fl]) == canon(plain[fl]) for fl in levels], [True] * len(levels), 'the FRA graph of every level is IDENTICAL, edge by edge, with and without the neighbours shared by the levels of the click', what='graphs')
+            c.eq((kept, work_shared < work_plain, work_shared * 2 <= work_plain + work_plain // 10), (True, True, True), f'the work (pairs examined) of the four levels with the shared neighbours is about HALF of the work without (the union of four levels is built once; four times before) ({work_shared} against {work_plain}): the bound is on the count, never on seconds', what='work bound')
+            # a graph of a single level alone keeps nothing
+            nav.fra.release()
+            build(350, None)
+            c.eq(nav.fra._neigh, None, 'a level computed alone (no click) keeps no neighbours in memory', what='single level')
+            # the routes of PL.levels (which sets the hint) are those of the levels computed one by one (no hint)
+            template = dict(request, alternatives=False, proposals=False)
+            res = PL.levels(template, levels, data, radf, fraf, budget_s=600)
+            c.eq(fra.LEVEL_HINT, None, 'the hint of a click is given back at its end, whatever happens', what='hint reset')
+            with_hint = [(r['fl'], r['valid'], r['distance_nm'], r['route']) for r in res['levels']]
+            alone, kinds = [], []
+            for fl in levels:
+                p = PL.compute(dict(template, fl=fl), data, radf, fraf)['primary']
+                kinds.append(sum(1 for l in p.get('legs') or [] if l.get('kind') == 'FRA'))
+                alone.append((fl, bool(p.get('ok')) and not [i for i in p.get('issues') or [] if i['level'] == 'ERREUR'], p.get('distance_nm'), p.get('route')))
+            c.eq(with_hint, alone, 'the route, its distance and its verdict at every level are the same with the neighbours shared by the click and without', what='routes')
+            c.ok(all(r[3] for r in with_hint), str(with_hint), 'a route was found at every level (the world gives one)')
+            # Sécurisation (26 Nov): releasing the neighbours at the end of a click never raises « mutated during iteration » when another calculation changes the contexts (the iteration is under the solver lock, on a copy)
+            import types
+
+            class Meddling:
+                def release(self):
+                    PL._CONTEXTS.pop('two', None)      # another calculation changes the contexts WHILE the release walks them (one is dropped, one is added)
+                    PL._CONTEXTS['late'] = {'nav': types.SimpleNamespace(fra=None), 'sig': None, 'rad': None, 'at': 0}
+            PL.drop_contexts()
+            PL._CONTEXTS['one'] = {'nav': types.SimpleNamespace(fra=Meddling()), 'sig': None, 'rad': None, 'at': 0}
+            PL._CONTEXTS['two'] = {'nav': types.SimpleNamespace(fra=None), 'sig': None, 'rad': None, 'at': 0}
+            raised = None
+            try:
+                PL._release_neighbours()
+            except RuntimeError as error:
+                raised = str(error)
+            c.eq(raised, None, 'the release of the neighbours walks a copy of the contexts under the solver lock: a context added meanwhile does not make the end of a click raise', what='release under change')
+            c.ok(len({r[3] for r in with_hint}) >= 3, str(with_hint), 'the levels give at least three DIFFERENT routes (airway, free route at some levels only): the identity is not that of a world that never changes')
+            c.ok(all(r[3] for r in with_hint) and len(set(kinds)) >= 1 and max(kinds) > 0, str(kinds), 'the routes use the free route (FRA legs) at least at one level: the comparison is made on the free-route graphs, not on an airway')
+        finally:
+            engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.STATE_CEIL = None
+            engine.SEARCH_CAP_S = 120.0
+            fra.LEVEL_HINT = None
+            PL.drop_contexts()

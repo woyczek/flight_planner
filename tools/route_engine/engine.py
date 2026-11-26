@@ -291,6 +291,7 @@ class Nav:
         for name in ['_fra_graph_cache','_fra_discards','_routing_cache','_routing_base','_fra_recovery_graph_cache','_turn_cache']:
             cache=getattr(self,name,None)
             if cache is not None:cache.clear()
+        if getattr(self,'fra',None):self.fra.release()      # SOG-0587 : les voisins de route libre du clic
 
     @staticmethod
     def valid(p): return all(isinstance(p.get(k),(int,float)) and math.isfinite(p[k]) for k in ['lat','lon']) and -90<=p['lat']<=90 and -180<=p['lon']<=180

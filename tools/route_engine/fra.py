@@ -2,10 +2,11 @@
 Point roles, numeric levels, simple UTC windows and entry/exit FLOS are enforced.
 The workbooks do not provide area polygons or NPZ geometry; links remain candidates.
 """
-import collections,datetime as dt,gzip,heapq,json,math,re
+import array,collections,datetime as dt,gzip,heapq,json,math,re
 from pathlib import Path
 from . import geo      # SOG-0468 (3)
 CORRIDOR_EXCESS_NM=250   # SOG-0161 : détour maximal d'un point FRA par rapport à un tronçon dep → passages → arr (recherche « normale »)
+LEVEL_HINT=None   # SOG-0587 : l'ensemble des niveaux du CLIC en cours (posé par plan.levels, rendu à None à sa fin) : les voisins de route libre de chaque point sont calculés UNE fois pour tous ces niveaux, la sélection est refaite par niveau ; None : le niveau seul
 FRA_FILE=None   # SOG-0081 : chemin de fra.json.gz posé par le travail du lanceur (data/route/fra.json.gz) ; None : à côté du module, comme RouteSim 2
 
 def coord(text):
@@ -47,6 +48,8 @@ def parity(value,fl,role):
 class Fra:
     def __init__(self,nav,date,nm):
         self.nav=nav;self.nm=nm;self.records=[];self.by_key=collections.defaultdict(list);self.book=None
+        self.near_pairs=0
+        self._neigh=None      # SOG-0587 : (clé, contexte) des voisins du clic en cours : un seul gardé, vidé avec les autres caches du graphe (Nav.release_graph_caches)
         self.by_row={};self.by_id=collections.defaultdict(list);self.discards=[]      # SOG-0610 : les lignes par numéro de ligne et par nom de point ; les entrées et sorties écartées pour leur seule orientation, au dernier graphe
         path=Path(FRA_FILE) if FRA_FILE else Path(__file__).resolve().parent/'fra.json.gz'   # SOG-0081 : FRA_FILE
         if not path.exists():return
@@ -100,11 +103,24 @@ class Fra:
             if density=='wide' or not legs:return True
             q=tr(p)
             return any(fast(a,q)+fast(q,b)-d<=CORRIDOR_EXCESS_NM for a,b,d in legs)
-        for r in self.records:
-            p=nav.nodes[r['key']]
-            if not (latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi) or not in_corridor(p) or not self.eligible(r,fl,when,steps):continue
-            state=r['key']+'|FRA|'+r['area']+'|'+str(r['row']);nav.nodes[state]=p
-            r=dict(r,state=state,_tr=tr(p));groups[r['area']].append(r)      # SOG-0468 (2) : `_tr` = les positions en radians du point, faites une fois (le dictionnaire reste local à ce graphe : les arêtes n'en reprennent que des valeurs)
+        lvls=LEVEL_HINT if LEVEL_HINT and fl in LEVEL_HINT else frozenset((fl,))      # SOG-0587 : les niveaux du CLIC (plan.levels les pose) ; hors d'un clic : le niveau seul, rien n'est gardé
+        ckey=(dep,arr,tuple(via),when.isoformat(timespec='minutes'),bool(steps),density,lvls)
+        ctx=self._neigh[1] if self._neigh and self._neigh[0]==ckey else None
+        if ctx is None:      # SOG-0587 : les points admissibles à l'UN des niveaux (la boîte, le couloir, l'heure et les remarques ne dépendent pas du niveau), dans l'ordre de la liste ; leurs voisins sont calculés UNE fois (`near`), pour tous les niveaux
+            members=[]
+            for r in self.records:
+                p=nav.nodes[r['key']]
+                if r['lower'] is None or r['upper'] is None or not self.time_ok_row(r,when) or not (latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi) or not in_corridor(p):continue
+                if not any(r['lower']<=x*100 and (steps or x*100<=r['upper']) for x in lvls):continue
+                members.append(dict(r,state=r['key']+'|FRA|'+r['area']+'|'+str(r['row']),_tr=tr(p),_i=len(members)))      # SOG-0468 (2) : `_tr` = les positions en radians du point, faites une fois (le dictionnaire reste local à ce graphe : les arêtes n'en reprennent que des valeurs)
+            areas=collections.defaultdict(list)
+            for r in members:areas[r['area']].append(r)
+            ctx=dict(members=members,areas=areas,cells={},cand={},near={})
+            if len(lvls)>1:self._neigh=(ckey,ctx)
+        floor_ft=fl*100
+        for r in ctx['members']:
+            if not (r['lower']<=floor_ft and (steps or floor_ft<=r['upper'])):continue      # admissible à CE niveau (la condition de `eligible`)
+            p=nav.nodes[r['key']];state=r['state'];nav.nodes[state]=p;groups[r['area']].append(r)
             enter=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
             leave=('X' in r['enroute'] and parity(r['flos'],fl,'X')) or ('A' in r['terminal'] and self.airport_match(r['arr'],arr))
             if not enter and 'E' in r['enroute'] and orientation(r['flos'],'E'):self.discards.append(dict(code='fra_entry_orientation',area=r['area'],point=r['id'],fl=fl,parity=orientation(r['flos'],'E')))
@@ -120,29 +136,46 @@ class Fra:
             for a in rows:
                 for b in rows:
                     if a['area']!=b['area'] and max(a['lower'],b['lower'])<=min(a['upper'],b['upper']):g.setdefault(a['state'],[]).append((b['state'],dict(route='DCT',nm=0,kind='FRA_GATE',fra_area=b['area'],lower=max(a['lower'],b['lower']),upper=min(a['upper'],b['upper']),chained=True)))
-        cand_cache={}
+        cand_cache=ctx['cand']
+        def near_of(r,area,cells):      # SOG-0587 : les voisins d'un point parmi les points admissibles à l'un des niveaux, triés par distance (le tri est stable : l'ordre des égalités est celui des cases), avec le secteur de chacun ; rangés en tableaux (la mémoire d'un clic de douze niveaux)
+            p=nav.nodes[r['key']]; la,lo=math.floor(p['lat']),math.floor(p['lon']);tp=tr(p)
+            max_nm=900 if density=='wide' else 500
+            if density=='wide':candidates=ctx['areas'][area]
+            else:                       # les points d'une même case de 1° partagent leur liste de candidats (SOG-0161)
+                candidates=cand_cache.get((area,la,lo))
+                if candidates is None:candidates=cand_cache[(area,la,lo)]=[o for x in range(la-9,la+10) for y in range(lo-16,lo+17) for o in cells.get((x,y),[])]
+            found=[]
+            self.near_pairs+=len(candidates)      # SOG-0587 : le TRAVAIL des voisins (les paires examinées), pour que les cas bornent le calcul sans compter des secondes
+            for other in candidates:
+                if other['key']==r['key']:continue
+                if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
+                if max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
+                d=fast(tp,other['_tr'])
+                if .1<d<=max_nm:found.append((d,other))
+            found.sort(key=lambda pair:pair[0])
+            sector=bytearray()
+            for d,o in found:
+                target=nav.nodes[o['key']];angle=math.atan2(target['lat']-p['lat'],(target['lon']-p['lon'])*math.cos(math.radians(p['lat'])))
+                sector.append(int((angle+math.pi)/(math.pi/4))%8)
+            return array.array('d',[d for d,o in found]),array.array('I',[o['_i'] for d,o in found]),bytes(sector)
         for area,records in groups.items():
-            cells=collections.defaultdict(list)
-            for r in records:
-                p=nav.nodes[r['key']];cells[(math.floor(p['lat']),math.floor(p['lon']))].append(r)
+            cells=ctx['cells'].get(area)
+            if cells is None:
+                cells=ctx['cells'][area]=collections.defaultdict(list)
+                for r in ctx['areas'][area]:
+                    p=nav.nodes[r['key']];cells[(math.floor(p['lat']),math.floor(p['lon']))].append(r)
             for r in records:
                 can_depart='E' in r['enroute'] or r['enroute']=='I' or 'D' in r['terminal'] and self.airport_match(r['dep'],dep)
                 if not can_depart:continue
-                p=nav.nodes[r['key']]; la,lo=math.floor(p['lat']),math.floor(p['lon']);neighbors=[];tp=tr(p)
+                p=nav.nodes[r['key']];tp=tr(p)
                 # Distances here are graph search settings, not FRA legal limits.
                 # Wider search retries are automatic if the first topology fails.
-                max_nm=900 if density=='wide' else 500
-                if density=='wide':candidates=records
-                else:                       # les points d'une même case de 1° partagent leur liste de candidats (SOG-0161)
-                    candidates=cand_cache.get((area,la,lo))
-                    if candidates is None:candidates=cand_cache[(area,la,lo)]=[o for x in range(la-9,la+10) for y in range(lo-16,lo+17) for o in cells.get((x,y),[])]
-                for other in candidates:
-                    if other['key']==r['key']:continue
-                    if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
-                    if max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
-                    d=fast(tp,other['_tr'])
-                    if .1<d<=max_nm:neighbors.append((d,other))
-                neighbors.sort(key=lambda pair:pair[0])
+                near=ctx['near'].get(r['state'])
+                if near is None:near=ctx['near'][r['state']]=near_of(r,area,cells)
+                neighbors=[];sector_of=[];members=ctx['members']      # SOG-0587 : la liste de CE niveau : les voisins admissibles à ce niveau, dans le même ordre
+                for d,i,k in zip(near[0],near[1],near[2]):
+                    o=members[i]
+                    if o['lower']<=floor_ft and (steps or floor_ft<=o['upper']):neighbors.append((d,o));sector_of.append(k)
                 goals=[nav.nodes[k] for k in resolved]+[nav.ads[arr]]
                 goals=sorted(goals,key=lambda goal:fast(tp,tr(goal)))[:2]+[nav.ads[arr]]
                 chosen=neighbors[:(100 if density=='wide' else 24)]
@@ -152,9 +185,7 @@ class Fra:
                 # Retain candidates in each compass sector, including directions
                 # away from the arrival when a mandatory waypoint requires it.
                 sectors=collections.defaultdict(list)
-                for d,o in neighbors:
-                    target=nav.nodes[o['key']];angle=math.atan2(target['lat']-p['lat'],(target['lon']-p['lon'])*math.cos(math.radians(p['lat'])))
-                    sectors[int((angle+math.pi)/(math.pi/4))%8].append((d,o))
+                for pair,k in zip(neighbors,sector_of):sectors[k].append(pair)
                 for values in sectors.values():chosen+=values[:4]
                 chosen += [(d,o) for d,o in neighbors if o['id'] in via]
                 used=set()
@@ -239,6 +270,8 @@ class Fra:
             else:
                 out.append(dict(level='REVUE',code='fra_exit_role',values=dict(area=area,point=end,fl=fl),text=f"Route libre : l'aire {area} est quittée à {end}, qui n'y est pas un point de sortie dans la liste Eurocontrol : à examiner."))
         return out
+
+    def release(self):self._neigh=None
 
     def time_ok_row(self,r,when):return time_ok(r['time'],when) and not r['remarks']
 
