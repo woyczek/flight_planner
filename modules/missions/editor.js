@@ -2160,8 +2160,10 @@ export function rdvWithoutTime(doc, shown = null) {
     const d = obj(doc),
       rdv = placesOf(d).filter(p => p.kind === 'rdv' && p.id && (!shown || shown.some(x => x && x.id === p.id)));
     if (!rdv.length) return [];
-    const events = typeof MS.readEvents === 'function' ? MS.readEvents(d) : [],
-      plan = typeof MS.plannedMin === 'function' ? MS.plannedMin(d) : null,
+    // la mission LUE : le lecteur y trouve ses tiroirs, l'heure de l'ordre et le temps estimé jusqu'à un point (un document brut n'en a pas)
+    const mission = typeof MS.readMission === 'function' ? MS.readMission(d) : null,
+      events = mission ? MS.readEvents(mission) : [],
+      plan = mission && typeof MS.plannedMin === 'function' ? MS.plannedMin(mission) : null,
       timed = new Set((Array.isArray(events) ? events : []).filter(e => e && plan instanceof Map && Number.isFinite(plan.get(e.id))).map(
         e => String(e.place ?? '').toUpperCase()));
     return rdv.filter(p => !timed.has(p.id.toUpperCase())).map(p => ({

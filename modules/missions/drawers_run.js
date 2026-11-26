@@ -647,7 +647,8 @@ function eventsJudge(c, raw) {
   let changed = false;
   for (const e of evs) {
     const place = e.place ? placeAt(c.mission, e.place) : null;
-    if (place && isOwnEvent(e, letter) && !ev.held.has(e.id)) {
+    if (place && e.idWritten !== false && isOwnEvent(e, letter) && !ev.held.has(e
+        .id)) { // un événement sans identifiant écrit (« @<rang> ») n'a pas de constat gardé
       const nm = gcNm(f, place);
       if (nm <= EVENT_NM && at) {
         ev.held.set(e.id, at);

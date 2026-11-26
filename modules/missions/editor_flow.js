@@ -73,7 +73,10 @@ const teamsOk = v => [...new Set((Array.isArray(v) ? v : []).map(x => String(x).
 /** Les heures prévues du fichier (MS.plannedMin) : Map id → minutes | null ; vide sans lecteur. */
 export function plannedOf(doc) {
   try {
-    const m = MS.plannedMin?.(doc);
+    // le lecteur lit les tiroirs de la mission LUE (`drawers`, depuis `phases`), l'heure de l'ordre (`orderOffsetMin`) et le temps estimé jusqu'à un point :
+    // un document brut n'a rien de tout cela, il passe donc par readMission
+    const mission = typeof MS.readMission === 'function' ? MS.readMission(doc) : null,
+      m = mission ? MS.plannedMin?.(mission) : null;
     return m instanceof Map ? m : new Map();
   } catch {
     return new Map();
@@ -90,7 +93,8 @@ function entryOf(r, i, at) {
     text = str(r.text, TEXT_MAX);
   return {
     i,
-    id: ID_RE.test(r.id) ? r.id : '',
+    // le lecteur dit lui-même si l'identifiant est ÉCRIT (`idWritten`) : un doublon ou un mal formé est lu sous « @<rang> », jamais un identifiant de la séance
+    id: r.idWritten !== false && ID_RE.test(r.id) ? r.id : '',
     title,
     text: title && text === title ? '' : text, // la consigne vide s'écrit comme le titre pour que la V2 ait quelque chose à dire (compose)
     place: str(r.place, 40).toUpperCase(),
@@ -138,7 +142,7 @@ export function mirror(e) {
 
 /** Le premier EV-n libre (le fichier, puis les lignes de la séance) ; '' au-delà de 999. */
 export function nextEventId(doc, entries) {
-  // jamais un EV-n déjà ÉCRIT dans le fichier, même celui d'un doublon que le lecteur renvoie sous « ＠<i> »
+  // jamais un EV-n déjà ÉCRIT dans le fichier, même celui d'un doublon que le lecteur renvoie sous « @<i> » (idWritten: false)
   const used = new Set([...read(doc).map(e => e.id), ...ED.eventsRawOf(doc).map(e => e.id), ...(Array.isArray(entries) ? entries : []).map(
     e => plain(e).id)]);
   for (let n = 1; n <= 999; n++)
@@ -327,6 +331,8 @@ export function tolOf(e, t) {
  *  (editor_drawers.js drawerRowsOf). */
 export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
   const plan = plannedOf(doc),
+    // une ligne sans identifiant écrit a, chez le lecteur, l'identifiant « @<rang dans le fichier> » : le document de la séance porte les lignes dans leur ordre
+    rd = typeof MS.readEvents === 'function' ? MS.readEvents(doc) : [],
     ctx = {
       drawers,
       entries,
@@ -336,7 +342,7 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
       kind: 'event',
       n,
       id: e.id,
-      min: e.id && Number.isFinite(plan.get(e.id)) ? plan.get(e.id) : null,
+      min: Number.isFinite(plan.get(e.id || rd[n]?.id)) ? plan.get(e.id || rd[n]?.id) : null,
       when: whenOf(e, ctx, t),
       tol: tolOf(e, t),
       title: e.title || e.text || t('flNoTitle'),

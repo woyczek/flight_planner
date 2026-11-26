@@ -4,7 +4,7 @@
 // MON équipe seulement (ou un événement sans équipe), une ligne d'état. La maquette : modules/missions/maquette/deroule.html, scène (e).
 //
 // Les constats sont ceux du juge (drawers_run.js constatsOf : tenu à, passé à, temps restant) ; le lecteur de la suite donne les heures
-// (MS.eventTimes, MS.plannedMin) et les tolérances (readEvents : tolEarlyMin, tolLateMin). Chaque appel est gardé : sans ce lecteur, ou
+// (MS.eventTimes : une liste [{ id, plannedAt, clock, imposed }] ; MS.plannedMin) et les tolérances (readEvents : tolEarlyMin, tolLateMin). Chaque appel est gardé : sans ce lecteur, ou
 // sans événement, il n'y a PAS de section « Prévu ». Les textes sont en français seulement (SOG-0680 : la traduction suit).
 //
 // API : plannedBlock(w, c, view, o) → { html, before } : `html` la section (ou '') ; `before` les événements constatés plus anciens que le
@@ -54,13 +54,15 @@ export function model(c, view, o = {}) {
         const k = RUN.constatsOf(c),
           open = {};
         for (const d of Array.isArray(o.opened) ? o.opened : []) open[d.id] = iso(d.at);
-        return MS.eventTimes(c.mission, {
+        const arr = MS.eventTimes(c.mission, {
           takeoffAt: c.startIso || null,
           orderReadAt: iso(o.orderReadAt),
           passed: asObject(k.passed),
           held: asObject(k.held),
           drawersOpenAt: open
         });
+        // le lecteur rend une LISTE [{ id, plannedAt, clock, imposed }] dans l'ordre du fichier : rangée par identifiant (une Map ou un objet reste lu)
+        return Array.isArray(arr) ? new Map(arr.filter(x => x && typeof x.id === 'string').map(x => [x.id, x])) : arr;
       })() : null;
     if (!evs.length || !times) return {
       upcoming: [],
