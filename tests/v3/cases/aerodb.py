@@ -24024,3 +24024,52 @@ def k670(c):
             engine.SEARCH_CAP_S = 120.0
             fra.LEVEL_HINT = None
             PL.drop_contexts()
+@case('K671', 'Route engine, SOG-0613: the catalogue line of an aerodrome whose SIDs are all read IN PART counts them (« N lues en partie ») instead of « 0 résolues, 0 incomplètes, 0 douteuses » for N procedures; a departure whose connector limit is 0 NM and whose SIDs read in part end nowhere on the network keeps its ERROR (connector_limit) and the repeated search of SOG-0547; a network with no way between two points says it (network_gap)',
+      'K', static=True, tags=('route', 'procedures'),
+      rule='SOG-0613 (26 Nov 2026, the relay): EGLL → BIKF on the real base said « Catalogue : 24 procédures, 0 résolues, 0 incomplètes, 0 douteuses » — the 24 SIDs read in part (exit point and levels, no track) were counted by the engine (`SID_partial`) but never written; decision (a): the screen says the cause on the lines already decided, no new kind of proposal. An INVENTED world of the same shape (never the real route, never the names of the base): a departure with three SIDs read in part and a limit of 0 NM, an airway network cut between two groups of points')
+def k671(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    pts = {'NEAR': (50.0, 0.6), 'EXA': (50.4, 1.2), 'EXB': (50.6, 0.9), 'EXC': (50.2, 1.6), 'P2': (50.0, 4.0), 'P3': (50.0, 7.0), 'P4': (50.0, 10.0), 'Q1': (56.0, 10.0), 'Q2': (56.0, 12.0)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (56.0, 13.0)}
+
+    def way(route, chain):
+        return [{'route': route, 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': 5000, 'upper': 46000} for a, b in zip(chain, chain[1:])]
+    ways = way('UL1', ['NEAR', 'P2', 'P3', 'P4']) + way('UL5', ['Q1', 'Q2'])      # no way between P4 and Q1: the network is cut
+    sids = {'icao': 'ZZAA', 'cycle': '2026-10-01', 'procedures': [
+        {'kind': 'SID', 'name': name, 'id': 'ZZAA.SID.' + name, 'runways': ['09'], 'partial': True, 'status': 'check',
+         'points': [{'id': end, 'lat': pts[end][0], 'lon': pts[end][1], 'alt': {'type': 'min', 'ft': 3000}}]} for name, end in (('EXA1A', 'EXA'), ('EXB1A', 'EXB'), ('EXC1A', 'EXC'))]}
+    pad = lambda row: row + [''] * (17 - len(row))
+    cond = [RF.RAD_HEAD, pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', 'ZZ** DEP DCT 0NM', 'H24', 'ZZ'])]
+    sheets = [(n, cond if n == 'Annex 3A Conditions' else rows) for n, rows in RF.rad_sheets()]
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(folder)
+        for k, v in files.items():
+            with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        os.makedirs(os.path.join(data, 'proc', 'manual'))
+        with open(os.path.join(data, 'proc', 'manual', 'ZZAA.json'), 'w', encoding='utf-8') as f:
+            json.dump(sids, f)
+        os.makedirs(os.path.join(data, 'route'))
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, sheets)
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'use_procedures': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+    issues = p.get('issues') or []
+    catalogue = [i['text'] for i in issues if i['level'] == 'REVUE' and i['text'].startswith('ZZAA : aucune SID complète connectée utilisée')]
+    c.eq(len(catalogue), 1, 'the departure says that no complete SID is connected (the three SIDs are read in part)', what='catalogue line')
+    c.ok('3 procédures, 0 résolues, 3 lues en partie, 0 incomplètes, 0 douteuses' in catalogue[0], catalogue[0], 'the three SIDs read in part are COUNTED: « 3 lues en partie » (before: « 3 procédures, 0 résolues, 0 incomplètes, 0 douteuses »: the three went nowhere)')
+    c.eq((p.get('procedure_coverage') or {}).get('ZZAA', {}).get('SID_partial'), 3, 'the engine counted them (the coverage said it already)', what='coverage')
+    c.ok(any(i['level'] == 'ERREUR' and i.get('code') == 'connector_limit' for i in issues), str([(i['level'], i.get('code')) for i in issues]), 'the connector of 0 NM that no SID read in part serves stays an ERROR (the route is rendered and said refused by Eurocontrol)')
+    c.ok(any(i.get('code') == 'network_gap' for i in issues), str([(i['level'], i.get('code')) for i in issues]), 'the network cut between P4 and Q1 is said (« Réseau absent »), the direct that joins the two groups is a simulation that is not validated')
