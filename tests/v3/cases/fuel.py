@@ -11763,3 +11763,86 @@ def f334(c):
     c.ok(not any(w in unres for w in ('STAY', 'OAT', 'GAT', 'K0210')), unres, 'nothing of it « not recognised »')
     c.js("document.querySelector('[data-module=fuel] [data-rread]').scrollIntoView({block: 'center'})")
     c.shot(f'F334_{c.design}_{c.width}_{c.lang}.png')
+
+
+# SOG-0669: the words, written in clear (the States named from aerodb's table of ICAO prefixes, SOG-0556)
+_DIR_WORDS = {
+    'fr': {'both': 'Sens des voies : vérifié en Allemagne, France. Inconnu en Suisse, Italie : une voie peut y être prise à contresens.',
+           'all': 'Sens des voies : vérifié sur toute la route.',
+           'none': 'Sens des voies : inconnu en Suisse : une voie peut y être prise à contresens.',
+           'via': ['Suisse : sens de XN850 inconnu.', 'Italie : sens de <b>X</b> inconnu.', 'et 3 autres voies au sens inconnu'],
+           'speeds': 'Vitesses limites'},
+    'en': {'both': 'Airway direction: checked in Germany, France. Unknown in Switzerland, Italy: an airway may be flown the wrong way there.',
+           'all': 'Airway direction: checked along the whole route.',
+           'none': 'Airway direction: unknown in Switzerland: an airway may be flown the wrong way there.',
+           'via': ['Switzerland: direction of XN850 unknown.', 'Italy: direction of <b>X</b> unknown.',
+                   'and 3 other airways of unknown direction'],
+           'speeds': 'Vitesses limites'},
+    'de': {'both': 'Richtung der Luftstraßen: geprüft in Deutschland, Frankreich. Unbekannt in Schweiz, Italien: eine Luftstraße kann dort in '
+                   'Gegenrichtung beflogen werden.',
+           'all': 'Richtung der Luftstraßen: auf der ganzen Route geprüft.',
+           'none': 'Richtung der Luftstraßen: unbekannt in Schweiz: eine Luftstraße kann dort in Gegenrichtung beflogen werden.',
+           'via': ['Schweiz: Richtung von XN850 unbekannt.', 'Italien: Richtung von <b>X</b> unbekannt.',
+                   'und 3 weitere Luftstraßen mit unbekannter Richtung'],
+           'speeds': 'Vitesses limites'},
+    'es': {'both': 'Sentido de las aerovías: verificado en Alemania, Francia. Desconocido en Suiza, Italia: una aerovía puede tomarse allí en '
+                   'sentido contrario.',
+           'all': 'Sentido de las aerovías: verificado en toda la ruta.',
+           'none': 'Sentido de las aerovías: desconocido en Suiza: una aerovía puede tomarse allí en sentido contrario.',
+           'via': ['Suiza: sentido de XN850 desconocido.', 'Italia: sentido de <b>X</b> desconocido.',
+                   'y 3 aerovías más de sentido desconocido'],
+           'speeds': 'Vitesses limites'},
+}
+
+
+@case('F329', 'Route: « Ce que le contrôle ne couvre pas » says the direction of the airways per State — « Sens des voies : vérifié en '
+      'Allemagne, France. Inconnu en Suisse, Italie : une voie peut y être prise à contresens. », « vérifié sur toute la route » when the '
+      'base has it everywhere, the « Inconnu » part only when there is one; the speed limits keep their own line, never « Sens et »; under '
+      '« Non vérifiable » each airway whose direction is unknown, in the language of the screen, as text', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0669 (the ergonomist, 26 Nov: the line « Sens autorisés et limites de vitesse absents des fichiers airways » is false for '
+      'France, Germany and the United Kingdom; AeroDB 2f7c05bbe: gaps { code: direction, known, unknown } in ICAO prefixes, « Vitesses '
+      'limites » with its sentence, issues direction_unknown { via, state } and direction_unknown_more { count }); a fake launcher')
+def f329(c):
+    st = _route_launcher(c, ['route/compute'])
+    W = _DIR_WORDS[c.lang]
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    unv = [{'level': 'REVUE', 'code': 'direction_unknown', 'values': {'via': 'XN850', 'state': 'LS'}, 'text': 'Sens de XN850 inconnu en LS.'},
+           {'level': 'REVUE', 'code': 'direction_unknown', 'values': {'via': '<b>X</b>', 'state': 'LI'}, 'text': 'Sens de X inconnu en LI.'},
+           {'level': 'REVUE', 'code': 'direction_unknown_more', 'values': {'count': 3}, 'text': 'et 3 autres'}]
+    st['alts'] = [dict(_alt(1, 'Direct', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 270, segs), verdict='unverifiable', violations=[],
+                       unverifiable=unv)]
+    speeds = {'name': 'Vitesses limites', 'reason': 'Limites de vitesse absentes des fichiers airways ; vitesse sol saisie utilisée pour le '
+              'profil.'}
+    st['extra'] = {'gaps': [speeds, {'code': 'direction', 'known': ['ED', 'LF'], 'unknown': ['LS', 'LI']}]}
+    c.open('fuel', docs=proc_docs() + proc_flight(), airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    _compute_now(c, st)
+    L = f'{FUEL} [data-routealts] details[data-rlimits]'
+    dir_line = f"(w) => {{ const e = document.querySelector('{L} [data-gapdir]'); return !!e && (e.textContent || '')" \
+               ".replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }}"
+    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='« Ce que le contrôle ne couvre pas »')
+    c.js(f"document.querySelector('{L}').open = true")
+    c.until(dir_line, W['both'], timeout=10000, what='the direction line, per State (red before: no such line)')
+    c.ok(norm(W['speeds']) in [norm(x) for x in c.js(f"[...document.querySelectorAll('{L} p b')].map(e => e.textContent)")],
+         c.text(L), 'the speed limits keep their own line')
+    c.ok('Sens et' not in (c.text(L) or ''), c.text(L), 'never « Sens et vitesses limites »')
+    G = f'{FUEL} [data-altlist] [data-alt] details[data-reasons=unverifiable]'
+    c.js(f"document.querySelector('{G}').open = true")
+    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{G} li[data-reason]')].map(e => e.textContent)")],
+         [norm(x) for x in W['via']], 'each airway of unknown direction, its State named, then the rest counted (red before: the French '
+         'sentence of the engine)', what='airways')
+    c.eq(c.count(f'{G} b'), 0, 'a name of airway is text, never markup', what='esc')
+    # known everywhere: one sentence; known nowhere: the « Inconnu » part alone
+    st['extra'] = {'gaps': [speeds, {'code': 'direction', 'known': ['ED'], 'unknown': []}]}
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='the fold again')
+    c.js(f"document.querySelector('{L}').open = true")
+    c.until(dir_line, W['all'], timeout=10000, what='known everywhere: « vérifié sur toute la route »')
+    st['extra'] = {'gaps': [speeds, {'code': 'direction', 'known': [], 'unknown': ['LS']}]}
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='the fold again')
+    c.js(f"document.querySelector('{L}').open = true")
+    c.until(dir_line, W['none'], timeout=10000, what='known nowhere: the « Inconnu » part alone')
+    c.shot(f'F329_{c.design}_390_{c.lang}.png')
