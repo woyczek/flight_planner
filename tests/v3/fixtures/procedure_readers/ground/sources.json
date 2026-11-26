@@ -4,6 +4,14 @@
     "reference": "Page inventée, sur le modèle de l'eAIP du Royaume-Uni, AD 2.8, aires de trafic, voies de circulation et emplacements de contrôle (texte de la page, balisage sémantique de l'eAIP). Aucune valeur n'est réelle."
   },
   {
+    "fixture": "EGYA-parking-native.txt",
+    "reference": "Page inventée, sur le modèle de la carte de stationnement des aéronefs de l'AIP du Royaume-Uni (texte natif de la page, tableau des coordonnées des postes et des points d'attente). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EGYB-parking-native.txt",
+    "reference": "Page inventée, sur le modèle de la carte de mouvements au sol et de stationnement d'un terminal de l'AIP du Royaume-Uni (texte natif de la page, tableau des coordonnées des postes). Aucune valeur n'est réelle."
+  },
+  {
     "fixture": "EIZA-AD2-8.html.txt",
     "reference": "Page inventée, sur le modèle de l'eAIP d'Irlande, AD 2.8, voies de circulation en tableau à quatre colonnes (type Dublin). Aucune valeur n'est réelle."
   },

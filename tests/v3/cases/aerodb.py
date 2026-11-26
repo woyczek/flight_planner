@@ -23632,8 +23632,8 @@ def k618(c):
     _reader_modules()
     from aip_ground_names import read
     doc = read(_reader_fixture('ground/EGYA-AD2-8.html.txt'), 'EGYA')
-    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'apron'], ['PICUG APRON', 'DELTA APRON', 'EAST APRON', 'MAIN APRON', 'NORTH APRON', 'SOUTH APRON'], 'native TAPRON names are kept as printed', what='Luton aprons')
-    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'twy'], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'K'], 'native TTWY names are not width/surface/strength cells', what='Luton taxiways')
+    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'apron'], ['PICUG APRON', 'DELTA APRON', 'EAST APRON', 'MAIN APRON', 'NORTH APRON', 'SOUTH APRON'], 'native TAPRON names are kept as printed', what='UK-style aprons')
+    c.eq([f['name'] for f in doc['items'] if f['kind'] == 'twy'], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'K'], 'native TTWY names are not width/surface/strength cells', what='UK-style taxiways')
     c.ok(all(f['position'] is None and f['geometry'] is None for f in doc['items']), str(doc), 'names alone are never placed on the map')
     c.eq(next(f['native_id'] for f in doc['items'] if f['kind'] == 'twy' and f['name'] == 'A'), 'TTWY;TXT_DESIG;179', 'the source native identity stays attached', what='native source id')
 
@@ -23681,3 +23681,68 @@ def k620(c):
         try: build(root, root/'output')
         except ValueError: refused = True
         c.eq(refused, True, 'new bytes cannot retain an old provenance hash', what='source integrity')
+@case('K627', 'Printed stand and hold coordinates (UK style) place actual published ground points without map calibration', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented parking chart on the model of a UK aerodrome parking chart: 62 stand rows, 4 explicit Hold F1-F4 rows; independent DMS arithmetic for stand1/HoldF1, never the ARP or label-centre position')
+def k627(c):
+    _reader_modules()
+    from ground_positions import parse
+    doc=parse(_reader_fixture('ground/EGYA-parking-native.txt'),'EGYA','AIRCRAFT PARKING/DOCKING CHART - ICAO')
+    c.eq((sum(i['kind']=='park' for i in doc['items']),sum(i['kind']=='hold' for i in doc['items'])),(62,4),'numbered stand rows and explicitly named holding rows retain different roles',what='published rows')
+    one=next(i for i in doc['items'] if i['name']=='1' and i['kind']=='park')
+    f1=next(i for i in doc['items'] if i['name']=='F1' and i['kind']=='hold')
+    c.eq(one['point'],[round(-(2+40/60+41.91/3600),8),round(51+52/60+42.66/3600,8)],'stand1 has its own printed coordinates',what='stand1')
+    c.eq(f1['point'],[round(-(2+40/60+6.98/3600),8),round(51+52/60+37.18/3600,8)],'HoldF1 is not an assumed taxiway point',what='HoldF1')
+    c.ok(all(i['coordinate_role']=='explicit-published-coordinate' for i in doc['items']),str(doc),'published coordinates are distinct from chart-label anchors')
+
+
+@case('K628', 'Terminal parking coordinates (UK style) retain stand suffix identities and source positions', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Invented terminal parking chart on the model of a UK terminal chart; 545, 545L, 545R remain separate, 81 native rows and independent DMS for 545L')
+def k628(c):
+    _reader_modules()
+    from ground_positions import parse
+    doc=parse(_reader_fixture('ground/EGYB-parking-native.txt'),'EGYB','AIRCRAFT GROUND MOVEMENT/PARKING/DOCKING - TERMINAL 5 CHART - ICAO')
+    c.eq(len(doc['items']),81,'all native terminal stand-coordinate rows are retained',what='Terminal5 rows')
+    points={i['name']:i for i in doc['items']}
+    c.ok({'545','545L','545R'}<=set(points),str(points.keys()),'suffix stands do not overwrite the centre stand')
+    c.eq(points['545L']['point'],[round(-(2+46/60+48.92/3600),8),round(51+28/60+16.15/3600,8)],'545L position follows printed DMS rather than nearby 545R',what='545L')
+
+
+@case('K629', 'Printed ground coordinates require an owned surface chart, valid DMS, table role and unambiguous identity', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic source counterexamples: no stand header, wrong airport/title, COM terminator, bad minute/second, out-of-country position and conflicting duplicate name')
+def k629(c):
+    _reader_modules()
+    from ground_positions import parse
+    title='AIRCRAFT PARKING/DOCKING CHART - ICAO'
+    row='1 515242.66N 0024041.91W'
+    for text,icao,heading in [('EGYA\n'+row,'EGYA',title),('EGYB\nSTAND COORDINATES\n'+row,'EGYA',title),('EGYA\nSTAND COORDINATES\n'+row,'EGYA','ILS APPROACH CHART'),('EGYA\nSTAND COORDINATES\nCOM\n'+row,'EGYA',title)]:
+        c.eq(parse(text,icao,heading)['items'],[],'no unrelated text is promoted to a stand-coordinate table',what='scope refusal')
+    for value in ('516242.66N 0024041.91W','515260.66N 0024041.91W','315242.66N 0024041.91W'):
+        c.eq(parse('EGYA\nSTAND COORDINATES\n1 '+value,'EGYA',title)['items'],[],'invalid DMS or country bounds cannot create a mapped point',what='coordinate refusal')
+    duplicate=parse('EGYA\nSTAND COORDINATES\n'+row+'\n1 515243.66N 0024041.91W','EGYA',title)
+    c.eq((duplicate['items'],duplicate['conflicts']),([],[['park','1']]),'two positions for one identity remain a conflict',what='duplicate')
+
+
+@case('K630', 'Printed-coordinate source builds preserve source/page/hash and refuse changed cached inputs', 'K', static=True,
+      tags=('procedure-readers', 'aip-ground'), rule='Synthetic PDF/catalogue seam and literal published-coordinate row; candidate ground schema, native cache resumption, no live data or network')
+def k630(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import ground_positions as P
+    from proc_replay import sha,write
+    with tempfile.TemporaryDirectory() as folder:
+        root=Path(folder);(root/'work').mkdir()
+        chart=root/'chart.pdf';chart.write_bytes(b'%PDF-coordinate seam')
+        write(root/'inputs-manifest.json',{'files':{'chart.pdf':{'sha256':sha(chart)}}})
+        write(root/'work/vfr-ground-catalogue.json',{'charts':[{'icao':'EGYA','country':'UK','title':'AIRCRAFT PARKING CHART','file':'chart.pdf','cycle':'2026-10-29','stored':True,'families':['parking']}]})
+        payload={'pages':['EGYA\nSTAND COORDINATES\n1 515242.66N 0024041.91W'],'truncated':False}
+        with patch.object(P,'limited',return_value=payload):r=P.build(root,root/'output',workers=1)
+        doc=json.loads(next((root/'output/candidates/EGYA').glob('*.json')).read_text())
+        c.eq((r['charts'][0]['counts'],doc['items'][0]['page'],doc['source']['sha256'],doc['installed']),({'park':1},1,sha(chart),False),'actual source/page/bytes remain attached without installation',what='candidate provenance')
+        with patch.object(P,'limited',side_effect=AssertionError('unexpected PDF reread')) as reader:
+            P.build(root,root/'output',workers=1)
+        c.eq(reader.call_count,0,'unchanged sources reuse only the native extraction cache',what='cache')
+        chart.write_bytes(b'%PDF-new bytes')
+        c.eq(P.build(root,root/'output',workers=1)['charts'][0]['state'],'failed','a new source cannot inherit old coordinate results',what='changed source')

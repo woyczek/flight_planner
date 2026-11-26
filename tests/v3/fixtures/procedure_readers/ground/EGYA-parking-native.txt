@@ -1,0 +1,559 @@
+N
+
+Zapelu Xoli
+
+of Change 0.17°E
+
+VAR 1.2°E - 2027
+
+HS1
+
+HS2
+
+Hot Tedaf
+
+HS1
+
+Susesexa dexi and mofukuxe
+
+gimefix.
+
+HS2
+
+Mofukuxe gimefix.
+
+101 102 103
+
+Twy K
+
+21 22
+
+21L 21R
+
+23L 23R 20 21 22
+
+21L 21R
+
+23L 23R
+
+Twy B
+
+Twy H
+
+Twy B
+
+Twy A Twy A
+
+Twy F
+
+Twy K
+
+Twy D
+
+Twy D
+
+58
+
+56
+
+7
+
+1R
+
+16
+
+17
+
+19 18
+
+4
+
+3
+
+5
+
+15 14L
+
+15L 6
+
+2
+
+1
+
+Becusik
+
+7 & 8
+
+43
+
+Rebedax
+
+Tecad
+
+Main
+
+Apron
+
+Foren Apron
+
+Vapob Apron Vapob Apron
+
+Stand 71 Deri Stand 71 Deri
+
+Stand 62 Deri Stand 62 Are
+
+Taliva run-up bay
+
+47 46 49
+
+90
+
+101 102 103
+
+91
+
+9
+
+91
+
+2
+
+9
+
+92
+
+39
+
+Vazo Apron
+
+44 44
+
+Moxekob
+
+Hangar
+
+201
+
+Moxekob
+
+Hangar
+
+201
+
+Hangar
+
+129
+
+Hangar
+
+Hangar
+
+219
+
+Hangar
+
+Hangar
+
+202
+
+Hangar
+
+Foren
+
+Laciba
+
+200
+
+Foren
+
+Laciba
+
+200
+
+Hangar
+
+89
+
+Car
+
+Park
+
+Car
+
+Park
+
+31 30
+
+45
+
+Hangar
+
+60
+
+48
+
+13R
+
+12R
+
+11R
+
+10R
+
+13L
+
+11L
+
+Hangar
+
+61
+
+L L
+
+8
+
+9
+
+9L 60 61
+
+Hangar
+
+127
+
+Cumataxer S gi tufulu
+
+ZUB
+
+Cumataxer
+
+Hangar
+
+9
+
+Hangar
+
+Koko
+
+Station
+
+Terminal
+
+Volavemin
+
+R
+
+R
+
+Gizuz Apron
+
+79
+
+78
+
+77
+
+76
+
+75
+
+74
+
+73
+
+72
+
+80
+
+81
+
+Twy E
+
+Twy
+
+E Twy
+
+Twy C
+
+Stand
+
+54
+
+Deri
+
+Stand
+
+54
+
+Deri
+
+Zegapodubo
+
+Hangar 1 25
+
+Zegapodubo
+
+Hangar 125
+
+Canof A nilo Canof Apron
+
+wT y B
+
+TP-Z
+
+TP-X TP-V
+
+TP-Y
+
+TP-W TP-E
+
+Turn-lolu from 07/25 Runway xaka
+
+Taxiway Lozisin are turikuvezu
+
+kemeni guce bacedutapu by ATC.
+
+D1
+
+F1
+
+E1
+
+E2
+
+J1
+
+C2
+
+A6W
+
+A6
+
+A6E
+
+D2
+
+F2
+
+F4
+
+F3
+
+F5
+
+K1
+
+D4
+
+D3
+
+A7
+
+A8
+
+B7
+
+B6
+
+B5 B4 B3
+
+B2
+
+B8
+
+E3
+
+A4 A5
+
+C1 H1 B1
+
+A3
+
+A2
+
+G1
+
+50 50 0 100 150 m
+
+500 ft 0 100
+
+STAND COORDINATES
+
+ 1 515242.66N 0024041.91W
+
+ 1R 515242.05N 0024039.81W
+
+ 2 515243.26N 0024043.55W
+
+ 3 515244.15N 0024044.43W
+
+ 4 515245.28N 0024044.49W
+
+ 5 515246.26N 0024043.90W
+
+ 6 515247.42N 0024042.67W
+
+ 7 515248.53N 0024041.28W
+
+ 8 515249.70N 0024039.81W
+
+ 9 515250.78N 0024038.38W
+
+ 9L 515251.55N 0024037.12W
+
+ 10R 515254.38N 0024042.94W
+
+ 11L 515252.17N 0024045.74W
+
+ 11R 515253.27N 0024044.34W
+
+ 12R 515251.03N 0024047.18W
+
+ 13L 515248.83N 0024049.98W
+
+ 13R 515249.93N 0024048.58W
+
+ 14L 515247.72N 0024051.37W
+
+ 15 515246.78N 0024052.49W
+
+ 15L 515246.62N 0024052.77W
+
+ 16 515238.95N 0024047.43W
+
+ 17 515237.71N 0024046.19W
+
+ 18 515237.54N 0024043.08W
+
+ 19 515237.37N 0024041.31W
+
+ 20 515235.72N 0024024.51W
+
+ 21 515236.25N 0024022.15W
+
+ 21L 515235.66N 0024022.67W
+
+ 21R 515236.34N 0024020.67W
+
+ 22 515236.86N 0024018.60W
+
+ 23L 515237.08N 0024016.39W
+
+ 23R 515237.56N 0024014.30W
+
+ 30 515303.47N 0024026.31W
+
+ 31 515303.85N 0024021.68W
+
+COM
+
+ATIS 120.580 VENOX INFO
+
+TWR 132.555 VENOX TECAD
+
+ 121.755 (GMC) VENOX GROUND
+
+ 121.885 VENOX DUDIBAMA
+
+ 121.605 VENOX KOKO
+
+RUNWAY/TAXIWAY/APRON KETEMIRU MUNISAKADOMUMOD
+
+RWY / TWY / APRON SURFACE LOF
+
+Main Apron Bipafez (see AD 2.8) -
+
+Canof, Vazo & Gizuz Apron Zesumizo -
+
+Vapob Apron Zesumizo -
+
+Foren Apron Zesumizo/Kupufil -
+
+RWY
+
+TWY (All) See AD 2-EGYA-2-1
+
+STAND COORDINATES
+
+ 43L 515250.77N 0024028.17W
+
+ 44L 515250.91N 0024025.91W
+
+ 44R 515251.63N 0024023.95W
+
+ 45R 515251.77N 0024021.68W
+
+ 46 515245.66N 0024025.46W
+
+ 47 515246.08N 0024023.35W
+
+ 48 515246.51N 0024021.25W
+
+ 49 515246.94N 0024019.14W
+
+ 56 515243.18N 0024056.08W
+
+ 58 515247.21N 0024058.82W
+
+ 60 515252.72N 0024033.73W
+
+ 61 515253.29N 0024032.35W
+
+ 72 515254.10N 0024022.81W
+
+ 73 515253.40N 0024025.23W
+
+ 74 515253.67N 0024024.92W
+
+ 75 515253.25N 0024027.03W
+
+ 76 515252.81N 0024029.14W
+
+ 77 515258.38N 0024025.22W
+
+ 78 515257.95N 0024027.33W
+
+ 79 515257.65N 0024028.97W
+
+ 80 515257.00N 0024032.94W
+
+ 81 515255.44N 0024040.20W
+
+ 90 515238.60N 0024015.69W
+
+ 91 515239.89N 0024016.44W
+
+ 92 515241.21N 0024017.07W
+
+ 93 515242.39N 0024017.61W
+
+ 101 515239.33N 0024001.96W
+
+ 102 515239.63N 0023959.79W
+
+ 103 515240.06N 0023957.68W
+
+Hold F1 515237.18N 0024006.98W
+
+Hold F2 515239.56N 0024008.25W
+
+Hold F3 515243.57N 0024010.38W
+
+Hold F4 515246.02N 0024011.68W
+
+AERO INFO DATE 11 AUG 26 AD 2-EGYA-2-2
+
+EGYA
+
+POZABI VENOX AIRCRAFT PARKING/DOCKING
+
+CHART - ICAO
+
+AD ELEV 527FT ARP 515229N 0024006W
+
+CHANGE (11/26): STANDS 101-103 COORDS.
+
+Tug Licokig Point
+
+with a/c fibe fububocomam.
+
+ZER
