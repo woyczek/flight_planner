@@ -12,7 +12,7 @@
    timeline.events (plus des clés facultatives que la V2 ignore) et phases. Mission et lieux inventés. Scènes : ?s=a (le déroulé, un
    événement choisi), b (l'événement « RDV + 10 min », repère = un autre événement), c (un tiroir choisi), d (ajouter : « ＋ Événement »
    et « ＋ Tiroir »), e (côté pilote : les constats d'événements, sans outil de coordination). Le décor (en-tête, colonne) est imité : le
-   BLOC du déroulé et ses fiches font contrat. */
+   BLOC du déroulé et ses fiches font contrat. Retouches de l'ergonome du 26/11 : voir l'en-tête du script. */
 :root {
   --sog-fg: #1b1f24;
   --sog-muted: #59636e;
@@ -322,78 +322,125 @@ h1 {
 .phone .row {
   grid-template-columns: 62px minmax(0, 1fr)
 }
+.row.under {
+  padding-left: 40px;
+  box-shadow: inset 3px 0 0 var(--dw);
+  background: #fbf9fe
+}
+.chip.mine {
+  background: var(--sog-accent);
+  border-color: var(--sog-accent);
+  color: var(--sog-accent-fg)
+}
+.chip.other {
+  background: transparent
+}
+.phead {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sog-border)
+}
+details.more>summary {
+  cursor: pointer;
+  padding: 6px 0
+}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-// Mission inventée : X-980A « Exercice coordonné Blue / Red ». Aucun lieu ni nom réel.
+// Mission inventée : X-980A « Exercice coordonné Blue / Red ». Aucun lieu ni nom réel. Retouches de l'ergonome (26/11) : la liste triée par
+// l'heure (l'heure prévue d'un événement, l'heure de repli d'un tiroir ; les tiroirs gardent leur ordre entre eux) ; un événement dont le
+// repère est un tiroir est caché AVEC lui, rangé sous lui en retrait ; l'heure imposée ne se décale pas ; en vol, des heures d'horloge dès que
+// le repère est connu ; « Prévu » dans le bloc du pilote, entre « Maintenant » et « Avant » ; le brief est commun, l'équipe du pilote marquée.
 const P = new URLSearchParams(location.search),
   S = P.get('s') || 'a',
   phone = innerWidth < 760;
 document.body.classList.toggle('phone', phone);
 const esc = s => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
 
-// le déroulé, dans l'ordre prévu : événements (prévus au brief) et tiroirs (cachés jusqu'à leur clé)
+// les lignes ; `min` : l'heure prévue (événement) ou de repli (tiroir), en minutes après le décollage prévu, la clé du tri ; `under` : un
+// événement dont le repère est ce tiroir (caché avec lui, rangé sous lui)
 const ROWS = [{
-  id: 'EV-1',
-  k: 'ev',
-  when: 'H+45',
-  tol: '± 10 min',
-  title: 'Rendez-vous au point ROMEO',
-  sub: 'ROMEO · 2 500 ft · « Blue : orbite gauche ; Red : orbite droite »',
-  teams: ['Blue', 'Red']
-}, {
-  id: 'EV-2',
-  k: 'ev',
-  when: 'RDV + 10',
-  tol: '± 2 min',
-  title: 'Blue : silence radio',
-  sub: 'aucun lieu · jusqu\'au largage',
-  teams: ['Blue']
-}, {
-  id: 'EV-3',
-  k: 'ev',
-  when: 'RDV + 12',
-  tol: 'imposée',
-  title: 'Red : largage sur la zone SIERRA',
-  sub: 'SIERRA · heure imposée',
-  teams: ['Red']
-}, {
   id: 'T1',
   k: 'dw',
+  min: 90,
   when: 'clé',
   tol: 'repli H+90',
   title: 'Tiroir 1 · Cible affinée',
   sub: 'clé : passage de la zone SIERRA · caché jusque-là',
   teams: ['Blue', 'Red']
 }, {
+  id: 'EV-3',
+  k: 'ev',
+  min: 57,
+  when: 'RDV + 12',
+  tol: 'imposée',
+  title: 'Red : largage sur la zone SIERRA',
+  sub: 'SIERRA · heure imposée',
+  teams: ['Red']
+}, {
+  id: 'EV-1',
+  k: 'ev',
+  min: 45,
+  when: 'H+45',
+  tol: '± 10 min',
+  title: 'Rendez-vous au point ROMEO',
+  sub: 'ROMEO · 2 500 ft · « Blue : orbite gauche ; Red : orbite droite »',
+  teams: ['Blue', 'Red']
+}, {
   id: 'T2',
   k: 'dw',
+  min: 120,
   when: 'clé',
   tol: 'repli H+120',
   title: 'Tiroir 2 · Changement de zone',
   sub: 'clé : objet trouvé (canot) · caché jusque-là',
   teams: ['Blue']
 }, {
+  id: 'EV-2',
+  k: 'ev',
+  min: 55,
+  when: 'RDV + 10',
+  tol: '± 2 min',
+  title: 'Blue : silence radio',
+  sub: 'aucun lieu · jusqu\'au largage',
+  teams: ['Blue']
+}, {
+  id: 'EV-5',
+  k: 'ev',
+  min: 100,
+  when: 'H+100',
+  tol: '± 10 min',
+  title: 'Red : retour à XTSU',
+  sub: 'XTSU',
+  teams: ['Red']
+}, {
   id: 'EV-4',
   k: 'ev',
+  under: 'T2',
   when: 'T2 + 20',
   tol: '± 5 min',
   title: 'Retour groupé à la base',
-  sub: 'XTST · après le tiroir 2',
+  sub: 'XTST · caché avec le tiroir 2 : le pilote le voit une fois le tiroir lu',
   teams: ['Blue', 'Red']
 }];
 const sel = S === 'b' ? 'EV-2' : S === 'c' ? 'T1' : 'EV-1';
 
+/** L'ordre du déroulé : TRIÉ PAR L'HEURE (prévue pour un événement, de repli pour un tiroir) ; les tiroirs gardent entre eux leur ordre ; un
+ *  événement « sous » un tiroir vient juste après lui. */
+function ordered() {
+  const top = ROWS.filter(r => !r.under).sort((a, b) => a.min - b.min);
+  return top.flatMap(r => [r, ...ROWS.filter(x => x.under === r.id)]);
+}
+
 /** Une ligne du déroulé : l'heure (repère et décalage, puis tolérance) ; la sorte ; le propos, le lieu, les équipes. */
-const row = r => `<div class="row ${r.k}"${r.id === sel ? ' aria-current="true"' : ''}><div class="when"><b>${esc(r.when)}</b><span class="muted">${esc(r.tol)}</span></div>
+const row = r => `<div class="row ${r.k}${r.under ? ' under' : ''}"${r.id === sel ? ' aria-current="true"' : ''}><div class="when"><b>${esc(r.when)}</b><span class="muted">${esc(r.tol)}</span></div>
   <div class="what"><span class="kind ${r.k}">${r.k === 'ev' ? 'Événement' : 'Tiroir'}</span><b>${esc(r.title)}</b><div class="sub">${esc(r.sub)}</div>
   <div>${r.teams.map(t => `<span class="chip">${t}</span>`).join('')}</div></div></div>`;
 
-/** Le bloc du déroulé : un titre, la ligne qui dit les deux sortes, les lignes, l'ajout. */
-const list = () => `<div class="card"><h2>Déroulé</h2><p class="def">Un événement est prévu au brief et se constate sur son lieu ; un tiroir reste caché jusqu'à ce que sa clé joue.</p>
-  ${ROWS.map(row).join('')}
+/** Le bloc du déroulé : un titre, la ligne qui dit les deux sortes, les lignes triées, l'ajout. */
+const list = () => `<div class="card"><h2>Déroulé</h2><p class="def">Un événement est prévu au brief et se constate sur son lieu ; un tiroir reste caché jusqu'à ce que sa clé joue. Rangés par heure : l'heure prévue, ou l'heure de repli d'un tiroir.</p>
+  ${ordered().map(row).join('')}
   <div class="adds"><button>＋ Événement</button><button>＋ Tiroir</button></div>
   ${S === 'd' ? `<div class="menu"><button><b>＋ Événement</b><small>prévu au brief : une heure par rapport à un repère, une tolérance</small></button><button><b>＋ Tiroir</b><small>caché jusqu'à ce que sa clé joue ; reçu en enveloppe</small></button></div>` : ''}</div>`;
 
@@ -403,13 +450,13 @@ function eventSheet(r) {
   return `<div class="card sheet"><span class="kind ev">Événement</span><h3>${esc(r.title)}</h3><p class="muted" style="margin:0">prévu au brief · se constate, sans geste</p>
   <label class="field"><span>Titre</span><input value="${esc(r.title)}"></label>
   <label class="field"><span>Consigne</span><input value="${rdv ? 'Silence radio jusqu\'au largage' : 'Blue : orbite gauche ; Red : orbite droite'}"></label>
-  <div class="field"><span>Heure prévue</span><div class="inline"><select><option${rdv ? '' : ' selected'}>le décollage</option><option>la réception de l'ordre</option><option>le passage à un point</option><option${rdv ? ' selected' : ''}>un autre événement</option></select>
-  ${rdv ? '<select><option selected>EV-1 · Rendez-vous au point ROMEO</option></select>' : ''}<span>+</span><input value="${rdv ? '10' : '45'}"><span>min</span></div></div>
+  <div class="field"><span>Heure prévue</span><div class="inline"><select><option${rdv ? '' : ' selected'}>le décollage</option><option>la réception de l'ordre</option><option>le passage à un point</option><option${rdv ? ' selected' : ''}>un autre événement</option><option>un tiroir (caché avec lui)</option></select>
+  ${rdv ? '<select><option selected>Rendez-vous au point ROMEO</option></select>' : ''}<span>+</span><input value="${rdv ? '10' : '45'}"><span>min</span></div></div>
   <div class="field"><span>Tolérance</span><div class="inline"><span>avance</span><input value="${rdv ? '2' : '10'}"><span>retard</span><input value="${rdv ? '2' : '10'}"><span>min</span></div></div>
-  <label class="check"><input type="checkbox"><span>Heure imposée (l'avance ne se rattrape pas en attendant)</span></label>
+  <label class="check"><input type="checkbox"><span>Heure imposée : elle ne se décale pas, même si son repère est tenu en retard.</span></label>
   <label class="field"><span>Lieu (facultatif)</span><select><option${rdv ? ' selected' : ''}>aucun lieu</option><option${rdv ? '' : ' selected'}>ROMEO · rendez-vous</option></select></label>
   <div class="field teams"><span>Équipes concernées</span><div>${['Blue', 'Red'].map(t => `<span class="chip"${r.teams.includes(t) ? ' style="border-color:var(--ev);background:var(--ev-bg)"' : ''}>${t}</span>`).join('')}</div></div>
-  <p class="read">Le pilote lira : « ${rdv ? '10 min après le rendez-vous (± 2 min)' : 'H+45 (± 10 min)'} · ${esc(r.title)} ». Son heure suit l'heure RÉELLE de son repère dès qu'elle est constatée${rdv ? ' (le rendez-vous tenu à 14:52Z → 15:02Z)' : ''}.</p></div>`;
+  <p class="read">Le pilote lira : « ${rdv ? '10 min après le rendez-vous (± 2 min)' : 'H+45 (± 10 min)'} · ${esc(r.title)} ». En vol, une heure d'horloge dès que son repère est constaté${rdv ? ' : le rendez-vous tenu à 14:52Z, il lira 15:02Z' : ''}.</p></div>`;
 }
 
 /** La fiche d'un TIROIR : inchangée dans son principe (clé, heure de repli, message, briefing, suite de route), avec les communs. */
@@ -421,12 +468,20 @@ const drawerSheet = r => `<div class="card sheet"><span class="kind dw">Tiroir</
   <div class="field teams"><span>Équipes concernées</span><div><span class="chip" style="border-color:var(--dw);background:var(--dw-bg)">Blue</span><span class="chip" style="border-color:var(--dw);background:var(--dw-bg)">Red</span></div></div>
   <p class="read dw">Les tiroirs s'attendent dans l'ordre ; à l'heure de repli, le tiroir s'ouvre même si sa clé n'a pas joué.</p></div>`;
 
-/** (e) côté pilote : les constats, des mots seulement (le pilote a la radio ; la coordination a l'écran du CPCO) */
-const pilot = () => `<div class="card pilot"><section><p class="kick">Prévu</p>
-  <div class="ev-line"><b>H+45</b><div>Rendez-vous au point ROMEO<div class="state ok">tenu à 14:52Z, 7 min de retard (dans la tolérance)</div></div></div>
-  <div class="ev-line"><b>15:02Z</b><div>Blue : silence radio<div class="state muted">dans 3 min · 10 min après le rendez-vous</div></div></div>
-  <div class="ev-line"><b>15:04Z</b><div>Red : largage sur la zone SIERRA · heure imposée<div class="state late">sur site dans 6 min : en retard de 2 min</div></div></div>
-  </section><section><p class="kick">Ce que vous pouvez faire</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button>Objet en vue</button><button>Demander la suite</button></div></section></div>`;
+/** (e) côté pilote, équipe Blue, décollage réel 14:00Z, il est 14:55Z : le bloc « Suite de la mission » avec « Prévu » entre « Maintenant » et
+ *  « Avant » ; des heures d'horloge ; le dernier événement constaté et les deux suivants, le reste replié ; le brief commun, l'équipe du pilote
+ *  en puce pleine ; l'heure imposée du largage ne glisse pas (14:57Z, celle du plan) ; un événement passé et constaté rejoint « Avant ». */
+const team = t => `<span class="chip ${t === 'Blue' ? 'mine' : 'other'}">${t}</span>`;
+const pilot = () =>
+  `<div class="card pilot"><header class="phead"><b>Suite de la mission</b><div class="muted" style="font-size:14px">En vol depuis 14:00Z · Position : X-Plane, reçue il y a 3 s</div></header>
+  <section><p class="kick">Maintenant</p><b>Ordre de mission</b><div class="muted" style="font-size:14px">lu à 13:52Z</div><p style="margin:6px 0 0">Rejoignez Red au point ROMEO, puis couvrez son largage sur SIERRA.</p></section>
+  <section><p class="kick">Ce que vous pouvez faire</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button>Objet en vue</button><button>Demander la suite</button></div></section>
+  <section><p class="kick">Prévu</p>
+  <div class="ev-line"><b>14:45Z</b><div>Rendez-vous au point ROMEO ${team('Blue')}${team('Red')}<div class="state ok">tenu à 14:52Z, 7 min de retard (dans la tolérance)</div></div></div>
+  <div class="ev-line"><b>14:57Z</b><div>Red : largage sur la zone SIERRA · heure imposée ${team('Red')}<div class="state late">Red sur site dans 6 min : en retard de 4 min</div></div></div>
+  <div class="ev-line"><b>15:02Z</b><div>Blue : silence radio ${team('Blue')}<div class="state muted">dans 7 min · 10 min après le rendez-vous tenu</div></div></div>
+  <details class="more"><summary class="muted">1 autre</summary><div class="ev-line"><b>15:40Z</b><div>Red : retour à XTSU ${team('Red')}</div></div></details></section>
+  </div>`; // « Avant » viendra sous « Prévu » dès qu'un message aura été lu (ici, l'ordre de mission est encore sous « Maintenant »)
 
 let body;
 if (S === 'e') body = `<div class="crumbs">Missions › Mes missions</div><h1>X-980A · Exercice coordonné Blue / Red</h1>${pilot()}`;
