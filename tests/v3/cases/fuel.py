@@ -11538,3 +11538,25 @@ def f324(c):
             what='the list of points unfolded, the group rows shown')
     c.js(f"document.querySelector('{FUEL} [data-pts] > .fu-ptgrp').scrollIntoView({{block: 'center'}})")
     c.shot(f'F324_{c.design}_{c.width}.png')
+
+
+@case('F326', 'Procedures: trying one SID after another leaves only the exit of the SID chosen last in the route — never the exits of the '
+      'SIDs tried before it', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='SOG-0655 (the user, 25 Nov: « chaque SID choisie laisse trainer le dernier point de la SID dans le FPL. au final, on a tous les '
+      'points de toutes les SID par lesquelles on a fait un test. »): RT.withProcedures removed the name of the SID tried before, not the exit '
+      'the suite had written for it; invented aerodrome procedures (three SIDs of LFRS, each with its own exit)')
+def f326(c):
+    from fixtures.procedures import PROC_CYCLE, file, pt, rec
+    sids = [rec('LFRS', 'SID', f'ZAB{i}{x}', [], [pt(1, f'Z{x}101', 47.0, -1.5 + i / 10), pt(2, f'Z{x}EXT', 46.8, -1.3 + i / 10)])
+            for i, x in ((1, 'A'), (2, 'B'), (3, 'C'))]
+    docs = [d for d in proc_docs() if d[0] != f'proc/{PROC_CYCLE}/LFRS.json'] + [[f'proc/{PROC_CYCLE}/LFRS.json', file('LFRS', sids), 'reference']]
+    c.open('fuel', docs=docs + proc_flight(None), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'dep')
+    words = lambda d: [w.split('/')[0] for w in (((d or {}).get('route') or {}).get('text') or '').split()]
+    for x in ('A', 'B', 'C'):
+        pick_proc(c, 'p-dep-sid', f'LFRS.SID.ZAB{"ABC".index(x) + 1}{x}.RWALL.NONE')
+        d = cf_doc(c, lambda d: f'Z{x}EXT' in words(d), f'the exit Z{x}EXT of the SID ZAB…{x} is written after it')
+    got = [w for w in words(d) if w.endswith('EXT')]
+    c.eq(got, ['ZCEXT'], 'three SIDs tried in a row: only the exit of the last one stays (red before: ZAEXT, ZBEXT too)', what='exits')
+    c.ok('ZAB3C' in words(d) and not any(w in words(d) for w in ('ZAB1A', 'ZAB2B')), words(d), 'and only its name')
