@@ -17384,8 +17384,11 @@ def n290(c):
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
-    tl = t[t.find('timeline'):][:300]
-    c.ok('at: H+30mn' in tl and 'id: EV-' not in t and 'offset_min' not in t and 'ref:' not in t, tl, 'the V2 event kept as written, nothing added')
+    # the block `timeline:` alone, up to the next key of the top level (the maps of the file carry `centre_ref:`, which is not an event's `ref:`)
+    m = re.search(r'^timeline:\n(?:[ -].*\n?)*', t.replace('\r\n', '\n'), re.M)
+    tl = m.group(0) if m else ''
+    c.eq([tl, 'id: EV-' in t, 'offset_min' in t], ['timeline:\n  events:\n    - at: H+30mn\n      place: PT1\n      text: Un message inventé arrive.\n', False, False],
+         'the V2 event kept as written, nothing added: the block `timeline` byte for byte, no identifier and no offset anywhere in the file', what='the saved file')
     c.js(_REG_CLEAR)
 
 
