@@ -108,7 +108,8 @@ function labelOf(fam, rec, finals) {
     kind: 'name',
     name: fam === 'appTrans' ? PR.transitionLabelOf(rec) : fam === 'app' && finals ? PR.labelOf(rec, finals) : PR.nameOf(rec, rec.id) ||
       rec.id,
-    src: rec.status === 'xplane' || rec.local ? 'x' : rec.status === 'lnm' ? 'lnm' : ''
+    // « lnm » d'abord : une fiche Little Navmap est aussi `local` (SOG-0654, comme srcLabel de procedures.js)
+    src: rec.status === 'lnm' || rec.lnm === true ? 'lnm' : rec.status === 'xplane' || rec.local ? 'x' : ''
   };
 }
 /** Les pistes d'une fiche, en petites étiquettes ([] pour une fiche qui les dessert toutes, une piste, une transition) ; sans celle
