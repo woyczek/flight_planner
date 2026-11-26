@@ -572,8 +572,8 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
         say(message)
         raise SystemExit(message)
     extra = [name for name, d in wanted if 'CODING' not in d['kinds']]
-    if extra and len(extra) < len(wanted):      # IT1 : une table de codage ne remplace plus les cartes : ce que l'utilisateur télécharge a changé, l'écran le dit (avant : seules les tables de codage)
-        say(f"{icao}: {len(wanted)} documents à télécharger : les tables de codage ET {len(extra)} carte(s) (SID, STAR, approches) — une table de codage ne remplace plus les cartes")
+    if extra and len(extra) < len(wanted):      # IT1 : ce que l'utilisateur télécharge a changé (les cartes en plus des tables), l'écran le dit
+        say(f"{icao}: {len(wanted)} documents à télécharger : les tables de codage et {len(extra)} carte(s) (SID, STAR, approches).")
     for i, (name, d) in enumerate(wanted):
         step(f'{icao}: téléchargement de {name}', i, len(wanted), 'documents')
         try:
