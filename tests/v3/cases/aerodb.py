@@ -21290,3 +21290,42 @@ def k543(c):
             {'id': 'COM-0000000001', 'at': '2026-11-12T10:00:00Z', 'text': 'b' * 6000}, {'id': 'COM-0000000002', 'at': '2026-11-12T11:00:00Z', 'text': 'c' * 5000}]}}})
         d = run('detail', {'id': 'SIG-00000000e1'}, root)['item']
         c.eq((len(d['text']), [len(x['text']) for x in d['comments']]), (5000, [5000, 5000]), 'the text of 6000 signs and the comment of 6000 are cut at 5000; a comment of exactly 5000 is whole', what='cut at the reading')
+
+
+@case('K641', 'The journal of the last results of the launcher (last_results.json): jobs that END together do not lose the entry of each other (SOG-0525, the relay reading K404)', 'K', static=True,
+      rule='the relay, on the unstable red of K404: the journal is written by reading, adding, writing at the end of every job that is not a pure read, and two jobs that end together (a taking in the background and a read of PARALLEL that is not READ_ONLY) read the same file and wrote each its own copy: an entry lost, or the replacement refused on the same temporary file; the writing is now under a lock; red before: with eight writers at once one or two keys remain')
+def k641(c):
+    import json
+    import os
+    import tempfile
+    import threading
+    import time
+    RJ = _regen()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        jobs = RJ.Jobs(RJ.REGISTRY, {'data': data}, min_gap={})
+        real_dump = RJ.json.dump
+
+        def slow_dump(*a, **k):
+            time.sleep(0.05)      # widens the window between the reading and the writing of the journal
+            return real_dump(*a, **k)
+
+        class Fake:      # a finished job of a verb that is not a pure read
+            def __init__(self, n):
+                self.id = 'job%d' % n
+                self.released = False
+                self.data = {'set': 'x', 'verb': 'v%d' % n, 'args': {}, 'state': 'done', 'ended': 1000 + n, 'result': {'ok': True, 'message': 'm%d' % n}}
+        RJ.json.dump = slow_dump
+        try:
+            ts = [threading.Thread(target=jobs._remember, args=(Fake(n),)) for n in range(8)]
+            for t in ts:
+                t.start()
+            for t in ts:
+                t.join(30)
+        finally:
+            RJ.json.dump = real_dump
+        folder = os.path.join(data, 'local')
+        doc = json.load(open(os.path.join(folder, 'last_results.json'), encoding='utf-8'))
+        c.eq(sorted(doc), sorted('x/v%d' % n for n in range(8)), 'eight jobs that end together: the eight entries are in the journal', what='eight entries')
+        c.ok(not [f for f in os.listdir(folder) if f.endswith('.tmp')], os.listdir(folder), 'no temporary file left')

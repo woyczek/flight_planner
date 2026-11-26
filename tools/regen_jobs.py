@@ -289,6 +289,7 @@ class Jobs:
         self.ctx = ctx if ctx is not None else {}
         self.ctx['gap_started'] = self.gap_started      # SOG-0666 : un verbe (weather/world status) dit l'heure du dernier départ compté pour l'attente minimale
         self.lock = threading.Lock()
+        self.journal_lock = threading.Lock()  # le journal des derniers résultats (last_results.json) : deux travaux qui finissent ensemble ne l'écrivent pas en même temps (lecture, ajout, écriture : une entrée perdue sinon)
         self.cur = None
         self.side = None  # le travail de SIDE qui court à côté d'une lecture de fond (SOG-0206), ou le dernier : view(id) et cancel(id) le trouvent
         self.min_gap = dict(MIN_GAP if min_gap is None else min_gap)
@@ -501,6 +502,10 @@ class Jobs:
         return v if isinstance(v, (int, float, bool)) or v is None else str(v)[:60]
 
     def _remember(self, job):
+        with self.journal_lock:
+            self._remember_locked(job)
+
+    def _remember_locked(self, job):
         """SOG-0265 / journal persistant : le DERNIER résultat de pickup, fetch, build et update (et du synoptique monde), gardé dans data/local/last_results.json (jamais commité), pour que l'écran dise le fil de la dernière opération
         même après une autre opération ou un redémarrage. SOG-0525 : et de CHAQUE travail qui n'est pas une pure lecture, par verbe, en court ({ state, ended, ok, reason, message }) : la cause d'un échec ne se perd plus dès qu'un autre travail passe.
         Une action « status » (une lecture) ne remplace jamais le résultat d'une construction. Ne lève jamais : un journal qui ne s'écrit pas ne gêne pas le travail."""
