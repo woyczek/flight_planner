@@ -1,0 +1,32 @@
+{
+  "runways": [
+    {
+      "id": "25",
+      "lat": 47.991544,
+      "lon": 4.075689,
+      "elev": 399,
+      "true": 249.33,
+      "qfu": 248,
+      "length": 2404,
+      "width": 45,
+      "dthr": null,
+      "source": "eaip",
+      "cycle": "2026-11-26"
+    }
+  ],
+  "current_checklist_page_1based": 49,
+  "same_cycle_adc_page_1based": 755,
+  "iac_page_1based": 771,
+  "method": "Invented values: the expected positions are recomputed on this invented page by a spherical vector rotation along the DTHR axis (not by the code of the reader).",
+  "expected_positions": [
+    [
+      48.0390103,
+      4.264472
+    ],
+    [
+      48.0214663,
+      4.1945118
+    ]
+  ],
+  "expected_crossing_altitude_ft": 457
+}

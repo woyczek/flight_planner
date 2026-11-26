@@ -1,0 +1,44 @@
+{
+  "runways": [
+    {
+      "id": "25",
+      "lat": 47.763028,
+      "lon": -5.728725,
+      "elev": 137,
+      "true": 251.77,
+      "qfu": 252,
+      "length": 2403,
+      "width": 45,
+      "cycle": "2026-11-26",
+      "source": "eaip",
+      "dthr": {
+        "lat": 47.762542,
+        "lon": -5.730911,
+        "elev": 140
+      }
+    }
+  ],
+  "method": "Invented values: the expected positions are recomputed on this invented page by a spherical vector rotation along the DTHR axis (not by the code of the reader).",
+  "expected_positions": [
+    [
+      47.808361,
+      -5.523333
+    ],
+    [
+      47.762542,
+      -5.730911
+    ],
+    [
+      47.72875,
+      -5.882444
+    ]
+  ],
+  "expected_missed_trigger_dme_nm": 6.3,
+  "expected_maximum_ias_kt": 185,
+  "expected_crossing_altitude_ft": 197,
+  "expected_derived_if_position": [
+    47.8237962,
+    -5.4529378
+  ],
+  "expected_derived_if_method": "Invented values: the expected positions are recomputed on this invented page by a spherical vector rotation along the DTHR axis (not by the code of the reader)."
+}

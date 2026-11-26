@@ -1,0 +1,54 @@
+[
+  {
+    "fixture": "LFZH-geometry.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZH-levels-source.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC : fragments de texte positionnés et barres d'altitude du profil. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZH-positioned-fragments.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC : fragments de texte positionnés. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZH-positioned.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZH.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZI-DATA.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZI-geometry.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZI-levels-source.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC : fragments de texte positionnés et barres d'altitude du profil. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZI-positioned.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZI.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZJ-geometry.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZJ-levels-source.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC : fragments de texte positionnés et barres d'altitude du profil. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZJ.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  }
+]

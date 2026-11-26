@@ -21827,3 +21827,662 @@ def k667(c):
     reader = type('Reader', (), {'pages': [Page(font)]})()
     with patch.object(P, 'pdf_reader', return_value=reader), patch.object(P, 'rows_from_pdf', return_value=['legacy']), patch.object(N, 'supplement', side_effect=ValueError('unread')):
         c.eq(P._iac_pages_of('chart.pdf'), (1, [['legacy', '@@IAC_POSITION_UNREAD']]), 'the failure of the optional position reading does not discard the legacy rows', what='optional failure')
+def _reader_fixture(name):
+    return (ROOT / 'tests/v3/fixtures/procedure_readers' / name).read_text(encoding='utf-8')
+
+
+def _reader_modules():
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    return tuple(importlib.import_module(n) for n in ('proc_records', 'proc_layouts', 'proc_sia'))
+
+
+def _fr_iac_fixture(icao):
+    import importlib
+    _reader_modules()
+    reader = importlib.import_module('proc_fr_iac')
+    rows = _reader_fixture('fr/iac/' + icao + '.rows.txt').splitlines()
+    runway = '05' if icao == 'LFZJ' else '25'
+    file = f'AD_2_{icao}_IAC_RWY{runway}_ILS' + ('_Z_LOC_Z.pdf' if icao != 'LFZH' else '_ou_LOC.pdf')
+    return reader, rows, file
+
+
+def _lfrh_published_context():
+    import importlib
+    import json
+    F, rows, file = _fr_iac_fixture('LFZI')
+    S = importlib.import_module('proc_sia')
+    source = 'AD_2_LFZI_DATA_01.pdf'
+    data_rows = _reader_fixture('fr/iac/LFZI-DATA.rows.txt').splitlines()
+    profile = F.read_profile(rows, 'LFZI', file, '2026-11-26')
+    context = json.loads(_reader_fixture('fr/iac/LFZI-geometry.json'))
+    data = {'cycle': '2026-11-26', 'sole_final_chart': True, 'source_file': source,
+            'faf': S.parse_faf(data_rows)['25'], 'navigation_type': S.parse_faf_details(data_rows)['25']['kind'],
+            'matf': {**S.parse_matf(data_rows)['25'], 'source_file': source, 'cycle': '2026-11-26'}}
+    return F, S, profile, context, data, rows, file, data_rows
+
+@case('K556', 'French final-fix labels: FAF altitude, reversed FAF/FAP and ILS/LOC variant are read without including VOR fixes', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: France ILS first; real LFZG DATA 01, LFZB DATA 02 and LFZE DATA 01 labels')
+def k556(c):
+    import importlib
+    _reader_modules()
+    S = importlib.import_module('proc_sia')
+    rn = _reader_fixture('fr/AD_2_LFZG_DATA_01.pdf.rows.txt').splitlines()
+    mt = _reader_fixture('fr/AD_2_LFZB_DATA_02.pdf.rows.txt').splitlines()
+    qq = _reader_fixture('fr/AD_2_LFZE_DATA_01.pdf.rows.txt').splitlines()
+    details = S.parse_faf_details(rn)
+    c.eq(set(details), {'28'}, 'the VOR FAFs of runway 10/28 are excluded from the ILS/LOC list', what='Libune final fixes')
+    c.eq((details['28']['alt'], details['28']['kind']), (2000, 'LOC'), 'FAF 2000 LOC prints an altitude and a LOC type; ILS requires chart-index evidence', what='FAF label')
+    for got, expected, what in [(details['28']['pos'], (48.0523611111, -3.8783888889), 'Libune'),
+                                 (S.parse_faf(mt)['30R'], (43.5147222222, 6.3971388889), 'Civoxobigec'),
+                                 (S.parse_if(qq)['26'], (50.59575, 5.6155555556), 'Bopan IF ILS/LOC Z')]:
+        c.ok(all(abs(a-b)<0.000001 for a,b in zip(got,expected)), str(got), f'{what}: the independently transcribed DMS position')
+    c.eq(S.parse_faf(["FAF 2000 VOR RWY 28 48°03'29.5'' N 003°52'36.0'' W"]), {}, 'a VOR final is never relabelled as an ILS', what='VOR exclusion')
+
+
+@case('K557', 'Libune and Civoxobigec obtain an explicitly partial final axis from their real DATA and IAC index', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: recover French ILS finals and preserve the distinction between final axis and complete approach')
+def k557(c):
+    import importlib
+    import json
+    _reader_modules()
+    S = importlib.import_module('proc_sia')
+    for icao, data, runway in [('LFZG','AD_2_LFZG_DATA_01.pdf','28'), ('LFZB','AD_2_LFZB_DATA_02.pdf','30R')]:
+        context = json.loads(_reader_fixture(f'fr/{icao}-context.json'))
+        rows = _reader_fixture('fr/'+data+'.rows.txt').splitlines()
+        doc = S.build_aerodrome(icao, [data]+context['iac'], lambda n: rows if n==data else [], 'fixture', context['cycle'], ad2=context['runways'])
+        finals = [p for p in doc['procedures'] if p['name']==f'ILS RWY {runway}']
+        c.eq(len(finals), 1, 'the published FAF plus threshold and IAC type are sufficient for a final axis', what=icao)
+        rec = finals[0]
+        c.eq([p['id'] for p in rec['points']], ['FAF'+runway,'RW'+runway], 'only the two justified positions are added', what=icao+' final points')
+        c.ok('missed-path' in rec['partial']['unread'] and 'final-profile' in rec['partial']['unread'], str(rec.get('partial')), 'no complete ILS or missed manoeuvre is claimed')
+        c.eq(rec['chart_data']['navigation_type_basis'], 'IAC index', 'the DATA label alone does not prove an ILS', what='ILS evidence')
+        if icao=='LFZG':
+            c.eq(rec['points'][0]['alt'], {'type':'at','ft':2000}, 'the altitude printed in the FAF label is retained', what='FAF altitude')
+            loc = S.build_aerodrome(icao, [data], lambda n: rows, 'fixture', context['cycle'], ad2=context['runways'])
+            c.eq([p['name'] for p in loc['procedures']], ['LOC RWY 28'], 'without an ILS chart, the LOC label remains LOC', what='LOC evidence guard')
+
+
+@case('K558', 'A French INA or unread FNA coding filename cannot suppress the independently justified final; Bopan keeps IF/FAF/threshold order', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: French ILS first; LFZE AD 2 DATA and INA RNAV ILS Z CODE, the INA/FNA distinction')
+def k558(c):
+    import importlib
+    import json
+    _reader_modules()
+    S = importlib.import_module('proc_sia')
+    data='AD_2_LFZE_DATA_01.pdf'
+    ina='AD_2_LFZE_DATA_RWY26_INA_RNAV_ILS_Z_CODE.pdf'
+    context=json.loads(_reader_fixture('fr/LFZE-context.json'))
+    source={name:_reader_fixture('fr/'+name+'.rows.txt').splitlines() for name in [data,ina]}
+    for extra in [[], ['AD_2_LFZE_DATA_RWY26_FNA_ILS_Z_CODE.pdf']]:
+        files=[data,ina]+context['iac']+extra
+        doc=S.build_aerodrome('LFZE',files,lambda n:source.get(n,[]),'fixture',context['cycle'],ad2=context['runways'])
+        finals=[p for p in doc['procedures'] if p['name']=='ILS RWY 26']
+        c.eq(len(finals),1,'an INA is not a final; an unread FNA cannot hide the independent partial final',what='Bopan final count')
+        c.eq([p['id'] for p in finals[0]['points']],['IF26','FAF26','RW26'],'the anonymous IF variant Z is upstream of the FAF and threshold',what='Bopan final order')
+        c.eq(finals[0]['source']['file'],data,'the final keeps the DATA source that printed its positions',what='source')
+        if extra:
+            c.ok(any(f['file']==extra[0] and not f['ok'] for f in doc['formats']),str(doc['formats']),'the unread FNA is still reported as unread, never hidden by the fallback')
+
+
+@case('K559', 'Xedizeza retains a DATA-derived final when the indexed ILS coding page is unread, without claiming the Y/Z variants complete; when the page is read (since the lot of 26 Nov) its coding groups are the procedures and no partial final is added', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: France ILS first; real LFZA DATA 01 and RWY27 ILS Z CODE. Rewritten 26 Nov (SOG-0667, lot F1b): the branch v3-ead read this coding page after the case was written (commit of 26 Nov 09:18), so the unread state is now made by replacing the rows of the page with one unreadable line')
+def k559(c):
+    import importlib
+    import json
+    _reader_modules()
+    S=importlib.import_module('proc_sia')
+    context=json.loads(_reader_fixture('fr/LFZA-context.json'))
+    names=['AD_2_LFZA_DATA_01.pdf','AD_2_LFZA_DATA_RWY27_ILS_Z_CODE.pdf']
+    source={name:_reader_fixture('fr/'+name+'.rows.txt').splitlines() for name in names}
+    read=S.build_aerodrome('LFZA',names+context['iac'],lambda n:source.get(n,[]),'fixture',context['cycle'],ad2=context['runways'])
+    c.ok(any(f['file']==names[1] and f['ok'] for f in read['formats']) and not [p for p in read['procedures'] if p['name']=='ILS RWY 27'],str(read['formats']),'a coding page that is read gives its own coded procedures and no partial final beside them')
+    unread=dict(source,**{names[1]:['page illisible']})
+    doc=S.build_aerodrome('LFZA',names+context['iac'],lambda n:unread.get(n,[]),'fixture',context['cycle'],ad2=context['runways'])
+    finals=[p for p in doc['procedures'] if p['name']=='ILS RWY 27']
+    c.eq(len(finals),1,'an indexed but unread coding file does not suppress the independently positioned final',what='Xedizeza final')
+    c.ok(any(f['file']==names[1] and not f['ok'] for f in doc['formats']),str(doc['formats']),'the coding defect remains visible alongside the partial final')
+    c.eq(finals[0]['chart_data']['scope'],'final-axis-only','the result does not pretend to distinguish the Y/Z approach variants or their missed manoeuvres',what='scope')
+
+
+@case('K560', 'French IAC metadata: three real charts retain localizer, glide, RDH, threshold reference and named variants', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: continue France ILS before UK; native rows from local amendment pages 673/735/771, independently checked against rendered charts')
+def k560(c):
+    expected = [('LFZJ', 'Z', 'DI', 108.3, 3.5, 51, 13, 6, 'DTHR'),
+                ('LFZI', 'Z', 'XI', 108.35, 3.0, 57, 159, 140, 'DTHR'),
+                ('LFZH', None, 'GIC', 111.5, 3.0, 58, 412, 399, 'THR')]
+    for icao, variant, ident, freq, glide, rdh, ad, threshold, basis in expected:
+        F, rows, file = _fr_iac_fixture(icao)
+        profile = F.read_profile(rows, icao, file, '2026-11-26')
+        c.ok(profile is not None, str(profile), icao + ': the actual chart family is recognised')
+        data = profile['chart_data']
+        c.eq((profile['variant'], data['localizer'], data['glide_path_deg'], data['rdh_ft'], data['ad_elevation_ft'], data['threshold_elevation_ft'], data['threshold_reference']),
+             (variant, {'ident': ident, 'frequency_mhz': freq}, glide, rdh, ad, threshold, basis), 'independently transcribed header and profile facts', what=icao)
+        c.eq((profile['source']['at'], data['transition_altitude_ft']), ('2026-11-26', 5000), 'the printed chart date and TA, not the VAR year or a minima altitude', what=icao+' references')
+        c.ok('missed-path' in profile['partial']['unread'] and 'minima' in profile['partial']['unread'], str(profile['partial']), 'profile metadata is not a reconstructed missed path or a minima reader')
+
+
+@case('K561', 'French IAC distance and missed facts: DI/XI threshold offsets, FAC separate from GIC, radial and conditional instructions without geometry', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Real chart checks: DI DME at DTHR 0.1 NM, XI 0.2 NM; Tibud merged distance text must stay unread; source-date and identity counterexamples')
+def k561(c):
+    profiles = {}
+    for icao in ('LFZJ', 'LFZI', 'LFZH'):
+        F, rows, file = _fr_iac_fixture(icao)
+        profiles[icao] = F.read_profile(rows, icao, file, '2026-11-26')
+        c.eq(F.read_profile(rows, icao, file, '2026-10-29'), None, 'a 26 November chart cannot be treated as part of the October cache', what=icao+' future chart')
+        c.eq(F.read_profile(rows, 'LFXX', file, '2026-11-26'), None, 'the chart identity is checked, not replaced by the caller', what=icao+' identity')
+        c.eq(F.read_profile(rows, icao, file.replace('_ILS', '_ILS_Y'), '2026-11-26'), None, 'a contradictory indexed variant is refused', what=icao+' variant')
+    hy, bh, oj = [profiles[k]['chart_data'] for k in ('LFZJ', 'LFZI', 'LFZH')]
+    c.eq([d['distance_references']['dme_at_threshold_nm'] for d in (hy, bh, oj)], [0.1, 0.2, None], 'offsets require a consistent printed correspondence; the merged Tibud row is not guessed', what='DME references')
+    c.eq((oj['localizer']['ident'], oj['recommended_profile']['station']), ('GIC', 'FAC'), 'the localizer is not necessarily the DME station', what='Tibud stations')
+    c.eq(oj['recommended_profile']['values'], [{'dme_nm': 2.0, 'altitude_ft': 810}, {'dme_nm': 3.0, 'altitude_ft': 1130}, {'dme_nm': 4.0, 'altitude_ft': 1450}, {'dme_nm': 5.0, 'altitude_ft': 1770}], 'the recommended profile is read separately from the minima columns', what='Tibud profile')
+    mh, mb, mo = [d['missed_approach'] for d in (hy, bh, oj)]
+    c.eq((mh['target_altitude_ft'], mh['turn'], mh['turn_at'], mh['fix_sequence']), (2400, 'R', {'dme_nm': 5.0, 'station': 'DI'}, ['DOC', 'ZUCIL']), 'Xecezo: interleaved profile labels do not erase the instruction', what='DI missed')
+    c.ok(any('P 48 tuberi' in row for row in mh['conditions_rows']), str(mh['conditions_rows']), 'the P48 radar condition is retained')
+    c.eq((mb['target_altitude_ft'], mb['maximum_ias_kt'], mb['radial']), (3000, 185, {'magnetic_deg': 212, 'station': 'GEZ', 'inbound_magnetic_deg': 32}), 'Cupocik: printed missed altitude, speed, radial and inbound course', what='XI missed')
+    c.eq((mo['target_altitude_ft'], mo['turn_at'], mo['fix_sequence']), (3100, {'dme_nm': 4.5, 'station': 'FAC'}, ['FAC']), 'Tibud: DME FAC is kept at the trigger', what='FAC missed')
+    c.ok(all(not d['distance_references']['coordinates_derived'] and not d['missed_approach']['geometry_reconstructed'] for d in (hy, bh, oj)), 'metadata only', 'no DME distance is silently treated as distance from the runway threshold')
+
+
+@case('K562', 'SIA acquisition includes final ILS/LOC IACs alongside DATA without requiring a coding table; excludes INA/RNP/ADC and reuses cache', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='France ILS follow-up: the production reader must actually acquire the IAC it interprets, one aerodrome with a bounded final-chart list')
+def k562(c):
+    import importlib
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    S = importlib.import_module('proc_sia')
+    names = ['AD_2_LFZJ_DATA_01.pdf', 'AD_2_LFZJ_IAC_RWY05_ILS_Z_LOC_Z.pdf', 'AD_2_LFZJ_IAC_RWY05_INA_ILS.pdf', 'AD_2_LFZJ_IAC_RWY05_RNP.pdf', 'AD_2_LFZJ_ADC.pdf']
+    c.eq(S.procedure_files(names + [names[1]]), sorted(names[:2]), 'an IAC remains wanted without CODE; duplicates and unrelated charts are excluded', what='wanted files')
+    page = ''.join(f'<a href="Cartes/LFZJ/{name}">chart</a>' for name in names).encode()
+    asked = []
+    def get(url):
+        asked.append(url)
+        return page if url.endswith('.html') else b'%PDF fixture bytes, text reader mocked separately'
+    with tempfile.TemporaryDirectory() as td:
+        first = S.download_aerodrome('https://example.org/AIRAC-2026-11-26', 'LFZJ', Path(td), get=get)
+        second = S.download_aerodrome('https://example.org/AIRAC-2026-11-26', 'LFZJ', Path(td), get=get)
+        c.eq((first, second), ({'fetched': 3, 'unchanged': 0, 'tables': False}, {'fetched': 0, 'unchanged': 3, 'tables': False}), 'AD page, DATA and final IAC only; the second read makes no request', what='cache')
+        c.eq(len(asked), 3, 'no INA, RNP, ADC or repeated download', what='requests')
+    try:
+        S.procedure_files([f'AD_2_LFZJ_IAC_RWY05_ILS_Z_{i}.pdf' for i in range(65)])
+    except ValueError:
+        refused = True
+    else:
+        refused = False
+    c.ok(refused, '65 indexed final charts', 'an excessive final-chart list is refused before acquisition')
+
+
+@case('K563', 'French IAC metadata is wired through read_aerodrome and attached without changing points, altitudes, route names or other variants', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Profile metadata must reach the launcher result; missing route geometry and unknown chart layouts remain explicit')
+def k563(c):
+    import copy
+    import importlib
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    F, rows, file = _fr_iac_fixture('LFZI')
+    profile = F.read_profile(rows, 'LFZI', file, '2026-11-26')
+    procs = [{'kind': 'APP', 'runways': ['25'], 'name': name, 'points': [{'id': 'RW25', 'alt': None}], 'partial': {'unread': ['missed-path']}} for name in ('ILS RWY 25', 'ILS Z RWY 25', 'ILS Y RWY 25', 'INA RNAV ILS Z RWY 25')]
+    before = copy.deepcopy(procs)
+    c.eq(F.attach_profile(procs, profile), 2, 'generic final gets a reference, exact Z matches, Y and INA do not', what='associations')
+    for rec, old in zip(procs, before):
+        c.eq({k: v for k, v in rec.items() if k != 'chart_data'}, old, 'metadata adds no point, altitude, name or completion claim', what=old['name'])
+    S = importlib.import_module('proc_sia')
+    page = f'<a href="Cartes/LFZI/{file}">chart</a>'.encode()
+    with tempfile.TemporaryDirectory() as td, patch.object(S, 'all_pages_rows', return_value=[rows]), patch.object(S, 'iac_pages_rows', return_value=[rows]):
+        doc = S.read_aerodrome('https://example.org/AIRAC-2026-11-26', 'LFZI', Path(td), say=lambda *a: None, get=lambda url: page if url.endswith('.html') else b'%PDF fixture', vac_exists=lambda url: False)
+    c.eq((len(doc['approach_profiles']), doc['procedures'], doc['formats'][0]['scope']), (1, [], 'profile-metadata-only'), 'the production entry point no longer drops a chart-only ILS, but invents no route', what='launcher seam')
+    unread = S.build_aerodrome('LFZI', [file], lambda name: [], 'fixture', '2026-11-26', iac_pages_of=lambda name: [[]])
+    c.ok(unread['formats'][0]['ok'] is False and unread['warnings'], str(unread['formats']), 'unread IACs stay reported')
+
+
+@case('K564', 'French derived final: Xecezo IF/FAF labels use DTHR 8.3/5.3 NM rather than DME 8.4/5.4 NM', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='User 25 Nov 2026: continue French geometry using same-cycle IAC and AD 2.12; published range references must remain distinct')
+def k564(c):
+    F, rows, file = _fr_iac_fixture('LFZJ')
+    profile = F.read_profile(rows, 'LFZJ', file, '2026-11-26')
+    c.eq(profile['chart_data']['final_fixes'], {'IF': {'dme_nm': 8.4, 'station': 'DI', 'threshold_nm': 8.3, 'threshold_reference': 'DTHR'},
+                                              'FAF': {'dme_nm': 5.4, 'station': 'DI', 'threshold_nm': 5.3, 'threshold_reference': 'DTHR'}},
+         'each explicit label is matched to its printed DME/DTHR column', what='Xecezo final references')
+    c.eq(profile['chart_data']['inbound_course_magnetic_deg'], 49, 'repeated final-axis labels, not a holding or missed radial', what='inbound course')
+    changed = [r.replace('IF 8.4 NM DI', 'IF 8.4 NM ZUG') for r in rows]
+    bad = F.read_profile(changed, 'LFZJ', file, '2026-11-26')
+    c.ok('IF' not in bad['chart_data']['final_fixes'], str(bad['chart_data']['final_fixes']), 'a different DME station cannot borrow DI distance columns')
+
+
+@case('K565', 'French derived axis uses the displaced threshold and true runway bearing, preserves RDH and refuses missing or inconsistent references', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='AD 2 LFZJ.12 page 631 and ILS Z 05 page 673 of the same local amendment; coordinate expectations calculated independently by spherical vector rotation')
+def k565(c):
+    import copy
+    import json
+    F, rows, file = _fr_iac_fixture('LFZJ')
+    context = json.loads(_reader_fixture('fr/iac/LFZJ-geometry.json'))
+    profile = F.read_profile(rows, 'LFZJ', file, '2026-11-26')
+    record, reason = F.final_record(profile, context['runways'])
+    c.eq(reason, None, 'all same-cycle references are available', what='geometry refusal')
+    c.eq([p['id'] for p in record['points']], ['IF05', 'FAF05', 'RW05'], 'no initial or missed turn is invented', what='point sequence')
+    for point, expected in zip(record['points'][:2], context['expected_final_positions']):
+        c.ok(abs(point['lat'] - expected[0]) < 0.0000001 and abs(point['lon'] - expected[1]) < 0.0000001, str(point), 'independent vector-projected coordinate')
+        c.eq((point['alt'], point['distance_rounding_uncertainty_nm']), (None, 0.05), 'distance rounding is explicit and no IF/FAF altitude constraint is inferred', what=point['id'])
+    last = record['points'][-1]
+    dthr = context['runways'][0]['dthr']
+    c.eq((last['lat'], last['lon'], last['alt'], last['vpa'], last['trk']), (dthr['lat'], dthr['lon'], {'type': 'at', 'ft': 57}, -3.5, 51.29), 'DTHR instead of physical THR; threshold crossing is 6 + RDH 51 ft', what='threshold crossing')
+    c.ok('localizer-true-axis' in record['partial']['unread'] and 'missed-path' in record['partial']['unread'], str(record['partial']), 'a runway-axis approximation is not a complete published ILS geometry')
+    c.eq(profile['chart_data']['distance_references']['coordinates_derived'], False, 'building the record does not mutate the raw profile facts', what='source metadata')
+    for field, value, expected in [('dthr', None, 'matching-threshold-missing'), ('qfu', 44, 'final-axis-not-runway-aligned'), ('cycle', '2026-10-29', 'ad212-cycle-mismatch'), ('true', float('nan'), 'threshold-or-course-unread')]:
+        runways = copy.deepcopy(context['runways'])
+        runways[0][field] = value
+        c.eq(F.final_record(profile, runways), (None, expected), 'no fallback to an unrelated threshold, course or cycle', what=field)
+    runways = copy.deepcopy(context['runways'])
+    runways[0]['dthr']['elev'] = 50
+    c.eq(F.final_record(profile, runways), (None, 'threshold-elevation-mismatch'), 'a conflicting threshold elevation prevents geometry', what='elevation')
+
+
+@case('K566', 'SIA builds the named Xecezo final from a chart-only ILS and the official runway context, with source and partial geometry kept', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='The derived final must reach the production document; IF/FAF coordinates remain labelled synthetic and no missed path is appended')
+def k566(c):
+    import importlib
+    import json
+    F, rows, file = _fr_iac_fixture('LFZJ')
+    S = importlib.import_module('proc_sia')
+    context = json.loads(_reader_fixture('fr/iac/LFZJ-geometry.json'))
+    doc = S.build_aerodrome('LFZJ', [file], lambda name: [], 'fixture', '2026-11-26', ad2=context['runways'], iac_pages_of=lambda name: [rows])
+    c.eq(len(doc['procedures']), 1, 'a chart-only ILS now supplies a derived final when its references justify it', what='final count')
+    rec = doc['procedures'][0]
+    c.eq((rec['name'], rec['source']['file'], rec['status'], doc['formats'][0]['scope']), ('ILS Z RWY 05', file, 'check', 'derived-final-axis'), 'the actual variant and chart source are retained', what='record identity')
+    c.eq([p.get('synthetic') for p in rec['points']], ['if', 'faf', 'threshold'], 'derived fixes are not passed off as published coordinates', what='provenance')
+    c.ok(not any(p.get('phase') == 'missed' for p in rec['points']) and doc['warnings'], str(doc['warnings']), 'the unconstructed missed manoeuvre stays explicit')
+    c.eq(doc['approach_profiles'][0]['geometry_record'], rec['id'], 'the source profile references its derived record', what='profile link')
+
+
+@case('K567', 'Cupocik DATA supplies its published MATF without turning it into an inferred missed trajectory or a final fix', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Same-cycle LFZI DATA page 711 explicitly prints MATF NDB/DME ILS/LOC RWY25; preserve its role and coordinates independently of the final')
+def k567(c):
+    import importlib
+    F, rows, file = _fr_iac_fixture('LFZI')
+    S = importlib.import_module('proc_sia')
+    data = 'AD_2_LFZI_DATA_01.pdf'
+    data_rows = _reader_fixture('fr/iac/LFZI-DATA.rows.txt').splitlines()
+    fix = S.parse_matf(data_rows)['25']
+    c.eq((fix['lat'], fix['lon']), (47.72875, -5.882444), 'independently transcribed DMS position, at the DATA reader\'s six-decimal precision', what='MATF position')
+    conflict = 'MATF NDB/DME ILS/LOC RWY 25 47°44\'43.5"N 003°34\'56.8"W'
+    c.eq(S.parse_matf(data_rows + [conflict]), {}, 'conflicting MATF positions are not selected arbitrarily', what='conflict')
+    doc = S.build_aerodrome('LFZI', [data, file], lambda name: data_rows if name == data else [], 'fixture', '2026-11-26', iac_pages_of=lambda name: [rows])
+    missed = doc['approach_profiles'][0]['chart_data']['missed_approach']
+    c.eq((missed['published_turn_fix']['role'], missed['published_turn_fix']['source_file'], missed['geometry_reconstructed']), ('MATF', data, False), 'the source point is retained without projecting the left turn or radial interception', what='MATF provenance')
+    c.eq(doc['procedures'], [], 'without complete final references no trajectory is manufactured from the MATF', what='no invented path')
+
+
+@case('K568', 'Cupocik published final and straight missed segment keep DATA coordinates, DTHR/RDH, MATF phase and turn speed without inventing the turn', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Same-cycle physical page 703, DATA page 711 and IAC page 735; expected coordinates, 197 ft crossing and 185 kt restriction independently transcribed')
+def k568(c):
+    F, S, profile, context, data, rows, file, data_rows = _lfrh_published_context()
+    record, reason = F.published_final_record(profile, context['runways'], data)
+    c.eq(reason, None, 'the published FAF and MATF agree with the IAC ranges and official runway', what='association')
+    c.eq([(p['lat'], p['lon']) for p in record['points']], [tuple(p) for p in context['expected_positions']], 'the DATA/AD 2.12 coordinates are retained, not projected from DME', what='published positions')
+    c.eq([(p['id'], p.get('phase'), p.get('kt'), p['alt']) for p in record['points']],
+         [('FAF25', None, None, None), ('RW25', None, None, {'type': 'at', 'ft': 197}), ('MATF25', 'missed', 185, None)],
+         'the climb target 3000 is not an altitude constraint at the MATF; RDH is included at the threshold', what='lateral and vertical roles')
+    c.ok(not any(p.get('turn') or p.get('synthetic') for p in record['points']), str(record['points']), 'no left-turn arc or synthetic fix is inserted')
+    c.eq(record['chart_data']['missed_approach']['target_altitude_ft'], 3000, 'the climb target stays separate in the instructions', what='missed climb target')
+    c.ok('missed-turn-and-interception' in record['partial']['unread'] and 'published-missed-straight-segment' in record['partial']['read'], str(record['partial']), 'only the verified straight segment is claimed')
+
+
+def _native_if_level(icao):
+    import json
+    _reader_modules()
+    from proc_iac_positions import axis_from_fragments
+    from proc_iac_levels import levels_from_fragments
+    source = json.loads(_reader_fixture('fr/iac/' + icao + '-levels-source.json'))
+    axis = axis_from_fragments(source['fragments'], with_positions=True)
+    levels = levels_from_fragments(source['fragments'], source['strokes'], axis)
+    axis.pop('_positions')
+    return source, axis, levels
+
+
+@case('K569', 'Published French FAF association refuses ambiguous variants, stale DATA and inconsistent final distance or axis', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='A generic DATA FAF cannot silently choose among multiple IAC variants or borrow a different cycle or distance reference')
+def k569(c):
+    import copy
+    F, S, profile, context, data, rows, file, data_rows = _lfrh_published_context()
+    supplied = copy.deepcopy(data)
+    supplied['faf_altitude_ft'] = 3000
+    with_altitude, _ = F.published_final_record(profile, context['runways'], supplied)
+    c.eq(with_altitude['points'][0]['alt'], {'type': 'at', 'ft': 3000}, 'an explicit DATA-adapter altitude is preserved, unlike an inferred diagram altitude', what='supplied DATA altitude')
+    for field, value, expected in [('sole_final_chart', False, 'ambiguous-data-final-variant'),
+                                   ('cycle', '2026-10-29', 'data-cycle-mismatch'),
+                                   ('navigation_type', 'VOR', 'data-final-navigation-type-mismatch'),
+                                   ('faf', (48.0, -3.2), 'data-faf-iac-distance-or-axis-mismatch')]:
+        changed = copy.deepcopy(data)
+        changed[field] = value
+        c.eq(F.published_final_record(profile, context['runways'], changed), (None, expected), 'the unproved association is left unread', what=field)
+
+
+@case('K570', 'Cupocik orchestration replaces only its generic DATA fallback, drops stale warnings and excludes an off-axis or stale MATF from the missed path', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Published final integration must not duplicate the generic partial axis or connect an unverified turning fix')
+def k570(c):
+    import copy
+    F, S, profile, context, data, rows, file, data_rows = _lfrh_published_context()
+    doc = S.build_aerodrome('LFZI', [data['source_file'], file], lambda name: data_rows if name == data['source_file'] else [], 'fixture', '2026-11-26', ad2=context['runways'], iac_pages_of=lambda name: [rows])
+    c.eq([(p['name'], p['status']) for p in doc['procedures']], [('ILS Z RWY 25', 'check')], 'only the verified named final is offered in place of the generic DATA fallback', what='final selection')
+    c.ok(not any('LFZI.APP.ILSRWY25.RW25:' in w for w in doc['warnings']), str(doc['warnings']), 'a removed generic fallback contributes no stale unread warning')
+    for field, value in [('lat', 47.75), ('cycle', '2026-10-29')]:
+        changed = copy.deepcopy(data)
+        changed['matf'][field] = value
+        rec, reason = F.published_final_record(profile, context['runways'], changed)
+        c.eq((reason, [p['id'] for p in rec['points']]), (None, ['FAF25', 'RW25']), 'the valid final remains, but the unverified missed point is not plotted', what='MATF '+field)
+        c.ok('missed-path' in rec['partial']['unread'], str(rec['partial']), 'without the verified MATF the missed path remains unread')
+
+
+@case('K571', 'Tibud native text positions separate merged DME/THR baselines and bind IF/FAF to unique columns', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Real page 771 text-show fragments; chart-transcribed columns, frame isolation and ambiguity refusal; no numeric string repair')
+
+def k571(c):
+    import copy
+    import json
+    _reader_modules()
+    from proc_iac_positions import axis_from_fragments
+    fragments = json.loads(_reader_fixture('fr/iac/LFZH-positioned-fragments.json'))
+    axis = axis_from_fragments(fragments)
+    c.eq((axis['station'], axis['threshold_reference'], axis['columns'], axis['fix_columns']),
+         ('FAC', 'THR', [{'dme_nm': 1.5, 'threshold_nm': 0.6}, {'dme_nm': 4.0, 'threshold_nm': 3.1},
+                         {'dme_nm': 6.0, 'threshold_nm': 5.1}, {'dme_nm': 9.0, 'threshold_nm': 8.1}], {'IF': 3, 'FAF': 2}),
+         'separate text baselines recover FAC distances without splitting the merged legacy strings', what='source columns')
+    split = copy.deepcopy(fragments)
+    for f in split:
+        if f['text'].startswith('THR'):
+            f['frame'] += 100
+    c.eq(axis_from_fragments(split), None, 'DME and THR from different form coordinate frames cannot be paired', what='frames')
+    duplicate = fragments + [dict(f, frame=f['frame'] + 100) for f in fragments]
+    c.eq(axis_from_fragments(duplicate), None, 'two independently readable profile axes are ambiguous', what='duplicate axes')
+    shifted = copy.deepcopy(fragments)
+    number = next(f for f in shifted if f['text'] == '5.1')
+    number['y'] += 20
+    c.eq(axis_from_fragments(shifted), None, 'a missing partner leaves the profile unread', what='incomplete pair')
+
+
+@case('K572', 'French positioned axis data is typed, bounded and checked against independent chart references', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Tibud legacy merged text stays unread; duplicate, nonfinite and malformed supplements do not provide geometry, a contradictory station is refused')
+
+def k572(c):
+    import copy
+    import json
+    F, legacy, file = _fr_iac_fixture('LFZH')
+    rows = _reader_fixture('fr/iac/LFZH-positioned.rows.txt').splitlines()
+    profile = F.read_profile(rows, 'LFZH', file, '2026-11-26')
+    old = F.read_profile(legacy, 'LFZH', file, '2026-11-26')
+    c.eq(old['chart_data']['final_fixes'], {}, 'concatenated legacy numbers are never split by guessing', what='legacy')
+    c.eq([(k, v['dme_nm'], v['threshold_nm']) for k, v in profile['chart_data']['final_fixes'].items()],
+         [('IF', 9.0, 8.1), ('FAF', 6.0, 5.1)], 'labels select the separately positioned FAC/THR columns', what='positioned fixes')
+    supplement = next(r for r in rows if r.startswith('@@IAC_AXIS '))
+    axis = json.loads(supplement[len('@@IAC_AXIS '):])
+    variants = []
+    for key, value in [('schema', True), ('method', 'ocr'), ('fix_columns', {'IF': True}), ('extra', 1)]:
+        changed = copy.deepcopy(axis)
+        changed[key] = value
+        variants.append([legacy, changed])
+    for value in [float('nan'), float('inf'), 10 ** 350]:
+        changed = copy.deepcopy(axis)
+        changed['columns'][0]['dme_nm'] = value
+        variants.append([legacy, changed])
+    for index, (base, changed) in enumerate(variants):
+        p = F.read_profile(base + ['@@IAC_AXIS ' + json.dumps(changed)], 'LFZH', file, '2026-11-26')
+        c.eq(p['chart_data']['final_fixes'], {}, 'invalid supplement contributes no fix coordinates', what='invalid supplement ' + str(index))
+    duplicate = F.read_profile(rows + [supplement], 'LFZH', file, '2026-11-26')
+    c.eq(duplicate['chart_data']['final_fixes'], {}, 'duplicate supplements do not select an arbitrary axis', what='duplicate supplement')
+    changed = copy.deepcopy(axis)
+    changed['station'] = 'GIC'
+    contradictory = F.read_profile(legacy + ['@@IAC_AXIS ' + json.dumps(changed)], 'LFZH', file, '2026-11-26')
+    c.eq((contradictory['chart_data']['distance_reference_conflict'], contradictory['chart_data']['final_fixes']),
+         (True, {}), 'the GIC localizer cannot replace the FAC DME station in the profile', what='station conflict')
+
+
+@case('K573', 'Tibud derived final uses official runway context, 8.1/5.1 THR distances and 457 ft crossing without projecting the missed turn', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Page 771 and unchanged physical AD 2.12 checked against the current checklist/ADC; independent vector-derived expected coordinates, not parser snapshots')
+
+def k573(c):
+    import copy
+    import importlib
+    import json
+    F, legacy, file = _fr_iac_fixture('LFZH')
+    S = importlib.import_module('proc_sia')
+    rows = _reader_fixture('fr/iac/LFZH-positioned.rows.txt').splitlines()
+    context = json.loads(_reader_fixture('fr/iac/LFZH-geometry.json'))
+    profile = F.read_profile(rows, 'LFZH', file, '2026-11-26')
+    record, reason = F.final_record(profile, context['runways'])
+    c.eq((reason, [p['id'] for p in record['points']]), (None, ['IF25', 'FAF25', 'RW25']), 'one explicitly partial final, no guessed missed point', what='final')
+    c.eq([[p['lat'], p['lon']] for p in record['points'][:2]], context['expected_positions'], 'coordinates agree with the independently calculated expected projection', what='derived positions')
+    c.eq((record['points'][1]['nm'], record['points'][2]['nm'], record['points'][2]['alt']),
+         (3.0, 5.1, {'type': 'at', 'ft': 457}), 'FAF/THR distances and 399 ft plus 58 ft RDH, not distances to FAC', what='references')
+    c.eq((profile['chart_data']['localizer']['ident'], profile['chart_data']['distance_references']['station']), ('GIC', 'FAC'), 'localizer and distance station stay distinct', what='navaids')
+    c.ok('missed-path' in record['partial']['unread'] and all(p.get('synthetic') for p in record['points']), str(record), 'rounded geometry is labelled and the turn at 4.5 FAC remains instructions only')
+    doc = S.build_aerodrome('LFZH', [file], lambda name: [], 'fixture', '2026-11-26', ad2=context['runways'], iac_pages_of=lambda name: [rows])
+    c.eq([(p['name'], p['status']) for p in doc['procedures']], [('ILS RWY 25', 'check')], 'the source profile reaches the real builder without a coding table', what='builder')
+    for field, value, expected in [('cycle', '2026-10-29', 'ad212-cycle-mismatch'), ('elev', 401, 'threshold-elevation-mismatch')]:
+        changed = copy.deepcopy(context['runways'])
+        changed[0][field] = value
+        c.eq(F.final_record(profile, changed), (None, expected), 'incompatible physical context prevents derivation', what=field)
+
+
+@case('K574', 'The IAC positioned-text boundary accepts explicit WinAnsi ASCII, rejects opaque fonts and keeps legacy rows if the optional supplement fails', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Dependency-free source-operation fixture, not an encoding guess; PDF work remains behind the existing bounded-child entry point')
+
+def k574(c):
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_pdf as P
+    import proc_iac_positions as N
+    font = {'/Encoding': '/WinAnsiEncoding', '/BaseFont': '/Fixture', '/FirstChar': 32, '/Widths': [500] * 95}
+
+    class Page(dict):
+        def __init__(self, selected):
+            super().__init__({'/Resources': {'/Font': {'/F1': selected}}})
+
+        def extract_text(self, visitor_operand_before, visitor_operand_after):
+            cm = [1, 0, 0, 1, 0, 0]
+            for operator, operands, x in [(b'Tf', ['/F1', 10], 0), (b'Tj', [b'F'], 100), (b'Tj', [b'AF'], 105), (b'Tj', [b'9'], 140)]:
+                tm = [1, 0, 0, 1, x, 200]
+                visitor_operand_before(operator, operands, cm, tm)
+                visitor_operand_after(operator, operands, cm, tm)
+
+    c.eq([f['text'] for f in N.ascii_fragments(Page(font))], ['FAF', '9'], 'font advances join adjacent letters but keep a separate distance token', what='font advances')
+    for name, changed in [('opaque', dict(font, **{'/Encoding': '/Identity-H'})), ('mapped', dict(font, **{'/ToUnicode': {}}))]:
+        c.eq(N.ascii_fragments(Page(changed)), [], 'unsupported encodings are left unread', what=name)
+    with patch.object(P, 'limited', return_value=(1, [['legacy']])) as bounded:
+        c.eq(P.iac_pages_rows('chart.pdf', timeout=7), [['legacy']], 'the public entry retains the bounded child contract', what='child result')
+        c.eq(bounded.call_args.args, ('_iac_pages_of', 'chart.pdf'), 'the positioned reader is a child task', what='child task')
+        c.eq(bounded.call_args.kwargs, {'timeout': 7}, 'the caller timeout is preserved', what='bound')
+    reader = type('Reader', (), {'pages': [Page(font)]})()
+    with patch.object(P, 'pdf_reader', return_value=reader), patch.object(P, 'rows_from_pdf', return_value=['legacy']), patch.object(N, 'supplement', side_effect=ValueError('unread')):
+        c.eq(P._iac_pages_of('chart.pdf'), (1, [['legacy', '@@IAC_POSITION_UNREAD']]), 'failure of optional position reading cannot discard the legacy chart rows', what='optional failure')
+
+
+@case('K575', 'Cupocik positioned IF extends the final without moving its published FAF/DTHR/MATF or inventing a turn', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Rendered page 735: IF 12 XI = 11.8 DTHR, FAF 9 XI = 8.8 DTHR; independent vector projection along published endpoints, remaining positions unchanged')
+
+def k575(c):
+    import copy
+    import json
+    F, S, old, context, data, legacy, file, data_rows = _lfrh_published_context()
+    rows = _reader_fixture('fr/iac/LFZI-positioned.rows.txt').splitlines()
+    profile = F.read_profile(rows, 'LFZI', file, '2026-11-26')
+    record, reason = F.published_final_record(profile, context['runways'], data)
+    c.eq((reason, [(p['seq'], p['id']) for p in record['points']]), (None, [(1, 'IF25'), (2, 'FAF25'), (3, 'RW25'), (4, 'MATF25')]), 'the labelled IF is inserted before the published final and missed segment', what='point roles')
+    c.eq([record['points'][0]['lat'], record['points'][0]['lon']], context['expected_derived_if_position'], 'IF projection follows the published endpoint axis at 11.8 DTHR', what='derived IF')
+    c.eq([[p['lat'], p['lon']] for p in record['points'][1:]], context['expected_positions'], 'all three published positions remain unchanged', what='published positions')
+    c.eq((record['points'][0].get('synthetic'), record['points'][0]['alt'], record['points'][1]['nm'], record['points'][-1].get('phase'), record['points'][-1].get('kt'), record['points'][-1]['alt']),
+         ('if', None, 3.0, 'missed', 185, None), 'derived IF, unknown altitude, final leg length and missed speed/altitude roles remain distinct', what='constraints')
+    c.ok('derived-initial-fix' in record['partial']['read'] and 'missed-turn-and-interception' in record['partial']['unread'], str(record['partial']), 'a derived IF does not claim the initial manoeuvre or missed turn')
+    wrong_label = copy.deepcopy(profile)
+    wrong_label['chart_data']['final_fixes']['FAF']['threshold_nm'] = 3.9
+    c.eq(F.published_final_record(wrong_label, context['runways'], data), (None, 'data-faf-iac-label-mismatch'), 'a DATA FAF cannot borrow another profile column once an explicit FAF column is known', what='FAF label')
+    axis = json.loads(next(r[len('@@IAC_AXIS '):] for r in rows if r.startswith('@@IAC_AXIS ')))
+    axis['columns'][0]['dme_nm'] += 0.5
+    axis['columns'][0]['threshold_nm'] += 0.5
+    contradictory = F.read_profile(legacy + ['@@IAC_AXIS ' + json.dumps(axis)], 'LFZI', file, '2026-11-26')
+    c.eq(contradictory['chart_data']['distance_reference_conflict'], True, 'equal DME offsets do not excuse a contradictory pair of printed distances', what='column disagreement')
+    c.eq(F.published_final_record(contradictory, context['runways'], data), (None, 'iac-distance-reference-conflict'), 'conflicting distance evidence cannot select a final', what='reference conflict')
+
+
+@case('K576', 'French native IF altitude/height pairs are procedure levels, not minima or invented FAF constraints', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Rendered source pages 673/735/771: IF levels 2000(1994), 3000(2860), 2100(1701); SIA profile typography and GEN 2.3 bars define separate roles')
+
+def k576(c):
+    import json
+    for icao, altitude, height in [('LFZJ', 2000, 1994), ('LFZI', 3000, 2860), ('LFZH', 2100, 1701)]:
+        source, axis, levels = _native_if_level(icao)
+        F, rows, file = _fr_iac_fixture(icao)
+        profile = F.read_profile(rows + ['@@IAC_AXIS ' + json.dumps(axis), '@@IAC_LEVELS ' + json.dumps(levels)], icao, file, '2026-11-26')
+        found = profile['chart_data']['profile_levels']
+        c.eq((found['IF']['altitude_ft'], found['IF']['height_ft'], found['IF']['restriction']),
+             (altitude, height, 'recommended'), 'independently transcribed IF altitude/height pair with no restriction bar', what=icao)
+        c.eq((set(found), profile['chart_data']['profile_level_conflict']), ({'IF'}, False), 'only the measured IF role is associated; shaded floors and LOC FAF levels are not copied', what=icao+' scope')
+
+
+@case('K577', 'French IF levels reject inconsistent heights, stations, columns and malformed child data without discarding lateral geometry', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Altitude minus height must match the independently read THR/DTHR elevation, and the level must bind to the same labelled IF column')
+
+def k577(c):
+    import copy
+    import json
+    source, axis, levels = _native_if_level('LFZH')
+    F, legacy, file = _fr_iac_fixture('LFZH')
+    base = legacy + ['@@IAC_AXIS ' + json.dumps(axis)]
+    variants = []
+    for field, value in [('height_ft', 1710), ('altitude_ft', True), ('threshold_nm', 9.0), ('restriction', 'mandatory'), ('extra', 1)]:
+        item = copy.deepcopy(levels)
+        item['fixes']['IF'][field] = value
+        variants.append(item)
+    item = copy.deepcopy(levels)
+    item['station'] = 'GIC'
+    variants.append(item)
+    for i, changed in enumerate(variants):
+        profile = F.read_profile(base + ['@@IAC_LEVELS ' + json.dumps(changed)], 'LFZH', file, '2026-11-26')
+        c.eq((profile['chart_data']['profile_levels'], profile['chart_data']['profile_level_conflict'], set(profile['chart_data']['final_fixes'])),
+             ({}, True, {'IF', 'FAF'}), 'invalid altitude evidence cannot become a route constraint; lateral references remain readable', what='invalid level '+str(i))
+    text = '@@IAC_LEVELS ' + json.dumps(levels)
+    profile = F.read_profile(base + [text, text], 'LFZH', file, '2026-11-26')
+    c.eq((profile['chart_data']['profile_levels'], profile['chart_data']['profile_level_conflict']), ({}, True), 'duplicate altitude supplements are ambiguous', what='duplicate')
+    fragments = copy.deepcopy(source['fragments'])
+    fragments += [dict(f, x=f['x']+0.5) for f in fragments if f['text'] == '(1701)']
+    from proc_iac_positions import axis_from_fragments
+    from proc_iac_levels import levels_from_fragments
+    c.eq(levels_from_fragments(fragments, source['strokes'], axis_from_fragments(fragments, with_positions=True)), None,
+         'two possible height partners leave the IF level unread', what='ambiguous height')
+
+
+@case('K578', 'Native altitude bars distinguish minimum, maximum and mandatory from unbarred recommendations; long and dashed lines are not bars', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Synthetic changes to the measured Tibud IF label: GEN 2.3 lower/upper bars mean min/max, both mean at; no claim that these bars occur on the source chart')
+
+def k578(c):
+    _reader_modules()
+    from proc_iac_positions import axis_from_fragments, ascii_fragments
+    from proc_iac_levels import levels_from_fragments
+    source, _, _ = _native_if_level('LFZH')
+    fragments = source['fragments']
+    axis = axis_from_fragments(fragments, with_positions=True)
+    altitude = next(f for f in fragments if f['text'] == '2100' and f['y'] < 290)
+    lower = {'frame': altitude['frame'], 'x1': altitude['x'], 'x2': altitude['end_x'], 'y': altitude['y']-1}
+    upper = dict(lower, y=altitude['y']+7)
+    for bars, expected in [([], 'recommended'), ([lower], 'min'), ([upper], 'max'), ([lower, upper], 'at')]:
+        c.eq(levels_from_fragments(fragments, bars, axis)['fixes']['IF']['restriction'], expected, 'bar position carries the restriction role', what=expected)
+
+    class GraphicsPage(dict):
+        def extract_text(self, visitor_operand_before, visitor_operand_after):
+            matrix = [1, 0, 0, 1, 0, 0]
+            ops = [(b'w', [0.5]), (b'G', [0]), (b'm', [10, 20]), (b'l', [25, 20]), (b'S', []),
+                   (b'd', [[2], 0]), (b'm', [10, 30]), (b'l', [25, 30]), (b'S', []),
+                   (b'd', [[], 0]), (b'm', [10, 40]), (b'l', [200, 40]), (b'S', []),
+                   (b'g', [0]), (b're', [10, 50, 15, 0.5]), (b'f', []),
+                   (b'g', [0.5]), (b're', [10, 60, 15, 20]), (b'f', [])]
+            for op, args in ops:
+                visitor_operand_before(op, args, matrix, matrix)
+                visitor_operand_after(op, args, matrix, matrix)
+    strokes = []
+    ascii_fragments(GraphicsPage(), strokes)
+    c.eq([(s['x1'], s['x2'], s['y']) for s in strokes], [(10.0, 25.0, 20.0), (10.0, 25.0, 50.25)],
+         'only a short solid black stroke and thin black fill qualify; dashed leaders, long rules and grey floors do not', what='native graphic guard')
+
+
+@case('K579', 'IF procedure levels reach derived/published finals as advisory annotations; explicit native restrictions and source conflicts keep their own roles', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Production builder on frozen Tibud and Cupocik sources; an unbarred level must not become alt=at, and DATA FAF altitude/missed target are never replaced by IF levels')
+
+def k579(c):
+    import copy
+    import importlib
+    import json
+    _reader_modules()
+    S = importlib.import_module('proc_sia')
+    from proc_iac_levels import attach_levels
+    for icao in ('LFZH', 'LFZI'):
+        source, axis, levels = _native_if_level(icao)
+        F, legacy, file = _fr_iac_fixture(icao)
+        rows = legacy + ['@@IAC_AXIS ' + json.dumps(axis), '@@IAC_LEVELS ' + json.dumps(levels)]
+        context = json.loads(_reader_fixture('fr/iac/'+icao+'-geometry.json'))
+        data_file = 'AD_2_LFZI_DATA_01.pdf'
+        data_rows = _reader_fixture('fr/iac/LFZI-DATA.rows.txt').splitlines() if icao == 'LFZI' else []
+        doc = S.build_aerodrome(icao, [file] + ([data_file] if data_rows else []), lambda name: data_rows if name == data_file else [],
+                                'fixture', '2026-11-26', ad2=context['runways'], iac_pages_of=lambda name: [rows])
+        record = doc['procedures'][0]
+        point = record['points'][0]
+        c.eq((point['id'], point['alt'], point['profile_altitude']['ft'], point['profile_altitude']['role']),
+             ('IF25', None, 2100 if icao == 'LFZH' else 3000, 'recommended'), 'the ordinary record carries the IF level as advisory, without forcing an exact altitude', what=icao)
+        c.ok('if-procedure-level' in record['partial']['read'] and 'faf-altitude-constraint' in record['partial']['unread'], str(record['partial']), 'known IF role and unread FAF constraint stay distinct')
+        for restriction in ('min', 'max', 'at'):
+            changed = copy.deepcopy(record)
+            changed['chart_data']['profile_levels']['IF']['restriction'] = restriction
+            attach_levels(changed)
+            c.eq(changed['points'][0]['alt'], {'type': restriction, 'ft': levels['fixes']['IF']['altitude_ft']}, 'a separately decoded restriction uses the suite constraint schema', what=icao+' '+restriction)
+        changed = copy.deepcopy(record)
+        changed['chart_data']['profile_levels']['IF']['restriction'] = 'min'
+        changed['points'][0]['alt'] = {'type': 'at', 'ft': 4000}
+        attach_levels(changed)
+        c.eq((changed['points'][0]['alt'], changed['chart_data']['profile_level_conflict']), ({'type': 'at', 'ft': 4000}, True), 'a contradictory existing coded altitude is preserved and reported', what=icao+' existing altitude')
+
+
+@case('K582', 'Tibud explicitly labelled LOC FAF is retained as that chart role, never silently promoted to an ILS FAP or assigned a shaded-floor altitude', 'K', static=True,
+      tags=('procedure-readers', 'fr-ils'), rule='Rendered page 771 prints FAF LOC at 6 FAC; native qualifier must be uniquely adjacent in the same frame and bind to that distance column')
+
+def k582(c):
+    import copy
+    import json
+    _reader_modules()
+    from proc_iac_positions import axis_from_fragments
+    from proc_iac_levels import levels_from_fragments
+    source, axis, levels = _native_if_level('LFZH')
+    c.eq(levels['faf_role'], {'dme_nm': 6.0, 'threshold_nm': 5.1, 'navigation_type': 'LOC'},
+         'the adjacent LOC label qualifies the printed FAF, not the localizer-frequency label elsewhere on the page', what='printed FAF role')
+    F, legacy, file = _fr_iac_fixture('LFZH')
+    rows = legacy + ['@@IAC_AXIS ' + json.dumps(axis), '@@IAC_LEVELS ' + json.dumps(levels)]
+    profile = F.read_profile(rows, 'LFZH', file, '2026-11-26')
+    context = json.loads(_reader_fixture('fr/iac/LFZH-geometry.json'))
+    record, _ = F.final_record(profile, context['runways'])
+    c.eq((record['points'][1]['chart_role'], record['points'][1]['alt']), ('LOC FAF', None),
+         'the 1160 ft grey-floor annotation is not copied as a FAF or ILS-intercept altitude', what='route role')
+    c.ok('ils-fap-position' in record['partial']['unread'], str(record['partial']), 'the ILS FAP remains explicitly unresolved')
+    qualifier = next(f for f in source['fragments'] if f['text'] == 'LOC' and 415 < f['x'] < 440)
+    ambiguous = copy.deepcopy(source['fragments']) + [dict(qualifier, text='ILS')]
+    result = levels_from_fragments(ambiguous, source['strokes'], axis_from_fragments(ambiguous, with_positions=True))
+    c.eq(result['faf_role'], None, 'two possible navigation qualifiers do not choose one arbitrarily', what='qualifier ambiguity')
+    changed = copy.deepcopy(levels)
+    changed['faf_role']['threshold_nm'] = 3.1
+    profile = F.read_profile(legacy + ['@@IAC_AXIS ' + json.dumps(axis), '@@IAC_LEVELS ' + json.dumps(changed)], 'LFZH', file, '2026-11-26')
+    c.eq((profile['chart_data']['final_fix_roles'], profile['chart_data']['profile_level_conflict']), ({}, True),
+         'a qualifier for another distance column cannot qualify the FAF', what='role binding')
+
+
+@case('K583', 'SIA numeric MT glyph names decode printable WinAnsi while mixed or unknown glyph data stays unread', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Measured on Le Minizak current IAC; same WinAnsi numeric naming already used by the VAC source engine, with bounded all-fragment validation')
+def k583(c):
+    _reader_modules()
+    from proc_pdf import _mt_glyphs
+    from proc_iac_positions import _native_map
+    c.eq(_mt_glyphs('/MT65/MT68/MT32/MT50/MT32/MT76/MT70/MT90/MT76'), 'AD 2 LFZL', 'numeric source glyph names retain exact chart identity', what='source identity')
+    c.eq(_mt_glyphs('/MT108/MT146/MT97/MT120/MT101'), 'l’axe', 'the source uses WinAnsi smart apostrophe, not a control character', what='WinAnsi')
+    for text in ['/MT0/MT65', '/MT999', '/MT129', '/MT65 literal', '/MT123456', '/Other/MT65']:
+        c.eq(_mt_glyphs(text), text, 'unproved or nonprintable encoding is not partially rewritten', what=text)
+    font = {'/Encoding': {'/Differences': [2, '/MT49', '/MT46', '/MT53', '/Unknown']}}
+    c.eq(_native_map(font), {2: '1', 3: '.', 4: '5'}, 'native positions use explicit glyph names and original byte advances, never a shifted guess', what='native numeric mapping')
+    c.eq(_native_map({**font, '/ToUnicode': 'opaque'}), {}, 'the numeric-name fallback does not replace a different encoding layer', what='encoding guard')

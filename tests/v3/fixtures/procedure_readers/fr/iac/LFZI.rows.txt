@@ -1,0 +1,103 @@
+AIP AD 2 LFZI IAC RWY25 ILS Z LOC Z
+FRANCE 26 NOV 26
+APPROCHE AUX INSTRUMENTS CUPOCIK DULU BACECU
+Instrument approach
+CAT A B C D
+ALT AD : 159, DTHR : 140 (5 hPa) ILS Z ou/or LOC Z RWY25
+APP : CUPOCIK Approche / Approach 123.100 231.975 (1) ILS - DME VAR
+TWR : CUPOCIK Deti / Susut 122.800 119.800(S) 281.650 (1)
+XI 108.35 0°E
+ATIS : 129.225
+AFIS : Cupocik INFO 122.800 (1) Xitox vée MIL. RDH : 57 (2025)
+R 56
+48° 2500
+TMA VEMEZU 2.1 ALT MNM 25 NM GEZ
+00' 800 ASFC
+TMA CUPOCIK 3 DME requis/ required 2400
+CTR CUPOCIK
+ADF requis/ required TMA CUPOCIK 1
+096°
+301°
+12 NM XI 1500
+NDB HLDG NDB HLDG 3000
+GEZ IAF
+MAX IAS 220 kt IAF 249 PILEC
+072° Left GEZ 359 (109)
+T 1 min 073° GEZ
+FL 080
+253°
+47° 3000
+50' 252°
+1500 252°
+410
+(270) FAF
+P 71 OM
+2100
+500 ASFC 057°
+1500 SFC 087° GEZ
+17 NM XI
+073°
+MAPT
+MAX IAS 185 kt
+072°
+252°
+196 R 1 F
+R 183
+(56) 1500 NDB DME HLDG NDB DME HLDG
+1200
+D 18 A2 SFC PILEC
+SFC
+FL 095 MAX IAS 220 kt
+SFC 253° Left
+12 - 17 NM XI
+47°
+FL 080
+40'
+R 13 A1 3000
+UNL 2100
+R 14
+R 13 A2 SFC
+XI Ch 18Y 3000
+(108.35) UNL
+9 NM XI SFC
+ALT / HGT : ft SFC
+Distances : NM
+MOCA
+0 5 NM
+4.1 NM XI 005° 58' 005° 48' 005° 38' 005° 28' 005° 18'
+TA : 5000
+GEZ FAF IF
+API : Pataki dans l’axe vers 3000 (2860). A 6.3 XI domegon MAPT 252°
+3000
+à vikasi (MAX IAS 185 kt) pour kupikoxemox et neseta le
+XI OM (2860)
+radial 212° GEZ (RM 032°) vers GEZ .
+1450 252°
+Zobefo d’favegisasuta non laleso.
+(1310)
+Missed APCH : Climb straight ahead to 3000 (2860). 252° 3.0°-5.2%
+At 6.3 XI turn left (MAX IAS 185kt) to zifamofox and
+1110
+zanavu RDL 212° GEZ (RM 032°) in direction of GEZ .
+620 (970)
+DA MDA (480)
+DTHR (NM) 0.6 3.9 8.8 11.8
+DME XI (NM) 0.8 4.1 9.0 12
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva./ Vertical distances in ticu, RVR and VIS in luteva. REF HGT : ALT DTHR
+6.3 NM XI ILS LOC MVL
+DA (H) RVR(1) OCH OCH MDA (H) RVR MDA (H) VIS DME-XI
+145 710 (570) 1500 NM 2 3 4.1 5 6 7 8
+A
+154 710 (570) 1600 ALT 780 1100 1450 1730 2050 2370 2680
+B
+340 (200) 800 500 (360) 900 354 (HGT) (640) (960) (1310) (1590) (1910) (2230) (2540)
+C 166 810 (670) 2400
+D 180 860 (720) 3600
+Sapituxalugi/ Remarks : (1) levasos d'état français / french zebep pedolufuz : 550
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+OM - MAPT 2 min 50 2 min 20 1 min 59 1 min 43 1 min 31 1 min 14 1 min 043.3 NM
+VSP (ft/min) 370 450 530 610 685 845 980
+AMDT 12/26 CHG : Sikixikuz, VAR. © GODAKEZUL
+C A T
+212° GEZ
+032°

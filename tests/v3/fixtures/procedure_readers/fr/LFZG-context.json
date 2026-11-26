@@ -1,0 +1,91 @@
+{
+  "cycle": "2026-10-29",
+  "runways": [
+    {
+      "id": "10",
+      "lat": 48.073681,
+      "lon": -4.0461,
+      "elev": 77,
+      "qfu": 101,
+      "true": 100.8,
+      "length": 2102,
+      "width": 45,
+      "displaced": 233,
+      "dthr": {
+        "lat": 48.073564,
+        "lon": -4.045158,
+        "elev": 81
+      },
+      "source": "eaip"
+    },
+    {
+      "id": "28",
+      "lat": 48.070183,
+      "lon": -4.018369,
+      "elev": 121,
+      "qfu": 281,
+      "true": 280.8,
+      "length": 2102,
+      "width": 45,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "14",
+      "lat": 48.069925,
+      "lon": -4.040497,
+      "elev": 110,
+      "qfu": 142,
+      "true": 141.8,
+      "length": 850,
+      "width": 30,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "32",
+      "lat": 48.063922,
+      "lon": -4.033525,
+      "elev": 109,
+      "qfu": 322,
+      "true": 321.8,
+      "length": 850,
+      "width": 30,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "14L",
+      "lat": 48.069267,
+      "lon": -4.038522,
+      "elev": 115,
+      "qfu": 142,
+      "true": 141.8,
+      "length": 549,
+      "width": 50,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "32R",
+      "lat": 48.065372,
+      "lon": -4.033994,
+      "elev": 111,
+      "qfu": 322,
+      "true": 321.8,
+      "length": 549,
+      "width": 50,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    }
+  ],
+  "iac": [
+    "AD_2_LFZG_IAC_RWY28_FNA_ILS_LOC.pdf",
+    "AD_2_LFZG_IAC_RWY28_INA_ILS_LOC_VOR.pdf"
+  ]
+}

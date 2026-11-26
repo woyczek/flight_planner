@@ -1,0 +1,19 @@
+AD 2 LFZE DATA RWY26 INA RNAV ILS Z CODEAIP
+19 FEB 2026FRANCE
+BOPAN NIXUNIT
+PRECODING INA RNAV (GNSS ou / or DME) RWY 26
+AMDT 02/26© Tedatod de b'fatumadicol Malomibaruba, France
+INA RNAV RWY 26
+RMK - MAG VAR 2025 2.0° E REF NAVAID : DEB
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - MIVOP - ---- - - -- -
+IF MIVOP - ---- 3000 - - - -
+INA MIVOP TF VAGUG - 010 011.9 6.9 - 2000 4000 220 - 1.0
+TF RIFEL - 346 347.8 6.0 - 2000 - 210 - 1.0
+IF VAGUG - ---- 2000 4000 220 - -
+INA VAGUG
+TF RIFEL - 346 347.8 6.0 - 2000 - 210 - 1.0
+IF NULOC - ---- 2000 - 170 - -
+INA NULOC
+TF RIFEL - 166 167.6 3.0 - 2000 - 170 - 1.0
+INA RIFEL IF RIFEL - ---- 2000 - 210 - -

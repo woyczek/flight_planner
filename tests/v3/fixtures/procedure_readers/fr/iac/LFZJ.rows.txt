@@ -1,0 +1,117 @@
+AD 2 LFZJ IAC RWY05 ILS Z LOC ZAIP
+FRANCE 26 NOV 26
+APPROCHE AUX INSTRUMENTS XECEZO LE PUZEBAGOTO
+Instrument approach
+CAT A B C D
+ALT AD : 13 , DTHR : 6 (1 hPa) ILS Z ou/ or LOC Z RWY05
+ATIS : 129.750
+ILS - DME VAR
+APP : LOTIDU Approche /Approach 126.425 339.350(1) - LOTIDU Betod 125.300 342.675(1) - LOTIDU Précision : 123.400 232.625(1)
+DI 108.3 3°E
+TWR : XECEZO Deti /T fegi 121.100 121.900(S) 343.425(1)
+(1) Vagizore MIL /Muxukisu MIL ACFT RDH : 51 (2025)
+FISUN 2310
+1000 1000 2000 2871
+R 234 A 2284
+2730 2000
+R 234 B
+SFC ZUG Ch 27X
+5000
+(109.2) 1070
+2000
+2792 (1064)
+5 NM DI 1000 1000
+43° 1752
+10' KE A LOTIDU 1
+239
+1821 1821
+(1815) (1815) (233)
+1000 1000
+P 62 739 MAX IAS 185 kt
+FL 195 837 (733)
+SFC (831)
+1034 049°
+(1028) DI Ch 18X
+P 48
+(108.3) 3300 ASFC
+804 SFC
+(798)
+KE A LOTIDU 1
+1345 MAPT
+(1339)
+P 63 P 63
+FL 195 FL 195
+DOC 322
+NDB DME HLDG NDB DME HLDG IAF 049° 247° SFC SFC
+ZUCIL
+ZUCIL
+43° MAX IAS 210 kt 703
+522
+00' 12 - 18 NM ZUG
+049° ALT / HGT : ft
+FL 080 Distances : NM
+2400 MOCA
+2400 0 5 NM
+CTR XECEZO D SFC - 3500 ASFC 008° 38'
+067°
+Goginanoned P API 05 valalosudot
+247° DOC 2400
+Ragineber use of P API 05
+R 64 A ALT MNM 25 NM DOC
+247°
+FL 195 DME requis/ required
+SFC
+D 54 A 3800
+ADF requis/ required 5500
+UNL
+18 NM ZUG SFC
+Procédure susotivumuc A NODOKI NDB/DME 269°089°
+Mamabixopege procedure HOLDING NDB /DME
+233° DOC 233° DOC
+API sous surveillance betod si P 48 tuberi
+2400
+MISSED APCH under betod surveillance if P 48 tuberi
+42°
+50' 008° 08' 008° 18' 008° 28'
+TA : 5000
+FAF 5.4 NM DI FAF DME
+IF 049° DI
+2000
+MAPT
+(1994) OM API : Pataki dans l’axe vers 2400 (2394). A 5 DI domegon à droite
+LOC
+1480 049° vers DOC puis ZUCIL .
+3.5° - 6.1% Zobefo d'favegisasuta non laleso.
+IF 8.4 NM DI (1474)
+049°
+MDA
+710
+Missed approach : Climb straight ahead to 2400 (2394). At 5 DI turn
+(704) DA
+049° right to DOC then ZUCIL .
+MDA
+Level favegisasuta not vozepik.
+12 NM ZUG
+DME DI (NM) 8.4 5.4 4 1 0
+2000 DTHR (NM) 8.3 5.3 3.9 0.9
+MNM AD : distances bubinonule en pieds, RVR et VIS en luteva./ Vertical distance in ticu, RVR and VIS in fifigi . REF HGT : ALT DTHR
+ILS ILS
+LOC + DME DI MVL (1)
+API 2.5% API 3% Nozicuco
+DME DI
+DA (H) RVR OCH OCH DA (H) RVR RVR MDA (H) OCH MDA (H) VIS OCH
+NM 5 4 3 2
+A 340 (330) 1500 326 240 (230) 1200 226 1500 1100 (1100) 1500 1094
+ALT 1860 1480 1120 750
+B 350 (350) 1500 341 250 (250) 1300 241 1500 1140 (1130) 1600 1126
+750 (740) 736
+C 360 (360) 1600 351 260 (260) 1300 251 2400 1240 (1230) 2400 1225 (HGT) (1854) (1474) (1114) (744)
+D 370 (370) 1700 363 270 (270) 1300 263 2400 1430 (1430) 3600 1422
+Sapituxalugi/ Remarks : (1) MVL dukavivivi au Mavi de l’axe 05/23 / Nozicuco is timasazod Canof of center ribi 05/23 .
+MVL 13: lopefopov / turikuvezu .
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+FAF - MAPT 4.4 NM 3 min 46 3 min 06 2 min 38 2 min 18 2 min 02 1 min 39 1 min 26
+VSP (ft/min) 430 520 615 705 800 985 1135
+POTICO AMDT 12/26 CHG : Sikixikuz, VAR, P 48, dudedap AD. © DIA
+C A T
+179°

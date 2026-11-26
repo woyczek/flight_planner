@@ -1,0 +1,65 @@
+{
+  "cycle": "2026-10-29",
+  "runways": [
+    {
+      "id": "12L",
+      "lat": 43.586111,
+      "lon": 6.255714,
+      "elev": 17,
+      "qfu": 123,
+      "true": 124.69,
+      "length": 2600,
+      "width": 45,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "30R",
+      "lat": 43.572769,
+      "lon": 6.282217,
+      "elev": 6,
+      "qfu": 303,
+      "true": 304.69,
+      "length": 2600,
+      "width": 45,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "12R",
+      "lat": 43.575831,
+      "lon": 6.251889,
+      "elev": 7,
+      "qfu": 123,
+      "true": 124.69,
+      "length": 1100,
+      "width": 30,
+      "displaced": 324,
+      "dthr": {
+        "lat": 43.575325,
+        "lon": 6.252897,
+        "elev": 10
+      },
+      "source": "eaip"
+    },
+    {
+      "id": "30L",
+      "lat": 43.570189,
+      "lon": 6.263094,
+      "elev": 7,
+      "qfu": 303,
+      "true": 304.69,
+      "length": 1100,
+      "width": 30,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    }
+  ],
+  "iac": [
+    "AD_2_LFZB_IAC_RWY30R_ILS_Y_LOC_Y.pdf",
+    "AD_2_LFZB_IAC_RWY30R_ILS_Z_LOC_Z.pdf"
+  ]
+}

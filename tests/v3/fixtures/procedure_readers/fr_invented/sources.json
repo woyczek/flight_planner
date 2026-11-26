@@ -1,0 +1,10 @@
+[
+  {
+    "fixture": "AD_2_LFZY_IAC_RWY05_ILS_Z_LOC_Z.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC (approche aux instruments). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "ZQX-positioned-fragments.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, carte IAC ILS/LOC : fragments de texte positionnés. Aucune valeur n'est réelle."
+  }
+]

@@ -1,0 +1,43 @@
+{
+  "cycle": "2026-10-29",
+  "runways": [
+    {
+      "id": "09",
+      "lat": 43.468244,
+      "lon": -3.837225,
+      "elev": 241,
+      "qfu": 88,
+      "true": 89.17,
+      "length": 2250,
+      "width": 45,
+      "displaced": 667,
+      "dthr": {
+        "lat": 43.468272,
+        "lon": -3.834703,
+        "elev": 242
+      },
+      "source": "eaip"
+    },
+    {
+      "id": "27",
+      "lat": 43.468536,
+      "lon": -3.809422,
+      "elev": 219,
+      "qfu": 268,
+      "true": 269.17,
+      "length": 2250,
+      "width": 45,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    }
+  ],
+  "iac": [
+    "AD_2_LFZA_IAC_RWY09_RNP.pdf",
+    "AD_2_LFZA_IAC_RWY09_VOR.pdf",
+    "AD_2_LFZA_IAC_RWY27_ILS_Y_LOC_Y.pdf",
+    "AD_2_LFZA_IAC_RWY27_ILS_Z_LOC_Z.pdf",
+    "AD_2_LFZA_IAC_RWY27_RNP.pdf",
+    "AD_2_LFZA_IAC_RWY27_VOR.pdf"
+  ]
+}

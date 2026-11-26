@@ -1,0 +1,42 @@
+[
+  {
+    "fixture": "AD_2_LFZA_DATA_01.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "AD_2_LFZA_DATA_RWY27_ILS_Z_CODE.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC d'une approche ILS (CODE). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "AD_2_LFZB_DATA_02.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "AD_2_LFZE_DATA_01.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "AD_2_LFZE_DATA_RWY26_INA_RNAV_ILS_Z_CODE.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page de codage ARINC d'une approche ILS (CODE). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "AD_2_LFZG_DATA_01.pdf.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, page DATA. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZA-context.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZB-context.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZE-context.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "LFZG-context.json",
+    "reference": "Page inventée, sur le modèle de l'AIP de France, AD 2, rubrique AD 2.12 (pistes, seuils, caps vrais) et liste des cartes IAC. Aucune valeur n'est réelle."
+  }
+]

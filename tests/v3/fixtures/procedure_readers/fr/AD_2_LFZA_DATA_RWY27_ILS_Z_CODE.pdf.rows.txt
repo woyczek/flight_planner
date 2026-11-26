@@ -1,0 +1,26 @@
+AD 2 LFZA DATA RWY27 ILS Z CODEAIP
+19 FEB 2026FRANCE
+XEDIZEZA PEDA DIZIPA
+PRECODING ILS Z RWY 27
+AMDT 02/26© Tedatod de b'fatumadicol Malomibaruba, France
+ILS Z RWY 27
+RMK - MAG VAR 2025 0.9°E REF NAVAID : -
+Leg Path Waypoint Fly Direction Direction Distance Turn MNM Altitude MAX Altitude MAX Vertical angle Navigation
+sequence Terminator Identification Over MAG (°) True (°) (NM) direction (FL or AMSL ft) (FL or AMSL ft) IAS (kt) (°) / TCH (ft) Accuracy (NM)
+HLDG - ZA277 - - - - - - - - - -
+IF ZA277 - - - - - - 3500 220 - -
+TF ZA275 - 358 359.2 4.5 - 2500 3500 220 - 1.0
+INA ZA277
+TF ZA276 - 088 089.2 7.0 R 2500 3500 220 - 1.0
+TF IZA27 - 189 189.7 4.6 R 2500 2500 200 - 1.0
+IF ZA274 - - - - - 2500 5000 - - -
+INA ZA274 TF ZA276 - 189 189.8 3.8 - 2500 3500 220 - 1.0
+TF IZA27 - 189 189.7 4.6 - 2500 2500 200 - 1.0
+IF BILIL - - - - - 2500 5000 - - -
+INA BILIL
+TF IZA27 - 299 300.3 6.4 - 2500 2500 200 - 1.0
+IF ZA501 - - - - - 2500 3500 220 - -
+INA ZA501
+TF IZA27 - 359 000.0 4.5 - 2500 2500 200 - 1.0
+IF IZA27 - - - - - 2500 2500 200 - -
+APCH See chart ILS Z RWY 27

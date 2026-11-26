@@ -1,0 +1,66 @@
+{
+  "cycle": "2026-10-29",
+  "runways": [
+    {
+      "id": "01",
+      "lat": 50.560108,
+      "lon": 5.385444,
+      "elev": 148,
+      "qfu": 13,
+      "true": 14.86,
+      "length": 1580,
+      "width": 30,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "19",
+      "lat": 50.573836,
+      "lon": 5.391164,
+      "elev": 153,
+      "qfu": 193,
+      "true": 194.86,
+      "length": 1580,
+      "width": 30,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "08",
+      "lat": 50.562881,
+      "lon": 5.383017,
+      "elev": 156,
+      "qfu": 75,
+      "true": 77.41,
+      "length": 2825,
+      "width": 45,
+      "displaced": 0,
+      "dthr": null,
+      "source": "eaip"
+    },
+    {
+      "id": "26",
+      "lat": 50.568458,
+      "lon": 5.422231,
+      "elev": 135,
+      "qfu": 255,
+      "true": 257.41,
+      "length": 2825,
+      "width": 45,
+      "displaced": 980,
+      "dthr": {
+        "lat": 50.567872,
+        "lon": 5.4181,
+        "elev": 132
+      },
+      "source": "eaip"
+    }
+  ],
+  "iac": [
+    "AD_2_LFZE_IAC_RWY26_FNA_ILS_Z_CAT123_LOC_Z.pdf",
+    "AD_2_LFZE_IAC_RWY26_ILS_Y_CAT123_LOC_Y.pdf",
+    "AD_2_LFZE_IAC_RWY26_INA_RNAV_ILS_Z.pdf"
+  ]
+}
