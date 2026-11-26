@@ -56,6 +56,7 @@ import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle n
 import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (extrait)
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
+import * as AL from './auto_limits.js'; // SOG-0653 : les bornes des niveaux d'« Auto » (extrait)
 import {
   copyAndTell,
   copyText
@@ -132,7 +133,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js', 'altn_wx.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js', 'altn_wx.js', 'auto_limits.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -7072,11 +7073,7 @@ function levelAuto(C) {
     b.title = tt(why || TX.levelAutoHint);
     b.setAttribute('aria-pressed', String(!!f.level?.auto));
   }
-  const cons = Object.values(f.route?.constraints || {}).map(Number).filter(v => v > 0),
-    lim = {
-      minFt: Math.max(3000, ...cons),
-      maxFt: ceilOf(C) ?? 20000 // SOG-0562 : le plus bas du plafond de la fiche et de celui du modèle (EUROCONTROL)
-    },
+  const lim = AL.autoLimits(f.route?.constraints, ceilOf(C)), // modules/fuel/auto_limits.js (SOG-0653, extrait de ce fichier)
     cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
       ...lim,
       max: RE.LEVELS_MAX
