@@ -479,8 +479,8 @@ async function load(c) {
       passage: c.passage
     });
   c.states = states;
-  seedConstats(c, D.readBook(doc, c.id), seance, theirs.map(t => D.readBook(t, c
-    .id))); // SOG-0620 lot 3 : « Prévu » garde ses constats d'un rechargement à l'autre
+  seedConstats(c, D.readBook(doc, c.id), seance, theirs.map(t => D.readBook(t, c.id)), peers.map(p => teamOf(idx, c.id,
+    p))); // SOG-0620 lot 3 : « Prévu » garde ses constats d'un rechargement à l'autre
   // un carnet d'avant les enveloppes : ce qui est ouvert à ce premier calcul est lu (voir isUnread) ; un carnet marqué ou absent : la règle des enveloppes
   const bk = D.bookFor(D.readBook(doc, c.id), seance);
   c.legacyRead = bk && !bk.marked ? c.legacyRead || new Set(states.filter(x => x.open).map(x => x.id)) : null;
@@ -571,7 +571,7 @@ export function constatsOf(c) {
 
 /** Les constats de « Prévu » relus des carnets (SOG-0620 lot 3) : les miens (ce que ce vol a déjà tenu et passé : un rechargement les garde) et
  *  ceux des AUTRES pilotes de la séance (`c.shared` : id d'événement → l'heure la plus ancienne, en ms — seul « tenu à » en est dit). */
-function seedConstats(c, ownBook, seance, theirBooks) {
+function seedConstats(c, ownBook, seance, theirBooks, theirTeams = []) {
   const k = constatsOf(c),
     now = Date.now(),
     mine = D.constatsOf(ownBook, seance, now);
@@ -580,11 +580,26 @@ function seedConstats(c, ownBook, seance, theirBooks) {
   for (const [id, t] of Object.entries(mine.passed))
     if (!k.passed.has(id)) k.passed.set(id, new Date(t).toISOString());
   c.shared = new Map();
-  for (const b of theirBooks)
+  c.mates =
+    new Map(); // les constats de mes équipiers (la même lettre d'équipe, la même séance) : « tenu à » d'un événement de MON équipe prend le plus ancien
+  const letter = ownLetter(c);
+  theirBooks.forEach((b, i) => {
     for (const [id, t] of Object.entries(D.constatsOf(b, seance, now, true).held)) {
-      const cur = c.shared.get(id);
-      if (cur === undefined || t < cur) c.shared.set(id, t);
+      for (const m of letter && theirTeams[i] === letter ? [c.shared, c.mates] : [c.shared]) {
+        const cur = m.get(id);
+        if (cur === undefined || t < cur) m.set(id, t);
+      }
     }
+  });
+}
+
+/** La lettre d'équipe (`team`) de la ligne d'affectation de ce pilote pour cette mission, '' sans elle. */
+function teamOf(idx, mission, pilot) {
+  const l = (Array.isArray(idx?.assignments) ? idx.assignments : []).slice(0, 5000).find(a => a && typeof a === 'object' && MS.midOf(own(a,
+        'mission')) === mission &&
+      MS.triOf(own(a, 'pilot')) === pilot),
+    t = l ? String(own(l, 'team') ?? '').toUpperCase() : '';
+  return /^[A-Y]$/.test(t) ? t : '';
 }
 
 /** Écrit dans MON carnet les constats pas encore écrits (SOG-0620 lot 3) : une écriture au premier constat de chaque événement ou point, jamais

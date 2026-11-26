@@ -17482,7 +17482,11 @@ def n292(c):
                         'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
     # the pilot's team is said by the line (`team: A`, Blue); the peer DEF flies Red (`team: B`) and its book says it held the drop (EV-3) 11 minutes after take-off
     assignments = {'assignments': [{'mission': 'X-905A', 'pilot': 'ABC', 'callsign': 'AZUR', 'team': 'A', 'takeoff': start},
-                                   {'mission': 'X-905A', 'pilot': 'DEF', 'callsign': 'RUBIS', 'team': 'B', 'takeoff': start}]}
+                                   {'mission': 'X-905A', 'pilot': 'DEF', 'callsign': 'RUBIS', 'team': 'B', 'takeoff': start},
+                                   {'mission': 'X-905A', 'pilot': 'GHI', 'callsign': 'AZUR2', 'team': 'A', 'takeoff': start}]}
+    # my teammate GHI (team A, like me) held the rendezvous 10 minutes after take-off, before my own constat: « tenu à » takes the EARLIEST
+    mate_held = iso(start_dt + datetime.timedelta(minutes=10))
+    mate_book = {'schema': 1, 'mission': 'X-905A', 'seance': f'A:{start[:10]}', 'reads': 1, 'held': {'EV-1': mate_held}, 'by': 'GHI', 'updated_at': mate_held}
     peer_held = iso(start_dt + datetime.timedelta(minutes=11))
     peer_book = {'schema': 1, 'mission': 'X-905A', 'seance': f'A:{start[:10]}', 'reads': 1, 'held': {'EV-3': peer_held}, 'by': 'DEF', 'updated_at': peer_held}
     BOOK = 'pilot/ABC/missions/X-905A.json'
@@ -17494,7 +17498,8 @@ def n292(c):
         c.js(_DW_CLEAR)
         c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _PV_REGISTRY], ['missions/X_TIR/X-905A/missionX-905A.yaml', _PV_MISSION]])
         c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], ['missions/affectations.json', assignments, 'document'],
-                                                                            ['pilot/DEF/missions/X-905A.json', peer_book, 'document']])
+                                                                            ['pilot/DEF/missions/X-905A.json', peer_book, 'document'],
+                                                                            ['pilot/GHI/missions/X-905A.json', mate_book, 'document']])
         c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list')
         c.tap(f'{M} [data-list] [data-id="X-905A"]')
         c.until(f"!!document.querySelector('{S} [data-dw-planned]')", timeout=30000, what='the section « Prévu »')
@@ -17511,6 +17516,8 @@ def n292(c):
         c.eq(list(rows), ['EV-1', 'EV-2', 'EV-3'], 'the last event held and the next two, in time order', what='lines')
         c.ok(re.search(r'tenu à \d\d:\d\dZ, \d+ min de retard \(dans la tolérance\)', rows['EV-1'][2]) is not None, rows['EV-1'][2],
              'the rendezvous: « tenu à hh:mmZ, n min de retard (dans la tolérance) » (own team, held 7 minutes after its planned time)')
+        c.ok(f'tenu à {hhmm(start_dt + datetime.timedelta(minutes=10))}' in rows['EV-1'][2], rows['EV-1'][2],
+             'the rendezvous of MY team: « tenu à » is the EARLIEST time, that of my teammate (take-off + 10) before my own constat')
         c.ok(re.search(r'dans \d+ min · 10 min après Rendez-vous au point Romeo tenu', rows['EV-2'][2]) is not None and 'Blue' in rows['EV-2'][2], rows['EV-2'][2],
              'the silence of Blue: « dans n min · 10 min après le rendez-vous tenu », the chip Blue')
         c.ok(rows['EV-3'][3] is True and 'heure imposée' in rows['EV-3'][2] and f'tenu à {hhmm(start_dt + datetime.timedelta(minutes=11))}' in rows['EV-3'][2]

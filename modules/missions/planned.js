@@ -78,7 +78,10 @@ export function model(c, view, o = {}) {
           atMs = Date.parse(t.plannedAt || ''),
           rel = plan ? pick(plan, e.id) : null,
           own = RUN.isOwnEvent(e, letter),
-          heldMs = own && k.held.has(e.id) ? Date.parse(k.held.get(e.id)) : null,
+          // le plus ancien : mon constat, ou celui d'un équipier de la même équipe (mon état en direct, lui, ne vient que de MA position)
+          earliest = own ? Math.min(k.held.has(e.id) ? Date.parse(k.held.get(e.id)) : Infinity, c.mates?.get(e.id) ?? Infinity) :
+          Infinity,
+          heldMs = Number.isFinite(earliest) ? earliest : null,
           late = heldMs !== null && Number.isFinite(atMs) ? Math.round((heldMs - atMs) / 60000) : null,
           eta = own && heldMs === null ? k.eta.get(e.id) : undefined,
           refEv = e.ref?.kind === 'event' ? byId.get(e.ref.id) : null;
@@ -93,7 +96,7 @@ export function model(c, view, o = {}) {
           own,
           // le constat PARTAGÉ d'un événement d'une autre équipe (les carnets des autres pilotes, l'heure la plus ancienne) : « tenu à » seulement
           sharedMs: !own && c.shared?.get(e.id) !== undefined ? c.shared.get(e.id) : null,
-          heldMs: Number.isFinite(heldMs) ? heldMs : null,
+          heldMs,
           lateMin: late,
           inTol: late === null ? null : late <= (e.tolLateMin || 0) && late >= -(e.tolEarlyMin || 0),
           etaMin: Number.isFinite(eta) ? eta : null,
