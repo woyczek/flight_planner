@@ -210,6 +210,8 @@ def level_matters(primary, info):
     """(vrai ou faux, la raison dite) : la raison du PREMIER échec (au niveau demandé) est-elle une affaire de NIVEAU ? Une reprise à un niveau plus bas n'est tentée que si oui (SOG-0354 L5 4, défaut 2) ; sinon la réponse part tout de suite avec sa raison.
     Oui : une ERREUR du contrôle qui parle de niveau, d'altitude, de plancher, de plafond ou de profil (un vol trop court pour son niveau, RFL NOT ABV FL275) ; sans route, une track écartée pour le NIVEAU qui serait valable à un niveau qu'elle propose (`sections.level_retry`) ; sans route et sans découpage par sections (un vol hors océan), le message « à ce niveau » du moteur.
     Non : une ERREUR d'une autre nature (une règle RAD d'itinéraire), une track écartée par le sens, l'heure ou le réseau, une route libre qui n'a pas abouti."""
+    if primary.get('level_free'):      # SOG-0652 : un passage imposé n'est sur aucune voie, à aucun niveau : un autre niveau ne change rien
+        return False, 'un passage imposé n\'est sur aucune voie de la base, à aucun niveau : un autre niveau ne change pas la réponse'
     errors = [i['text'] for i in primary.get('issues') or [] if i.get('level') == 'ERREUR']
     for text in errors:
         if LEVEL_WORDS.search(text):
@@ -437,7 +439,7 @@ def plan(request, root):
         primary = dict(ok=False, status='CALCUL INTERROMPU', error=str(e), route=request.get('route', ''), legs=[], issues=[])
     except ValueError as e:
         hint = nat_layer.hint(nav, str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper()) if request.get('mode', 'calculate') == 'calculate' else ''      # SOG-0263 : traversée sans track dans le sens du vol
-        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[], **({'error_code': e.code} if isinstance(getattr(e, 'code', None), str) else {}))      # le CODE de la raison d'un échec qui en a un (« no_route_at_level ») : l'écran le dit dans sa langue
+        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[], **({'error_code': e.code} if isinstance(getattr(e, 'code', None), str) else {}), **({'level_free': True} if getattr(e, 'level_free', False) else {}))      # le CODE de la raison d'un échec qui en a un (« no_route_at_level ») : l'écran le dit dans sa langue
     rad_retries = []
     avoids = []
     head_nm = primary.get('distance_nm')
@@ -612,7 +614,7 @@ def plan(request, root):
         primary, alternatives = replace_refused_head(primary, alternatives)
     message = ('' if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''      # SOG-0401 : « sans incompatibilité détectée » n'est plus rendu (c'était un 0 constat sur les seules conditions décidables, 95 contre 555 à examiner) : l'écran compose sa phrase avec `rad.decided` et `rad.review`
     repli = None
-    if rejected and not alternatives and not check_only and not interrupted:
+    if rejected and not alternatives and not check_only and not interrupted and request.get('proposals') is not False:      # SOG-0659 : `proposals: false` (le calcul d'un niveau de la recherche de niveaux : « la route de TÊTE seule, ni alternatives ni propositions ») : les propositions de repli ne se cherchent pas ; absent ou vrai : comme avant
         engine.STATE_CEIL = s0 + bounds['total_states']      # les propositions de repli ont la fin du budget
         nav._routing_cache.clear()
         try:
@@ -814,7 +816,7 @@ def levels(template, levels, data, rad_file, fra_file, first_valid=False, stop=N
             break
         row = (known or {}).get(level)      # SOG-0586 (Auto 2) : un niveau déjà jugé (gardé par le lanceur) n'est pas recalculé
         if row is None:
-            res = compute(dict(template, fl=level, alternatives=False), data, rad_file, fra_file)
+            res = compute(dict(template, fl=level, alternatives=False, proposals=False), data, rad_file, fra_file)      # SOG-0659 : la route de TÊTE seule : sans propositions de repli (5 à 16 s par niveau sans route, 65 % des 56 s de douze niveaux)
             row = level_summary(level, res)
             if judged is not None:      # le niveau jugé est rendu au lanceur AVANT le suivant : une annulation ou un arrêt ne le perd pas ; un rappel qui échoue n'arrête jamais le calcul
                 try:

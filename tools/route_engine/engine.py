@@ -18,12 +18,14 @@ from . import space_dct      # SOG-0513 lot C : la limite d'un direct dans un es
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
 SEARCH_CAP_S = 120.0   # SOG-0524 : le GARDE-FOU d'UNE recherche (A*), en secondes : large, il ne décide plus de rien — un calcul qui le dépasse est « interrompu » (le poste est trop lent), jamais « impossible » ; les budgets se comptent en ÉTATS (STATE_CEIL, `max_states`)
+RECOVERY_WORK = 60_000_000      # SOG-0571 : le budget de TRAVAIL de chaque recherche des propositions de repli (arêtes parcourues + étiquettes comparées, voir `_search`) : environ 10 s sur le poste mesuré (5,6 millions d'unités par seconde) ; EGGW → KJFK au FL530 y passait 111 s pour 16 000 états, le plafond d'ÉTATS ne coupait rien (617 millions d'unités)
 STATE_CEIL = None   # SOG-0524 : le plafond ABSOLU du compteur d'états du Nav (`states_total`) de la phase en cours (route de tête, alternatives, propositions), posé par plan.plan() ; None : seule la borne propre de chaque recherche (100 000 états). Déterministe : la même demande rend la même réponse quelle que soit la charge du poste
 
 
 class NoRouteAtLevel(ValueError):
     """Lot « no-route-at-level » du relais (21 nov.) : aucune route à ce niveau ; porte le CODE de la raison (`code`), que les écrans disent dans leur langue ; le texte français n'est que le repli d'un écran qui ne connaît pas le code."""
     code = 'no_route_at_level'
+    level_free = False      # SOG-0652 : vrai quand la cause n'est PAS le niveau (un passage imposé qui n'est sur aucune voie, à aucun niveau) : un autre niveau ne change rien, la reprise à d'autres niveaux ne se tente pas
 
 
 class Interrupted(Exception):
@@ -273,6 +275,18 @@ class Nav:
             cache[key]=previous!=v and geo.turn_deg(nodes[previous],nodes[u],nodes[v])>self.TURN_MAX_DEG if previous in nodes and u in nodes and v in nodes else False
         return cache[key]
 
+    def on_network(self,key):
+        """SOG-0652 : ce nœud est-il l'extrémité d'au moins une arête du réseau, à N'IMPORTE quel niveau (le graphe brut : toutes les voies, tous les niveaux) ou un point d'une aire de route libre ? Faux : aucun niveau ne le relie (le VOR de Saverne, « SAV », n'est l'extrémité d'aucune voie : six reprises à d'autres niveaux, 5,3 s, échouaient toutes pour cette cause)."""
+        incident=getattr(self,'_incident_nodes',None)
+        if incident is None:
+            raw=self.graph(None);incident=set()
+            for u,es in raw.items():
+                if es:
+                    incident.add(u);incident.update(v for v,e in es)
+            incident.update(r['key'] for r in getattr(getattr(self,'fra',None),'records',[]))
+            self._incident_nodes=incident
+        return key in incident
+
     def release_graph_caches(self):
         for name in ['_fra_graph_cache','_fra_discards','_routing_cache','_routing_base','_fra_recovery_graph_cache','_turn_cache']:
             cache=getattr(self,name,None)
@@ -443,7 +457,7 @@ class Nav:
             ls=getattr(self,'last_search',None)
             if ls is not None and ls is not before:self.states_total=getattr(self,'states_total',0)+(ls.get('expanded') or 0)
 
-    def _search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None,need=None,max_states=None):
+    def _search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None,need=None,max_states=None,max_work=None):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
         the cheapest cost/NM in this graph. It stays admissible with FRA bonus.
@@ -453,7 +467,7 @@ class Nav:
         { porte: { path, cost, band } } (celles atteintes), jamais une exception de budget : une porte non atteinte manque (`last_search['truncated']` dit que le budget a coupé). `end` est alors ignoré (toute porte convient). `need` : s'arrêter dès que ce nombre de portes est atteint (la route libre n'a besoin que des plus proches : une porte inatteignable fait sinon parcourir tout l'espace des états, 31 000 états, 5 s pour EIDW → KJFK).
         """
         import time
-        begun=time.perf_counter();expanded=0;fra_reachable=False
+        begun=time.perf_counter();expanded=0;work=0;fra_reachable=False      # SOG-0571 : `work` = les ARÊTES parcourues (la dépense réelle d'une recherche : un état d'un graphe de repli FRA en porte des centaines, six millisecondes chacun : 17 000 états ont pris 112 s, le plafond d'ÉTATS ne coupait rien)
         cap=max_states or 100000      # SOG-0524 : le plafond d'états de CETTE recherche : le sien, ramené à ce qui reste à la phase (STATE_CEIL)
         if STATE_CEIL is not None:cap=max(1,min(cap,STATE_CEIL-getattr(self,'states_total',0)))
         stop_at=begun+SEARCH_CAP_S if DEADLINE is None else min(begun+SEARCH_CAP_S,DEADLINE)      # SOG-0371 / SOG-0524 (garde-fou de temps seulement) : la borne de la phase en cours borne AUSSI la recherche déjà partie
@@ -512,12 +526,17 @@ class Nav:
             return 1 if ds<=climb_nm or de<=descent_nm else self.LOW_PENALTY
         q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
         labels[origin[:3]].append((0,low,high,origin))
+        work_cap=max_work or 0
         while q:
+            if work_cap and work>=work_cap:      # SOG-0571 : le budget de TRAVAIL (déterministe comme celui des états : la même demande rend la même réponse quelle que soit la charge du poste) : la recherche s'arrête, ce qu'elle n'a pas trouvé n'est pas dit impossible
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated='work',fra_reachable=fra_reachable)
+                if goal_set:return reached
+                raise ValueError(f'Budget de travail atteint ({work_cap:,} arêtes parcourues). Ce résultat ne prouve pas l’absence de route.'.replace(',',' '))
             if expanded%128==0 and time.perf_counter()>stop_at:      # SOG-0524 : le GARDE-FOU de temps : le poste est trop lent, le calcul est INTERROMPU (jamais dit « impossible » ni « budget atteint »)
-                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated='time',fra_reachable=fra_reachable)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated='time',fra_reachable=fra_reachable)
                 raise interrupted(round(stop_at-begun))
             if expanded%128==0 and expanded>=cap:      # SOG-0354 L5 (4) : le budget en ÉTATS (déterministe : la même demande rend la même réponse quelle que soit la charge du poste)
-                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated=True,fra_reachable=fra_reachable)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated=True,fra_reachable=fra_reachable)
                 if goal_set:return reached
                 raise ValueError(f'Budget de recherche atteint ({cap:,} états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.'.replace(',',' '))
             _,cost,state=heapq.heappop(q)
@@ -531,17 +550,18 @@ class Nav:
                         previous,e=prev[walk];path.append((previous[0],walk[0],e));walk=previous
                     reached[u]=dict(path=list(reversed(path)),cost=cost,band=(low,high))
                     if len(reached)==len(goal_set) or (need and len(reached)>=need):
-                        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,goals=len(goal_set))
+                        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,goals=len(goal_set))
                         return reached
             elif u==end and index==len(names) and (seen_fra or not require_fra):
                 if flight and not gate and not low-.01<=flight['arrival']<=high+.01:continue
                 path=[]
                 while state!=origin:
                     previous,e=prev[state];path.append((previous[0],state[0],e));state=previous
-                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,band=(low,high),cost=cost)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,band=(low,high),cost=cost)
                 return list(reversed(path))
             came=prev.get(state) if state!=origin else None      # SOG-0501 : l'arête par laquelle ce meilleur état a été atteint (le virage au point u)
-            for v,e in g.get(u,[]):
+            adjacent=g.get(u,[]);work+=len(adjacent)
+            for v,e in adjacent:
                 if self.nat_rejected and e.get('nat') and e['nat']['track'] in self.nat_rejected:continue
                 if came is not None and self.sharp_turn(came[0][0],u,v,came[1],e):continue
                 a,b=self.edge_band(e,'start')
@@ -567,7 +587,7 @@ class Nav:
                 factor=low_factor(u,v,e)
                 if factor is None:continue      # SOG-0532 : la voie est exclue
                 next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])*factor
-                bucket=labels[next_state[:3]]
+                bucket=labels[next_state[:3]];work+=len(bucket)      # SOG-0571 : le travail compte aussi les étiquettes de l'état comparées (la boucle de dominance : c'est elle qui coûte, des centaines d'étiquettes par état dans un graphe de repli FRA)
                 new_t,c_t,d_t=new+1e-10,c+.001,d-.001      # SOG-0354 L2b (1) : les trois seuils une fois, la boucle sans générateur (6,3 millions de tours par recherche de 6 000 états) : même test, mot pour mot
                 dominated=False
                 for old,lo,hi,_ in bucket:
@@ -581,7 +601,7 @@ class Nav:
                 kept.append((new,c,d,next_state));labels[next_state[:3]]=kept
                 costs[next_state]=new;prev[next_state]=(state,e)
                 heapq.heappush(q,(new+heuristic(v,next_index),new,next_state))
-        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),fra_reachable=fra_reachable)
+        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,work=work,seconds=round(time.perf_counter()-begun,4),found=bool(reached),fra_reachable=fra_reachable)
         return reached if goal_set else None
 
     def path(self,g,start,end):return self.search(g,start,end)
@@ -886,8 +906,8 @@ class Nav:
         # FRA and procedure states; repeated reachability searches are unnecessary.
         return self.resolve_sequence(via,start,end)
 
-    def constrained_path(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None):
-        return self.search(g,start,end,waypoints,require_fra,fra_already,initial_band)
+    def constrained_path(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,max_work=None):
+        return self.search(g,start,end,waypoints,require_fra,fra_already,initial_band,max_work=max_work)
 
     def generate(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         import time
@@ -908,8 +928,14 @@ class Nav:
             del g
             self.release_graph_caches()
             return self.generate(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal or {},search_density='wide'))
-        if path is None: raise (ValueError('Aucun chemin avec un tronçon FRA accessible aux conditions demandées.') if (terminal or {}).get('require_fra') else NoRouteAtLevel('Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.'))
+        if path is None: raise (ValueError('Aucun chemin avec un tronçon FRA accessible aux conditions demandées.') if (terminal or {}).get('require_fra') else self.no_route_at_level(mandatory))
         return self.format_path(dep,path,via),path
+
+    def no_route_at_level(self,mandatory=()):
+        """L'échec « aucune route à ce niveau » : `level_free` (SOG-0652) quand un passage imposé n'est sur aucune voie ni aucune aire de route libre."""
+        e=NoRouteAtLevel('Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.')
+        e.level_free=any(not self.on_network(k) for k in mandatory)
+        return e
 
     def format_path(self,dep,path,via=()):
         words=[dep]; last=None

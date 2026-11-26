@@ -23099,3 +23099,79 @@ def k615(c):
         records = result['docs'][0]['procedures']
         c.eq(sorted(p['name'] for p in records), ['SEMOX 1J', 'SEMOX 1K', 'XIRAT 1F', 'XIRAT 1G'], 'the launcher calls the same reader as the source batch', what='production SIDs')
         c.ok(all(p['source']['kind'] == 'ukpkg' and p['source']['file'] == 'ukpkg_EGYB_6-2.pdf' and 'path' in p['partial']['unread'] for p in records), str(records), 'source attribution and incomplete geometry survive normalization')
+
+
+@case('K668', 'Route engine, SOG-0571 / SOG-0652 / SOG-0659 (speed): the search has a budget of WORK (edges walked, labels compared) that the budget of states did not give — and the fallback proposals use it; a mandatory point that is on no airway at any level (the VOR of Saverne) makes no retry at other levels; the level scan asks for the head route ALONE (`proposals: false`: no fallback proposals at each level), while a plain request still gets them',
+      'K', static=True,
+      rule='The user (26 Nov 2026: Auto over 120 s, the proposed level in 20 s) through the relay: « la PERFORMANCE (SOG-0571, SOG-0659, SOG-0652) ». Measured on EGGW → KJFK at FL530: ONE search of the fallback proposals (`propose > build > constrained_path`) took 111 s for 16,000 states (617 million units of work), the budget of states cut nothing; 12 levels cost 56 s, 65 % in the fallback of the levels without a route; six useless retries at other levels 5.3 s for a point that is on no airway. INVENTED base (two aerodromes, points on a line, one airway), the counts of work and of calls are deterministic',
+      )
+def k668(c):
+    import sys
+    import tempfile
+    from unittest.mock import patch
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, plan as P, recovery, view as V
+    ask = {'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 350, 'date': '2026-11-09', 'alternatives': False}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td)
+        seen = []
+        real = engine.Nav.search
+
+        def spy(self, *args, **kwargs):
+            seen.append((self, args, kwargs))
+            return real(self, *args, **kwargs)
+        with patch.object(engine.Nav, 'search', spy):
+            res = P.compute(V.to_request(dict(ask, proposals=False)), data, rad, None)
+        c.eq(res['primary'].get('ok'), True, 'the invented flight has a route (the control of the search below)', what='route')
+        nav, args, _ = next((n, a, k) for n, a, k in seen if a and a[0] is not None and len(a) >= 3)
+        path = real(nav, *args)
+        full = nav.last_search['work']
+        c.ok(path and full > 0, str(nav.last_search), 'a search counts its WORK: the edges walked and the labels compared')
+        refused = ''
+        try:
+            real(nav, *args, max_work=max(1, full // 2))
+        except ValueError as e:
+            refused = str(e)
+        c.eq((refused.startswith('Budget de travail atteint'), nav.last_search.get('truncated')), (True, 'work'), 'a search that passes its budget of work stops, says so, and does not say that there is no route', what='work budget')
+        c.eq(real(nav, *args, max_work=full + 1) == path, True, 'a budget that is enough changes nothing: the same route', what='same route')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, points={'OFF': (50.0, 10.0)})
+        inside = []
+        real_propose = recovery.propose
+        calls = []
+
+        def propose(request, nav, rad_):
+            inside.append(True)
+            try:
+                return real_propose(request, nav, rad_)
+            finally:
+                inside.pop()
+
+        def spy2(self, *args, **kwargs):
+            if inside:
+                calls.append(kwargs.get('max_work'))
+            return real(self, *args, **kwargs)
+        with patch.object(recovery, 'propose', propose), patch.object(engine.Nav, 'search', spy2):
+            res = P.compute(V.to_request(dict(ask, via=['OFF'], proposals=True)), data, rad, None)
+        p = res['primary']
+        c.eq((p.get('ok'), p.get('error_code'), p.get('level_free')), (False, 'no_route_at_level', True), 'a mandatory point on no airway: no route, and the cause is not the level', what='off network')
+        c.eq((res['level_retry']['tried'], res['level_retry']['matters']), (False, False), 'no retry at other levels (six useless retries, 5.3 s, for the VOR of Saverne): the answer goes at once with its reason', what='no retry')
+        c.ok(calls and all(w == engine.RECOVERY_WORK for w in calls), str(calls), 'every search of the fallback proposals has its budget of work')
+        res_on = P.compute(V.to_request(dict(ask, fl=350, via=['P2'], proposals=True)), data, rad, None)
+        c.eq(res_on['primary'].get('level_free', False), False, 'a mandatory point that IS on an airway: the cause stays a matter of level for the engine as before', what='on network')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, rad = _sog532_bench(td, points={'OFF': (50.0, 10.0)})      # a mandatory point on no airway: no route at any level, no alternative: the fallback proposals are the only recourse
+        counted = []
+        real_propose = recovery.propose
+
+        def counting(request, nav, rad_):
+            counted.append(request.get('proposals'))
+            return real_propose(request, nav, rad_)
+        with patch.object(recovery, 'propose', counting):
+            plain = P.compute(V.to_request(dict(ask, via=['OFF'])), data, rad, None)
+            plain_calls = len(counted)
+            counted.clear()
+            scan = P.levels(V.to_request(dict(ask, via=['OFF'])), [350, 330, 310], data, rad, None)
+        c.eq(plain_calls, 1, 'a plain request without an alternative still gets its fallback proposals (the contract of before)', what='plain request')
+        c.eq((counted, [r['valid'] for r in scan['levels']], [r['fl'] for r in scan['levels']]), ([], [False, False, False], [350, 330, 310]), 'the level scan is the head route ALONE: three levels without a route, no fallback proposal at any of them (5 to 16 s each), the same verdicts', what='level scan')
+        c.ok(plain['primary'].get('ok') is False, str(plain['primary'].get('error'))[:120], 'the flight has no route (the base of the case)')

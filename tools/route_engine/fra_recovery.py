@@ -97,7 +97,7 @@ def build(request,nav,rad,anchors,samples,required_area=None,prepare_only=False)
     prepared=nav._fra_recovery_graph_cache[cache_key]
     g=engine.RoutingGraph(prepared);g.flight=prepared.flight;g.required_fra_area=required_area
     if prepare_only:return g
-    path=nav.constrained_path(g,anchors[0],anchors[-1],anchors[1:-1],require_fra=True)
+    path=nav.constrained_path(g,anchors[0],anchors[-1],anchors[1:-1],require_fra=True,max_work=engine.RECOVERY_WORK)      # SOG-0571 : bornée en TRAVAIL (le budget d'états ne coupait pas : 16 000 états pouvaient prendre 111 s)
     if not path:return None
     # Group actual consecutive FRA edges; zero-distance E/X gates are not
     # displayed as legs, but were indispensable to the search above.
@@ -165,7 +165,7 @@ def windowed(request,nav,rad,anchors,base_path):
         if not exit_caps:continue
         g.flight=dict(prepared.flight,arrival=max(exit_caps));g.required_fra_area=area
         initial=(prepared.flight['departure'],)*2 if i==0 else (0,fl*100)
-        try:path=nav.constrained_path(g,anchors[i],anchors[j],anchors[i+1:j],require_fra=True,initial_band=initial)
+        try:path=nav.constrained_path(g,anchors[i],anchors[j],anchors[i+1:j],require_fra=True,initial_band=initial,max_work=engine.RECOVERY_WORK)
         except ValueError:continue
         if path and feasible(compose([*selected,(i,j,path)])):selected.append((i,j,path))
     if not selected:return None
