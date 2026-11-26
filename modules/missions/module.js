@@ -49,6 +49,8 @@ export const meta = {
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
     'draft.js',
     'editor_drawers.js', 'catalog.js', 'catalog.yaml', 'editor_trial.js', 'editor_map.js', 'assigned.js',
+    'editor_flow.js', 'editor_flow_view.js',
+    'editor_flow_texts.js', // SOG-0620 lot 2 : le déroulé de l'atelier (Création), importé par editor_view.js
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'reader.js',
     'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
