@@ -275,6 +275,29 @@ svg.map {
   border: 1px solid var(--sog-border);
   border-radius: 50%
 }
+/* la notification flottante du cadre (AppFramework.notify), en bas au centre : une ligne par choix retiré */
+.notes {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(92vw, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none
+}
+.notes p {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  border: 1px solid var(--sog-border);
+  border-left: 4px solid var(--route);
+  box-shadow: 0 2px 8px #0003
+}
 .note {
   margin: 8px 0 0;
   font-size: 12.5px;
@@ -290,6 +313,9 @@ svg.map {
   <button data-go="piste">Piste choisie</button>
   <button data-go="choisie">Une choisie</button>
   <button data-go="aucune">« Aucune »</button>
+  <button data-go="change">Piste changée</button>
+  <button data-go="inverse">Chemin inverse</button>
+  <button data-go="plusieurs">Deux pistes</button>
   <span style="flex:1"></span>
   <button data-tone-btn="day">Jour</button>
   <button data-tone-btn="night">Nuit</button>
@@ -299,6 +325,7 @@ svg.map {
   <div class="mapbox" id="mapbox"><svg class="map" id="svg" role="img" aria-label="Carte : procédures candidates"></svg></div>
   <aside class="panel" id="panel"></aside>
 </div>
+<div class="notes" id="notes" role="status" aria-live="polite"></div>
 <script>
 'use strict';
 /* ---------- données inventées (deux terrains imaginaires) : l'arrivée à LFXB, deux pistes (27 et 09) ---------- */
@@ -493,7 +520,7 @@ const SCENES = {
     ids: CAND.map(c => c.id)
   },
   piste: {
-    t: 'LE CHEMIN : la piste d’abord quand le terrain en a plusieurs. Une piste choisie (ici la 27) ne laisse dessinées, sur la carte et dans la liste, que les procédures qui la desservent ; les numéros restent ceux de l’ouverture (le 3 et le 5 ne reviennent pas sur la 27, le 8 à 10 non plus).',
+    t: 'LE CHEMIN : la piste d’abord quand le terrain en a plusieurs ; la première ligne, « Toutes », enlève le filtre. Une piste choisie (ici la 27) ne laisse dessinées, sur la carte et dans la liste, que les procédures qui la desservent ; les numéros restent ceux de l’ouverture (le 3 et le 5 ne reviennent pas sur la 27, le 8 à 10 non plus).',
     ids: CAND.map(c => c.id),
     rwy: '27'
   },
@@ -504,6 +531,26 @@ const SCENES = {
     chosen: {
       star: 'c1'
     }
+  },
+  change: {
+    t: 'Changer de piste GARDE les choix qui desservent la nouvelle piste et RETIRE les autres ; l’écran le dit, une ligne par retrait (ici : la STAR NORTH 1B dessert la 27 et la 09, elle reste ; l’approche LOC 27 ne dessert que la 27, son choix est retiré). Le toucher de « Piste 09 » vient d’avoir lieu.',
+    ids: CAND.map(c => c.id),
+    rwy: '27',
+    chosen: {
+      star: 'c1',
+      app: 'c7'
+    },
+    act: () => setRunway('09')
+  },
+  inverse: {
+    t: 'LE CHEMIN INVERSE : choisir une procédure qui ne dessert qu’UNE piste choisit cette piste, et la ligne de la piste le dit (« Piste 27 · celle de BRAVO 3A ») ; les autres procédures qui ne desservent pas cette piste disparaissent comme pour une piste choisie à la main. Le toucher de BRAVO 3A vient d’avoir lieu.',
+    ids: CAND.map(c => c.id),
+    act: () => pick('c2')
+  },
+  plusieurs: {
+    t: 'Si la procédure choisie dessert PLUSIEURS pistes (NORTH 1B : 27 et 09), la piste reste à choisir : « Toutes » reste la ligne choisie des pistes et rien n’est écarté. Le toucher de NORTH 1B vient d’avoir lieu.',
+    ids: CAND.map(c => c.id),
+    act: () => pick('c1')
   },
   aucune: {
     t: '« Aucune » reste : pas de STAR pour ce vol, la ligne « Aucune » dit « choisie pour le vol » et les STAR restent des candidates estompées (on peut en choisir une à tout moment) ; l’approche, elle, est choisie.',
@@ -520,6 +567,8 @@ const NS = 'http://www.w3.org/2000/svg';
 let scene = 'huit',
   chosen = {},
   runway = null,
+  runwayBy = null,
+  notes = [],
   K = 1;
 const $ = id => document.getElementById(id);
 const el = (p, n, a = {}, t) => {
@@ -773,6 +822,7 @@ function draw() {
     }, String(b.n))
   }
   panel(list);
+  $('notes').innerHTML = notes.map(n => `<p>${n}</p>`).join('');
 }
 
 /* ---------- la liste : le même numéro, la même teinte ; UN toucher choisit ---------- */
@@ -782,9 +832,12 @@ function panel(list) {
   for (const f of FAMS) {
     h += `<h2>${f.title}</h2>`;
     if (f.id === 'rwy') {
+      /* la première ligne enlève le filtre : « Toutes », le mot que la Carte a déjà pour cela (« n autres · Toutes ») */
+      h += `<button type="button" class="row" data-rwy="" ${!runway ? 'data-state="chosen"' : ''}><span class="${!runway ? 'sw' : 'none'}"></span><span class="nm">Toutes</span></button>`;
       for (const r of ['27', '09']) {
-        const on = runway === r;
-        h += `<button type="button" class="row" data-rwy="${r}" ${on ? 'data-state="chosen"' : ''}><span class="${on ? 'sw' : 'none'}"></span><span class="nm">Piste ${r}</span>${on ? '<span class="st">choisie pour le vol</span>' : ''}</button>`;
+        const on = runway === r,
+          by = on && runwayBy && CAND.find(x => x.id === runwayBy && chosen[x.fam] === x.id);
+        h += `<button type="button" class="row" data-rwy="${r}" ${on ? 'data-state="chosen"' : ''}><span class="${on ? 'sw' : 'none'}"></span><span class="nm">Piste ${r}${by ? ' · celle de ' + by.name : ''}</span>${on ? '<span class="st">choisie pour le vol</span>' : ''}</button>`;
       }
       continue
     }
@@ -804,23 +857,48 @@ function panel(list) {
 function pick(id) {
   const c = CAND.find(x => x.id === id);
   if (!c || !shown().includes(c)) return;
+  notes = [];
   chosen = {
     ...chosen,
     [c.fam]: id
   };
+  /* le chemin inverse : une procédure qui ne dessert qu'UNE piste choisit cette piste (la ligne de la piste le dit) ; qui en dessert plusieurs, la piste reste à choisir */
+  if (!runway && c.rwy.length === 1) setRunway(c.rwy[0], c.id, true);
   draw()
+}
+/* changer de piste GARDE les choix qui la desservent et RETIRE les autres, une ligne par retrait */
+function setRunway(r, by, inner) {
+  if (!inner) notes = [];
+  const next = {
+    ...chosen
+  };
+  if (r)
+    for (const fam of ['star', 'app']) {
+      const c = CAND.find(x => x.id === next[fam]);
+      if (c && !c.rwy.includes(r)) {
+        delete next[fam];
+        notes.push(`${c.name} ne dessert pas la piste ${r} : choix retiré.`)
+      }
+    }
+  chosen = next;
+  runway = r || null;
+  runwayBy = r ? by || null : null;
+  if (!inner) draw()
 }
 
 function go(name) {
   scene = name;
   const S = SCENES[name];
   runway = S.rwy || null;
+  runwayBy = null;
+  notes = [];
   chosen = {
     ...(S.chosen || {})
   };
   $('principle').textContent = S.t;
   document.querySelectorAll('[data-go]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === name)));
   draw();
+  if (S.act) S.act()
 }
 document.addEventListener('click', e => {
   const p = e.target.closest('[data-pick]'),
@@ -828,17 +906,14 @@ document.addEventListener('click', e => {
     r = e.target.closest('[data-rwy]');
   if (p) return pick(p.dataset.pick);
   if (n) {
+    notes = [];
     chosen = {
       ...chosen,
       [n.dataset.pickNone]: 'none'
     };
     return draw()
   }
-  if (r) {
-    runway = runway === r.dataset.rwy ? null : r.dataset.rwy;
-    chosen = {};
-    draw()
-  }
+  if (r) setRunway(r.dataset.rwy || null)
 });
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
   location.hash = b.dataset.go;
