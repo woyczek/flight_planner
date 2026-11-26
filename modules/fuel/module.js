@@ -51,6 +51,7 @@ import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plan
 // (SOG-0088, calcul pur)
 import * as ATIS from './atis.js';
 import * as DIR from './direct.js';
+import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ de la route (extrait de resolveRoute)
 import {
   copyAndTell,
   copyText
@@ -127,7 +128,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -8306,6 +8307,13 @@ function knownPoints(r, withProcs = true) {
     });
   return known;
 }
+// les lignes sous le champ de la route, après chaque lecture du texte : modules/fuel/route_lines.js (SOG-0679, extrait de resolveRoute)
+const RLH = {
+  tt: (row, v) => tt(row, v),
+  TX,
+  esc,
+  lang: () => S.ctx.lang()
+};
 /** Relit les points de la route (texte, départ, arrivée) dans aerodb, les points déjà connus du vol en secours ;
  *  distance et route vraie déduites. normalize : le texte est réécrit sous sa forme normalisée (routeText) — à la sortie
  *  du champ, pas pendant la frappe. Dernière demande seule retenue. */
@@ -8362,14 +8370,7 @@ function resolveRoute(normalize = true) {
     // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
     // SOG-0354 (l'ergonome : « une notification passe, une ligne reste ») : une voie écrite que la base ne relie pas, tronçon direct, dite
     // par une ligne fixe en sourdine sous la route, comme celle des routes NAT ; elle suit chaque lecture du texte
-    const bad = [...new Set(badAirways.map(x => x.w))].slice(0, 12).map(w => tt(TX.awyBad, {
-        w
-      })).join(' · '),
-      awyLine = S.body.querySelector('[data-awywarn]');
-    if (awyLine) {
-      awyLine.textContent = bad;
-      awyLine.hidden = !bad;
-    }
+    RLN.awyPaint(S.body, badAirways, RLH);
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot ; la première frappe le rend au pilote
@@ -8403,20 +8404,12 @@ function resolveRoute(normalize = true) {
     scheduleWx();
     // écran Fiches ouvert entre-temps : pas de ligne des points non reconnus à écrire
     S.unresolvedNames = unresolved;
-    const un = S.body.querySelector('[data-unres]'),
-      ut = unresolved.length ? tt(TX.unresolved, {
-        l: unresolved.join(', ')
-      }) : '';
-    if (un && un.textContent !== ut) un.textContent = ut;
-    // SOG-0142 : les homonymes et les sauts, dits sous la route (jamais corrigés en silence)
-    const rw = S.body.querySelector('[data-rwarn]');
-    if (rw) rw.innerHTML = [...far.map(x => tt(TX.farPt, {
-      ...x,
-      nm: x.nm.toLocaleString(S.ctx.lang())
-    })), ...homonyms.map(h => tt(TX.homonyms, h)), ...jumps.map(j => tt(TX.jump, {
-      ...j,
-      nm: j.nm.toLocaleString(S.ctx.lang())
-    }))].map(x => `<span data-rw>${esc(x)}</span>`).join('<br>');
+    const ut = RLN.notesPaint(S.body, {
+      unresolved,
+      far,
+      homonyms,
+      jumps
+    }, RLH);
     // SOG-0372 : une route NAT du texte absente des routes du jour lues, dite calmement
     S.natLetters = natTracks;
     S.natDirect = natDirect; // SOG-0372 : les traversées restées en direct, dites par natTrackWarn
