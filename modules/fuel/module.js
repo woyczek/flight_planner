@@ -52,6 +52,7 @@ import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plan
 import * as ATIS from './atis.js';
 import * as DIR from './direct.js';
 import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ de la route (extrait de resolveRoute)
+import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle ne couvre pas » (extrait)
 import {
   copyAndTell,
   copyText
@@ -128,7 +129,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -5436,16 +5437,15 @@ function sectionsHtml(a) {
 }
 /** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
-/** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
- *  du moteur et ses domaines hors contrôle, repliés. */
-const limitsHtml = n => perfDefaultHtml() + (n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${terrainHtml(n.rad?.terrain_rules)}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '');
-/** SOG-0539 (l'ergonome) : les règles du RAD qui citent un terrain du vol et un espace non lu — un fait du VOL, hors de tout verdict : une
- *  fois par écran, dans « Ce que le contrôle ne couvre pas » (liste et « Contrôler »), le départ d'abord, aucune ligne à 0 ; chaque ligne
- *  est un repli (le chevron seul) qui s'ouvre sur ses références à la suite (esc : elles viennent du RAD), 40 au plus, « et N autres » à
- *  la fin. */
-function terrainHtml(list) {
-  return (Array.isArray(list) ? list : []).filter(x => x.total > 0).map(x => `<details class="fu-faultmore fu-rterrain" data-terrainrules data-role="${esc(x.role)}"><summary>${esc(tt(x.total === 1 ? RR.ROWS.terrainRules1 : RR.ROWS.terrainRules, { ad: x.ad, n: x.total }))}</summary><p class="f-muted" data-terrainrefs>${esc(x.rules.slice(0, 40).join(', '))}${x.total > 40 ? ` <span data-terrainmore>${esc(tt(RR.ROWS.more, { n: x.total - 40 }))}</span>` : ''}</p></details>`).join('');
-}
+// « Ce que le contrôle ne couvre pas » : modules/fuel/route_limits.js (SOG-0669, extrait de ce fichier)
+const RLMH = {
+  tt: (row, v) => tt(row, v),
+  esc,
+  TX,
+  ROWS: RR.ROWS,
+  perfDefault: () => perfDefaultHtml()
+};
+const limitsHtml = n => RLM.limitsHtml(n, RLMH);
 /** SOG-0401 : le détail du contrôle RAD, écrit à l'ouverture du pli seulement (la liste peut compter 1 500 conditions) — les espaces
  *  inconnus et leurs règles, puis les conditions laissées à examiner (cent au plus, puis leur nombre). */
 function radListFill(fold) {
