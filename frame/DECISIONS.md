@@ -3235,6 +3235,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Offline**: the file of each watcher of the table is added to the precache of every application (`moduleFiles`); its heavy dynamic imports are kept at their first use by the service worker, like any file a page asks for.
 - **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
 
+## 26 November 2026 — the rule of maintainability: a ceiling per big file, recorded and only going down (SOG-0678)
+
+- **Decision** (the ergonomist): no file of V3 code over 3 000 lines grows; the five that are over are recorded at their size of the day (`CODE_CEILING` in `tests/v3/cases/repo.py`, read there, never recomputed), the ceiling goes down with the file and never up; no NEW file of code over 1 500 lines; `texts.js` (text tables), generated bundles, `test/` pages and `maquette/` are out of the rule; V2 is frozen and out of it. An extraction is a commit of its own (`:recycle:`), the owner chooses where to cut.
+- **Reading choices of the first commit** (the relay may change them): the scope is `frame/`, `modules/`, `tools/` (`.js`, `.py`, lines as `splitlines`); the ceiling may stay 100 lines above its file (`CODE_SLACK`), so that a commit that removes ten lines does not have to touch the table; the 17 files that were already between 1 500 and 3 000 lines are named (`CODE_BIG_OLD`: that is how « new » is told) and may not pass 3 000.
+- **Noreg I65**, red before in three ways (a file + 1 line, a new file of 1 501 lines, a ceiling left too high).
+
 ## 24 November 2026 — the places of a drawer's key: one function (SOG-0624)
 
 - **Fact**: `pilotView` cited, for an open drawer, `key.zoneId`, `key.point` and `key.required`: the place of a CONDITION key (`rule.point`, `rule.object`, the steps of a sequence) was never cited, so the pilot never saw it, the drawer open or not.

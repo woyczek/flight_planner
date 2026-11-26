@@ -4319,3 +4319,58 @@ def i63(c):
     c.eq(got['spMore'], ['1 autre', '2 autres'], 'the airspace list: « 1 autre » / « 2 autres »', what='spMore at 1 and 2')
     c.eq(got['atcMore'], ['+ 1 autre', '+ 2 autres'], 'the controllers: « + 1 autre » / « + 2 autres »', what='atcMore at 1 and 2')
     c.eq(got['gMore'], ['1 autre : affinez le filtre', '2 autres : affinez le filtre'], 'the ground list: « 1 autre : affinez le filtre » / « 2 autres : … »', what='gMore at 1 and 2')
+
+
+# The rule of maintainability (SOG-0678, the ergonomist), first commit. The files of V3 code (frame/, modules/, tools/: .js and .py; not the text tables
+# `texts.js`, the generated bundles, the test pages `test/`, the mock-ups `maquette/`; V2 is frozen and out of the rule) that are over 3 000 lines have a CEILING, their
+# size on 26 Nov 2026. The ceiling is READ here, never recomputed from the file: a commit that makes a file grow past it is red; it goes down with the file
+# (a refactoring commit lowers it in the same commit) and never goes up. The extraction itself is a commit of its own (:recycle:, no change of behaviour); each owner
+# chooses where to cut. The files already between 1 500 and 3 000 lines are listed by name (BIG_OLD) and may not pass 3 000: any other file stays under 1 500.
+CODE_CEILING = {
+    'modules/fuel/module.js': 11253,
+    'frame/app.js': 6830,
+    'modules/missions/editor_view.js': 5673,
+    'tools/launch.py': 4833,
+    'frame/aerodb/aerodb.js': 4272,
+}
+CODE_BIG_OLD = {
+    'modules/missions/module.js', 'modules/missions/editor.js', 'modules/fuel/procedures.js', 'frame/store/frame_data.js', 'frame/aerodb/catalogue.js',
+    'frame/settings/access.js', 'frame/aerodb/sheets.js', 'frame/help/signaler.js', 'modules/maps/render.js', 'modules/report/module.js',
+    'modules/maps/lib/vertical_profile.js', 'modules/data/countries.js', 'tools/data_sync.py', 'modules/maps/lib/aero_symbols.js', 'modules/missions/drawers.js',
+    'tools/proc_sia.py', 'frame/help/recette.js',
+}
+CODE_SLACK = 100        # a ceiling may stay this far above its file: below that, it is lowered with the file
+
+
+@case('I65', 'Maintainability (SOG-0678): no file of V3 code (frame/, modules/, tools/: .js, .py) goes over its ceiling — the five files over 3 000 lines are recorded at their size of 26 Nov 2026 and only go down, the 17 files between 1 500 and 3 000 lines may not pass 3 000, no new file passes 1 500 (the text tables texts.js, the generated bundles, test/ and maquette/ are out of the rule; V2 is frozen)', 'I', static=True,
+      rule="SOG-0678 (the ergonomist, 26 Nov 2026; the first commit of the rule of maintainability): a file of 11 000 lines is read by nobody and rewritten by one session at a time; the ceiling is what the repository says, a commit does not make a file bigger than the day before; an extraction is a commit of its own")
+def i65(c):
+    skip_dirs = {'test', 'maquette', 'build', '__pycache__', 'node_modules'}
+    sizes = {}
+    for top in ('frame', 'modules', 'tools'):
+        for f in sorted((c.root / top).rglob('*')):
+            rel = f.relative_to(c.root).as_posix()
+            if f.suffix not in ('.js', '.py') or not f.is_file() or skip_dirs & set(rel.split('/')[:-1]) or f.name == 'texts.js' or 'bundle' in f.name:
+                continue
+            sizes[rel] = len(f.read_text(encoding='utf-8', errors='replace').splitlines())
+    c.ok(len(sizes) > 100 and all(k in sizes for k in CODE_CEILING), len(sizes), 'the files of V3 code are found, the five recorded ones among them')
+    over = {k: (sizes[k], v) for k, v in CODE_CEILING.items() if sizes[k] > v}
+    c.eq(over, {}, 'no file is over its ceiling (a commit never makes the biggest files bigger)', what='over the ceiling')
+    loose = {k: (sizes[k], v) for k, v in CODE_CEILING.items() if v - sizes[k] > CODE_SLACK}
+    c.eq(loose, {}, f'a ceiling stays within {CODE_SLACK} lines of its file: the file went down, the ceiling goes down with it (tests/v3/cases/repo.py CODE_CEILING)', what='ceiling too high')
+    big_new = {k: n for k, n in sizes.items() if k not in CODE_CEILING and k not in CODE_BIG_OLD and n > 1500}
+    c.eq(big_new, {}, 'no NEW file of code over 1 500 lines (cut it before it grows: one file, one job)', what='new big file')
+    swollen = {k: n for k, n in sizes.items() if k in CODE_BIG_OLD and n > 3000}
+    c.eq(swollen, {}, 'the files between 1 500 and 3 000 lines do not pass 3 000 (over that, they get a ceiling of their own: ask the ergonomist)', what='old files over 3 000')
+    c.ok(all(k in sizes for k in CODE_BIG_OLD), [k for k in CODE_BIG_OLD if k not in sizes], 'the files listed as « between 1 500 and 3 000 » exist (a file renamed or cut leaves the list)')
+    # a ceiling never goes up: compared with the same table at the tip of the shared branch, when it can be read
+    import subprocess
+    prev = None
+    for ref in ('origin/v3', 'github.com/v3'):
+        r = subprocess.run(['git', 'show', f'{ref}:tests/v3/cases/repo.py'], cwd=str(c.root), capture_output=True)
+        if r.returncode == 0 and b'CODE_CEILING' in r.stdout:
+            prev = {m.group(1): int(m.group(2)) for m in re.finditer(r"^    '([^']+)': (\d+),$", r.stdout.decode('utf-8', 'replace').split('CODE_CEILING = {')[1].split('}')[0], re.M)}
+            break
+    if prev:
+        raised = {k: (prev[k], v) for k, v in CODE_CEILING.items() if k in prev and v > prev[k]}
+        c.eq(raised, {}, 'no ceiling went up since the shared branch (a ceiling only goes down)', what='ceiling raised')
