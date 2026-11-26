@@ -8844,12 +8844,10 @@ async function loadSimbrief() {
     }), 'err');
   }
   if (gone(s)) return;
-  const got = await SBF.readAnswer(res, ofp => SH().isSimbriefOfp(ofp));
+  const got = await SBF.readAnswer(res, ofp => SH().isSimbriefOfp(ofp), id);
   if (gone(s)) return;
-  if (got.offline) return S.ctx.notify(tt(TX.offline), 'warn');
-  if (got.error) return S.ctx.notify(tt(TX.sbError, {
-    e: got.error
-  }), 'err');
+  if (!got.ofp) return S.ctx.notify(got.offline ? tt(TX.offline) : tt(got.say || TX.sbError, got.vars || got), got.offline ? 'warn' :
+    'err');
   const ofp = got.ofp;
   await S.ctx.data.put(OFP_PATH, ofp, {
     policy: 'cache'
