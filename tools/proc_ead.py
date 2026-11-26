@@ -258,6 +258,7 @@ MIN_DELAY = 1.0  # secondes au moins entre deux requêtes de la bibliothèque (c
 # dictionnaire seul est à corriger. {t} = identifiant du tableau (mainForm:searchResults), {first} = rang de la première ligne de la page demandée.
 PAGE_ROWS = 15
 MAX_PAGES = 50      # pages parcourues au plus par recherche (jamais de boucle sans fin)
+MAX_DOCS = 60       # documents au plus pour UN aérodrome : au-delà la sélection entière est refusée (rien n'est téléchargé), jamais tronquée en silence
 PAGE_TABLE = 'mainForm:searchResults'
 PAGE_PARAMS = {'{t}': '{t}', '{t}_pagination': 'true', '{t}_first': '{first}', '{t}_rows': str(PAGE_ROWS), '{t}_skipChildren': 'true', '{t}_encodeFeature': 'true'}
 SAFE_NAME = re.compile(r'^[A-Za-z0-9._-]+$')  # le nom d'un document d'EAD Basic, tel qu'il devient un nom de fichier du cache (proc_pdf.safe_path)
@@ -548,7 +549,7 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     import proc_records
     step = step or (lambda *a: None)
     icao = icao_code(icao)
-    if not lib.authority(icao[:2]):
+    if not lib.authority('LE' if icao[:2] in ('GC', 'GE') else icao[:2]):
         raise SystemExit(f'autorité {icao[:2]} non proposée par la bibliothèque')
     lib.choose('part', 'AD')
     found = {}
@@ -564,9 +565,12 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     cache = Path(out) / 'cache' / icao
     cache.mkdir(parents=True, exist_ok=True)
     pdfs = []
-    # sans document « CODING » (ex. Arménie, Albanie), on télécharge les cartes SID / STAR / IAP : seules celles dont la disposition est connue seront lues, les autres signalées
-    only_coding = any('CODING' in d['kinds'] for d in found.values())
-    wanted = [(name, d) for name, d in sorted(found.items()) if 'CODING' in d['kinds'] or not only_coding]
+    # A coding table does not replace an IAC: keep each document once for this aerodrome.
+    wanted = sorted(found.items())
+    if len(wanted) > MAX_DOCS:
+        message = f"{icao}: {len(wanted)} documents trouvés, plus que le plafond de {MAX_DOCS} par aérodrome : sélection refusée, rien n'est téléchargé"
+        say(message)
+        raise SystemExit(message)
     for i, (name, d) in enumerate(wanted):
         step(f'{icao}: téléchargement de {name}', i, len(wanted), 'documents')
         try:

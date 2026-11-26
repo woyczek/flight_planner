@@ -1,0 +1,10 @@
+[
+  {
+    "fixture": "it_liza.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Italie (ENAV), AD 2, tables de description en tableau d'une approche ILS. Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "it_lizb.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Italie (ENAV), AD 2, tables de description en tableau d'une approche ILS. Aucune valeur n'est réelle."
+  }
+]

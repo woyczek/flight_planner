@@ -59,6 +59,8 @@ READERS = (
     _ead('ead-ge', ('ge-coding',), ('ge',), ('UG',), 'Georgia'),
     _ead('ead-am', ('am-coding',), ('am',), ('UD',), 'Armenia'),
     _ead('ead-ie', ('ei-coding',), ('ie',), ('EI',), 'Ireland', ('ie',)),
+    _ead('ead-it', ('it-app',), ('it',), ('LI',), 'Italy', ('it',)),
+    _ead('ead-es', ('es-prose',), ('es',), ('LE', 'GC', 'GE'), 'Spain', ('es',)),
     _ead('ead-de', ('de-route',), ('de',), ('ED',), 'Germany'),
     _ead('ead-icao-tab', ('icao-tab',), (), (), 'several States (an ICAO table printed without coordinates: the layout is not tied to one State)'),
     {'id': 'lfv-local', 'reader': 'proc_se', 'layouts': ('se-coding',), 'zones': (), 'prefixes': ('ES',), 'state': 'Sweden (the coding tables of a local archive of the LFV package: read on the workstation, not wired in the launcher: `none-lfv` below stays)',

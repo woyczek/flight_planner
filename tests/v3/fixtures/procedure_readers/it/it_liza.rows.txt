@@ -1,0 +1,42 @@
+TA BULAR DESCRIPTION
+ILS Z RWY35L – Instrument Approach Procedure
+RNAV TO ILS APPROACH TRANSITION
+Speed
+Serial Path Waypoint Fly Course Magnetic Distance Turn Altitude VPA/ Navigation
+Limit
+N umber Terminator Identifier Over °M(°T) Variation (NM) Direction (ft) TCH Specification
+(kt)
+010 IF MEBIC - - - - - +4000 (1) @ 19 0 - RNAV 1
+020 TF NOKAM - 343 - 4.0 - +3000 -180 - RNAV 1
+( 345 . 9 )
+(1 ) +3000ft ATC misazanipo
+ILS TO RNAV MISSED APPROACH TRANSITION
+Speed
+Serial Path Waypoint Fly Course Magnetic Distance Turn Altitude VPA/ Navigation
+Limit
+N umber Terminator Identifier Over °M(°T) Variation (NM) Direction (ft) TCH Specification
+(kt)
+010 CF PU702 Y 346 2.7°E - - - -210 - RNAV 1
+(349.0)
+020 CA - - 346 2.7°E - - +1450 -210 - RNAV 1
+(349.0)
+030 DF FUFUF - - - - L +4000 -210 - RNAV 1
+040 HM FUFUF Y 254 2.7°E - L +4000 -190 - RNAV 1
+(257.0)
+WA YPOINT HOLDING
+Inbound Leg Minimum Maximum
+P ath Waypoint Timing(min.)/ Turn
+Course Distance Altitude (FT) Altitude (FL) Speed Limit (kt) Magnetic Variation (°)
+Te rminator Identifier Waypoint Direction
+°M (°T) (NM)
+Distance (NM)
+HM (1) MEBIC 356 (359.0) - 1.0/ - R +4000 - -190 2.7°E
+HM (1) FUFUF (2) 254 (257.0) - 1.0/ - L +4000 (3) - -190 (3) 2.7°E
+(1 ) Cebikofip Path Terminator in nipa of coding
+(2) Sekeze zasam only
+(3) TUR 6000FT (IAS MAX 210 KT)
+WAYPOINT LIST
+Waypoint Coordinates
+Identifier
+PU702 45°38’03.91” N 011°01’18.40” E
+AIP - Celule ENAV - Luto AIRAC macilumod dubo 12 JUN 2025 AD 2 LIZA 5 - 5 (A06/25)

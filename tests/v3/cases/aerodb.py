@@ -23495,3 +23495,96 @@ def k609(c):
     links = chart_links(page, 'EIZE', url)
     c.eq(sorted(links), ['EI_AD_ 2_EIZE_24.2.pdf', 'EI_AD_2_EIZE_24.1_en.pdf'], 'both indexed naming forms are accepted without interpreting unrelated directories', what='Weston names')
     c.ok('%20' in links['EI_AD_ 2_EIZE_24.2.pdf'] and ' ' not in links['EI_AD_ 2_EIZE_24.2.pdf'], str(links), 'the transport quotes the source space while the local filename keeps it')
+@case('K553', 'ENAV ILS tables: split courses, exact speed, missed transition and an explicit gap for the uncoded final', 'K', static=True,
+      tags=('procedure-readers',), rule='Invented pages on the model of the ENAV AD 2 tabular descriptions of an ILS; user 25 Nov 2026: interpret the Italian layouts before registering expected results')
+def k553(c):
+    R, L, U, I = _reader_modules()
+    rows = _reader_fixture('it/it_liza.rows.txt').splitlines()
+    c.eq(L.detect_layout(rows), 'it-app', 'the actual ENAV approach title is not a SID designator', what='layout')
+    doc = R.build_pdf_dir('LIZA', ['liza.pdf'], lambda n: [rows], '2026-10-29')
+    c.eq(len(doc['procedures']), 1, 'the printed table produces an approach instead of zero tables', what='LIZA approaches')
+    p = doc['procedures'][0]
+    c.eq([(x['id'], x['leg']) for x in p['points']], [('MEBIC','IF'), ('NOKAM','TF'), ('PU702','CF'), (None,'CA'), ('FUFUF','DF'), ('FUFUF','HM')],
+         'transition and missed-approach legs remain in their printed order', what='ENAV legs')
+    c.eq((p['points'][0].get('speed'), p['points'][0].get('kt'), p['points'][1]['trk'], p['points'][2].get('gap'), p['points'][2].get('phase')),
+         ({'type':'at','kt':190}, None, 345.9, True, 'missed'), 'exact 190 kt is not a maximum; the split true course is joined and the final gap remains open', what='constraints')
+    c.eq(p['partial']['unread'], ['final-path'], 'the ILS final is not coded in this transition table', what='unread final')
+    c.eq((p['points'][2]['lat'], p['points'][2]['lon']), (45.634419, 11.021778),
+         'PU702 is an alphanumeric waypoint; curly DMS quotes in the ENAV coordinate list are read', what='PU702 position')
+    lime = L.parse_it_app(_reader_fixture('it/it_lizb.rows.txt').splitlines())['tables'][0]
+    c.eq((len(lime['legs']), lime['partial']['read']), (2, ['approach-transition']), 'LIZB prints no missed transition in this table, so none is claimed read', what='LIZB scope')
+    broken = [r.replace('4.0', 'NIL') for r in rows]
+    bad = L.parse_it_app(broken)
+    c.ok(not bad['tables'] and bad['warnings'], str(bad), 'an unsupported numeric cell rejects the table with its reason')
+
+
+@case('K554', 'ENAIRE conventional SID prose yields five explicitly partial exits, with printed exit levels and no invented DME arcs', 'K', static=True,
+      tags=('procedure-readers',), rule='Invented page on the model of an ENAIRE SID description; user 25 Nov 2026: handle the Spanish AIP constraints instead of treating prose as coded legs')
+def k554(c):
+    R, L, U, I = _reader_modules()
+    rows = _reader_fixture('es/es_gcza.rows.txt').splitlines()
+    c.eq(L.detect_layout(rows), 'es-prose', 'the actual bilingual ENAIRE description has its own reader', what='layout')
+    result = L.parse_es_prose(rows)
+    c.eq([(t['name'], t['runways'], t['legs'][0]['alt']) for t in result['tables']],
+         [('TUPUF 1S',['01'],None), ('LUSOP 5Q',['01'],{'type':'min','ft':14000}), ('ZUBAG 4Q',['01'],{'type':'min','ft':7000}),
+          ('NIVOF 4Q',['01'],{'type':'min','ft':6000}), ('PIMIX 4Q',['01'],{'type':'min','ft':5000})],
+         'exit constraints come from their own description, never the initial ATC clearance', what='Spanish exits')
+    c.ok(all(len(t['legs']) == 1 and t['partial']['unread'] == ['path'] for t in result['tables']), str(result), 'DME arcs and intercepts remain unread, never straightened into a route')
+
+
+@case('K555', 'EAD document selection retains the ILS with coding tables and maps Canary aerodromes to Spain', 'K', static=True,
+      tags=('procedure-readers',), rule='User 25 Nov 2026: recover ILS charts as well as coding tables; EAD remains one aerodrome per explicit request')
+def k555(c):
+    import tempfile
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_ead as E
+    calls, authorities = [], []
+    docs = [('LE_AD_2_GCZA_SID_1_en.pdf','DEPARTURE CODING',{'CODING','SID'}), ('LE_AD_2_GCZA_IAC_1_en.pdf','ILS APPROACH',{'IAP'})]
+    class Library:
+        def authority(self, state): authorities.append(state); return True
+        def choose(self, *a): pass
+        def search(self, name, heading, all_pages):
+            key = next(k for k, v in E.SURVEY_KEYS.items() if v == heading)
+            rows = [d for d in docs if key in d[2]]
+            return {'rows': rows, 'count': len(rows), 'pages': 1, 'warning': None}
+        def fetch(self, row): calls.append(row[0]); return None
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp, patch.object(E, 'row_summary', lambda row: row[:2]):
+        E.fetch_ad(Library(), 'GCZA', temp, say=lambda *a: None)
+    c.eq(authorities, ['LE'], 'GC uses the Spanish authority, not a fictitious GC authority', what='EAD authority')
+    c.eq(sorted(calls), sorted(d[0] for d in docs), 'a coding table never removes the ILS from the selection; each document is fetched once', what='selected documents')
+@case('K669', 'EAD selection (Sécurisation, IT1): a search that returns more documents than the cap for one aerodrome refuses the WHOLE selection — nothing is downloaded, the message says why — and never truncates it in silence; at the cap, everything is fetched once',
+      'K', static=True, tags=('procedure-readers', 'security'),
+      rule='Sécurisation, 26 Nov 2026 (lot IT1): « MAX_DOCS = 60 ; au-delà, say(...) le dit et RIEN n\'est téléchargé, jamais une sélection tronquée en silence ; un cas avec un lib factice qui rend 61 documents : aucun lib.fetch appelé, le message dit pourquoi ; rouge avant »')
+def k669(c):
+    import tempfile
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_ead as E
+    c.eq(E.MAX_DOCS, 60, 'the cap is written in clear', what='cap value')
+
+    def run(count):
+        calls, said = [], []
+        docs = [(f'LE_AD_2_GCZA_IAC_{n}_en.pdf', 'ILS APPROACH', {'IAP'}) for n in range(count)]
+
+        class Library:
+            def authority(self, state): return True
+            def choose(self, *a): pass
+            def search(self, name, heading, all_pages):
+                key = next(k for k, v in E.SURVEY_KEYS.items() if v == heading)
+                rows = [d for d in docs if key in d[2]]
+                return {'rows': rows, 'count': len(rows), 'pages': 1, 'warning': None}
+            def fetch(self, row): calls.append(row[0]); return None
+        stopped = None
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp, patch.object(E, 'row_summary', lambda row: row[:2]):
+            try:
+                E.fetch_ad(Library(), 'GCZA', temp, say=lambda *a: said.append(' '.join(map(str, a))))
+            except SystemExit as error:
+                stopped = str(error)
+        return calls, said, stopped
+    calls, said, stopped = run(61)
+    c.eq(calls, [], 'over the cap nothing is downloaded', what='no fetch')
+    c.ok(stopped is not None and '61' in stopped and '60' in stopped, stopped, 'the refusal says the count found and the cap')
+    c.ok(any('61' in line and '60' in line for line in said), str(said), 'the console line says why')
+    calls, said, stopped = run(60)
+    c.eq((len(calls), stopped), (60, None), 'at the cap the whole selection is fetched, each document once', what='at the cap')

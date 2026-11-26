@@ -1,0 +1,25 @@
+TABULAR DESCRIPTION
+ILS or LOC Z RWY28 – Instrument Approach procedure
+RNAV1/RNP1 transition to ILS/LOC
+Speed
+Serial Path Waypoint Fly Course Magnetic Distance Turn Altitude VPA (°)/ Navigation
+Limit
+Number Terminator Identifier Over °M(°T) Variation (NM) Direction (ft) TCH (m) Specification
+(kt)
+010 IF NAFUS - - - - - +6000 @ 210 - RNAV1/RNP1(1)
+020 TF CITAC - 012 - 7.0 - +4000 -185 - RNAV1/RNP1(1)
+(015.0)
+REMARK
+(1) For "bilivonebo and naretevo" reasons, RNP1 spe xisaxipebo is required in nipa of betod doxugit gozupimezidepa or cakefubofat
+WAYPOINT HOLDING
+Inbound Leg Timing(min.)/ Minimum Maximum
+Path Waypoint Turn Speed Magnetic
+Course Distance Waypoint Altitude (FT) Altitude (FL)
+Terminator Identifier Direction Limit (kt) Variation (°)
+°M (°T) (NM) Distance (NM)
+HM
+- 1/- L 6000 - -200 3 E
+(1) NAFUS 012 (015.0)
+REMARK
+(1) Cebikofip Path Terminator in nipa of coding
+AIP - Celule ENAV - Luto AD 2 LIZB 5 - 5 12 JUN 2025 (A06/25)
