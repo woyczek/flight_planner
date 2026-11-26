@@ -6437,7 +6437,7 @@ def a124(c):
         mk(505, delivered=D),                                                                          # the device holds an older refusal
         mk(506, delivered=D),                                                                          # the device holds a later pass
         mk(507, delivered='javascript:alert(1)', previous={'verdict': 'ko', 'comment': '<img src=x onerror=window.__pwn=1>', 'at': 'nope'}),  # hostile
-        mk(508, app='maintenance', delivered=D, previous={'verdict': 'ko', 'comment': 'x' * 2500, 'at': '2026-11-10T06:00:00Z'}),
+        mk(508, app='maintenance', delivered=D, previous={'verdict': 'ko', 'comment': 'x' * 6000, 'at': '2026-11-10T06:00:00Z'}),
     ]
     doc = {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-10', 'tests': len(tests), 'verdicts': 3},
            'apps': ['pilote', 'compagnie', 'maintenance', 'stats'], 'tests': tests}
@@ -6474,7 +6474,7 @@ def a124(c):
     # untrusted entries: a bad `delivered` is ignored, a bad `at` dropped, a long comment bounded, nothing runs
     c.ok(c.count('[data-section=today] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile comment is text')
     long = why('SOG-0508') or ''
-    c.ok(0 < len(long) < 2100, str(len(long)), 'a long comment is bounded (2 000 signs since SOG-0303)')
+    c.ok(0 < len(long) < 5100, str(len(long)), 'a long comment is bounded (5 000 signs since 26 Nov 2026, 2 000 before)')
     c.eq(state('SOG-0507'), 'todo', 'a delivered that is not a date is ignored: the test is still to test', what='0507')
 @case('A125', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B1): a stepper on the same screen (identity, summary), nothing written before the last button, then settings, fleet and the INDEX last; an interruption says what is done and « Reprendre » finishes without overwriting', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
@@ -8718,7 +8718,7 @@ def a175(c):
     c.check_errors()
 
 
-@case('A176', 'The Recette comment field grows with the text (four lines to start, twelve at most, then it scrolls), takes 2 000 signs, and a discreet counter appears from 1 800; the free text of a decision does the same (SOG-0303)', 'A',
+@case('A176', 'The Recette comment field grows with the text (four lines to start, twelve at most, then it scrolls), takes 5 000 signs, and a discreet counter appears from 4 500; the free text of a decision does the same (SOG-0303)', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0303 (the user: « recette : le champ de saisie est trop petit. tu as du limiter à 255 caractères ? »): the comment of a test and the free text of a decision were a two-line field cut at 600 signs; now the field starts at four lines, grows with the text up to twelve, then scrolls; the limit is 2 000 signs (page, launcher verb and recette_build.py agree: K123, K-decision), a counter « n / 2000 » appears from 1 800 signs, hidden before')
 def a176(c):
@@ -8734,18 +8734,18 @@ def a176(c):
             c.until("!!document.querySelector('[data-decisions] li[data-q] textarea[data-dtext]')", what='the free field of a decision')
             sel = '[data-decisions] li[data-q] textarea[data-dtext]'
         g0 = c.js(f"({GEO})({json.dumps(sel)})")
-        c.eq([g0['rows'], g0['max'], g0['counter'][0]], [4, 2000, False], f'{what}: four lines to start, 2 000 signs, the counter hidden', what=f'{what} start')
+        c.eq([g0['rows'], g0['max'], g0['counter'][0]], [4, 5000, False], f'{what}: four lines to start, 5 000 signs, the counter hidden', what=f'{what} start')
         c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 8])})")
         g1 = c.js(f"({GEO})({json.dumps(sel)})")
         c.ok(g1['h'] > g0['h'] + g0['lh'], [g0['h'], g1['h']], f'{what}: eight lines of text: the field grew')
         c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 60])})")
         g2 = c.js(f"({GEO})({json.dumps(sel)})")
         c.ok(g2['h'] <= 12 * g2['lh'] + 40 and g2['h'] >= g1['h'] and g2['scrolls'], [g1['h'], g2['h'], g2['lh'], g2['scrolls']], f'{what}: sixty lines: twelve at most, then it scrolls')
-        c.js(f"({FILL})({json.dumps([sel, 'x' * 1799])})")
-        c.eq(c.js(f"({GEO})({json.dumps(sel)})")['counter'][0], False, f'{what}: 1 799 signs: no counter', what=f'{what} 1799')
-        c.js(f"({FILL})({json.dumps([sel, 'x' * 1800])})")
+        c.js(f"({FILL})({json.dumps([sel, 'x' * 4499])})")
+        c.eq(c.js(f"({GEO})({json.dumps(sel)})")['counter'][0], False, f'{what}: 4 499 signs: no counter', what=f'{what} 4499')
+        c.js(f"({FILL})({json.dumps([sel, 'x' * 4500])})")
         g3 = c.js(f"({GEO})({json.dumps(sel)})")
-        c.ok(g3['counter'][0] and '1800' in g3['counter'][1] and '2000' in g3['counter'][1], g3['counter'], f'{what}: 1 800 signs: the counter shows « 1800 / 2000 »')
+        c.ok(g3['counter'][0] and '4500' in g3['counter'][1] and '5000' in g3['counter'][1], g3['counter'], f'{what}: 4 500 signs: the counter shows « 4500 / 5000 »')
         c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 9 + 'x' * 1700])})")
         c.shot(f'A176_{what}_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
@@ -10203,7 +10203,7 @@ def a211(c):
       out.badId = w(P, { ...ok, items: { 'x/../y': { verdict: 'ok' } } });
       out.badVerdict = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'meh' } } });
       out.koBare = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko' } } });
-      out.longComment = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko', comment: 'x'.repeat(2001) } } });
+      out.longComment = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko', comment: 'x'.repeat(5001) } } });
       out.histBig = w(P, { ...ok, items: { 'SOG-0301': { history: Array.from({ length: 21 }, () => ({ verdict: 'ok' })) } } });
       out.tooMany = w(P, { ...ok, items: Object.fromEntries(Array.from({ length: 1001 }, (_, i) => ['SOG-' + String(i).padStart(4, '0'), { verdict: 'ok' }])) });
       out.keyOrder = w(P, { ...ok, items: { 'SOG-0301': { at: '2026-11-14T09:00:00Z', verdict: 'ok' } } });

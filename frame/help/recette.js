@@ -17,8 +17,8 @@
     ], // SOG-0329 : « accepter avec réserves (pas de retest) » compte comme validé et ne revient pas en recette
     NEEDS_COMMENT = ['ko', 'reserve']; // un refus et des réserves se disent
   const MAX_ITEMS = 1000,
-    MAX_COMMENT = 2000, // SOG-0303 : 600 avant ; le lanceur (tools/regen/recette.py) et tools/recette_build.py disent la même limite
-    COUNT_FROM = 1800, // le compteur discret apparaît à partir de là
+    MAX_COMMENT = 5000, // 5000 depuis le 26 nov. 2026 (SOG-0303 : 600, puis 2000) ; même limite côté lanceur
+    COUNT_FROM = 4500, // le compteur discret apparaît à partir de là (90 % de la limite)
     ROWS_MIN = 4,
     ROWS_MAX = 12,
     SEVEN = 7,

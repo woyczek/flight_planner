@@ -1600,13 +1600,13 @@ def k123(c):
         r = run(action='set', items={'SOG-0003': {'verdict': 'ok'}})
         c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
         run(action='set', items={}, drop=['SOG-0003'])
-        # SOG-0303: a comment of 2000 signs is kept whole by the launcher and by the regeneration (recette_build); 2001 is refused (below)
-        long_c = 'é' * 1999 + '!'
+        # SOG-0303: a comment of 5000 signs (2000 before the 26 Nov 2026) is kept whole by the launcher and by the regeneration (recette_build); 5001 is refused (below)
+        long_c = 'é' * 4999 + '!'
         r = run(action='set', items={'SOG-0003': {'verdict': 'ko', 'comment': long_c}})
         sys.path.insert(0, str(c.root / 'tools'))
         import recette_build as RB
         c.eq((r['ok'], run(action='get')['items'].get('SOG-0003', {}).get('comment') == long_c, RB.verdicts(str(org)).get('SOG-0003', {}).get('comment') == long_c), (True, True, True),
-             'a comment of 2000 signs is written, read back and kept whole by tools/recette_build.py (SOG-0303)', what='2000 comment')
+             'a comment of 5000 signs is written, read back and kept whole by tools/recette_build.py (SOG-0303)', what='5000 comment')
         run(action='set', items={}, drop=['SOG-0003'])
         # SOG-0329: « accepter avec réserves » is a third verdict that needs its comment; what is already written is not rewritten; the regeneration counts it as a verdict
         existing = json.loads(f.read_text(encoding='utf-8'))['items']
@@ -1617,7 +1617,7 @@ def k123(c):
         run(action='set', items={}, drop=['SOG-0009'])
         before = f.read_bytes()
         for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}}, {'SOG-0003': {'verdict': 'reserve'}}, {'SOG-0003': {'verdict': 'reserve', 'comment': '  '}},
-                    {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 2001}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
+                    {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 5001}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
                     {'SOG-0003': {'verdict': 'ok', 'extra': 1}}, {'SOG-0003': {'verdict': 'ok', 'comment': 3}}):
             r = run(action='set', items={**good, **bad})
             c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written (a refusal needs its comment)')
@@ -1636,7 +1636,7 @@ def k123(c):
 
 
 @case('K171', 'recette/decision: organisation/DECISIONS_REPONSES.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a hostile file filtered, atomic write) (SOG-0241)', 'K',
-      static=True, rule='SOG-0241: the user’s answers to the points to decide (the « À trancher » tab of the recette) are written by the launcher: 1000 entries at most, ids Q-nnnn, a choice 0 to 9 or none, a free text of 2000 signs, one of the two at least, nothing else written; same guards as recette/verdict')
+      static=True, rule='SOG-0241: the user’s answers to the points to decide (the « À trancher » tab of the recette) are written by the launcher: 1000 entries at most, ids Q-nnnn, a choice 0 to 9 or none, a free text of 5000 signs (2000 before 26 Nov 2026), one of the two at least, nothing else written; same guards as recette/verdict')
 def k171(c):
     RJ, BS, AF, DS = _mods()
     fn, check = RJ.REGISTRY[('recette', 'decision')]
@@ -1674,12 +1674,12 @@ def k171(c):
         r = run(action='set', items={'Q-0003': {'choice': 0}})
         c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
         run(action='set', items={}, drop=['Q-0003'])
-        r = run(action='set', items={'Q-0003': {'choice': 0, 'text': 'é' * 2000}})      # SOG-0303: a free text of 2000 signs is kept
-        c.eq((r['ok'], len(run(action='get')['items'].get('Q-0003', {}).get('text', ''))), (True, 2000), 'a free text of 2000 signs is written and read back whole (SOG-0303)', what='2000 text')
+        r = run(action='set', items={'Q-0003': {'choice': 0, 'text': 'é' * 5000}})      # SOG-0303: a free text of 5000 signs is kept (2000 before 26 Nov 2026)
+        c.eq((r['ok'], len(run(action='get')['items'].get('Q-0003', {}).get('text', ''))), (True, 5000), 'a free text of 5000 signs is written and read back whole (SOG-0303)', what='5000 text')
         run(action='set', items={}, drop=['Q-0003'])
         before = f.read_bytes()
         for bad in ({'Q-12': {'choice': 0}}, {'SOG-0003': {'choice': 0}}, {'Q-0003': {}}, {'Q-0003': {'choice': None}}, {'Q-0003': {'choice': None, 'text': '   '}}, {'Q-0003': {'choice': 10}},
-                    {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 2001}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
+                    {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 5001}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
                     {'Q-0003': {'choice': 0, 'at': 'yesterday'}}, {'Q-0003': {'choice': 0, 'extra': 1}}, {'Q-0003': {'choice': 0, 'text': 3}}):
             r = run(action='set', items={**good, **bad})
             c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written')
@@ -3820,9 +3820,9 @@ def k270(c):
     RB = importlib.import_module('recette_build')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         org = Path(td)
-        (org / 'RECETTE.json').write_text(json.dumps({'schema': 'sog-recette/1', 'items': {'SOG-0301': {'history': [ko, {'verdict': 'meh'}] + [ko] * 30 + [{**ko, 'comment': 'x' * 3000}]}}}), encoding='utf-8')
+        (org / 'RECETTE.json').write_text(json.dumps({'schema': 'sog-recette/1', 'items': {'SOG-0301': {'history': [ko, {'verdict': 'meh'}] + [ko] * 30 + [{**ko, 'comment': 'x' * 6000}]}}}), encoding='utf-8')
         h = RB.histories(str(org))
-        c.eq([sorted(h), len(h['SOG-0301']), len(h['SOG-0301'][-1]['comment'])], [['SOG-0301'], 20, 2000], 'recette_build.histories: twenty at most, the unknown verdict dropped, a comment bounded to 2000', what='build')
+        c.eq([sorted(h), len(h['SOG-0301']), len(h['SOG-0301'][-1]['comment'])], [['SOG-0301'], 20, 5000], 'recette_build.histories: twenty at most, the unknown verdict dropped, a comment bounded to 5000', what='build')
 
 
 @case('K369', 'DFS lot 3 (the chain of the Data screen: « Mettre à jour » = `base/fetch` then `base/build`): `base/fetch` runs the job `dfsproc/build` AFTER the sources of the zone `de` are fetched — nothing else to press —, once for several zones, never for another zone, and its answer (the counts, or a short code) is in the result of the fetch, which the journal `base/last` keeps; a failure of the procedures (an answer or an exception) stops nothing',
@@ -4207,3 +4207,40 @@ def k542(c):
         c.eq((last.get('ok'), last.get('reason')), (False, 'too-big'), 'the series ends by too-big (not by a file that the reading would refuse)', what='end of the series')
         doc = json.loads(f.read_text(encoding='utf-8'))
         c.ok(750 < len(doc['items']) < 1000 and f.stat().st_size <= FOUR_MIO and rd(Job('signalement', 'lire', {}), check_rd({}), ctx).get('ok'), (len(doc['items']), f.stat().st_size), 'it ends before 1000 reports, the file is not above 4 Mio and is readable')
+
+
+
+def _rec_big(c, verb, fname, schema, qid, mk):
+    """recette/verdict and recette/decision, Sécurisation's guard (26 Nov 2026): a `set` that would carry the file past 2 Mio (what the reading accepts) is refused by `too-big`, the old file identical byte for byte and readable, no temporary file."""
+    RJ = _mods()[0]
+    fn, check = RJ.REGISTRY[('recette', verb)]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        org = root / 'organisation'
+        org.mkdir()
+        f = org / fname
+        run = lambda **a: fn(RJ.Job('recette', verb, {}), check(a), {'root': str(root)})
+        TWO_MIO = 2 * 1024 * 1024
+        first = {qid(n): mk('a' * 5000) for n in range(1, 301)}      # 300 entries of 5000 signs: about 1.5 Mio, readable
+        r = run(action='set', items=first)
+        b0 = f.read_bytes()
+        c.ok(r['ok'] and TWO_MIO - 700000 < len(b0) < TWO_MIO, (r.get('reason'), len(b0)), '300 entries of 5000 signs are written: the file is below 2 Mio')
+        more = {qid(n): mk('b' * 5000) for n in range(301, 601)}      # 300 more would make about 3 Mio
+        r = run(action='set', items=more)
+        after = run(action='get')
+        c.eq((r.get('ok'), r.get('reason'), f.read_bytes() == b0, list(org.glob('*.tmp')), after.get('ok'), len(after.get('items') or {})),
+             (False, 'too-big', True, [], True, 300), 'a set that would pass 2 Mio: too-big, the old file identical byte for byte and still readable, no temporary file', what='too-big')
+        r = run(action='set', items={qid(1): mk('c' * 5000)})
+        c.eq((r.get('ok'), len(run(action='get')['items'])), (True, 300), 'a set that fits is still written (one entry replaced)', what='fits')
+
+
+@case('K650', 'recette/verdict, the size guard (Sécurisation, 26 Nov 2026): a `set` that would carry RECETTE.json past 2 Mio is refused by too-big BEFORE the temporary file, the old file identical and readable', 'K', static=True,
+      rule='Sécurisation, on the 5000-sign comment of the recette: the verb wrote json.dumps(doc) without counting the bytes while the reading refuses a file of more than FILE_MAX (2 Mio): the page’s 900 000 was the only brake and a direct call of the verb could make a file that the launcher never reads again; the bytes are counted before the .tmp, the answer is `too-big`; red before: the file passes 2 Mio and `get` says nothing')
+def k550(c):
+    _rec_big(c, 'verdict', 'RECETTE.json', 'sog-recette/1', lambda n: f'SOG-{n:04d}', lambda t: {'verdict': 'ko', 'comment': t})
+
+
+@case('K651', 'recette/decision, the size guard (Sécurisation, 26 Nov 2026): a `set` that would carry DECISIONS_REPONSES.json past 2 Mio is refused by too-big BEFORE the temporary file, the old file identical and readable', 'K', static=True,
+      rule='Sécurisation, on the 5000-sign free text of the recette: same guard as recette/verdict (K650) for the answers to the points to decide; red before: the file passes 2 Mio')
+def k551(c):
+    _rec_big(c, 'decision', 'DECISIONS_REPONSES.json', 'sog-decisions/1', lambda n: f'Q-{n:04d}', lambda t: {'choice': 0, 'text': t})

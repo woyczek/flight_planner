@@ -134,7 +134,7 @@ def verdicts(org):
             continue
         e = {'verdict': v['verdict']}
         if isinstance(v.get('comment'), str):
-            e['comment'] = re.sub(r'[\x00-\x1f]', ' ', v['comment'])[:2000]
+            e['comment'] = re.sub(r'[\x00-\x1f]', ' ', v['comment'])[:5000]
         if isinstance(v.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', v['at']):
             e['at'] = v['at'][:24]
         out[fid] = e
@@ -153,7 +153,7 @@ def histories(org):
                 continue
             e = {'verdict': h['verdict']}
             if isinstance(h.get('comment'), str):
-                e['comment'] = re.sub(r'[\x00-\x1f]', ' ', h['comment'])[:2000]
+                e['comment'] = re.sub(r'[\x00-\x1f]', ' ', h['comment'])[:5000]
             if isinstance(h.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', h['at']):
                 e['at'] = h['at'][:24]
             hist.append(e)
@@ -187,7 +187,7 @@ def decisions(org, fs):
         if isinstance(a, dict):
             c = a.get('choice')
             choice = c if isinstance(c, int) and not isinstance(c, bool) and 0 <= c < len(options) else None
-            text = clean(a['text'], 2000) if isinstance(a.get('text'), str) else ''
+            text = clean(a['text'], 5000) if isinstance(a.get('text'), str) else ''
             if choice is not None or text:
                 row.update({'state': 'answered', 'choice': choice, 'text': text})
                 if isinstance(a.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', a['at']):

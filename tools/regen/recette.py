@@ -5,7 +5,7 @@ Un verbe, `recette/verdict` { action, items? } (ce poste seulement, comme tous l
   · `set` { items, drop? } : FUSIONNE `items` dans le contenu, par identifiant (une entrée écrite ne disparaît JAMAIS parce que l'écran ne l'a pas en main : seul `drop`, la liste des identifiants que l'utilisateur reprend, en retire) et rend { ok, action, count, updated }.
 Forme du fichier : { "schema": "sog-recette/1", "updated": "<ISO UTC>", "items": { "SOG-0046": { "verdict": "ok" | "ko" | "reserve", "comment": "…", "at": "<ISO UTC>" }, … } } — 1000 entrées au plus,
 un identifiant ^SOG-\\d{4}$, un verdict `ok`, `ko` ou `reserve` (SOG-0329 : « accepter avec réserves, pas de retest » : compte comme validé et ne revient pas en recette ; un verdict déjà écrit n'est pas réécrit),
-un commentaire de 2000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes) qui est OBLIGATOIRE pour un refus (`ko`) et pour des réserves (`reserve`), une date ISO UTC. C'est l'entrée
+un commentaire de 5000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes) qui est OBLIGATOIRE pour un refus (`ko`) et pour des réserves (`reserve`), une date ISO UTC. C'est l'entrée
 de l'utilisateur : tools/recette_build.py la lit à chaque régénération (un verdict tient tant que la fiche n'est pas livrée de nouveau).
 Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; `set` refuse en bloc ({ ok: false, reason: 'bad-items', bad: [identifiants, 20 au plus] })
 une entrée hors des règles ci-dessus, sans rien écrire ; `get` lit un fichier qui peut venir d'ailleurs : ce qui n'est pas aux règles est écarté (`dropped`), un fichier d'un autre schéma ou
@@ -25,7 +25,7 @@ ID = re.compile(r'SOG-[0-9]{4}')
 AT = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z')
 MAX_ITEMS = 1000
 MAX_HISTORY = 20  # SOG-0351 : les verdicts d'une fiche qu'on remet à tester ou qu'un nouveau verdict remplace ; jamais effacés, les plus anciens au-delà de vingt
-MAX_COMMENT = 2000  # SOG-0303 : 600 avant ; la page, recette_build.py et ce verbe disent la même limite
+MAX_COMMENT = 5000  # SOG-0303 : 600 avant, puis 2000 ; 5000 depuis le 26 nov. 2026 (l'utilisateur) ; la page, recette_build.py et ce verbe disent la même limite
 FILE_MAX = 2 * 1024 * 1024
 BAD_MAX = 20
 
@@ -81,7 +81,7 @@ def history_of(v):
 
 def entry(v):
     """L'entrée nettoyée { verdict?, comment?, at?, history? } d'une valeur, ou None si elle n'est pas aux règles. Une entrée SANS verdict est une fiche remise à tester (SOG-0351) : elle ne porte que son
-    historique (non vide) et l'heure ; son verdict d'avant y est gardé, jamais effacé. Sinon : un verdict ok, ko ou reserve, un commentaire texte de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
+    historique (non vide) et l'heure ; son verdict d'avant y est gardé, jamais effacé. Sinon : un verdict ok, ko ou reserve, un commentaire texte de 5000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
     non vide, pour `ko` et `reserve`), une date ISO UTC ; rien d'autre."""
     if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at', 'history'}:
         return None
@@ -184,10 +184,15 @@ def verdict(job, args, ctx):
     if items is None:
         return {'ok': False, 'action': 'set', 'reason': 'too-many'}
     doc = {'schema': SCHEMA, 'updated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'items': {k: items[k] for k in sorted(items)}}
+    # Sécurisation (26 nov. 2026) : les octets sont comptés AVANT le .tmp, car la lecture refuse un fichier de plus de FILE_MAX : à 5000 signes par commentaire, un appel direct
+    # du verbe pouvait fabriquer un fichier que le lanceur ne relit plus ; l'ancien fichier reste alors intact et lisible
+    data = (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
+    if len(data) > FILE_MAX:
+        return {'ok': False, 'action': 'set', 'reason': 'too-big'}
     tmp = path + '.tmp'
     try:
-        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
-            f.write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        with open(tmp, 'wb') as f:
+            f.write(data)
         os.replace(tmp, path)
     except OSError:
         return {'ok': False, 'action': 'set', 'reason': 'failed'}
@@ -204,7 +209,7 @@ def verdict(job, args, ctx):
 # ---- recette/decision (SOG-0241) : les réponses de l'utilisateur aux points à trancher (onglet « À trancher » de la recette) — même forme et mêmes gardes que recette/verdict.
 #   { action: 'get' } → { ok, action, schema, updated, items, dropped, exists } ; { action: 'set', items, drop? } FUSIONNE par identifiant (`drop` retire). Fichier : organisation/DECISIONS_REPONSES.json,
 #   { "schema": "sog-decisions/1", "updated": "<ISO UTC>", "items": { "Q-0001": { "choice": 0..9 | null, "text": "…", "at": "<ISO UTC>" } } } : un identifiant ^Q-\d{4}$, un choix entier
-#   de 0 à 9 ou rien, un texte libre de 2000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes), au moins l'un des deux, une date ISO UTC ; 1000 entrées au plus ; rien d'autre n'est écrit.
+#   de 0 à 9 ou rien, un texte libre de 5000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes), au moins l'un des deux, une date ISO UTC ; 1000 entrées au plus ; rien d'autre n'est écrit.
 DECISIONS_FILE = 'DECISIONS_REPONSES.json'
 DECISIONS_SCHEMA = 'sog-decisions/1'
 QID = re.compile(r'Q-[0-9]{4}')
@@ -216,7 +221,7 @@ def check_decision(a):
 
 
 def decision_entry(v):
-    """L'entrée nettoyée { choice, text, at? } d'une valeur, ou None hors des règles : `choice` entier 0 à 9 ou None, `text` de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne, au moins un des deux, `at` ISO UTC."""
+    """L'entrée nettoyée { choice, text, at? } d'une valeur, ou None hors des règles : `choice` entier 0 à 9 ou None, `text` de 5000 signes au plus sans caractère de commande hors tabulation et saut de ligne, au moins un des deux, `at` ISO UTC."""
     if not isinstance(v, dict) or not set(v) <= {'choice', 'text', 'at'}:
         return None
     choice = v.get('choice')
@@ -288,10 +293,15 @@ def decision(job, args, ctx):
     if items is None:
         return {'ok': False, 'action': 'set', 'reason': 'too-many'}
     doc = {'schema': DECISIONS_SCHEMA, 'updated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'items': {k: items[k] for k in sorted(items)}}
+    # Sécurisation (26 nov. 2026) : les octets sont comptés AVANT le .tmp, car la lecture refuse un fichier de plus de FILE_MAX : à 5000 signes par commentaire, un appel direct
+    # du verbe pouvait fabriquer un fichier que le lanceur ne relit plus ; l'ancien fichier reste alors intact et lisible
+    data = (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
+    if len(data) > FILE_MAX:
+        return {'ok': False, 'action': 'set', 'reason': 'too-big'}
     tmp = path + '.tmp'
     try:
-        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
-            f.write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        with open(tmp, 'wb') as f:
+            f.write(data)
         os.replace(tmp, path)
     except OSError:
         return {'ok': False, 'action': 'set', 'reason': 'failed'}

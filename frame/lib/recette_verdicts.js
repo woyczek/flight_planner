@@ -11,7 +11,7 @@ export const VERDICTS = ['ok', 'ko', 'reserve'];
 export const NEEDS_COMMENT = ['ko', 'reserve'];
 export const LIMITS = {
   items: 1000,
-  comment: 2000,
+  comment: 5000,
   history: 20,
   doc: 900000 // la taille du texte du fichier (l'adaptateur refuse au-delà ; la lecture ignore au-delà de 1,5 Mo)
 };
