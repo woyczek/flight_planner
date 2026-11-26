@@ -1856,14 +1856,20 @@ export function createProcedures(host) {
   /** Ce que la Carte a choisi (#fuel?focus=arr&rwy=13R&star=ID&app=ID : plusieurs clés d'un aller, consommées par module.js ; une
    *  clé absente laisse sa famille telle quelle, § 10.30) : { side, fields }, appliqué dès que le vol est lu. */
   let proposal = null;
-  /** Reçoit la proposition d'un côté ; « none » vaut « Aucune » (null). */
-  function propose(side, fields) {
+  /** Reçoit la proposition d'un côté ; « none » vaut « Aucune » (null). explicit : le choix fait par le pilote sur la Carte (SOG-0654),
+   *  sinon une proposition par défaut (l'itinéraire du moteur). */
+  function propose(side, fields, explicit = false) {
     if (side !== 'dep' && side !== 'arr') return;
     proposal = {
       side,
-      fields
+      fields,
+      explicit: explicit === true
     };
     applyProposal();
+  }
+  /** Le choix explicite de la Carte (#fuel?focus=dep|arr&sid=…, SOG-0654) : une fiche lue de Little Navmap y est admise. */
+  function mapChoice(side, fields) {
+    propose(side, fields, true);
   }
   /** Applique la proposition comme des choix faits ici (le même chemin que les listes : choose), dans l'ordre du côté (piste,
    *  procédure, transition, approche, transition d'approche), puis un seul dessin, une seule écriture différée et une seule ligne qui
@@ -1876,7 +1882,8 @@ export function createProcedures(host) {
     // dessinées : render la rappelle
     const {
       side,
-      fields
+      fields,
+      explicit
     } = proposal,
     before = snapshot();
     proposal = null;
@@ -1897,9 +1904,11 @@ export function createProcedures(host) {
         if (v === 'none') return k === 'rwy' ? null : '__none';
         if (k === 'rwy') return /^\d{2}[LRC]?$/.test(v) ? (ad.rwys || []).find(r => PR.rwNum(r) === v) ?? null : null;
         const rec = ad.recs.get(v);
-        // ni une fiche douteuse, ni une fiche lue de Little Navmap (SOG-0210 : jamais la proposition par défaut)
-        return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && rec.status !== 'lnm' && rec.lnm !== true && (k !== 'trans' && k !==
-          'appTrans' || rec.transition) ? rec.id : null;
+        // jamais une fiche douteuse ; une fiche lue de Little Navmap seulement choisie par le pilote sur la Carte (SOG-0654), jamais
+        // comme proposition par défaut (SOG-0210)
+        const lnm = rec?.status === 'lnm' || rec?.lnm === true;
+        return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && (!lnm || explicit) && (k !== 'trans' && k !== 'appTrans' || rec
+          .transition) ? rec.id : null;
       };
     let any = false;
     for (const k of PROC_FIELDS[side]) {
@@ -2170,6 +2179,7 @@ export function createProcedures(host) {
     windSync,
     settling,
     propose,
+    mapChoice,
     reset,
     choose,
     read,

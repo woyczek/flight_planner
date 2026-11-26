@@ -9922,7 +9922,7 @@ export async function mount(el, ctx) {
     lat: q.lat,
     lon: q.lon
   };
-  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
+  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.mapChoice(asked, {
     rwy: q.rwy,
     sid: q.sid,
     star: q.star,
