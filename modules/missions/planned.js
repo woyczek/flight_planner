@@ -15,6 +15,7 @@
 
 import * as RUN from './drawers_run.js';
 import * as MS from '../../frame/lib/mission.js';
+import * as U from '../../frame/lib/untrusted.js';
 import {
   fmtZ
 } from '../../frame/lib/time.js';
@@ -39,7 +40,7 @@ export const PTX = {
 };
 
 /** Une valeur d'un résultat qui est une Map ou un objet d'identifiants (le lecteur rend l'un ou l'autre) ; une clé PROPRE seulement. */
-const pick = (m, id) => m instanceof Map ? m.get(id) : m && typeof m === 'object' && Object.hasOwn(m, id) ? m[id] : undefined;
+const pick = (m, id) => m instanceof Map ? m.get(id) : U.own(m, id);
 
 /** Les relevés de constat en objet d'identifiants, bornés (le lecteur les attend ainsi). */
 const asObject = m => Object.fromEntries([...m].slice(0, 100));

@@ -9260,8 +9260,7 @@ def n116(c):
     c.until(f"!document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved again')
     got = c.js(_VEIL_EV_FILE, path)[1][0]
     c.ok(got.get('place') == 'TARGET' and got.get('text') == 'Contact radio établi' and got.get('at') == 'H+40mn',
-         got, 'a place chosen by the author replaces the hidden one (the event, edited, gets its identifier; its V2 time is kept)',
-         what='a place chosen')
+         got, 'a place chosen by the author replaces the hidden one (the event, edited, gets its identifier; its V2 time is kept)')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -14993,8 +14992,8 @@ def n226(c):
         c.tap(f'{E} [data-steps] [data-step="cadre"]') if not c.count(f'{E} [data-grp=cadre] input[data-k=edtitle]') else None
         c.until(f"!!document.querySelector('{E} [data-grp=cadre] input[data-k=edtitle]')", what='the Cadre')
         fields = c.js(f"[...document.querySelectorAll('{E} [data-grp=cadre] input, {E} [data-grp=cadre] select')].map(x => x.dataset.k)")
-        c.eq([len(fields), 'eddep' in fields, 'edarr' in fields, c.count(f'{E} [data-endsinline]'), c.count(f'{E} [data-grp=cadre] .f-muted')], [6, False, False, 0, 1],
-             f'{width}: the Cadre has six fields, neither the Departure nor the Arrival, no sentence of explanation (only its summary is secondary text: the one `.f-muted` of the group)', what='cadre')
+        c.eq([len(fields), 'eddep' in fields, 'edarr' in fields, c.count(f'{E} [data-endsinline]'), c.count(f'{E} [data-grp=cadre] .f-muted')], [7, False, False, 0, 1],
+             f'{width}: the Cadre has seven fields (SOG-0620 lot 2 added « Ordre reçu »), neither the Departure nor the Arrival, no sentence of explanation (only its summary is secondary text: the one `.f-muted` of the group)', what='cadre')
         c.eq(norm(c.text(f'{E} [data-line=cadre]')), 'REG · LFPO → LFRS', f'{width}: the Cadre keeps its summary « REG · LFPO → LFRS »', what='summary')
         c.tap(f'{E} [data-do="edsave"]')
         c.wait(700)
@@ -17313,7 +17312,8 @@ def n278(c):
     c.ok(not re.search(r'EV-\d', c.js(f"document.querySelector('{E} [data-flow]').textContent")), c.js(f"document.querySelector('{E} [data-flow]').textContent"),
          'no identifier of an event anywhere in the block (a reference reads by the NAME of the place of the event it points to)')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flow] .fl-adds button')].map(b => b.textContent.trim())"),
-         ['＋ Événement', '＋ Tiroir'], 'the two additions', what='additions')
+         ['＋ Événement', '＋ Tiroir', 'Créer les événements des rendez-vous'],
+         'the additions: the two of the block, and the button of lot 5 since the rendezvous RDV-1 of the file has no event', what='additions')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N278_390_deroule.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
@@ -17599,6 +17599,8 @@ def n293(c):
     c.tap(f'{_AS_BOX} [data-as-go]')
     doc = c.until_doc(P, lambda d: any(x.get('mission') == 'X-906A' for x in d['assignments']), what='the line of X-906A')
     c.eq(next(x for x in doc['assignments'] if x['mission'] == 'X-906A').get('team'), 'B', 'the line carries team: B', what='team')
+    # the notification « ok » of « Affecter » covers the bar of the form at 390: cleared before « ← »
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.tap(f'{_AS_BOX} [data-as-back]')
     form('X-907A')
     c.eq(c.count(f'{_AS_BOX} [data-as=team]'), 0, 'a mission with one team: no list « Équipe »', what='no list')
@@ -17642,8 +17644,8 @@ def n294(c):
     c.until(f"!document.querySelector('{E} [data-drawer=\"D\"]')", what='the drawer gone: the switch is undone in one step')
     _tab(c, 'mission')
     c.eq(c.count(f'{E} [data-flowrows] .fl-row[data-kind=event]'), 2, '↶ gives the event back', what='events')
-    c.tap(f'{E} [data-flowrows] .fl-row[data-kind=event]')
-    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-flowchoice]')", what='the sheet again')
+    # ↶ gives back the state of before the switch, its open sheet included (a tap on the row would close it: one sheet open, a second tap closes)
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-flowchoice]')", what='the sheet of the event, given back open by ↶')
     c.tap(f'{E} [data-flowsheet] [data-flowchoice] input[value="1"]')
     c.until(f"!!document.querySelector('{E} [data-drawer=\"D\"]')", what='the drawer D again')
     c.tap(f'{E} [data-do="edsave"]')

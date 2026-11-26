@@ -12,6 +12,9 @@ export const FTX = {
     'Ein Ereignis ist im Briefing vorgesehen und wird an seinem Ort festgestellt; eine Schublade bleibt verborgen, bis ihr Schlüssel spielt. Nach Zeit sortiert: die geplante Zeit oder die Ersatzzeit einer Schublade.',
     'Un evento está previsto en el briefing y se constata en su lugar; un cajón permanece oculto hasta que juega su llave. Ordenados por hora: la hora prevista, o la hora de reserva de un cajón.'
   ],
+  // SOG-0620 : l'atelier voilé (le registre caché) ne dit jamais « tiroir » (N114) : la définition et la liste vide sans le mot (français seul, SOG-0680)
+  flDefVeil: ['Un événement est prévu au brief et se constate sur son lieu. Rangés par heure prévue.'],
+  flNoneVeil: ['Aucun événement : « ＋ Événement » en ajoute un.'],
   flEvent: ['Événement', 'Event', 'Ereignis', 'Evento'],
   flDrawer: ['Tiroir', 'Drawer', 'Schublade', 'Cajón'],
   flDrawerShort: ['T', 'D', 'S', 'C'],

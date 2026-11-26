@@ -145,7 +145,7 @@ function rowsHtml(s, h) {
     t = tr(s),
     teams = new Map(EF.teamLetters(c.doc).map(x => [x.letter, x.name])),
     rows = EF.rows(c.doc, c.list, c.drawers, t, c.places);
-  if (!rows.length) return `<p class="f-muted" data-noevent>${esc(s.tt(FTX.flNone))}</p>`;
+  if (!rows.length) return `<p class="f-muted" data-noevent>${esc(s.tt(s.ed.veil ? FTX.flNoneVeil : FTX.flNone))}</p>`;
   return rows.map(r => {
     const ev = r.kind === 'event',
       cur = ev ? e.flowSel === r.n : e.sel === r.id && (e.sel || 'start') !== 'start';
@@ -270,7 +270,7 @@ export function flowHtml(s, h) {
     c = ctxOf(e, h),
     // SOG-0620 lot 5 : tant qu'un rendez-vous de la mission n'a AUCUN événement pour lieu, un bouton les crée tous d'un geste (l'heure reste à donner)
     rdv = !full && EF.rdvWithoutEvent(doc, c.list, c.places).length ? `<div class="fl-adds"><button type="button" data-do="edflowrdv">${esc(s.tt(FTX.flRdvBtn))}</button></div>` : '';
-  return `${STYLE}<div class="fl ms-edsub" data-flow><h4>${esc(s.tt(FTX.flTitle))}</h4><p class="f-muted fl-def">${esc(s.tt(FTX.flDef))}</p>
+  return `${STYLE}<div class="fl ms-edsub" data-flow><h4>${esc(s.tt(FTX.flTitle))}</h4><p class="f-muted fl-def">${esc(s.tt(e.veil ? FTX.flDefVeil : FTX.flDef))}</p>
     <div class="fl-list" data-flowrows>${rowsHtml(s, h)}</div>
     ${!storable ? `<p class="f-muted" data-evnohome>${esc(s.tt(FTX.flNoHome))}</p>` : `<div class="fl-adds">${full ? `<p class="f-muted">${esc(s.tt(FTX.flFull))}</p>` : `<button type="button" data-do="edflowadd">${esc(s.tt(FTX.flAddEvent))}</button>`}${e.veil ? '' : `<button type="button" data-do="edflowdrawer">${esc(s.tt(FTX.flAddDrawer))}</button>`}</div>${rdv}`}
     ${sheetHtml(s, h)}</div>`;
@@ -410,11 +410,12 @@ export function act(s, b, h) {
 }
 
 /** Le champ « Ordre reçu : n min avant le décollage » du Cadre (timeline.order_offset_min = −n ; vide : la clé est effacée) ; '' quand la
- *  chronologie du fichier ne peut pas la porter. */
+ *  chronologie du fichier ne peut pas la porter. Son nom est celui d'un champ du Cadre, jamais un texte secondaire (N132 : une ligne
+ *  secondaire par groupe, le résumé du Cadre). */
 export function orderHtml(s, h) {
   const e = s.ed,
     doc = h.doc(e);
   if (!EF.orderStorable(doc)) return '';
   const v = EF.orderOf(doc);
-  return `<div class="f-field" data-floworderfield><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsOrderL))}</span><div class="fl-inline"><input type="number" inputmode="numeric" data-k="edflow" data-f="order" value="${v}" min="0" max="1440" step="1" aria-label="${esc(s.tt(FTX.fsOrderL))}"><span>${esc(s.tt(FTX.fsOrderU))}</span></div></div>`;
+  return `<label class="f-field" data-floworderfield><span>${esc(s.tt(FTX.fsOrderL))}</span><div class="fl-inline"><input type="number" inputmode="numeric" data-k="edflow" data-f="order" value="${v}" min="0" max="1440" step="1" aria-label="${esc(s.tt(FTX.fsOrderL))}"><span>${esc(s.tt(FTX.fsOrderU))}</span></div></label>`;
 }

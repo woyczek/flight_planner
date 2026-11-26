@@ -44,6 +44,7 @@
 //     décollage, décalage VIDE). `places` : les lieux montrés (l'atelier voilé). Ne lèvent jamais.
 //   mirror(entry) → le miroir `at` d'une ligne ('' quand l'heure n'est pas lue).
 import * as MS from '../../frame/lib/mission.js';
+import * as U from '../../frame/lib/untrusted.js';
 import * as ED from './editor.js';
 import * as DR from './editor_drawers.js'; // toDrawer / toEvent : les lignes de tiroir (blankDrawer, keyed)
 
@@ -55,7 +56,8 @@ export const TEXT_MAX = 500;
 export const REFS = Object.freeze(['takeoff', 'order', 'point', 'event', 'drawer']);
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXY';
-const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+/** Un objet simple lu d'un fichier, sinon un objet vide (la garde de frame/lib/untrusted.js). */
+const rec = v => U.plain(v) ?? {};
 const str = (v, n) => typeof v === 'string' ? ED.cut(v, n) : typeof v === 'number' && Number.isFinite(v) ? String(v).slice(0, n) : '';
 /** Un nombre entier ramené dans ses bornes ; null quand ce n'est pas un nombre (une saisie vide). */
 const int = (v, [lo, hi]) => {
@@ -85,8 +87,8 @@ export function plannedOf(doc) {
 
 /** Une ligne du lecteur (MS.readEvents) en ligne de séance, bornée. `at` : l'heure telle que le fichier l'écrit. */
 function entryOf(r, i, at) {
-  r = plain(r);
-  const ref = plain(r.ref),
+  r = rec(r);
+  const ref = rec(r.ref),
     kind = REFS.includes(ref.kind) ? ref.kind : 'takeoff',
     id = typeof ref.id === 'string' ? ref.id : '',
     title = str(r.title, TITLE_MAX),
@@ -127,7 +129,7 @@ export function read(doc) {
   }));
   // une entrée par entrée du fichier, dans son ordre, chacune avec `i` (son indice) : on s'appuie sur `i`, jamais sur la place dans le tableau
   return list.slice(0, ED.EVENTS_MAX).map((r, k) => {
-    const i = Number.isInteger(plain(r).i) && r.i >= 0 ? r.i : k;
+    const i = Number.isInteger(rec(r).i) && r.i >= 0 ? r.i : k;
     return entryOf(r, i, raw[i]?.at ?? '');
   });
 }
@@ -144,7 +146,7 @@ export function mirror(e) {
 export function nextEventId(doc, entries) {
   // jamais un EV-n déjà ÉCRIT dans le fichier, même celui d'un doublon que le lecteur renvoie sous « @<i> » (idWritten: false)
   const used = new Set([...read(doc).map(e => e.id), ...ED.eventsRawOf(doc).map(e => e.id), ...(Array.isArray(entries) ? entries : []).map(
-    e => plain(e).id)]);
+    e => rec(e).id)]);
   for (let n = 1; n <= 999; n++)
     if (!used.has(`EV-${n}`)) return `EV-${n}`;
   return '';
@@ -174,7 +176,7 @@ export function blank(doc, entries) {
 
 /** Ce qui compte pour dire qu'une ligne a été retouchée (`at` et `legacy` viennent du fichier, ils ne se retouchent pas). */
 const core = e => JSON.stringify({
-  ...plain(e),
+  ...rec(e),
   at: 0,
   legacy: 0
 });
@@ -182,7 +184,7 @@ const core = e => JSON.stringify({
 /** L'objet du fichier d'une ligne retouchée : les autres clés gardées, celles du déroulé réécrites (une valeur vide retire sa clé). */
 function compose(base, e, id) {
   const o = {
-      ...plain(base)
+      ...rec(base)
     },
     set = (k, v) => {
       if (v === '' || v === null || v === undefined || v === false || Array.isArray(v) && !v.length) delete o[k];
@@ -218,17 +220,17 @@ function compose(base, e, id) {
 }
 
 export function withFlow(doc, entries) {
-  const out = structuredClone(plain(doc));
+  const out = structuredClone(rec(doc));
   try {
     if (!ED.eventsStorable(doc)) return out;
     const prev = read(doc),
       list = (Array.isArray(entries) ? entries : []).slice(0, ED.EVENTS_MAX),
       raw = ED.eventsRawOf(doc);
     const byI = new Map(prev.map(x => [x.i, x]));
-    if (JSON.stringify(list.map(core)) === JSON.stringify(prev.map(core)) && list.every((e, k) => plain(e).i === prev[k]?.i)) return out;
-    const used = new Set([...list.map(e => plain(e).id), ...raw.map(r => r.id)].filter(id => ID_RE.test(id))),
+    if (JSON.stringify(list.map(core)) === JSON.stringify(prev.map(core)) && list.every((e, k) => rec(e).i === prev[k]?.i)) return out;
+    const used = new Set([...list.map(e => rec(e).id), ...raw.map(r => r.id)].filter(id => ID_RE.test(id))),
       objs = list.map(e => {
-        e = plain(e);
+        e = rec(e);
         const was = Number.isInteger(e.i) && e.i >= 0 ? byI.get(e.i) : null;
         if (was && core(was) === core(e) && raw[e.i]) return structuredClone(raw[e.i]); // inchangé : l'objet du fichier
         let id = ID_RE.test(e.id) ? e.id : '';
@@ -249,7 +251,7 @@ export function withFlow(doc, entries) {
  *  l'heure prévue de chacun avant le retrait, MS.plannedMin ; sans elle, au décollage même). */
 export function without(entries, n, plan = new Map()) {
   const list = Array.isArray(entries) ? entries : [],
-    gone = plain(list[n]).id;
+    gone = rec(list[n]).id;
   return list.filter((_, k) => k !== n).map(e => e.refKind === 'event' && gone && e.refId === gone ? {
     ...e,
     refKind: 'takeoff',
@@ -273,7 +275,7 @@ export function withEvent(doc, ev) {
 export function withoutEvent(doc, id) {
   const list = read(doc),
     k = list.findIndex(e => e.id === id);
-  return k < 0 ? structuredClone(plain(doc)) : withFlow(doc, without(list, k, plannedOf(doc)));
+  return k < 0 ? structuredClone(rec(doc)) : withFlow(doc, without(list, k, plannedOf(doc)));
 }
 
 /** Les équipes de la mission, nommées par leur lettre (A à Y, dans l'ordre du fichier). */
@@ -387,7 +389,7 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
 /** Les repères qu'on peut choisir (voir l'en-tête). */
 export function targets(doc, entries, n, drawers, kind) {
   const list = Array.isArray(entries) ? entries : [],
-    me = plain(list[n]).id;
+    me = rec(list[n]).id;
   if (kind === 'drawer') return (drawers || []).map((d, k) => ({
     id: d.id,
     label: d.title || `${d.id}`,
@@ -413,23 +415,23 @@ export function targets(doc, entries, n, drawers, kind) {
 
 /** Le temps de réception de l'ordre, en minutes AVANT le décollage (timeline.order_offset_min = −n) : un nombre, ou '' quand il n'est pas donné. */
 export const orderOf = doc => {
-  const v = plain(plain(doc).timeline).order_offset_min;
+  const v = rec(rec(doc).timeline).order_offset_min;
   return Number.isFinite(v) && v <= 0 ? Math.min(1440, Math.round(-v)) : '';
 };
 
 /** Vrai quand la mission peut porter `timeline.order_offset_min` (une chronologie en liste ou un texte nu ne le peut pas). */
 export const orderStorable = doc => {
-  const t = plain(doc).timeline;
+  const t = rec(doc).timeline;
   return t === undefined || t === null || !!t && typeof t === 'object' && !Array.isArray(t);
 };
 
 /** Le document avec le temps de réception de l'ordre posé (`n` minutes avant le décollage, 0 à 1 440) ou effacé (`n` vide). */
 export function withOrder(doc, n) {
-  const out = structuredClone(plain(doc));
+  const out = structuredClone(rec(doc));
   if (!orderStorable(out)) return out;
   const v = n === '' || n === null || n === undefined ? null : int(n, [0, 1440]),
     tl = {
-      ...plain(out.timeline)
+      ...rec(out.timeline)
     };
   if (v === null) delete tl.order_offset_min;
   else tl.order_offset_min = -v;
