@@ -11844,3 +11844,55 @@ def f329(c):
     c.js(f"document.querySelector('{L}').open = true")
     c.until(dir_line, W['none'], timeout=10000, what='known nowhere: the « Inconnu » part alone')
     c.shot(f'F329_{c.design}_390_{c.lang}.png')
+
+
+@case('F330', 'Level: the CEILING said is the one the sheet declares — at a level under it but above the limit the performance model '
+      'computes, the line says « Au-dessus de la limite de montée calculée du C30J (FLxxx) ; plafond déclaré : FL600. », never « plafond » for '
+      'the computed limit, and the card of a route at that level « au-dessus de la limite de montée calculée (FLxxx) »; above the declared '
+      'ceiling, « Au-dessus du plafond du C30J (FL600). »', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0674 (the user, 25 Nov, a Concorde: « FL 530 Alt de référence : 550. plafond : 600. pourtant […] il considère FL547 comme '
+      'plafond. »; the ergonomist, 26 Nov: the ceiling said is the declared one, a computed limit is named for what it is); French only '
+      '(SOG-0680); an invented sheet declaring 60 000 ft, far above what its model can climb to, a fake launcher')
+def f330(c):
+    import re as _re
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 590, segs), verdict='conform', violations=[],
+                       unverifiable=[])]
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 60000}}
+
+    def docs_at(ft):
+        docs = proc_flight()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft'] = {'type': 'C30J', 'sheetId': 'C30J'}
+                d[1]['level'] = {'ft': ft}
+        return proc_docs() + docs + [['aircraft/sheets/C30J.json', sheet, 'document']]
+
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # FL590: under the declared ceiling, above what the model computes
+    c.open('fuel', docs=docs_at(59000), airfields=True)
+    wait_quote(c)
+    to_step(c, 0)
+    c.until(f"!!document.querySelector('{FUEL} [data-lvlceil]:not([hidden])')", timeout=8000, what='the line under the Level field')
+    line = norm(c.text(f'{FUEL} [data-lvlceil]') or '')
+    m = _re.fullmatch(r'Au-dessus de la limite de montée calculée du C30J \(FL(\d{3})\) ; plafond déclaré : FL600\.', line)
+    c.ok(bool(m) and int(m.group(1)) < 590, line, 'the computed limit named for what it is, the declared ceiling said (red before: '
+         '« Au-dessus du plafond du C30J (FLxxx). » with the computed value)')
+    c.ok('plafond du' not in line, line, 'never « plafond » for the computed limit')
+    to_step(c, 1)
+    _compute_now(c, st)
+    A = f'{FUEL} [data-altlist]'
+    c.until(f"document.querySelectorAll('{A} [data-alt]').length === 1", timeout=10000, what='the route')
+    card = norm(c.text(f'{A} [data-alt] [data-ceil]') or '')
+    c.ok(bool(_re.fullmatch(r'au-dessus de la limite de montée calculée \(FL\d{3}\)', card)), card,
+         'on the card: the computed limit, never « plafond »')
+    c.shot(f'F330_{c.design}_390_{c.lang}.png')
+    # FL610: above the declared ceiling — the ceiling of the sheet
+    c.open('fuel', docs=docs_at(61000), airfields=True)
+    wait_quote(c)
+    to_step(c, 0)
+    c.until(f"!!document.querySelector('{FUEL} [data-lvlceil]:not([hidden])')", timeout=8000, what='the line under the Level field')
+    c.eq(norm(c.text(f'{FUEL} [data-lvlceil]') or ''), 'Au-dessus du plafond du C30J (FL600).', 'above the declared ceiling: the '
+         'ceiling the sheet declares', what='declared')
