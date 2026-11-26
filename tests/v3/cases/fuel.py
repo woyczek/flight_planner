@@ -11635,7 +11635,7 @@ def f327(c):
     c.eq(got[1], ['XDEP', 'XPA', 'XPB', 'XARR'], 'the point of the cruise climb is a point of the route; VFR and IFR are not', what='points')
     c.eq(got[2], {'notUnderstood': ['C/XPB/N0450F350F390', 'ZZ*9'], 'unplaced': ['XPA180040'],
                   'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPA'}], 'speeds': ['N0450'], 'headLevel': 0,
-                  'steps': False}, 'the reading: « C/… » and ZZ*9 not understood, the bearing-distance point apart, each change of rule after '
+                  'steps': False, 'stays': []}, 'the reading: « C/… » and ZZ*9 not understood, the bearing-distance point apart, each change of rule after '
          'its point, the speed of the cruise climb', what='reading')
     c.eq(got[3], [], 'nothing « not recognised »: VFR and IFR are never looked up as points', what='unresolved')
     c.eq(got[4], 'XDEP VFR XPA IFR C/XPB/N0450F350F390 XPA180040 ZZ*9 XARR', 'the normalised text keeps every word as written',
@@ -11647,7 +11647,7 @@ def f327(c):
          'the letter deduced: VFR then IFR Z, IFR then VFR Y, VFR alone V, a first change to VFR means the flight left IFR; no rule '
          'written, nothing', what='letter')
     c.eq(got[10], {'notUnderstood': [], 'unplaced': [], 'rules': [], 'speeds': ['N0300', 'N0280', 'N0450'], 'headLevel': 25000,
-                   'steps': True}, 'the speeds written (head group, point, group in the middle), the level of the head group, steps',
+                   'steps': True, 'stays': []}, 'the speeds written (head group, point, group in the middle), the level of the head group, steps',
          what='groups')
     c.eq(got[11], [['XDEP', 0, ''], ['XPA', 15000, 'N0280'], ['XPB', 37000, 'N0450'], ['XARR', 0, '']],
          'a level at a point or in a group in the middle is a step, with its speed; the head group is never a step', what='steps')
@@ -11736,7 +11736,7 @@ def f334(c):
          'at FL350', what='points')
     c.eq(got[2], {'notUnderstood': ['C/XPF/M082F370PLUS', 'C/NTR270010/N0450F350F390'], 'unplaced': ['NTR270010'],
                   'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPB'}], 'speeds': ['K0210', 'K0300', 'M078', 'M082', 'N0450'],
-                  'headLevel': 0, 'steps': True}, 'the reading: the VFR rule of the head group, the speeds in knots, km/h and Mach, the point '
+                  'headLevel': 0, 'steps': True, 'stays': ['STAY1/0045']}, 'the reading: the VFR rule of the head group, the speeds in knots, km/h and Mach, the point '
          'of a cruise climb by bearing and distance « non situé »', what='reading')
     c.eq(got[3], [], 'nothing « not recognised »', what='unresolved')
     c.eq(got[4], 'XDEP K0210VFR XPA STAY1/0045 XPB/K0300A045 IFR XPC/M078F350 DCT XPD OAT XPE GAT C/XPF/M082F370PLUS NATD 5530N02000W '
@@ -11748,12 +11748,13 @@ def f334(c):
     c.page.fill(f'{FUEL} [data-k="rtext"]', typed)
     c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
     want = [['rules', 'Règles de vol : Z — VFR jusqu’à NEPIX, puis IFR.'], ['steps', 'Niveaux écrits aux points : appliqués comme paliers.'],
-            ['speeds', 'Non appliqué au devis : les vitesses écrites dans la route.']]
+            ['speeds', 'Non appliqué au devis : les vitesses écrites dans la route.'],
+            ['stays', 'Non appliqué au devis : la durée des arrêts écrits dans la route (STAY).']]
     read = """() => { const b = document.querySelector('[data-module=fuel] [data-rread]'); if (!b || b.hidden) return null;
       return [...b.querySelectorAll('[data-rl]')].filter(e => !e.hidden).map(e => [e.dataset.rl,
         (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) }"""
     c.until(f"() => JSON.stringify(({read})()) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')), ensure_ascii=False)}",
-            timeout=10000, what='the three lines already decided, nothing else (red before: « Non compris : K0210VFR. », STAY1 looked up as a point)')
+            timeout=10000, what='the lines already decided and the line of the stops (the relay, 26 Nov), nothing else (red before: « Non compris : K0210VFR. », STAY1 looked up as a point)')
     f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d['route'].get('text') or '') == typed, 'the text kept word for word',
                     timeout=10000)
     nep = next(p for p in f['route']['points'] if p['id'] == 'NEPIX')
