@@ -1,0 +1,117 @@
+AD 2 LFZY IAC RWY05 ILS Z LOC ZAIP
+FRANCE 26 NOV 26
+APPROCHE AUX INSTRUMENTS ZYRES LE CLOS
+Instrument approach
+CAT A B C D
+ALT AD : 21 , DTHR : 14 (1 hPa) ILS Z ou/ or LOC Z RWY05
+ATIS : 120.100
+ILS - DME VAR
+APP : TARLEN Approche /Approach 120.107 120.114(1) - TARLEN Radar 120.121 120.128(1) - TARLEN Précision : 120.135 120.142(1)
+ZY 109.3 3°E
+TWR : ZYRES Tour /T ower 120.149 120.156(S) 121.163(1)
+(1) Réservée MIL /Reserved MIL ACFT RDH : 52 (2025)
+KERSE 2310
+1000 1000 2000 2871
+R 234 A 2284
+2730 2000
+R 234 B
+SFC ZYE Ch 27X
+5000
+(109.0) 1070
+2000
+2792 (1064)
+5 NM ZY 1000 1000
+43° 1752
+10' CT A TARLEN 1
+239
+1821 1821
+(1815) (1815) (233)
+1000 1000
+P 62 739 MAX IAS 185 kt
+FL 195 837 (733)
+SFC (831)
+1034 049°
+(1028) ZY Ch 18X
+P 48
+(109.3) 3300 ASFC
+804 SFC
+(798)
+CT A TARLEN 1
+1345 MAPT
+(1339)
+P 63 P 63
+FL 195 FL 195
+TQN 322
+NDB DME HLDG NDB DME HLDG IAF 049° 247° SFC SFC
+PELMA
+PELMA
+43° MAX IAS 210 kt 703
+522
+00' 12 - 18 NM ZYE
+049° ALT / HGT : ft
+FL 080 Distances : NM
+2400 MOCA
+2400 0 5 NM
+CTR ZYRES D SFC - 3500 ASFC 006° 20'
+067°
+Utilisation P API 05 obligatoire
+247° TQN 2400
+Mandatory use of P API 05
+R 64 A ALT MNM 25 NM TQN
+247°
+FL 195 DME requis/ required
+SFC
+D 54 A 3800
+ADF requis/ required 5500
+UNL
+18 NM ZYE SFC
+Procédure dérogatoire A TTENTE NDB/DME 269°089°
+Dispensatory procedure HOLDING NDB /DME
+233° TQN 233° TQN
+API sous surveillance radar si P 48 active
+2400
+MISSED APCH under radar surveillance if P 48 active
+42°
+50' 005° 50' 006° 00' 006° 10'
+TA : 5000
+FAF 4.6 NM ZY FAF DME
+IF 049° ZY
+2000
+MAPT
+(1994) OM API : Monter dans l’axe vers 2400 (2394). A 5 ZY tourner à droite
+LOC
+1480 049° vers TQN puis PELMA .
+3.0° - 5.2% Palier d'accélération non étudié.
+IF 7.6 NM ZY (1474)
+049°
+MDA
+710
+Missed approach : Climb straight ahead to 2200 (2186). At 4 ZY turn
+(704) DA
+049° right to TQN then PELMA .
+MDA
+Level acceleration not studied.
+12 NM ZYE
+DME ZY (NM) 7.6 4.6 3.1 1.1 0
+2000 DTHR (NM) 7.5 4.5 3.0 1.0
+MNM AD : distances verticales en pieds, RVR et VIS en mètres./ Vertical distance in feet, RVR and VIS in meters . REF HGT : ALT DTHR
+ILS ILS
+LOC + DME ZY MVL (1)
+API 2.5% API 3% Circling
+DME ZY
+DA (H) RVR OCH OCH DA (H) RVR RVR MDA (H) OCH MDA (H) VIS OCH
+NM 5 4 3 2
+A 340 (330) 1500 326 240 (230) 1200 226 1500 1100 (1100) 1500 1094
+ALT 1860 1480 1120 750
+B 350 (350) 1500 341 250 (250) 1300 241 1500 1140 (1130) 1600 1126
+750 (740) 736
+C 360 (360) 1600 351 260 (260) 1300 251 2400 1240 (1230) 2400 1225 (HGT) (1854) (1474) (1114) (744)
+D 370 (370) 1700 363 270 (270) 1300 263 2400 1430 (1430) 3600 1422
+Observations/ Remarks : (1) MVL interdites au Nord de l’axe 05/23 / Circling is forbidden North of center line 05/23 .
+MVL 13: interdite / prohibited .
+70 kt 85 kt 100 kt 115 kt 130 kt 160 kt 185 kt
+FAF - MAPT 4.4 NM 3 min 46 3 min 06 2 min 38 2 min 18 2 min 02 1 min 39 1 min 26
+VSP (ft/min) 430 520 615 705 800 985 1135
+DIRCAM AMDT 12/26 CHG : Renommage, VAR, P 48, symbole AD. © DIA
+C A T
+179°

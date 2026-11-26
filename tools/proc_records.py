@@ -268,14 +268,16 @@ def _faf_leg(before, runway, threshold, coords, ils, warnings):
     if not (d < d_if and off <= FAF_AXIS):
         warnings.append(f'page ILS: FAF LOC RWY {runway} à {d:.1f} NM du seuil (point initial à {d_if:.1f} NM), relèvement {brg:.0f}° pour une piste à {true:.0f}° : pas sur la finale, non ajouté')
         return None
-    return {'id': f'FAF{runway}', 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'faf', 'pos': pos}
+    altitude = (ils.get('faf_details') or {}).get(runway, {}).get('alt')
+    return {'id': f'FAF{runway}', 'leg': 'CF', 'alt': {'type': 'at', 'ft': altitude} if altitude is not None else None, 'over': None, 'synthetic': 'faf', 'pos': pos}
 
 
-def final_only_record(icao, runway, ils, coords, source, cycle):
-    """L'approche ILS/LOC d'une piste dont le SIA donne le FAF (pages DATA : « FAP/FAF ILS/LOC 17L … ») mais AUCUNE table de codage (LFLL : ILS 17L, 35L, 35R) : la finale seule, FAF → seuil, tracée droit.
-    Rend (fiche, avertissements) ; fiche None (avertissement) si le seuil ou le cap de la piste manquent (page AD 2.12) ou si le FAF n'est pas sur la finale (relèvement FAF → seuil à plus de
-    FAF_AXIS° du cap vrai de la piste). Statut « check » ; les deux points sont synthétiques (`faf`, `threshold`) : pas de point initial, de transition ni d'approche interrompue, la source ne les donne pas
-    (ils figurent sur la carte seulement) : rien n'est inventé. Nommée par la piste, jamais par un nom de carte (SOG-0044, 6 nov. 2026)."""
+def final_only_record(icao, runway, ils, coords, source, cycle, nav='ILS'):
+    """A DATA-derived ILS/LOC final axis, explicitly partial: optional IF -> FAF -> threshold.
+
+    Use only published positions, runway axis and the altitude printed in a FAF label. An INA
+    coding table is not a final. No initial manoeuvre, vertical profile or missed path is invented.
+    """
     warnings = []
     pos, thr, true = (ils.get('faf') or {}).get(runway), coords.get('RW' + runway), (ils.get('true') or {}).get(runway)
     if not pos or not thr or thr[0] is None or true is None:
@@ -286,11 +288,23 @@ def final_only_record(icao, runway, ils, coords, source, cycle):
     if off > FAF_AXIS:
         warnings.append(f'ILS/LOC {runway}: FAF à {d:.1f} NM du seuil, relèvement {brg:.0f}° pour une piste à {true:.0f}° : pas sur la finale, approche non construite')
         return None, warnings
-    name = f'ILS RWY {runway}'
-    legs = [{'id': f'FAF{runway}', 'leg': 'IF', 'alt': None, 'over': None, 'synthetic': 'faf', 'pos': pos}, {'id': 'RW' + runway, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}]
+    name = f'{nav} RWY {runway}'
+    initial = _if_leg(runway, thr, ils, warnings)
+    if initial and G.bearing_nm(initial['pos'], thr)[1] <= d:
+        warnings.append(f'{name}: IF is not upstream of the FAF, IF not added')
+        initial = None
+    altitude = (ils.get('faf_details') or {}).get(runway, {}).get('alt')
+    legs = ([initial] if initial else []) + [
+        {'id': f'FAF{runway}', 'leg': 'CF' if initial else 'IF',
+         'alt': {'type': 'at', 'ft': altitude} if altitude is not None else None,
+         'over': None, 'synthetic': 'faf', 'pos': pos},
+        {'id': 'RW' + runway, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}]
     rec = {'id': _id_of(icao, 'APP', name, [runway], None), 'icao': icao, 'kind': 'APP', 'name': name, 'runways': [runway], 'transition': None,
-           'points': _points(icao, legs, coords, warnings), 'source': {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': None}, 'status': 'check'}
-    warnings.append(f'{rec["id"]}: finale seule construite des pages DATA (FAF à {d:.1f} NM du seuil) : le SIA ne publie aucune table de codage de cette approche, donc ni point initial, ni transitions, ni approche interrompue')
+           'points': _points(icao, legs, coords, warnings), 'source': {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': None}, 'status': 'check',
+           'partial': {'read': ['final-axis'] + (['initial-fix'] if initial else []) + (['faf-altitude'] if altitude is not None else []),
+                       'unread': ['initial-manoeuvre', 'final-profile', 'missed-path'],
+                       'note': 'DATA-derived final axis only; initial manoeuvre, vertical profile and missed approach not read'}}
+    warnings.append(f'{rec["id"]}: finale seule construite des pages DATA (FAF à {d:.1f} NM du seuil) : transitions, profil vertical et approche interrompue non lus ; consulter la carte IAC')
     return rec, warnings
 
 
@@ -323,6 +337,12 @@ def records(icao, table, coords, source, cycle, ils=None):
             out.append({'id': _id_of(icao, 'APP', name, table['runways'], trans), 'icao': icao, 'kind': 'APP', 'name': name,
                         'runways': table['runways'], 'transition': trans,
                         'points': _points(icao, legs, coords, warnings, missed_after=True), 'source': src, 'status': 'check'})
+            if final is None or final.get('gap') is not None:
+                out[-1]['partial'] = {'read': (['coded-initial-path'] if g else [])
+                                      + (['coded-missed-path'] if final and final.get('gap') is not None else []),
+                                      'unread': ['final-profile'] + ([] if final else ['missed-path']),
+                                      'note': 'Coding tables leave the final to the IAC; gap flags preserve unencoded segments'}
+                out[-1]['chart_data'] = {'scope': 'coding-with-iac-gap' if final else 'coded-initial-only'}
             lost = sum(x.get('lost', 0) for x in ([final] if final else []) + ([g] if g else []))
             if lost:
                 warnings.append(G.mark(out[-1], 'unread', f'{lost} ligne(s) de la table non lue(s)'))

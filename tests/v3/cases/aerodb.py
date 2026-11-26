@@ -21684,3 +21684,146 @@ def k538(c):
     c.eq((len(old), old[0]['verdict'], any(i['text'] == 'règle forcée' for i in old[0]['issues'])), (1, 'violates', True), 'the old head stays proposed among the alternatives with its verdict and its cause', what='old head')
     p2 = out2['primary']
     c.eq((p2['verdict'], 'head_replaced' in p2), ('violates', False), 'when the control refuses every route of the bench, the head keeps its place and nothing is replaced', what='all refused')
+
+
+@case('K663', 'French IAC reader, an INVENTED page of the layout « IAC ILS » (SOG-0667, lot F1): the metadata of the final — localizer, glide, RDH (not the year that follows it), elevations and their reference, transition altitude, the printed DME / threshold distances, the IF and FAF bound to them, the missed climb, turn and fixes — are read from the printed text; a chart dated after the cycle, another aerodrome, a page with no title, or an IF on another station are refused or not bound',
+      'K', static=True, tags=('procedure-readers', 'fr-ils'),
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0667): « dans le dépôt, des cas sur pages INVENTÉES, une par mise en page (mêmes colonnes, mêmes pièges, noms et coordonnées inventés) ». The page is INVENTED (fictitious aerodrome LFZY, localizer ZY 109.3, invented names, frequencies and distances) on the layout and the traps of the real SIA IAC ILS pages; the expected values are those chosen when the page was written, not the output of the reader. Written before the code: red until `tools/proc_fr_iac.py` exists',
+      )
+def k663(c):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import proc_fr_iac as F
+    name = 'AD_2_LFZY_IAC_RWY05_ILS_Z_LOC_Z.pdf'
+    rows = (ROOT / 'tests' / 'v3' / 'fixtures' / 'procedure_readers' / 'fr_invented' / 'AD_2_LFZY_IAC_RWY05_ILS_Z_LOC_Z.rows.txt').read_text(encoding='utf-8').splitlines()
+    p = F.read_profile(rows, 'LFZY', name, '2026-11-26')
+    c.ok(p is not None, str(p), 'the invented page of the layout is recognised')
+    d = p['chart_data']
+    c.eq((p['runway'], p['variant'], p['name'], p['source']['at']), ('05', 'Z', 'ILS Z RWY 05', '2026-11-26'), 'the identity of the chart and its printed date', what='identity')
+    c.eq((d['localizer'], d['glide_path_deg'], d['rdh_ft'], d['ad_elevation_ft'], d['threshold_elevation_ft'], d['threshold_reference'], d['transition_altitude_ft']),
+         ({'ident': 'ZY', 'frequency_mhz': 109.3}, 3.0, 52, 21, 14, 'DTHR', 5000), 'localizer, glide, RDH (52, not the year 2025 that follows it), the elevations of the aerodrome and of the displaced threshold with their reference, the transition altitude', what='header')
+    r = d['distance_references']
+    c.eq((r['station'], r['threshold_reference'], r['dme_nm'], r['threshold_nm'], r['dme_at_threshold_nm'], r['coordinates_derived']), ('ZY', 'DTHR', [7.6, 4.6, 3.1, 1.1, 0.0], [7.5, 4.5, 3.0, 1.0], 0.1, False), 'the printed DME and threshold distances and the constant offset between them; no coordinate is derived', what='distances')
+    c.eq({k: (v['dme_nm'], v['threshold_nm'], v['station']) for k, v in d['final_fixes'].items()}, {'IF': (7.6, 7.5, 'ZY'), 'FAF': (4.6, 4.5, 'ZY')}, 'the IF (7.6 NM ZY) and the FAF (4.6 NM ZY) are bound to the printed threshold distances', what='fixes')
+    m = d['missed_approach']
+    c.eq((m['target_altitude_ft'], m['target_height_ft'], m['straight_ahead'], m['turn'], m['turn_at'], m['fix_sequence'], m['geometry_reconstructed']), (2200, 2186, True, 'R', {'dme_nm': 4.0, 'station': 'ZY'}, ['TQN', 'PELMA'], False), 'the missed approach: climb straight ahead to 2200 (2186), at 4 ZY turn right to TQN then PELMA; the path itself is not reconstructed', what='missed')
+    c.ok('missed-path' in p['partial']['unread'] and 'minima' in p['partial']['unread'], str(p['partial']), 'the reader says what it does not read (the missed path, the minima)')
+    c.eq((F.read_profile(rows, 'LFZY', name, '2026-11-10'), F.read_profile(rows, 'LFZZ', name, '2026-11-26'), F.read_profile([r for r in rows if 'APPROCHE AUX INSTRUMENTS' not in r], 'LFZY', name, '2026-11-26')), (None, None, None),
+         'a chart dated AFTER the requested cycle, a page of another aerodrome, a page with no title: refused (None)', what='refused')
+    other = [r.replace('IF 7.6 NM ZY', 'IF 7.6 NM QQ') for r in rows]
+    p2 = F.read_profile(other, 'LFZY', name, '2026-11-26')
+    c.eq(sorted(p2['chart_data']['final_fixes']), ['FAF'], 'an IF labelled on another station than the DME of the table is not bound (only the FAF is)', what='other station')
+    c.eq((F.is_final_chart('AD_2_LFZY_IAC_RWY05_ILS_Z_LOC_Z.pdf'), F.is_final_chart('AD_2_LFZY_IAC_RWY05_INA_ILS_Z.pdf'), F.is_final_chart('AD_2_LFZY_IAC_RWY05_VOR.pdf')), (True, False, False), 'the name of a final ILS / LOC chart is recognised; an INA transition or a VOR chart is not', what='names')
+
+
+@case('K664', 'French IAC positioned text, an INVENTED page (SOG-0667, lot F1): the text baselines of the DME and of the THR distances are paired by their columns and the IF / FAF labels are bound to the unique column under them; fragments of different forms, two axes on a page, or a missing partner leave the profile UNREAD (None), never repaired',
+      'K', static=True, tags=('procedure-readers', 'fr-ils'),
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0667: cases on INVENTED pages, written before the code). The fragments (text, position, font, form) are those of an invented page of the layout of the SIA IAC pages (fictitious station ZQX, invented distances 1.2 / 3.7 / 5.7 / 8.7 NM and 0.5 / 3.0 / 5.0 / 8.0 NM): the expected columns are those chosen when the page was written. Red until `tools/proc_iac_positions.py` exists',
+      )
+def k664(c):
+    import copy
+    import json
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from proc_iac_positions import axis_from_fragments
+    fragments = json.loads((ROOT / 'tests' / 'v3' / 'fixtures' / 'procedure_readers' / 'fr_invented' / 'ZQX-positioned-fragments.json').read_text(encoding='utf-8'))
+    axis = axis_from_fragments(fragments)
+    c.eq((axis['station'], axis['threshold_reference'], axis['columns'], axis['fix_columns']),
+         ('ZQX', 'THR', [{'dme_nm': 1.2, 'threshold_nm': 0.5}, {'dme_nm': 3.7, 'threshold_nm': 3.0}, {'dme_nm': 5.7, 'threshold_nm': 5.0}, {'dme_nm': 8.7, 'threshold_nm': 8.0}], {'IF': 3, 'FAF': 2}),
+         'the DME and THR baselines are paired column by column; the IF label is over the fourth column, the FAF label over the third', what='columns')
+    split = copy.deepcopy(fragments)
+    for f in split:
+        if f['text'].startswith('THR'):
+            f['frame'] += 100
+    c.eq(axis_from_fragments(split), None, 'DME and THR from different form coordinate frames cannot be paired', what='frames')
+    c.eq(axis_from_fragments(fragments + [dict(f, frame=f['frame'] + 100) for f in fragments]), None, 'two independently readable profile axes on a page are ambiguous: unread', what='duplicate axes')
+    shifted = copy.deepcopy(fragments)
+    next(f for f in shifted if f['text'] == '5.0')['y'] += 20
+    c.eq(axis_from_fragments(shifted), None, 'a number whose partner is not on the same baseline leaves the profile unread', what='incomplete pair')
+
+
+@case('K665', 'SIA coding-table reader (SOG-0667, lot F1, the retouch 1 of Sécurisation): the word of a page that an extractor spaced letter by letter is recomposed by a regular expression that takes LINEAR time — a word of sixty digits that ends with a letter answers at once, a word longer than the bound is left as it is, and the recomposition of a level and a number (« FL110FL110250 ») is unchanged',
+      'K', static=True, tags=('procedure-readers', 'fr-coding'),
+      rule='Sécurisation, 26 Nov 2026, reading of the lot France (tools/proc_sia.py, `_spelled`): `re.fullmatch(r\'(?:FL\\d{3}|\\d+(?:\\.\\d+)?)+\', run)` takes a time that doubles with every digit on a word taken from the text of a PDF (« FL100 » + digits + a letter: 0.6 s at 24 digits, 2.3 s at 26). Red before: the call in a child process is stopped at 5 s',
+      )
+def k665(c):
+    import subprocess
+    import sys
+    import time
+    code = ("import sys; sys.path.insert(0, %r); import proc_sia as S, time; t = time.perf_counter(); r = S._spelled(%r); print(round(time.perf_counter() - t, 3), r)")
+    word = 'FL100' + '1' * 60 + 'x'
+    try:
+        out = subprocess.run([sys.executable, '-c', code % (str(ROOT / 'tools'), word)], capture_output=True, text=True, timeout=5).stdout.split()
+        took, kept = float(out[0]), ' '.join(out[1:])
+    except subprocess.TimeoutExpired:
+        took, kept = 999.0, 'stopped at 5 s'
+    c.ok(took < 0.1, f'{took} s, {kept}', 'a word of sixty digits that ends with a letter is answered in less than 0.1 s (the expression is linear)')
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import proc_sia as S
+    c.eq((S._spelled('FL110FL110250'), S._spelled('FL1101x'), S._spelled('FL110' + '2' * 41)), (['FL110', 'FL110', '250'], ['FL1101x'], ['FL110' + '2' * 41]),
+         'a level and a number are recomposed as before; a word that is not only levels and numbers is left as it is; a word LONGER than the bound (40 signs) is left as it is, even when it is only a level and digits (red before: the old expression recomposed it: [FL110, 2222…])', what='recomposition')
+
+
+@case('K666', 'IAC pages of a PDF (SOG-0667, lot F1, the retouch 2 of Sécurisation): the child that reads the positioned text reads at most MAX_PAGES (400, the cap of `pdf_guard`) pages of a PDF, whatever its size, and says that the pages beyond were not read (a last row `@@IAC_PAGES_BEYOND_LIMIT`); the pages below the cap are read as before',
+      'K', static=True, tags=('procedure-readers', 'fr-ils'),
+      rule='Sécurisation, 26 Nov 2026 (reading of the lot France): `proc_pdf._iac_pages_of` read ALL the pages of a PDF with no cap; `pdf_guard` caps at 400. Fake reader of 402 pages (a fixture object, no PDF): the pages read are counted',
+      )
+def k666(c):
+    import sys
+    from unittest.mock import patch
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import proc_pdf as P
+    import proc_iac_positions as N
+    import pdf_guard as G
+    cap = getattr(P, 'MAX_PAGES', None)
+    c.eq((cap, G.MAX_PAGES), (400, 400), 'the cap of the pages of the child is the one of `pdf_guard`', what='cap')
+    seen = []
+
+    class Reader:
+        def __init__(self, n):
+            self.pages = [object() for _ in range(n)]
+
+    def rows_of(path, i, reader):
+        seen.append(i)
+        return [f'page {i}']
+    for n, want_read, marker in ((402, 400, True), (400, 400, False), (3, 3, False)):
+        seen.clear()
+        with patch.object(P, 'pdf_reader', return_value=Reader(n)), patch.object(P, 'rows_from_pdf', side_effect=rows_of), patch.object(N, 'supplement', return_value=[]):
+            total, pages = P._iac_pages_of('chart.pdf')
+        c.eq((total, len(seen), P.BEYOND_LIMIT in sum(pages, [])), (n, want_read, marker), f'a PDF of {n} pages: {want_read} pages read; the pages beyond the cap are said, none is said below it', what=f'{n} pages')
+
+
+@case('K667', 'SIA glyph layer and the boundary of the positioned text (SOG-0667, lot F1; SYNTHETIC fixtures, said): a text made only of glyph names « /MT<WinAnsi code> » is decoded to its letters, never a mixed text, a control or an unknown code; the positioned text reader joins the letters of one word, keeps a separate distance, leaves an unsupported encoding unread, and a failure of the optional reader never discards the legacy rows of the page',
+      'K', static=True, tags=('procedure-readers', 'fr-ils'),
+      rule='SYNTHETIC fixtures (no source page): glyph strings and fake page objects written for this case; the expected letters are those of the WinAnsi table (70 = F, 65 = A). The positioned text stays behind the bounded child entry point',
+      )
+def k667(c):
+    import sys
+    from unittest.mock import patch
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import proc_pdf as P
+    import proc_iac_positions as N
+    c.eq((P._mt_glyphs('/MT70/MT65/MT70'), P._mt_glyphs('/MT70 x'), P._mt_glyphs('/MT10'), P._mt_glyphs('/MT300'), P._mt_glyphs('FAF'), P._mt_glyphs('/MT57/MT48')),
+         ('FAF', '/MT70 x', '/MT10', '/MT300', 'FAF', '90'), 'glyph names decode to letters and digits; a text with anything else beside them, a control code, a code over 255 is left as it is', what='glyphs')
+    font = {'/Encoding': '/WinAnsiEncoding', '/BaseFont': '/Fixture', '/FirstChar': 32, '/Widths': [500] * 95}
+
+    class Page(dict):
+        def __init__(self, selected):
+            super().__init__({'/Resources': {'/Font': {'/F1': selected}}})
+
+        def extract_text(self, visitor_operand_before, visitor_operand_after):
+            cm = [1, 0, 0, 1, 0, 0]
+            for operator, operands, x in [(b'Tf', ['/F1', 10], 0), (b'Tj', [b'F'], 100), (b'Tj', [b'AF'], 105), (b'Tj', [b'9'], 140)]:
+                tm = [1, 0, 0, 1, x, 200]
+                visitor_operand_before(operator, operands, cm, tm)
+                visitor_operand_after(operator, operands, cm, tm)
+    c.eq([f['text'] for f in N.ascii_fragments(Page(font))], ['FAF', '9'], 'the advances of the font join adjacent letters and keep a separate distance token', what='font advances')
+    for name, changed in [('opaque', dict(font, **{'/Encoding': '/Identity-H'})), ('mapped', dict(font, **{'/ToUnicode': {}}))]:
+        c.eq(N.ascii_fragments(Page(changed)), [], 'an encoding that is not supported is left unread', what=name)
+    with patch.object(P, 'limited', return_value=(1, [['legacy']])) as bounded:
+        c.eq(P.iac_pages_rows('chart.pdf', timeout=7), [['legacy']], 'the public entry keeps the contract of the bounded child', what='child result')
+        c.eq((bounded.call_args.args, bounded.call_args.kwargs), (('_iac_pages_of', 'chart.pdf'), {'timeout': 7}), 'the positioned reader is a task of the child, with the timeout of the caller', what='bound')
+    reader = type('Reader', (), {'pages': [Page(font)]})()
+    with patch.object(P, 'pdf_reader', return_value=reader), patch.object(P, 'rows_from_pdf', return_value=['legacy']), patch.object(N, 'supplement', side_effect=ValueError('unread')):
+        c.eq(P._iac_pages_of('chart.pdf'), (1, [['legacy', '@@IAC_POSITION_UNREAD']]), 'the failure of the optional position reading does not discard the legacy rows', what='optional failure')

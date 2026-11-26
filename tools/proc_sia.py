@@ -1,4 +1,4 @@
-"""Le lecteur de l'eAIP du SIA (France) : procédures (SID, STAR, approches RNP), au schéma commun d'aerodb (frame/aerodb/SPEC.md § 5 quinquies).
+"""Le lecteur de l'eAIP du SIA (France) : procédures (SID, STAR, approches codées et axes finaux ILS/LOC partiels), au schéma commun d'aerodb (frame/aerodb/SPEC.md § 5 quinquies).
 
 Source : les pages « AD 2 <OACI> DATA … CODE » de l'eAIP (tables de codage ARINC : une ligne par tronçon) et « AD 2 <OACI>
 DATA 01 » (coordonnées des points propres aux procédures). Lecture des PDF par pypdf, dépendance FACULTATIVE de ce
@@ -9,7 +9,7 @@ constructeur de poste (jamais du lanceur ni de la page) : installer_bibliotheque
 
 Écrit <out>/<cycle>/<OACI>.json et <out>/<cycle>/index.json (cycle = date de l'AIRAC lue dans l'adresse). Statut « check »
 (à vérifier) : extrait de pages PDF, jamais un fichier officiel. Une ligne illisible est signalée dans `warnings`, jamais devinée.
-Les procédures conventionnelles (ILS, VOR) n'ont pas de table de codage : hors de ce constructeur.
+Les axes finaux ILS/LOC peuvent aussi être construits des positions DATA et AD 2.12, avec un statut explicitement partiel ; le profil IAC et les manœuvres non codées restent à lire.
 
 Les autres morceaux (V3 § 10.29 (b)) : proc_pdf (lecture des PDF), proc_layouts (les dispositions étrangères), proc_records (lignes → fiches), proc_geometry (le contrôle).
 """
@@ -20,6 +20,7 @@ import re
 import sys
 import time
 import urllib.request
+from urllib.parse import quote
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -27,7 +28,7 @@ from pathlib import Path
 import outbound  # le User-Agent du lanceur, chaque échec dit en console
 import proc_geometry as G
 from proc_layouts import BY_NAME, alt_constraint, alt_ft, amdt_number, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
-from proc_pdf import PDF_NAME, all_pages_rows, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
+from proc_pdf import PDF_NAME, all_pages_rows, iac_pages_rows, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
 from proc_records import build_pdf_dir, final_only_record, page_reason, records
 
 
@@ -55,22 +56,53 @@ def parse_data01(rows):
     return out
 
 
-FAF_ROW = re.compile(r'^(?:FAF (?:ILS/LOC|ILS|LOC)(?: ?\+ ?DME)?|FAP/FAF(?: ILS/LOC)?) ?(?:RWY ?)?(\d{2}[LRC]?)\s+(.*)$')       # « FAF LOC RWY 06 … » (Orly), « FAP/FAF ILS/LOC 17L … » (Lyon), « FAF LOC + DME RWY 23 … » (Bordeaux), « FAP/FAF RWY 05 … » et « FAP/FAF RWY03 … » (Strasbourg, Nantes) ; jamais « FAF VOR… » (SOG-0203)
+FAF_ROW = re.compile(r'^(?:(?:FAF|FAP)(?:\s+\d{3,5})?\s+(?:ILS/LOC|ILS|LOC)(?: ?\+ ?DME)?|(?:FAP/FAF|FAF/FAP)(?:\s+(?:ILS/LOC|ILS|LOC))?)(?:\s+[S-Z])?\s*(?:RWY\s*)?(\d{2}[LRC]?)\s+(.*)$')
 
 
 def parse_faf(rows):
     """Les points d'approche finale (FAF) des approches ILS / LOC d'une page DATA : { piste : (lat, lon) } d'après les lignes « FAF LOC RWY 06  48°37'50.4'' N 002°03'57.2'' E ». La page ne donne ni
-    nom de point ni altitude : le constructeur nomme le point « FAF » + la piste et ne lui met pas d'altitude (with_threshold, proc_records). Les lignes « FAF VOR RWY … » (approches VOR) n'en font pas partie."""
+    nom de point ; certaines étiquettes portent une altitude (parse_faf_details). Le constructeur nomme le point « FAF » + la piste. Les lignes « FAF VOR RWY … » (approches VOR) n'en font pas partie."""
+    return {rw: detail['pos'] for rw, detail in parse_faf_details(rows).items()}
+
+
+def parse_faf_details(rows):
+    """Final fix positions and altitude when printed in the label (e.g. Rennes 'FAF 2000 LOC').
+
+    VOR/RNP fixes are excluded. A LOC label alone is not evidence of an ILS: the builder also
+    checks the aerodrome's IAC index before choosing the final's navigation type.
+    """
     out = {}
     for r in rows:
-        m = FAF_ROW.match(r.strip())
+        r = r.strip()
+        m = FAF_ROW.match(r)
         c = m and dms(m.group(2))
         if c:
-            out.setdefault(m.group(1), c)
+            head = r[:m.start(2)]
+            level = re.match(r'^(?:FAF|FAP)\s+(\d{3,5})\s+(?:ILS|LOC)', head)
+            out.setdefault(m.group(1), {'pos': c, 'alt': int(level[1]) if level else None,
+                                       'kind': 'ILS' if 'ILS' in head else 'LOC' if 'LOC' in head else None})
     return out
 
 
-IF_ROW = re.compile(r'^IF (?:(?:ILS/LOC|ILS|LOC)(?: RNP)? )?RWY ?(\d{2}[LRC]?)\s+(\d.*)$')       # « IF ILS/LOC RWY 07 … » ; « IF RWY 05 … » (Strasbourg : la page DATA ne dit pas ILS) — jamais « IF VOR … » 
+def parse_matf(rows):
+    """Published missed-approach turning fixes shared by NDB/DME and ILS/LOC."""
+    out, conflicts = {}, set()
+    for row in rows:
+        match = re.match(r'^MATF NDB/DME ILS/LOC RWY\s*(\d{2}[LRC]?)\s+(.+)', row.strip())
+        position = dms(match[2]) if match else None
+        if position:
+            rw = match[1]
+            if rw in conflicts:
+                continue
+            if rw in out and (out[rw]['lat'], out[rw]['lon']) != position:
+                conflicts.add(rw)
+                out.pop(rw)
+                continue
+            out[match[1]] = {'lat': position[0], 'lon': position[1], 'role': 'MATF', 'coordinates': 'published DATA'}
+    return out
+
+
+IF_ROW = re.compile(r'^IF (?:(?:ILS/LOC|ILS|LOC)(?: RNP)?(?: [S-Z])? )?RWY ?(\d{2}[LRC]?)\s+(\d.*)$')
 
 
 def parse_if(rows):
@@ -126,6 +158,13 @@ def _title(rows):
     own = _own_title(rows)
     if own:
         return own
+    for row in rows[:14]:
+        # Current civil ILS tables print PRECODING ILS..., then their own ILS/LOC
+        # title without INA/FNA. References beginning "See chart" are not titles.
+        m = re.fullmatch(r'((?:ILS|LOC)(?:\s+[A-Za-z0-9/]+){0,30})\s+RWY\s*(\d{2}[LRC]?)', row)
+        if m:
+            nav = re.match(r'(?:ILS|LOC)(?:\s+[S-Z])?\b', m[1])[0]
+            return 'APP', [m[2]], nav + ' RWY ' + m[2]
     for r in rows:
         m = re.search(r'\b(SID|STAR|RNP[A-Z ]*?)\s*(?:RNAV\s+)?RWY\s*(\d{2}[LRC]?|ALL)\b', r)
         if m:
@@ -142,6 +181,9 @@ def _title(rows):
 LANE = re.compile(r'^RWY ?(\d{2}[LRC]?)(?: -)? (\d{1,3}) (\d{1,3}\.\d)$')       # « RWY14R 141 142.9 » : en-tête de piste d'un départ à plusieurs pistes (cap magnétique et vrai de la piste) ; « RWY09L - 087 088.4 » (LFPG) : la colonne de l'identifiant de procédure, vide, imprime un tiret
 
 
+SPELLED_MAX = 40      # un mot recomposé d'une suite de caractères espacés : jamais plus de 40 signes (le plus long vu : « FL110FL110250 », 13)
+
+
 def _spelled(run, after_pt=False):
     """Mot(s) recomposé(s) d'une suite de caractères que l'extracteur a espacés un à un (« D F P O 2 0 4 Y e s » → DF PO204 Yes ; « F L 1 1 0 F L 1 1 0 2 5 0 » → FL110 FL110 250)."""
     if len(run) > 1 and run[0] in 'LR' and (run[1].isdigit() or run.startswith(('LFL', 'RFL'))):        # le sens du virage collé au nombre qui suit
@@ -149,7 +191,7 @@ def _spelled(run, after_pt=False):
     m = re.fullmatch(r'([A-Z]{2})([A-Z0-9]{2,6}?)(Yes)?', run)
     if m and m.group(1) in PATH_TERMINATORS and not after_pt:        # après un terminateur déjà lu (« IF V A G N A »), la suite est UN point : « VA » de VAGNA n'est pas le terminateur VA
         return [m.group(1), m.group(2)] + (['Yes'] if m.group(3) else [])
-    if 'FL' in run and re.fullmatch(r'(?:FL\d{3}|\d+(?:\.\d+)?)+', run):
+    if 'FL' in run and len(run) <= SPELLED_MAX and re.fullmatch(r'(?:FL\d{3}|\d+(?:\.\d+)?(?![\d.]))+', run):      # SOG-0667 (Sécurisation) : le mot vient du texte d'un PDF : borne de longueur ET forme sans ambiguïté (un nombre prend tous ses chiffres : temps linéaire, jamais exponentiel)
         return re.findall(r'FL\d{3}|\d+(?:\.\d+)?', run)
     return [run]
 
@@ -618,6 +660,10 @@ def parse_code_table(rows):
     rnp = kind == 'APP'
     ina = title.startswith('INA')
     start = next((i for i, r in enumerate(rows) if re.search(r'Accuracy \(NM\)|NAV Spec|Navigation|Accuracy', r)), -1)
+    if start == -1 and kind != 'SID':      # SOG-0667 : le repli (un tableau sans l'en-tête « Nav Spec » : une STAR, une approche ILS/LOC) ne vaut PAS pour une SID : le titre d'une SID imprimé en police décalée (« AN AN G 4 4 S », LFRS, K198) est AVANT le premier tronçon et serait perdu
+        start = next((i - 1 for i, row in enumerate(rows)
+                      if STAR_TITLE.fullmatch(' '.join(norm_tokens(row)))
+                      or _is_leg_tokens(norm_tokens(row, split=rnp)) is not None), -1)
     groups, cur = [], None
     seen = read = lost = 0                # lost : lignes de tronçon non lues d'un groupe qui n'existe pas encore (reprises par le premier groupe)
     fixed, designators = [], []
@@ -902,7 +948,7 @@ def vac_url(base_url, icao):
     return f'{m.group(1)}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.{icao}.pdf' if m else None
 
 
-def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None, pages_of=None):
+def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None, pages_of=None, iac_pages_of=None):
     """Fichier d'un terrain : { procedures, charts, warnings, formats, families }. `files` : noms des PDF de Cartes/<OACI>/ ; `rows_of(nom)` : lignes
     de la première page d'un PDF ; `pages_of(nom)` (facultatif, celui de read_aerodrome) : les lignes de CHAQUE page d'un PDF, une liste par page : un PDF de plusieurs pages est lu en entier,
     chaque page comptée à part dans `formats` (clés `page` et `of`) ; sans lui, chaque PDF n'a que la page que donne `rows_of`. `families` : par famille de pages (une suite « …_01, …_02 »),
@@ -911,20 +957,31 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     coords, warnings, procs, used, formats = {}, [], [], [], []
     merges, dropped = {}, []             # points merge (clé : entrée, fusion, arc) ; procédures retirées (un bloc sans titre qui en répète une nommée)
     data_read = {}                        # page DATA → (pages du PDF, pages où l'on a lu du texte) : pour les familles
-    faf, iff, faf_page = {}, {}, {}       # piste → position du FAF LOC, du point initial sans nom (pages DATA), pour les approches ILS ; la page DATA qui donne le FAF
+    faf, iff, faf_page, faf_details, matf = {}, {}, {}, {}, {}
+    matf_conflicts = set()
+    fallback_warnings = {}
     for f in sorted(files):
         if re.search(r'_DATA_0\d\.pdf$', f):
             data_pages = pages_of(f)
             data_rows = [r for pg in data_pages for r in pg]             # toutes les pages du PDF : les points et le FAF d'une page 2 comptent comme ceux de la première
             data_read[f] = (len(data_pages), sum(1 for pg in data_pages if pg))
             coords.update(parse_data01(data_rows))
-            for rw, pos in parse_faf(data_rows).items():
+            for rw, fix in parse_matf(data_rows).items():
+                if rw in matf_conflicts:
+                    continue
+                if rw in matf and (fix['lat'], fix['lon']) != (matf[rw]['lat'], matf[rw]['lon']):
+                    matf.pop(rw)
+                    matf_conflicts.add(rw)
+                    warnings.append(f'{f}: conflicting MATF positions for RWY {rw}; no turning fix selected')
+                    continue
+                matf.setdefault(rw, {**fix, 'source_file': f, 'cycle': cycle})
+            for rw, detail in parse_faf_details(data_rows).items():
                 if rw not in faf:
-                    faf[rw], faf_page[rw] = pos, f
+                    faf[rw], faf_page[rw], faf_details[rw] = detail['pos'], f, detail
             for rw, pos in parse_if(data_rows).items():
                 iff.setdefault(rw, pos)
     ad_runways = ad2 if isinstance(ad2, list) else (ad212_runways(ad2, icao, warnings) if ad2 else [])
-    ils_ctx = {'faf': faf, 'if': iff, 'true': {r['id']: r.get('true') for r in ad_runways}}
+    ils_ctx = {'faf': faf, 'if': iff, 'true': {r['id']: r.get('true') for r in ad_runways}, 'faf_details': faf_details}
     for r in ad_runways:                  # AVANT la lecture des pages : les points RWnn des tables RNP (« TF RW06 ») prennent le seuil d'atterrissage de la page AD 2.12
         coords.setdefault('RW' + r['id'], landing_position(r))
     for f in sorted(files):
@@ -964,10 +1021,21 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
                 used.append(f)
     # une piste dont le SIA donne le FAF ILS/LOC (pages DATA) mais AUCUNE table de codage ILS (LFLL : ILS 17L, 35L, 35R) : la finale seule, FAF → seuil (SOG-0044)
     for rw in sorted(faf):
-        if any(CODE_PAGE.match(f) and re.search(rf'_RWY{rw}_.*ILS', f) for f in files) or any(p['kind'] == 'APP' and p['runways'] == [rw] and 'ILS' in (p['name'] or '').upper() for p in procs):
+        if any(p['kind'] == 'APP' and p['runways'] == [rw] and not (p['name'] or '').upper().startswith('INA')
+               and any(nav in (p['name'] or '').upper() for nav in ('ILS', 'LOC'))
+               and any(q.get('id') == 'RW' + rw for q in p['points']) for p in procs):
             continue
-        rec, w = final_only_record(icao, rw, ils_ctx, coords, faf_page[rw], cycle)
-        warnings += [f'{faf_page[rw]}: {x}' for x in w]
+        iac = [f for f in files if re.search(rf'_IAC_RWY{rw}(?:_|\.)', f) and any(nav in f for nav in ('ILS', 'LOC'))]
+        nav = 'ILS' if any('ILS' in f for f in iac) else faf_details[rw].get('kind') or 'ILS'
+        rec, w = final_only_record(icao, rw, ils_ctx, coords, faf_page[rw], cycle, nav=nav)
+        if rec:
+            rec['chart_data'] = {'scope': 'final-axis-only', 'reference_files': sorted(iac),
+                                 'navigation_type_basis': 'IAC index' if iac else 'DATA label',
+                                 'faf_altitude_ft': faf_details[rw]['alt']}
+        if rec and iac_pages_of is not None:
+            fallback_warnings[rec['id']] = [f'{faf_page[rw]}: {x}' for x in w]
+        else:
+            warnings += [f'{faf_page[rw]}: {x}' for x in w]
         if rec and rec['id'] not in {p['id'] for p in procs}:
             procs.append(rec)
     # un bloc sans titre (procédure commencée en bas de la page précédente et reprise en tête de la suivante, LFPO SID RWY07 _05) qui
@@ -993,6 +1061,62 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
            'pages': used, 'formats': formats, 'families': families, 'warnings': warnings}
+    if iac_pages_of is not None:
+        import proc_fr_iac
+        profiles = []
+        for name in procedure_files(files):
+            if not proc_fr_iac.is_final_chart(name):
+                continue
+            try:
+                pages = iac_pages_of(name) or [[]]
+            except (OSError, PdfTimeout) as error:
+                warnings.append(f'{name}: IAC profile unread: {error}')
+                pages = [[]]
+            for number, rows in enumerate(pages, 1):
+                profile = proc_fr_iac.read_profile(rows, icao, name, cycle)
+                formats.append({'file': name, 'layout': 'fr-iac-profile', 'ok': profile is not None,
+                                'scope': 'profile-metadata-only', 'page': number, 'of': len(pages),
+                                **({} if profile else {'reason': 'layout', 'problems': ['IAC profile unread: unsupported text, inconsistent identity or chart newer than cycle']})})
+                if profile is None:
+                    warnings.append(f'{name} (p. {number}): IAC profile unread; keep the chart for review')
+                    continue
+                profile['source']['page'] = number
+                if profile['runway'] in matf:
+                    profile['chart_data']['missed_approach']['published_turn_fix'] = matf[profile['runway']]
+                profiles.append(profile)
+                proc_fr_iac.attach_profile(procs, profile, ad_runways)
+                rw = profile['runway']
+                data_context = {'cycle': cycle, 'faf': faf.get(rw), 'source_file': faf_page.get(rw),
+                                'navigation_type': (faf_details.get(rw) or {}).get('kind'), 'matf': matf.get(rw),
+                                'faf_altitude_ft': (faf_details.get(rw) or {}).get('alt'),
+                                'sole_final_chart': sum(proc_fr_iac.is_final_chart(f) and bool(re.search(rf'_IAC_RWY{rw}(?:_|\.)', f)) for f in set(files)) == 1}
+                final, published_reason = proc_fr_iac.published_final_record(profile, ad_runways, data_context)
+                reason = published_reason
+                if final is None:
+                    final, derived_reason = proc_fr_iac.final_record(profile, ad_runways)
+                    reason = published_reason if data_context['faf'] else derived_reason
+                if final and final['id'] not in {p['id'] for p in procs}:
+                    # Replace only our DATA-only generic axis after a verified, unambiguous
+                    # chart association. Coded records and other sources retain their identities.
+                    if final['chart_data']['scope'] == 'published-final-axis':
+                        procs[:] = [p for p in procs if not (p.get('name') in (f'ILS RWY {rw}', f'LOC RWY {rw}') and p['runways'] == [rw]
+                                    and (p.get('chart_data') or {}).get('scope') == 'final-axis-only'
+                                    and p['source'].get('file') == data_context['source_file'])]
+                    profile['geometry_record'] = final['id']
+                    final['chart_data']['iac_profiles'] = [profile]
+                    formats[-1]['scope'] = final['chart_data']['scope']
+                    procs.append(final)
+                    warnings += [f'{name}: {message}' for message in G.review(final, basis=BY_NAME['sia-code'].tolerances)]
+                    if final['chart_data']['scope'] == 'derived-final-axis':
+                        warnings.append(f'{name}: IF/FAF derived from rounded IAC threshold distances and AD 2.12; initial and missed geometry unread')
+                    else:
+                        warnings.append(f'{name}: published DATA final linked to the IAC; remaining initial/missed manoeuvres unread')
+                elif reason:
+                    profile['geometry_unread_reason'] = reason
+        if profiles:
+            doc['approach_profiles'] = profiles
+    for proc in procs:
+        warnings += fallback_warnings.get(proc['id'], [])
     if merges:
         doc['point_merge'] = list(merges.values())
     if dropped:
@@ -1329,10 +1453,24 @@ def page_name(icao):
     return f'FR-AD-2.{icao}-fr-FR.html'
 
 
+def procedure_files(files):
+    """DATA, coding tables and final ILS/LOC IACs of one aerodrome; never all charts."""
+    from proc_fr_iac import is_final_chart
+    finals = {name for name in files if is_final_chart(name)}
+    if len(finals) > 64:
+        raise ValueError('more than 64 ILS/LOC IACs for one aerodrome: source index requires review')
+    if not finals and not any(CODE_PAGE.match(name) for name in files):
+        return []
+    return sorted({name for name in files if name in finals or re.search(r'_DATA_0\d\.pdf$', name)
+                   or (CODE_PAGE.match(name) and 'FASDB' not in name)})
+
+
 def download_aerodrome(eaip, icao, cache, get=None):
-    """Télécharge seulement (sans rien lire) ce que read_aerodrome lira d'UN terrain : sa page AD 2 et les PDF de ses tables de codage et
-    pages DATA, dans `cache` (le dossier du cycle) ; un fichier déjà là n'est pas redemandé. Rend { fetched, unchanged, tables } (tables faux :
-    la page ne cite aucune table de codage, rien d'autre n'est demandé). `get(url)` : les octets d'une adresse (fetch par défaut)."""
+    """Acquire one aerodrome's AD 2 page, DATA/CODE and final ILS/LOC IACs into its cycle cache.
+
+    Existing files are reused. INA, RNP and unrelated charts are not requested.
+    The `tables` result reports coding-table presence, not IAC-profile availability.
+    `get(url)` returns bytes (fetch by default); no PDF is interpreted here."""
     if not ICAO_RE.fullmatch(str(icao)):
         raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
     get, cache = get or fetch, Path(cache)
@@ -1347,29 +1485,32 @@ def download_aerodrome(eaip, icao, cache, get=None):
         tmp.replace(page_file)
         fetched += 1
     files = pdf_names(icao, page.decode('utf-8', 'replace'))
-    if not any(CODE_PAGE.match(f) for f in files):
+    wanted = procedure_files(files)
+    if not wanted:
         return {'fetched': fetched, 'unchanged': unchanged, 'tables': False}
-    for name in [f for f in files if re.search(r'_DATA_0\d\.pdf$', f) or (CODE_PAGE.match(f) and 'FASDB' not in f)]:
+    for name in wanted:
         p = safe_path(cache, name)  # le nom vient d'une page du serveur : un nom sûr, sous le dossier du cache
         if p.exists():
             unchanged += 1
             continue
-        body = get(f'{eaip}/html/eAIP/Cartes/{icao}/{name}')
+        body = get(f'{eaip}/html/eAIP/Cartes/{icao}/{quote(name)}')
         tmp = p.with_suffix('.tmp')
         tmp.write_bytes(body)
         tmp.replace(p)
         fetched += 1
-    return {'fetched': fetched, 'unchanged': unchanged, 'tables': True}
+    return {'fetched': fetched, 'unchanged': unchanged, 'tables': any(CODE_PAGE.match(f) for f in files)}
 
 
 def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None, get=None, vac_exists=None, cycle=None):
-    """Fichier d'UN terrain lu dans l'eAIP (page AD 2, pages DATA et CODE) : build_aerodrome, ou None si la page ne cite aucune table de
-    codage (rien à lire : cartes seules). `eaip` : dossier AIRAC (…/FRANCE/AIRAC-AAAA-MM-JJ) ; `cache` : dossier (existant) des PDF déjà
-    téléchargés ; `resolve(id)` : position d'un point en route ; `say(texte)` : messages ; `rows_dir` : lignes de chaque PDF (fixtures) ;
-    `step(texte, fait, total)` : avancement (le lanceur) ; `get(url)` : les octets d'une adresse (fetch par défaut ; le travail proc/build
-    passe une lecture du cache seul) ; `vac_exists(url)` : la carte VAC est-elle publiée (url_exists par défaut). Les erreurs réseau (urllib)
-    et pypdf manquant remontent à l'appelant. `cycle` : le cycle écrit dans le fichier (SOG-0054 : pour une région d'outre-mer, le cycle du DISQUE lu, non la date propre de son dossier : « en vigueur » se juge sur le
-    calendrier de 28 jours) ; par défaut, la date du dossier AIRAC de l'adresse."""
+    """Read one aerodrome from SIA AD 2, DATA/CODE and final ILS/LOC IACs.
+
+    Return None only when neither coding tables nor final ILS/LOC IACs are indexed.
+    Profile metadata may be available without route geometry. PDF rows still come
+    from all_pages_rows's bounded child. Optional rows_dir keeps native-text fixtures.
+    get(url) reads bytes (fetch by default; proc/build supplies cache-only access);
+    step reports progress, resolve supplies en-route positions, vac_exists checks VAC.
+    cycle is the source disc cycle, including for overseas regional publication dates.
+    Missing dependencies propagate; unread IACs remain in formats/warnings."""
     if not ICAO_RE.fullmatch(str(icao)):
         raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
     get, vac_exists = get or fetch, vac_exists or url_exists
@@ -1384,10 +1525,10 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     files = pdf_names(icao, page, skipped)
     for n in skipped:
         say(f'{icao}: nom de PDF refusé (pas un simple nom de fichier), ignoré : {n[:80]!r}')
-    if not any(CODE_PAGE.match(f) for f in files):      # rien à lire (cartes seules) : pas de fichier
+    wanted = procedure_files(files)
+    if not wanted:      # no coding table or final ILS/LOC IAC: nothing to interpret
         say(f'{icao}: aucune table de codage')
         return None
-    wanted = [f for f in files if re.search(r'_DATA_0\d\.pdf$', f) or (CODE_PAGE.match(f) and 'FASDB' not in f)]
     seen = set()
 
     def pages_of(name):
@@ -1397,9 +1538,10 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
             step(f'{icao}: {name}', len(seen), len(wanted))
         seen.add(name)
         if not p.exists():
-            p.write_bytes(get(f'{eaip}/html/eAIP/Cartes/{icao}/{name}'))
+            p.write_bytes(get(f'{eaip}/html/eAIP/Cartes/{icao}/{quote(name)}'))
         try:
-            pages = all_pages_rows(p)
+            from proc_fr_iac import is_final_chart
+            pages = iac_pages_rows(p) if is_final_chart(name) else all_pages_rows(p)
         except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
             say(f'{icao}: {e}')
             pages = []
@@ -1411,7 +1553,7 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     vac = vac_url(eaip, icao)
     if vac and not vac_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
         vac = None
-    doc = build_aerodrome(icao, files, lambda n: (pages_of(n) or [[]])[0], eaip, cycle.group(1), resolve, vac, page, pages_of)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
+    doc = build_aerodrome(icao, files, lambda n: (pages_of(n) or [[]])[0], eaip, cycle.group(1), resolve, vac, page, pages_of, iac_pages_of=pages_of)
     say(families_line(icao, doc.get('families') or []))
     return doc
 

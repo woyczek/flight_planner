@@ -62,6 +62,30 @@ def _glyphs(text):
     return GLYPH.sub(one, text)
 
 
+MT_GLYPH = re.compile(r'/MT(\d{1,3})(?!\d)')
+
+
+def _mt_glyphs(text):
+    """Decode the measured SIA /MT<WinAnsi code> glyph-name layer, never mixed text.
+
+    Numeric names are bounded to printable WinAnsi; unknown names, controls or
+    literal non-whitespace beside the glyph layer leave the entire fragment unread.
+    The rule is source-fixtured independently of the existing shifted /g fonts.
+    """
+    matches = list(MT_GLYPH.finditer(text))
+    if not matches or MT_GLYPH.sub('', text).strip():
+        return text
+    try:
+        values = [int(m[1]) for m in matches]
+        if any(v < 32 or v == 127 or v > 255 for v in values):
+            return text
+        decoded = [bytes([v]).decode('cp1252') for v in values]
+    except UnicodeDecodeError:
+        return text
+    iterator = iter(decoded)
+    return MT_GLYPH.sub(lambda m: next(iterator), text)
+
+
 def pdf_pages(path, timeout=None):
     """Lignes de TOUTES les pages d'un PDF : liste (une par page) de listes de lignes ; une page illisible donne [] (rien n'est deviné).
     Lu dans un processus séparé, au plus PDF_TIMEOUT s (limited) : PdfTimeout sinon."""
@@ -97,7 +121,7 @@ def rows_from_pdf(path, page=0, reader=None):
             rows[-1][1].append((x, i, t))
         else:
             rows.append([y, [(x, i, t)]])
-    return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
+    return [' '.join(' '.join(_mt_glyphs(t) for _, _, t in sorted(r)).split()) for _, r in rows]
 
 
 PDF_NAME = re.compile(r'^[A-Za-z0-9._-][A-Za-z0-9._ -]*\.pdf$')      # un nom de PDF cité par un serveur : jamais un chemin (ni « / », ni « \ », ni « .. ») ; l'espace intérieur passe (les cartes ILS de LFBO : « CAT_ 1_2_3 »)
@@ -133,6 +157,36 @@ def _pages_of(path, which):
         except Exception:                            # une page illisible n'arrête pas la lecture : [] (rien n'est deviné)
             out.append([])
     return n, out
+
+
+MAX_PAGES = 400      # the cap of the pages of one PDF read by the child: the same as `pdf_guard.MAX_PAGES` (kept equal by the case K547)
+BEYOND_LIMIT = '@@IAC_PAGES_BEYOND_LIMIT'      # the last row of the last page read when the PDF has more pages than the cap: said, never read
+
+
+def _iac_pages_of(path):
+    """IAC-only supplement: retain individual text-show positions before merging rows. At most MAX_PAGES pages are read (SOG-0667, Sécurisation: the cap of `pdf_guard`); the pages beyond are said by the row BEYOND_LIMIT."""
+    from proc_iac_positions import supplement
+    reader = pdf_reader(path)
+    out = []
+    for i, page in enumerate(reader.pages[:MAX_PAGES]):
+        try:
+            rows = rows_from_pdf(path, i, reader)
+        except Exception:
+            out.append([])
+            continue
+        try:
+            rows += supplement(page)
+        except Exception:
+            rows.append('@@IAC_POSITION_UNREAD')
+        out.append(rows)
+    if len(reader.pages) > MAX_PAGES and out:
+        out[-1] = [*out[-1], BEYOND_LIMIT]
+    return len(reader.pages), out
+
+
+def iac_pages_rows(path, timeout=None):
+    """Read IAC native rows and position-supported axis columns in the bounded child."""
+    return list(limited('_iac_pages_of', path, timeout=timeout)[1])
 
 
 def _child(module, task, args, kw, conn):
@@ -301,9 +355,9 @@ def scan_pdf(path, report=print):
 
 # listes de coordonnées de points (« WAYPOINTS », « Waypoint coordinates », page DATA « Coordonnées »…)
 _HEMI_END = r'(?![A-Za-z])'
-_LAT = re.compile(r'(?:([NS])\s*)?(\d{2})\s*°?\s*(\d{2})\s*[\'′]?\s*(\d{2}(?:[.,]\d+)?)\s*["″]?(?:\s*([NS])' + _HEMI_END + ')?')
-_LON = re.compile(r'(?:([EW])\s*)?(\d{3})\s*°?\s*(\d{2})\s*[\'′]?\s*(\d{2}(?:[.,]\d+)?)\s*["″]?(?:\s*([EW])' + _HEMI_END + ')?')
-_IDENT = re.compile(r'^(?:[A-Z]{3,5}|RW\d{2}[LRC]?)$')
+_LAT = re.compile(r'(?:([NS])\s*)?(\d{2})\s*°?\s*(\d{2})\s*[\'′’]?\s*(\d{2}(?:[.,]\d+)?)\s*["″”]?(?:\s*([NS])' + _HEMI_END + ')?')
+_LON = re.compile(r'(?:([EW])\s*)?(\d{3})\s*°?\s*(\d{2})\s*[\'′’]?\s*(\d{2}(?:[.,]\d+)?)\s*["″”]?(?:\s*([EW])' + _HEMI_END + ')?')
+_IDENT = re.compile(r'^(?:[A-Z][A-Z0-9]{2,6}|RW\d{2}[LRC]?)$')
 
 
 def _one_coord(rx, text, lon):
