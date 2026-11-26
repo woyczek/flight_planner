@@ -420,7 +420,7 @@ def k3(c):
     widened = [re.sub(r'^((?:INA \S+ )?(?:IF|TF|DF|CF) \S+) ', r'\1 NEW ', r) for r in base]
     ok, pb, fp, lay = P.verify_page(widened, P.parse_code_table(widened))
     c.ok(not ok and any('moins de 85' in x for x in pb), f'{ok} {pb}', 'a column added to the table: the page is refused (less than 85 % of the leg rows read), nothing is guessed')
-    nohead = [r for r in base if not re.search(r'Terminator|Leg sequence|Path|Waypoint', r)]
+    nohead = [r for r in base if not re.search(r'Terminator|Leg sequence|Path|Waypoint|CODE', r)]      # « CODE » too: the identity line of a DATA page (AD 2 … DATA … CODE) is a second way to recognise it (the invented page keeps that line)
     c.ok(P.verify_page(nohead)[0] is False and P.detect_layout(nohead) is None, 'a page with no header was accepted', 'a page without its header is refused')
     doc2 = P.build_aerodrome('LFAV', ['AD_2_LFAV_DATA_RWY29_RNP_CODE.pdf', 'AD_2_LFAV_DATA_01.pdf'], lambda n: widened if 'RNP_CODE' in n else rows(n.replace('.pdf', '')),
                              'https://example.org/AIRAC-2026-10-01', '2026-10-01')
@@ -2836,11 +2836,11 @@ def k29(c):
     c.ok(all(callable(e.detect) and e.tolerances in G.TOLERANCES and (e.read is None) == (e.name == 'sia-code') for e in L.LAYOUTS), str(names),
          'every entry detects, names a tolerance of proc_geometry, and only sia-code has no parser here (proc_sia reads it)')
     c.eq((sorted(L.PARSERS), sorted(L.OCR_LAYOUTS), sorted(L.NORMALIZERS), sorted(k for k, v in L.KNOWN_FINGERPRINTS.items() if v)),
-         (['am-coding', 'at-coding', 'be-coding', 'de-route', 'ei-coding', 'ge-coding', 'icao-tab', 'uk-app', 'uk-coding'],
+         (['am-coding', 'at-coding', 'be-coding', 'de-route', 'ei-coding', 'es-prose', 'ge-coding', 'icao-tab', 'it-app', 'se-coding', 'uk-app', 'uk-coding'],
           ['am-coding', 'at-coding', 'be-coding', 'ei-coding', 'ge-coding', 'uk-app', 'uk-coding'], ['at-coding', 'be-coding', 'ge-coding', 'uk-app', 'uk-coding'], ['sia-code', 'uk-app']),
          'PARSERS, OCR_LAYOUTS, NORMALIZERS and KNOWN_FINGERPRINTS are derived from the list', what='derived tables')
     c.eq(([e.name for e in L.LAYOUTS if e.kind_hint], [e.name for e in L.LAYOUTS if e.known_names], L.BY_NAME['de-route'].tolerances, L.BY_NAME['uk-app'].tolerances),
-         (['icao-tab'], ['ei-coding'], 'magnetic', 'true'), 'what a reader takes from the other pages, and the tolerance of what it prints', what='entry fields')
+         (['se-coding', 'icao-tab'], ['ei-coding'], 'magnetic', 'true'), 'what a reader takes from the other pages, and the tolerance of what it prints', what='entry fields')
     c.eq((L.detect_layout(['nothing', 'to see']), L.detect_layout(['Path Terminator', 'Waypoint', 'Fly over'])), (None, 'sia-code'), 'a page nobody recognises is None; the SIA header is sia-code', what='detect_layout')
 
 
@@ -2915,7 +2915,7 @@ def k31(c):
     c.eq(((ei['status'], ei.get('doubt')), de['status'], none['status']), (('doubt', 'geometry'), 'check', 'check'),
          'records_uk_app: the Irish layout (true) judges a distance-only leg tightly, the German one (magnetic) and no layout as before', what='records_uk_app')
     # unresolved: only the layouts that require positions
-    c.eq({e.name: e.positions for e in L.LAYOUTS if e.positions != 'deferred'}, {'be-coding': 'required'}, 'only the Belgian list requires positions', what='positions')
+    c.eq({e.name: e.positions for e in L.LAYOUTS if e.positions != 'deferred'}, {'se-coding': 'required', 'be-coding': 'required'}, 'only the Belgian list and the Swedish tables (positions come from their own waypoint list) require positions', what='positions')
     miss = {'tables': [{**tbl, 'legs': [tbl['legs'][0], {**tbl['legs'][1], 'lat': None, 'lon': None, 'true': 90.0, 'nm': None}]}], 'warnings': []}
     be = P.records_uk_app('EBXX', miss, 'f.pdf', '2026-10-29', None, 'EB', 'be-coding')
     ea = P.records_uk_app('EIXX', miss, 'f.pdf', '2026-10-29', None, 'EI', 'ei-coding')
@@ -4141,7 +4141,7 @@ def k79(c):
     c.eq(([(q['id'], q['leg'], q.get('synthetic')) for q in ils['points']], ils['name'], ils['runways'], ils['transition']),
          ([('FAF17L', 'IF', 'faf'), ('RW17L', 'CF', 'threshold')], 'ILS RWY 17L', ['17L'], None), 'ILS 17L: FAF -> threshold, named by the runway, no transition (the source has none)', what='ILS 17L')
     c.eq((ils['points'][0]['lat'], ils['points'][0]['lon']), (45.847861, 5.078111), "the FAF is the DATA page's (45°50'52.3'' N 005°04'41.2'' E)", what='ILS 17L FAF')
-    c.ok(any('ILSRWY17L' in w and 'aucune table de codage' in w for w in d['warnings']), str([w for w in d['warnings'] if 'ILSRWY17L' in w]), 'and said: no coding table, so no initial fix, no transition, no missed approach')
+    c.ok(any('ILSRWY17L' in w and 'finale seule construite des pages DATA' in w and 'profil vertical et approche interrompue non lus' in w for w in d['warnings']), str([w for w in d['warnings'] if 'ILSRWY17L' in w]), 'and said: DATA-derived final only; transitions, vertical profile and missed approach unread')
     # the SID 35L page 02: the fly-over and the turn come BEFORE the terminator
     sid = {p['id']: p for p in d['procedures'] if p['kind'] == 'SID' and p['runways'] == ['35L']}
     asleg = sid['LFLL.SID.ASLEG8N.RW35L']['points']
