@@ -11700,3 +11700,65 @@ def f327(c):
     c.ok('VFR' not in unres and 'IFR' not in unres, unres, 'VFR and IFR are never points « not recognised »')
     c.js("document.querySelector('[data-module=fuel] [data-rread]').scrollIntoView({block: 'center'})")
     c.shot(f'F327_{c.design}_{c.width}_{c.lang}.png')
+
+
+@case('F334', 'Route reader, the forms of a valid item 15: « K0210VFR » (a speed and the VFR rule, at the head), « STAY1/0045 », « OAT » / '
+      '« GAT » (understood, kept, never points, never « Non compris »), Mach groups, « A045 » (an ALTITUDE of 4 500 ft, written back A045), '
+      '« C/…/M082F370PLUS », a named NAT track and Atlantic coordinates; a cruise climb whose point is a bearing and distance is « non situé », '
+      'never « inconnu »; under the route, only the lines already decided', 'F', tags=('fuel',), designs=('standard',), screens=True,
+      langs4=False,
+      rule='SOG-0679, the user\'s addendum of 26 Nov (« c\'est simplement un addenda à la fiche », two routes he says VALID: K0210VFR, '
+      'STAY1/0045, OAT / GAT, M078F350, A045, C/…/M082F370PLUS, a NAT track, Atlantic coordinates; the idea of BUGS SOG\'s local commit '
+      'ee885546d, taken into the reader of SOG-0679); French only (SOG-0680); invented routes of the same shape, never his')
+def f334(c):
+    # A. the reader (frame/lib/route_text.js, route_model.js) on an invented base
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const [RT, RM] = await Promise.all([import('/frame/lib/route_text.js'), import('/frame/lib/route_model.js')]);
+      const toks = RT.tokenize('K0210VFR STAY1/0045 XPB/K0300A045 OAT GAT A34 A345 N0180A045').map(t => [t.kind, t.form || '',
+        t.id || t.word || '', t.alt_ft || 0, t.alt_a ? 'A' : '', t.vfr ? 'vfr' : '', t.speed || '']);
+      const P = { XDEP: [47, -1.6], XPA: [46.6, -1.2], XPB: [46, 0], XPC: [45.5, 1], XPD: [45, 2], XPE: [44.5, 3], XPF: [50, -10],
+        XARR: [43.4, 5.2] };
+      const base = { coords: async id => P[id] ? { id, lat: P[id][0], lon: P[id][1] } : null, airways: async () => [],
+        state: () => ({ state: 'ready' }) };
+      const m = await RM.routeModel('XDEP K0210VFR XPA STAY1/0045 XPB/K0300A045 IFR XPC M078F350 XPD OAT XPE GAT C/XPF/M082F370PLUS NATD '
+        + '5530N02000W C/NTR270010/N0450F350F390 XARR', { dep: 'XDEP', arr: 'XARR', base });
+      return [toks, m.points.map(p => [p.id, p.alt_ft || 0, p.alt_a ? 'A' : '']), m.reading, m.unresolved,
+        RT.textFromTokens(m.tokens, { dct: true })];
+    }""")
+    c.eq(got[0], [['group', '', 'K0210VFR', 0, '', 'vfr', 'K0210'], ['word', 'remark', 'STAY1/0045', 0, '', '', ''],
+                  ['name', '', 'XPB', 4500, 'A', '', 'K0300'], ['word', 'remark', 'OAT', 0, '', '', ''], ['word', 'remark', 'GAT', 0, '', '', ''],
+                  ['name', '', 'A34', 0, '', '', ''], ['name', '', 'A345', 0, '', '', ''], ['group', '', 'N0180A045', 4500, 'A', '', 'N0180']],
+         'K0210VFR a group with the VFR rule; STAY, OAT, GAT understood; A045 an altitude of 4 500 ft; A34 and A345 bare stay airways '
+         '(red before: K0210VFR a bare word, A045 read 0 ft)', what='tokens')
+    c.eq(got[1], [['XDEP', 0, ''], ['XPA', 0, ''], ['XPB', 4500, 'A'], ['XPC', 35000, ''], ['XPD', 0, ''], ['XPE', 0, ''], ['XPF', 0, ''],
+                  ['5530N02000W', 0, ''], ['XARR', 0, '']], 'the points: never STAY, OAT, GAT, NATD; XPB at 4 500 ft (an altitude), XPC '
+         'at FL350', what='points')
+    c.eq(got[2], {'notUnderstood': ['C/XPF/M082F370PLUS', 'C/NTR270010/N0450F350F390'], 'unplaced': ['NTR270010'],
+                  'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPB'}], 'speeds': ['K0210', 'K0300', 'M078', 'M082', 'N0450'],
+                  'headLevel': 0, 'steps': True}, 'the reading: the VFR rule of the head group, the speeds in knots, km/h and Mach, the point '
+         'of a cruise climb by bearing and distance « non situé »', what='reading')
+    c.eq(got[3], [], 'nothing « not recognised »', what='unresolved')
+    c.eq(got[4], 'XDEP K0210VFR XPA STAY1/0045 XPB/K0300A045 IFR XPC/M078F350 DCT XPD OAT XPE GAT C/XPF/M082F370PLUS NATD 5530N02000W '
+         'C/NTR270010/N0450F350F390 XARR', 'every word kept, A045 written back as an altitude', what='text')
+    # B. under the route field of Fuel: only the lines already decided
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    typed = 'LFRS K0210VFR LUGEN STAY1/0045 NEPIX/K0300A045 IFR LFML'
+    c.page.fill(f'{FUEL} [data-k="rtext"]', typed)
+    c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
+    want = [['rules', 'Règles de vol : Z — VFR jusqu’à NEPIX, puis IFR.'], ['steps', 'Niveaux écrits aux points : appliqués comme paliers.'],
+            ['speeds', 'Non appliqué au devis : les vitesses écrites dans la route.']]
+    read = """() => { const b = document.querySelector('[data-module=fuel] [data-rread]'); if (!b || b.hidden) return null;
+      return [...b.querySelectorAll('[data-rl]')].filter(e => !e.hidden).map(e => [e.dataset.rl,
+        (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) }"""
+    c.until(f"() => JSON.stringify(({read})()) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')), ensure_ascii=False)}",
+            timeout=10000, what='the three lines already decided, nothing else (red before: « Non compris : K0210VFR. », STAY1 looked up as a point)')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d['route'].get('text') or '') == typed, 'the text kept word for word',
+                    timeout=10000)
+    nep = next(p for p in f['route']['points'] if p['id'] == 'NEPIX')
+    c.eq([nep.get('alt_ft'), nep.get('alt_a')], [4500, True], 'NEPIX at 4 500 ft, an altitude', what='NEPIX')
+    unres = norm(c.text(f'{FUEL} [data-unres]') or '')
+    c.ok(not any(w in unres for w in ('STAY', 'OAT', 'GAT', 'K0210')), unres, 'nothing of it « not recognised »')
+    c.js("document.querySelector('[data-module=fuel] [data-rread]').scrollIntoView({block: 'center'})")
+    c.shot(f'F334_{c.design}_{c.width}_{c.lang}.png')
