@@ -862,6 +862,10 @@ one call in each) — not by `module.js`.
   (none: nothing is written), `title` the visible title (120 signs), `departure` the visible ICAO or `''`. Every line built is READ
   BACK by `mine()` (`assigned.js`, « Mes missions affectées ») and `seanceOf()` (`drawers.js`, the play of the drawers) before it is
   written: a line they would not read as it is is not written. Nothing of a closed drawer enters the form or the line.
+- **`team` (optional, SOG-0620 lot 3)** — the letter `A` to `Y` of the pilot's team in the mission (the rank of the team in the mission file: `A` the
+  first); written by the « Équipe » list of « Affecter… », shown only when the mission has two or more teams (« aucune » writes no `team`); read
+  bounded by `own()` (`drawers_run.js`: `ownLetter` reads `team` first, then falls back to the `callsign` equal to a team name, for the older lines);
+  the team of a pilot never opens or closes anything — it only says whose status lines « Prévu » shows live.
 - **The key and the merge.** The key of a line is `mission + pilot + role`; it never changes on a line (changing the pilot = withdraw
   one, assign the other). Every write re-reads the file (`ctx.data.get`), replaces OR appends its own line by that key (in place), keeps
   every other line and every other top-level key AS IT IS (never re-read into another shape, never rewritten), sets `updatedAt`, writes.

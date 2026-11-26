@@ -3,7 +3,8 @@
 //
 // L'index des affectations (docs/technique/AFFECTATION_MISSIONS.md § 12) : { updatedAt, assignments: [ligne…] }. Une ligne écrite ici :
 //   { mission, title, pilot, callsign, takeoff, departure, aircraft: { type, registration }, status: 'affectée' | 'annulée',
-//     role: 'mission', updated_at, by }
+//     role: 'mission', updated_at, by } plus, facultative (SOG-0620 lot 3), `team` : la lettre (A à Y) de l'équipe du pilote dans la mission — absente
+//     pour « aucune » ou une mission à une seule équipe
 // — la forme que lisent déjà mine() (assigned.js, « Mes missions affectées ») et seanceOf() (drawers.js, la séance des tiroirs), et
 // rien de plus. Sa CLÉ est mission + pilot + role (la règle de fusion `keyed:assignments:mission+pilot+role` déclarée par module.js,
 // la même que tools/data_sync.py) : elle ne change jamais sur une ligne ; changer de pilote = retirer l'une, affecter l'autre.
@@ -17,7 +18,7 @@
 //   readIndex(doc) → { ok: true, lines } (les lignes telles quelles ; [] sans fichier) ou { ok: false, why: 'shape' | 'size' }.
 //   check(input, { types }) → { ok, why, value } : la saisie (pilot, callsign, date, time, type, registration : des textes) validée ;
 //     why : le premier champ refusé ('pilot', 'callsign', 'takeoff', 'type', 'registration') ; value : { pilot, callsign, takeoff
-//     (ISO UTC), type, registration }.
+//     (ISO UTC), type, registration, team } ; `team` : une lettre A à Y que la mission a (`teams` : le nombre d'équipes de sa partie visible), '' sinon.
 //   lineOf(mission, value, { by, now }) → la ligne à écrire, ou null (mission : { id, title, departure } — sa partie VISIBLE).
 //   keyOf(line) → « mission|pilot|role » : la clé de la règle de fusion.
 //   withLine(doc, line, now) → { doc, updated } (updated : la clé existait déjà, non annulée) ou { error: 'shape' | 'size' | 'line' }.
@@ -26,7 +27,7 @@
 //     pilot, role } tels que listOf les a rendus.
 //   conflictOf(doc, { mission, pilot, takeoff }) → { mission, takeoff } : une affectation NON annulée du même pilote, d'une AUTRE
 //     mission, dont le décollage est à MOINS de deux heures (CONFLICT_MS) de celui-ci ; null sinon.
-//   listOf(doc, missionId) → [{ mission, pilot, role, callsign, takeoff, type, registration }] : les lignes NON annulées de CETTE
+//   listOf(doc, missionId) → [{ mission, pilot, role, callsign, takeoff, type, registration, team }] : les lignes NON annulées de CETTE
 //     mission, bornées pour l'affichage (pilot, mission, role : les valeurs du fichier, la clé de « Retirer »).
 //   trigramsOf(paths) → ['ABC', …] : les trigrammes qui ont un dossier de pilote (pilot/<TRI>/…), triés, bornés.
 //   defaultTakeoff(now) → { date: 'AAAA-MM-JJ', time: 'HH:MM' } : aujourd'hui, l'heure ronde suivante, en UTC.
@@ -118,7 +119,8 @@ export function readIndex(doc) {
 
 /** La saisie validée (voir l'en-tête). `types` : les types de la mission (sa partie visible) — vide : l'affectation part sans type. */
 export function check(input, {
-  types = []
+  types = [],
+  teams = 0
 } = {}) {
   const i = input && typeof input === 'object' ? input : {},
     txt = (k, n) => cut(own(i, k), n),
@@ -128,6 +130,8 @@ export function check(input, {
     time = txt('time', 8).slice(0, 5),
     type = txt('type', 8).toUpperCase(),
     registration = txt('registration', 12).toUpperCase(),
+    team = /^[A-Y]$/.test(txt('team', 2).toUpperCase()) && txt('team', 2).toUpperCase().charCodeAt(0) - 65 < Math.min(25, Math.max(0, +
+      teams || 0)) ? txt('team', 2).toUpperCase() : '',
     allowed = (Array.isArray(types) ? types : []).slice(0, 20).filter(t => typeof t === 'string' && TYPE.test(t));
   // la date et l'heure lues en UTC : le procédé de modules/atmosphere/screen_flight.js (Date.parse(`${v}:00Z`)), en deux champs comme
   // le compte rendu (modules/report/module.js) ; une date qui n'existe pas (31 février) est refusée, pas reportée au mois suivant
@@ -146,7 +150,10 @@ export function check(input, {
       callsign,
       takeoff,
       type: allowed.length ? type : '',
-      registration
+      registration,
+      ...(team ? {
+        team
+      } : {})
     }
   };
 }
@@ -174,6 +181,9 @@ export function lineOf(mission, value, {
         type: TYPE.test(v.type || '') ? v.type : '',
         registration: REG.test(v.registration || '') ? v.registration : ''
       },
+      ...(/^[A-Y]$/.test(v.team || '') ? {
+        team: v.team
+      } : {}),
       status: 'affectée',
       role: 'mission',
       updated_at: new Date(Number.isFinite(now) ? now : Date.now()).toISOString(),
@@ -377,7 +387,8 @@ function collect(lines, id, out) {
       callsign: CALLSIGN.test(cs) ? cs.toUpperCase() : '',
       takeoff: at === null ? '' : new Date(at).toISOString(),
       type: TYPE.test(ty) ? ty.toUpperCase() : '',
-      registration: cut(own(ac, 'registration'), 12).toUpperCase()
+      registration: cut(own(ac, 'registration'), 12).toUpperCase(),
+      team: /^[A-Y]$/.test(String(own(l, 'team') ?? '').toUpperCase()) ? String(own(l, 'team')).toUpperCase() : ''
     });
     if (out.length >= 60) break;
   }

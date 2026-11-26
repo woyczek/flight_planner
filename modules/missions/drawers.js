@@ -221,12 +221,33 @@ export function readBook(doc, missionId) {
   const s = own(doc, 'seance'),
     drawers = {},
     reads = {};
+  // SOG-0620 lot 3 : les constats des événements (`held` : { 'EV-n': ISO }) et des points passés (`passed` : { id: ISO }), bornés : soixante au plus,
+  // un identifiant valide, une heure valide — jamais une clé héritée
+  // (absents du carnet rendu quand il n'y en a pas : un carnet d'avant se lit comme avant)
+  const marks = (k, ok) => {
+    const o = own(doc, k),
+      out = {};
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+    for (const id of Object.keys(o).slice(0, 60)) {
+      const t = ok.test(id) && id !== '__proto__' ? msOf(own(o, id)) : null;
+      if (t != null) out[id] = t;
+    }
+    return out;
+  };
   for (const l of LETTERS) {
     const e = entryOf(own(doc, `drawer_${l}`));
     if (e) drawers[l] = e;
     // SOG-0619 : la lecture d'un message (`read_at`), portée par la clé du tiroir — quelle que soit son ouverture (la mienne, celle d'un autre, l'heure)
     const at = msOf(own(own(doc, `drawer_${l}`), 'read_at'));
     if (at != null) reads[l] = at;
+  }
+  const constats = {};
+  for (const [k, ok] of [
+      ['held', /^EV-\d{1,3}$/],
+      ['passed', /^[\w-]{1,40}$/]
+    ]) {
+    const m = marks(k, ok);
+    if (Object.keys(m).length) constats[k] = m;
   }
   return {
     mission: id,
@@ -236,7 +257,25 @@ export function readBook(doc, missionId) {
     // SOG-0619 : la marque de version — `reads: 1` à la racine du carnet : écrit par le code qui connaît les enveloppes (voir baseOf)
     marked: own(doc, 'reads') === 1,
     drawers,
-    reads
+    reads,
+    ...constats
+  };
+}
+
+/** Les constats d'événements d'un carnet (SOG-0620 lot 3) : { held, passed } (id → ms) qui valent pour cette séance — le carnet de la séance
+ *  (`strict` : celui d'un AUTRE pilote doit porter la clé de la séance), une heure d'un jour avant le premier départ jusqu'à deux minutes d'ici. */
+export function constatsOf(book, seance, now = Date.now(), strict = false) {
+  const none = {
+      held: {},
+      passed: {}
+    },
+    b = bookFor(book, seance);
+  if (!b || strict && (!seance?.key || b.seance !== seance.key)) return none;
+  const lo = seance?.ref != null ? seance.ref - BEFORE_MS : -Infinity,
+    keep = o => Object.fromEntries(Object.entries(o || {}).filter(([, t]) => t >= lo && t <= now + FUTURE_MS));
+  return {
+    held: keep(b.held),
+    passed: keep(b.passed)
   };
 }
 
@@ -1354,7 +1393,9 @@ function baseOf(doc, ctx) {
       readAt: null,
       startAt: null,
       drawers: {},
-      reads: {}
+      reads: {},
+      held: {},
+      passed: {}
     },
     reads = {
       ...b.reads
@@ -1379,6 +1420,12 @@ function baseOf(doc, ctx) {
       ...b.drawers
     },
     reads,
+    held: {
+      ...b.held
+    },
+    passed: {
+      ...b.passed
+    },
     marked: true,
     by: tri
   };
@@ -1450,6 +1497,13 @@ function docOf(b, now) {
       } : {})
     };
   }
+  // SOG-0620 lot 3 : les événements tenus et les points passés (écrits une fois chacun, au premier constat)
+  const marks = (k, o) => {
+    const e = Object.entries(o || {}).filter(([, t]) => Number.isFinite(t)).slice(0, 60);
+    if (e.length) out[k] = Object.fromEntries(e.map(([id, t]) => [id, isoOf(t)]));
+  };
+  marks('held', b.held);
+  marks('passed', b.passed);
   out.updated_at = isoOf(now);
   out.by = b.by;
   return out;
@@ -1540,6 +1594,27 @@ export function withRead(doc, ctx) {
   const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
   if (b.readAt == null) b.readAt = now;
   return docOf(b, now);
+}
+
+/** Le carnet avec les constats d'événements ajoutés (SOG-0620 lot 3 : `add` = { held: { 'EV-n': ISO | ms }, passed: { id: ISO | ms } }) : un constat déjà
+ *  écrit n'est jamais remplacé, soixante au plus, un identifiant valide ; null quand rien n'est à écrire. */
+export function withConstats(doc, ctx, add) {
+  const b = baseOf(doc, ctx);
+  if (!b) return null;
+  let n = 0;
+  for (const [k, ok] of [
+      ['held', /^EV-\d{1,3}$/],
+      ['passed', /^[\w-]{1,40}$/]
+    ]) {
+    for (const [id, t] of Object.entries(add?.[k] || {})) {
+      const ms = typeof t === 'number' ? t : msOf(t);
+      if (ok.test(id) && id !== '__proto__' && ms != null && !Number.isFinite(b[k][id]) && Object.keys(b[k]).length < 60) {
+        b[k][id] = ms;
+        n++;
+      }
+    }
+  }
+  return n ? docOf(b, Number.isFinite(ctx.now) ? ctx.now : Date.now()) : null;
 }
 
 /** Le carnet avec le départ réel du vol de cette mission (started.at) : la référence d'heure de la séance. */

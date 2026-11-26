@@ -30,6 +30,9 @@ import {
 } from '../../frame/lib/mission.js'; // la partie visible de la mission (SOG-0448) : la règle du lecteur, écrite une fois
 
 export const TX = {
+  // SOG-0620 lot 3 (français seulement, SOG-0680) : l'équipe du pilote dans la mission, quand elle en a deux ou plus
+  team: ['Équipe'],
+  teamNone: ['aucune'],
   open: ['Affecter…', 'Assign…', 'Zuweisen…', 'Asignar…'],
   head: ['Affecter cette mission', 'Assign this mission', 'Diese Mission zuweisen', 'Asignar esta misión'],
   listHead: ['Affectations de cette mission', 'Assignments of this mission', 'Zuweisungen dieser Mission', 'Asignaciones de esta misión'],
@@ -155,7 +158,10 @@ function visibleOf(id, mission) {
     id,
     title: typeof v.title === 'string' ? v.title : '',
     departure: typeof v.origin?.icao === 'string' ? v.origin.icao : '',
-    types
+    types,
+    // les équipes de la mission par leur nom, dans l'ordre du fichier (la lettre est leur rang : A, B…) ; vingt-cinq au plus
+    teams: (Array.isArray(v.teams) ? v.teams : []).slice(0, 25).map((t, i) => typeof t?.name === 'string' && t.name.trim() ? t.name.trim()
+      .slice(0, 40) : String.fromCharCode(65 + i))
   };
 }
 
@@ -227,7 +233,8 @@ function readForm(box) {
     date: v('date'),
     time: v('time'),
     type: v('type'),
-    registration: v('registration')
+    registration: v('registration'),
+    team: v('team')
   };
 }
 
@@ -240,7 +247,8 @@ const fresh = (w, keepType = null) => ({
     time: ''
   }),
   type: keepType ?? w.mission.types[0] ?? '',
-  registration: ''
+  registration: '',
+  team: ''
 });
 
 /** « Affecter… » touché : le formulaire prend la place de la fiche ; les affectations de la mission et les trigrammes sont lus. */
@@ -304,6 +312,7 @@ function formHtml(w) {
     <label class="f-field"><span>${esc(tt(TX.pilot))}</span><input data-as="pilot" list="asPilots" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(v.pilot)}"></label>
     <label class="f-field"><span>${esc(tt(TX.callsign))}</span><input data-as="callsign" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(v.callsign)}"></label>
     <div class="f-field" role="group" aria-label="${esc(tt(TX.takeoff))}"><span>${esc(tt(TX.takeoff))}</span><div class="ms-asrow"><input type="date" data-as="date" aria-label="${esc(tt(TX.date))}" value="${esc(v.date)}"><input type="time" data-as="time" aria-label="${esc(tt(TX.time))}" value="${esc(v.time)}"></div></div>
+    ${w.mission.teams.length >= 2 ? `<label class="f-field"><span>${esc(tt(TX.team))}</span><select data-as="team"><option value="">${esc(tt(TX.teamNone))}</option>${w.mission.teams.map((n, i) => `<option value="${String.fromCharCode(65 + i)}"${String.fromCharCode(65 + i) === v.team ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>` : ''}
     <div class="f-field" role="group" aria-label="${esc(tt(TX.aircraft))}"><span>${esc(tt(TX.aircraft))}</span><div class="ms-asrow"><select data-as="type" aria-label="${esc(tt(TX.type))}">${types}</select><input data-as="registration" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${esc(tt(TX.registration))}" aria-label="${esc(tt(TX.registration))}" value="${esc(v.registration)}"></div></div>
     </div><datalist id="asPilots">${w.pilots.map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
     <div class="f-row ms-asacts"><button type="button" class="primary" data-as-go>${esc(tt(TX.go))}</button><button type="button" data-as-cancel>${esc(tt(TX.cancel))}</button></div>`;
@@ -377,7 +386,8 @@ async function put(w, doc) {
 async function submit(w) {
   if (w.busy) return;
   const c = A.check(readForm(w.box), {
-    types: w.mission.types
+    types: w.mission.types,
+    teams: w.mission.teams.length >= 2 ? w.mission.teams.length : 0
   });
   if (!c.ok) return void w.ctx.notify?.(w.tt(BAD[c.why]), 'warn');
   const by = A.meOf(w.ctx.identity?.trigram);

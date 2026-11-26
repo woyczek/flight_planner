@@ -412,11 +412,13 @@ async function load(c) {
     }),
     playing = !!flight && typeof flight === 'object' && String(flight.mission || '').toUpperCase() === c.id;
   c.mine = !!myPath && (seance.assigned || playing);
-  // SOG-0620 lot 3 : mon indicatif d'équipage (la ligne d'affectation de ce trigramme pour cette mission) : MON équipe se lit dessus (ownLetter)
-  c.callsign = String((Array.isArray(idx?.assignments) ? idx.assignments : []).slice(0, 5000).map(a => a && typeof a === 'object' && MS
-      .midOf(own(a, 'mission')) === c.id &&
-      MS.triOf(own(a, 'pilot')) === me ? own(a, 'callsign') : null).find(x => typeof x === 'string' && x) ?? '').slice(0, 12)
-    .toUpperCase();
+  // SOG-0620 lot 3 : ma ligne d'affectation pour cette mission : mon indicatif d'équipage et, si elle le dit, ma lettre d'équipe (`team`, A à Y) —
+  // MON équipe se lit dessus (ownLetter)
+  const myLine = (Array.isArray(idx?.assignments) ? idx.assignments : []).slice(0, 5000).find(a => a && typeof a === 'object' &&
+      MS.midOf(own(a, 'mission')) === c.id && MS.triOf(own(a, 'pilot')) === me),
+    word = k => myLine ? own(myLine, k) : undefined;
+  c.callsign = String(typeof word('callsign') === 'string' ? word('callsign') : '').slice(0, 12).toUpperCase();
+  c.team = typeof word('team') === 'string' && /^[A-Y]$/.test(word('team').toUpperCase()) ? word('team').toUpperCase() : '';
   if (!c.mine) {
     c.states = [];
     c.flying = false;
@@ -477,6 +479,8 @@ async function load(c) {
       passage: c.passage
     });
   c.states = states;
+  seedConstats(c, D.readBook(doc, c.id), seance, theirs.map(t => D.readBook(t, c
+    .id))); // SOG-0620 lot 3 : « Prévu » garde ses constats d'un rechargement à l'autre
   // un carnet d'avant les enveloppes : ce qui est ouvert à ce premier calcul est lu (voir isUnread) ; un carnet marqué ou absent : la règle des enveloppes
   const bk = D.bookFor(D.readBook(doc, c.id), seance);
   c.legacyRead = bk && !bk.marked ? c.legacyRead || new Set(states.filter(x => x.open).map(x => x.id)) : null;
@@ -528,8 +532,10 @@ export function eventsOf(c) {
   }
 }
 
-/** La lettre (A à Y) de MON équipe : celle dont le nom est l'indicatif de mon affectation (c.callsign) ; '' quand elle ne se dit pas. */
+/** La lettre (A à Y) de MON équipe : celle que mon affectation dit (`team`), sinon celle dont le nom est son indicatif (c.callsign, les lignes d'avant) ;
+ *  '' quand elle ne se dit pas. */
 export function ownLetter(c) {
+  if (/^[A-Y]$/.test(c.team || '')) return c.team; // la lettre que l'affectation dit (`team`) d'abord
   const cs = String(c.callsign || '').toUpperCase(),
     teams = Array.isArray(c.mission?.teams) ? c.mission.teams : [],
     k = cs ? teams.findIndex(t => String(t?.name ?? '').toUpperCase() === cs) : -1;
@@ -563,6 +569,57 @@ export function constatsOf(c) {
   return c.ev;
 }
 
+/** Les constats de « Prévu » relus des carnets (SOG-0620 lot 3) : les miens (ce que ce vol a déjà tenu et passé : un rechargement les garde) et
+ *  ceux des AUTRES pilotes de la séance (`c.shared` : id d'événement → l'heure la plus ancienne, en ms — seul « tenu à » en est dit). */
+function seedConstats(c, ownBook, seance, theirBooks) {
+  const k = constatsOf(c),
+    now = Date.now(),
+    mine = D.constatsOf(ownBook, seance, now);
+  for (const [id, t] of Object.entries(mine.held))
+    if (!k.held.has(id)) k.held.set(id, new Date(t).toISOString());
+  for (const [id, t] of Object.entries(mine.passed))
+    if (!k.passed.has(id)) k.passed.set(id, new Date(t).toISOString());
+  c.shared = new Map();
+  for (const b of theirBooks)
+    for (const [id, t] of Object.entries(D.constatsOf(b, seance, now, true).held)) {
+      const cur = c.shared.get(id);
+      if (cur === undefined || t < cur) c.shared.set(id, t);
+    }
+}
+
+/** Écrit dans MON carnet les constats pas encore écrits (SOG-0620 lot 3) : une écriture au premier constat de chaque événement ou point, jamais
+ *  une par relevé ; le garde entre onglets relit le carnet et n'écrit rien de ce qui y est déjà. Trois essais au plus par série de constats. */
+async function flushConstats(c) {
+  if (!c.evDirty || c.busy || c.dead || !c.mine || !c.states || !c.myPath || (c.evTries || 0) >= 3) return;
+  c.busy = true;
+  c.evTries = (c.evTries || 0) + 1;
+  try {
+    const k = constatsOf(c),
+      res = await locked(c, async guarded => {
+        const cur = guarded ? await reread(c) : c.doc,
+          have = D.constatsOf(D.readBook(cur, c.id), c.seance),
+          add = {
+            held: Object.fromEntries([...k.held].filter(([id]) => !(id in have.held))),
+            passed: Object.fromEntries([...k.passed].filter(([id]) => !(id in have.passed)))
+          },
+          next = D.withConstats(cur, {
+            mission: c.id,
+            me: c.me,
+            seance: c.seance,
+            opened: openedOf(c),
+            now: Date.now()
+          }, add);
+        return !next ? 'seen' : await put(c, c.myPath, next) ? 'wrote' : 'failed';
+      });
+    if (res !== 'failed') {
+      c.evDirty = false;
+      c.evTries = 0;
+    }
+  } finally {
+    c.busy = false;
+  }
+}
+
 /** Un relevé reçu : les événements sur site, les points passés, le temps restant. */
 function eventsJudge(c, raw) {
   if (!c.mine || !c.flying) return;
@@ -579,7 +636,7 @@ function eventsJudge(c, raw) {
       const nm = gcNm(f, place);
       if (nm <= EVENT_NM && at) {
         ev.held.set(e.id, at);
-        changed = true;
+        changed = c.evDirty = true;
       } else if (Number.isFinite(f.gsKt) && f.gsKt > 30) {
         const m = Math.round(nm / f.gsKt * 60);
         changed ||= ev.eta.get(e.id) !== m;
@@ -590,13 +647,14 @@ function eventsJudge(c, raw) {
       const pt = placeAt(c.mission, e.ref.id);
       if (pt && gcNm(f, pt) <= EVENT_NM) {
         ev.passed.set(e.ref.id, at);
-        changed = true;
+        changed = c.evDirty = true;
       }
     }
   }
   if (ev.held.size)
     for (const id of ev.held.keys()) ev.eta.delete(id);
   if (changed) paintViews(c); // « Prévu » se repeint : un constat, ou le temps restant qui change
+  if (c.evDirty) flushConstats(c).catch(() => {});
 }
 
 /** L'appareil a-t-il une position en direct qui est celle du vol de cette mission ? */
@@ -733,6 +791,7 @@ async function record(c, id, f, source) {
     Promise.resolve().then(() => c.ctx.data.sync?.()).catch(() => {});
   } finally {
     c.busy = false;
+    flushConstats(c).catch(() => {}); // SOG-0620 lot 3 : un constat de « Prévu » attendu pendant cette écriture
     // le rattrapage qu'un calcul pendant cette écriture n'a pas pu lancer (SOG-0617, c) ; un écrit refusé ne boucle pas : son tiroir,
     // toujours le premier fermé, est déjà marqué relu
     catchUp(c);

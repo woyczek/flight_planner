@@ -91,6 +91,8 @@ export function model(c, view, o = {}) {
           imposed: t.imposed === true || e.imposed === true,
           teams: Array.isArray(e.teams) ? e.teams : [],
           own,
+          // le constat PARTAGÉ d'un événement d'une autre équipe (les carnets des autres pilotes, l'heure la plus ancienne) : « tenu à » seulement
+          sharedMs: !own && c.shared?.get(e.id) !== undefined ? c.shared.get(e.id) : null,
           heldMs: Number.isFinite(heldMs) ? heldMs : null,
           lateMin: late,
           inTol: late === null ? null : late <= (e.tolLateMin || 0) && late >= -(e.tolEarlyMin || 0),
@@ -131,7 +133,9 @@ function whenOf(l) {
 /** La ligne d'état d'un événement de MON équipe (ou de toutes) ; '' quand il n'y a rien à dire. */
 function stateOf(w, l) {
   const tx = (k, v) => w.tt(PTX[k], v);
-  if (!l.own) return '';
+  if (!l.own) return l.sharedMs !== null ? tx('held', {
+    t: fmtZ(new Date(l.sharedMs))
+  }) : ''; // une autre équipe : jamais d'état en direct, « tenu à » quand un carnet le dit
   if (l.heldMs !== null) {
     const late = l.lateMin;
     return `${tx('held', {

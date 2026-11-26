@@ -17480,7 +17480,12 @@ def n292(c):
               'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
               'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0}, {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
                         'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
-    assignments = {'assignments': [{'mission': 'X-905A', 'pilot': 'ABC', 'callsign': 'BLUE', 'takeoff': start}]}
+    # the pilot's team is said by the line (`team: A`, Blue); the peer DEF flies Red (`team: B`) and its book says it held the drop (EV-3) 11 minutes after take-off
+    assignments = {'assignments': [{'mission': 'X-905A', 'pilot': 'ABC', 'callsign': 'AZUR', 'team': 'A', 'takeoff': start},
+                                   {'mission': 'X-905A', 'pilot': 'DEF', 'callsign': 'RUBIS', 'team': 'B', 'takeoff': start}]}
+    peer_held = iso(start_dt + datetime.timedelta(minutes=11))
+    peer_book = {'schema': 1, 'mission': 'X-905A', 'seance': f'A:{start[:10]}', 'reads': 1, 'held': {'EV-3': peer_held}, 'by': 'DEF', 'updated_at': peer_held}
+    BOOK = 'pilot/ABC/missions/X-905A.json'
     S = f'{M} [data-drawers]'
     lines = f"""(() => [...document.querySelectorAll('{S} [data-dw-planned] .pv-line')].map(l => [l.dataset.pv, l.querySelector('b').textContent.trim(),
       l.textContent.replace(/\\s+/g, ' ').trim(), !!l.querySelector('[data-pv-state]')]))()"""
@@ -17488,7 +17493,8 @@ def n292(c):
         c.page.goto(c.base + '/frame/manifest.webmanifest')
         c.js(_DW_CLEAR)
         c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _PV_REGISTRY], ['missions/X_TIR/X-905A/missionX-905A.yaml', _PV_MISSION]])
-        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], ['missions/affectations.json', assignments, 'document']])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], ['missions/affectations.json', assignments, 'document'],
+                                                                            ['pilot/DEF/missions/X-905A.json', peer_book, 'document']])
         c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list')
         c.tap(f'{M} [data-list] [data-id="X-905A"]')
         c.until(f"!!document.querySelector('{S} [data-dw-planned]')", timeout=30000, what='the section « Prévu »')
@@ -17507,15 +17513,86 @@ def n292(c):
              'the rendezvous: « tenu à hh:mmZ, n min de retard (dans la tolérance) » (own team, held 7 minutes after its planned time)')
         c.ok(re.search(r'dans \d+ min · 10 min après Rendez-vous au point Romeo tenu', rows['EV-2'][2]) is not None and 'Blue' in rows['EV-2'][2], rows['EV-2'][2],
              'the silence of Blue: « dans n min · 10 min après le rendez-vous tenu », the chip Blue')
-        c.ok(rows['EV-3'][3] is False and 'heure imposée' in rows['EV-3'][2], rows['EV-3'],
-             'the drop of Red (imposed): its time, « heure imposée », and NO status line — another team')
+        c.ok(rows['EV-3'][3] is True and 'heure imposée' in rows['EV-3'][2] and f'tenu à {hhmm(start_dt + datetime.timedelta(minutes=11))}' in rows['EV-3'][2]
+             and 'retard' not in rows['EV-3'][2] and 'dans ' not in rows['EV-3'][2], rows['EV-3'],
+             'the drop of Red (imposed), another team: its time, « heure imposée », and only « tenu à hh:mmZ » from the book of the peer of Red — no lateness, no live state')
         c.eq(rows['EV-3'][1], hhmm(start_dt + datetime.timedelta(minutes=17)), 'the imposed time does not slide: take-off + 5 + 12, not the rendez-vous held late + 12', what='imposed')
         c.ok(rows['EV-2'][1] != hhmm(start_dt + datetime.timedelta(minutes=15)), rows['EV-2'][1], 'the silence of Blue follows the REAL time of the rendez-vous (it slid past its plan)')
         c.eq(c.text(f'{S} [data-pv-fold] summary'), '1 autre', 'the fold', what='fold')
         c.ok(c.js(f"document.querySelector('{S} [data-pv=\"EV-1\"] .pv-chip.mine')?.textContent") == 'Blue'
              and c.js(f"document.querySelector('{S} [data-pv=\"EV-3\"] .pv-chip.other')?.textContent") == 'Red', '', 'the chips: Blue (mine, filled), Red (the others, outlined)')
         c.shot(f'N292_{c.width}_prevu.png')
+        # the constat is written once in my book, and a reload keeps « tenu à » even when the aircraft is far from the point again
+        book = c.until_doc(BOOK, lambda d: d and 'EV-1' in (d.get('held') or {}), timeout=15000, what='my book carries the rendezvous held')
+        c.ok(list(book['held']) == ['EV-1'] and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z', book['held']['EV-1']) is not None, book,
+             'one entry in my book: the rendezvous held, an ISO time — written once, not at every fix')
+        pos['fix'] = fix(45.0, 1.0)
+        c.page.reload()
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list again')
+        c.tap(f'{M} [data-list] [data-id="X-905A"]')
+        c.until(f"document.querySelector('{S} [data-pv=\"EV-1\"]')?.hasAttribute('data-held')", timeout=40000, what='« tenu à » kept after the reload')
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+# ---- SOG-0620 lot 3 : la liste « Équipe » de « Affecter… » (une mission à deux équipes la montre et écrit `team` ; une mission à une seule ne la montre pas).
+_TEAM_REGISTRY = """missions:
+  - { id: X-906A, family: TESTTIROIR, title: Exercice à deux équipes, folder: X_TIR/X-906A, files: [missionX-906A.yaml] }
+  - { id: X-907A, family: TESTTIROIR, title: Exercice à une équipe, folder: X_TIR/X-907A, files: [missionX-907A.yaml] }
+"""
+_TEAM_TWO = """mission: { id: X-906A, type: SAR, subtype: RECHERCHE }
+title: Exercice à deux équipes
+summary: Un exercice inventé, Blue et Red.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+teams:
+  - { name: Blue, service: Service d'essai, type: EC25, role: couverture }
+  - { name: Red, service: Service d'essai, type: EC25, role: largage }
+route_order: [ORIGIN, DESTINATION]
+"""
+_TEAM_ONE = _TEAM_TWO.replace('X-906A', 'X-907A').replace('Exercice à deux équipes', 'Exercice à une équipe').replace(
+    "  - { name: Red, service: Service d'essai, type: EC25, role: largage }\n", '')
+
+
+@case('N293', 'Missions › « Affecter… », SOG-0620 lot 3: on a mission with two teams the form has a list « Équipe » (the teams by their name, plus « aucune »); choosing Red '
+      'writes `team: B` in the line of the assignment; on a mission with one team there is no list', 'N', tags=('missions',), designs=('standard',), langs4=False,
+      rule='SOG-0620 lot 3 (decision of 26 Nov 2026): the optional key `team` (one letter A to Y) of an assignment line, read by drawers_run.js ownLetter')
+def n293(c):
+    import datetime
+    import json
+    today = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    P = 'missions/affectations.json'
+    folders = [['pilot/ABC/missions/X-001A.json', {'schema': 1, 'mission': 'X-001A'}, 'document']]
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _TEAM_REGISTRY], ['missions/X_TIR/X-906A/missionX-906A.yaml', _TEAM_TWO],
+                     ['missions/X_TIR/X-907A/missionX-907A.yaml', _TEAM_ONE], [P, json.dumps({'updatedAt': f'{today}T08:00:00.000Z', 'assignments': []})]])
+    c.open('missions', wait=False, app='company', trigram='QRS', docs=[['device/level.json', {'level': 2}, 'cache'], *folders])
+
+    def form(mid):
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"{mid}\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="{mid}"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{mid}'", timeout=10000, what=f'the sheet of {mid}')
+        c.until(f"!!document.querySelector('{_AS_OPEN}')", timeout=10000, what='« Affecter… »')
+        c.tap(_AS_OPEN)
+        c.until(f"!!document.querySelector('{_AS_BOX} #asPilots option')", timeout=6000, what='the form')
+
+    form('X-906A')
+    c.eq(c.js(f"[...document.querySelector('{_AS_BOX} [data-as=team]').options].map(o => [o.value, o.textContent])"),
+         [['', 'aucune'], ['A', 'Blue'], ['B', 'Red']], 'the list « Équipe »: none, then the teams by their name', what='teams')
+    c.page.fill(f'{_AS_BOX} [data-as="pilot"]', 'ABC')
+    c.page.fill(f'{_AS_BOX} [data-as="callsign"]', 'RUBIS1')
+    c.page.fill(f'{_AS_BOX} [data-as="date"]', today)
+    c.page.fill(f'{_AS_BOX} [data-as="time"]', '20:00')
+    c.page.select_option(f'{_AS_BOX} [data-as="team"]', 'B')
+    c.shot('N293_390_equipe.png')
+    c.tap(f'{_AS_BOX} [data-as-go]')
+    doc = c.until_doc(P, lambda d: any(x.get('mission') == 'X-906A' for x in d['assignments']), what='the line of X-906A')
+    c.eq(next(x for x in doc['assignments'] if x['mission'] == 'X-906A').get('team'), 'B', 'the line carries team: B', what='team')
+    c.tap(f'{_AS_BOX} [data-as-back]')
+    form('X-907A')
+    c.eq(c.count(f'{_AS_BOX} [data-as=team]'), 0, 'a mission with one team: no list « Équipe »', what='no list')
     c.js(_DW_CLEAR)
