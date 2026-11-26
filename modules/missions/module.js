@@ -56,6 +56,7 @@ export const meta = {
     'reader_view.js', // l'enveloppe et la liseuse de MA mission (SOG-0441, lot T3), à la session « Affectation des missions »
     'drawers.js', 'drawers_view.js',
     'drawers_run.js', // SOG-0617 : le juge des tiroirs (Création), importé par drawers_view.js
+    'planned.js', // SOG-0620 lot 3 : le bloc « Prévu » du pilote (Création), importé par drawers_view.js
     'watch.js', // SOG-0617 : le veilleur de la mission en vol (meta.watch)
     '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js', '../../frame/lib/mission_events.js', // mission_events.js : importé par mission.js (SOG-0620 ; I26)
