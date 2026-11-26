@@ -4327,7 +4327,7 @@ def i63(c):
 # (a refactoring commit lowers it in the same commit) and never goes up. The extraction itself is a commit of its own (:recycle:, no change of behaviour); each owner
 # chooses where to cut. The files already between 1 500 and 3 000 lines are listed by name (BIG_OLD) and may not pass 3 000: any other file stays under 1 500.
 CODE_CEILING = {
-    'modules/fuel/module.js': 11253,
+    'modules/fuel/module.js': 11146,
     'frame/app.js': 6830,
     'modules/missions/editor_view.js': 5673,
     'tools/launch.py': 4833,
