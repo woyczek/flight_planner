@@ -54,6 +54,7 @@ import * as DIR from './direct.js';
 import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ de la route (extrait de resolveRoute)
 import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle ne couvre pas » (extrait)
 import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (extrait)
+import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import {
   copyAndTell,
   copyText
@@ -130,7 +131,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -8833,10 +8834,9 @@ async function loadSimbrief() {
   const s = S,
     id = String(S.ctx.identity.simbrief || '').trim();
   if (!id) return S.ctx.notify(tt(TX.noSimbrief), 'warn');
-  const url = `https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(id) ? 'userid' : 'username'}=${encodeURIComponent(id)}&json=v2`;
   let res;
   try {
-    res = await S.ctx.net.fetch(url);
+    res = await S.ctx.net.fetch(SBF.ofpUrl(id)); // modules/fuel/simbrief_fetch.js (SOG-0677, extrait de ce fichier)
   } catch (e) {
     if (gone(s)) return;
     return S.ctx.notify(tt(TX.sbError, {
@@ -8844,12 +8844,13 @@ async function loadSimbrief() {
     }), 'err');
   }
   if (gone(s)) return;
-  if (res.headers.get('x-sog-offline')) return S.ctx.notify(tt(TX.offline), 'warn');
-  const ofp = res.ok ? await res.json().catch(() => null) : null;
+  const got = await SBF.readAnswer(res, ofp => SH().isSimbriefOfp(ofp));
   if (gone(s)) return;
-  if (!ofp || !SH().isSimbriefOfp(ofp)) return S.ctx.notify(tt(TX.sbError, {
-    e: ofp?.fetch?.status || res.status
+  if (got.offline) return S.ctx.notify(tt(TX.offline), 'warn');
+  if (got.error) return S.ctx.notify(tt(TX.sbError, {
+    e: got.error
   }), 'err');
+  const ofp = got.ofp;
   await S.ctx.data.put(OFP_PATH, ofp, {
     policy: 'cache'
   });
