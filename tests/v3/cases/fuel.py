@@ -12009,3 +12009,18 @@ def f333(c):
                     'the cheapest level of the short flight, under it)', timeout=15000)
     ft = f['level']['ft']
     c.ok(ft % 1000 == 0 and ft <= 25000, ft, 'a level of the parity, under the ceiling')
+    # C. the terrain above the ceiling (a sheet whose ceiling is FL080): no level proposed, and it is said under the Level field
+    sheet['cruise']['ceilingFt'] = 8000
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['level'] = {'ft': 5000, 'auto': True}
+    c.open('fuel', docs=docs, aero_extra={'aerodromes': [{'icao': p['id'], 'name': p['id'] + ' TEST', 'lat': p['lat'], 'lon': p['lon'],
+                                                          'elev': 300} for p in (a, b)], 'cells': {'45': [[0, 3]]}})
+    wait_quote(c)
+    to_step(c, 0)
+    want = 'Relief de la route (MORA 9300 ft) au-dessus du plafond (FL080) : aucun niveau proposé.'
+    c.until("(w) => { const e = document.querySelector('[data-module=fuel] [data-lvlwhy]:not([hidden]) [data-lvlmain]'); return !!e && "
+            "(e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }", want, timeout=15000,
+            what='the terrain above the ceiling, said (never a level under it in silence)')
+    c.js("document.querySelector('[data-module=fuel] input[data-k=fl]').scrollIntoView({block: 'center'})")
+    c.shot(f'F333_{c.design}_390_{c.lang}_overceil.png')
