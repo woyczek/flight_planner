@@ -55,6 +55,7 @@ import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ 
 import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle ne couvre pas » (extrait)
 import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (extrait)
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
+import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
 import {
   copyAndTell,
   copyText
@@ -131,7 +132,7 @@ export const meta = {
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
-    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
+    'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js', 'altn_wx.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -5714,33 +5715,15 @@ async function altnChkDraw(C) {
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
   box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(whyOf(c))}</span>${altnReadHtml(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
 }
-/** SOG-0559 (l'ergonome, choix a) : la ligne d'une météo de dégagement non jugée — sa cause (pas de TAF ; sans date de vol ; arrivée
- *  hors de la validité du TAF ; pas de catégorie à l'heure d'arrivée), puis, quand un METAR existe, son observation « METAR de 14:20Z :
- *  VFR. » (la catégorie de l'observation, jamais celle du jugement : la pastille reste « ? ») ; sans METAR non plus : « ni TAF ni METAR ».
- *  '' pour une lecture en cours ou en échec (le repli le dit, SOG-0527 (2)) et pour une cause hors de ces cas. */
-function altnWxLine(c, id) {
-  if (S.wxBusy || S.wxFail) return '';
-  const m = S.wx?.metar?.[id] || null,
-    st = m ? WX.station(m, null, null) : null,
-    t = +m?.obsTime > 0 ? `${new Date(+m.obsTime * 1000).toISOString().slice(11, 16)}Z` : '',
-    obs = st?.cat && t ? tt(TX.altnWxObs, {
-      t,
-      c: st.cat
-    }) : '',
-    row = {
-      wxNoTime: TX.altnWxNoTime,
-      wxOutside: TX.altnWxOutside,
-      wxNoCat: TX.altnWxNoCat,
-      wxNoTaf: obs ? TX.altnWxNoTaf : TX.altnWxNone,
-      wxNoKey: obs ? TX.altnWxNoTaf : TX.altnWxNone
-    } [c.code];
-  if (!row) return '';
-  const text = tt(row, {
-    ad: id,
-    at: c.v?.at || ''
-  }) + (row === TX.altnWxNone || !obs ? '' : ` ${obs}`);
-  return `<p class="f-muted fu-altnwx" data-altnwx>${esc(text)}</p>`;
-}
+/** SOG-0559 : la ligne d'une météo de dégagement non jugée (modules/fuel/altn_wx.js, SOG-0660 : extrait de ce fichier). */
+const altnWxLine = (c, id) => AWX.wxLine(c, id, {
+  busy: !!(S.wxBusy || S.wxFail),
+  metar: S.wx?.metar?.[id] || null,
+  station: m => WX.station(m, null, null),
+  tt: (row, v) => tt(row, v),
+  TX,
+  esc
+});
 /** SOG-0398 lot 2 : le document local des terrains proposés, pour la Carte (INTEGRATION § 3 ter) : cet appareil seulement (politique
  *  cache), jamais data/, écrit par Carburant seul, avec l'événement fuel-altn-candidates. */
 const ALTN_DOC = 'cache/fuel/altn_candidates.json',
