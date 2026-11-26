@@ -72,6 +72,8 @@ export const TX = {
     'Flughöhe am Anfang der Route ({a}) nicht übernommen: die Berechnung behält die Flughöhe des Flugs ({b}).',
     'Nivel al inicio de la ruta ({a}) no aplicado: el presupuesto mantiene el nivel del vuelo ({b}).'
   ],
+  // SOG-0679 (addendum, le relais) : un arrêt écrit dans la route n'est pas compté dans le temps du devis ; français seul (SOG-0680)
+  stays: ['Non appliqué au devis : la durée des arrêts écrits dans la route (STAY).'],
   notUnderstood: ['Non compris : {l}.', 'Not understood: {l}.', 'Nicht verstanden: {l}.', 'No comprendido: {l}.'],
   unplaced: ['Point non situé : {w} (relèvement et distance) : il n’est pas dans le tracé ni dans le devis.',
     'Point not located: {w} (bearing and distance): it is neither in the track nor in the quote.',
@@ -116,6 +118,7 @@ export function readingPaint(body, reading, flightFt, h) {
   }
   if (R.steps) line('steps', false, h.tt(TX.steps));
   if (Array.isArray(R.speeds) && R.speeds.length) line('speeds', false, h.tt(TX.speeds));
+  if (Array.isArray(R.stays) && R.stays.length) line('stays', false, h.tt(TX.stays));
   if (+R.headLevel > 0 && +flightFt > 0 && Math.round(+R.headLevel / 100) !== Math.round(+flightFt / 100)) line('head', true, h.tt(TX
     .head, {
       a: formatLevel(+R.headLevel),

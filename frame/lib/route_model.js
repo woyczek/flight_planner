@@ -6,7 +6,7 @@
 //   routeModel(text, { dep, arr, known, chain, base, procs, nat }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks,
 //   natDirect, reading } (voir la fonction ; SOG-0679 : reading = { notUnderstood (les mots non compris dans l'ordre du texte, « C/… »
 //   compris), unplaced (les points par relèvement et distance, pas placés), rules ([{ rule: 'VFR' | 'IFR', after: le point qui précède
-//   ou null }]), speeds (les vitesses écrites), headLevel (le niveau du groupe de tête, 0 sans lui), steps (un niveau écrit à un point) } ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
+//   ou null }]), speeds (les vitesses écrites), stays (les arrêts « STAY… » écrits), headLevel (le niveau du groupe de tête, 0 sans lui), steps (un niveau écrit à un point) } ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
 //   jour lues et valides, [{ id, points: [{ id, lat, lon }] }] — aerodb.natTracks() —, null si elles ne le sont pas ; natDirect : les routes
 //   NAT gardées NON dépliées, [{ l, why: 'unread' | 'gone' | 'ends' }]).
 //   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
@@ -68,7 +68,8 @@ export async function routeModel(text, {
     rules = [],
     // SOG-0679 : les points par relèvement et distance (lus, pas placés), les vitesses écrites, le niveau du groupe de tête
     unplaced = [],
-    speeds = [];
+    speeds = [],
+    stays = []; // SOG-0679 (addendum, le relais) : les arrêts écrits (« STAY1/0045 »), leur durée jamais appliquée au devis
   let headLevel = 0;
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
   const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
@@ -270,7 +271,8 @@ export async function routeModel(text, {
           keep: t.id
         });
       }
-    } else if (t.form === 'remark') { // SOG-0679 (addendum) : OAT, GAT, STAY : compris, gardés, rien à dire
+    } else if (t.form === 'remark') { // SOG-0679 (addendum) : OAT, GAT, STAY : compris, gardés ; un arrêt est dit non appliqué
+      if (/^STAY/.test(t.id)) stays.push(t.id);
       tokens.push({
         keep: t.id
       });
@@ -405,7 +407,8 @@ export async function routeModel(text, {
       rules,
       speeds,
       headLevel,
-      steps: points.slice(1, -1).some(p => p.alt_ft > 0)
+      steps: points.slice(1, -1).some(p => p.alt_ft > 0),
+      stays
     },
     tokens,
     badAirways,
