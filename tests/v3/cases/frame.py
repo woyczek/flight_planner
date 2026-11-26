@@ -11081,7 +11081,6 @@ def a269(c):
     L = c.lang
     # a draft in the form: the sheet does not touch it
     c.page.fill('[data-title]', 'Brouillon gardé')
-    c.wait(1200)
     c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
     c.until(f"location.hash === '#signaler?sig={_SG_SLOW}' && !!document.querySelector('[data-sheet-title]')", timeout=15000, what='the sheet of the report')
     c.eq(c.js("document.activeElement === document.querySelector('[data-sheet-title]')"), True, 'the heading of the sheet has the focus', what='focus')
@@ -12825,8 +12824,7 @@ def a400(c):
     c.page.fill('[data-text]', 'b' * 4500)
     c.until("!document.querySelector('[data-xcount]').hidden", timeout=5000, what='the counter appears at 4500')
     c.ok('4500' in norm(c.text('[data-xcount]')) and '5000' in norm(c.text('[data-xcount]')), c.text('[data-xcount]'), 'the counter says « 4500 / 5000 signes »')
-    # a comment on the sheet of a report (the draft is written 800 ms after the last key: waited, as A269 does)
-    c.wait(1200)
+    # a comment on the sheet of a report
     c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
     c.until(f"location.hash === '#signaler?sig={_SG_SLOW}' && !!document.querySelector('[data-cm-text]')", timeout=15000, what='the sheet of the report')
     c.eq(c.attr('[data-cm-text]', 'maxlength'), '5000', 'the comment field cuts at 5000', what='comment field')
@@ -12842,4 +12840,22 @@ def a400(c):
     c.until("document.querySelectorAll('[data-cmlist] li').length === 3", timeout=8000, what='the second comment is listed')
     sent = [p['args'] for p in st['posts'] if p['verb'] == 'commenter']
     c.eq([len(a['text']) for a in sent], [2500, 5000], 'a comment of 5001 signs is written cut at 5000: the page never sends more than the launcher takes', what='5001 cut')
+    c.check_errors()
+
+
+@case('A401', 'A draft typed in the report form is written even when a row of the list is touched at once (SOG-0651): 100 ms after the last key, the sheet opens, no error in the console, and back on the form the title and the text are there whole (the deferred write read the form that the sheet had replaced: error, draft lost)', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0651 (the relay, found in SOG-0647: « Cannot read properties of null (reading 'value') » when a row is touched less than 800 ms after the last key): a typed text is a piece of work, losing it is the worst outcome of a form")
+def a401(c):
+    _sg_open_list(c)
+    c.page.fill('[data-title]', 'Titre tapé vite')
+    c.page.fill('[data-text]', 'Un long texte tapé juste avant de toucher une ligne : il ne doit pas se perdre.')
+    c.wait(100)
+    c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
+    c.until(f"location.hash === '#signaler?sig={_SG_SLOW}' && !!document.querySelector('[data-sheet-title]')", timeout=15000, what='the sheet of the report')
+    c.wait(1200)
+    c.tap('[data-back]')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-title]')", timeout=15000, what='the form again')
+    c.eq(c.js("[document.querySelector('[data-title]').value, document.querySelector('[data-text]').value]"),
+         ['Titre tapé vite', 'Un long texte tapé juste avant de toucher une ligne : il ne doit pas se perdre.'], 'the title and the text typed 100 ms before the touch are back whole', what='draft')
     c.check_errors()

@@ -879,7 +879,8 @@
       saveTimer = 0;
       if (!dirty) return;
       dirty = false;
-      st.draft = withId(draft());
+      // SOG-0651 : le formulaire peut déjà être remplacé (une ligne de la liste touchée aussitôt : l'écran de la fiche a pris sa place) ; le brouillon gardé à chaque frappe (st.draft) est alors ce qui s'écrit
+      if ($('[data-title]') && $('[data-text]')) st.draft = withId(draft());
       return saveStore(c, st);
     };
     const queueDraft = () => {

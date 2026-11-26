@@ -234,6 +234,12 @@ The user, on the published site without a launcher: « pas d'afficheur md pour l
 - **Any link to one of these documents in a Markdown text** (`md()` → `suiteDocLink`: `LICENSE.md`, `CHANGELOG.md`, `VERSION.md`) is rewritten to the same viewer, in the manuals and the tutorials.
 - Noreg A165 (the link, no new tab, the document formatted — heading, tables, no raw `#` or pipes — the way back; red before: the link was the raw file in a tab); A84 accorded. Capture `A165_licence_1280_fr_delivered.png`.
 
+## 26 November 2026 — the draft of the report form survives a touch on a row at once (SOG-0651)
+
+- **Fact** (found in SOG-0647): a row of the list touched less than 800 ms after the last key raised « Cannot read properties of null (reading 'value') » — the screen of the sheet did not open, the typed text was not written. `flushDraft` (the deferred write and the one of the next mount) read the form by `draft()`; the screen of the sheet had already replaced it.
+- **Decision** (the relay: a typed text is a piece of work): `flushDraft` reads the form only if it is still there; otherwise it writes `st.draft`, which every key already keeps (title and text).
+- **Noreg A401**: red before WITHOUT wait (touch 100 ms after the last key); A269 and A400 no longer wait 1 200 ms.
+
 ## 25 November 2026 — a report and a comment take 5 000 signs (SOG-0647)
 
 - **The user**, in recette: « 2000 signes, c'est trop peu pour un vrai bug report ». The bound protects a file written by every pilot's workstation (`organisation/SIGNALEMENTS.json`): Security said YES to **5 000 signs for the text AND the comment**, the same constant on both sides, `COUNT_FROM` at 4 500 (90 %), under three conditions: the reading still CUTS at 5 000 and the writing still REFUSES above (an older report, or one written by hand, never shows more than 5 000), the case checks the equality of the constants and a text of 5 001 signs, and the page (UTF-16 units, `maxlength`) is never above the launcher (Python signs).
