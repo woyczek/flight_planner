@@ -919,8 +919,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.route) d = ED.withRoute(d, e.route); // SOG-0444, Tracé : la route du départ retouchée (avant que les références suivent les lieux)
   if (e.story) d = ED.withStory(d, e.story);
   if (e.risks) d = ED.withRisks(d, e.risks);
-  if (e.flow) d = EF.withFlow(d, e.flow); // SOG-0620 : le déroulé (les événements et leurs heures)
-  if (e.orderMin !== undefined) d = EF.withOrder(d, e.orderMin); // SOG-0620 : « Ordre reçu » du Cadre
+  d = EF.withDeroule(d, e.flow, e.orderMin); // SOG-0620 : le déroulé et « Ordre reçu » du Cadre
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
   if (e.mapWant) d = ED.withMapLook(d, e.mapWant); // SOG-0456 : le fond et la couche de la carte, choisis par l'auteur
   if (e.model !== undefined) d = CAT.withModel(d, e.model); // le modèle posé dans la séance (lot « modèles de mission », décision D)
@@ -1224,7 +1223,8 @@ const FLOW_H = {
   draw: s => draw(s),
   refresh: s => edRefresh(s),
   clear: e => edUndoClear(e),
-  remember: e => edMapRemember(e) // SOG-0620 : « Annuler le geste » rend l'état d'avant (le déroulé est dans l'instantané : edMapSnap)
+  remember: e => edMapRemember(e),
+  said: (s, r) => edSaid(s, r) // SOG-0620 : « Annuler le geste » rend l'état d'avant (edMapSnap) ; la clé dite en clair
 };
 
 /** Vrai sur un module large (la fiche à côté de la carte) : à l'ouverture, le premier groupe de la fiche est déplié ; sur un module
@@ -3995,7 +3995,7 @@ function edDrawerHtml(s, doc) {
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
     ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p data-pvnothing>${esc(s.tt(EDTX.dwPilotNothing))}</p></div>
       <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
-    <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.itDelAnyway : EDTX.dwRemove))}</button></div></section>`;
+    ${FV.switchHtml(s, r)}<div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.itDelAnyway : EDTX.dwRemove))}</button></div></section>`;
 }
 
 /** Une saisie de la fiche d'un tiroir. Une liste (la clé, un lieu, la suite de route) ne joue qu'à son « change » et redessine l'écran ;

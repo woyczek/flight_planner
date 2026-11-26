@@ -407,10 +407,24 @@ export function drawerRowsOf(doc) {
       ...keyOf(p),
       ...emitOf(p.emit_event),
       fallback: numText(p.fallback_delay_min),
-      route: tokens(p.route_order, B.route)
+      route: tokens(p.route_order, B.route),
+      ...extrasOf(p)
     };
   });
 }
+
+/** SOG-0620 lot 4 : un tiroir né d'un événement garde son identifiant (`event_id`, EV-n) — le choix « Annoncé au brief » ⇄ « Caché jusqu'à un
+ *  stimulus » le lui rend — et porte ses équipes (`teams`, lettres A à Y) ; des champs de la ligne seulement quand le fichier les écrit (une
+ *  ligne d'avant reste telle quelle). */
+const EVENT_ID = /^EV-\d{1,3}$/;
+const extrasOf = p => ({
+  ...(typeof p.event_id === 'string' && EVENT_ID.test(p.event_id) ? {
+    eventId: p.event_id
+  } : {}),
+  ...(Array.isArray(p.teams) && p.teams.some(t => /^[A-Y]$/.test(String(t))) ? {
+    teams: [...new Set(p.teams.map(t => String(t)).filter(t => /^[A-Y]$/.test(t)))].sort()
+  } : {})
+});
 
 /** Le message qu'une partie envoie en s'ouvrant, en champs : { emit (l'identifiant), emitTo (les destinataires, séparés par des
  *  virgules) } — '' pour ce qui n'est pas un mot nu. */
@@ -648,7 +662,7 @@ function putKey(o, r, diff, was = null) {
 /** Les champs d'une ligne qui se comparent (une liste par sa forme écrite). */
 const FIELDS = ['title', 'said', 'message', 'brief', 'key', 'point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius',
   'arrSpeed',
-  'arrGround', 'stops', 'rule', 'steps', 'event', 'emit', 'emitTo', 'fallback', 'route'
+  'arrGround', 'stops', 'rule', 'steps', 'event', 'emit', 'emitTo', 'fallback', 'route', 'eventId', 'teams'
 ];
 const KEY_OF = ['point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stops', 'rule', 'steps',
   'event'
@@ -684,6 +698,17 @@ export function withDrawerRows(doc, rows) {
       if (diff.includes('emit') || diff.includes('emitTo')) putEmit(o, r);
       // l'heure de repli saisie s'écrit quelle que soit la clé (withKey la vide pour une clé qui ne regarde pas l'avion)
       if (diff.includes('fallback')) putNumber(o, 'fallback_delay_min', r.fallback, 0, B.delayMin, true);
+      if (diff.includes('eventId')) {
+        if (EVENT_ID.test(r.eventId || '')) o.event_id = r.eventId;
+        else delete o.event_id;
+      }
+      if (diff.includes('teams')) {
+        const t = extrasOf({
+          teams: r.teams
+        }).teams;
+        if (t) o.teams = t;
+        else delete o.teams;
+      }
       if (diff.includes('route')) {
         const route = routeFrom(r.route, o.route_order, B.route);
         if (route.length) o.route_order = route;
@@ -867,6 +892,8 @@ export function drawersTodo(doc) {
     });
     else if (x.keyWhy && x.keyWhy !== 'several') add('keyUnread');
     else if (['zone', 'object', 'arrival', 'condition'].includes(x.key.kind) && x.key.fallbackMin === null) add('noFallback');
+    else if (row?.eventId && !row.fallback) add(
+      'noFallback'); // SOG-0620 lot 4 : un tiroir né d'un événement dont l'heure prévue n'était pas connue
     if (!x.message) add('noMessage');
     if (!x.brief) add('noBrief');
     if (x.routeUnknown) add('routeUnknown');

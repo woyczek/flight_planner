@@ -34,9 +34,14 @@
 //     lui-même ni un événement qui en dépend (un cycle n'est jamais proposé) ; 'point' : les lieux de la mission (placesOf).
 //   teamLetters(doc) → [{ letter, name }] : les équipes de la mission, A à Y.
 //   orderOf(doc) → les minutes avant le décollage ou '' ; orderStorable(doc) ; withOrder(doc, n) → timeline.order_offset_min = −n (effacé si n est vide).
+//   dependentCount(doc, entries, id) → combien d'événements dépendent de celui-ci (la chaîne du lecteur, sinon les directs).
+//   toDrawer(doc, entries, drawers, id) → { entries, drawers, letter } : l'événement `id` devient un TIROIR (« Caché jusqu'à un stimulus ») ou null
+//     (inconnu, ou douze tiroirs : l'appelant le dit) ; toEvent(doc, entries, drawers, letter) → { entries, drawers, id } : le tiroir né d'un
+//     événement (`eventId`) redevient un événement ou null. Purs sur leurs entrées (copiées), ne lèvent jamais.
 //   mirror(entry) → le miroir `at` d'une ligne ('' quand l'heure n'est pas lue).
 import * as MS from '../../frame/lib/mission.js';
 import * as ED from './editor.js';
+import * as DR from './editor_drawers.js'; // toDrawer / toEvent : les lignes de tiroir (blankDrawer, keyed)
 
 export const ID_RE = /^EV-\d{1,3}$/;
 export const OFFSET = Object.freeze([-240, 1440]);
@@ -420,4 +425,132 @@ export function withOrder(doc, n) {
   if (Object.keys(tl).length) out.timeline = tl;
   else delete out.timeline;
   return out;
+}
+
+/** Combien d'événements dépendent de celui-ci : ceux dont la chaîne de repères y mène (MS.eventDependents), sinon les directs. */
+export function dependentCount(doc, entries, id) {
+  try {
+    const list = typeof MS.eventDependents === 'function' ? MS.eventDependents(doc, id) : null;
+    if (Array.isArray(list)) return list.length;
+  } catch {
+    /* les directs */
+  }
+  return (Array.isArray(entries) ? entries : []).filter(e => e && e.refKind === 'event' && e.refId === id).length;
+}
+
+/** La clé que propose un lieu à un tiroir né d'un événement : un passage par ce lieu — une zone (clé « zone »), un objet (« objet »), l'arrivée
+ *  (« arrivée »), un autre point (« heure » après son passage, sans délai) ; sans lieu, le geste du pilote seul. */
+function keyFor(row, place, places) {
+  if (!place) return DR.keyed(row, 'hand', places);
+  if (place.kind === 'zone') return {
+    ...DR.keyed(row, 'zone', places),
+    zone: place.id
+  };
+  if (place.kind === 'object') return {
+    ...DR.keyed(row, 'object', places),
+    object: place.id
+  };
+  if (place.kind === 'arr') return DR.keyed(row, 'arrival', places);
+  return {
+    ...DR.keyed(row, 'time', places),
+    point: place.kind === 'dep' ? 'ORIGIN' : place.id,
+    delay: '0'
+  };
+}
+
+export function toDrawer(doc, entries, drawers, id) {
+  try {
+    const flow = (Array.isArray(entries) ? entries : []).map(e => ({
+        ...e
+      })),
+      n = flow.findIndex(e => e && e.id === id),
+      rows = (Array.isArray(drawers) ? drawers : []).map(r => structuredClone(r));
+    if (n < 0 || !ID_RE.test(id)) return null;
+    const ev = flow[n],
+      blank = DR.blankDrawer(rows, doc);
+    if (!blank) return null;
+    const plan = plannedOf(doc).get(id),
+      fb = Number.isFinite(plan) ? Math.max(0, Math.round(plan + (ev.late || 0))) : null,
+      places = ED.placesOf(doc),
+      place = ev.place ? places.find(p => p.id && p.id.toUpperCase() === ev.place) : null,
+      row = {
+        ...keyFor(blank, place, places),
+        title: ED.cut(ev.title || '', 120),
+        message: ED.cut(ev.text || '', 2000),
+        eventId: id,
+        fallback: fb === null ? '' : String(fb),
+        ...(ev.teams.length ? {
+          teams: [...ev.teams]
+        } : {})
+      },
+      // à sa place par l'heure de repli : avant le premier tiroir dont le repli est plus tard (les tiroirs s'attendent dans l'ordre du fichier)
+      later = fb === null ? -1 : rows.findIndex(r => r.fallback !== '' && Number.isFinite(Number(r.fallback)) && Number(r.fallback) > fb),
+      at = later < 0 ? rows.length : later;
+    rows.splice(at, 0, row);
+    flow.splice(n, 1);
+    return {
+      entries: flow.map(e => e.refKind === 'event' && e.refId === id ? {
+        ...e,
+        refKind: 'drawer',
+        refId: blank.id
+      } : e),
+      drawers: rows,
+      letter: blank.id
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function toEvent(doc, entries, drawers, letter) {
+  try {
+    const rows = (Array.isArray(drawers) ? drawers : []).map(r => structuredClone(r)),
+      k = rows.findIndex(r => r.id === letter && ID_RE.test(r.eventId || '')),
+      flow = (Array.isArray(entries) ? entries : []).map(e => ({
+        ...e
+      }));
+    if (k < 0 || flow.length >= ED.EVENTS_MAX) return null;
+    const r = rows[k],
+      id = flow.some(e => e.id === r.eventId) || ED.eventsRawOf(doc).some(e => e.id === r.eventId) ? nextEventId(doc, flow) : r.eventId,
+      place = r.key === 'zone' ? r.zone : r.key === 'object' ? r.object : r.key === 'time' && !['ORIGIN', 'DEPART'].includes(String(r.point)
+        .toUpperCase()) ? r.point :
+      r.key === 'arrival' && r.arrPoint !== 'DESTINATION' ? r.arrPoint : '',
+      off = r.fallback !== '' && Number.isFinite(Number(r.fallback)) ? int(r.fallback, OFFSET) : null;
+    if (!id) return null;
+    rows.splice(k, 1);
+    flow.push({
+      i: -1,
+      id,
+      title: ED.cut(r.title || '', TITLE_MAX),
+      text: ED.cut(String(r.message || '').replace(/\s+/g, ' '), TEXT_MAX),
+      place: String(place || '').toUpperCase().slice(0, 40),
+      teams: teamsOk(r.teams),
+      refKind: 'takeoff',
+      refId: '',
+      offset: off,
+      early: 0,
+      late: 0,
+      imposed: false,
+      legacy: false,
+      at: ''
+    });
+    return {
+      entries: flow.map(e => e.refKind === 'drawer' && e.refId === letter ? {
+        ...e,
+        refKind: 'event',
+        refId: id
+      } : e),
+      drawers: rows,
+      id
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Le document avec le déroulé de la séance : ses événements (`entries`, quand la séance les a lus) et « Ordre reçu » (`order`, quand elle l'a retouché) ;
+ *  ni l'un ni l'autre : le document tel quel. */
+export function withDeroule(doc, entries, order) {
+  const d = Array.isArray(entries) ? withFlow(doc, entries) : doc;
+  return order === undefined ? d : withOrder(d, order);
 }

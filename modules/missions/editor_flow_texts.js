@@ -101,5 +101,10 @@ export const FTX = {
     'La hora de recepción de la orden no está dada: se ajusta en el Marco.'
   ],
   fsOpenCadre: ['Ouvrir le Cadre', 'Open the Cadre', 'Rahmen öffnen', 'Abrir el Marco'],
+  // SOG-0620 lot 4 (français seulement, SOG-0680) : le choix « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus »
+  fsShown: ['Annoncé au brief'],
+  fsHidden: ['Caché jusqu\'à un stimulus'],
+  fsDep1: ['1 événement en dépend : il sera caché avec lui.'],
+  fsDepN: ['{n} événements en dépendent : ils seront cachés avec lui.'],
   fsDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
 };

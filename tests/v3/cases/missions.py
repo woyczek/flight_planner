@@ -17603,3 +17603,86 @@ def n293(c):
     form('X-907A')
     c.eq(c.count(f'{_AS_BOX} [data-as=team]'), 0, 'a mission with one team: no list « Équipe »', what='no list')
     c.js(_DW_CLEAR)
+
+
+# ---- SOG-0620 lot 4 : le choix « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus ». Deux cas (N294, N295) ; ils ne jouent pas avant que le lecteur de V3 Frame
+# (readEvents, plannedMin, eventDependents) soit sur la branche. Missions inventées.
+_SW_DOC = _ED_FULL + """phases:
+  - { id: B, title: Zone, trigger_zone: ZONE-1, fallback_delay_min: 90, message: La cible est plus au nord., brief: Affinez la recherche. }
+  - { id: C, title: Changement de zone, trigger_zone: ZONE-1, fallback_delay_min: 120, message: Nouvelle zone., brief: Rejoignez-la. }
+timeline:
+  events:
+    - { at: H+45, id: EV-1, title: Rendez-vous au point un, text: Orbite gauche., place: PT1, teams: [A], ref: takeoff, offset_min: 45, tol_early_min: 10, tol_late_min: 10 }
+    - { at: EV-1+10, id: EV-2, title: Retour groupé, ref: 'event:EV-1', offset_min: 10 }
+"""
+# twelve drawers (B to M); the drawer C was an event (EV-7); one event (EV-1) that cannot become a drawer
+_SW_TWELVE = _ED_FULL + 'phases:\n' + ''.join(
+    f"  - {{ id: {l}, title: Tiroir {l}, fallback_delay_min: {30 + 10 * k}{', event_id: EV-7' if l == 'C' else ''} }}\n" for k, l in enumerate('BCDEFGHIJKLM')) + """timeline:
+  events:
+    - { at: H+45, id: EV-1, title: Rendez-vous au point un, place: PT1, ref: takeoff, offset_min: 45 }
+"""
+
+
+@case('N294', 'Missions › the workshop, SOG-0620 lot 4: an event with one dependent is switched to « Caché jusqu\'à un stimulus » — the sentence « 1 événement en dépend : '
+      'il sera caché avec lui. » is shown BEFORE the switch; one tap makes the drawer (a free letter, `event_id`, the fallback = planned + late tolerance, in its place by that '
+      'time), the dependent\'s ref becomes `drawer:<letter>`, no EV-1 stays in timeline.events; « Annuler le geste » gives the event back', 'N', tags=('missions',),
+      designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 4, the user\'s question « Comment crée-t-on un évènement qui devient tiroir ? »; cannot play before the reader of V3 Frame is on the branch')
+def n294(c):
+    _flow_open(c, _SW_DOC)
+    c.tap(f'{E} [data-flowrows] .fl-row[data-kind=event]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-flowchoice]')", what='the choice on the sheet of the event')
+    c.eq(norm(c.text(f'{E} [data-flowsheet] [data-flowdeps]')), '1 événement en dépend : il sera caché avec lui.', 'the sentence, before the switch', what='dependents')
+    c.shot('N294_390_avant.png')
+    c.tap(f'{E} [data-flowsheet] [data-flowchoice] input[value="1"]')
+    c.until(f"!!document.querySelector('{E} [data-drawer=\"D\"]')", what='the sheet of the new drawer D')
+    c.eq(c.js(f"document.querySelector('{E} [data-drawer=\"D\"] [data-flowchoice] input[value=\"1\"]').checked"), True, 'the drawer sheet offers the choice, « Caché » checked', what='choice')
+    c.shot('N294_390_tiroir.png')
+    c.tap(f'{_EDHIST} [data-do="edmapundo"]')
+    c.until(f"!document.querySelector('{E} [data-drawer=\"D\"]')", what='the drawer gone: the switch is undone in one step')
+    _tab(c, 'mission')
+    c.eq(c.count(f'{E} [data-flowrows] .fl-row[data-kind=event]'), 2, '↶ gives the event back', what='events')
+    c.tap(f'{E} [data-flowrows] .fl-row[data-kind=event]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-flowchoice]')", what='the sheet again')
+    c.tap(f'{E} [data-flowsheet] [data-flowchoice] input[value="1"]')
+    c.until(f"!!document.querySelector('{E} [data-drawer=\"D\"]')", what='the drawer D again')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    d = t[t.find('id: D'):][:400]
+    c.ok('event_id: EV-1' in d and 'fallback_delay_min: 55' in d and t.find('id: D') < t.find('id: B'), d,
+         'the drawer D: event_id EV-1, fallback 45 + 10 = 55, written before B (the first whose fallback is later)')
+    c.ok('ref: drawer:D' in t and 'event:EV-1' not in t and t.count('EV-1') == 1, t[t.find('timeline'):][:500],
+         'the dependent follows the drawer (ref: drawer:D), no EV-1 is left in timeline.events')
+    c.js(_REG_CLEAR)
+
+
+@case('N295', 'Missions › the workshop, SOG-0620 lot 4: with twelve drawers the switch to « Caché » is refused with « Douze tiroirs au plus. » and nothing changes; a drawer '
+      'that came from an event (`event_id`) switches back to « Annoncé au brief » and the event returns under its own EV-n', 'N', tags=('missions',),
+      designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 4: twelve drawers at most; the reverse switch only for a drawer that has an event_id')
+def n295(c):
+    _flow_open(c, _SW_TWELVE)
+    c.tap(f'{E} [data-flowrows] .fl-row[data-kind=event]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-flowchoice]')", what='the choice on the sheet of the event')
+    n0 = len(c.note_log())
+    c.tap(f'{E} [data-flowsheet] [data-flowchoice] input[value="1"]')
+    c.until(f"window.__notes.length > {n0}", timeout=6000, what='the notification')
+    c.eq(norm(c.note_log()[-1]), 'Douze tiroirs au plus.', 'the refusal, word for word', what='refusal')
+    c.eq(c.count(f'{E} [data-flowrows] .fl-row[data-kind=event]'), 1, 'the event is still an event; nothing changed', what='events')
+    c.shot('N295_390_refus.png')
+    _tab(c, 'itin')
+    c.tap(f'{E} [data-do="edsel"][data-sel="D"]')
+    c.until(f"!!document.querySelector('{E} [data-drawer=\"D\"]')", what='the sheet of the drawer D')
+    c.eq(c.count(f'{E} [data-drawer="D"] [data-flowchoice]'), 0, 'a drawer without event_id does not offer the choice', what='no choice')
+    c.tap(f'{E} [data-do="edsel"][data-sel="C"]')
+    c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-flowchoice]')", what='the choice on the drawer C (it has an event_id)')
+    c.tap(f'{E} [data-drawer="C"] [data-flowchoice] input[value="0"]')
+    _tab(c, 'mission')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 2", what='the event is back')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('id: EV-7' in t and 'event_id' not in t and t.count('fallback_delay_min') == 11, t[t.find('timeline'):][:400],
+         'the drawer left phases (eleven remain, no event_id) and the event came back as EV-7')
+    c.js(_REG_CLEAR)

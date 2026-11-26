@@ -444,6 +444,12 @@ timeline:
   file that is only opened and saved keeps the same keys and values; the first edit gives it its `id`.
 - **How the workshop names a reference**: never by an event's identifier — another event by the NAME of its place when it has one, else by its
   title cut at fourteen signs (« Rendez-vous a… »); a drawer by its rank (« T2 »); a point by its name; the order as « ordre ».
+- **An event that became a drawer** (the switch « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus » of the workshop): the drawer keeps the event's
+  name in the optional key `phases[i].event_id` (`^EV-\d{1,3}$`); `title`, `message` (the event's instruction) and `teams` came over,
+  `fallback_delay_min` is the planned minutes plus the late tolerance (absent when the planned time is unknown), the key is a passage through the
+  event's place (a zone, an object, the arrival, or `trigger_point` with no delay) or the pilot's gesture alone; the `ref: event:<EV-n>` of its
+  dependents became `ref: drawer:<letter>` (their `at` mirror rewritten). The reader ignores `event_id`; only a drawer that has it can be switched
+  back (the event returns under that name, or a free EV-n). A drawer without it is never offered the switch.
 - **An event under a drawer** (`ref: drawer:<letter>`) is hidden with it: the pilot sees it once the drawer is read; the workshop sorts it right
   under its drawer.
 - **Cycles and dead references**: an event never proposes itself or one of its dependents as reference; a reference to an unknown event, drawer

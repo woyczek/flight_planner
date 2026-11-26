@@ -10,12 +10,18 @@
 // passe par les gestes de l'atelier — `h.draw` (le dessin, qui garde le brouillon), `h.refresh` (la frappe : sur place, le brouillon
 // suit), `h.remember` (l'instantané d'avant un choix, un ajout, un retrait : « Annuler le geste » le rend), `h.clear` (une saisie vide
 // l'historique, la règle de l'atelier) — que editor_view.js donne : h = { doc(e), shown(e, rows), drawers(e), draw(s), refresh(s), clear(e),
-// remember(e) }.
+// remember(e), said(s, row) } (said : la clé du tiroir dite en clair, `trigger`).
+//
+// Le choix « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus » (SOG-0620, lot 4) : sur la fiche d'un événement et sur celle d'un tiroir né d'un événement
+// (`event_id`) ; editor_flow.js toDrawer / toEvent font le calcul, ici l'état de la séance (e.flow, e.drawers, e.sel) et « Annuler le geste ».
 //
 // API : flowHtml(s, h) → le bloc (une chaîne) ; input(s, ev, h) → une saisie ou un choix de la fiche (data-k="edflow") ; act(s, b, h) → vrai
 //   quand le geste est celui du déroulé (edflowsel, edflowadd, edflowdel).
 import * as ED from './editor.js';
 import * as EF from './editor_flow.js';
+import {
+  EDTX
+} from './editor_texts.js'; // dwMax : « Douze tiroirs au plus. »
 import {
   FTX
 } from './editor_flow_texts.js';
@@ -173,6 +179,7 @@ function sheetHtml(s, h) {
     num = (f, v, [lo, hi], label) => `<input type="number" inputmode="numeric" data-k="edflow" data-f="${f}" value="${Number.isInteger(v) ? v : ''}" min="${lo}" max="${hi}" step="1" aria-label="${esc(label)}">`,
     n = e.flowSel;
   return `<div class="fl-sheet" data-flowsheet="${n}"><span class="fl-kind">${esc(s.tt(FTX.flEvent))}</span><span class="f-muted">${esc(s.tt(FTX.fsKind))}</span>
+    ${e.veil ? '' : choiceHtml(s, false, row.id ? EF.dependentCount(doc, e.flow, row.id) : 0, '')}
     <label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsTitle))}</span><input data-k="edflow" data-f="title" value="${esc(row.title)}" maxlength="${EF.TITLE_MAX}" autocomplete="off"></label>
     <label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsText))}</span><input data-k="edflow" data-f="text" value="${esc(row.text)}" maxlength="${EF.TEXT_MAX}" autocomplete="off"></label>
     <div class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsWhen))}</span><div class="fl-inline">
@@ -187,6 +194,68 @@ function sheetHtml(s, h) {
     <div class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsTeams))}</span>${teams.length ? `<div class="fl-teams">${teams.map(x => `<label><input type="checkbox" data-k="edflow" data-f="team" data-l="${x.letter}"${row.teams.includes(x.letter) ? ' checked' : ''}><span>${esc(x.name)}</span></label>`).join('')}</div><span class="f-muted">${esc(s.tt(FTX.fsTeamsAll))}</span>` : `<span class="f-muted">${esc(s.tt(FTX.fsNoTeams))}</span>`}</div>
     <p class="fl-read f-muted" data-flowread>${esc(readLine(s, row, c))}</p>
     <div class="f-row"><button type="button" class="f-linkbtn" data-do="edflowdel" data-n="${n}">${esc(s.tt(FTX.fsDel))}</button></div></div>`;
+}
+
+/** Le choix « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus » (une fiche d'événement : annoncé ; une fiche de tiroir né d'un événement : caché), et,
+ *  quand des événements en dépendent, la phrase qui le dit AVANT le geste (jamais une question : un geste, annulable). */
+function choiceHtml(s, hidden, deps, letter) {
+  const radio = (v, label) => `<label class="fl-inline"><input type="radio" name="flowhide${esc(letter)}" data-k="edflow" data-f="hide" data-letter="${esc(letter)}" value="${v}"${hidden === !!v ? ' checked' : ''}><span>${esc(s.tt(label))}</span></label>`;
+  return `<div class="f-field" role="radiogroup" data-flowchoice>${radio(0, FTX.fsShown)}${radio(1, FTX.fsHidden)}${deps > 0 && !hidden ? `<span class="f-muted" data-flowdeps>${esc(s.tt(deps === 1 ? FTX.fsDep1 : FTX.fsDepN, { n: deps }))}</span>` : ''}</div>`;
+}
+
+/** Le choix sur la fiche d'un tiroir né d'un événement (editor_view.js l'appelle ; '' pour tout autre tiroir ou dans l'atelier voilé). */
+export function switchHtml(s, row, h) {
+  return row?.eventId && !s.ed.veil ? choiceHtml(s, true, 0, row.id) : '';
+}
+
+/** Le choix touché : un événement devient un tiroir (« Caché »), un tiroir né d'un événement redevient un événement (« Annoncé »). Un seul geste,
+ *  « Annuler le geste » le défait ; douze tiroirs : la phrase d'avant, rien ne change. */
+function toggle(s, t, h) {
+  const e = s.ed,
+    letter = String(t.dataset.letter || ''),
+    hide = t.value === '1';
+  if (e.veil) return;
+  if (!e.flow) e.flow = EF.read(e.base);
+  const doc = h.doc(e),
+    rows = h.drawers(e);
+  if (hide && !letter) {
+    const row = e.flow[e.flowSel];
+    if (!row) return;
+    if (!row.id) row.id = EF.nextEventId(doc, e.flow); // un événement de la V2 reçoit son identifiant : le tiroir le garde (`event_id`)
+    const res = EF.toDrawer(h.doc(e), e.flow, rows, row.id);
+    if (!res) {
+      s.ctx.notify?.(s.tt(EDTX.dwMax), 'info');
+      return h.draw(s);
+    }
+    h.remember(e);
+    Object.assign(e, {
+      flow: res.entries,
+      drawers: res.drawers,
+      flowSel: -1,
+      sel: res.letter,
+      tab: 'itin',
+      placeEdit: -1,
+      mapSel: -1,
+      itAt: '',
+      drawerAsk: '',
+      dopen: {},
+      kinds: ''
+    });
+    const made = e.drawers.find(r => r.id === res.letter);
+    if (made && h.said) made.said = h.said(s, made);
+  } else if (!hide && letter) {
+    const res = EF.toEvent(doc, e.flow, rows, letter);
+    if (!res) return h.draw(s);
+    h.remember(e);
+    Object.assign(e, {
+      flow: res.entries,
+      drawers: res.drawers,
+      flowSel: res.entries.length - 1,
+      sel: 'start',
+      tab: 'mission'
+    });
+  } else return;
+  h.draw(s);
 }
 
 export function flowHtml(s, h) {
@@ -220,6 +289,7 @@ export function input(s, ev, h) {
     t = ev.target,
     f = t?.dataset?.f,
     row = e.flow?.[e.flowSel];
+  if (f === 'hide') return ev.type === 'change' || t.type === 'radio' ? toggle(s, t, h) : undefined;
   if (f === 'order') { // « Ordre reçu » du Cadre : timeline.order_offset_min = −n ; vide, la clé est effacée
     const v = String(t.value ?? '').trim(),
       n = Number(v);
