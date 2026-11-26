@@ -1,0 +1,5 @@
+{
+  "cycle": "2026-11-26",
+  "workers": 3,
+  "france_regions": ["FRANCE", "RUN", "CAR-SAM-NAM", "PAC-P", "PAC-N"]
+}

@@ -23175,3 +23175,150 @@ def k668(c):
         c.eq(plain_calls, 1, 'a plain request without an alternative still gets its fallback proposals (the contract of before)', what='plain request')
         c.eq((counted, [r['valid'] for r in scan['levels']], [r['fl'] for r in scan['levels']]), ([], [False, False, False], [350, 330, 310]), 'the level scan is the head route ALONE: three levels without a route, no fallback proposal at any of them (5 to 16 s each), the same verdicts', what='level scan')
         c.ok(plain['primary'].get('ok') is False, str(plain['primary'].get('error'))[:120], 'the flight has no route (the base of the case)')
+@case('K591', 'Swedish local archive selection keeps procedure/AD sources under hashed filenames and excludes unrelated entries', 'K', static=True,
+      tags=('procedure-readers', 'local-corpus'), rule='Synthetic archive only: no PDF parser or network, no archive path becomes a filesystem destination')
+def k591(c):
+    import tempfile
+    from pathlib import Path
+    from zipfile import ZipFile
+    _reader_modules()
+    from proc_local_corpus import sweden_groups
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        archive = root/'source.zip'
+        with ZipFile(archive, 'w') as z:
+            z.writestr('documents/Root/SWEDEN/Charts/AD/ESZY/6. SID and STAR/../source.pdf', b'%PDF-fixture')
+            z.writestr('unrelated.pdf', b'%PDF-not-selected')
+        groups = sweden_groups(archive, root/'out')
+        files = list(groups['ESZY'].values())
+        c.eq(len(files), 1, 'only selected national chart families are copied', what='selection')
+        c.ok(files[0]['path'].is_relative_to(root/'out/se-raw/ESZY') and '..' not in files[0]['path'].name, str(files), 'archive names are metadata; a hash names the local file')
+
+
+@case('K596', 'Roadmap coordinator isolates stage failures and never installs data or runs regression', 'K', static=True,
+      tags=('procedure-readers', 'fr-national'), rule='Synthetic orchestration seam only; real national/local build functions are replaced, stage ordering/report persistence and failure continuation are exercised')
+def k596(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from proc_roadmap import run
+    calls = []
+    def national(cycle, out, workers, region):
+        calls.append(region)
+        if region == 'RUN':
+            raise OSError('source unavailable')
+        return {'results': {'LFZT': {'records': 4}}}
+    def foreign(out, **kwargs):
+        calls.append('foreign')
+        return {'results': {}}
+    with tempfile.TemporaryDirectory() as tmp:
+        r = run({'cycle': '2026-11-26', 'france_regions': ['FRANCE', 'RUN', 'PAC-P'], 'foreign': {'uk': 'fixture'}},
+                tmp, national_run=national, local_run=foreign)
+        c.eq(calls, ['FRANCE', 'RUN', 'PAC-P', 'foreign'], 'one unavailable region does not prevent later countries', what='stage order')
+        c.eq((r['stages']['RUN']['state'], r['installed'], r['regression_run']), ('failed', False, False), 'a build report never claims installation or test success', what='failure and scope')
+        c.eq(json.loads((Path(tmp)/'roadmap-report.json').read_text()), r, 'the last completed state survives process exit', what='durable report')
+
+
+@case('K610', 'Replay snapshots retain individual PDFs and relative source paths without moving the originals', 'K', static=True,
+      tags=('procedure-readers', 'local-replay'), rule='Synthetic bytes and archive entries; hashed names, immutable inputs separated from mutable rows, no PDF dependency or network')
+def k610(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    from zipfile import ZipFile
+    _reader_modules()
+    from proc_replay import prepare, verify
+    with tempfile.TemporaryDirectory() as folder:
+        base = Path(folder)
+        work = base/'build'
+        (work/'raw').mkdir(parents=True)
+        (work/'raw/chart.pdf').write_bytes(b'%PDF-1.4 synthetic input')
+        (work/'rows').mkdir()
+        (work/'rows/cache.json').write_text('{}')
+        with ZipFile(base/'source.zip', 'w') as archive:
+            archive.writestr('AD/chart.pdf', b'%PDF-1.4 first')
+            archive.writestr('../../outside.pdf', b'%PDF-1.4 second')
+        cfg = base/'config.json'
+        cfg.write_text(json.dumps({'cycle': '2026-11-26', 'france_regions': [], 'foreign': {'sweden': 'source.zip'}}))
+        local = base/'local'
+        manifest = prepare(cfg, work, local)
+        c.eq(verify(local)['verified_inputs'], 6, 'chart, archive, two individual PDFs, publication context and configuration are immutable', what='input count')
+        c.eq(manifest['counts']['.pdf'], 3, 'archive PDFs also exist individually', what='PDF count')
+        extracted = sorted((local/'sources/sweden/pdfs').glob('*.pdf'))
+        c.eq({p.read_bytes() for p in extracted}, {b'%PDF-1.4 first', b'%PDF-1.4 second'}, 'member names never become destination paths', what='archive contents')
+        c.ok(all(re.fullmatch(r'[0-9a-f]{24}\.pdf', p.name) for p in extracted) and not (base/'outside.pdf').exists(), str(extracted), 'even a traversal member is retained under a safe generated filename')
+        saved = json.loads((local/'replay-config.json').read_text())
+        c.eq(saved['foreign']['sweden'], 'sources/sweden/AIP_OFFLINE.zip', 'the snapshot does not depend on the original absolute path', what='relative archive')
+        c.ok('work/rows/cache.json' not in manifest['files'] and (work/'raw/chart.pdf').exists() and (base/'source.zip').exists(), str(manifest), 'derived rows are mutable; original inputs remain in place')
+
+
+@case('K611', 'Replay verifies immutable bytes and refuses missing, changed or escaping inputs', 'K', static=True,
+      tags=('procedure-readers', 'local-replay'), rule='Synthetic files only; corruption, deletion, parent escape and changed input under an existing snapshot are explicit failures')
+def k611(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    _reader_modules()
+    from proc_replay import prepare, verify, write
+    with tempfile.TemporaryDirectory() as folder:
+        base = Path(folder)
+        work = base/'build'
+        (work/'raw').mkdir(parents=True)
+        source = work/'raw/chart.pdf'
+        source.write_bytes(b'%PDF-original')
+        cfg = base/'config.json'
+        cfg.write_text(json.dumps({'cycle': '2026-11-26', 'france_regions': []}))
+        local = base/'local'
+        manifest = prepare(cfg, work, local)
+        target = local/'work/raw/chart.pdf'
+        for mutation in ('changed', 'missing', 'escape'):
+            target.write_bytes(b'%PDF-changed!' if mutation == 'changed' else b'%PDF-original')
+            changed = json.loads(json.dumps(manifest))
+            if mutation == 'missing':
+                target.unlink()
+            elif mutation == 'escape':
+                changed['files']['../outside.pdf'] = {'sha256': '0'*64, 'bytes': 0}
+            write(local/'inputs-manifest.json', changed)
+            refused = False
+            try: verify(local)
+            except ValueError: refused = True
+            c.eq(refused, True, 'modified or escaped input cannot be a valid replay', what=mutation)
+        target.write_bytes(b'%PDF-original')
+        source.write_bytes(b'%PDF-new-source')
+        refused = False
+        try: prepare(cfg, work, local)
+        except ValueError: refused = True
+        c.eq(refused, True, 'a different source revision requires a distinct snapshot root', what='snapshot revision')
+
+
+@case('K612', 'Offline national replay uses the saved regional publication and never rediscovers it online', 'K', static=True,
+      tags=('procedure-readers', 'local-replay'), rule='Synthetic cached menu and empty AD2, no PDF; wrong disc/region refused, coordinator injects the acquisition refusal into its national stages')
+def k612(c):
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import proc_national as N
+    import proc_roadmap as M
+    from proc_replay import offline_get
+    url = N.S.eaip_url('2026-11-26')
+    with tempfile.TemporaryDirectory() as folder:
+        out = Path(folder)
+        (out/'raw/LFZT').mkdir(parents=True)
+        (out/'raw/FR-menu-fr-FR.html').write_text('<a href="FR-AD-2.LFZT-fr-FR.html">LFZT</a>')
+        (out/'raw/LFZT'/N.S.page_name('LFZT')).write_text('<p>No chart links in this synthetic boundary fixture.</p>')
+        with patch.object(N.S, 'region_eaip', side_effect=AssertionError('live discovery forbidden')):
+            result = N.run('2026-11-26', out, workers=1, get=offline_get, resolve=lambda name: None, publication_url=url)
+        c.eq((result['source_url'], result['selected_aerodromes'], result['results']['LFZT']['records']), (url, ['LFZT'], 0), 'the saved publication and cached source are sufficient', what='cached build')
+        for bad in (url.replace('/FRANCE/', '/RUN/'), url.replace('eAIP_26_NOV_2026', 'eAIP_29_OCT_2026')):
+            refused = False
+            try: N.run('2026-11-26', out, publication_url=bad, get=offline_get)
+            except ValueError: refused = True
+            c.eq(refused, True, 'saved context must belong to the requested publication disc and region', what=bad)
+        calls = []
+        def national(cycle, output, **options):
+            calls.append((options['publication_url'], options['get'] is offline_get))
+            return {'results': {}}
+        M.run({'cycle': '2026-11-26', 'france_regions': ['FRANCE'], 'publications': {'FRANCE': url}}, out/'coordinator', offline=True, national_run=national)
+        c.eq(calls, [(url, True)], 'the repeatable coordinator preserves both offline boundaries', what='offline wiring')
