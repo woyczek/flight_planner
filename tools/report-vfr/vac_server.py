@@ -1,5 +1,5 @@
 """Loopback-only workbench; explicit, separate writes for parser corrections and target JSON."""
-import argparse, copy, hashlib, json, secrets, threading, webbrowser
+import argparse, copy, hashlib, json, re, secrets, threading, webbrowser
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse,unquote
