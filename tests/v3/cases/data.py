@@ -5211,7 +5211,7 @@ def l62(c):
         text = unq(m.group(1))
         for q in quote.finditer(text):
             name = next(g for g in q.groups() if g).strip()
-            if name not in allowed and name not in others and not re.fullmatch(r'\{\w+\}', name):   # a token {n} that the text function resolves (« seen: « {n} » »: the name of a file between quotation marks) is not a button name (6a955c31b)
+            if name not in allowed and name not in others and not re.fullmatch(r'\{\w+\}', name) and not re.fullmatch(r'[\w.-]+\.(?:pdf|zip)', name):   # a token {n} that the text function resolves (« seen: « {n} » »: the name of a file between quotation marks) is not a button name (6a955c31b); nor is the name of a FILE between quotation marks (« EB_ENR_3_2_en.pdf », .pdf or .zip: SOG-0656)
                 orphans.append(name)
     c.eq(sorted(set(orphans)), [], 'every quoted button name of a message is the name of a button of the screen', what='orphans')
 
@@ -11542,22 +11542,22 @@ def l174(c):
 # ------------------------------------------------------------------------------------------------------ L179
 # The sentences of the Belgian ENR 3.2 (SOG-0541) written IN CLEAR here (French first, the ergonomist's words), four languages: a typo in modules/data/texts.js is a red of this case, not a copy of itself.
 _L179_BE = {
-    'fr': {'howto': 'Téléchargez le PDF de la partie ENR 3.2 de l’AIP de Belgique, puis déposez-le ici avec « Choisir le fichier… ». À refaire à chaque cycle AIRAC.',
+    'fr': {'howto': 'Déposez ici le PDF de la partie ENR 3.2 de l’eAIP (« EB_ENR_3_2_en.pdf » ; il est aussi dans le zip de l’eAIP). À refaire à chaque cycle AIRAC.', 'page': 'Ouvrir l’eAIP de la Belgique',
            'current': 'Pages déposées le {dep} (cycle {cycle}). Dernier amendement lu : {amd}.', 'future': 'Pages déposées le {dep}, en vigueur le {amd}.',
            'expired': 'Périmé depuis le {exp}. Déposez la page ENR 3.2 du cycle en cours.', 'notRoutes': '{name} : cette page ne sert pas au calcul des routes.',
            'noDate': '{name} : aucune date d’amendement lisible. Rien n’a été déposé.', 'inforce': 'en vigueur le', 'name': 'AIM Belgique',
            'notKept': '{name} : ces pages sont plus anciennes que celles déjà déposées. Rien n’a été déposé.'},
-    'en': {'howto': 'Download the PDF of part ENR 3.2 of the Belgian AIP, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
+    'en': {'howto': 'Download the PDF of part ENR 3.2 alone (“EB_ENR_3_2_en.pdf”), not the whole ENR, nor the amendment, nor the eAIP zip, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.', 'page': 'Open the Belgian eAIP',
            'current': 'Pages dropped on {dep} (cycle {cycle}). Latest amendment read: {amd}.', 'future': 'Pages dropped on {dep}, in force on {amd}.',
            'expired': 'Expired since {exp}. Drop the ENR 3.2 page of the current cycle.', 'notRoutes': '{name}: this page is not used to compute routes.',
            'noDate': '{name}: no readable amendment date. Nothing was dropped.', 'inforce': 'in force on', 'name': 'AIM Belgium',
            'notKept': '{name}: these pages are older than those already dropped. Nothing was dropped.'},
-    'de': {'howto': 'Laden Sie das PDF des Teils ENR 3.2 des belgischen AIP herunter und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
+    'de': {'howto': 'Laden Sie das PDF des Teils ENR 3.2 allein herunter („EB_ENR_3_2_en.pdf“), nicht das ganze ENR, nicht die Änderung und nicht das eAIP-Zip, und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.', 'page': 'Das belgische eAIP öffnen',
            'current': 'Seiten abgelegt am {dep} (Zyklus {cycle}). Letzte gelesene Änderung: {amd}.', 'future': 'Seiten abgelegt am {dep}, in Kraft am {amd}.',
            'expired': 'Veraltet seit {exp}. Legen Sie die Seite ENR 3.2 des laufenden Zyklus ab.', 'notRoutes': '{name}: diese Seite dient nicht der Streckenberechnung.',
            'noDate': '{name}: kein lesbares Änderungsdatum. Es wurde nichts abgelegt.', 'inforce': 'in Kraft am', 'name': 'AIM Belgien',
            'notKept': '{name}: diese Seiten sind älter als die bereits abgelegten. Es wurde nichts abgelegt.'},
-    'es': {'howto': 'Descargue el PDF de la parte ENR 3.2 del AIP de Bélgica y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.',
+    'es': {'howto': 'Descargue el PDF de la parte ENR 3.2 sola («EB_ENR_3_2_en.pdf»), no el ENR entero, ni la enmienda, ni el zip del eAIP, y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.', 'page': 'Abrir el eAIP de Bélgica',
            'current': 'Páginas depositadas el {dep} (ciclo {cycle}). Última enmienda leída: {amd}.', 'future': 'Páginas depositadas el {dep}, en vigor el {amd}.',
            'expired': 'Caducado desde el {exp}. Deposite la página ENR 3.2 del ciclo en curso.', 'notRoutes': '{name}: esta página no sirve para el cálculo de rutas.',
            'noDate': '{name}: ninguna fecha de enmienda legible. No se ha depositado nada.', 'inforce': 'en vigor el', 'name': 'AIM Bélgica',
@@ -11581,12 +11581,15 @@ def _l179_go(answer, box):
     return go
 
 
-@case('L179', 'Données: the Belgian ENR 3.2 PDF (SOG-0541) — the card says the two sentences of the ergonomist (no link, no file name, no source), « Choisir le fichier… » sends the PDF, every refusal is said (« {fichier} : cette page ne sert pas au calcul des routes. », « … aucune date d’amendement lisible. Rien n’a été déposé. », the launcher’s reason for the others), the line of the source is judged by TODAY’s date (in force, in advance, expired, a date that has passed with nothing recompiled), an accepted set says itself on the line, never starts a pickup, and builds the zone only with the personal-use box ticked',
+@case('L179', 'Données: the Belgian ENR 3.2 PDF (SOG-0541) — the card says the form to drop and gives ONE link to the official page (SOG-0656; no file inventory, no source name), « Choisir le fichier… » sends the PDF, every refusal is said (« {fichier} : cette page ne sert pas au calcul des routes. », « … aucune date d’amendement lisible. Rien n’a été déposé. », the launcher’s reason for the others), the line of the source is judged by TODAY’s date (in force, in advance, expired, a date that has passed with nothing recompiled), an accepted set says itself on the line, never starts a pickup, and builds the zone only with the personal-use box ticked',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
       rule='SOG-0541 (the user dropped the Belgian AIP pages; the launcher reads the ENR 3.2 PDF, AeroDB e4a583cae): modules/data/belgium.js (the sentences, judged by today’s date), upload.js (the answer, the closed `code` of a refusal, the build that follows), countries.js (the tick of the source, the card), model_countries.js (`set` of base/cycle); frame/aerodb/INTEGRATION.md « Belgium and Luxembourg: the ENR 3.2 of the AIP dropped as a PDF »')
 def l179(c):
     lang = c.lang
     BE = {k: v for k, v in _L179_BE[lang].items()}
+    BE['notEnr'] = 'Ce PDF n’est pas la partie ENR 3.2. Déposez « EB_ENR_3_2_en.pdf ».'      # SOG-0656: the two refusals are written in French only (the other languages fall back on it)
+    BE['pdf'] = 'Ouvrir l’ENR 3.2 de la Belgique (PDF)'      # SOG-0656, French only
+    BE['noZip'] = 'Un zip n’est pas lu : sortez-en « EB_ENR_3_2_en.pdf ».'
     ZM = lambda key: _trow(key, lang, after='  zm: {')
     UP = lambda key: _trow(key, lang, after='  up: {')
     today, cur, prev, nxt = _cycles()
@@ -11658,8 +11661,11 @@ def l179(c):
     # ---- 1. the card: the two sentences, no link, no file name, no source name; the gesture is « Choisir le fichier… »
     box['set'] = {'inForce': None, 'next': None}
     open_be(reload=False)
-    c.eq(norm(c.text(f'{src} [data-choose-hint=aimbe]')), norm(BE['howto']), 'the card says the two sentences of the ergonomist, in the language of the run', what='card sentences')
-    c.eq([c.count(f'{src} a[href]'), c.count(f'{src} [data-inventory] code'), c.count(f'{src} [data-file-name]')], [0, 0, 0], 'no link, no file name on the card', what='no link no file')
+    c.eq(norm(c.text(f'{src} [data-choose-hint=aimbe]')), norm(BE['howto'] + ' ' + BE['pdf'] + ' ' + BE['page']), 'the card says the form to drop (the ENR 3.2 PDF alone), then the two links in this order: the PDF, the home page of the eAIP (SOG-0656)', what='card sentences')
+    links = c.js(f"[...document.querySelectorAll('{src} [data-choose-hint=aimbe] a')].map(a => [a.getAttribute('href'), a.rel, a.target])")
+    c.eq([c.count(f'{src} a[href]'), links, c.count(f'{src} [data-inventory] code'), c.count(f'{src} [data-file-name]')],
+         [2, [['https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/pdf/EB_ENR_3_2_en.pdf', 'noopener noreferrer', '_blank'], ['https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Product/index.html', 'noopener noreferrer', '_blank']], 0, 0],
+         'TWO links, in this order, written addresses only (nothing is followed, nothing downloaded): the ENR 3.2 PDF alone, then the home page of the eAIP (ops.skeyes.be), both opened aside; no file inventory, no file name on the card', what='the links')
     c.eq([c.count(f'{src} [data-act=zone-upload]'), c.js(f"document.querySelector('{src} [data-act=zone-upload]').disabled"), norm(c.text(f'{src} [data-act=zone-upload]'))], [1, False, norm(UP('choose'))], 'and « Choisir le fichier… », live', what='gesture')
     # ---- 2. the line, judged by today's date
     # the personal-use box is NOT ticked (it is, further down): a set in force that nothing reads is not « déposé » with no effect and the card is not silent — the head says the box, with the words of the other personal sources
@@ -11751,8 +11757,8 @@ def l179(c):
     done = []
     n_pick, n_build = len(_posts(st, 'pickup')), len(_posts(st, 'build'))
     page33 = 'ENR 3.3 <b>é</b>.pdf'
-    shot_of = {'not-routes': 'page', 'no-amendment': 'nodate', 'pdf-timeout': 'reason'}
-    refusals = ((page33, 'not-routes', 'notRoutes', True), ('EB_ENR_3_2_en.pdf', 'no-amendment', 'noDate', True), ('x.pdf', 'pdf-timeout', None, False))
+    shot_of = {'not-routes': 'page', 'no-amendment': 'nodate', 'pdf-timeout': 'reason', 'not-enr': 'notenr'}
+    refusals = ((page33, 'not-routes', 'notRoutes', True), ('EB_ENR_3_2_en.pdf', 'no-amendment', 'noDate', True), ('ENR.pdf', 'not-enr', 'notEnr', False), ('x.pdf', 'pdf-timeout', None, False))
     for name, code, key, whole in refusals:
         answer.update({'status': 422, 'body': {'ok': False, 'reason': 'unrecognised', 'code': code, 'message': 'La lecture du PDF a dépassé 40 s <i>(script)</i>', 'expected': ['sia', 'aimbe']}})
         choose(name)
@@ -11765,6 +11771,20 @@ def l179(c):
         if c.width in (390, 1280):
             c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
             c.shot(f'L179_{c.width}_{lang}_refused_{shot_of[code]}.png')
+    # a zip (recognised by its extension, never opened): nothing is sent, the line says the cause and what to take out of it (SOG-0656)
+    n_sent = len(sent)
+    c.until(f"!document.querySelector('{btn}').disabled", timeout=15000, what='the gesture is free')
+    quiet()
+    with c.page.expect_file_chooser() as fc:
+        c.js(f"document.querySelector('{btn}').click()")
+    fc.value.set_files({'name': 'eAIP_Package.zip', 'mimeType': 'application/zip', 'buffer': b'PK' + bytes([3, 4]) + b' not opened'})
+    want = norm(BE['noZip'])
+    c.until(has_line(want), timeout=8000, what='the line says that a zip is not read')
+    c.eq([lines_of()[-1:], len(sent) - n_sent, [len(_posts(st, 'pickup')) - n_pick, len(_posts(st, 'build')) - n_build]], [[want], 0, [0, 0]], 'a zip: the cause is said, nothing is sent, nothing is started', what='zip')
+    c.ok(bool(_notes_with(c, want)), 'zip', 'a zip: the notification says the same words')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{src}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L179_{c.width}_{lang}_refused_zip.png')
     c.eq([sent[0]['size'], sent[0]['name']], [len(_L179_PDF), urllib.parse.quote(page33, safe="-_.!~*'()")], 'the PDF goes as it is (raw bytes), its name only a hint, URL-encoded', what='request')
     # ---- 4. accepted, a set in force, the personal-use box NOT ticked: ONE state — the line of the source shows the set kept, the line under the button and the notification say what is missing (the box),
     # never « Pages déposées », and the state of the country and its button say there is something to do (never « Rien à faire » next to a file waiting)

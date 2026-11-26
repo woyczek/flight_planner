@@ -12,6 +12,10 @@ import {
 
 /** L'identifiant de la source dans la liste du cycle et dans la réponse d'un dépôt. */
 export const BE_SOURCE = 'aimbe';
+/** La page officielle de l'eAIP de la Belgique (hôte ops.skeyes.be, relu par Sécurisation en SOG-0541) : celle où l'on prend le PDF de l'ENR 3.2 (SOG-0656, le signalement de l'utilisateur : « donner la source »). */
+export const BE_PAGE = 'https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Product/index.html';
+/** Le PDF de la partie ENR 3.2 SEULE sur le même site (229 Ko, `eAIP_Main` = l'édition en cours ; aucune date ni numéro de cycle dans l'adresse, aucune redirection : relu par requête HEAD le 26 nov. 2026, sans téléchargement) : un lien que l'UTILISATEUR ouvre, jamais lu par le lanceur ni par un cas. */
+export const BE_PDF = 'https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/pdf/EB_ENR_3_2_en.pdf';
 /** Le nom de la source de Belgique dans la langue (le catalogue d'aerodb ne la connaît pas) ; '' pour toute autre source : jamais son identifiant en capitales (« AIMBE »). */
 export const beName = id => id === BE_SOURCE ? tt(TX.be.name) : '';
 /** La date du jour (AAAA-MM-JJ, UTC) d'un instant. */

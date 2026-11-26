@@ -158,12 +158,17 @@ export const TX = {
   // L'AIP de Belgique et du Luxembourg (SOG-0541) : le PDF de l'ENR 3.2 déposé à la main ; les phrases de la ligne de Données (jugées à la date du jour), ses refus, et les deux phrases de la carte (aucun lien, aucun nom de fichier ni de source)
   be: {
     name: ['AIM Belgique', 'AIM Belgium', 'AIM Belgien', 'AIM Bélgica'],
+    // SOG-0656 (décision de l'ergonome, 26 nov., français seul) : la forme à déposer est dite (le PDF de la partie ENR 3.2 SEUL, nom lu sur le site de l'AIP belge : eAIP_Main/pdf/EB_ENR_3_2_en.pdf) et le lien de la page officielle suit ; le refus dit sa cause (notEnr, noZip)
     howto: [
-      'Téléchargez le PDF de la partie ENR 3.2 de l’AIP de Belgique, puis déposez-le ici avec « Choisir le fichier… ». À refaire à chaque cycle AIRAC.',
-      'Download the PDF of part ENR 3.2 of the Belgian AIP, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
-      'Laden Sie das PDF des Teils ENR 3.2 des belgischen AIP herunter und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
-      'Descargue el PDF de la parte ENR 3.2 del AIP de Bélgica y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.'
+      'Déposez ici le PDF de la partie ENR 3.2 de l’eAIP (« EB_ENR_3_2_en.pdf » ; il est aussi dans le zip de l’eAIP). À refaire à chaque cycle AIRAC.',
+      'Download the PDF of part ENR 3.2 alone (“EB_ENR_3_2_en.pdf”), not the whole ENR, nor the amendment, nor the eAIP zip, then drop it here with “Choose the file…”. To redo at each AIRAC cycle.',
+      'Laden Sie das PDF des Teils ENR 3.2 allein herunter („EB_ENR_3_2_en.pdf“), nicht das ganze ENR, nicht die Änderung und nicht das eAIP-Zip, und legen Sie es hier mit „Datei wählen…“ ab. Bei jedem AIRAC-Zyklus zu wiederholen.',
+      'Descargue el PDF de la parte ENR 3.2 sola («EB_ENR_3_2_en.pdf»), no el ENR entero, ni la enmienda, ni el zip del eAIP, y deposítelo aquí con «Elegir el archivo…». A repetir en cada ciclo AIRAC.'
     ],
+    page: ['Ouvrir l’eAIP de la Belgique', 'Open the Belgian eAIP', 'Das belgische eAIP öffnen', 'Abrir el eAIP de Bélgica'],
+    pdf: ['Ouvrir l’ENR 3.2 de la Belgique (PDF)'],
+    notEnr: ['Ce PDF n’est pas la partie ENR 3.2. Déposez « EB_ENR_3_2_en.pdf ».'],
+    noZip: ['Un zip n’est pas lu : sortez-en « EB_ENR_3_2_en.pdf ».'],
     current: ['Pages déposées le {dep} (cycle {cycle}). Dernier amendement lu : {amd}.',
       'Pages dropped on {dep} (cycle {cycle}). Latest amendment read: {amd}.',
       'Seiten abgelegt am {dep} (Zyklus {cycle}). Letzte gelesene Änderung: {amd}.',

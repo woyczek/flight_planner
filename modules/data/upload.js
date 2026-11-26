@@ -293,6 +293,11 @@ async function sendFile(zone, file, source, note) {
   let name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
   const dircam = source === DIRCAM_SOURCE,
     origin = name; // le fichier que l'utilisateur a choisi (l'archive du SIA, ou le PDF), dit sur la ligne
+  // l'ENR 3.2 de Belgique : un zip, reconnu à son extension, n'est pas ouvert ni envoyé (SOG-0656, décision de l'ergonome : « le refus dit sa cause »)
+  if (source === BE_SOURCE && /\.zip$/i.test(name)) {
+    sayOnLine(zone, name, tt(TX.be.noZip));
+    return S.ctx.notify(tt(TX.be.noZip), 'err');
+  }
   if (dircam && file.size > 0) { // l'archive du SIA se lit en place : sa taille n'est pas celle de l'envoi
     S.zoneMsg.delete(zone);
     const ctrl = new AbortController();
@@ -398,6 +403,8 @@ async function sendFile(zone, file, source, note) {
     if (whole) out.text = tt(out.code === 'not-routes' ? TX.be.notRoutes : TX.be.noDate, {
       name: origin
     });
+    else if (out.code === 'not-enr') out.text = tt(TX.be
+      .notEnr); // un PDF qui n'est pas la partie 3.2 : la phrase dit quoi déposer (SOG-0656)
     else if (out.detail) out.text = out.detail; // le motif du lanceur (bornée, sans commande), à la place de « non reconnu »
     out.detail = '';
   }

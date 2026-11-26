@@ -57,6 +57,8 @@ import {
   framesOf
 } from './mapview.js';
 import {
+  BE_PAGE,
+  BE_PDF,
   BE_SOURCE,
   tickOf as beTick
 } from './belgium.js';
@@ -742,7 +744,7 @@ function renameOf(sid, z, item, cy) {
 /** Ce que la ligne DIRCAM dit du fichier à choisir, en mots : l'archive du SIA (son nom d'après le catalogue, `files[].file`, jamais un nom inventé), lue sur cet appareil, dont seul le PDF de l'ENR 5.7 part au lanceur ; '' pour toute autre source. */
 function chooseHintHtml(sid) {
   if (sid === BE_SOURCE)
-    return `<p class="f-muted" data-choose-hint="${esc(sid)}">${esc(tt(TX.be.howto))}</p>`; // l'ENR 3.2 de Belgique : les deux phrases de l'ergonome, sans lien ni nom de fichier ni de source (SOG-0541)
+    return `<p class="f-muted" data-choose-hint="${esc(sid)}">${esc(tt(TX.be.howto))} <span data-be-pdf>${link(BE_PDF, tt(TX.be.pdf))}</span> <span data-be-page>${link(BE_PAGE, tt(TX.be.page))}</span></p>`; // l'ENR 3.2 de Belgique : la forme à déposer, puis le lien de la page officielle (SOG-0656 : « donner la source » ; SOG-0541 n'en mettait aucun)
   if (sid !== DIRCAM_SOURCE) return '';
   const f = filesOf(sid, null).files[0],
     arc = typeof f?.file === 'string' && f.file !== f.name ? ` (${f.file.replace(/[\p{Cc}]/gu, ' ').slice(0, 80)})` : '';
