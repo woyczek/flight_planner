@@ -22,6 +22,8 @@
 //     La vue d'une AUTRE mission n'arrête jamais celle qui est suivie.
 //   stateOf(id) → LE CONTRÔLEUR lui-même (lecture seule pour la vue) : id, ctx, mission, drawers, mine, states, flying, startIso, asking, inRange,
 //     seance, line, doc, me, gotNow, passage(p), notJudged(k), tt(row, vars) ; ou null.
+//   « Prévu » (SOG-0620 lot 3) : eventsOf(c), ownLetter(c), isOwnEvent(ev, lettre), constatsOf(c) → { held, passed, eta } (Map : id → ISO / minutes), EVENT_NM :
+//     les constats des événements, jugés ici depuis les relevés reçus (planned.js les affiche) ; c.callsign : l'indicatif de mon affectation.
 //   markDrawerRead(id, lettre) : « Ouvrir l'enveloppe » d'un message arrivé (`drawer_<L>.read_at`) ; objectSeen(id) : « Objet en vue » (SOG-0619) ;
 //     isUnread(c, s), unreadOf(c) : les messages arrivés et non lus, le plus ancien d'abord.
 //   ask(id) → le panneau « Demander la suite » s'ouvre (faux au repos ou hors de ma mission) ; cancelAsk(id) ; answer(id) ; markRead(id) ;
@@ -33,6 +35,15 @@
 // « lu » déjà écrits), rien n'est écrit et la section est relue. Sans navigator.locks (contexte non sécurisé), l'écriture est celle d'avant.
 
 import * as D from './drawers.js';
+import {
+  fixOf as readFix
+} from '../../frame/lib/crossing.js'; // un relevé lu borné : lat, lon, gsKt, t
+import {
+  gcNm
+} from '../../frame/lib/geo.js';
+import {
+  own
+} from '../../frame/lib/untrusted.js';
 import * as MS from '../../frame/lib/mission.js'; // passageMin, notJudgedYet : les règles du lecteur, une seule fois (SOG-0617)
 import {
   mine as myLines
@@ -401,6 +412,11 @@ async function load(c) {
     }),
     playing = !!flight && typeof flight === 'object' && String(flight.mission || '').toUpperCase() === c.id;
   c.mine = !!myPath && (seance.assigned || playing);
+  // SOG-0620 lot 3 : mon indicatif d'équipage (la ligne d'affectation de ce trigramme pour cette mission) : MON équipe se lit dessus (ownLetter)
+  c.callsign = String((Array.isArray(idx?.assignments) ? idx.assignments : []).slice(0, 5000).map(a => a && typeof a === 'object' && MS
+      .midOf(own(a, 'mission')) === c.id &&
+      MS.triOf(own(a, 'pilot')) === me ? own(a, 'callsign') : null).find(x => typeof x === 'string' && x) ?? '').slice(0, 12)
+    .toUpperCase();
   if (!c.mine) {
     c.states = [];
     c.flying = false;
@@ -495,6 +511,94 @@ function catchUp(c) {
   if (f) record(c, first.id, f, 'trail').catch(() => {});
 }
 
+/** « Prévu » (SOG-0620 lot 3) — les constats des ÉVÉNEMENTS, jugés ici depuis les relevés déjà reçus (aucune autre source de position) :
+ *  `held` (id d'événement → l'heure ISO du relevé où le pilote était sur son lieu : à EVENT_NM d'un lieu de la mission, l'événement
+ *  étant de MON équipe ou de toutes), `passed` (id d'un point cité en repère → l'heure du premier relevé à EVENT_NM) et `eta` (id →
+ *  minutes avant d'être sur le lieu, d'après la vitesse sol du dernier relevé ; absent sans vitesse). Gardés en mémoire pour le vol en cours
+ *  (le départ du vol les remet à zéro) ; ne lève jamais ; sans le lecteur d'événements (MS.readEvents), rien n'est jugé. */
+export const EVENT_NM = 1;
+
+/** Les événements de la mission lus par le lecteur (MS.readEvents), bornés ; [] sans lecteur. */
+export function eventsOf(c) {
+  try {
+    const list = typeof MS.readEvents === 'function' ? MS.readEvents(c.mission) : null;
+    return Array.isArray(list) ? list.slice(0, 60) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** La lettre (A à Y) de MON équipe : celle dont le nom est l'indicatif de mon affectation (c.callsign) ; '' quand elle ne se dit pas. */
+export function ownLetter(c) {
+  const cs = String(c.callsign || '').toUpperCase(),
+    teams = Array.isArray(c.mission?.teams) ? c.mission.teams : [],
+    k = cs ? teams.findIndex(t => String(t?.name ?? '').toUpperCase() === cs) : -1;
+  return k >= 0 && k < 25 ? 'ABCDEFGHIJKLMNOPQRSTUVWXY' [k] : '';
+}
+
+/** Un événement est-il suivi par MON équipe : sans équipe (toutes), ou ma lettre y est. */
+export const isOwnEvent = (ev, letter) => !Array.isArray(ev?.teams) || !ev.teams.length || !!letter && ev.teams.includes(letter);
+
+/** La position d'un lieu de la mission (les points lus, une clé PROPRE), ou null. */
+function placeAt(mission, id) {
+  const pts = mission?.points,
+    k = String(id ?? '').toUpperCase(),
+    p = pts && typeof pts === 'object' && k && Object.hasOwn(pts, k) ? pts[k] : null,
+    lat = Number(p?.lat),
+    lon = Number(p?.lon);
+  return Number.isFinite(lat) && Number.isFinite(lon) ? {
+    lat,
+    lon
+  } : null;
+}
+
+/** Les constats de « Prévu » : { held: Map, passed: Map, eta: Map } (voir plus haut), remis à zéro au départ d'un autre vol. */
+export function constatsOf(c) {
+  if (!c.ev || c.ev.start !== c.startIso) c.ev = {
+    start: c.startIso,
+    held: new Map(),
+    passed: new Map(),
+    eta: new Map()
+  };
+  return c.ev;
+}
+
+/** Un relevé reçu : les événements sur site, les points passés, le temps restant. */
+function eventsJudge(c, raw) {
+  if (!c.mine || !c.flying) return;
+  const f = readFix(raw),
+    evs = eventsOf(c);
+  if (!f || !evs.length) return;
+  const ev = constatsOf(c),
+    at = Number.isFinite(f.t) ? new Date(f.t).toISOString() : '',
+    letter = ownLetter(c);
+  let changed = false;
+  for (const e of evs) {
+    const place = e.place ? placeAt(c.mission, e.place) : null;
+    if (place && isOwnEvent(e, letter) && !ev.held.has(e.id)) {
+      const nm = gcNm(f, place);
+      if (nm <= EVENT_NM && at) {
+        ev.held.set(e.id, at);
+        changed = true;
+      } else if (Number.isFinite(f.gsKt) && f.gsKt > 30) {
+        const m = Math.round(nm / f.gsKt * 60);
+        changed ||= ev.eta.get(e.id) !== m;
+        ev.eta.set(e.id, m);
+      }
+    }
+    if (e.ref?.kind === 'point' && at && !ev.passed.has(e.ref.id)) {
+      const pt = placeAt(c.mission, e.ref.id);
+      if (pt && gcNm(f, pt) <= EVENT_NM) {
+        ev.passed.set(e.ref.id, at);
+        changed = true;
+      }
+    }
+  }
+  if (ev.held.size)
+    for (const id of ev.held.keys()) ev.eta.delete(id);
+  if (changed) paintViews(c); // « Prévu » se repeint : un constat, ou le temps restant qui change
+}
+
 /** L'appareil a-t-il une position en direct qui est celle du vol de cette mission ? */
 export const liveNow = c => c.flying && c.ctx.live?.status === 'tracking';
 
@@ -534,6 +638,11 @@ function onFix(c, fix) {
       c.lastStatus = c.ctx.live?.status;
       emit(c);
     }
+  } catch {
+    /* rien ne casse le jugement */
+  }
+  try {
+    eventsJudge(c, fix); // SOG-0620 lot 3 : « Prévu » — les événements sur site, les points passés
   } catch {
     /* rien ne casse le jugement */
   }

@@ -53,6 +53,7 @@ import {
   pilotView,
   routeNm
 } from '../../frame/lib/mission.js'; // ce que le pilote peut voir : la règle du lecteur, écrite une fois (SOG-0448)
+import * as PV from './planned.js'; // SOG-0620 lot 3 : « Prévu » (les événements, leur heure, l'état de mon équipe)
 import * as RD from './reader_view.js'; // l'enveloppe et la liseuse de MA mission (lot T3)
 import {
   clean,
@@ -748,7 +749,15 @@ function paintFlight(w, c) {
       title: w.tt(TX.debriefHead),
       body: debriefRow(w, l)
     })),
-    rows = [...before, ...lines].sort((a, b) => b.at - a.at);
+    // SOG-0620 lot 3 : « Prévu » entre les gestes et « Avant » ; un événement constaté plus ancien que le dernier passe sous « Avant », avec son heure
+    pv = PV.plannedBlock(w, c, view, {
+      orderReadAt: book?.readAt ?? null,
+      opened: read.map(s => ({
+        id: s.id,
+        at: s.at
+      }))
+    }),
+    rows = [...before, ...lines, ...pv.before].sort((a, b) => b.at - a.at);
   if (last && view?.summary) rows.push({
     key: 'order',
     at: book?.readAt ?? null,
@@ -756,7 +765,7 @@ function paintFlight(w, c) {
     body: `<p>${esc(view.summary)}</p>`
   });
   const past = rows.length ? `<section class="dw-past" data-dw-past><p class="dw-kick">${esc(w.tt(TX.kPast))}</p>${rows.map(r => `<details class="dw-fold" data-dw-before="${esc(r.key)}"${w.pastOpen?.has(r.key) ? ' open' : ''}><summary><span class="t">${esc(r.title)}</span><span class="h">${r.at != null ? esc(hhmm(r.at)) : ''}</span></summary>${r.body}</details>`).join('')}</section>` : '';
-  w.host.innerHTML = head + arrived + now + (narrow ? past + acts : acts + past);
+  w.host.innerHTML = head + arrived + now + (narrow ? pv.html + past + acts : acts + pv.html + past);
   // un message d'« Avant » déplié le reste à travers les dessins (un passage, un relevé, la fiche redessinée) : sinon son « Resceller » se cachait
   for (const d of w.host.querySelectorAll('[data-dw-before]')) d.ontoggle = () => {
     if (W !== w) return;

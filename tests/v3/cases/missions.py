@@ -17423,3 +17423,99 @@ def n291(c):
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
     c.ok('order_offset_min: -20' in t, t[t.find('timeline'):][:300], 'the key written, minus the minutes typed')
     c.js(_REG_CLEAR)
+
+
+# ---- SOG-0620 lot 3 : « Prévu » dans le bloc « Suite de la mission » du pilote. Un seul cas (N292) ; il ne joue pas avant que le lecteur de V3 Frame
+# (MS.readEvents, MS.eventTimes, MS.plannedMin, et `events` dans MS.pilotView) soit sur la branche. Mission inventée : le pilote ABC vole sous
+# l'indicatif BLUE (l'équipe Blue) ; un rendez-vous (Blue et Red) tenu sur place, un largage de Red à heure imposée, un silence radio de Blue
+# qui suit le rendez-vous, un retour de Red à H+100.
+_PV_REGISTRY = """missions:
+  - { id: X-905A, family: TESTTIROIR, title: Exercice coordonné, folder: X_TIR/X-905A, files: [missionX-905A.yaml] }
+"""
+_PV_MISSION = """mission: { id: X-905A, type: SAR, subtype: RECHERCHE }
+title: Exercice coordonné
+summary: Un exercice inventé à deux équipes, Blue et Red.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.5, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+teams:
+  - { name: Blue, service: Service d'essai, type: EC25, role: couverture }
+  - { name: Red, service: Service d'essai, type: EC25, role: largage }
+turning_points:
+  - { id: PT1, name: Romeo, lat: 44.8, lon: 1.0 }
+  - { id: PT2, name: Sierra, lat: 44.6, lon: 1.0 }
+route_order: [ORIGIN, PT1, PT2, DESTINATION]
+timeline:
+  events:
+    - { at: H+5, id: EV-1, title: Rendez-vous au point Romeo, place: PT1, teams: [A, B], ref: takeoff, offset_min: 5, tol_early_min: 10, tol_late_min: 10 }
+    - { at: EV-1+10, id: EV-2, title: 'Blue : silence radio', teams: [A], ref: 'event:EV-1', offset_min: 10, tol_early_min: 2, tol_late_min: 2 }
+    - { at: EV-1+12, id: EV-3, title: 'Red : largage sur la zone', place: PT2, teams: [B], ref: 'event:EV-1', offset_min: 12, imposed: true }
+    - { at: H+100, id: EV-5, title: 'Red : retour à XTSU', teams: [B], ref: takeoff, offset_min: 100 }
+"""
+
+
+@case('N292', 'Missions › the pilot\'s block « Suite de la mission », SOG-0620 lot 3: « Prévu » sits between « Ce que vous pouvez faire » and « Avant »; the events '
+      'with their clock time (hh:mmZ), the imposed time does not slide, the status line only for the events of the pilot\'s own team (Blue): « tenu à … (dans la '
+      'tolérance) », « dans n min · 10 min après … tenu »; none under the event of Red; the last event held and the next two shown, the rest folded in « 1 autre »',
+      'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 3, the validated mock-up deroule.html scene (e); cannot play before the reader of V3 Frame (readEvents, eventTimes, plannedMin and the events '
+      'of pilotView) is on the branch; the constat « tenu à » is judged by drawers_run.js from the fixes of the live position (within 1 NM of the place), simulated here')
+def n292(c):
+    import datetime
+    import json
+    now_dt = datetime.datetime.now(datetime.timezone.utc)
+    iso = lambda d: d.strftime('%Y-%m-%dT%H:%M:%SZ')
+    hhmm = lambda d: d.strftime('%H:%M') + 'Z'
+    start_dt = now_dt - datetime.timedelta(minutes=12)
+    start = iso(start_dt)
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+            'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    fix = lambda lat, lon: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180, 'gsKt': 120,
+                            'source': 'xplane'}
+    pos = {'fix': fix(45.0, 1.0)}  # 12 NM north of the rendezvous point
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.context.route(re.compile(r'/__setup/sim/position'),
+                    lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**pos['fix'], 'at': iso(datetime.datetime.now(datetime.timezone.utc))})))
+    flight = {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': 'X-905A', 'started': {'at': start},
+              'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+              'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0}, {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
+                        'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
+    assignments = {'assignments': [{'mission': 'X-905A', 'pilot': 'ABC', 'callsign': 'BLUE', 'takeoff': start}]}
+    S = f'{M} [data-drawers]'
+    lines = f"""(() => [...document.querySelectorAll('{S} [data-dw-planned] .pv-line')].map(l => [l.dataset.pv, l.querySelector('b').textContent.trim(),
+      l.textContent.replace(/\\s+/g, ' ').trim(), !!l.querySelector('[data-pv-state]')]))()"""
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _PV_REGISTRY], ['missions/X_TIR/X-905A/missionX-905A.yaml', _PV_MISSION]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document'], ['missions/affectations.json', assignments, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-905A"]')
+        c.until(f"!!document.querySelector('{S} [data-dw-planned]')", timeout=30000, what='the section « Prévu »')
+        c.eq(c.text(f'{S} [data-dw-planned] .dw-kick'), 'Prévu', 'the title of the section', what='kick')
+        c.ok(c.js(f"""(() => {{ const h = document.querySelector('{S}'), p = h.querySelector('[data-dw-planned]'), a = h.querySelector('[data-dw-acts], [data-actslot] [data-dw-acts]'),
+          past = h.querySelector('[data-dw-past]'); return !past || !!(p.compareDocumentPosition(past) & Node.DOCUMENT_POSITION_FOLLOWING) }})()"""), c.js(f"document.querySelector('{S}').innerHTML.length"),
+             '« Prévu » comes before « Avant » when « Avant » is there')
+        rows = c.js(lines)
+        c.ok(all(re.fullmatch(r'\d\d:\d\dZ', r[1]) for r in rows), rows, 'every line starts with a clock time (hh:mmZ): the reference is known in flight')
+        # the pilot reaches the rendezvous point: it is held (a fix within 1 NM of PT1)
+        pos['fix'] = fix(44.8, 1.0)
+        c.until(f"document.querySelector('{S} [data-pv=\"EV-1\"]')?.hasAttribute('data-held')", timeout=40000, what='the rendezvous held')
+        rows = {r[0]: r for r in c.js(lines)}
+        c.eq(list(rows), ['EV-1', 'EV-2', 'EV-3'], 'the last event held and the next two, in time order', what='lines')
+        c.ok(re.search(r'tenu à \d\d:\d\dZ, \d+ min de retard \(dans la tolérance\)', rows['EV-1'][2]) is not None, rows['EV-1'][2],
+             'the rendezvous: « tenu à hh:mmZ, n min de retard (dans la tolérance) » (own team, held 7 minutes after its planned time)')
+        c.ok(re.search(r'dans \d+ min · 10 min après Rendez-vous au point Romeo tenu', rows['EV-2'][2]) is not None and 'Blue' in rows['EV-2'][2], rows['EV-2'][2],
+             'the silence of Blue: « dans n min · 10 min après le rendez-vous tenu », the chip Blue')
+        c.ok(rows['EV-3'][3] is False and 'heure imposée' in rows['EV-3'][2], rows['EV-3'],
+             'the drop of Red (imposed): its time, « heure imposée », and NO status line — another team')
+        c.eq(rows['EV-3'][1], hhmm(start_dt + datetime.timedelta(minutes=17)), 'the imposed time does not slide: take-off + 5 + 12, not the rendez-vous held late + 12', what='imposed')
+        c.ok(rows['EV-2'][1] != hhmm(start_dt + datetime.timedelta(minutes=15)), rows['EV-2'][1], 'the silence of Blue follows the REAL time of the rendez-vous (it slid past its plan)')
+        c.eq(c.text(f'{S} [data-pv-fold] summary'), '1 autre', 'the fold', what='fold')
+        c.ok(c.js(f"document.querySelector('{S} [data-pv=\"EV-1\"] .pv-chip.mine')?.textContent") == 'Blue'
+             and c.js(f"document.querySelector('{S} [data-pv=\"EV-3\"] .pv-chip.other')?.textContent") == 'Red', '', 'the chips: Blue (mine, filled), Red (the others, outlined)')
+        c.shot(f'N292_{c.width}_prevu.png')
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
