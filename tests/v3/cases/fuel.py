@@ -11599,3 +11599,55 @@ def f325(c):
               f"return !!z && z.getBoundingClientRect().top - b.getBoundingClientRect().bottom < 120 }})()"), '', 'right under « Calculer »')
     c.js(f"document.querySelector('{FUEL} [data-do=rcompute]').scrollIntoView({{block: 'start'}})")
     c.shot(f'F325_{c.design}_{c.width}_{c.lang}.png')
+
+
+@case('F327', 'Route step: the reader of the route field understands « VFR » / « IFR » (never a point « not recognised »), the cruise climb '
+      '« C/point/speed level level » (its point is a point of the route, the text kept as written), and reads a speed-level group as its own '
+      'token; every token it does not understand — a point by bearing and distance included, not placed — is said under the route: '
+      '« Non compris : LUGEN180040, ZZ*9. », never a silence', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0679 temps 1 (the relay, 26 Nov, on a word of the user: the flight rule is not a setting of the flight, item 15 says it with '
+      'the speeds and the levels; the fact of 26 Nov: « VFR » was looked up as a point, « C/… » and « TOU180040 » were dropped in silence); '
+      'an invented route of the same shape')
+def f327(c):
+    # A. the reader itself (frame/lib/route_text.js, route_model.js), on an invented base
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const [RT, RM] = await Promise.all([import('/frame/lib/route_text.js'), import('/frame/lib/route_model.js')]);
+      const toks = RT.tokenize('XDEP VFR XPA IFR C/XPB/N0450F350F390 XPA180040 N0450F370 XPC/N0420F360 ZZ*9 XARR')
+        .map(t => [t.kind, t.form || '', t.id || '', t.point || '', t.speed || '']);
+      const P = { XDEP: [47, -1.6], XPA: [46.6, -1.2], XPB: [45, 2], XARR: [43.4, 5.2] };
+      const base = { coords: async id => P[id] ? { id, lat: P[id][0], lon: P[id][1] } : null, airways: async () => [],
+        state: () => ({ state: 'ready' }) };
+      const m = await RM.routeModel('XDEP VFR XPA IFR C/XPB/N0450F350F390 XPA180040 ZZ*9 XARR', { dep: 'XDEP', arr: 'XARR', base });
+      return [toks, m.points.map(p => p.id), m.notUnderstood || null, m.rules || null, m.unresolved, RT.textFromTokens(m.tokens, { dct: true })];
+    }""")
+    c.eq(got[0], [['name', '', 'XDEP', '', ''], ['word', 'rule', 'VFR', '', ''], ['name', '', 'XPA', '', ''], ['word', 'rule', 'IFR', '', ''],
+                  ['word', 'cruise', 'C/XPB/N0450F350F390', 'XPB', 'N0450'], ['word', 'brgdist', 'XPA180040', 'XPA', ''],
+                  ['group', '', '', '', 'N0450'], ['name', '', 'XPC', '', ''], ['word', '', 'ZZ*9', '', ''], ['name', '', 'XARR', '', '']],
+         'each form its token: the rules, the cruise climb and its point, the point by bearing and distance, the group and its speed '
+         '(red before: VFR and IFR were names, C/… and XPA180040 bare words)', what='tokens')
+    c.eq(got[1], ['XDEP', 'XPA', 'XPB', 'XARR'], 'the point of the cruise climb is a point of the route; VFR and IFR are not', what='points')
+    c.eq(got[2], ['XPA180040', 'ZZ*9'], 'the tokens not understood, in the order of the text (the point by bearing and distance is not '
+         'placed)', what='not understood')
+    c.eq(got[3], [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPA'}], 'each change of rule and the point it follows',
+         what='rules')
+    c.eq(got[4], [], 'nothing « not recognised »: VFR and IFR are never looked up as points', what='unresolved')
+    c.eq(got[5], 'XDEP VFR XPA IFR C/XPB/N0450F350F390 XPA180040 ZZ*9 XARR', 'the normalised text keeps every word as written',
+         what='text')
+    # B. under the route field of Fuel: the line « Non compris », and no « VFR » or « IFR » among the points not recognised
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS VFR LUGEN IFR C/NEPIX/N0300F270F290 LUGEN180040 ZZ*9 LFML')
+    c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
+    want = {'fr': 'Non compris : LUGEN180040, ZZ*9.', 'en': 'Not understood: LUGEN180040, ZZ*9.',
+            'de': 'Nicht verstanden: LUGEN180040, ZZ*9.', 'es': 'No comprendido: LUGEN180040, ZZ*9.'}[c.lang]
+    c.until("(w) => { const e = document.querySelector('[data-module=fuel] [data-rnotund]'); return !!e && !e.hidden && "
+            "(e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }", want, timeout=10000,
+            what='the line « Non compris » under the route (red before: no such line)')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and any(p['id'] == 'NEPIX' for p in d['route'].get('points') or [])
+                    and 'C/NEPIX/N0300F270F290' in (d['route'].get('text') or ''), 'NEPIX of the cruise climb is a point, the word kept',
+                    timeout=10000)
+    c.ok(all(w in f['route']['text'].split() for w in ('VFR', 'IFR', 'LUGEN180040', 'ZZ*9')), f['route']['text'],
+         'every word stays in the text of the route')
+    unres = norm(c.text(f'{FUEL} [data-unres]') or '')
+    c.ok('VFR' not in unres and 'IFR' not in unres, unres, 'VFR and IFR are never points « not recognised »')
