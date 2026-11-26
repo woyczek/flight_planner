@@ -3026,6 +3026,7 @@ ${PROC_STYLE}
    sur un ordinateur, en bas sur un téléphone, sans rien déplacer dessous */
 [data-module="fuel"] .fu-mchipslot:empty{display:none}
 ${MCH.CSS}
+${AWX.CSS}
 [data-module="fuel"]:has(> .fu-mpane:not([hidden])){position:relative} /* le volet dans la colonne de Carburant : la Carte à côté reste libre */
 [data-module="fuel"] .fu-mpane{position:absolute;z-index:30;right:0;top:88px;width:min(420px,100%);max-height:calc(100vh - 128px);overflow:auto;margin:0;box-shadow:var(--sog-shadow)}
 [data-module="fuel"] .fu-mpane[hidden]{display:none}
@@ -6023,7 +6024,7 @@ function altnPropHtml() {
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}</li>`;
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.tafFold(S.altnProp?.taf?.[x.icao], esc)}</li>`;
     },
     // SOG-0544 (le critère de l'ergonome) : un terrain dont la météo n'est pas connue passe après ceux dont elle est lue
     unk = x => altnPropCrits(x).crits[2]?.state === 'grey' ? 1 : 0,

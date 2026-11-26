@@ -5,6 +5,8 @@
 // API : wxLine(c, id, h) → le HTML de la ligne, ou « » ; c : le critère météo (altn_check.js weatherOf) ; h = { busy (une lecture en
 //   cours ou en échec : le repli le dit), metar (le METAR du terrain, ou null), station(metar) (weather.js station), tt, TX (les textes de
 //   module.js : altnWxObs, altnWxNoTime, altnWxOutside, altnWxNoCat, altnWxNoTaf, altnWxNone), esc }.
+//   tafFold(taf, esc) → SOG-0660 : le texte du TAF d'un terrain proposé, replié sous sa ligne (« TAF », aucune phrase), ou « » sans texte
+//   lu ; CSS : son style, posé par module.js.
 
 /** SOG-0559 (l'ergonome, choix a) : la ligne d'une météo de dégagement non jugée — sa cause (pas de TAF ; sans date de vol ; arrivée
  *  hors de la validité du TAF ; pas de catégorie à l'heure d'arrivée), puis, quand un METAR existe, son observation « METAR de 14:20Z :
@@ -32,4 +34,20 @@ export function wxLine(c, id, h) {
     at: c.v?.at || ''
   }) + (row === h.TX.altnWxNone || !obs ? '' : ` ${obs}`);
   return `<p class="f-muted fu-altnwx" data-altnwx>${h.esc(text)}</p>`;
+}
+
+/** SOG-0660 : le style du repli du TAF — une ligne entière sous celle du terrain (la ligne est en flex), le texte coupé où il faut. */
+export const CSS = `[data-module="fuel"] .fu-altnprop li{flex-wrap:wrap}
+[data-module="fuel"] .fu-altnprop li>span:nth-child(2){flex-basis:0}
+[data-module="fuel"] .fu-candtaf{flex-basis:100%;box-sizing:border-box;min-width:0;padding-left:22px}
+[data-module="fuel"] .fu-candtaf>p{margin:2px 0;overflow-wrap:anywhere;font-family:var(--sog-mono,ui-monospace,monospace)}`;
+
+/** SOG-0660 : le texte brut d'un TAF (rawTAF, une entrée non fiable) — une ligne, sans signe de contrôle, 1 200 signes au plus. */
+const rawOf = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1200) : '';
+
+/** SOG-0660 (le relais, par le précédent de SOG-0559) : sous la ligne d'un terrain proposé, le texte de son TAF, replié (fermé d'abord),
+ *  posé par esc ; « » sans texte lu. */
+export function tafFold(taf, esc) {
+  const raw = rawOf(taf?.rawTAF);
+  return raw ? `<details class="fu-faultmore fu-candtaf" data-candtaf><summary class="f-muted">TAF</summary><p class="f-muted" data-tafraw>${esc(raw)}</p></details>` : '';
 }
