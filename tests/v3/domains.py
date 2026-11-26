@@ -70,6 +70,7 @@ RULES = [
     ('modules/flightlog/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'flightlog (the Status block and the gear read its pending file)'),
     ('modules/report/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'report (the Status block hands over to it)'),
     ('tools/proc_sia.py', ['K', 'I'], 'the SIA eAIP procedures reader (France) and its aerodb cases'),
+    ('tools/proc_it_es.py', ['K', 'I'], 'the Italian and Spanish page readers (cut out of proc_layouts) and their aerodb cases'),
     ('tools/proc_layouts.py', ['K', 'I'], 'the foreign page layouts (one ordered list) and their aerodb cases'),
     ('tools/proc_records.py', ['K', 'I'], 'lines to records, the common pass of every reader, and its aerodb cases'),
     ('tools/proc_pdf.py', ['K', 'I'], 'PDF reading shared by the readers and its aerodb cases'),
