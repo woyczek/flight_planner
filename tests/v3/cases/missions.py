@@ -17617,7 +17617,7 @@ timeline:
 """
 # twelve drawers (B to M); the drawer C was an event (EV-7); one event (EV-1) that cannot become a drawer
 _SW_TWELVE = _ED_FULL + 'phases:\n' + ''.join(
-    f"  - {{ id: {l}, title: Tiroir {l}, fallback_delay_min: {30 + 10 * k}{', event_id: EV-7' if l == 'C' else ''} }}\n" for k, l in enumerate('BCDEFGHIJKLM')) + """timeline:
+    f"  - {{ id: {l}, title: Tiroir {l}, fallback_delay_min: {30 + 10 * k}{', event_id: EV-7, brief: Briefing à perdre' if l == 'C' else ''} }}\n" for k, l in enumerate('BCDEFGHIJKLM')) + """timeline:
   events:
     - { at: H+45, id: EV-1, title: Rendez-vous au point un, place: PT1, ref: takeoff, offset_min: 45 }
 """
@@ -17677,6 +17677,7 @@ def n295(c):
     c.eq(c.count(f'{E} [data-drawer="D"] [data-flowchoice]'), 0, 'a drawer without event_id does not offer the choice', what='no choice')
     c.tap(f'{E} [data-do="edsel"][data-sel="C"]')
     c.until(f"!!document.querySelector('{E} [data-drawer=\"C\"] [data-flowchoice]')", what='the choice on the drawer C (it has an event_id)')
+    c.eq(norm(c.text(f'{E} [data-drawer="C"] [data-flowlost]')), 'Le briefing de ce tiroir ne sera pas gardé.', 'the loss is said BEFORE the tap (it has a briefing, no route)', what='loss')
     c.tap(f'{E} [data-drawer="C"] [data-flowchoice] input[value="0"]')
     _tab(c, 'mission')
     c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 2", what='the event is back')

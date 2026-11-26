@@ -106,5 +106,8 @@ export const FTX = {
   fsHidden: ['Caché jusqu\'à un stimulus'],
   fsDep1: ['1 événement en dépend : il sera caché avec lui.'],
   fsDepN: ['{n} événements en dépendent : ils seront cachés avec lui.'],
+  fsLostBoth: ['Le briefing et la suite de route de ce tiroir ne seront pas gardés.'],
+  fsLostBrief: ['Le briefing de ce tiroir ne sera pas gardé.'],
+  fsLostRoute: ['La suite de route de ce tiroir ne sera pas gardée.'],
   fsDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
 };

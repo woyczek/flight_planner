@@ -198,14 +198,18 @@ function sheetHtml(s, h) {
 
 /** Le choix « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus » (une fiche d'événement : annoncé ; une fiche de tiroir né d'un événement : caché), et,
  *  quand des événements en dépendent, la phrase qui le dit AVANT le geste (jamais une question : un geste, annulable). */
-function choiceHtml(s, hidden, deps, letter) {
+function choiceHtml(s, hidden, deps, letter, lost = '') {
   const radio = (v, label) => `<label class="fl-inline"><input type="radio" name="flowhide${esc(letter)}" data-k="edflow" data-f="hide" data-letter="${esc(letter)}" value="${v}"${hidden === !!v ? ' checked' : ''}><span>${esc(s.tt(label))}</span></label>`;
-  return `<div class="f-field" role="radiogroup" data-flowchoice>${radio(0, FTX.fsShown)}${radio(1, FTX.fsHidden)}${deps > 0 && !hidden ? `<span class="f-muted" data-flowdeps>${esc(s.tt(deps === 1 ? FTX.fsDep1 : FTX.fsDepN, { n: deps }))}</span>` : ''}</div>`;
+  return `<div class="f-field" role="radiogroup" data-flowchoice>${radio(0, FTX.fsShown)}${radio(1, FTX.fsHidden)}${lost && hidden ? `<span class="f-muted" data-flowlost>${esc(s.tt(FTX[lost]))}</span>` : ''}${deps > 0 && !hidden ? `<span class="f-muted" data-flowdeps>${esc(s.tt(deps === 1 ? FTX.fsDep1 : FTX.fsDepN, { n: deps }))}</span>` : ''}</div>`;
 }
 
 /** Le choix sur la fiche d'un tiroir né d'un événement (editor_view.js l'appelle ; '' pour tout autre tiroir ou dans l'atelier voilé). */
 export function switchHtml(s, row, h) {
-  return row?.eventId && !s.ed.veil ? choiceHtml(s, true, 0, row.id) : '';
+  // ce que « Annoncé au brief » ne garde pas (le briefing, la suite de route) est dit AVANT le geste, au même endroit que les dépendants ; rien de perdu, rien dit
+  const brief = !!String(row?.brief ?? '').trim(),
+    route = Array.isArray(row?.route) && row.route.length > 0;
+  return row?.eventId && !s.ed.veil ? choiceHtml(s, true, 0, row.id, brief && route ? 'fsLostBoth' : brief ? 'fsLostBrief' : route ?
+    'fsLostRoute' : '') : '';
 }
 
 /** Le choix touché : un événement devient un tiroir (« Caché »), un tiroir né d'un événement redevient un événement (« Annoncé »). Un seul geste,
