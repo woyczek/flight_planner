@@ -242,6 +242,11 @@
         'Die Meldungsdatei ist voll (1.000): Die Ergonomie muss sie leeren.',
         'El archivo de informes está lleno (1000): la ergonomía debe vaciarlo.'
       ],
+      'too-big': ['Le fichier des signalements est plein (4 Mio) : l’ergonome doit le vider.',
+        'The reports file is full (4 MiB): the ergonomist has to empty it.',
+        'Die Meldungsdatei ist voll (4 MiB): Die Ergonomie muss sie leeren.',
+        'El archivo de informes está lleno (4 MiB): la ergonomía debe vaciarlo.'
+      ],
       unreadable: ['Le fichier des signalements est illisible : il n’a pas été touché.',
         'The reports file is unreadable: it was not touched.', 'Die Meldungsdatei ist unlesbar: Sie wurde nicht angetastet.',
         'El archivo de informes es ilegible: no se ha tocado.'

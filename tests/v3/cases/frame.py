@@ -12859,3 +12859,45 @@ def a401(c):
     c.eq(c.js("[document.querySelector('[data-title]').value, document.querySelector('[data-text]').value]"),
          ['Titre tapé vite', 'Un long texte tapé juste avant de toucher une ligne : il ne doit pas se perdre.'], 'the title and the text typed 100 ms before the touch are back whole', what='draft')
     c.check_errors()
+
+
+@case('A402', 'A report of 5 000 signs goes through the REAL launcher whole, and a file that has no room left for one more is refused with its own sentence (SOG-0647): the text of 5000 signs is written and read back, then, the file at 4 MiB, « Le fichier des signalements est plein (4 Mio) » (the reason too-big of the launcher, said by the page in four languages), the file untouched', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0647 (Security, BUGS: at 5000 signs a report the file would be over FILE_MAX = 4 MiB, unreadable; the launcher refuses before writing, the page says it): the fake launcher of A179 runs the REAL verb on a temporary organisation/")
+def a402(c):
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation' / 'images').mkdir(parents=True)
+        f = root / 'organisation' / 'SIGNALEMENTS.json'
+        st = _sg_launcher(c, root)
+        c.open('signaler', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-form]') && !document.querySelector('[data-shotsbox]').hidden", timeout=20000, what='the form of the ergonomist workstation')
+        long_text = ('Etape ' + 'z' * 93 +'\n') * 49 + 'Fin' + 'y' * 97   # 5000 signs exactly
+        c.eq(len(long_text), 5000, 'the text is 5000 signs', what='fixture')
+        c.page.fill('[data-title]', 'Un vrai rapport')
+        c.page.fill('[data-text]', long_text)
+        c.tap('[data-send]')
+        c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the long report in « Mes signalements »')
+        e = next(iter(json.loads(f.read_text(encoding='utf-8'))['items'].values()))
+        c.eq(e['text'], long_text, 'a text of 5000 signs is written whole by the launcher (it was refused above 2000)', what='5000 written')
+        # the file filled up to the last few thousand bytes below FILE_MAX (4 MiB): readable, but no room for one more report of 5000 signs
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        fill = lambda n: {'kind': 'bug', 'title': f'Rempli {n}', 'text': 'x' * 5000, 'screen': 'fuel', 'at': '2026-11-01T08:00:00Z', 'state': 'new'}
+        size = lambda: len(json.dumps(doc, ensure_ascii=False, indent=1).encode('utf-8'))
+        for n in range(1, 700):
+            doc['items'][f'SIG-{n:010x}'] = fill(n)
+        while size() + 5400 < 4 * 1024 * 1024 - 1000 and n < 900:   # one more filler would still leave the file under FILE_MAX, a report of 5000 signs would not
+            n += 1
+            doc['items'][f'SIG-{n:010x}'] = fill(n)
+        doc['items'][f'SIG-{n:010x}']['text'] += 'x' * (4 * 1024 * 1024 - 2000 - size())   # exactly 2000 bytes of room: a report of 5000 signs does not fit
+        f.write_bytes((json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8'))   # bytes: no translation of the line ends, the size is the one measured
+        before = f.read_bytes()
+        c.ok(4 * 1024 * 1024 - 12000 < len(before) < 4 * 1024 * 1024, len(before), 'the file is a few thousand bytes under 4 MiB: readable, almost full')
+        c.page.fill('[data-title]', 'Un de trop')
+        c.page.fill('[data-text]', long_text)
+        c.tap('[data-send]')
+        c.until("/4 Mi[oB]/.test(document.body.innerText)", timeout=15000, what='the sentence of a file that is full, with its size')
+        c.eq((f.read_bytes() == before, list((root / 'organisation').glob('*.tmp'))), (True, []), 'the file is untouched and no temporary file is left', what='untouched')
+    c.check_errors()
