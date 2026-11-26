@@ -19170,11 +19170,11 @@ def k483(c):
         data2, rad2 = _sog532_bench(td2)
         fresh = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': 250, 'date': '2026-11-09', 'alternatives': False, 'proposals': False}), data2, rad2, None)['primary']
     codes = lambda p: sorted((x['code'], (x['values'] or {}).get('end') or (x['values'] or {}).get('zone')) for x in p.get('unverifiable') or [])
-    c.eq(codes(old), [('connector_unknown', 'arr'), ('connector_unknown', 'dep'), ('stale_cycle', 'xx')], 'the base of the cycle of 1 Oct read for a flight of 9 Nov (39 days: stale): the two connectors of unknown limit and the State of an old cycle are `unverifiable`, each with its code (red before: no `unverifiable` list)', what='old')
+    c.eq(codes(old), [('connector_unknown', 'arr'), ('connector_unknown', 'dep'), ('direction_unknown', None), ('stale_cycle', 'xx')], 'the base of the cycle of 1 Oct read for a flight of 9 Nov (39 days: stale): the two connectors of unknown limit, the airway whose direction the base does not know (SOG-0669: the invented base has no direction) and the State of an old cycle are `unverifiable`, each with its code (red before: no `unverifiable` list)', what='old')
     stale = [x for x in old.get('unverifiable') or [] if x['code'] == 'stale_cycle']
     c.eq((stale[0]['values']['cycle'], stale[0]['values'].get('current')) if stale else None, ('2026-10-01', '2026-10-01'), 'the stale cycle names the cycle that is read (and the zone); the current cycle is named when the base knows it', what='stale values')
     c.eq(old.get('verdict'), 'unverifiable', 'the verdict is `unverifiable`: not `conform`, not `violates` (nothing known is broken)', what='verdict old')
-    c.eq(codes(fresh), [('connector_unknown', 'arr'), ('connector_unknown', 'dep')], 'inside the cycle: no stale State, the two connectors are still unverifiable (no limit read: never counted conforming)', what='fresh')
+    c.eq(codes(fresh), [('connector_unknown', 'arr'), ('connector_unknown', 'dep'), ('direction_unknown', None)], 'inside the cycle: no stale State, the two connectors are still unverifiable (no limit read: never counted conforming), and so is the airway whose direction is not known (SOG-0669)', what='fresh')
 
 
 @case('K485', 'Route engine, SOG-0532 (2): the level written in the route is the level asked — a level group is written only when it CHANGES the level (never « POINT/F330 » for a flight already at FL330); after a real change the return to the filed level is written',
@@ -21374,3 +21374,55 @@ def k661(c):
         finally:
             E.DATA_DIR = E.RAD_FILE = None
             P.drop_contexts()
+
+
+@case('K662', 'Route engine, SOG-0669 (the direction of the airways): the answer of the control says, by a STRUCTURED entry with no phrase (`gaps` code `direction`: the States that the route crosses by airways where the base HAS the direction of the airways, and those where it has not), and the route that takes an airway in a State where its direction is unknown carries a point NOT VERIFIED, named (`direction_unknown`: « Sens de {airway} inconnu en {State}. »); the verdict stays « unverifiable »; the line of the limits of speed no longer says « sens »',
+      'K', static=True,
+      rule='The ergonomist through the relay, 26 Nov 2026 (SOG-0669: the States are written by their OACI prefix (LF, ED, LS…), as the screens name them (EAD_STATES), and not by the code of the zone of the base; the line « Sens et vitesses limites » of the answer was false for the States whose airways carry their direction in the base — France, Germany, the United Kingdom —; SimBrief refused an airway taken against its direction in a State where the base has none). On an INVENTED base of two States: an airway whose direction the base gives (`dir` FB) in the first, an airway with no direction in the second; a typed route that takes the first then the second',
+      )
+def k662(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        import shutil
+        shutil.rmtree(os.path.join(data, 'sia', 'base', 'xx'))
+        nodes = {'XS1': (55.0, 10.5), 'XM1': (55.0, 17.0), 'XE1': (55.0, 23.5)}
+        node = lambda n: {'id': n, 'lat': nodes[n][0], 'lon': nodes[n][1]}
+
+        def zone(code, rows, ways):
+            d = os.path.join(data, 'sia', 'base', code, '2026-10-29')
+            os.makedirs(d)
+            files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': rows}, 'navaids': [], 'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()], 'airways': ways}
+            for k, v in files.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': code, 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        zone('xa', [['KAXS', 'DEPART', 55.0, 10.0, 20, 0, 0], ['KAXE', 'ARRIVE', 55.0, 24.0, 20, 0, 0]], [{'route': 'L1', 'a': node('XS1'), 'b': node('XM1'), 'lower': 2000, 'upper': 66000, 'dir': 'FB'}])
+        zone('xb', [['KUAA', 'AUTRE', 55.0, 17.0, 20, 0, 0]], [{'route': 'L2', 'a': node('XM1'), 'b': node('XE1'), 'lower': 2000, 'upper': 66000}])
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        P.drop_contexts()
+        args = {'action': 'check', 'adep': 'KAXS', 'adest': 'KAXE', 'fl': 330, 'date': '2026-11-10T12:00', 'enable_fra': False, 'speed_kt': 450, 'alternatives': False, 'route': 'KAXS DCT XS1 L1 XM1 L2 XE1 DCT KAXE'}
+        p = P.compute(view.to_request(args), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+        P.drop_contexts()
+        args1 = dict(args, route='KAXS DCT XS1 L1 XM1 DCT KAXE')
+        p1 = P.compute(view.to_request(args1), data, os.path.join(data, 'route', 'rad.json.gz'), os.path.join(data, 'route', 'fra.json.gz'))['primary']
+    direction = [g for g in p['gaps'] if g.get('code') == 'direction']
+    c.eq(direction, [{'code': 'direction', 'known': ['KA'], 'unknown': ['KU']}], 'the answer says by a STRUCTURED entry (no phrase, no name) the States that the route crosses by airways, written by their OACI prefix (the main one of the aerodromes of the zone: KA, KU — not the code of the zone, xa, xb): the direction is read in KA, not in KU — red before: no such entry, only the line « Sens et vitesses limites »', what='gap')
+    points = [(i['code'], i['values']['via'], i['values']['state'], i['text']) for i in p['issues'] if str(i.get('code', '')).startswith('direction')]
+    c.eq(points, [('direction_unknown', 'L2', 'KU', 'Sens de L2 inconnu en KU.')], 'the airway taken in the State where its direction is unknown is a point NOT VERIFIED, named (once per airway and State); the airway of KA, whose direction the base gives, is not', what='point')
+    c.eq(([u['code'] for u in p['unverifiable'] if u['code'].startswith('direction')], p['verdict']), (['direction_unknown'], 'unverifiable'), 'the point is in the list of what the control could not verify; the verdict stays « unverifiable »', what='verdict')
+    c.eq(([g.get('name') for g in p['gaps'] if g.get('name') and 'ens' in g['name'].lower()], [g['name'] for g in p['gaps'] if g.get('name') == 'Vitesses limites' and 'sens' not in g['reason'].lower()]), ([], ['Vitesses limites']), 'the line of the limits of speed keeps its phrase and no longer says « sens » (the false half is gone)', what='speeds')
+    d1 = [g for g in p1['gaps'] if g.get('code') == 'direction']
+    c.eq((d1, [i for i in p1['issues'] if str(i.get('code', '')).startswith('direction')]), ([{'code': 'direction', 'known': ['KA'], 'unknown': []}], []), 'a route that takes only the airway whose direction the base gives: the State is « known », no point not verified', what='known only')

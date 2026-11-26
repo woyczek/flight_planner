@@ -177,7 +177,7 @@ class Nav:
     def __init__(self,root,date):
         self.root=Path(root); self.date=date; self.nodes={}; self.ids=collections.defaultdict(list)
         self.data_dir=Path(DATA_DIR) if DATA_DIR else self.root/'data'   # SOG-0081 : DATA_DIR
-        self.ads={}; self.edges=[]; self.cycles={}; self.coverage=[];self.vrp_keys=set();self.navaid_keys=set();self.fir_keys=set()      # SOG-0417 : les points que la source dit à la limite d'une FIR (drapeau `lim: 'fir'` de la base : une donnée NON FIABLE, lue à la porte des portes seulement)
+        self.ads={}; self.zone_prefix={}; self.edges=[]; self.cycles={}; self.coverage=[];self.vrp_keys=set();self.navaid_keys=set();self.fir_keys=set()      # SOG-0417 : les points que la source dit à la limite d'une FIR (drapeau `lim: 'fir'` de la base : une donnée NON FIABLE, lue à la porte des portes seulement)
         base=self.data_dir/'sia/base'   # SOG-0081 : data_dir
         if not base.is_dir(): raise ValueError('Base introuvable : '+str(base))
         for zone in sorted(base.iterdir()):
@@ -190,6 +190,8 @@ class Nav:
             for a in index:
                 if self.valid(a) and a.get('icao'):
                     self.ads[a['icao']]=a;self.add(dict(a,id=a['icao']))
+            prefixes=collections.Counter(a['icao'][:2] for a in index if self.valid(a) and isinstance(a.get('icao'),str) and len(a['icao'])==4)      # SOG-0669 : le préfixe OACI PRINCIPAL de la zone (celui de la plupart de ses aérodromes) : l'État est dit par ce préfixe, comme les écrans le nomment (EAD_STATES), jamais par le code de zone de la base
+            if prefixes:self.zone_prefix[zone.name]=sorted(prefixes.items(),key=lambda x:(-x[1],x[0]))[0][0]
             for kind in ['points','navaids','vrp']:
                 for point in datasets.dataset(kind):
                     if self.valid(point) and point.get('id'):
@@ -287,6 +289,16 @@ class Nav:
         self.nodes[key]=dict(id=ident,lat=p['lat'],lon=p['lon'])
         self.ids[ident].append(key)
         return key
+
+    def direction_routes(self):
+        """SOG-0669 : { (zone, voie) : la base donne le SENS de cette voie dans cet État } : au moins un tronçon de la voie, dans la zone, porte `dir` (F, B, FB) ; lu une fois sur les tronçons de voie de la base."""
+        if not hasattr(self,'_dir_routes'):
+            known={}
+            for e in self.edges:
+                if e.get('zone') and e.get('route'):
+                    k=(e['zone'],e['route']);known[k]=known.get(k,False) or e.get('dir') in ('F','B','FB')
+            self._dir_routes=known
+        return self._dir_routes
 
     def keys_of(self,ident):
         """Les positions d'un identifiant : celles de la base ; à défaut, le point que ses coordonnées donnent (SOG-0211 : « KDEN 4959N08712W DCT 5520N06712W … », la route de l'utilisateur) ; [] sinon."""
@@ -1331,8 +1343,19 @@ def assess(request,_nav=None,_rad=None,_path=None):
     dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures,fl*100,strict=True)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
     for level,text,*meta in dct_issues:issue(level,text,*([meta[0]['code'],meta[0].get('unverifiable',False)] if meta else []),**(meta[0]['values'] if meta else {}))
     for level,text,*meta in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),True,dep,arr,True):issue(level,text,*([meta[0]['code']] if meta else []),**(meta[0]['values'] if meta else {}))      # SOG-0532 (3) : un direct décidé trop long est une ERREUR, route calculée ou tapée      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
+    state_of=lambda z:nav.zone_prefix.get(z) or z.upper()      # SOG-0669 : l'État par son préfixe OACI principal (LF, ED, EG, LS, LI…) ; à défaut, le code de la zone
+    dir_known=nav.direction_routes()      # SOG-0669 : les voies prises, État par État, et si la base en donne le sens (jamais « absent » pour la France, l'Allemagne, le Royaume-Uni)
+    flown_dir={}
+    for u,v,e in parsed:
+        z=e.get('zone');name=e.get('route')
+        if z and z!='nat' and name and name!='DCT' and e.get('kind') in (None,'AIRWAY') and not e.get('procedure_id') and name not in flown_dir.setdefault(z,[]):flown_dir[z].append(name)
+    unknown_dir=[(z,name) for z in sorted(flown_dir) for name in flown_dir[z] if not dir_known.get((z,name))]
+    for z,name in unknown_dir[:MAX_BAND_ISSUES]:issue('REVUE',f'Sens de {name} inconnu en {state_of(z)}.','direction_unknown',True,via=name,state=state_of(z))      # SOG-0669 : un point NON VÉRIFIÉ, nommé : le sens de cette voie n'est pas dans la base (la recherche la prend dans les deux sens)
+    if len(unknown_dir)>MAX_BAND_ISSUES:issue('REVUE',f'{len(unknown_dir)-MAX_BAND_ISSUES} autre(s) voie(s) dont le sens est inconnu.','direction_unknown_more',False,count=len(unknown_dir)-MAX_BAND_ISSUES)
+    direction=[dict(code='direction',known=sorted({state_of(z) for z in flown_dir if all(dir_known.get((z,n)) for n in flown_dir[z])}),unknown=sorted({state_of(z) for z in flown_dir if not all(dir_known.get((z,n)) for n in flown_dir[z])}-{state_of(z) for z in flown_dir if all(dir_known.get((z,n)) for n in flown_dir[z])}))] if flown_dir else []      # SOG-0669 : le fait, STRUCTURÉ, sans phrase (l'écran la compose) : les États que la route traverse par des voies, ceux où la base A le sens et ceux où elle ne l'a pas
     gaps=[dict(name='FRA : géométrie et NPZ',reason='Points FRA, rôles E/X/I/A/D, niveaux numériques et horaires simples utilisés. Volumes des FRA, NPZ et règles complexes non fournis par la liste de points : les liaisons sont des candidates à contrôler.' if fra_loaded else 'Aucune liste FRA ne couvre cette date. Les DCT ne sont pas des autorisations FRA.'),
-          dict(name='Sens et vitesses limites',reason='Sens autorisés et limites de vitesse absents des fichiers airways ; vitesse sol saisie utilisée pour le profil.'),
+          *direction,
+          dict(name='Vitesses limites',reason='Limites de vitesse absentes des fichiers airways ; vitesse sol saisie utilisée pour le profil.'),
           dict(name='RAD complet',reason='Le vol entier, SID/STAR développées comprises, est le périmètre du contrôle. Seules les formes de conditions explicitement prises en charge sont décidées. Conditions complexes, doublons ambigus, plafonnements conditionnels et géométrie des espaces restent à interpréter.'),
           dict(name='Procédures et environnement',reason='SID/STAR complètes sélectionnées depuis AeroDB, selon la piste. Tracé entre points codés, sans modèle de virage ni certification ARINC. Approche finale, IAS, parité, QNH, vent, performances, relief, NOTAM et activations EAUP/EUUP non évalués.')]
     if not rad.book: issue('REVUE','Aucun RAD fourni ne couvre cette date : contrôle RAD indisponible.')
@@ -1397,7 +1420,7 @@ def report(r):
     if r.get('proposal'):lines+=['','PROPOSITION DE REPLI NON VALIDÉE',r.get('proposal_note','')]
     if r.get('fra_stats'):lines+=['','FRA : '+str(r['fra_stats'])]
     if r.get('vfr_environment'):lines+=['','CONTRÔLES VFR : '+str(r['vfr_environment'])]
-    lines += ['','COUVERTURE DU CONTRÔLE']+[g['name']+' : '+g['reason'] for g in r.get('gaps',[])]
+    lines += ['','COUVERTURE DU CONTRÔLE']+[(g['name']+' : '+g['reason']) if 'name' in g else ('Sens des voies : connu en '+(', '.join(g.get('known') or []) or '—')+' ; inconnu en '+(', '.join(g.get('unknown') or []) or '—')+'.') for g in r.get('gaps',[]) if 'name' in g or g.get('code')=='direction']      # SOG-0669 : l'entrée « direction » est structurée (sans phrase) : le rapport écrit sa ligne
     if r.get('profile'):
         p=r['profile']; lines += ['','PROFIL VERTICAL',f'Vitesse sol {p["speed_kt"]:g} kt ; montée {p["climb_fpm"]:g} ft/min ; descente {p["descent_fpm"]:g} ft/min.',
             f'Stratégie {p["strategy"]} ; maximum atteint {p["max_altitude_ft"]:g} ft ; durée {p["duration_min"]:g} min.']
