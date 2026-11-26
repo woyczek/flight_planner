@@ -2161,6 +2161,8 @@ export function todo(doc) {
       key
     });
   if (!cut(d.title, 200)) add('cadre', 'title');
+  // SOG-0620 : un événement dont le repère est la réception de l'ordre, sans l'heure de cette réception (timeline.order_offset_min)
+  if (eventsIn(d).some(e => obj(e).ref === 'order') && !Number.isFinite(obj(d.timeline).order_offset_min)) add('cadre', 'orderTime', {});
   // une liaison (famille commerciale) : ni théâtre, ni équipes, ni risques, ni chronologie à compléter (décision du 13 nov.)
   const link = liaison(m.type);
   if (!cut(m.theatre, 40) && !link) add('cadre', 'theatre');

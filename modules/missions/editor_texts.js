@@ -132,6 +132,9 @@ export const EDTX = {
     '{id} eliminado, con sus citas.'
   ],
   // « À compléter » nomme (l'ergonome, 17 nov.) : le champ qui cite et l'identifiant absent, le tiroir, la carte
+  todo_orderTime: ['l\'heure de réception de l\'ordre', 'the time the order is received', 'die Zeit des Auftragseingangs',
+    'la hora de recepción de la orden'
+  ],
   todo_deadRef: ['{who} cite {id}, un lieu qui n\'existe pas', '{who} cites {id}, a place that does not exist',
     '{who} nennt {id}, einen Ort, den es nicht gibt', '{who} cita {id}, un lugar que no existe'
   ],

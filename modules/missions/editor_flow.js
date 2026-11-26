@@ -27,11 +27,13 @@
 //     prévue ou de repli, null si inconnue), when, tol, title, sub, teams [lettres], imposed }] — TRIÉES PAR L'HEURE (null à la fin), les
 //     tiroirs gardent leur ordre entre eux, un événement dont le repère est un tiroir vient juste sous lui (under) ; `t(clé, valeurs)` :
 //     les textes de editor_flow_texts.js.
-//   whenOf(entry, ctx, t) → « H+45 », « H-15 », « Ordre + 5 », « ROMEO + 10 », « EV-1 + 10 », « T2 + 20 » (ctx : { drawers }) ;
+//   whenOf(entry, ctx, t) → « H+45 », « H-15 », « ordre + 5 », « Point un + 10 », « ROMEO + 10 », « Rendez-vous a… + 10 », « T2 + 20 » (ctx : { drawers,
+//     entries, places } ; jamais l'identifiant d'un événement : refName) ;
 //     tolOf(entry, t) → « ± 10 min », « −2 / +5 min », « imposée », ''.
 //   targets(doc, entries, n, drawers, kind) → les repères qu'on peut choisir pour la sorte `kind` : [{ id, label }] — jamais l'événement
 //     lui-même ni un événement qui en dépend (un cycle n'est jamais proposé) ; 'point' : les lieux de la mission (placesOf).
 //   teamLetters(doc) → [{ letter, name }] : les équipes de la mission, A à Y.
+//   orderOf(doc) → les minutes avant le décollage ou '' ; orderStorable(doc) ; withOrder(doc, n) → timeline.order_offset_min = −n (effacé si n est vide).
 //   mirror(entry) → le miroir `at` d'une ligne ('' quand l'heure n'est pas lue).
 import * as MS from '../../frame/lib/mission.js';
 import * as ED from './editor.js';
@@ -110,7 +112,11 @@ export function read(doc) {
     place: r.place,
     legacy: true
   }));
-  return list.slice(0, ED.EVENTS_MAX).map((r, i) => entryOf(r, i, raw[i]?.at ?? ''));
+  // une entrée par entrée du fichier, dans son ordre, chacune avec `i` (son indice) : on s'appuie sur `i`, jamais sur la place dans le tableau
+  return list.slice(0, ED.EVENTS_MAX).map((r, k) => {
+    const i = Number.isInteger(plain(r).i) && r.i >= 0 ? r.i : k;
+    return entryOf(r, i, raw[i]?.at ?? '');
+  });
 }
 
 /** La forme que la V2 lira d'une ligne : « H+45 », « H-15 », « H », « EV-1+10 », « B+20 », « ORDER-5 », « ROMEO+10 » ; '' sans heure lue. */
@@ -123,7 +129,9 @@ export function mirror(e) {
 
 /** Le premier EV-n libre (le fichier, puis les lignes de la séance) ; '' au-delà de 999. */
 export function nextEventId(doc, entries) {
-  const used = new Set([...read(doc).map(e => e.id), ...(Array.isArray(entries) ? entries : []).map(e => plain(e).id)]);
+  // jamais un EV-n déjà ÉCRIT dans le fichier, même celui d'un doublon que le lecteur renvoie sous « ＠<i> »
+  const used = new Set([...read(doc).map(e => e.id), ...ED.eventsRawOf(doc).map(e => e.id), ...(Array.isArray(entries) ? entries : []).map(
+    e => plain(e).id)]);
   for (let n = 1; n <= 999; n++)
     if (!used.has(`EV-${n}`)) return `EV-${n}`;
   return '';
@@ -203,11 +211,12 @@ export function withFlow(doc, entries) {
     const prev = read(doc),
       list = (Array.isArray(entries) ? entries : []).slice(0, ED.EVENTS_MAX),
       raw = ED.eventsRawOf(doc);
-    if (JSON.stringify(list.map(core)) === JSON.stringify(prev.map(core)) && list.every((e, k) => plain(e).i === k)) return out;
-    const used = new Set(list.map(e => plain(e).id).filter(id => ID_RE.test(id))),
+    const byI = new Map(prev.map(x => [x.i, x]));
+    if (JSON.stringify(list.map(core)) === JSON.stringify(prev.map(core)) && list.every((e, k) => plain(e).i === prev[k]?.i)) return out;
+    const used = new Set([...list.map(e => plain(e).id), ...raw.map(r => r.id)].filter(id => ID_RE.test(id))),
       objs = list.map(e => {
         e = plain(e);
-        const was = Number.isInteger(e.i) && e.i >= 0 ? prev[e.i] : null;
+        const was = Number.isInteger(e.i) && e.i >= 0 ? byI.get(e.i) : null;
         if (was && core(was) === core(e) && raw[e.i]) return structuredClone(raw[e.i]); // inchangé : l'objet du fichier
         let id = ID_RE.test(e.id) ? e.id : '';
         if (!id) { // une ligne de la V2 retouchée reçoit son identifiant (les autres la citeront)
@@ -263,16 +272,33 @@ export const teamLetters = doc => ED.teamsOf(doc).slice(0, LETTERS.length).map((
 /** L'heure d'une ligne (voir l'en-tête). ctx.drawers : les tiroirs de la séance (leur rang nomme « T2 »). */
 export function whenOf(e, ctx, t) {
   if (!Number.isInteger(e.offset)) return e.at || '—'; // l'heure de la V2 non lue : telle que le fichier l'écrit
-  const n = e.offset,
-    sign = n < 0 ? '−' : '+';
+  const n = e.offset;
   if (e.refKind === 'takeoff') return n === 0 ? 'H' : `H${n < 0 ? '-' : '+'}${Math.abs(n)}`;
-  let name = e.refId;
-  if (e.refKind === 'order') name = t('flOrder');
-  else if (e.refKind === 'drawer') {
+  const name = refName(e, ctx, t);
+  return n === 0 ? name : `${name} ${n < 0 ? '−' : '+'} ${Math.abs(n)}`;
+}
+
+/** Le nom d'un lieu de la mission (`id` : son identifiant ; ctx.places : placesOf) : son nom, sinon l'identifiant. */
+const placeName = (ctx, id) => {
+  const p = (ctx?.places || []).find(x => x.id && x.id.toUpperCase() === String(id).toUpperCase());
+  return p?.name || String(id || '');
+};
+
+/** Un titre coupé à quatorze signes, « … » compris (« Rendez-vous a… ») ; entier jusqu'à quatorze. */
+const short = v => v.length > 14 ? `${v.slice(0, 13).trimEnd()}…` : v;
+
+/** Le repère d'une ligne dit pour l'auteur — JAMAIS l'identifiant d'un événement : un autre événement par le NOM de son lieu s'il en a un, sinon
+ *  son titre coupé (« ROMEO », « Rendez-vous a… ») ; un tiroir par son rang (« T2 ») ; un point par son nom ; l'ordre (« ordre »).
+ *  ctx : { drawers, entries, places }. */
+export function refName(e, ctx, t) {
+  if (e.refKind === 'order') return t('flOrder');
+  if (e.refKind === 'point') return placeName(ctx, e.refId);
+  if (e.refKind === 'drawer') {
     const k = (ctx?.drawers || []).findIndex(d => d.id === e.refId);
-    name = `${t('flDrawerShort')}${k >= 0 ? k + 1 : e.refId}`;
+    return `${t('flDrawerShort')}${k >= 0 ? k + 1 : ''}`;
   }
-  return n === 0 ? name : `${name} ${sign} ${Math.abs(n)}`;
+  const o = (ctx?.entries || []).find(x => x.id && x.id === e.refId);
+  return o ? o.place ? placeName(ctx, o.place) : short(o.title || o.text || t('flNoTitle')) : t('flNoTitle');
 }
 
 /** La tolérance d'une ligne (voir l'en-tête). */
@@ -289,16 +315,19 @@ export function tolOf(e, t) {
 
 /** Le déroulé : les événements et les tiroirs, TRIÉS PAR L'HEURE (voir l'en-tête). `drawers` : les lignes de tiroir de la séance
  *  (editor_drawers.js drawerRowsOf). */
-export function rows(doc, entries, drawers, t) {
+export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
   const plan = plannedOf(doc),
+    ctx = {
+      drawers,
+      entries,
+      places
+    },
     evs = (Array.isArray(entries) ? entries : []).map((e, n) => ({
       kind: 'event',
       n,
       id: e.id,
       min: e.id && Number.isFinite(plan.get(e.id)) ? plan.get(e.id) : null,
-      when: whenOf(e, {
-        drawers
-      }, t),
+      when: whenOf(e, ctx, t),
       tol: tolOf(e, t),
       title: e.title || e.text || t('flNoTitle'),
       sub: [e.place || t('flNoPlace'), e.title && e.text ? e.text : ''].filter(Boolean).join(' · '),
@@ -350,7 +379,7 @@ export function targets(doc, entries, n, drawers, kind) {
   }));
   if (kind === 'point') return ED.placesOf(doc).filter(p => p.id && !['dep', 'arr'].includes(p.kind)).map(p => ({
     id: p.id,
-    label: p.name ? `${p.id} — ${p.name}` : p.id
+    label: p.name || p.id
   }));
   if (kind !== 'event') return [];
   let dep = [];
@@ -361,6 +390,34 @@ export function targets(doc, entries, n, drawers, kind) {
   }
   return list.filter((e, k) => k !== n && e.id && !dep.includes(e.id)).map(e => ({
     id: e.id,
-    label: e.title || e.id
+    label: e.title || (e.place ? ED.placesOf(doc).find(p => p.id && p.id.toUpperCase() === e.place)?.name || e.place : e.text.slice(0,
+      40)) // jamais l'identifiant
   }));
+}
+
+/** Le temps de réception de l'ordre, en minutes AVANT le décollage (timeline.order_offset_min = −n) : un nombre, ou '' quand il n'est pas donné. */
+export const orderOf = doc => {
+  const v = plain(plain(doc).timeline).order_offset_min;
+  return Number.isFinite(v) && v <= 0 ? Math.min(1440, Math.round(-v)) : '';
+};
+
+/** Vrai quand la mission peut porter `timeline.order_offset_min` (une chronologie en liste ou un texte nu ne le peut pas). */
+export const orderStorable = doc => {
+  const t = plain(doc).timeline;
+  return t === undefined || t === null || !!t && typeof t === 'object' && !Array.isArray(t);
+};
+
+/** Le document avec le temps de réception de l'ordre posé (`n` minutes avant le décollage, 0 à 1 440) ou effacé (`n` vide). */
+export function withOrder(doc, n) {
+  const out = structuredClone(plain(doc));
+  if (!orderStorable(out)) return out;
+  const v = n === '' || n === null || n === undefined ? null : int(n, [0, 1440]),
+    tl = {
+      ...plain(out.timeline)
+    };
+  if (v === null) delete tl.order_offset_min;
+  else tl.order_offset_min = -v;
+  if (Object.keys(tl).length) out.timeline = tl;
+  else delete out.timeline;
+  return out;
 }

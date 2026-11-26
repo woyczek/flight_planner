@@ -418,7 +418,9 @@ below are **optional keys of `timeline.events[i]`**, ignored by the V2 (which ke
 | `tol_early_min`, `tol_late_min` | the tolerance before and after the planned time | 0 to 240 |
 | `imposed` | the time does not shift, even if its reference is held late | boolean |
 
-Beside the events: `timeline.order_offset_min` (−1 440 to 0), the planned receipt of the order, in minutes from the **planned** take-off.
+Beside the events: `timeline.order_offset_min` (−1 440 to 0), the planned receipt of the order, in minutes from the **planned** take-off. The
+workshop writes it from the field « Ordre reçu : n min avant le décollage » of the Cadre (−n; erased when the field is emptied); while it is
+absent an event with `ref: order` has no planned time, and « À compléter » says « l'heure de réception de l'ordre ».
 A drawer (`phases[i]`) gains `teams` (the same letters) and keeps its letter as its id (`drawer:B`).
 
 ```yaml
@@ -440,6 +442,8 @@ timeline:
 - **A V2 event** (`at: H+30mn` alone) is read as the take-off + 30 minutes when it can be (shown « H+30 »); a time that is not of that form is
   read as « old » (`legacy`): shown as written, planned at no time (last in the sequence). **It is not rewritten until it is edited** — a
   file that is only opened and saved keeps the same keys and values; the first edit gives it its `id`.
+- **How the workshop names a reference**: never by an event's identifier — another event by the NAME of its place when it has one, else by its
+  title cut at fourteen signs (« Rendez-vous a… »); a drawer by its rank (« T2 »); a point by its name; the order as « ordre ».
 - **An event under a drawer** (`ref: drawer:<letter>`) is hidden with it: the pilot sees it once the drawer is read; the workshop sorts it right
   under its drawer.
 - **Cycles and dead references**: an event never proposes itself or one of its dependents as reference; a reference to an unknown event, drawer

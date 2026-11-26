@@ -21,7 +21,7 @@ export const FTX = {
   flFallback: ['repli H+{n}', 'fallback H+{n}', 'Ersatz H+{n}', 'reserva H+{n}'],
   flImposedTag: ['imposée', 'imposed', 'vorgegeben', 'impuesta'],
   flNoPlace: ['aucun lieu', 'no place', 'kein Ort', 'ningún lugar'],
-  flOrder: ['Ordre', 'Order', 'Auftrag', 'Orden'],
+  flOrder: ['ordre', 'order', 'Auftrag', 'orden'],
   flTolSame: ['± {a} min', '± {a} min', '± {a} Min.', '± {a} min'],
   flTolDiff: ['−{a} / +{b} min', '−{a} / +{b} min', '−{a} / +{b} Min.', '−{a} / +{b} min'],
   flDrawerTitle: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
@@ -37,10 +37,10 @@ export const FTX = {
   flFull: ['Le déroulé est plein : soixante événements au plus.', 'The sequence is full: sixty events at most.',
     'Der Ablauf ist voll: höchstens sechzig Ereignisse.', 'El desarrollo está lleno: sesenta eventos como máximo.'
   ],
-  flRemoved: ['{id} retiré ; ses dépendants gardent leur heure, comptée depuis le décollage.',
-    '{id} removed; its dependents keep their time, counted from take-off.',
-    '{id} entfernt; abhängige Ereignisse behalten ihre Zeit, ab dem Start gerechnet.',
-    '{id} quitado; los que dependían de él conservan su hora, contada desde el despegue.'
+  flRemoved: ['« {t} » retiré ; ses dépendants gardent leur heure, comptée depuis le décollage.',
+    '“{t}” removed; its dependents keep their time, counted from take-off.',
+    '„{t}“ entfernt; abhängige Ereignisse behalten ihre Zeit, ab dem Start gerechnet.',
+    '«{t}» quitado; los que dependían de él conservan su hora, contada desde el despegue.'
   ],
   // la fiche d'un événement
   fsKind: ['prévu au brief · se constate, sans geste', 'planned in the brief · observed, no gesture',
@@ -93,5 +93,13 @@ export const FTX = {
   fsRName_order: ['la réception de l\'ordre', 'the receipt of the order', 'der Empfang des Auftrags', 'la recepción de la orden'],
   fsRName_drawer: ['le tiroir {n}', 'drawer {n}', 'Schublade {n}', 'el cajón {n}'],
   fsRName_point: ['le passage à {id}', 'passing {id}', 'das Passieren von {id}', 'el paso por {id}'],
+  fsOrderL: ['Ordre reçu', 'Order received', 'Auftrag erhalten', 'Orden recibida'],
+  fsOrderU: ['min avant le décollage', 'min before take-off', 'Min. vor dem Start', 'min antes del despegue'],
+  fsNoOrder: ['L\'heure de réception de l\'ordre n\'est pas donnée : elle se règle dans le Cadre.',
+    'The time the order is received is not given: set it in the Cadre.',
+    'Die Zeit des Auftragseingangs ist nicht angegeben: sie wird im Rahmen eingestellt.',
+    'La hora de recepción de la orden no está dada: se ajusta en el Marco.'
+  ],
+  fsOpenCadre: ['Ouvrir le Cadre', 'Open the Cadre', 'Rahmen öffnen', 'Abrir el Marco'],
   fsDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
 };

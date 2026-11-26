@@ -8,8 +8,9 @@
 // L'état de la séance (s.ed) : `flow` (les lignes d'événement, editor_flow.js read ; absentes tant que le groupe n'est pas ouvert),
 // `flowSel` (la ligne dont la fiche est ouverte, -1 sinon). Le document de la séance les prend par EF.withFlow (edDoc). Une retouche
 // passe par les gestes de l'atelier — `h.draw` (le dessin, qui garde le brouillon), `h.refresh` (la frappe : sur place, le brouillon
-// suit), `h.clear` (« Annuler le geste » n'a plus rien à rendre : une retouche de la fiche, comme une saisie) — que editor_view.js
-// donne : h = { doc(e), shown(e, rows), drawers(e), draw(s), refresh(s), clear(e) }.
+// suit), `h.remember` (l'instantané d'avant un choix, un ajout, un retrait : « Annuler le geste » le rend), `h.clear` (une saisie vide
+// l'historique, la règle de l'atelier) — que editor_view.js donne : h = { doc(e), shown(e, rows), drawers(e), draw(s), refresh(s), clear(e),
+// remember(e) }.
 //
 // API : flowHtml(s, h) → le bloc (une chaîne) ; input(s, ev, h) → une saisie ou un choix de la fiche (data-k="edflow") ; act(s, b, h) → vrai
 //   quand le geste est celui du déroulé (edflowsel, edflowadd, edflowdel).
@@ -51,6 +52,37 @@ const STYLE = `<style>
 /** Le texte d'une clé du déroulé, dans la langue de l'écran. */
 const tr = s => (k, v) => s.tt(FTX[k], v);
 
+/** Ce que l'écran du déroulé lit de la séance : le document, les tiroirs, les lieux MONTRÉS, et les lignes telles que l'écran les dit (`live`) :
+ *  le lieu et le repère « point » à l'identifiant d'AUJOURD'HUI (un lieu renommé dans les Lieux se lit renommé ici, un lieu retiré se lit
+ *  « aucun lieu »), et, dans l'atelier voilé, un lieu caché se lit « aucun lieu » (la ligne de la séance garde l'identifiant du fichier,
+ *  edDoc fait suivre le document). */
+function ctxOf(e, h) {
+  const doc = h.doc(e),
+    places = h.shown(e, ED.placesOf(doc)).filter(Boolean),
+    ids = new Set(places.map(p => p.id.toUpperCase())),
+    ok = id => !e.veil || ids.has(String(id).toUpperCase()),
+    live = x => {
+      if (!x) return x;
+      const place = x.place && e.places ? ED.refNow(x.place, e.base, e.places).toUpperCase() : x.place,
+        refId = x.refKind === 'point' && x.refId && e.places ? ED.refNow(x.refId, e.base, e.places) : x.refId;
+      return {
+        ...x,
+        place: place && ok(place) ? place : '',
+        refId: x.refKind === 'point' && !ok(refId) ? '' : refId
+      };
+    };
+  return {
+    doc,
+    places,
+    drawers: e.veil ? [] : h.drawers(e),
+    live,
+    list: (e.flow || []).map(live),
+    get entries() {
+      return this.list;
+    }
+  };
+}
+
 /** Le tiroir `id` de la séance et son rang (1…), sinon null. */
 const drawerOf = (drawers, id) => {
   const k = drawers.findIndex(d => d.id === id);
@@ -60,22 +92,22 @@ const drawerOf = (drawers, id) => {
   };
 };
 
-/** Ce que dit le repère d'une ligne dans « Le pilote lira » : « le rendez-vous », « le passage à ROMEO », « la réception de l'ordre »,
- *  « le tiroir 2 » ; l'événement cité par son titre. */
-function refName(s, e, list, drawers) {
+/** Ce que dit le repère d'une ligne dans « Le pilote lira » : « le passage à ROMEO », « la réception de l'ordre », « le tiroir 2 » ; un autre
+ *  événement par son titre (sans titre : le nom de son lieu) — jamais un identifiant d'événement. `c` : ctxOf. */
+function refName(s, e, c) {
   if (e.refKind === 'order') return s.tt(FTX.fsRName_order);
+  const t = tr(s);
   if (e.refKind === 'point') return s.tt(FTX.fsRName_point, {
-    id: e.refId
+    id: EF.refName(e, c, t)
   });
   if (e.refKind === 'drawer') return s.tt(FTX.fsRName_drawer, {
-    n: drawerOf(drawers, e.refId)?.rank ?? e.refId
+    n: drawerOf(c.drawers, e.refId)?.rank ?? ''
   });
-  const o = list.find(x => x.id === e.refId);
-  return o?.title || e.refId;
+  return c.list.find(x => x.id && x.id === e.refId)?.title || EF.refName(e, c, t);
 }
 
 /** « H+45 (± 10 min) » ou « 10 min après le rendez-vous (± 2 min) » : ce que le pilote lira de l'heure d'une ligne. */
-function readWhen(s, e, list, drawers) {
+function readWhen(s, e, c) {
   const t = tr(s),
     tol = EF.tolOf({
       ...e,
@@ -84,11 +116,9 @@ function readWhen(s, e, list, drawers) {
     n = Number.isInteger(e.offset) ? e.offset : null;
   let when;
   if (n === null) when = e.at || '';
-  else if (e.refKind === 'takeoff') when = EF.whenOf(e, {
-    drawers
-  }, t);
+  else if (e.refKind === 'takeoff') when = EF.whenOf(e, c, t);
   else {
-    const r = refName(s, e, list, drawers);
+    const r = refName(s, e, c);
     when = n === 0 ? r : s.tt(n < 0 ? FTX.fsBefore : FTX.fsAfter, {
       n: Math.abs(n),
       r
@@ -98,19 +128,17 @@ function readWhen(s, e, list, drawers) {
 }
 
 /** La phrase « Le pilote lira : … » d'une ligne. */
-const readLine = (s, e, list, drawers) => s.tt(FTX.fsRead, {
-  t: `${readWhen(s, e, list, drawers)} · ${e.title || e.text || s.tt(FTX.flNoTitle)}`
+const readLine = (s, e, c) => s.tt(FTX.fsRead, {
+  t: `${readWhen(s, e, c)} · ${e.title || e.text || s.tt(FTX.flNoTitle)}`
 });
 
 /** Les lignes du déroulé (le contenu de [data-flowrows]). */
 function rowsHtml(s, h) {
   const e = s.ed,
-    doc = h.doc(e),
-    list = e.flow || [],
-    drawers = e.veil ? [] : h.drawers(e),
+    c = ctxOf(e, h),
     t = tr(s),
-    teams = new Map(EF.teamLetters(doc).map(x => [x.letter, x.name])),
-    rows = EF.rows(doc, list, drawers, t);
+    teams = new Map(EF.teamLetters(c.doc).map(x => [x.letter, x.name])),
+    rows = EF.rows(c.doc, c.list, c.drawers, t, c.places);
   if (!rows.length) return `<p class="f-muted" data-noevent>${esc(s.tt(FTX.flNone))}</p>`;
   return rows.map(r => {
     const ev = r.kind === 'event',
@@ -124,19 +152,22 @@ function rowsHtml(s, h) {
 /** La fiche de l'événement choisi (sinon ''). */
 function sheetHtml(s, h) {
   const e = s.ed,
-    row = e.flow?.[e.flowSel];
+    c = ctxOf(e, h),
+    row = c.live(e.flow?.[e.flowSel]);
   if (!row) return '';
-  const doc = h.doc(e),
-    drawers = e.veil ? [] : h.drawers(e),
-    list = e.flow,
-    opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
+  const {
+    doc,
+    drawers,
+    list
+  } = c,
+  opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
     places = h.shown(e, ED.placesOf(doc)).filter(p => p && p.id && !['dep', 'arr', 'object'].includes(p.kind)),
     place = e.veil && row.place && !places.some(p => p.id.toUpperCase() === row.place) ? '' : row.place,
     tg = EF.targets(doc, list, e.flowSel, drawers, row.refKind),
     // un repère que le fichier cite et que rien ne propose plus reste choisi (il ne disparaît pas en silence)
     tgs = row.refId && !tg.some(x => x.id === row.refId) ? [...tg, {
       id: row.refId,
-      label: row.refId
+      label: ''
     }] : tg,
     teams = EF.teamLetters(doc),
     num = (f, v, [lo, hi], label) => `<input type="number" inputmode="numeric" data-k="edflow" data-f="${f}" value="${Number.isInteger(v) ? v : ''}" min="${lo}" max="${hi}" step="1" aria-label="${esc(label)}">`,
@@ -146,14 +177,15 @@ function sheetHtml(s, h) {
     <label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsText))}</span><input data-k="edflow" data-f="text" value="${esc(row.text)}" maxlength="${EF.TEXT_MAX}" autocomplete="off"></label>
     <div class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsWhen))}</span><div class="fl-inline">
       <select data-k="edflow" data-f="refKind" aria-label="${esc(s.tt(FTX.fsRefAria))}">${EF.REFS.filter(k => k !== 'drawer' || drawers.length).map(k => opt(k, s.tt(FTX[`fsRef_${k}`]), row.refKind)).join('')}</select>
-      ${['point', 'event', 'drawer'].includes(row.refKind) ? `<select data-k="edflow" data-f="refId" aria-label="${esc(s.tt(FTX.fsTarget))}">${opt('', '—', row.refId)}${tgs.map(x => opt(x.id, row.refKind === 'drawer' ? `${s.tt(FTX.flDrawerTitle, { n: x.rank ?? '' })}${x.label && x.label !== x.id ? ` · ${x.label}` : ''}` : x.label, row.refId)).join('')}</select>` : ''}
+      ${['point', 'event', 'drawer'].includes(row.refKind) ? `<select data-k="edflow" data-f="refId" aria-label="${esc(s.tt(FTX.fsTarget))}">${opt('', '—', row.refId)}${tgs.map(x => opt(x.id, row.refKind === 'drawer' ? `${s.tt(FTX.flDrawerTitle, { n: x.rank ?? '' })}${x.label && x.label !== x.id ? ` · ${x.label}` : ''}` : x.label || s.tt(FTX.flNoTitle), row.refId)).join('')}</select>` : ''}
       <span>${esc(s.tt(FTX.fsPlus))}</span>${num('offset', row.offset, EF.OFFSET, s.tt(FTX.fsOffset))}<span>${esc(s.tt(FTX.fsMin))}</span></div>
+      ${row.refKind === 'order' && EF.orderOf(doc) === '' ? `<span class="f-muted" data-floworder>${esc(s.tt(FTX.fsNoOrder))} <button type="button" class="f-linkbtn" data-do="edstep" data-step="cadre">${esc(s.tt(FTX.fsOpenCadre))}</button></span>` : ''}
       ${!Number.isInteger(row.offset) && row.at ? `<span class="f-muted" data-flowlegacy>${esc(s.tt(FTX.fsLegacy, { at: row.at }))}</span>` : ''}</div>
     <div class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsTol))}</span><div class="fl-inline"><span>${esc(s.tt(FTX.fsEarly))}</span>${num('early', row.early, EF.TOL, s.tt(FTX.fsEarly))}<span>${esc(s.tt(FTX.fsLate))}</span>${num('late', row.late, EF.TOL, s.tt(FTX.fsLate))}<span>${esc(s.tt(FTX.fsMin))}</span></div></div>
     <label class="fl-inline"><input type="checkbox" data-k="edflow" data-f="imposed"${row.imposed ? ' checked' : ''}><span>${esc(s.tt(FTX.fsImposed))}</span></label>
     <label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsPlace))}</span><select data-k="edflow" data-f="place">${opt('', s.tt(FTX.fsNoPlace), place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(place && !places.some(p => p.id.toUpperCase() === place) ? [[place, place]] : [])].map(([v, l]) => opt(v, l, place)).join('')}</select></label>
     <div class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsTeams))}</span>${teams.length ? `<div class="fl-teams">${teams.map(x => `<label><input type="checkbox" data-k="edflow" data-f="team" data-l="${x.letter}"${row.teams.includes(x.letter) ? ' checked' : ''}><span>${esc(x.name)}</span></label>`).join('')}</div><span class="f-muted">${esc(s.tt(FTX.fsTeamsAll))}</span>` : `<span class="f-muted">${esc(s.tt(FTX.fsNoTeams))}</span>`}</div>
-    <p class="fl-read f-muted" data-flowread>${esc(readLine(s, row, list, drawers))}</p>
+    <p class="fl-read f-muted" data-flowread>${esc(readLine(s, row, c))}</p>
     <div class="f-row"><button type="button" class="f-linkbtn" data-do="edflowdel" data-n="${n}">${esc(s.tt(FTX.fsDel))}</button></div></div>`;
 }
 
@@ -172,12 +204,13 @@ export function flowHtml(s, h) {
 function showLive(s, h) {
   const e = s.ed,
     rows = s.el.querySelector('[data-flowrows]'),
-    row = e.flow?.[e.flowSel],
+    c = ctxOf(e, h),
+    row = c.live(e.flow?.[e.flowSel]),
     html = rowsHtml(s, h);
   if (rows && rows.innerHTML !== html) rows.innerHTML = html;
   const read = s.el.querySelector('[data-flowread]');
   if (read && row) {
-    const txt = readLine(s, row, e.flow, e.veil ? [] : h.drawers(e));
+    const txt = readLine(s, row, c);
     if (read.textContent !== txt) read.textContent = txt;
   }
 }
@@ -187,6 +220,14 @@ export function input(s, ev, h) {
     t = ev.target,
     f = t?.dataset?.f,
     row = e.flow?.[e.flowSel];
+  if (f === 'order') { // « Ordre reçu » du Cadre : timeline.order_offset_min = −n ; vide, la clé est effacée
+    const v = String(t.value ?? '').trim(),
+      n = Number(v);
+    e.orderMin = v === '' || !Number.isFinite(n) ? '' : Math.min(1440, Math.max(0, Math.round(n)));
+    h.clear(e);
+    h.refresh(s);
+    return showLive(s, h);
+  }
   if (!row || !f) return;
   const doc = h.doc(e),
     drawers = e.veil ? [] : h.drawers(e);
@@ -203,29 +244,35 @@ export function input(s, ev, h) {
     const n = Number(t.value);
     row[f] = Number.isFinite(n) && t.value !== '' ? Math.min(EF.TOL[1], Math.max(EF.TOL[0], Math.round(n))) : 0;
     soft = true;
-  } else if (f === 'imposed') row.imposed = t.checked === true;
-  else if (f === 'refKind') {
+  } else if (f === 'imposed') {
+    h.remember(e);
+    row.imposed = t.checked === true;
+  } else if (f === 'refKind') {
     if (!EF.REFS.includes(t.value) || t.value === row.refKind) return;
+    h.remember(e);
     row.refKind = t.value;
     row.refId = EF.targets(doc, e.flow, e.flowSel, drawers, row.refKind)[0]?.id || ''; // la première cible proposée, jamais une cible vide
     if (!Number.isInteger(row.offset)) row.offset = 0; // choisir un repère, c'est lire l'heure : plus d'« ancienne »
   } else if (f === 'refId') {
     if (!EF.targets(doc, e.flow, e.flowSel, drawers, row.refKind).some(x => x.id === t.value) && t.value !== '') return;
+    h.remember(e);
     row.refId = t.value;
   } else if (f === 'place') {
     // atelier voilé : seul un lieu montré (ou aucun) se choisit — une page forgée ne pose pas un lieu caché
     const v = String(t.value ?? '').toUpperCase();
     if (v && e.veil && !h.shown(e, ED.placesOf(doc)).some(p => p && p.id && p.id.toUpperCase() === v)) return;
+    h.remember(e);
     row.place = v;
   } else if (f === 'team') {
     const l = String(t.dataset.l || ''),
       on = new Set(row.teams);
     if (!EF.teamLetters(doc).some(x => x.letter === l)) return;
+    h.remember(e);
     if (t.checked) on.add(l);
     else on.delete(l);
     row.teams = [...on].sort();
   } else return;
-  h.clear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+  if (soft) h.clear(e); // une saisie vide l'historique (la règle de l'atelier) ; un choix, lui, s'annule (h.remember, avant)
   if (!soft) return h.draw(s);
   h.refresh(s);
   showLive(s, h);
@@ -250,10 +297,10 @@ export function act(s, b, h) {
   if (what === 'edflowadd') {
     const ev = EF.blank(h.doc(e), e.flow);
     if (!ev || !ED.eventsStorable(h.doc(e))) return true;
+    h.remember(e);
     e.flow = [...e.flow, ev];
     e.flowSel = e.flow.length - 1;
     e.sel = 'start';
-    h.clear(e);
     h.draw(s);
     s.el.querySelector('[data-flowsheet] [data-f=title]')?.focus?.();
     return true;
@@ -262,12 +309,22 @@ export function act(s, b, h) {
   // « Retirer cet événement » : ses dépendants gardent leur heure, comptée depuis le décollage (une phrase le dit)
   const gone = e.flow[n],
     moved = e.flow.some(x => x.refKind === 'event' && gone.id && x.refId === gone.id);
+  h.remember(e);
   e.flow = EF.without(e.flow, n, EF.plannedOf(h.doc(e)));
   e.flowSel = -1;
-  h.clear(e);
   h.draw(s);
   if (moved) s.ctx.notify?.(s.tt(FTX.flRemoved, {
-    id: gone.id
+    t: gone.title || gone.text || s.tt(FTX.flNoTitle)
   }), 'info');
   return true;
+}
+
+/** Le champ « Ordre reçu : n min avant le décollage » du Cadre (timeline.order_offset_min = −n ; vide : la clé est effacée) ; '' quand la
+ *  chronologie du fichier ne peut pas la porter. */
+export function orderHtml(s, h) {
+  const e = s.ed,
+    doc = h.doc(e);
+  if (!EF.orderStorable(doc)) return '';
+  const v = EF.orderOf(doc);
+  return `<div class="f-field" data-floworderfield><span class="ms-tlabel f-muted">${esc(s.tt(FTX.fsOrderL))}</span><div class="fl-inline"><input type="number" inputmode="numeric" data-k="edflow" data-f="order" value="${v}" min="0" max="1440" step="1" aria-label="${esc(s.tt(FTX.fsOrderL))}"><span>${esc(s.tt(FTX.fsOrderU))}</span></div></div>`;
 }

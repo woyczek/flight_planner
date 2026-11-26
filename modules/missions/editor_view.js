@@ -906,6 +906,7 @@ function edCadreHtml(s) {
     <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), idHint ? '' : seriesHint)}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
+    ${FV.orderHtml(s, FLOW_H)}
 `;
 }
 
@@ -919,6 +920,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.story) d = ED.withStory(d, e.story);
   if (e.risks) d = ED.withRisks(d, e.risks);
   if (e.flow) d = EF.withFlow(d, e.flow); // SOG-0620 : le déroulé (les événements et leurs heures)
+  if (e.orderMin !== undefined) d = EF.withOrder(d, e.orderMin); // SOG-0620 : « Ordre reçu » du Cadre
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
   if (e.mapWant) d = ED.withMapLook(d, e.mapWant); // SOG-0456 : le fond et la couche de la carte, choisis par l'auteur
   if (e.model !== undefined) d = CAT.withModel(d, e.model); // le modèle posé dans la séance (lot « modèles de mission », décision D)
@@ -1221,7 +1223,8 @@ const FLOW_H = {
   drawers: e => edDrawers(e),
   draw: s => draw(s),
   refresh: s => edRefresh(s),
-  clear: e => edUndoClear(e)
+  clear: e => edUndoClear(e),
+  remember: e => edMapRemember(e) // SOG-0620 : « Annuler le geste » rend l'état d'avant (le déroulé est dans l'instantané : edMapSnap)
 };
 
 /** Vrai sur un module large (la fiche à côté de la carte) : à l'ouverture, le premier groupe de la fiche est déplié ; sur un module
@@ -2678,7 +2681,9 @@ function edMapSnap(e) {
       object: r.object
     })),
     rows: edDrawers(e).map(r => structuredClone(
-      r)) // lot 4 : les tiroirs eux-mêmes — « ＋ Tiroir » s'annule (le tiroir part), et « Rétablir » le rend
+      r)), // lot 4 : les tiroirs eux-mêmes — « ＋ Tiroir » s'annule (le tiroir part), et « Rétablir » le rend
+    flow: e.flow ? structuredClone(e.flow) : null, // SOG-0620 : le déroulé (un événement ajouté, retiré ou retouché s'annule)
+    flowSel: e.flowSel ?? -1
   };
 }
 
@@ -2689,6 +2694,7 @@ function edMapBack(s, e, snap) {
     now = snap.places[edMapSel(e)],
     same = !!was && !!now && now.kind === was.kind && now.id === was.id;
   e.places = snap.places;
+  if (snap.flow)[e.flow, e.flowSel] = [snap.flow, snap.flowSel ?? -1]; // SOG-0620
   e.route = Array.isArray(snap.route) ? snap.route : null;
   if (e.drawers && Array.isArray(snap
       .rows

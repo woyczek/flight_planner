@@ -3802,6 +3802,9 @@ def n56(c):
 
 
 
+# SOG-0620 lot 2: the list of events of the group « Chronologie et cartes » is replaced by the block « Déroulé » — same intention (an event added
+# with a time, a place of the mission and what happens, written in timeline.events with the declared maps kept), played on the sheet of the new
+# event: the time is a reference (the take-off) + 30 minutes, which the workshop also writes as `at: H+30` for the V2.
 @case('N57', 'Missions › editor, step 6 (Chronologie et cartes): an event added (H+30mn, a place of the mission, what happens); the declared maps '
       'listed; « Proposer les cartes depuis les lieux » adds the missing entries (target, its detail, the rendezvous, the second zone) and '
       'keeps the others; « Enregistrer » writes timeline.events and the maps', 'N', tags=('missions',), designs=('standard',), screens=False,
@@ -3816,16 +3819,17 @@ def n57(c):
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the Chronologie')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"), ['general', 'zone_1', 'bad'],
          'the declared maps', what='maps')
-    c.tap(f'{E} [data-do="edeventadd"]')
+    c.tap(f'{E} [data-do="edflowadd"]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet]')", what='the sheet of the new event')
     _tab(c, 'mission')
-    c.page.fill(f'{E} [data-event="0"] [data-f=at]', 'H+30mn')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=offset]', '30')
     _tab(c, 'mission')
-    c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'PT1')
+    c.page.select_option(f'{E} [data-flowsheet] select[data-f=place]', 'PT1')
     _tab(c, 'mission')
-    c.page.fill(f'{E} [data-event="0"] [data-f=text]', 'Un message inventé arrive.')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=text]', 'Un message inventé arrive.')
     c.tap(f'{E} [data-do="edmapspropose"]')
     c.until(f"document.querySelectorAll('{E} [data-edmaps] [data-map]').length > 3", what='the proposed maps')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"),
@@ -3838,7 +3842,7 @@ def n57(c):
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
-    c.ok('timeline:' in t and 'at: H+30mn' in t and 'place: PT1' in t and 'Un message inventé arrive.' in t, t[t.find('timeline'):][:300],
+    c.ok('timeline:' in t and 'at: H+30' in t and 'place: PT1' in t and 'Un message inventé arrive.' in t, t[t.find('timeline'):][:300],
          'the event written in timeline.events')
     c.ok('id: detail_rdv_1' in t and 'id: zone_2' in t and 'filename: ../../secret.png' in t and 'Danger cinq' in t, t[t.find('maps:'):][:600],
          'the proposed maps added, the declared ones (even a refused path) kept as written')
@@ -3950,6 +3954,8 @@ _TOLERATED_JS = """async () => { const ED = await import('/modules/missions/edit
   out.same = same; return out }"""
 
 
+# SOG-0620 lot 2: the last part (the step itself) is played on the block « Déroulé »: the two events of the list-form timeline are two rows, the
+# event added by « ＋ Événement » takes its consigne on its sheet, and the list is kept as a list (no `events:` key).
 @case('N60', 'Missions › editor, audit 190 and the review of tolerated shapes: a timeline written as a LIST (or chronology, or an event text '
       'under description / label) is shown and kept — an added event never replaces it; maps as plain file names listed; proposed file '
       'names without a free identifier; a null aircraft kept; radiusKm, centre under « center », participants and secondary objectives as '
@@ -3982,10 +3988,11 @@ def n60(c):
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events of the list shown')
-    c.tap(f'{E} [data-do="edeventadd"]')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 2", what='the two events of the list shown')
+    c.tap(f'{E} [data-do="edflowadd"]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet]')", what='the sheet of the new event')
     _tab(c, 'mission')
-    c.page.fill(f'{E} [data-event="2"] [data-f=text]', 'Troisième inventé')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=text]', 'Troisième inventé')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
@@ -4240,7 +4247,8 @@ _REF_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _REF_MI
 _ED_TODO = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.dataset.todo)"
 _ED_TODO_TEXT = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.textContent).join(' | ')"
 _NOTES = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.dataset.kind + ':' + n.textContent).join(' | ')"
-_EV_PLACES = f"[...document.querySelectorAll('{E} [data-event] select[data-f=place]')].map(x => x.value)"
+# SOG-0620 lot 2: the place of each event, read from the line of the Déroulé (its second line begins with the place, « aucun lieu » for none)
+_EV_PLACES = f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event] .fl-sub')].map(x => x.textContent.split(' · ')[0]).map(p => p === 'aucun lieu' ? '' : p)"
 # the rank of the place (`data-place`) of the first line whose title starts with `start` (SOG-0482: the lines are in the order of the itinerary, a place cited twice has two), -1 without
 _PLACE_AT = """(start) => { const r = [...document.querySelectorAll('%s [data-edplaces] [data-place]')].find(r => r.querySelector('.ms-plbody b').textContent.trim().startsWith(start)); return r ? +r.dataset.place : -1 }""" % E
 
@@ -4266,7 +4274,7 @@ def n70(c):
     # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the Chronologie')
     c.eq(c.js(_EV_PLACES), ['PT1', 'RDV-1'], 'the places of the file', what='events before')
     c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef'],
          '« À compléter » says the reference already dead in the file (GHOST), nothing else', what='todo at the opening')
@@ -4330,7 +4338,7 @@ def n70(c):
     # the rows of the Chronologie, on screen since before the rename, show the identifier of today
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie again')
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the Chronologie again')
     c.eq(c.js(_EV_PLACES), ['ALPHA', ''], 'renamed in the row already on screen; the removed place is gone from its event', what='events after')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -6064,8 +6072,11 @@ def n77(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
-    opts = c.js(f"[...document.querySelectorAll('{E} [data-event] select[data-f=place] option')].map(o => o.value)")
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the Chronologie')
+    # SOG-0620 lot 2: the places of an event are the list « Lieu » of the sheet of an event (a new one is added: the mission has none)
+    c.tap(f'{E} [data-do="edflowadd"]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] select[data-f=place]')", what='the sheet of the new event')
+    opts = c.js(f"[...document.querySelectorAll('{E} [data-flowsheet] select[data-f=place] option')].map(o => o.value)")
     c.ok(opts and not any(o.startswith('OBJ') for o in opts), opts, 'no object among the places of an event (the timeline is read by the pilot)')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
@@ -9003,7 +9014,7 @@ def n114(c):
     c.until(f"document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » closed')
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie unfolded')
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the Chronologie unfolded')
     v = c.js(_VEIL_LEAKS)
     c.eq([v['found'], v['tiroir'], c.count(f'{E} [data-do="edmapspropose"]')], [[], False, 0],
          'the Chronologie: its list of places has none of the hidden ones; « Proposer les cartes » is not offered (it names the zones by their rank)', what='the Chronologie')
@@ -9189,11 +9200,12 @@ _VEIL_EV_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _VE
 _VEIL_EV_VALUES = f"""(() => {{ const root = document.querySelector('{E}'), clone = root.cloneNode(true); clone.querySelectorAll('style').forEach(x => x.remove());
   const values = [...root.querySelectorAll('input, select, textarea')].map(x => String(x.value)), opts = [...root.querySelectorAll('option')].map(o => o.value + ' ' + o.textContent);
   return {{ hits: [clone.innerHTML.includes('PT2'), clone.textContent.includes('PT2'), values.some(v => v.includes('PT2')), opts.some(o => o.includes('PT2')), opts.some(o => o.includes('Point deux'))],
-    places: [...root.querySelectorAll('[data-edevents] select[data-f=place]')].map(x => [x.value, [...x.options].map(o => o.value)]) }} }})()"""
+    places: [...root.querySelectorAll('[data-flowrows] .fl-row[data-kind=event]')].map(r => [r.querySelector('.fl-sub').textContent.split(' · ')[0] === 'aucun lieu' ? '' : r.querySelector('.fl-sub').textContent.split(' · ')[0]]) }} }})()"""
 _VEIL_EV_FILE = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const Y = globalThis.jsyaml;
   const d = Y.load(await (%s)(p), { schema: Y.CORE_SCHEMA }); return [d.title, d.timeline.events, (d.phases || []).length, (d.turning_points || []).map(t => t.id)] }""" % _TEXT_OF
 
 
+# SOG-0620 lot 2: read on the block « Déroulé » (the line of an event begins with its place, « aucun lieu » for none; the list « Lieu » is on the sheet).
 @case('N116', 'Missions › the veiled workshop, a reference to a hidden place: an event of the chronology placed on a place hidden at the '
       'departure shows its list « lieu » as an event WITHOUT a place (the empty option chosen, the visible places alone offered) — the hidden '
       'identifier is nowhere in the page (text, value of a field or a list, option); saved with another change (the title), the event of '
@@ -9211,9 +9223,10 @@ def n116(c):
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 2", what='the two events')
     v = c.js(_VEIL_EV_VALUES)
-    c.eq(v, {'hits': [False] * 5, 'places': [['', ['', 'TARGET', 'PT1']], ['PT1', ['', 'TARGET', 'PT1']]]},
+    # SOG-0620 lot 2: the places are read from the lines of the Déroulé, sorted by time (H+10 first: PT1; then H+40: the hidden PT2, « aucun lieu »)
+    c.eq(v, {'hits': [False] * 5, 'places': [['PT1'], ['']]},
          'veiled: the event at the hidden PT2 shows « aucun lieu » chosen and the visible places alone, as an event without a place; PT2 is nowhere — not in the '
          'text, not in a value, not in an option; the event at PT1 keeps PT1', what='the hidden reference')
     _tab(c, 'mission')
@@ -9229,14 +9242,18 @@ def n116(c):
     # the author chooses a place himself: his choice replaces it
     _tab(c, 'mission')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
-    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events again')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 2", what='the two events again')
     c.eq(c.js(_VEIL_EV_VALUES)['hits'], [False] * 5, 'after the save, still nothing of PT2 in the page', what='after the save')
     _tab(c, 'mission')
-    c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'TARGET')
+    c.js(f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row')].find(r => r.textContent.includes('Contact radio')).click()")  # the event at the hidden place
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] select[data-f=place]')", what='the sheet of the event at the hidden place')
+    c.page.select_option(f'{E} [data-flowsheet] select[data-f=place]', 'TARGET')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
     c.until(f"!document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved again')
-    c.eq(c.js(_VEIL_EV_FILE, path)[1][0], {'at': 'H+40mn', 'place': 'TARGET', 'text': 'Contact radio établi'}, 'a place chosen by the author replaces the hidden one',
+    got = c.js(_VEIL_EV_FILE, path)[1][0]
+    c.ok(got.get('place') == 'TARGET' and got.get('text') == 'Contact radio établi' and got.get('at') == 'H+40mn',
+         got, 'a place chosen by the author replaces the hidden one (the event, edited, gets its identifier; its V2 time is kept)',
          what='a place chosen')
     ed_leave(c)
     c.js(_REG_CLEAR)
@@ -17239,8 +17256,7 @@ def n277(c):
     c.js(_REG_CLEAR)
 
 
-# ---- SOG-0620 lot 2 : le déroulé de l'atelier et la fiche d'un événement. Trois cas, ids PROVISOIRES (N2xxA, N2xxB, N2xxC : le relais les
-# numérote) ; ils ne jouent pas avant que le lecteur de V3 Frame (frame/lib/mission.js : readEvents, plannedMin, eventDependents) soit poussé ;
+# ---- SOG-0620 lot 2 : le déroulé de l'atelier et la fiche d'un événement. Trois cas (N278, N279, N290) ; ils ne jouent pas avant que le lecteur de V3 Frame (frame/lib/mission.js : readEvents, plannedMin, eventDependents) soit poussé ;
 # la mission est celle de la maquette (deroule.html : X-980A « Exercice coordonné », ici sous l'identifiant X-001A du registre inventé).
 _FLOW_DOC = _ED_FULL + """phases:
   - { id: B, title: Zone, trigger_zone: ZONE-1, fallback_delay_min: 90, message: La cible est plus au nord., brief: Affinez la recherche. }
@@ -17269,40 +17285,42 @@ def _flow_open(c, text):
     c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the block « Déroulé »')
 
 
-@case('N2xxA', 'Missions › the workshop, SOG-0620 lot 2: the block « Déroulé » sorts the events AND the drawers by time — the planned hour of an '
+@case('N278', 'Missions › the workshop, SOG-0620 lot 2: the block « Déroulé » sorts the events AND the drawers by time — the planned hour of an '
       'event (its reference chain), the fallback hour of a drawer; an event whose reference is a drawer sits right under it, indented', 'N',
       tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
       rule='SOG-0620 lot 2, the validated mock-up deroule.html (scene a): « rangés par heure : l\'heure prévue, ou l\'heure de repli d\'un tiroir »; '
       'cannot play before the reader of V3 Frame (plannedMin) is pushed')
-def n2xxa(c):
+def n278(c):
     _flow_open(c, _FLOW_DOC)
     rows = c.js(_FLOW_ROWS % E)
     c.eq(rows, [
         ['event', 'H+45', '± 10 min', 'Rendez-vous au point PT1', False],
-        ['event', 'EV-1 + 10', '± 2 min', 'Blue : silence radio', False],
-        ['event', 'EV-1 + 12', 'imposée', 'Red : largage sur la zone', False],
+        ['event', 'Point un + 10', '± 2 min', 'Blue : silence radio', False],
+        ['event', 'Point un + 12', 'imposée', 'Red : largage sur la zone', False],
         ['drawer', 'clé', 'repli H+90', 'Tiroir 1 · Zone', False],
         ['event', 'H+100', '± 10 min', 'Red : retour à XTSU', False],
         ['drawer', 'clé', 'repli H+120', 'Tiroir 2 · Changement de zone', False],
         ['event', 'T2 + 20', '± 5 min', 'Retour groupé à la base', True]], 'sorted by time, a drawer between two events, the event of T2 under T2',
          what='the rows')
     c.eq(c.js(f"document.querySelector('{E} [data-flow] h4').textContent"), 'Déroulé', 'the title of the block', what='title')
+    c.ok(not re.search(r'EV-\d', c.js(f"document.querySelector('{E} [data-flow]').textContent")), c.js(f"document.querySelector('{E} [data-flow]').textContent"),
+         'no identifier of an event anywhere in the block (a reference reads by the NAME of the place of the event it points to)')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flow] .fl-adds button')].map(b => b.textContent.trim())"),
          ['＋ Événement', '＋ Tiroir'], 'the two additions', what='additions')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.shot('N2xxA_390_deroule.png')
+    c.shot('N278_390_deroule.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
-    c.shot('N2xxA_1280_deroule.png')
+    c.shot('N278_1280_deroule.png')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
 
-@case('N2xxB', 'Missions › the workshop, SOG-0620 lot 2: the sheet of an event — « ＋ Événement », « un autre événement » + 10 min + tolerance + '
+@case('N279', 'Missions › the workshop, SOG-0620 lot 2: the sheet of an event — « ＋ Événement », « un autre événement » + 10 min + tolerance + '
       '« heure imposée » — « Enregistrer » writes the keys (id, title, ref, offset_min, tol_early_min, tol_late_min, imposed) and the V2 mirror '
       '`at`, and leaves the other events as they were', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
       rule='SOG-0620 lot 2, the mock-up (scene b) and FORMAT_MISSION.md § 4 octies: the keys of an event, `at` as a readable mirror for the V2')
-def n2xxb(c):
+def n279(c):
     _flow_open(c, _FLOW_DOC)
     c.tap(f'{E} [data-do="edflowadd"]')
     c.until(f"!!document.querySelector('{E} [data-flowsheet]')", what='the sheet of the new event')
@@ -17315,13 +17333,17 @@ def n2xxb(c):
     c.page.fill(f'{E} [data-flowsheet] [data-f=late]', '3')
     c.tap(f'{E} [data-flowsheet] input[data-f=imposed]')
     c.until(f"document.querySelector('{E} [data-flowsheet] input[data-f=imposed]').checked", what='the time imposed')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row')].map(r => r.querySelector('.fl-when b').textContent + ' | ' + r.querySelector('.fl-what > b').textContent).filter(x => x.includes('Demi'))"),
+         ['Point un + 10 | Demi-tour groupé'], 'the new event reads « Point un + 10 »: the name of the place of EV-1, never its identifier', what='the label')
+    c.ok(not re.search(r'EV-\d', c.js(f"document.querySelector('{E} [data-flow]').textContent")), c.js(f"document.querySelector('{E} [data-flow]').textContent"),
+         'no identifier of an event in the rows, the sheet or the list of targets')
     read = c.js(f"document.querySelector('{E} [data-flowread]').textContent")
     c.ok('Demi-tour groupé' in read and '10 min après' in read, read, 'the line « Le pilote lira » follows the sheet')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.shot('N2xxB_390_fiche_evenement.png')
+    c.shot('N279_390_fiche_evenement.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
-    c.shot('N2xxB_1280_fiche_evenement.png')
+    c.shot('N279_1280_fiche_evenement.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
@@ -17339,11 +17361,11 @@ _FLOW_LEGACY = _ED_FULL + """timeline:
 """
 
 
-@case('N2xxC', 'Missions › the workshop, SOG-0620 lot 2: a V2 event written only `at: H+30mn` opens as « H+30 » (the legacy read), and a change '
+@case('N290', 'Missions › the workshop, SOG-0620 lot 2: a V2 event written only `at: H+30mn` opens as « H+30 » (the legacy read), and a change '
       'elsewhere then « Enregistrer » does NOT rewrite it (no id, no key added)', 'N', tags=('missions',),
       designs=('standard',), screens=True, phone=True, langs4=False,
       rule='SOG-0620 lot 2: « une mission V2 avec seulement at: H+30mn s\'ouvre comme H+30 et n\'est pas réécrite tant qu\'on ne la retouche pas »')
-def n2xxc(c):
+def n290(c):
     _flow_open(c, _FLOW_LEGACY)
     rows = c.js(_FLOW_ROWS % E)
     c.eq(rows, [['event', 'H+30', '', 'Un message inventé arrive.', False]], 'the V2 event read as H+30', what='the row')
@@ -17351,10 +17373,46 @@ def n2xxc(c):
     c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
     c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
-    c.shot('N2xxC_390_ancien.png')
+    c.shot('N290_390_ancien.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
     tl = t[t.find('timeline'):][:300]
     c.ok('at: H+30mn' in tl and 'id: EV-' not in t and 'offset_min' not in t and 'ref:' not in t, tl, 'the V2 event kept as written, nothing added')
+    c.js(_REG_CLEAR)
+
+
+_FLOW_ORDER = _ED_FULL + """timeline:
+  events:
+    - { at: ORDER+10, id: EV-1, title: Largage inventé, ref: order, offset_min: 10 }
+"""
+
+
+@case('N291', 'Missions › the workshop, SOG-0620 lot 2: the repère « la réception de l\'ordre » — while the field « Ordre reçu » of the Cadre is empty the line '
+      'reads « ordre + 10 » (no hour in H), the sheet says what is missing with a link that opens the Cadre, « À compléter » counts « l\'heure de réception '
+      'de l\'ordre »; once the field is filled the note and the line of « À compléter » go and « Enregistrer » writes timeline.order_offset_min', 'N',
+      tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 2, decision of the ergonomist (26 Nov 2026): the order stays offered; its reception time is set in the Cadre; cannot play before '
+      'the reader of V3 Frame is pushed')
+def n291(c):
+    _flow_open(c, _FLOW_ORDER)
+    c.eq(c.js(_FLOW_ROWS % E), [['event', 'ordre + 10', '', 'Largage inventé', False]], 'the line says « ordre + 10 », no hour in H', what='the row')
+    c.tap(f'{E} [data-flowrows] .fl-row[data-kind=event]')
+    c.until(f"!!document.querySelector('{E} [data-floworder]')", what='the sheet says what is missing')
+    c.eq(c.text(f'{E} [data-floworder]').replace(' ', ' ').replace('\xa0', ' ').split(' Ouvrir')[0].strip(),
+         "L'heure de réception de l'ordre n'est pas donnée : elle se règle dans le Cadre.", 'the sentence of the sheet', what='the missing hour')
+    c.shot('N291_390_ordre_manquant.png')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » open')
+    c.ok('orderTime' in c.js(_ED_TODO) and "l'heure de réception de l'ordre" in c.js(_ED_TODO_TEXT), c.js(_ED_TODO_TEXT), '« À compléter » counts the reception hour of the order')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.tap(f'{E} [data-floworder] [data-do="edstep"]')
+    c.until(f"!!document.querySelector('{E} input[data-f=order]')", what='the field « Ordre reçu » of the Cadre')
+    c.page.fill(f'{E} input[data-f=order]', '20')
+    c.until(f"!{_ED_TODO}.includes('orderTime')", what='the line of « À compléter » gone')
+    c.shot('N291_1280_ordre_rempli.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('order_offset_min: -20' in t, t[t.find('timeline'):][:300], 'the key written, minus the minutes typed')
     c.js(_REG_CLEAR)
