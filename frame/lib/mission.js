@@ -97,6 +97,8 @@ import {
   plain,
   idWord
 } from './untrusted.js';
+import *
+as EV from './mission_events.js'; // SOG-0620 : les événements d'une mission (le lecteur, en calcul pur ; mission.js lui prête passageMin)
 import {
   gcNm
 } from './geo.js'; // LA distance du grand cercle du cadre (SOG-0468 (2)) : R = 3 440,065 NM, plus de copie ici
@@ -942,6 +944,8 @@ export function readMission(doc) {
       mitigation: cut(r?.mitigation)
     }).filter(r => r.hazard),
     category: categoryOf(m.category ?? d.category),
+    events: EV.readEvents(d), // SOG-0620 : les événements de la chronologie, bornés (voir mission_events.js)
+    orderOffsetMin: EV.orderOffsetMinOf(d),
     ...sheetOf(d),
     ...drawersOf(d, points)
   };
@@ -1235,7 +1239,9 @@ export function pilotView(mission, opened = [], options = null) {
     profilePoints = (Array.isArray(m.profilePoints) ? m.profilePoints : []).slice(0, 200).filter(p => plain(p) && named(String(p.id ??
         '')) &&
       named(String(p.name ?? '')));
-  const zones = keep(m.zones),
+  const hiddenEv = EV.hiddenEvents(m,
+      open), // SOG-0620 : un événement dont le repère est un tiroir fermé (ou un événement caché) disparaît avec lui
+    zones = keep(m.zones),
     rendezvous = keep(m.rendezvous),
     turns = keep(m.turns),
     target = targetSeen ? m.target : null,
@@ -1248,6 +1254,7 @@ export function pilotView(mission, opened = [], options = null) {
     rendezvous,
     turns,
     drawers: drawers.filter(d => open.has(d.id)), // les ouverts seuls, entiers ; un fermé ne laisse rien (SOG-0459)
+    events: (Array.isArray(m.events) ? m.events : []).filter(e => !hiddenEv.has(e?.id)),
     drawersRefused: 0,
     profileRoute,
     profilePoints,
@@ -1262,6 +1269,12 @@ export function pilotView(mission, opened = [], options = null) {
 /** La distance et le temps estimé du départ au passage d'un point de la partie A (voir l'en-tête ; la clé « heure » d'un tiroir, que la
  *  V2 estime sur la route prévue). La distance : celle de routeNm, de l'origine (si elle est située) au point ; les minutes : la distance
  *  à la vitesse de croisière, plus le temps sur zone des points d'AVANT (le milieu d'une fourchette) ; min null sans vitesse. */
+/** SOG-0620 : les événements, avec passageMin prêté (voir mission_events.js pour chaque fonction). */
+export const readEvents = EV.readEvents;
+export const hiddenEvents = EV.hiddenEvents;
+export const eventDependents = EV.eventDependents;
+export const plannedMin = mission => EV.plannedMin(mission, passageMin);
+export const eventTimes = (mission, ctx) => EV.eventTimes(mission, ctx, passageMin);
 export function passageMin(mission, pointId) {
   const f = missionFlight(mission);
   if (!f) return null;

@@ -138,7 +138,7 @@ export const meta = {
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
     '../../frame/lib/text.js',
-    '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js',
+    '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js', '../../frame/lib/mission_events.js',
     '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
   ]
 };

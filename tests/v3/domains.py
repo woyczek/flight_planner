@@ -43,6 +43,7 @@ RULES = [
     ('frame/store/test/publish.html', ['A30', 'I'], 'publication bench'),
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),
     ('frame/lib/mission.js', ['N', 'I'], 'the V2 missions read as they are, and the flight a mission gives (modules/missions)'),
+    ('frame/lib/mission_events.js', ['A403', 'N', 'I'], 'the events of a mission (SOG-0620): the pure reader, planned minutes, dependents, real times, what the pilot sees'),
     ('frame/lib/test/mission.html', ['N', 'I'], 'missions bench (N1)'),
     ('frame/lib/sortlist.js', ['A311', 'A312', 'I'], 'the common sortable list block (SOG-0498): its bench and its demonstration; no module imports it yet'),
     ('frame/lib/test/sortlist*.html', ['A311', 'A312'], 'sortable list bench and demonstration (SOG-0498)'),

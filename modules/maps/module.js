@@ -177,7 +177,7 @@ export const meta = {
     '../../frame/lib/untrusted.js?v=0',
     '../fuel/mission_chip.js?v=0', // SOG-0617 : la puce « Mission <ID> » de la ligne d'en-tête, celle de Carburant
     '../../frame/lib/precision.js?v=0', // SOG-0516 : importé par missions/drawers.js
-    '../../frame/lib/mission.js?v=0',
+    '../../frame/lib/mission.js?v=0', '../../frame/lib/mission_events.js?v=0',
     'weather.js?v=0',
     'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0',
     'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',

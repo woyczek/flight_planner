@@ -12728,3 +12728,85 @@ def a399(c):
     c.ok(any('?retry=' in u for u in mode['urls']), mode['urls'], 'the failure card came after a second request under a new address')
     c.eq(c.count('[data-loadfail] [data-retry]'), 1, 'the card offers its « Réessayer »: never an empty screen', what='retry button')
     c.ok(len(c.js("() => document.querySelector('[data-loadfail] p').textContent.trim()")) > 10, None, 'the card says a sentence')
+
+
+@case('A403', 'The events of a mission (SOG-0620, lot 1, the reader of frame/lib/mission_events.js through mission.js): invented missions — a meeting for several teams, a refuelling between two missions of an operation, a return option under condition, an operation A to Y with its sheet Z — read with their optional keys; the V2 `at` (H, H+30mn, H+1h30) read as a takeoff reference and an offset, anything else legacy; a key out of its bounds not read; plannedMin follows the chains (a cycle, an unknown reference, an order without order_offset_min: null), eventDependents, eventTimes follow the REAL time of the reference unless imposed; pilotView hides an event whose reference is a closed drawer (and what hangs on it)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0620 (the user said yes to the mock-up; the relay: lot 1 = the reader, pure; the contract with Creation of 26 Nov 2026): a mission of today reads as it is, the new keys are optional, the rule of what the pilot may see is pilotView's")
+def a403(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => {
+      const M = await import('/frame/lib/mission.js');
+      if (typeof M.readEvents !== 'function') return { missing: true };
+      const base = id => ({ schema: 'helo-xp-mission', mission: { id, type: 'REG' }, title: 'Test', cruise_speed_kt: 240,
+        origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+        turning_points: [{ id: 'PT-AAR', name: 'Anneau', lat: 45, lon: 3 }], rendezvous: [{ id: 'RDV-1', name: 'Col', lat: 45.3, lon: 1.5 }],
+        route_order: ['PT-AAR', 'RDV-1'] });
+      const out = {};
+      // 1. a meeting for several teams
+      const m1 = M.readMission({ ...base('A-010A'), timeline: { events: [
+        { id: 'EV-1', title: 'Rendez-vous', place: 'RDV-1', teams: ['b', 'A', 'A', 'Z', 7], ref: 'takeoff', offset_min: 30, tol_early_min: 3, tol_late_min: 5, text: 'Au col' },
+        { id: 'EV-2', ref: 'event:EV-1', offset_min: 10, text: 'Suite' }] } });
+      out.meeting = { events: m1.events.map(e => [e.id, e.title, e.place, e.teams.join(''), e.ref.kind + ':' + e.ref.id, e.offsetMin, e.tolEarlyMin, e.tolLateMin, e.imposed, e.legacy]),
+        planned: [...M.plannedMin(m1)], same: JSON.stringify(M.readEvents(m1)) === JSON.stringify(m1.events) };
+      // 2. a refuelling between two missions of an operation: the receiver meets at the ring point, planned from the passage there
+      const m2 = M.readMission({ ...base('A-011B'), timeline: { events: [{ id: 'EV-1', ref: 'point:PT-AAR', offset_min: 5, text: 'Contact tanker' }, { id: 'EV-2', ref: 'point:INCONNU', offset_min: 1 }] } });
+      const pass = M.passageMin(m2, 'PT-AAR');
+      out.refuel = { passage: pass && pass.min, planned: [...M.plannedMin(m2)] };
+      // 3. a return option under condition: a drawer C (an event of the file), an event that hangs on it, one that hangs on that one
+      const d3 = { ...base('A-012A'), phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'RDV-1', duration_sec: 60, max_gap_sec: 10 }, fallback_delay_min: 90 },
+          { id: 'C', title: 'Heure', trigger_point: 'DEPART', trigger_delay_min: 40 }],
+        timeline: { order_offset_min: -20, events: [
+        { id: 'EV-1', ref: 'order', offset_min: 10, title: 'Briefing' }, { id: 'EV-2', ref: 'drawer:B', offset_min: 0, title: 'Retour par la vallée' }, { id: 'EV-3', ref: 'event:EV-2', offset_min: 5 },
+        { id: 'EV-4', ref: 'drawer:C', offset_min: -5 }, { id: 'EV-5', ref: 'event:EV-1', offset_min: 5, imposed: true }] } };
+      const m3 = M.readMission(d3);
+      const ids = v => v.events.map(e => e.id).join(' ');
+      out.option = { drawers: m3.drawers.map(d => d.id).join(' '), planned: [...M.plannedMin(m3)], depB: M.eventDependents(m3, 'B'), depEv2: M.eventDependents(m3, 'EV-2'),
+        closed: ids(M.pilotView(m3, [])), openB: ids(M.pilotView(m3, ['B'])), openC: ids(M.pilotView(m3, ['C'])), openBC: ids(M.pilotView(m3, ['B', 'C'])), others: ids(M.pilotView(m3, ['B'], { mine: false })) };
+      const times = M.eventTimes(m3, { takeoffAt: '2026-11-26T10:00:00Z', orderReadAt: '2026-11-26T09:35:00Z', drawersOpenAt: { B: '2026-11-26T10:41:00Z' }, held: { 'EV-2': '2026-11-26T10:44:00Z' } });
+      out.times = times.map(t => [t.id, t.plannedAt && t.plannedAt.slice(11, 16), t.clock, t.imposed]);
+      const noOrder = M.readMission({ ...d3, timeline: { events: d3.timeline.events } });
+      out.noOrder = [...M.plannedMin(noOrder)].filter(x => ['EV-1', 'EV-5'].includes(x[0]));
+      // 4. an operation A to Y with its sheet Z: the teams A to Y are read, Z is not a team
+      const mz = M.readMission({ ...base('A-020Z'), timeline: { events: [{ id: 'EV-1', teams: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), ref: 'takeoff', offset_min: 0 }, { id: 'EV-2', teams: [] , ref: 'takeoff', offset_min: 15 }] } });
+      out.operation = mz.events.map(e => [e.id, e.teams.length, e.teams[0], e.teams[e.teams.length - 1]]);
+      // 5. the V2 shapes and everything out of bounds
+      const old = M.readEvents({ timeline: { events: [{ at: 'H', text: 'a' }, { at: 'H+30mn', text: 'b' }, { at: 'H+1h30', text: 'c' }, { at: 'H + 45', text: 'd' }, { at: 'H-15min', text: 'e' },
+        { at: '14:00', text: 'f' }, { at: 'H+25h', text: 'g' }, { text: 'h' }, { at: 'H+1h05mn', description: 'i' }] } });
+      out.old = old.map(e => [e.id, e.text, e.offsetMin, e.legacy]);
+      const bad = M.readEvents({ timeline: { events: [{ id: 'EV-1', offset_min: 5000, title: 'x'.repeat(200), ref: 'bidule:1', tol_early_min: 999, tol_late_min: 1.5, imposed: 'true' }, { id: 'EV-1', ref: 'point:' }, null, 5, 'x', { __proto__: { id: 'EV-9' } }] } });
+      out.bad = bad.map(e => [e.id, e.idWritten, e.title.length, e.ref.kind, e.offsetMin, e.tolEarlyMin, e.tolLateMin, e.imposed, e.legacy]);
+      out.many = M.readEvents({ timeline: { events: Array.from({ length: 80 }, (_, i) => ({ at: 'H+' + i })) } }).length;
+      out.alt = [M.readEvents({ timeline: [{ at: 'H+5', text: 'liste' }] }).length, M.readEvents({ chronology: { events: [{ at: 'H+6' }] } }).length, M.readEvents(null).length, M.readEvents({ timeline: 'x' }).length, M.readEvents(5).length];
+      // 6. a cycle never loops, an unknown reference is null
+      const cyc = M.readMission({ ...base('A-013A'), timeline: { events: [{ id: 'EV-1', ref: 'event:EV-2', offset_min: 1 }, { id: 'EV-2', ref: 'event:EV-1', offset_min: 1 }, { id: 'EV-3', ref: 'event:EV-3', offset_min: 1 }, { id: 'EV-4', ref: 'event:EV-77', offset_min: 1 }] } });
+      out.cycle = [[...M.plannedMin(cyc)], M.eventDependents(cyc, 'EV-1'), M.eventDependents(cyc, 'EV-3')];
+      out.plain = [M.plannedMin(null).size, M.eventDependents(null, 'x').length, M.eventTimes(null, null).length, M.pilotView(M.readMission(base('A-014A')), []).events.length];
+      return out; }""")
+    c.ok(not r.get('missing'), r, 'mission.js gives readEvents, plannedMin, eventDependents, eventTimes (the reader of the events)')
+    c.eq(r['meeting']['events'], [['EV-1', 'Rendez-vous', 'RDV-1', 'AB', 'takeoff:', 30, 3, 5, False, False], ['EV-2', '', '', '', 'event:EV-1', 10, None, None, False, False]],
+         'a meeting for several teams: title, place, teams cleaned (A to Y, no duplicate, Z and 7 dropped), reference, offset, tolerances', what='meeting')
+    c.eq((r['meeting']['planned'], r['meeting']['same']), ([['EV-1', 30], ['EV-2', 40]], True), 'planned minutes follow the chain (EV-2 hangs on EV-1: 40); readEvents of the read mission is the same list', what='meeting planned')
+    pr = r['refuel']
+    c.ok(pr['passage'] and pr['planned'] == [['EV-1', pr['passage'] + 5], ['EV-2', None]], pr, 'a refuelling: the receiver\'s event is planned from the PASSAGE at the ring point (+5), a reference to an unknown point is null')
+    o = r['option']
+    c.eq(o['drawers'], 'B C', 'the two drawers of the file', what='drawers')
+    c.eq(o['planned'], [['EV-1', -10], ['EV-2', 90], ['EV-3', 95], ['EV-4', 35], ['EV-5', -5], ['B', 90], ['C', 40]],
+         'planned: the order at H-20 (+10 = -10), a drawer by its fallback (B: 90) or its own time (C: 40), what hangs on them follows', what='option planned')
+    c.eq((o['depB'], o['depEv2']), (['EV-2', 'EV-3'], ['EV-3']), 'what depends on the drawer B (the event and what hangs on it), on EV-2', what='dependents')
+    c.eq((o['closed'], o['openB'], o['openC'], o['openBC'], o['others']), ('EV-1 EV-5', 'EV-1 EV-2 EV-3 EV-5', 'EV-1 EV-4 EV-5', 'EV-1 EV-2 EV-3 EV-4 EV-5', 'EV-1 EV-5'),
+         'the pilot sees no event that hangs on a CLOSED drawer (nor what hangs on that event); a mission one browses (mine: false) shows the visible part only', what='pilotView')
+    c.eq(r['times'], [['EV-1', '09:45', True, False], ['EV-2', '10:41', True, False], ['EV-3', '10:49', True, False], ['EV-4', '10:35', False, False], ['EV-5', '09:55', False, True]],
+         'real times: the order read at 09:35 (+10 = 09:45), the drawer B opened at 10:41, EV-3 follows the time EV-2 was HELD (10:44 + 5); EV-4 has no real reference yet: planned from the takeoff (10:35, no clock); an imposed time never follows its reference (09:55)', what='times')
+    c.eq(r['noOrder'], [['EV-1', None], ['EV-5', None]], 'without order_offset_min the order has no planned time: null, and what hangs on it', what='no order')
+    c.eq(r['operation'], [['EV-1', 25, 'A', 'Y'], ['EV-2', 0, None, None]], 'an operation A to Y: twenty-five teams, no Z; an empty list = all the teams', what='operation')
+    c.eq(r['old'], [['@0', 'a', 0, False], ['@1', 'b', 30, False], ['@2', 'c', 90, False], ['@3', 'd', 45, False], ['@4', 'e', -15, False], ['@5', 'f', None, True], ['@6', 'g', None, True], ['@7', 'h', None, True], ['@8', 'i', 65, False]],
+         'the V2 `at` read as a takeoff reference and an offset (H, H+30mn, H+1h30, H + 45, H-15min, H+1h05mn); a clock time, out of bounds, or no time at all: legacy, offset null', what='V2')
+    c.eq(r['bad'], [['EV-1', True, 120, 'unknown', None, None, None, False, False], ['@1', False, 0, 'unknown', 0, None, None, False, False], ['@2', False, 0, 'takeoff', None, None, None, False, True], ['@3', False, 0, 'takeoff', None, None, None, False, True],
+                    ['@4', False, 0, 'takeoff', None, None, None, False, True], ['@5', False, 0, 'takeoff', None, None, None, False, True]],
+         'a key out of its bounds is not read (offset 5000, tolerances 999 and 1.5, a reference of an unknown form, `imposed: "true"`), a title is cut at 120, a duplicate identifier is read under its rank, an entry that is not an object is an empty legacy event', what='bounds')
+    c.eq((r['many'], r['alt']), (60, [1, 1, 0, 0, 0]), 'sixty events at most; the old places of the events (timeline as a list, chronology.events) are read; nothing readable gives []', what='shapes')
+    c.eq(r['cycle'], [[['EV-1', None], ['EV-2', None], ['EV-3', None], ['EV-4', None]], ['EV-2'], []], 'a cycle, a loop on itself and an unknown event give null and never loop; the dependents of a cycle stop at it', what='cycle')
+    c.eq(r['plain'], [0, 0, 0, 0], 'nothing read: empty, never an exception; a mission with no event has none in the pilot\'s view', what='nothing')
+    c.check_errors()

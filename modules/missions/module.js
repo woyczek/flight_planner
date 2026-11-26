@@ -56,7 +56,7 @@ export const meta = {
     'drawers_run.js', // SOG-0617 : le juge des tiroirs (Création), importé par drawers_view.js
     'watch.js', // SOG-0617 : le veilleur de la mission en vol (meta.watch)
     '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
-    '../../frame/lib/mission.js',
+    '../../frame/lib/mission.js', '../../frame/lib/mission_events.js', // mission_events.js : importé par mission.js (SOG-0620 ; I26)
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
     '../../frame/lib/text.js', // text.js : importé par ad_field.js et search.js (SOG-0468 (2))
     '../../frame/lib/callsign_field.js', // SOG-0488 : le champ d'indicatif (Équipes)

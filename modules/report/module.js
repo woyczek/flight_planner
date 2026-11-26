@@ -80,7 +80,7 @@ export const meta = {
   files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js', '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
-    '../../frame/lib/mission.js',
+    '../../frame/lib/mission.js', '../../frame/lib/mission_events.js', // mission_events.js : importé par mission.js (SOG-0620 ; I26)
     '../../frame/lib/adnames.js', '../../frame/lib/untrusted.js', // importés par mission.js (cas I26 ; Création, 18/11)
     '../../frame/lib/precision.js', '../../frame/lib/crossing.js',
     '../../frame/lib/geo.js', // SOG-0516 : precision.js et ce qu'il importe (I26)
