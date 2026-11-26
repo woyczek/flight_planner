@@ -54,6 +54,7 @@ import * as DIR from './direct.js';
 import * as RLN from './route_lines.js'; // SOG-0679 : les lignes sous le champ de la route (extrait de resolveRoute)
 import * as RLM from './route_limits.js'; // SOG-0669 : « Ce que le contrôle ne couvre pas » (extrait)
 import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (extrait)
+import * as PP from './proc_partial.js'; // SOG-0613 : des départs lus en partie, au-delà de la limite de raccord
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
 import * as AL from './auto_limits.js'; // SOG-0653 : les bornes des niveaux d'« Auto » (extrait)
@@ -134,7 +135,7 @@ export const meta = {
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
     'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
-    'altn_wx.js', 'auto_limits.js',
+    'altn_wx.js', 'auto_limits.js', 'proc_partial.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -4790,6 +4791,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
   });
   if (lvl) autoMoreStart(); // SOG-0586 : la liste affichée, les autres niveaux se calculent derrière elle
   routeAltsDraw();
+  noProcPaint(); // SOG-0613 : la réponse dit si le départ est au-delà de la limite
   altsPublish('compute', S.ralts.list); // pour la Carte (INTEGRATION § 3 bis)
   // SOG-0517 : un vol sans niveau prend celui du calcul — écrit dans le vol (page 1), le devis, le profil et le plan de vol le portent, et
   // dit. Refus de recette (l'utilisateur : « j'ai vidé le niveau de vol. j'ai calculé. … le niveau de vol n'est pas renseigné dans la
@@ -6891,12 +6893,7 @@ function procHave(icao) {
   const s = S;
   Promise.resolve().then(() => s.ctx.aerodb.procedures(k)).catch(() => []).then(list => {
     if (gone(s)) return;
-    const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p));
-    s.procHave.set(k, {
-      SID: l.some(p => p.kind === 'SID'),
-      STAR: l.some(p => p.kind === 'STAR'),
-      any: (Array.isArray(list) ? list : []).length > 0 // SOG-0638 : le catalogue du terrain n'est pas vide
-    });
+    s.procHave.set(k, PP.haveOf(list, PR.isDoubt)); // SOG-0638 : any (catalogue non vide) ; SOG-0613 : part (SID toutes lues en partie)
     // SOG-0638 (F238) : jamais pendant un calcul — la ligne « Calcul en cours… » reste, la réponse redessine la liste
     if (s.ralts?.list?.length && !s.routeBusy) routeAltsDraw();
     noProcPaint();
@@ -6919,20 +6916,24 @@ function noProcHtml(v) {
  *  catalogue de procédures est VIDE (procHave : la liste d'aerodb, lue une fois) — un geste de lecture existe pour lui : « Aucune procédure
  *  de {terrain} n'est dans la base : sans elles, la route est refusée à son raccordement. » et le bouton du geste (S.P.readButtonFor, le même
  *  que la cause de SOG-0612 sur la route refusée) ; l'État n'a pas de lecteur (procStateOf : readable faux) : la seconde phrase, sans bouton.
- *  Le calcul n'est jamais empêché ; rien tant que le catalogue n'est pas lu. */
+ *  Le calcul n'est jamais empêché ; rien tant que le catalogue n'est pas lu. SOG-0613 (l'ergonome, 26/11) : le DÉPART dont les SID sont
+ *  toutes lues en partie (haveOf.part), quand un itinéraire affiché le dit au-delà de la limite de raccord : proc_partial.js TX.dep, au même
+ *  endroit, avec le même bouton (ou seule, sans lecteur pour l'État) ; elle part avec la lecture qui apporte une SID complète. */
 function noProcPaint() {
   const box = S?.body?.querySelector('[data-rnoproc]');
   if (!box) return;
   const r = S.flight?.route || {},
     ads = S.noProcAsked ? [...new Set([r.dep, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))] : [],
     html = ads.map(k => {
-      const h = procHave(k);
-      if (!h || h.any) return '';
+      const h = procHave(k),
+        part = !!h?.part && k === String(r.dep || '').toUpperCase() && PP.farDep(S.ralts?.list?.length ? S.ralts.list : S.rkeep?.R?.list,
+          k); // SOG-0613
+      if (!h || (h.any && !part)) return '';
       (S.noProcSaid ||= new Set()).add(k);
       const ps = procStateOf(k),
         none = !!ps && !ps.readable,
         b = none ? '' : typeof S.P?.readButtonFor === 'function' ? S.P.readButtonFor(k, false, true) : '';
-      return `<p class="f-warn fu-noproc" data-noprocad="${esc(k)}"><span data-noproctext>${esc(tt(none || !b ? TX.noProcNone : TX.noProcRead, { ad: k }))}</span>${b ? ` ${b}` : ''}</p>`;
+      return `<p class="f-warn fu-noproc" data-noprocad="${esc(k)}"><span data-noproctext>${esc(tt(part ? PP.TX.dep : none || !b ? TX.noProcNone : TX.noProcRead, { ad: k }))}</span>${b ? ` ${b}` : ''}</p>`;
     }).join('');
   if (box.innerHTML !== html) box.innerHTML = html;
   box.hidden = !html;
@@ -6945,17 +6946,12 @@ async function routeReadDone(k) {
   s.procHave.delete(k);
   const list = await Promise.resolve().then(() => s.ctx.aerodb.procedures(k)).catch(() => []);
   if (gone(s)) return;
-  const l = (Array.isArray(list) ? list : []).filter(p => p && !PR.isDoubt(p)),
-    h = {
-      SID: l.some(p => p.kind === 'SID'),
-      STAR: l.some(p => p.kind === 'STAR'),
-      any: (Array.isArray(list) ? list : []).length > 0
-    },
+  const h = PP.haveOf(list, PR.isDoubt),
     R = s.ralts;
   s.procHave.set(k, h);
   // SOG-0638 : une lecture qui apporte les procédures d'un terrain dit vide : sa ligne part, et la route déjà calculée est dite périmée
   // (SOG-0572 : « Recalculer », jamais un calcul tout seul)
-  if (h.any && s.noProcSaid?.has(k)) {
+  if (h.any && !h.part && s.noProcSaid?.has(k)) {
     s.noProcSaid.delete(k);
     if (R?.list?.length) R.procStale = R.stale = true;
   }

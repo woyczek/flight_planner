@@ -11602,6 +11602,78 @@ def f325(c):
     c.shot(f'F325_{c.design}_{c.width}_{c.lang}.png')
 
 
+@case('F341', 'Route step: departures read IN PART (every SID of the aerodrome gives its exit point and levels, no track) and a computed route that '
+      'leaves it beyond the connector limit — the sentence « Départs de LFRS lus en partie : aucun ne rejoint une route. La route part en '
+      'direct, au-delà de la limite. » next to « Calculer », in the place and the form of the empty catalogue (SOG-0638), with the reading button '
+      'of the State; nothing when the route does not say it, nothing when one SID is complete', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0613 (the ergonomist, 26 Nov: the sentence is rewritten, option (b) refused — a route with a visible defect beats a plausible '
+      'route built on a guess; the word « limite » is the one already on screen for this verdict); an invented world: LFRS with two SID read in '
+      'part (the `partial` object of aerodb), a fake launcher whose answer says the connector of the departure is beyond a limit of 0 NM')
+def f341(c):
+    want = {'fr': 'Départs de LFRS lus en partie : aucun ne rejoint une route. La route part en direct, au-delà de la limite.',
+            'en': 'Departures of LFRS read in part: none of them joins a route. The route leaves direct, beyond the limit.',
+            'de': 'Abflüge von LFRS nur teilweise gelesen: keiner führt zu einer Route. Die Route startet direkt, jenseits der Grenze.',
+            'es': 'Salidas de LFRS leídas en parte: ninguna enlaza con una ruta. La ruta sale en directo, más allá del límite.'}[c.lang]
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try {
+            db.procedures = async (icao) => String(icao).toUpperCase() === 'LFRS' ? (window.__sids || []) : [];
+            db.fetchProcedures = async () => { window.__read = true; return { ok: true, stats: { pages: 1, read: 1 } } };
+          } catch (e) {}
+          return db } } } }) })()""")
+    part = {'read': ['exit', 'runway'], 'unread': ['path'], 'note': 'exit point and levels; track not read'}
+    sid = lambda n, partial: dict({'id': f'LFRS.SID.{n}', 'kind': 'SID', 'name': n, 'runway': '21', 'ad': 'LFRS', 'status': 'check', 'points': []},
+                                  **({'partial': part} if partial else {}))
+    segs = [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]
+    lim = {'code': 'connector_limit', 'values': {'ad': 'LFRS', 'end': 'dep', 'nm': 34, 'limit_nm': 0, 'rule': 'XX9999', 'point': 'LUGEN'}, 'text': 'Raccord LFRS'}
+    LINE = f'{FUEL} [data-rnoproc] [data-noprocad="LFRS"]'
+
+    def run(sids, said):
+        st = _route_launcher(c, ['route/compute'])
+        st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS LUGEN UN10 NEPIX LFML', 370, 270, segs, sid=False), faults=1 if said is not None else 0,
+                           faulty=said is not None, verdict='violates' if said is not None else 'conform',
+                           violations=[lim] if said is not None else [], unverifiable=[])]
+        if said is not None:
+            st['extra'] = {'status': 'faulty'}
+        docs = proc_flight()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft'] = {'type': 'C30J'}
+        c.page.add_init_script(f'window.__sids = {json.dumps(sids)}')  # the last one registered is the one of this scenario, from the first script of the page
+        c.open('fuel', docs=docs, airfields=True)
+        wait_quote(c)
+        to_step(c, 1)
+        _compute_now(c, st)
+        return st
+
+    # 1. two SID, both read in part, the answer says the departure is beyond the limit: the sentence, and the reading gesture
+    run([sid('XQ1A', True), sid('XQ2B', True)], True)
+    c.until(f"!!document.querySelector('{LINE}')", timeout=12000, what='the sentence next to « Calculer » (red before: nothing)')
+    c.until(f"!!document.querySelector('{LINE} [data-do=procfetch]')", timeout=8000, what='the reading gesture of the State')
+    c.eq(norm(c.text(f'{LINE} [data-noproctext]') or ''), norm(want), 'the sentence of the ergonomist, in the language of the screen', what='sentence')
+    c.eq(c.count(LINE), 1, 'one line for LFRS (LFML, with no procedure at all in this world, keeps its own line of SOG-0638)', what='one')
+    c.ok(c.js(f"(() => {{ const z = document.querySelector('{FUEL} [data-rnoproc]'), b = document.querySelector('{FUEL} [data-do=rcompute]'); "
+              f"return !!z && z.getBoundingClientRect().top - b.getBoundingClientRect().bottom < 240 }})()"), '', 'near « Calculer »')
+    c.js(f"document.querySelector('{FUEL} [data-do=rcompute]').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F341_{c.design}_{c.width}_{c.lang}.png')
+    # the reading that brings a complete SID takes the line away and says the route stale (« Recalculer », never a computation by itself)
+    c.js(f'window.__sids = {json.dumps([sid("XQ1A", True), sid("XQ3C", False)])}')
+    c.tap(f'{LINE} [data-do=procfetch]')
+    c.until(f"!document.querySelector('{LINE}')", timeout=10000, what='the line gone once a complete SID is read')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rage][data-stale] [data-do=rcompute]')", timeout=10000,
+            what='the route said stale, with « Recalculer »')
+    # 2. the same SID, the answer does not say the connector is beyond the limit: nothing
+    run([sid('XQ1A', True), sid('XQ2B', True)], None)
+    c.wait(1500)
+    c.eq(c.count(LINE), 0, 'no sentence when the answer does not put the departure beyond the limit', what='no limit')
+    # 3. one SID complete, the answer says the connector is beyond the limit: not this sentence
+    run([sid('XQ1A', True), sid('XQ3C', False)], True)
+    c.wait(1500)
+    c.eq(c.count(LINE), 0, 'no sentence when one SID is complete', what='complete')
+    c.check_errors()
+
+
 @case('F327', 'Route step: under the route field, the reading of the route in plain words, each line only when it has a reason to be — the '
       'flight rules deduced from « VFR » / « IFR » (the letter, never typed; VFR and IFR never points), the levels written at points applied '
       'as steps, the speeds and the cruise climbs « C/… » written in the route not applied (one grey line; « C/… » is a valid form, its point '
