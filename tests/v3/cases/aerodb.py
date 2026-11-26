@@ -10783,7 +10783,7 @@ def k282(c):
         c.eq(('AIRAC 11-2026' in blob, 'UK-AIRAC' in blob, 'holiday' in blob, {p['source']['ref'] for p in doc['procedures']}, sorted(res['extra'])), (False, False, False, {'ukpkg'}, ['cycleKnown', 'partial']),
              'the NAME of the user\'s folder goes nowhere (not the journal, not the answer, not source.ref of the file that is committed and synchronised): `ref` is « ukpkg »', what='no folder name')
         c.eq((len(doc['procedures']), sorted({p['name'] for p in doc['procedures']}), doc['cycle'], {p['source']['kind'] for p in doc['procedures']}, [f['ok'] for f in res['formats']]),
-             (4, ['MAXIT 1F', 'MAXIT 1G', 'MODMI 1J', 'MODMI 1K'], '2026-10-29', {'ukpkg'}, [True, False]), 'the reader: four SIDs from the first chart, none from the second (no instructions: said), the cycle of the package folder, the source `ukpkg`', what='reader')
+             (4, ['MAXIT 1F', 'MAXIT 1G', 'MODMI 1J', 'MODMI 1K'], '2026-10-29', {'ukpkg'}, [True, False, False]), 'the reader: four SIDs from the first chart, none from the second (no instructions: said), none from the coding-table chart (since the lot UK2 the launcher reads the coding tables and the approach charts too: this one holds no table, it is said in the formats and never lost), the cycle of the package folder, the source `ukpkg`', what='reader')
         today = datetime.date(2026, 11, 16)
         mk = lambda *names: [(dl.joinpath(*n).mkdir(parents=True, exist_ok=True), (dl.joinpath(*n) / 'html' / 'eAIP').mkdir(parents=True, exist_ok=True), (dl.joinpath(*n) / 'graphics').mkdir(exist_ok=True),
                               (dl.joinpath(*n) / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text(page, encoding='utf-8')) for n in names]
