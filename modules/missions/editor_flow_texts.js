@@ -109,5 +109,9 @@ export const FTX = {
   fsLostBoth: ['Le briefing et la suite de route de ce tiroir ne seront pas gardés.'],
   fsLostBrief: ['Le briefing de ce tiroir ne sera pas gardé.'],
   fsLostRoute: ['La suite de route de ce tiroir ne sera pas gardée.'],
+  // SOG-0620 lot 5 (français seulement, SOG-0680) : les rendez-vous de la V2 deviennent des événements, un à la fois
+  flToGive: ['heure à donner'],
+  flRdvBtn: ['Créer les événements des rendez-vous'],
+  fsRdvTitle: ['Rendez-vous au point {name}'],
   fsDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
 };

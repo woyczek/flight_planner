@@ -38,6 +38,10 @@
 //   toDrawer(doc, entries, drawers, id) → { entries, drawers, letter } : l'événement `id` devient un TIROIR (« Caché jusqu'à un stimulus ») ou null
 //     (inconnu, ou douze tiroirs : l'appelant le dit) ; toEvent(doc, entries, drawers, letter) → { entries, drawers, id } : le tiroir né d'un
 //     événement (`eventId`) redevient un événement ou null. Purs sur leurs entrées (copiées), ne lèvent jamais.
+//   rdvWithoutTime(doc, entries, places) → [{ id, name }] : les rendez-vous sans heure prévue (editor.js rdvWithoutTime : le document porte déjà les lignes de la
+//     séance) ; rdvWithoutEvent(doc, entries, places) → ceux qu'AUCUN événement n'a pour lieu ; withRdvEvents(doc, entries, places, t) → { entries, created: [id] } : un
+//     événement par rendez-vous sans événement (titre « Rendez-vous au point {nom} », lieu, équipes = les participants qui portent le nom d'une équipe,
+//     décollage, décalage VIDE). `places` : les lieux montrés (l'atelier voilé). Ne lèvent jamais.
 //   mirror(entry) → le miroir `at` d'une ligne ('' quand l'heure n'est pas lue).
 import * as MS from '../../frame/lib/mission.js';
 import * as ED from './editor.js';
@@ -276,7 +280,8 @@ export const teamLetters = doc => ED.teamsOf(doc).slice(0, LETTERS.length).map((
 
 /** L'heure d'une ligne (voir l'en-tête). ctx.drawers : les tiroirs de la séance (leur rang nomme « T2 »). */
 export function whenOf(e, ctx, t) {
-  if (!Number.isInteger(e.offset)) return e.at || '—'; // l'heure de la V2 non lue : telle que le fichier l'écrit
+  if (!Number.isInteger(e.offset)) return e.at || t(
+    'flToGive'); // l'heure de la V2 non lue : telle que le fichier l'écrit ; aucune : « heure à donner »
   const n = e.offset;
   if (e.refKind === 'takeoff') return n === 0 ? 'H' : `H${n < 0 ? '-' : '+'}${Math.abs(n)}`;
   const name = refName(e, ctx, t);
@@ -553,4 +558,63 @@ export function toEvent(doc, entries, drawers, letter) {
 export function withDeroule(doc, entries, order) {
   const d = Array.isArray(entries) ? withFlow(doc, entries) : doc;
   return order === undefined ? d : withOrder(d, order);
+}
+
+export const rdvWithoutTime = (doc, entries, places = null) => ED.rdvWithoutTime(doc, places);
+
+export function rdvWithoutEvent(doc, entries, places = null) {
+  try {
+    const used = new Set((Array.isArray(entries) ? entries : []).map(e => String(e?.place ?? '').toUpperCase()).filter(Boolean));
+    return ED.placesOf(doc).filter(p => p.kind === 'rdv' && p.id && (!places || places.some(x => x && x.id === p.id)) && !used.has(p.id
+      .toUpperCase())).map(p => ({
+      id: p.id,
+      name: p.name,
+      participants: p.participants
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function withRdvEvents(doc, entries, places = null, t = k => k) {
+  try {
+    let list = (Array.isArray(entries) ? entries : []).map(e => ({
+      ...e
+    }));
+    const created = [],
+      teams = teamLetters(doc);
+    for (const r of rdvWithoutEvent(doc, list, places)) {
+      const id = list.length < ED.EVENTS_MAX ? nextEventId(doc, list) : '';
+      if (!id) break;
+      const names = String(r.participants || '').split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
+      list = [...list, {
+        i: -1,
+        id,
+        title: ED.cut(t('fsRdvTitle', {
+          name: r.name || r.id
+        }), TITLE_MAX),
+        text: '',
+        place: r.id.toUpperCase(),
+        teams: teams.filter(x => names.includes(x.name.toUpperCase())).map(x => x.letter),
+        refKind: 'takeoff',
+        refId: '',
+        offset: null, // l'heure se donne sur la fiche : rien n'est écrit (ni décalage, ni `at`) tant qu'elle est vide
+        early: 0,
+        late: 0,
+        imposed: false,
+        legacy: false,
+        at: ''
+      }];
+      created.push(id);
+    }
+    return {
+      entries: list,
+      created
+    };
+  } catch {
+    return {
+      entries: Array.isArray(entries) ? entries : [],
+      created: []
+    };
+  }
 }

@@ -2142,7 +2142,35 @@ export function veilTodo(doc, shown) {
     rows = (Array.isArray(shown) ? shown : []).filter(Boolean);
   delete d.phases;
   const unplaced = rows.some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''));
-  return todo(d).filter(t => t.key !== 'unplaced' || unplaced);
+  const left = rdvWithoutTime(d, rows).length; // un rendez-vous caché n'est ni compté ni nommé
+  return [...todo(d).filter(t => (t.key !== 'unplaced' || unplaced) && t.key !== 'rdvNoTime'), ...(left ? [{
+    step: 'timeline',
+    key: 'rdvNoTime',
+    vars: {
+      n: left
+    }
+  }] : [])];
+}
+
+/** SOG-0620 lot 5 : les rendez-vous (`rendezvous[]`) SANS HEURE PRÉVUE — qu'aucun événement n'a pour lieu avec une heure prévue (`MS.plannedMin` non nul : un
+ *  événement de la V2 `at: H+30mn` posé dessus en a une, le lecteur la lit décollage + 30). `shown` : les lieux montrés (l'atelier voilé : un lieu caché n'est
+ *  jamais compté ni nommé), tous sans lui. → [{ id, name }] ; ne lève jamais. */
+export function rdvWithoutTime(doc, shown = null) {
+  try {
+    const d = obj(doc),
+      rdv = placesOf(d).filter(p => p.kind === 'rdv' && p.id && (!shown || shown.some(x => x && x.id === p.id)));
+    if (!rdv.length) return [];
+    const events = typeof MS.readEvents === 'function' ? MS.readEvents(d) : [],
+      plan = typeof MS.plannedMin === 'function' ? MS.plannedMin(d) : null,
+      timed = new Set((Array.isArray(events) ? events : []).filter(e => e && plan instanceof Map && Number.isFinite(plan.get(e.id))).map(
+        e => String(e.place ?? '').toUpperCase()));
+    return rdv.filter(p => !timed.has(p.id.toUpperCase())).map(p => ({
+      id: p.id,
+      name: p.name
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /** « À compléter » (voir l'en-tête) : les champs vides de chaque étape, jamais bloquants. */
@@ -2161,6 +2189,10 @@ export function todo(doc) {
       key
     });
   if (!cut(d.title, 200)) add('cadre', 'title');
+  // SOG-0620 lot 5 : des rendez-vous sans heure prévue (un compte : « {n} rendez-vous sans heure prévue »), au Déroulé
+  if (rdvWithoutTime(d).length) add('timeline', 'rdvNoTime', {
+    n: rdvWithoutTime(d).length
+  });
   // SOG-0620 : un événement dont le repère est la réception de l'ordre, sans l'heure de cette réception (timeline.order_offset_min)
   if (eventsIn(d).some(e => obj(e).ref === 'order') && !Number.isFinite(obj(d.timeline).order_offset_min)) add('cadre', 'orderTime', {});
   // une liaison (famille commerciale) : ni théâtre, ni équipes, ni risques, ni chronologie à compléter (décision du 13 nov.)

@@ -17687,3 +17687,60 @@ def n295(c):
     c.ok('id: EV-7' in t and 'event_id' not in t and t.count('fallback_delay_min') == 11, t[t.find('timeline'):][:400],
          'the drawer left phases (eleven remain, no event_id) and the event came back as EV-7')
     c.js(_REG_CLEAR)
+
+
+# ---- SOG-0620 lot 5 : l'aide pour les missions existantes — leurs rendez-vous (`rendezvous[]`, sans heure) deviennent des événements, un geste, sur la volonté de l'auteur.
+# Une mission de la V2 inventée : ROMEO porte déjà un événement `at: H+30mn` ; SIERRA (un participant porte le nom de l'équipe BRAVO2) et TANGO n'en ont pas.
+_RDV_DOC = _ED_FULL.replace("  - { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, participants: [ALPHA1, BRAVO2], role: ralliement }\n",
+                            "  - { id: ROMEO, name: ROMEO, lat: 44.5, lon: 1.5, participants: [ALPHA1], role: ralliement }\n"
+                            "  - { id: SIERRA, name: SIERRA, lat: 44.4, lon: 1.4, participants: [BRAVO2, ZULU], role: ralliement }\n"
+                            "  - { id: TANGO, name: TANGO, lat: 44.3, lon: 1.3, role: ralliement }\n") + """timeline:
+  events:
+    - { at: H+30mn, place: ROMEO, text: Passage au rendez-vous }
+"""
+assert 'id: TANGO' in _RDV_DOC
+
+
+@case('N296', 'Missions › the workshop, SOG-0620 lot 5: a V2 mission with three rendezvous, one with a V2 event `at: H+30mn` on it — « À compléter » says « 2 rendez-vous sans heure '
+      'prévue » and the Déroulé offers « Créer les événements des rendez-vous »; one tap creates « Rendez-vous au point SIERRA » (the team of its participant) and « Rendez-vous au '
+      'point TANGO » (no team), « heure à donner », last; the button is gone and the line stays at 2 until a time is given (then 1); ↶ undoes the creation in one step; the V2 event '
+      'of ROMEO is untouched in the saved file', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 5: « une foule de missions existantes » — nothing is rewritten in bulk, the author acts; cannot play before the reader of V3 Frame (readEvents, plannedMin) is on the branch')
+def n296(c):
+    _flow_open(c, _RDV_DOC)
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » open')
+    c.ok('2 rendez-vous sans heure prévue' in norm(c.js(_ED_TODO_TEXT)), c.js(_ED_TODO_TEXT), '« À compléter » counts 2: SIERRA and TANGO (ROMEO has its V2 event, planned at take-off + 30)')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.eq(c.count(f'{E} [data-flow] [data-do="edflowrdv"]'), 1, 'the button is there', what='button')
+    c.tap(f'{E} [data-flow] [data-do="edflowrdv"]')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 3", what='the two events created')
+    c.eq(c.js(_FLOW_ROWS % E), [['event', 'H+30', '', 'Passage au rendez-vous', False], ['event', 'heure à donner', '', 'Rendez-vous au point SIERRA', False],
+                                ['event', 'heure à donner', '', 'Rendez-vous au point TANGO', False]], 'the two events read « heure à donner » and sort last', what='rows')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row')].map(r => [...r.querySelectorAll('.fl-chip')].map(x => x.textContent))"), [[], ['BRAVO2'], []],
+         'SIERRA carries the team of its participant, TANGO and ROMEO none', what='teams')
+    c.eq(c.js(f"document.querySelector('{E} [data-flowsheet] [data-f=title]')?.value"), 'Rendez-vous au point SIERRA', 'the sheet of the first created event is open', what='sheet')
+    c.eq(c.count(f'{E} [data-flow] [data-do="edflowrdv"]'), 0, 'the button is gone: every rendezvous has an event now', what='no button')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » open')
+    c.ok('2 rendez-vous sans heure prévue' in norm(c.js(_ED_TODO_TEXT)), c.js(_ED_TODO_TEXT), 'the line still counts 2 until their times are given')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.shot('N296_390_rendez-vous.png')
+    c.tap(f'{_EDHIST} [data-do="edmapundo"]')
+    c.until(f"document.querySelectorAll('{E} [data-flowrows] .fl-row[data-kind=event]').length === 1", what='one undo: the two events are gone')
+    c.eq(c.count(f'{E} [data-flow] [data-do="edflowrdv"]'), 1, 'the button is back', what='button again')
+    c.tap(f'{E} [data-flow] [data-do="edflowrdv"]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] [data-f=offset]')", what='the sheet of SIERRA')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=offset]', '20')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » open')
+    c.ok('1 rendez-vous sans heure prévue' in norm(c.js(_ED_TODO_TEXT)), c.js(_ED_TODO_TEXT), 'SIERRA has its time: the line says 1')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok(re.search(r'- at: H\+30mn\s+place: ROMEO\s+text: Passage au rendez-vous\s+- ', t) is not None, t[t.find('timeline'):][:500],
+         'the V2 event of ROMEO is untouched: at, place and text only, no new key')
+    c.ok('title: Rendez-vous au point SIERRA' in t and 'place: SIERRA' in t and 'place: TANGO' in t and 'offset_min: 20' in t and 'at: H+20' in t, t[t.find('timeline'):][:900],
+         'the two events written with their place; SIERRA has its offset and its `at` mirror')
+    c.js(_REG_CLEAR)

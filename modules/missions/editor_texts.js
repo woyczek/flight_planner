@@ -132,6 +132,7 @@ export const EDTX = {
     '{id} eliminado, con sus citas.'
   ],
   // « À compléter » nomme (l'ergonome, 17 nov.) : le champ qui cite et l'identifiant absent, le tiroir, la carte
+  todo_rdvNoTime: ['{n} rendez-vous sans heure prévue'], // SOG-0620 lot 5 (français seulement, SOG-0680)
   todo_orderTime: ['l\'heure de réception de l\'ordre', 'the time the order is received', 'die Zeit des Auftragseingangs',
     'la hora de recepción de la orden'
   ],
@@ -993,6 +994,7 @@ export function todoText(tt, t) {
   return tt(text, {
     name: String(v.name || '').slice(0, 60),
     id: String(v.id || '').slice(0, 40),
+    n: Number.isFinite(+v.n) ? +v.n : '',
     who: EDTX[`at_${v.where}`] ? tt(EDTX[`at_${v.where}`], {
       name: String(v.name || '').slice(0, 60)
     }) : ''

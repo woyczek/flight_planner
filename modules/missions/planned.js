@@ -108,7 +108,9 @@ export function model(c, view, o = {}) {
           } : null,
           key: Number.isFinite(atMs) ? atMs : Number.isFinite(rel) && Number.isFinite(takeoff) ? takeoff + rel * 60000 : Infinity
         };
-      }).sort((a, b) => a.key - b.key),
+      }).filter(l => l.atMs !== null || l.rel !==
+        null) // un événement sans heure prévue (ni d'horloge, ni après le décollage) n'est jamais montré au pilote
+      .sort((a, b) => a.key - b.key),
       done = lines.filter(l => l.heldMs !== null),
       last = done.at(-1) || null,
       rest = lines.filter(l => l.heldMs === null),

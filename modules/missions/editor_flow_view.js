@@ -266,10 +266,13 @@ export function flowHtml(s, h) {
   const e = s.ed,
     doc = h.doc(e),
     storable = ED.eventsStorable(doc),
-    full = (e.flow || []).length >= ED.EVENTS_MAX;
+    full = (e.flow || []).length >= ED.EVENTS_MAX,
+    c = ctxOf(e, h),
+    // SOG-0620 lot 5 : tant qu'un rendez-vous de la mission n'a AUCUN événement pour lieu, un bouton les crée tous d'un geste (l'heure reste à donner)
+    rdv = !full && EF.rdvWithoutEvent(doc, c.list, c.places).length ? `<div class="fl-adds"><button type="button" data-do="edflowrdv">${esc(s.tt(FTX.flRdvBtn))}</button></div>` : '';
   return `${STYLE}<div class="fl ms-edsub" data-flow><h4>${esc(s.tt(FTX.flTitle))}</h4><p class="f-muted fl-def">${esc(s.tt(FTX.flDef))}</p>
     <div class="fl-list" data-flowrows>${rowsHtml(s, h)}</div>
-    ${!storable ? `<p class="f-muted" data-evnohome>${esc(s.tt(FTX.flNoHome))}</p>` : `<div class="fl-adds">${full ? `<p class="f-muted">${esc(s.tt(FTX.flFull))}</p>` : `<button type="button" data-do="edflowadd">${esc(s.tt(FTX.flAddEvent))}</button>`}${e.veil ? '' : `<button type="button" data-do="edflowdrawer">${esc(s.tt(FTX.flAddDrawer))}</button>`}</div>`}
+    ${!storable ? `<p class="f-muted" data-evnohome>${esc(s.tt(FTX.flNoHome))}</p>` : `<div class="fl-adds">${full ? `<p class="f-muted">${esc(s.tt(FTX.flFull))}</p>` : `<button type="button" data-do="edflowadd">${esc(s.tt(FTX.flAddEvent))}</button>`}${e.veil ? '' : `<button type="button" data-do="edflowdrawer">${esc(s.tt(FTX.flAddDrawer))}</button>`}</div>${rdv}`}
     ${sheetHtml(s, h)}</div>`;
 }
 
@@ -355,7 +358,7 @@ export function input(s, ev, h) {
 export function act(s, b, h) {
   const e = s.ed,
     what = b.dataset.do;
-  if (!['edflowsel', 'edflowadd', 'edflowdel'].includes(what)) return false;
+  if (!['edflowsel', 'edflowadd', 'edflowdel', 'edflowrdv'].includes(what)) return false;
   if (!e.flow) e.flow = EF.read(e.base);
   const n = Number(b.dataset.n);
   if (what === 'edflowsel') {
@@ -366,6 +369,19 @@ export function act(s, b, h) {
     s.el.querySelector('[data-flowsheet] [data-f=title]')?.focus?.({
       preventScroll: true
     });
+    return true;
+  }
+  if (what ===
+    'edflowrdv'
+  ) { // « Créer les événements des rendez-vous » : un geste, « Annuler le geste » le défait ; la fiche du premier s'ouvre sur « Heure prévue »
+    const res = EF.withRdvEvents(h.doc(e), e.flow, ctxOf(e, h).places, tr(s));
+    if (!res.created.length) return true;
+    h.remember(e);
+    e.flow = res.entries;
+    e.flowSel = e.flow.findIndex(x => x.id === res.created[0]);
+    e.sel = 'start';
+    h.draw(s);
+    s.el.querySelector('[data-flowsheet] [data-f=offset]')?.focus?.();
     return true;
   }
   if (what === 'edflowadd') {
