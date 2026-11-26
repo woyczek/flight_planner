@@ -3131,7 +3131,7 @@ function renderPlanBody() {
       <div data-routealts></div><p class="f-row f-warn fu-rage" data-rstale hidden><span data-rstaletext></span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
-      <p class="f-muted" data-natwarn hidden></p><p class="f-muted" data-awywarn hidden></p>
+      <p class="f-muted" data-natwarn hidden></p><p class="f-muted" data-awywarn hidden></p><p class="f-warn" data-rnotund hidden></p>
       <p class="f-warn" data-rhumb hidden></p>
       <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
@@ -8342,6 +8342,7 @@ function resolveRoute(normalize = true) {
         unresolved,
         tokens,
         badAirways,
+        notUnderstood = [], // SOG-0679 : les mots du texte non compris, dits sous la route
         homonyms = [],
         jumps = [],
         far = [],
@@ -8371,6 +8372,7 @@ function resolveRoute(normalize = true) {
     // SOG-0354 (l'ergonome : « une notification passe, une ligne reste ») : une voie écrite que la base ne relie pas, tronçon direct, dite
     // par une ligne fixe en sourdine sous la route, comme celle des routes NAT ; elle suit chaque lecture du texte
     RLN.awyPaint(S.body, badAirways, RLH);
+    RLN.notUnderstoodPaint(S.body, notUnderstood, RLH); // SOG-0679 : jamais un silence
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot ; la première frappe le rend au pilote

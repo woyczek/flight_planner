@@ -4,7 +4,8 @@
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
 //   routeModel(text, { dep, arr, known, chain, base, procs, nat }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks,
-//   natDirect } (voir la fonction ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
+//   natDirect, notUnderstood, rules } (voir la fonction ; SOG-0679 : notUnderstood, les mots non compris dans l'ordre du texte ; rules,
+//   [{ rule: 'VFR' | 'IFR', after: le point qui précède ou null }] ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
 //   jour lues et valides, [{ id, points: [{ id, lat, lon }] }] — aerodb.natTracks() —, null si elles ne le sont pas ; natDirect : les routes
 //   NAT gardées NON dépliées, [{ l, why: 'unread' | 'gone' | 'ends' }]).
 //   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
@@ -57,7 +58,11 @@ export async function routeModel(text, {
     natAt = []; // SOG-0372 : chaque route NAT gardée et le point qui la précède (son entrée), dépliée après la lecture
   const points = [],
     unresolved = [],
-    tokens = [];
+    tokens = [],
+    // SOG-0679 : les mots que la suite ne comprend pas (dits sous la route, jamais un silence), et chaque changement de règle de vol
+    // avec le point qu'il suit (null en tête)
+    notUnderstood = [],
+    rules = [];
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
   const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
   const homonyms = [];
@@ -234,8 +239,30 @@ export async function routeModel(text, {
           keep: t.id
         });
       }
+    } else if (t.form === 'rule') { // SOG-0679 : la règle de vol, gardée dans le texte
+      rules.push({
+        rule: t.id,
+        after: points.at(-1)?.id || null
+      });
+      tokens.push({
+        keep: t.id
+      });
+    } else if (t.form ===
+      'cruise') { // SOG-0679 : la montée en croisière ; son point est un point de la route, ses niveaux ne s'appliquent pas
+      const inner = tokenize(t.point)[0],
+        c = inner?.kind === 'coord' ? inner : inner?.kind === 'name' ? await find(inner.id, points.at(-1) || mid) : null;
+      if (c) {
+        add(t.point, c, 0);
+        points.at(-1).cruise = t.id;
+      } else {
+        unresolved.push(t.point);
+        tokens.push({
+          keep: t.id
+        });
+      }
     } else {
       if (AIRWAY_WORD.test(t.id)) via = t.id; // voie composée (G54-R66)
+      else notUnderstood.push(t.id); // SOG-0679 : relèvement-distance compris (pas placé), et tout mot sans forme
       tokens.push({
         keep: t.id
       });
@@ -323,6 +350,8 @@ export async function routeModel(text, {
   return {
     points,
     unresolved,
+    notUnderstood,
+    rules,
     tokens,
     badAirways,
     homonyms,

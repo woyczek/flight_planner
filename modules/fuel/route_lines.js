@@ -5,7 +5,9 @@
 //
 // API : awyPaint(body, badAirways, h) ; notesPaint(body, { unresolved, far, homonyms, jumps }, h) → le texte des points non reconnus
 //   (« » sans eux) ; h = { tt(rangée, valeurs) (la traduction du module), TX (les textes de module.js : awyBad, unresolved, farPt,
-//   homonyms, jump), esc (l'échappement de module.js), lang() (la langue du montage, pour les nombres) }. Les noms viennent du texte du pilote ou du vol : textContent, esc.
+//   homonyms, jump), esc (l'échappement de module.js), lang() (la langue du montage, pour les nombres) }.
+//   notUnderstoodPaint(body, words, h) : SOG-0679, « Non compris : {mots}. » — les mots du texte que le lecteur de route ne comprend
+//   pas (frame/lib/route_model.js notUnderstood), jamais un silence ; TX : ses textes, quatre langues. Les noms viennent du texte du pilote ou du vol : textContent, esc.
 
 /** SOG-0354 (l'ergonome : « une notification passe, une ligne reste ») : une voie écrite que la base ne relie pas, tronçon direct, dite
  *  par une ligne fixe en sourdine sous la route, comme celle des routes NAT ; elle suit chaque lecture du texte (douze voies au plus). */
@@ -42,4 +44,21 @@ export function notesPaint(body, {
     nm: j.nm.toLocaleString(h.lang())
   }))].map(x => `<span data-rw>${h.esc(x)}</span>`).join('<br>');
   return ut;
+}
+
+export const TX = {
+  // SOG-0679 (l'ergonome, 26/11) : tout mot du texte de la route que la suite ne comprend pas est dit, dans l'ordre du texte
+  notUnderstood: ['Non compris : {l}.', 'Not understood: {l}.', 'Nicht verstanden: {l}.', 'No comprendido: {l}.']
+};
+
+/** SOG-0679 : la ligne « Non compris : … » sous la route (douze mots au plus, chacun tel qu'écrit, en texte) ; cachée sans eux. */
+export function notUnderstoodPaint(body, words, h) {
+  const line = body?.querySelector('[data-rnotund]'),
+    list = [...new Set((Array.isArray(words) ? words : []).map(w => String(w ?? '')).filter(Boolean))].slice(0, 12),
+    text = list.length ? h.tt(TX.notUnderstood, {
+      l: list.join(', ')
+    }) : '';
+  if (!line) return;
+  if (line.textContent !== text) line.textContent = text;
+  line.hidden = !text;
 }

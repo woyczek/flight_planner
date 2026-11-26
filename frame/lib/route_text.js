@@ -6,8 +6,11 @@
 //
 // API :
 //   tokenize(text) → [{ kind: 'coord', id, lat, lon, alt_ft } | { kind: 'name', id, alt_ft, airway } |
-//     { kind: 'group', alt_ft } | { kind: 'word', id }] — 'name' : identifiant à chercher (airway : sa forme est celle
-//     d'une voie ou d'une procédure, à garder tel quel s'il n'est pas un point connu) ; DCT écarté.
+//     { kind: 'group', alt_ft, speed } | { kind: 'word', id, form? }] — 'name' : identifiant à chercher (airway : sa forme est celle
+//     d'une voie ou d'une procédure, à garder tel quel s'il n'est pas un point connu) ; DCT écarté. SOG-0679 : un mot de l'item 15 que la
+//     suite sait lire porte sa forme — form 'rule' (« VFR », « IFR » : la règle de vol change), 'cruise' (« C/XPB/N0450F350F390 », la
+//     montée en croisière : point, speed, levels), 'brgdist' (« TOU180040 », un point par relèvement et distance : point, brg, nm) ; un
+//     mot sans forme n'est pas compris. speed : la vitesse d'un groupe (« N0450 »), jamais appliquée au devis.
 //   textFromTokens(tokens, { dct }) : texte normalisé de jetons { pt: point } | { keep: mot } (une ligne) ; avec dct, en forme OACI :
 //     « DCT » entre deux points de route qui se suivent sans voie ni procédure (jamais contre le départ ni l'arrivée) (§ 10.31).
 //   withProcedures(text, o), proceduresOfText(text, o) : les noms de SID et de STAR dans le texte, posés depuis le choix et relus
@@ -51,7 +54,13 @@ const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[
   GROUP = /^(?:(?:[NK]\d{4}|M\d{3})(?:[FA]\d{3}|[SM]\d{4})|[NK]\d{4})$/,
   AIRWAY = /^[A-Z]{1,2}\d{1,4}[A-Z]?$/,
   PROC = /\d[A-Z]$/,
-  NAME = /^[A-Z0-9]{2,7}$/;
+  NAME = /^[A-Z0-9]{2,7}$/,
+  // SOG-0679 : les éléments de l'item 15 que la suite lit sans les appliquer — la règle de vol, la montée en croisière (son point,
+  // coordonnées comprises, sa vitesse et ses deux niveaux ou « PLUS »), le point par relèvement (000 à 360) et distance (NM)
+  RULE = /^(?:VFR|IFR)$/,
+  CRUISE = /^C\/([A-Z0-9]{2,11})\/([NK]\d{4}|M\d{3})([FA]\d{3}|[SM]\d{4})([FA]\d{3}|[SM]\d{4}|PLUS)$/,
+  BRGDIST = /^([A-Z]{2,5})(\d{3})(\d{3})$/,
+  SPEED = /^([NK]\d{4}|M\d{3})/;
 
 /** La provenance des mots d'un texte de route face au dernier texte écrit par « Auto » (V3 § 10.31 : les voies et les nœuds d'un
  *  Auto précédent ne sont jamais des contraintes) : pour chaque mot de words, vrai quand il vient de cet Auto, faux quand il est posé
@@ -124,7 +133,30 @@ export function tokenize(text) {
     const ns = NAT_SLASH.exec(word),
       nlat = ns ? +ns[1] + (ns[2] ? +ns[2] / 60 : 0) : NaN,
       nlon = ns ? +ns[3] : NaN;
-    if (ns && (!ns[2] || +ns[2] < 60) && nlat >= 20 && nlat <= 75 && nlon >= 5 && nlon <= 80) out.push({
+    const cr = CRUISE.exec(word),
+      bd = BRGDIST.exec(word);
+    if (RULE.test(word)) out.push({ // SOG-0679 : la règle de vol, jamais un point à chercher
+      kind: 'word',
+      id: word,
+      form: 'rule'
+    });
+    else if (cr) out.push({ // SOG-0679 : la montée en croisière, son point est un point de la route
+      kind: 'word',
+      id: word,
+      form: 'cruise',
+      point: cr[1],
+      speed: cr[2],
+      levels: [cr[3], cr[4]]
+    });
+    else if (bd && +bd[2] <= 360) out.push({ // SOG-0679 : un point par relèvement et distance, lu mais pas placé
+      kind: 'word',
+      id: word,
+      form: 'brgdist',
+      point: bd[1],
+      brg: +bd[2],
+      nm: +bd[3]
+    });
+    else if (ns && (!ns[2] || +ns[2] < 60) && nlat >= 20 && nlat <= 75 && nlon >= 5 && nlon <= 80) out.push({
       kind: 'coord',
       id: word,
       lat: nlat,
@@ -133,7 +165,8 @@ export function tokenize(text) {
     });
     else if (GROUP.test(tok)) out.push({
       kind: 'group',
-      alt_ft: alt
+      alt_ft: alt,
+      speed: SPEED.exec(tok)?.[1] || '' // SOG-0679 : lue, jamais appliquée au devis
     });
     else if (tok === 'DCT') continue;
     else if ((m = ICAO_LL.exec(tok))) out.push({
@@ -199,6 +232,8 @@ const natSlashKept = (id, p) => {
   return lat >= 20 && lat <= 75 && lon >= 5 && lon <= 80;
 };
 const pointWord = p => {
+  const cr = typeof p?.cruise === 'string' ? CRUISE.exec(p.cruise) : null;
+  if (cr && cr[1] === String(p?.id || '').toUpperCase()) return p.cruise; // SOG-0679 : « C/XPB/N0450F350F390 » reste écrit ainsi
   const id = String(p?.id || '').toUpperCase(),
     name = NAME.test(id) || ICAO_LL.test(id) || natSlashKept(id, p) ? id : Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) ?
     icaoCoord(+p
@@ -343,9 +378,13 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
   const pts = (points || []).filter(p => p && !(p.awy && !(p.alt_ft > 0))),
     ids = new Set(pts.map(p => String(p.id || '').toUpperCase())),
     prevPos = previousPoints ? new Map(previousPoints.filter(Boolean).map(p => [String(p.id || '').toUpperCase(), p])) : null,
-    toks = tokenize(previousText).filter(t => t.kind !== 'group'),
+    toks = tokenize(previousText).filter(t => t.kind !== 'group').map(t => t.form === 'cruise' ?
+    { // SOG-0679 : le point de la montée en croisière
+      ...t,
+      id: t.point
+    } : t),
     // dans l'ancien texte : un point est un identifiant ou des coordonnées qui ne sont pas des mots à garder
-    isPoint = t => t.kind === 'coord' || (t.kind === 'name' && (!t.airway || ids.has(t.id) || prevPos?.has(t.id))),
+    isPoint = t => t.kind === 'coord' || t.form === 'cruise' || (t.kind === 'name' && (!t.airway || ids.has(t.id) || prevPos?.has(t.id))),
     between = new Map();
   let last = null,
     kept = [];
