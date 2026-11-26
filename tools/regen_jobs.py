@@ -252,6 +252,11 @@ BACKGROUND = {('ground', 'fetch')}
 SIDE = {('route', 'compute'), ('route', 'levels')}      # SOG-0529 : route/levels lit comme route/compute (relecture de Sécurisation : ni « dernier travail qui a écrit », ni 409 à côté de ground/fetch)
 
 
+def _gap_free(key, a):
+    """SOG-0666 : ce départ ne compte pas dans l'attente minimale (MIN_GAP) et n'y est pas soumis : la lecture de l'état de la publication du synoptique monde (`weather/world`, `action: status`, jamais d'appel réseau). Elle comptait comme un départ : ouvrir l'écran Données armait dix minutes d'attente, et le « Construire » d'après était refusé (« possible dans 585 s »)."""
+    return key == ('weather', 'world') and isinstance(a, dict) and a.get('action') == 'status'
+
+
 def clean_error(text, ctx=None):
     """Texte d'une erreur sans secret, avant le journal du travail et la page : les identifiants d'EAD Basic du poste (s'il y en a),
     les jetons, identifiants de session et adresses de courriel (proc_ead.sanitize), puis les « utilisateur:mot de passe@ » et les
@@ -281,7 +286,8 @@ class Jobs:
         self.read_orphan_s = READ_ORPHAN_S if read_orphan_s is None else read_orphan_s    # une lecture que la page n'interroge plus depuis tant de secondes : arrêtée
         self.read_grace_s = READ_GRACE_S if read_grace_s is None else read_grace_s        # arrêt demandé et pas obéi depuis tant de secondes : libérée
         self.registry = dict(registry)
-        self.ctx = ctx or {}
+        self.ctx = ctx if ctx is not None else {}
+        self.ctx['gap_started'] = self.gap_started      # SOG-0666 : un verbe (weather/world status) dit l'heure du dernier départ compté pour l'attente minimale
         self.lock = threading.Lock()
         self.cur = None
         self.side = None  # le travail de SIDE qui court à côté d'une lecture de fond (SOG-0206), ou le dernier : view(id) et cancel(id) le trouvent
@@ -414,15 +420,17 @@ class Jobs:
                     side = True       # à côté de la lecture de fond, jamais à côté d'un autre travail
                 else:
                     return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', 'job': self.cur.id, 'running': self._summary(self.cur)}
-            gap, now = self.min_gap.get(key), time.time()
+            free = _gap_free(key, a)      # SOG-0666 : la lecture de l'état (sans réseau) ne compte pas dans l'attente et n'y est pas soumise
+            gap, now = None if free else self.min_gap.get(key), time.time()
             if gap and key in self.last and now - self.last[key] < gap:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
                 return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
             prev = self.last.get(key)
-            self.last[key] = now
+            if not free:
+                self.last[key] = now
             job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
             job.auto = bool(auto)
-            job.gap = (key, prev, now)      # le départ rendu si le travail dit qu'il n'a pas atteint le réseau (_run)
+            job.gap = None if free else (key, prev, now)      # le départ rendu si le travail dit qu'il n'a pas atteint le réseau (_run)
             if side:
                 self.side = job
             else:
@@ -541,6 +549,11 @@ class Jobs:
                 else:
                     self.last[key] = prev
                 self._save()
+
+    def gap_started(self, key):
+        """SOG-0666 : l'heure (time.time) du dernier départ de ce verbe compté pour l'attente minimale (MIN_GAP), ou None : la page dit l'heure d'une nouvelle demande SANS tenter un départ que le lanceur refuserait (« too-soon »)."""
+        t = self.last.get(tuple(key))
+        return t if isinstance(t, (int, float)) and not isinstance(t, bool) else None
 
     def hold(self, why):
         """Suspend les départs (start refusé avec reason why) si aucun travail ne tourne ; False sinon. view, cancel, claim et

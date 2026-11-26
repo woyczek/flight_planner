@@ -31,7 +31,8 @@ export const worldInit = () => ({
 /** L'état du bouton : le lanceur du poste, rien d'autre en cours (la nôtre comprise), le lanceur qui connaît weather/world. */
 export function worldGate() {
   const reason = !S.ctx.launcher ? 'no-launcher' : S.world.phase || busyNow() ? 'busy' : !S.known.includes(M.WORLD_JOB.key) ?
-    'unknown-verb' : '';
+    'unknown-verb' : M.worldGap(S.world.status, Date.now()) ? 'gap' :
+    ''; // « gap » : une lecture vient de partir, le lanceur refuserait un départ avant dix minutes (SOG-0666)
   return {
     disabled: !!reason,
     reason
@@ -102,6 +103,15 @@ function lastHtml() {
   return `<p class="f-warn" data-world-last>${esc(tt(TX.world.last, { when, why }))}${l.message ? ` <span class="f-muted">(${esc(l.message)})</span>` : ''}</p>`;
 }
 /** SOG-0525 (3) : ce que le lanceur fait lui-même : tenir le synoptique à jour ; l'heure de sa prochaine tentative (publication en retard) ou de son prochain regard (à jour) ; rien si le lanceur ne le dit pas. */
+/** SOG-0666 : pendant l'attente de dix minutes entre deux lectures, PAS de bouton (il serait refusé) et UNE ligne : « Lecture lancée à 14:02. Nouvelle demande possible à 14:12. » ; l'écran se redessine à l'heure dite. */
+function gapHtml() {
+  const g = M.worldGap(S.world.status, Date.now());
+  if (!g) return '';
+  clearTimeout(S.world.gapT);
+  S.world.gapT = setTimeout(() => S && renderWorld(), Math.max(1000, g.until - Date.now() + 1000));
+  return `<p class="f-muted" data-world-gap>${esc(tt(TX.world.gapLine, { t: M.clockOf(g.started), u: M.clockOf(g.until) }))}</p>`;
+}
+
 function autoHtml() {
   const a = S.world.status?.auto;
   if (!a) return '';
@@ -119,7 +129,8 @@ function resultHtml() {
   }) + (r.kept ? ` ${tt(TX.world.kept)}` : '') + (r.resumed ? ` ${tt(TX.world.resumed, { k: r.resumed, n: r.of ?? r.steps ?? '?' })}` : '') : r.kind === 'refused' ? tt(r.key === 'tooSoon' ? TX.world.tooSoon : TX
     .refused[r.key] || TX.refused.failed, {
       n: r.wait,
-      t: M.lastStartClock(r.wait, Date.now())
+      t: M.lastStartClock(r.wait, r.at ?? Date.now()),
+      u: M.clockOf((r.at ?? Date.now()) + (r.wait ?? 0) * 1000)
     }) : tt(M.own(TX.world.why, r.reason) || TX.world.why.failed);
   return `<div data-world-result data-result="${esc(r.kind)}"><p${r.kind === 'done' ? '' : ' class="f-warn"'}><b>${esc(head)}</b></p></div>`;
 }
@@ -129,9 +140,9 @@ function bodyHtml() {
     r = S.world;
   return `<p class="f-muted" data-world-hint>${esc(tt(TX.world.hint))}</p><p class="f-muted" data-world-local>${esc(tt(TX.world.local))}</p>
     ${lastHtml()}
-    ${autoHtml()}
-    <p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>
-    ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
+    ${gate.reason === 'gap' ? gapHtml() : autoHtml()}
+    ${gate.reason === 'gap' ? '' : `<p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>`}
+    ${gate.reason && gate.reason !== 'gap' && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
     ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span>${r.resumedNow ? `<span class="f-muted" data-world-resumed>${esc(tt(TX.world.resumed, { k: r.resumedNow.have, n: r.resumedNow.of }))}</span>` : ''}<div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
 }
 /** La ligne : le même gabarit que les autres jeux. */
@@ -194,11 +205,13 @@ export async function worldEnd(me, final) {
     S.world.result = {
       kind: 'refused',
       key: f.key,
-      wait: f.wait
+      wait: f.wait,
+      at: Date.now() // l'instant du refus : les heures dites ne glissent pas à chaque dessin
     };
     S.ctx.notify(tt(f.key === 'tooSoon' ? TX.world.tooSoon : TX.refused[f.key] || TX.refused.failed, {
       n: f.wait,
-      t: M.lastStartClock(f.wait, Date.now())
+      t: M.lastStartClock(f.wait, S.world.result.at),
+      u: M.clockOf(S.world.result.at + (f.wait ?? 0) * 1000)
     }), 'err');
   } else if (w?.ok) {
     S.world.status = w;

@@ -933,17 +933,20 @@ export const TX = {
       'Automatische Aktualisierung durch den Launcher: nächster Versuch um {t}.',
       'Actualización automática por el lanzador: próximo intento a las {t}.'
     ],
-    autoWait: ['À jour. Le lanceur relira la NOAA à {t}, quand le run suivant sera publié.',
-      'Up to date. The launcher will read the NOAA again at {t}, when the next run is out.',
-      'Aktuell. Der Launcher liest die NOAA um {t} erneut, wenn der nächste Lauf veröffentlicht ist.',
-      'Al día. El lanzador volverá a leer la NOAA a las {t}, cuando se publique la pasada siguiente.'
+    // SOG-0666 : une heure, jamais des secondes ; à jour, la prochaine lecture de la NOAA ; pendant l'attente de dix minutes entre deux lectures, UNE ligne et pas de bouton
+    autoWait: ['À jour. Prochaine lecture de la NOAA à {t}.', 'Up to date. Next NOAA read at {t}.',
+      'Aktuell. Nächster NOAA-Lesevorgang um {t}.',
+      'Al día. Próxima lectura de la NOAA a las {t}.'
+    ],
+    gapLine: ['Lecture lancée à {t}. Nouvelle demande possible à {u}.', 'Read started at {t}. A new request is possible at {u}.',
+      'Lesevorgang um {t} gestartet. Neue Anfrage ab {u} möglich.', 'Lectura iniciada a las {t}. Nueva solicitud posible a las {u}.'
     ],
     // le compte a rebours ne vient JAMAIS seul : il dit ce qui l'a arme (le depart de la derniere lecture, l'attente de dix minutes entre deux departs), puis ce qui reste
     tooSoon: [
-      'Dernière lecture de la NOAA lancée à {t} : attente de dix minutes entre deux départs, la suivante est possible dans {n} s.',
-      'Last NOAA read started at {t}: ten minutes are kept between two starts, the next one is possible in {n} s.',
-      'Letzter NOAA-Lesevorgang um {t} gestartet: zwischen zwei Starts liegen zehn Minuten, der nächste ist in {n} s möglich.',
-      'Última lectura de la NOAA iniciada a las {t}: diez minutos de espera entre dos inicios, la siguiente es posible en {n} s.'
+      'Dernière lecture de la NOAA lancée à {t} : attente de dix minutes entre deux départs, une nouvelle demande est possible à {u}.',
+      'Last NOAA read started at {t}: ten minutes are kept between two starts, a new request is possible at {u}.',
+      'Letzter NOAA-Lesevorgang um {t} gestartet: zwischen zwei Starts liegen zehn Minuten, eine neue Anfrage ist ab {u} möglich.',
+      'Última lectura de la NOAA iniciada a las {t}: diez minutos de espera entre dos inicios, una nueva solicitud es posible a las {u}.'
     ],
     done: ['Construit : run {r}, {n} étapes, {s} ({t} s)', 'Built: run {r}, {n} steps, {s} ({t} s)',
       'Aufgebaut: Lauf {r}, {n} Schritte, {s} ({t} s)', 'Construido: pasada {r}, {n} pasos, {s} ({t} s)'
@@ -1086,6 +1089,10 @@ export const TX = {
     ],
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
       'Hay otra operación en curso'
+    ],
+    // SOG-0666 : la lecture de la NOAA vient de partir (le lanceur tient dix minutes entre deux départs) : la ligne du synoptique dit les heures, ici la raison seule
+    gap: ['Une lecture de la NOAA vient de partir : attendez dix minutes', 'A NOAA read has just started: wait ten minutes',
+      'Ein NOAA-Lesevorgang ist gerade gestartet: zehn Minuten warten', 'Una lectura de la NOAA acaba de iniciarse: espere diez minutos'
     ],
     'no-zone': ['Aucun pays défini : ajoutez-en un', 'No defined country: add one',
       'Kein festgelegtes Land: fügen Sie eines hinzu', 'Ningún país definido: añada uno'

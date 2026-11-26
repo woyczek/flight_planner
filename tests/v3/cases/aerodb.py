@@ -21225,3 +21225,51 @@ def k541(c):
     c.ok(unread, 'NO_READER_ZONES is empty', 'base_cycle names the states whose dropped files are not read')
     c.eq(sorted(unread - set(cov['PROC_NO_READER'])), [], 'every state with unread dropped files is in PROC_NO_READER', what='states missing from PROC_NO_READER')
     c.ok('se' in cov['PROC_NO_READER'], str(cov['PROC_NO_READER']), 'Sweden (the ENR is read, the procedures are not) is there by hand')
+
+
+@case('K654', 'weather/world: the READ of the state (action status, no network) neither counts in the ten-minute gap nor is refused by it, and says `started`, the hour of the last start that counts (SOG-0666)',
+      'K', static=True,
+      rule='SOG-0666 (the user, 25 Nov: « GFS : toujours cette collision entre la demande de construction, et l\'affichage » ; the ergonomist): opening the Données screen reads the state (weather/world status), and the runner counted that read as a START: the next « Construire » was refused « possible dans 585 s », and the next page open refused its own reading. The state read is now free of the gap (`_gap_free`); and it says `started`, the hour of the last start that counts (Jobs.last, kept across a restart), so that the page does not offer a start that the launcher would refuse; red before: the second status is refused too-soon (429) and a build right after a status is refused')
+def k544(c):
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    fake = ('import sys\nprint("@etape 1/3", flush=True)\nsys.exit(4)\n')       # reads a forecast time, then fails: the start COUNTS (K164)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        script = os.path.join(td, 'fake_world.py')
+        open(script, 'w', encoding='utf-8').write(fake)
+        jobs = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={('weather', 'world'): 600})
+        c.ok(callable(jobs.ctx.get('gap_started')), str(jobs.ctx.keys()), 'the runner gives its verbs the means to say the last counted start')
+
+        def play(action):
+            s = jobs.start('weather', 'world', {'action': action} if action else {})
+            if not s.get('ok'):
+                return s, None
+            end = time.time() + 20
+            v = jobs.view()['job']
+            while v['state'] == 'running' and time.time() < end:
+                time.sleep(0.05)
+                v = jobs.view()['job']
+            return s, v
+        s, v = play('status')
+        r = (v or {}).get('result') or {}
+        c.ok(s.get('ok') and r.get('ok') is True and 'started' not in r, str((s, r))[:200], 'no start counted yet: the status has no `started`')
+        s, v = play('status')
+        c.eq((s.get('ok'), s.get('reason')), (True, None), 'a second status right after is NOT refused (the state read does not count)', what='second status')
+        s, v = play(None)
+        c.eq((s.get('ok'), (v['result'] or {}).get('ok')), (True, False), 'a build right after the statuses is not refused: it starts (here it reads a time then fails: the start counts)', what='build')
+        s, v = play('status')
+        r = (v or {}).get('result') or {}
+        t = jobs.last.get(('weather', 'world'))
+        c.ok(s.get('ok') and isinstance(r.get('started'), int) and r['started'] == int(t) and abs(r['started'] - time.time()) < 60, str((s, r))[:200], 'the status, even within the gap, is answered and says the hour of that start')
+        s, v = play(None)
+        c.eq((s.get('ok'), s.get('status'), s.get('reason')), (False, 429, 'too-soon'), 'a build within the ten minutes is refused as before (the gap is for the builds)', what='build refused')
+        jobs.last[('weather', 'world')] = True      # never a bool, never an absurd value
+        s, v = play('status')
+        c.ok('started' not in ((v or {}).get('result') or {}), str(v and v.get('result'))[:100], 'a value that is not an hour is not said')
+        jobs.last[('weather', 'world')] = 1e12
+        s, v = play('status')
+        c.ok('started' not in ((v or {}).get('result') or {}), str(v and v.get('result'))[:100], 'an absurd hour is not said either')

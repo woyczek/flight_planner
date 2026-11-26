@@ -43,6 +43,10 @@ export function worldOf(final) {
     } : null,
     run: iso(r.run),
     built: iso(r.built),
+    // SOG-0666 : l'heure (ms) du dernier départ compté pour l'attente de dix minutes (le lanceur : `started`, en secondes) ; null s'il ne la dit pas
+    // (la fin d'une CONSTRUCTION dit le sien : la vue du travail ; celle d'un `status` n'est pas un départ de lecture de la NOAA)
+    started: [r.started, final.args?.action === 'build' ? final.started : null].map(v => Number.isFinite(v) && v > 0 && v < 4e9 ? v * 1000 :
+      null).find(v => v !== null) ?? null,
     times: [times[0] || '', times[1] || ''],
     steps: num(r.steps, 1000),
     files: num(r.files, 10000),
@@ -85,6 +89,15 @@ export function worldLast(v) {
 }
 /** L'attente que le lanceur tient entre deux departs de la lecture (tools/regen/weather.py MIN_GAP : 600 s) : l'heure du dernier depart se deduit de ce qu'il reste a attendre. */
 export const WORLD_GAP_S = 600;
+/** SOG-0666 : l'attente de dix minutes entre deux departs est EN COURS a `now` (ms) : { started, until } (ms) ; null sinon (le lanceur ne dit pas l'heure du dernier depart, ou l'attente est finie). */
+export function worldGap(w, now) {
+  if (!w || !Number.isFinite(w.started) || !Number.isFinite(now)) return null;
+  const until = w.started + WORLD_GAP_S * 1000;
+  return now < until ? {
+    started: w.started,
+    until
+  } : null;
+}
 /** L'heure locale hh:mm du depart de la derniere lecture, d'apres le refus du lanceur (`wait` s restantes sur WORLD_GAP_S) a `now` (ms) ; '' sans attente lisible. */
 export function lastStartClock(wait, now) {
   if (!Number.isFinite(wait) || wait < 0 || !Number.isFinite(now)) return '';

@@ -730,6 +730,7 @@ export function unmount() {
   cancelAnimationFrame(S.rz);
   clearTimeout(S.again);
   clearTimeout(S.statusRetry); // la relance de la lecture de l'état ne part plus
+  clearTimeout(S.world?.gapT); // l'attente de dix minutes entre deux lectures ne redessine plus la ligne (SOG-0666)
   unbindCovSort();
   destroyMaps();
   stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur

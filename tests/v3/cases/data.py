@@ -4728,7 +4728,8 @@ def l175(c):
     r = norm(c.text('[data-world-result]'))
     # the countdown never comes alone: it says what armed it, the start of the last read (hh:mm, here 300 s of the 600 s ago: 5 minutes ago) and the gap of ten minutes between two starts
     hm = c.js("() => [300, 360].map(s => { const d = new Date(Date.now() - s * 1000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') })")
-    c.ok(any(x in r for x in hm) and '300' in r and norm(WT('tooSoon')).split('{t}')[0] in r, f'{r} {hm}', 'a refusal because a read just took place says what armed the wait: the time of the last start, the gap between two starts, and the seconds left; never a bare « try again in N s »')
+    hu = c.js("() => [300, 301].map(s => { const d = new Date(Date.now() + s * 1000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') })")
+    c.ok(any(x in r for x in hm) and any(x in r for x in hu) and not re.search(r'\b300\b|\d+ ?s\b', r) and norm(WT('tooSoon')).split('{t}')[0] in r, f'{r} {hm}', 'a refusal because a read just took place says what armed the wait: the time of the last start, the gap between two starts, and the seconds left; never a bare « try again in N s »')
     c.check_errors()
 
 
@@ -12116,4 +12117,66 @@ def l184(c):
     _l89_sheet(c, 'fr')
     c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-proc]')", timeout=10000, what='the procedures line of the sheet of fr')
     c.ok('eAIP' in c.text('[data-sheet=fr] [data-sheet-proc]') and c.count('[data-sheet=fr] [data-sheet-proc][data-proc-reader]') == 0, c.text('[data-sheet=fr] [data-sheet-proc]'), 'a state that holds procedures keeps its words (« Procédures : oui (eAIP) »)')
+    c.check_errors()
+
+
+def _l185_open(c, started_ago_s, auto=None):
+    """The synoptic row on a launcher whose `weather/world status` says the last start of a read `started_ago_s` seconds ago (the gap of ten minutes between two starts): returns (st, started epoch, now)."""
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    started = int(now.timestamp()) - started_ago_s
+    res = {'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000, 'started': started}
+    if auto:
+        res['auto'] = auto
+    status = _view('done', step='Terminé', result=res)
+    st = _launcher(c, [status], verbs=_VERBS + ['weather/world'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=12000, what='the synoptic row is idle')
+    c.js("document.querySelector('[data-set=world]').open = true")
+    return st, started, now
+
+
+_HM_JS = "(s) => { const d = new Date(s * 1000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }"
+
+
+@case('L185', 'Données: during the ten minutes between two reads of the NOAA the synoptic row offers NO « Construire » and says ONE line « Lecture lancée à hh:mm. Nouvelle demande possible à hh:mm. » — an hour, never seconds (SOG-0666)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), night=False,
+      rule='SOG-0666 (the user, 25 Nov: « GFS : toujours cette collision entre la demande de construction, et l\'affichage » ; the ergonomist 26 Nov: a gesture that will be refused is not offered, the rule of SOG-0615): the row said « À jour », offered « Construire », then refused in orange « possible dans 585 s ». The launcher now says the start of the last read (weather/world status: `started`, the time its own gap of ten minutes counts from); inside the gap the row has no button and one line with both hours; red before: the button is there and the line is not')
+def l185(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    st, started, now = _l185_open(c, 240)
+    c.until("!!document.querySelector('[data-set=world] [data-world-gap]')", timeout=8000, what='the row says the read that has just started and when a new request is possible')
+    hs, hu = c.js(_HM_JS, started), c.js(_HM_JS, started + 600)
+    t = norm(c.text('[data-world-gap]'))
+    c.eq(t, norm(WT('gapLine')).replace('{t}', hs).replace('{u}', hu), 'ONE line: the hour of the start and the hour of a new request', what='gap line')
+    c.eq(c.count('[data-set=world] [data-verb=world-build]'), 0, 'no « Construire » during the gap: a gesture that will be refused is not offered', what='button')
+    c.ok(not re.search(r'\b\d+ ?(s|sec|secondes?|seconds?|Sek\.?|seg)\b', c.text('[data-set=world]'), re.I), c.text('[data-set=world]')[:200], 'no seconds anywhere in the row: an hour, never a countdown')
+    c.eq(c.count('[data-set=world] [data-world-auto]'), 0, 'one line only: the launcher\'s own next attempt is not said beside it', what='auto line')
+    if c.width in (390, 1280):
+        c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()
+        c.wait(400)
+        c.shot(f'L185_{c.width}_{lang}_attente.png')
+    c.check_errors()
+
+
+@case('L186', 'Données: once the ten minutes are over, or when the launcher does not say the start of a read, the synoptic row offers « Construire » again; up to date, it says « À jour. Prochaine lecture de la NOAA à hh:mm. » (SOG-0666)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), night=False,
+      rule='SOG-0666: the line and the missing button are for the ten minutes only; a read started 15 minutes ago (or no start said) leaves the button; the up-to-date line says an hour: « À jour. Prochaine lecture de la NOAA à hh:mm. »; the gap line comes back, then goes at the hour it said (the row is drawn again by its own timer)')
+def l186(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    nxt = int(now.timestamp()) + 2400
+    st, started, now = _l185_open(c, 900, auto={'next': nxt, 'due': False, 'fails': 0})
+    c.until("!!document.querySelector('[data-set=world] [data-world-auto]')", timeout=8000, what='the row says the next read of the NOAA')
+    c.eq(c.count('[data-set=world] [data-world-gap]'), 0, 'fifteen minutes after the start: no gap line', what='gap line')
+    c.eq(c.count('[data-set=world] [data-verb=world-build]'), 1, 'the button is back', what='button')
+    c.eq(norm(c.text('[data-world-auto]')), norm(WT('autoWait')).replace('{t}', c.js(_HM_JS, nxt)), 'up to date: « À jour. Prochaine lecture de la NOAA à hh:mm. » (an hour)', what='auto line')
+    if c.width in (390, 1280):
+        c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()
+        c.wait(400)
+        c.shot(f'L186_{c.width}_{lang}_ajour.png')
     c.check_errors()

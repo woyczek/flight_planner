@@ -4,7 +4,7 @@ La carte « monde » du module Atmosphère lit des pages publiées par tools/bui
 sur le poste, rien ne lançait l'outil : pas de carte. Un travail le lance.
 
 Un verbe, `weather/world` { action?: 'build' (par défaut) | 'status' } :
-  · `status` : { ok, exists, run, built, step, times: [première, dernière échéance], steps, files, bytes, age, last?, auto? } — ce que la publication du poste contient (jamais d'appel réseau) ; `auto` : la tenue à jour par le lanceur (tools/weather_keep.py) { next, due, fails, last_start?, reason? } ;
+  · `status` : { ok, exists, run, built, step, times: [première, dernière échéance], steps, files, bytes, age, last?, auto?, started? } — ce que la publication du poste contient (jamais d'appel réseau) ; `started` : l'heure (secondes) du dernier départ compté pour l'attente minimale de dix minutes (MIN_GAP), pour que la page dise l'heure d'une nouvelle demande sans tenter un départ refusé (SOG-0666) ; `auto` : la tenue à jour par le lanceur (tools/weather_keep.py) { next, due, fails, last_start?, reason? } ;
   · `build` : exécute tools/build_world_weather.py (bibliothèque standard ; NOMADS de la NOAA, GFS 1°, sans clé ni quota) vers un dossier de travail, CONTRÔLE ce qu'il a écrit (un index de schéma 1, des fichiers nommés par lui seul, taille et nombre bornés), puis le
     met en place d'un coup dans data/weather/world/ (SOG-0138 : data/local/ n'est servi à personne, hidden() du lanceur ; data/weather/ l'est, et n'est ni dans l'arbre du lanceur, FRAME_SKIP, ni dans git : `weather/` dans data/.gitignore et dans .git/info/exclude, posés ici s'ils manquent ; une publication de plusieurs Mo toutes les six heures n'a rien à faire dans l'historique). L'ancienne publication de data/local/weather/world/ est déplacée une fois, pas reconstruite. La publication d'avant sert de reprise
     (`--keep file://…`) : même run de GFS → rien n'est redemandé à la NOAA. Rend { ok, kept, run, built, times, steps, files, bytes, seconds, reason?, message? } ; reason : 'no-run' (aucun run publié / NOAA injoignable : l'ancienne publication reste), 'invalid' (le dossier produit n'est pas conforme : rien n'est remplacé), 'timeout', 'cancelled', 'failed'.
@@ -239,7 +239,10 @@ def run(job, args, ctx):
         part = _partial(data)
         last = _last(data)
         auto = weather_keep.view(data)
-        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {}), **({'last': last} if last else {}), **({'auto': auto} if auto else {})}
+        gap = ctx.get('gap_started')
+        started = gap(('weather', 'world')) if callable(gap) else None
+        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {}), **({'last': last} if last else {}), **({'auto': auto} if auto else {}),
+                **({'started': int(started)} if isinstance(started, (int, float)) and 0 < started < 4e9 else {})}
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):
