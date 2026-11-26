@@ -6915,7 +6915,8 @@ function procHave(icao) {
       STAR: l.some(p => p.kind === 'STAR'),
       any: (Array.isArray(list) ? list : []).length > 0 // SOG-0638 : le catalogue du terrain n'est pas vide
     });
-    if (s.ralts?.list?.length) routeAltsDraw();
+    // SOG-0638 (F238) : jamais pendant un calcul — la ligne « Calcul en cours… » reste, la réponse redessine la liste
+    if (s.ralts?.list?.length && !s.routeBusy) routeAltsDraw();
     noProcPaint();
   });
   return null;
@@ -6980,7 +6981,7 @@ async function routeReadDone(k) {
   if (R?.list?.some(a => (a.reasons?.violates || []).some(r => r.code === 'connector_limit' && String(r.values?.ad || '')
       .toUpperCase() === k &&
       h[r.values?.end === 'dep' ? 'SID' : 'STAR']))) R.procStale = R.stale = true;
-  if (R?.list?.length) routeAltsDraw();
+  if (R?.list?.length && !s.routeBusy) routeAltsDraw(); // SOG-0638 (F238) : jamais pendant un calcul
 }
 /** SOG-0532 (3) : le mot du verdict sur la ligne d'un itinéraire qui n'enfreint rien de connu — « conforme à ce que nous savons lire »
  *  ou « Non vérifiable : N point(s) » ; '' d'une réponse sans verdict. */
