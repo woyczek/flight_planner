@@ -157,7 +157,7 @@ export async function routeModel(text, {
     }) : null;
   };
   /** Ajoute un point (et son jeton) ; son niveau s'il en a un, et la vitesse écrite avec lui (SOG-0679, jamais appliquée). */
-  const add = (id, c, alt, speed = '') => {
+  const add = (id, c, alt, speed = '', altA = false) => {
     if (speed) speeds.push(speed);
     const p = {
       id,
@@ -168,6 +168,9 @@ export async function routeModel(text, {
       } : {}),
       ...(alt && speed ? {
         speed
+      } : {}),
+      ...(alt && altA ? {
+        alt_a: true
       } : {})
     };
     if (via && points.length) {
@@ -236,6 +239,10 @@ export async function routeModel(text, {
     }
     if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
       if (t.speed) speeds.push(t.speed);
+      if (t.vfr) rules.push({ // SOG-0679 (addendum) : « K0210VFR », la règle de vol écrite dans le groupe
+        rule: 'VFR',
+        after: points.at(-1)?.id || null
+      });
       // SOG-0679 : en tête (avant le départ ou contre lui), le groupe reste écrit et son niveau est dit non appliqué ; au milieu, sa
       // vitesse suit le niveau du point qui le précède (« TOU N0450F370 » s'écrit « TOU/N0450F370 »)
       if (points.length <= 1) {
@@ -244,14 +251,18 @@ export async function routeModel(text, {
           keep: t.word
         });
       } else if (t.alt_ft && t.speed) points.at(-1).speed = t.speed;
-      if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
-    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft, t.speed);
+      if (t.alt_ft && points.length) {
+        points.at(-1).alt_ft = t.alt_ft;
+        if (t.alt_a) points.at(-1).alt_a = true; // SOG-0679 (addendum) : une altitude (A045) reste une altitude
+        else delete points.at(-1).alt_a;
+      }
+    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft, t.speed, t.alt_a);
     else if (t.kind === 'name') {
       // le départ et l'arrivée du vol écrits dans le texte sont ces terrains : jamais jugés « trop loin » du point qui les précède (une
       // arrivée écrite après un point de l'Atlantique était écartée, gardée en mot, puis l'arrivée ajoutée : « … LFML LFML », garde F216)
       const own = t.id === dep || t.id === arr,
         c = await find(t.id, own ? null : points.at(-1) || mid);
-      if (c) add(t.id, c, t.alt_ft, t.speed);
+      if (c) add(t.id, c, t.alt_ft, t.speed, t.alt_a);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
         if (AIRWAY_WORD.test(t.id)) via = t.id;
@@ -259,6 +270,10 @@ export async function routeModel(text, {
           keep: t.id
         });
       }
+    } else if (t.form === 'remark') { // SOG-0679 (addendum) : OAT, GAT, STAY : compris, gardés, rien à dire
+      tokens.push({
+        keep: t.id
+      });
     } else if (t.form === 'rule') { // SOG-0679 : la règle de vol, gardée dans le texte
       rules.push({
         rule: t.id,
@@ -276,6 +291,12 @@ export async function routeModel(text, {
       if (c) {
         add(t.point, c, 0);
         points.at(-1).cruise = t.id;
+      } else if (inner?.form ===
+        'brgdist') { // SOG-0679 (addendum) : « C/NTR270010/… » : son point n'est pas situé, dit, jamais « inconnu »
+        unplaced.push(inner.id);
+        tokens.push({
+          keep: t.id
+        });
       } else {
         unresolved.push(t.point);
         tokens.push({
@@ -358,6 +379,7 @@ export async function routeModel(text, {
     if (!i || i === points.length - 1 || a === prev) {
       delete p.alt_ft;
       delete p.speed; // SOG-0679 : la vitesse suit le niveau écrit
+      delete p.alt_a;
     }
     if (a) prev = a;
   });

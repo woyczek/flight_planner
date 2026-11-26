@@ -11,7 +11,8 @@
 //     suite sait lire porte sa forme — form 'rule' (« VFR », « IFR » : la règle de vol change), 'cruise' (« C/XPB/N0450F350F390 », la
 //     montée en croisière : point, speed, levels), 'brgdist' (« TOU180040 », un point par relèvement et distance : point, brg, nm) ; un
 //     mot sans forme n'est pas compris. speed : la vitesse d'un groupe (« N0450 ») ou écrite avec le niveau d'un point
-//     (« LUGEN/N0280F150 »), jamais appliquée au devis ; word : le mot d'un groupe.
+//     (« LUGEN/N0280F150 »), jamais appliquée au devis ; word : le mot d'un groupe. Addendum : form 'remark' (OAT, GAT, « STAY1/0045 »),
+//     compris et gardés ; un groupe « K0210VFR » porte vfr ; alt_a : un niveau écrit en altitude (« A045 » = 4 500 ft).
 //   textFromTokens(tokens, { dct }) : texte normalisé de jetons { pt: point } | { keep: mot } (une ligne) ; avec dct, en forme OACI :
 //     « DCT » entre deux points de route qui se suivent sans voie ni procédure (jamais contre le départ ni l'arrivée) (§ 10.31).
 //   withProcedures(text, o), proceduresOfText(text, o) : les noms de SID et de STAR dans le texte, posés depuis le choix et relus
@@ -52,13 +53,17 @@ const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[
   // SOG-0513 : un groupe vitesse-niveau de l'item 15 porte son niveau (« N0236F270 », « M082F350 », « K0800A045 »), ou c'est une
   // vitesse seule à quatre chiffres (« N0450 ») ; jamais un mot nu « M189 », « N866 » : ce sont des VOIES (le niveau facultatif les
   // retirait, et deux points voisins recevaient « DCT » — l'IFPS de l'utilisateur, ROUTE165 « DCT HAWKE..NEVIL »)
-  GROUP = /^(?:(?:[NK]\d{4}|M\d{3})(?:[FA]\d{3}|[SM]\d{4})|[NK]\d{4})$/,
+  // SOG-0679 (addendum de l'utilisateur) : le niveau peut être « VFR » (« K0210VFR » : vitesse, vol à vue)
+  GROUP = /^(?:(?:[NK]\d{4}|M\d{3})(?:[FA]\d{3}|[SM]\d{4}|VFR)|[NK]\d{4})$/,
   AIRWAY = /^[A-Z]{1,2}\d{1,4}[A-Z]?$/,
   PROC = /\d[A-Z]$/,
   NAME = /^[A-Z0-9]{2,7}$/,
   // SOG-0679 : les éléments de l'item 15 que la suite lit sans les appliquer — la règle de vol, la montée en croisière (son point,
   // coordonnées comprises, sa vitesse et ses deux niveaux ou « PLUS »), le point par relèvement (000 à 360) et distance (NM)
   RULE = /^(?:VFR|IFR)$/,
+  // SOG-0679 (addendum) : les autres mots de l'item 15 qui ne sont pas des points — la classe de circulation (OAT, GAT) et l'attente sur
+  // place « STAY1/0045 » (numéro, durée hhmm) : gardés dans le texte, compris, jamais cherchés
+  REMARK = /^(?:OAT|GAT|STAY\d(?:\/\d{4})?)$/,
   CRUISE = /^C\/([A-Z0-9]{2,11})\/([NK]\d{4}|M\d{3})([FA]\d{3}|[SM]\d{4})([FA]\d{3}|[SM]\d{4}|PLUS)$/,
   BRGDIST = /^([A-Z]{2,5})(\d{3})(\d{3})$/,
   SPEED = /^([NK]\d{4}|M\d{3})/;
@@ -127,8 +132,11 @@ export function tokenize(text) {
     out = [];
   for (let i = 0; i < words.length; i++) {
     const word = words[i],
-      lv = /(?:^|\/)(?:[NKM]\d{3,4})?F(\d{3})$/.exec(word),
-      alt = lv ? +lv[1] * 100 : 0,
+      // SOG-0679 (addendum) : « A045 » est une ALTITUDE en centaines de pieds (4 500 ft) — après une vitesse ou après « / » seulement
+      // (« A34 », « A345 » nus sont des voies)
+      lv = /(?:^|\/)(?:[NKM]\d{3,4})?F(\d{3})$|(?:^|\/)[NKM]\d{3,4}A(\d{3})$|\/A(\d{3})$/.exec(word),
+      alt = lv ? +(lv[1] || lv[2] || lv[3]) * 100 : 0,
+      altA = !!lv && !lv[1],
       tok = word.split('/')[0],
       // SOG-0679 : la vitesse écrite avec le niveau d'un point (« LUGEN/N0280F150 »), lue, jamais appliquée au devis
       speed = word.includes('/') ? SPEED.exec(word.slice(word.lastIndexOf('/') + 1))?.[1] || '' : '';
@@ -142,6 +150,11 @@ export function tokenize(text) {
       kind: 'word',
       id: word,
       form: 'rule'
+    });
+    else if (REMARK.test(word)) out.push({ // SOG-0679 (addendum) : OAT, GAT, STAY : compris, gardés
+      kind: 'word',
+      id: word,
+      form: 'remark'
     });
     else if (cr) out.push({ // SOG-0679 : la montée en croisière, son point est un point de la route
       kind: 'word',
@@ -170,7 +183,13 @@ export function tokenize(text) {
       kind: 'group',
       alt_ft: alt,
       speed: SPEED.exec(tok)?.[1] || '', // SOG-0679 : lue, jamais appliquée au devis
-      word: tok // SOG-0679 : le groupe de tête reste écrit dans le texte
+      word: tok, // SOG-0679 : le groupe de tête reste écrit dans le texte
+      ...(altA ? {
+        alt_a: true
+      } : {}),
+      ...(/VFR$/.test(tok) ? {
+        vfr: true // SOG-0679 (addendum) : « K0210VFR », le vol passe (ou part) à vue
+      } : {})
     });
     else if (tok === 'DCT') continue;
     else if ((m = ICAO_LL.exec(tok))) out.push({
@@ -181,6 +200,9 @@ export function tokenize(text) {
       alt_ft: alt,
       ...(speed ? {
         speed
+      } : {}),
+      ...(altA && alt ? {
+        alt_a: true
       } : {})
     });
     else if ((m = NAT_LL.exec(tok))) {
@@ -208,6 +230,9 @@ export function tokenize(text) {
       airway: AIRWAY.test(tok) || PROC.test(tok),
       ...(speed ? {
         speed
+      } : {}),
+      ...(altA && alt ? {
+        alt_a: true
       } : {})
     });
     else out.push({
@@ -249,7 +274,8 @@ const pointWord = p => {
     icaoCoord(+p
       .lat, +p.lon) : id;
   const sp = typeof p?.speed === 'string' && /^(?:[NK]\d{4}|M\d{3})$/.test(p.speed) ? p.speed : ''; // SOG-0679
-  return `${name}${p?.alt_ft > 0 ? `/${sp}F${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`;
+  // SOG-0679 (addendum) : une altitude écrite « A045 » reste une altitude
+  return `${name}${p?.alt_ft > 0 ? `/${sp}${p.alt_a === true ? 'A' : 'F'}${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`;
 };
 
 /** Texte normalisé de jetons { pt } | { keep } : une ligne, en forme OACI (V3 § 10.31) : « DCT » entre deux points qui se suivent
