@@ -11959,3 +11959,53 @@ def f332(c):
     c.js(f"document.querySelector('{B} [data-altnprop]').scrollIntoView({{block: 'start'}})")
     c.wait(300)
     c.shot(f'F332_{c.design}_{c.width}_{c.lang}.png')
+
+
+@case('F333', '« Auto » never proposes a level under the terrain of the route — at least the highest MORA of the one-degree cells the '
+      'route crosses (the minimum altitude the profile shows), raised to a level of the parity; the cells read once per route', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0653 (the user\'s acceptance of SOG-0502, 25 Nov: « le niveau de vol auto passe sans aucun complexes à A 6000 ft, au milieu '
+      'des Alpes »; the fact of 26 Nov: the terrain never entered levelAuto; the ergonomist, 26 Nov: a level proposed is NEVER under the '
+      'terrain of the route, at least the highest MORA of the cells crossed); an invented short flight inside one cell of invented MORA '
+      '9 300 ft, an invented sheet')
+def f333(c):
+    # A. the cells crossed and their highest MORA (modules/fuel/auto_limits.js), on an invented grid
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const A = await import('/modules/fuel/auto_limits.js');
+      const grid = { '45|1': 9300, '45|2': 12300, '46|2': 4300 }, asked = [];
+      const mora = async (lat, lon) => { const k = `${Math.floor(lat)}|${Math.floor(lon)}`; asked.push(k); return grid[k] ?? null };
+      const r = await A.routeMoraFt([{ lat: 45.5, lon: 1.2 }, { lat: 45.5, lon: 2.8 }, { lat: 46.5, lon: 2.5 }], mora);
+      const none = await A.routeMoraFt([{ lat: 45.5, lon: 1.2 }], mora);
+      return [r, [...new Set(asked)].length === asked.length, none, A.autoLimits({}, 25000, 9300), A.autoLimits({ s: 11000 }, 25000, 9300),
+        A.autoLimits({}, 25000)];
+    }""")
+    c.eq(got[0], {'ft': 12300, 'cells': 3, 'unknown': 0}, 'the highest MORA of the three cells crossed (red before: no such function)',
+         what='route MORA')
+    c.ok(got[1], got, 'each cell asked once')
+    c.eq(got[2], {'ft': 0, 'cells': 0, 'unknown': 0}, 'a route of one point crosses nothing', what='one point')
+    c.eq(got[3:], [{'minFt': 9300, 'maxFt': 25000}, {'minFt': 11000, 'maxFt': 25000}, {'minFt': 3000, 'maxFt': 25000}],
+         'the floor: the highest of FL030, the procedures\' constraints and the terrain', what='limits')
+    # B. on the screen: a 64 NM flight inside the cell 45|1 (MORA 9 300 ft), « Auto » on
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+             'cruise': {'tasKt': 300, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    a, b = {'id': 'XQAA', 'lat': 45.05, 'lon': 1.05}, {'id': 'XQAB', 'lat': 45.95, 'lon': 1.95}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'C30J', 'sheetId': 'C30J'}
+            d[1]['route'] = {'text': 'XQAA XQAB', 'dep': 'XQAA', 'arr': 'XQAB', 'points': [dict(a), dict(b)], 'distanceNm': 64, 'trackDeg': 35}
+            d[1]['level'] = {'ft': 5000, 'auto': True}
+            d[1].pop('profile', None)
+    docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
+             [f'sia/base/fr/{AERO_CYCLE}/mora.json', {'schema': 2, 'zone': 'fr', 'cycle': AERO_CYCLE, 'kind': 'mora', 'parserVersion': 1,
+                                                      'data': [{'lat': 45, 'lon': 1, 'moraFt': 9300}],
+                                                      'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']]
+    c.open('fuel', docs=docs, aero_extra={'aerodromes': [{'icao': p['id'], 'name': p['id'] + ' TEST', 'lat': p['lat'], 'lon': p['lon'],
+                                                          'elev': 300} for p in (a, b)], 'cells': {'45': [[0, 3]]}})
+    wait_quote(c)
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d.get('level') or {}).get('auto') and
+                    +(d.get('level') or {}).get('ft', 0) >= 9300, 'the level « Auto » writes is above the MORA of the cell (red before: '
+                    'the cheapest level of the short flight, under it)', timeout=15000)
+    ft = f['level']['ft']
+    c.ok(ft % 1000 == 0 and ft <= 25000, ft, 'a level of the parity, under the ceiling')
