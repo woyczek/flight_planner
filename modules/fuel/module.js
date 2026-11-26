@@ -2523,7 +2523,14 @@ function procsToText(say) {
       starTrans: starT
     }, [], r),
     exit = ends.exit?.id || null,
-    res = RT.withProcedures(r.text || '', {
+    // SOG-0655 : la sortie (l'entrée) que la suite a écrite pour une SID (une STAR) d'avant est retirée quand la procédure change — seule
+    // celle de la procédure choisie reste ; un point que le pilote a tapé n'est jamais retiré (route.procWords : les mots écrits par la suite)
+    pw = r.procWords && typeof r.procWords === 'object' ? r.procWords : {},
+    stale = [pw.exit && pw.exit !== exit ? pw.exit : null, pw.entry && pw.entry !== (ends.entry?.id || null) ? pw.entry : null].filter(
+      w => typeof w === 'string' && /^[A-Z0-9]{2,7}$/.test(w)),
+    base = stale.length ? String(r.text || '').split(/\s+/).filter(w => !stale.includes(w.toUpperCase().split('/')[0])).join(' ') : r
+    .text || '',
+    res = RT.withProcedures(base, {
       dep: r.dep,
       arr: r.arr,
       sid: sidName,
@@ -2536,6 +2543,13 @@ function procsToText(say) {
       starNames: [...m.star.keys()]
     });
   const text = withRwys(res.text); // SOG-0089 : la piste choisie après le terrain
+  // SOG-0655 : les mots que la suite vient d'écrire (gardés pour être retirés si la procédure change), ceux d'avant gardés tant qu'ils tiennent
+  const words = {
+    exit: res.exitAdded ? exit : pw.exit === exit ? pw.exit : null,
+    entry: res.entryAdded ? ends.entry?.id || null : pw.entry === (ends.entry?.id || null) ? pw.entry : null
+  };
+  if (words.exit || words.entry) r.procWords = Object.fromEntries(Object.entries(words).filter(([, v]) => v));
+  else delete r.procWords;
   if (sameRoute(text, r.text)) return;
   r.text = text;
   r.from = 'route';
