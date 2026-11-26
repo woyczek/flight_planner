@@ -17237,3 +17237,124 @@ def n277(c):
     c.js("clearInterval(window.__sampT)")
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# ---- SOG-0620 lot 2 : le déroulé de l'atelier et la fiche d'un événement. Trois cas, ids PROVISOIRES (N2xxA, N2xxB, N2xxC : le relais les
+# numérote) ; ils ne jouent pas avant que le lecteur de V3 Frame (frame/lib/mission.js : readEvents, plannedMin, eventDependents) soit poussé ;
+# la mission est celle de la maquette (deroule.html : X-980A « Exercice coordonné », ici sous l'identifiant X-001A du registre inventé).
+_FLOW_DOC = _ED_FULL + """phases:
+  - { id: B, title: Zone, trigger_zone: ZONE-1, fallback_delay_min: 90, message: La cible est plus au nord., brief: Affinez la recherche. }
+  - { id: C, title: Changement de zone, trigger_zone: ZONE-1, fallback_delay_min: 120, message: Nouvelle zone., brief: Rejoignez-la. }
+timeline:
+  order_offset_min: -8
+  events:
+    - { at: H+100, id: EV-5, title: 'Red : retour à XTSU', teams: [B], ref: takeoff, offset_min: 100, tol_early_min: 10, tol_late_min: 10 }
+    - { at: EV-1+12, id: EV-3, title: 'Red : largage sur la zone', place: PT2, teams: [B], ref: 'event:EV-1', offset_min: 12, imposed: true }
+    - { at: H+45, id: EV-1, title: Rendez-vous au point PT1, text: 'Blue : orbite gauche ; Red : orbite droite', place: PT1, teams: [A, B], offset_min: 45, tol_early_min: 10, tol_late_min: 10 }
+    - { at: C+20, id: EV-4, title: Retour groupé à la base, ref: 'drawer:C', offset_min: 20, tol_early_min: 5, tol_late_min: 5 }
+    - { at: EV-1+10, id: EV-2, title: 'Blue : silence radio', text: Silence radio jusqu'au largage, teams: [A], ref: 'event:EV-1', offset_min: 10, tol_early_min: 2, tol_late_min: 2 }
+"""
+_FLOW_ROWS = """(() => [...document.querySelectorAll('%s [data-flowrows] .fl-row')].map(r => [r.dataset.kind, r.querySelector('.fl-when b').textContent,
+  r.querySelector('.fl-when .f-muted').textContent, r.querySelector('.fl-what > b').textContent, !!r.dataset.under]))()"""
+
+
+def _flow_open(c, text):
+    """Opens the workshop of the mission `text` (veil lifted) on the group « Chronologie et cartes », its block « Déroulé » shown."""
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _ed_open(c, text)
+    ed_reveal(c)
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the workshop')
+    _tab(c, 'mission')
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-flowrows]')", what='the block « Déroulé »')
+
+
+@case('N2xxA', 'Missions › the workshop, SOG-0620 lot 2: the block « Déroulé » sorts the events AND the drawers by time — the planned hour of an '
+      'event (its reference chain), the fallback hour of a drawer; an event whose reference is a drawer sits right under it, indented', 'N',
+      tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 2, the validated mock-up deroule.html (scene a): « rangés par heure : l\'heure prévue, ou l\'heure de repli d\'un tiroir »; '
+      'cannot play before the reader of V3 Frame (plannedMin) is pushed')
+def n2xxa(c):
+    _flow_open(c, _FLOW_DOC)
+    rows = c.js(_FLOW_ROWS % E)
+    c.eq(rows, [
+        ['event', 'H+45', '± 10 min', 'Rendez-vous au point PT1', False],
+        ['event', 'EV-1 + 10', '± 2 min', 'Blue : silence radio', False],
+        ['event', 'EV-1 + 12', 'imposée', 'Red : largage sur la zone', False],
+        ['drawer', 'clé', 'repli H+90', 'Tiroir 1 · Zone', False],
+        ['event', 'H+100', '± 10 min', 'Red : retour à XTSU', False],
+        ['drawer', 'clé', 'repli H+120', 'Tiroir 2 · Changement de zone', False],
+        ['event', 'T2 + 20', '± 5 min', 'Retour groupé à la base', True]], 'sorted by time, a drawer between two events, the event of T2 under T2',
+         what='the rows')
+    c.eq(c.js(f"document.querySelector('{E} [data-flow] h4').textContent"), 'Déroulé', 'the title of the block', what='title')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flow] .fl-adds button')].map(b => b.textContent.trim())"),
+         ['＋ Événement', '＋ Tiroir'], 'the two additions', what='additions')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N2xxA_390_deroule.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N2xxA_1280_deroule.png')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N2xxB', 'Missions › the workshop, SOG-0620 lot 2: the sheet of an event — « ＋ Événement », « un autre événement » + 10 min + tolerance + '
+      '« heure imposée » — « Enregistrer » writes the keys (id, title, ref, offset_min, tol_early_min, tol_late_min, imposed) and the V2 mirror '
+      '`at`, and leaves the other events as they were', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 2, the mock-up (scene b) and FORMAT_MISSION.md § 4 octies: the keys of an event, `at` as a readable mirror for the V2')
+def n2xxb(c):
+    _flow_open(c, _FLOW_DOC)
+    c.tap(f'{E} [data-do="edflowadd"]')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet]')", what='the sheet of the new event')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=title]', 'Demi-tour groupé')
+    c.page.select_option(f'{E} [data-flowsheet] select[data-f=refKind]', 'event')
+    c.until(f"!!document.querySelector('{E} [data-flowsheet] select[data-f=refId]')", what='the target of the reference')
+    c.page.select_option(f'{E} [data-flowsheet] select[data-f=refId]', 'EV-1')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=offset]', '10')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=early]', '2')
+    c.page.fill(f'{E} [data-flowsheet] [data-f=late]', '3')
+    c.tap(f'{E} [data-flowsheet] input[data-f=imposed]')
+    c.until(f"document.querySelector('{E} [data-flowsheet] input[data-f=imposed]').checked", what='the time imposed')
+    read = c.js(f"document.querySelector('{E} [data-flowread]').textContent")
+    c.ok('Demi-tour groupé' in read and '10 min après' in read, read, 'the line « Le pilote lira » follows the sheet')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N2xxB_390_fiche_evenement.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N2xxB_1280_fiche_evenement.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    new = t[t.find('id: EV-6'):][:400]
+    c.ok('id: EV-6' in t and 'title: Demi-tour groupé' in new and 'ref: event:EV-1' in new and 'offset_min: 10' in new and 'tol_early_min: 2' in new
+         and 'tol_late_min: 3' in new and 'imposed: true' in new and 'at: EV-1+10' in new, new, 'the keys of the new event and its `at` mirror written')
+    c.ok('at: H+45' in t and 'at: C+20' in t and t.count('imposed: true') == 2 and 'id: EV-5' in t, t[t.find('timeline'):][:900],
+         'the other events kept as they were')
+    c.js(_REG_CLEAR)
+
+
+_FLOW_LEGACY = _ED_FULL + """timeline:
+  events:
+    - { at: H+30mn, place: PT1, text: Un message inventé arrive. }
+"""
+
+
+@case('N2xxC', 'Missions › the workshop, SOG-0620 lot 2: a V2 event written only `at: H+30mn` opens as « H+30 » (the legacy read), and a change '
+      'elsewhere then « Enregistrer » does NOT rewrite it (no id, no key added)', 'N', tags=('missions',),
+      designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0620 lot 2: « une mission V2 avec seulement at: H+30mn s\'ouvre comme H+30 et n\'est pas réécrite tant qu\'on ne la retouche pas »')
+def n2xxc(c):
+    _flow_open(c, _FLOW_LEGACY)
+    rows = c.js(_FLOW_ROWS % E)
+    c.eq(rows, [['event', 'H+30', '', 'Un message inventé arrive.', False]], 'the V2 event read as H+30', what='the row')
+    _tab(c, 'mission')
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
+    c.shot('N2xxC_390_ancien.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    tl = t[t.find('timeline'):][:300]
+    c.ok('at: H+30mn' in tl and 'id: EV-' not in t and 'offset_min' not in t and 'ref:' not in t, tl, 'the V2 event kept as written, nothing added')
+    c.js(_REG_CLEAR)

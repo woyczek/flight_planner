@@ -400,6 +400,55 @@ phases:
 - **The pilot's view**: a closed refill drawer leaves nothing (§ 4 bis); open, it is there whole, its station resolved.
   Bench: `frame/lib/test/mission.html` (noreg N1); noreg N182.
 
+## 4 octies. The sequence — the keys of an event (SOG-0620, 26 Nov 2026)
+
+One sequence for the author: the **events** of `timeline.events` and the **drawers** of `phases`, sorted by time in the workshop (« Déroulé »,
+`modules/missions/maquette/deroule.html`). An event is *planned in the brief* — a time counted from a **reference** (« repère »), a tolerance —
+and *observed* on its place, without any gesture; a drawer stays hidden until its key plays. The file keeps both lists where they are: the keys
+below are **optional keys of `timeline.events[i]`**, ignored by the V2 (which keeps reading `at`, `place`, `text`, all three still written).
+
+| key | what | bounds |
+|---|---|---|
+| `id` | the event's name, cited by the others | `^EV-\d{1,3}$` |
+| `title` | its short name (the line of the sequence) | ≤ 120 characters |
+| `text` | the instruction (a title alone is mirrored here, for the V2) | ≤ 500 characters |
+| `teams` | the teams concerned: letters of the teams, in file order; **empty or absent = all** | letters `A` to `Y` |
+| `ref` | the reference of the time: `takeoff`, `order` (the receipt of the order), `point:<place id>`, `event:<EV-n>`, `drawer:<letter>`; **absent = `takeoff`** | — |
+| `offset_min` | minutes from the reference (negative: before it) | −240 to 1 440 |
+| `tol_early_min`, `tol_late_min` | the tolerance before and after the planned time | 0 to 240 |
+| `imposed` | the time does not shift, even if its reference is held late | boolean |
+
+Beside the events: `timeline.order_offset_min` (−1 440 to 0), the planned receipt of the order, in minutes from the **planned** take-off.
+A drawer (`phases[i]`) gains `teams` (the same letters) and keeps its letter as its id (`drawer:B`).
+
+```yaml
+timeline:
+  order_offset_min: -8                  # the order is read 8 minutes before the planned take-off
+  events:
+    - { id: EV-1, title: Rendez-vous au point ROMEO, text: "Blue : orbite gauche ; Red : orbite droite", place: ROMEO,
+        teams: [A, B], ref: takeoff, offset_min: 45, tol_early_min: 10, tol_late_min: 10, at: H+45 }
+    - { id: EV-2, title: "Blue : silence radio", teams: [A], ref: "event:EV-1", offset_min: 10, tol_early_min: 2, tol_late_min: 2,
+        at: EV-1+10 }
+    - { id: EV-3, title: "Red : largage sur la zone SIERRA", place: SIERRA, teams: [B], ref: "event:EV-1", offset_min: 12, imposed: true,
+        at: EV-1+12 }
+    - { id: EV-4, title: Retour groupé à la base, place: XTST, ref: "drawer:B", offset_min: 20, tol_early_min: 5, tol_late_min: 5, at: B+20 }
+```
+
+- **`at` is a mirror.** The workshop writes it with every event it touches (`H+45`, `H-15`, `H`, `EV-1+10`, `B+20`, `ORDER-5`,
+  `<place id>+10`) so that the V2 still prints a readable time; the reader of the suite reads the keys above, never `at`, when `offset_min` is
+  there.
+- **A V2 event** (`at: H+30mn` alone) is read as the take-off + 30 minutes when it can be (shown « H+30 »); a time that is not of that form is
+  read as « old » (`legacy`): shown as written, planned at no time (last in the sequence). **It is not rewritten until it is edited** — a
+  file that is only opened and saved keeps the same keys and values; the first edit gives it its `id`.
+- **An event under a drawer** (`ref: drawer:<letter>`) is hidden with it: the pilot sees it once the drawer is read; the workshop sorts it right
+  under its drawer.
+- **Cycles and dead references**: an event never proposes itself or one of its dependents as reference; a reference to an unknown event, drawer
+  or place, or a cycle written by hand, gives an event planned at no time (the reader never loops). Removing an event in the workshop gives
+  its dependents the take-off as reference, at the time they had; renaming a place renames `point:<id>`, removing it drops `ref` and
+  `offset_min` (the `at` mirror stays).
+- **Who reads what**: the reader (`frame/lib/mission.js`: `readEvents`, `plannedMin`, `eventDependents`) is V3 Frame's; the workshop
+  (`editor_flow.js`, `editor_flow_view.js`) only calls it and writes the keys; every key is bounded and untrusted (§ 5).
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

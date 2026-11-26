@@ -142,6 +142,8 @@ import * as CAT from './catalog.js'; // le catalogue des briques et des modèles
 import * as DF from './draft.js'; // SOG-0486 : le brouillon de l'atelier, sur l'appareil
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
+import * as EF from './editor_flow.js'; // SOG-0620 : le déroulé (lignes d'événement, écriture)
+import * as FV from './editor_flow_view.js'; // SOG-0620 : le bloc « Déroulé » et la fiche d'un événement
 import * as EM from './editor_map.js';
 import {
   createUndo
@@ -685,8 +687,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2}
 [data-module="missions"] .ms-atbody .ms-edthead{display:none}
 [data-module="missions"] .ms-atbody .ms-tlabel{display:block;font-size:var(--sog-size-s)} /* SOG-0467 : jamais plus petit que f-muted */
-[data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
-[data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
 [data-module="missions"] .ms-at :is(.ms-atbody,.ms-itin-sheet,.ms-plform) :is(input,select,textarea,button){scroll-margin-top:calc(var(--f-head-h,57px) + var(--ms-tabs-h) + 16px);scroll-margin-bottom:7rem} /* un champ amené à l'écran se place sous la rangée collante et au-dessus du pied */
 [data-module="missions"] .ms-attodo .ms-lines>li.ms-todomore{border-top:0}
 [data-module="missions"] .ms-todofold{display:flex;align-items:center;gap:.5em;width:100%;min-height:44px;padding:8px 12px;text-align:left;font:inherit;color:inherit;border:0;background:none;text-decoration:none} /* lot 7c : « Voir les n autres » a l'allure d'un repli de la suite (« ▸ Voir les aperçus »), pas d'un point de plus : le même triangle que les replis du cadre, la couleur du texte */
@@ -918,7 +918,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.route) d = ED.withRoute(d, e.route); // SOG-0444, Tracé : la route du départ retouchée (avant que les références suivent les lieux)
   if (e.story) d = ED.withStory(d, e.story);
   if (e.risks) d = ED.withRisks(d, e.risks);
-  if (e.events) d = ED.withEvents(d, e.events);
+  if (e.flow) d = EF.withFlow(d, e.flow); // SOG-0620 : le déroulé (les événements et leurs heures)
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
   if (e.mapWant) d = ED.withMapLook(d, e.mapWant); // SOG-0456 : le fond et la couche de la carte, choisis par l'auteur
   if (e.model !== undefined) d = CAT.withModel(d, e.model); // le modèle posé dans la séance (lot « modèles de mission », décision D)
@@ -1197,35 +1197,32 @@ function edRisksHtml(s) {
     ${rows.length < ED.RISKS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edriskadd">${esc(s.tt(TX.rkAdd))}</button></div>` : ''}`;
 }
 
-/** L'étape Chronologie et cartes : une ligne par événement (heure, lieu, ce qui se passe), « + Événement » ; puis les cartes déclarées
- *  et « Proposer les cartes depuis les lieux » (des entrées : les images se font au studio de la V2). */
+/** L'étape Chronologie et cartes : le déroulé (editor_flow_view.js : les événements et les tiroirs rangés par l'heure, « ＋ Événement »,
+ *  « ＋ Tiroir », la fiche d'un événement) ; puis les cartes déclarées et « Proposer les cartes depuis les lieux » (des entrées : les
+ *  images se font au studio de la V2). */
 function edTimelineHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
-    // jamais un objet caché au pilote ; dans l'atelier voilé, les seuls lieux montrés (SOG-0459)
-    places = edShown(e, ED.placesOf(doc)).filter(p => p && p.id && !['dep', 'arr', 'object'].includes(p.kind)),
-    // SOG-0439 : l'identifiant d'aujourd'hui du lieu cité ; SOG-0459 : dans l'atelier voilé, un lieu qui n'est pas montré se dit comme
-    // « aucun lieu » — à l'écran SEULEMENT : la ligne de la séance garde la valeur du fichier tant que l'auteur ne choisit pas un lieu
-    rows = (e.events || []).map(r => {
-      const place = ED.refNow(r.place, e.base, e.places).toUpperCase();
-      return {
-        ...r,
-        place: e.veil && place && !places.some(p => p.id.toUpperCase() === place) ? '' : place
-      };
-    }),
     maps = ED.mapsOf(doc),
     // les cartes proposées nomment les zones par leur rang : dans l'atelier voilé, elles ne se proposent pas (un rang dirait le caché)
-    missing = e.veil ? [] : ED.proposedMaps(doc),
-    opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
-    row = (r, i) => `<div class="ms-edteam ms-evrow" data-event="${i}"><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evAt))}</span><input data-k="edevent" data-i="${i}" data-f="at" value="${esc(r.at)}" placeholder="H+30mn" maxlength="20" autocomplete="off"></label><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evPlace))}</span><select data-k="edevent" data-i="${i}" data-f="place">${opt('', s.tt(TX.evFree), r.place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(r.place && !places.some(p => p.id.toUpperCase() === r.place) ? [[r.place, r.place]] : [])].map(([v, l]) => opt(v, l, r.place)).join('')}</select></label><label class="f-field ms-evtext"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evText))}</span><input data-k="edevent" data-i="${i}" data-f="text" value="${esc(r.text)}" maxlength="500" autocomplete="off"></label><button type="button" class="ms-edtdel" data-do="edeventdel" data-i="${i}" title="${esc(s.tt(TX.evDel))}" aria-label="${esc(s.tt(TX.evDel))}">✕</button></div>`;
-  const storable = ED.eventsStorable(doc);
+    missing = e.veil ? [] : ED.proposedMaps(doc);
   return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3>
-    <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : storable ? `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>` : ''}</div>
-    ${!storable ? `<p class="f-muted" data-evnohome>${esc(s.tt(TX.evNoHome))}</p>` : rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
+    ${FV.flowHtml(s, FLOW_H)}
     <div class="ms-edsub" data-edmapsgrp><h4>${esc(s.tt(TX.mpTitle))}</h4>
     <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc(TX[`mt_${m.type}`] ? s.tt(TX[`mt_${m.type}`]) : m.type || m.id)}</b><span class="f-muted">${esc([m.description || m.id, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
     ${missing.length ? `<div class="f-row ms-pladd"><button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button></div>` : ''}</div>`;
 }
+
+/** Ce que le déroulé (editor_flow_view.js) prend de l'atelier : le document de la séance, les lignes montrées (atelier voilé), les tiroirs,
+ *  le dessin, le rafraîchissement sur place et « Annuler le geste » vidé. */
+const FLOW_H = {
+  doc: edDoc,
+  shown: edShown,
+  drawers: e => edDrawers(e),
+  draw: s => draw(s),
+  refresh: s => edRefresh(s),
+  clear: e => edUndoClear(e)
+};
 
 /** Vrai sur un module large (la fiche à côté de la carte) : à l'ouverture, le premier groupe de la fiche est déplié ; sur un module
  *  étroit (un téléphone) tous les groupes sont repliés et disent leur contenu en une ligne (l'ergonome, 17 nov.). */
@@ -4245,15 +4242,7 @@ export function edInput(s, ev) {
     return draw(s);
   }
   if (k === 'edtr') return edTrialInput(s, ev); // le volet de l'essai des clés
-  if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
-    const row = e.events?.[+ev.target.dataset.i],
-      f = ev.target.dataset.f;
-    // SOG-0459 : dans l'atelier voilé, seul un lieu montré (ou aucun) se choisit — une page forgée ne pose pas un lieu caché
-    const shownPlace = v => !v || edShown(e, ED.placesOf(edDoc(e))).some(p => p && p.id && p.id.toUpperCase() === v);
-    if (row && ['at', 'place', 'text'].includes(f) && !(f === 'place' && e.veil && !shownPlace(ev.target.value.toUpperCase()))) row[f] =
-      f === 'place' ? ev.target.value.toUpperCase() : ev.target.value;
-    return edRefresh(s);
-  }
+  if (k === 'edflow') return FV.input(s, ev, FLOW_H); // SOG-0620 : la fiche d'un événement du déroulé
   if (k === 'edrisk') { // un risque : le champ retouché en place, la ligne redessinée à « OK »
     const row = e.risks?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -4754,7 +4743,7 @@ function edLoadStep(e) {
   if (e.step === 'places' && !e.places) e.places = ED.placesOf(edDoc(e));
   if (e.step === 'story' && !e.story) e.story = ED.storyOf(e.base);
   if (e.step === 'risks' && !e.risks) e.risks = ED.risksOf(e.base);
-  if (e.step === 'timeline' && !e.events) e.events = ED.eventsOf(e.base);
+  if (e.step === 'timeline' && !e.flow) e.flow = EF.read(e.base);
 }
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
@@ -4813,6 +4802,7 @@ export function edClick(s, b) {
     line = r?.lines.find(x => x.idx === idx);
   // SOG-0459 : dans l'atelier voilé, rien d'un tiroir ni de l'essai ne joue — même d'une page forgée
   if (s.ed?.veil && VEILED_OFF.has(b.dataset.do)) return;
+  if (FV.act(s, b, FLOW_H)) return; // SOG-0620 : les gestes du déroulé (une ligne, « ＋ Événement », « Retirer cet événement »)
   switch (b.dataset.do) {
     case 'edcreate':
       return edOpen(s, 'new');
@@ -4881,6 +4871,8 @@ export function edClick(s, b) {
       s.ed.drawerAsk = '';
       s.ed.dopen = {};
       s.ed.kinds = '';
+      if (s.ed.sel !== 'start') s.ed.tab =
+        'itin'; // SOG-0620 : une ligne du déroulé ouvre la fiche du tiroir, dans l'onglet de l'itinéraire
       draw(s);
       return edSheetShow(s); // SOG-0467 : la fiche choisie vient à l'écran
     }
@@ -5182,18 +5174,11 @@ export function edClick(s, b) {
       s.ed.mapVertex = -1;
       draw(s);
       return edMapFocus(s.ed, s.ed.placeEdit);
-    case 'edeventadd':
-      s.ed.events = [...(s.ed.events || ED.eventsOf(s.ed.base)), {
-        i: -1,
-        at: 'H',
-        place: '',
-        text: ''
-      }].slice(0, ED.EVENTS_MAX);
-      draw(s);
-      return s.el.querySelector(`[data-event="${s.ed.events.length - 1}"] [data-f=text]`)?.focus();
-    case 'edeventdel':
-      s.ed.events = (s.ed.events || []).filter((_, i) => i !== +b.dataset.i);
-      return draw(s);
+    case 'edflowdrawer': // SOG-0620 : « ＋ Tiroir » du déroulé — la même fenêtre des briques, le tiroir créé à la fin
+      if (s.ed.veil) return;
+      if (!DR.blankDrawer(edDrawers(s.ed), s.ed.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
+      s.ed.kwAt = -1;
+      return kwOpen(s, 'new');
     case 'edmapspropose':
       // les cartes attendues d'après les lieux tels qu'ils sont à l'écran (des entrées ; une proposition ne se fait qu'une fois)
       s.ed.mapsAdd = [...(s.ed.mapsAdd || []), ...ED.proposedMaps(edDoc(s.ed))];
@@ -5318,7 +5303,7 @@ export function edClick(s, b) {
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
   'eddrstep', 'eddrstepadd', 'eddrstepdel',
-  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
+  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edflowdrawer', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
   'edmodeloff', 'edmodelpick', 'edmodelsave'
 ]);
 

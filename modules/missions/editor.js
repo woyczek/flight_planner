@@ -21,6 +21,8 @@
 //   risksOf(doc) → [{ i, hazard, consequence, mitigation }] ; withRisks(doc, rows) → un NOUVEAU document : la forme du prompt de la V2
 //     (hazard, consequence, mitigation ; pas de niveau, la V2 n'en lit pas) ; un risque sans danger est retiré ; un risque retiré l'est
 //     aussi de i18n.<langue>.risks (« même ordre que risks ») ; RISKS_MAX lignes.
+//   eventsRawOf(doc) / withEventObjects(doc, list) : les événements tels que le fichier les porte, et leur remplacement (editor_flow.js, le
+//     déroulé de SOG-0620 : les clés id, title, teams, ref, offset_min, tol_*_min, imposed y sont écrites ; un repère `point:<id>` suit son lieu).
 //   eventsOf(doc) → [{ i, at, place, text }] (timeline.events, la forme de shared/mission_exercise.js : « H+30mn », un lieu de la
 //     mission ou rien, ce qui se passe) ; withEvents(doc, rows) → un NOUVEAU document (les autres clés de timeline gardées).
 //   mapsOf(doc) → [{ id, type, description, ref, unplaced }] ; proposedMaps(doc) → les cartes attendues d'après les lieux et absentes
@@ -998,6 +1000,20 @@ export function withEvents(doc, rows) {
   return out;
 }
 
+/** Les événements tels que le fichier les porte (les objets, toutes leurs clés : celles du déroulé de l'atelier comprises), bornés à EVENTS_MAX
+ *  — pour editor_flow.js, qui garde tout ce qu'il ne retouche pas. */
+export const eventsRawOf = doc => eventsIn(obj(doc)).slice(0, EVENTS_MAX).map(e => obj(e));
+
+/** Le document avec ses événements remplacés par `list` (des objets, tels que editor_flow.js les compose) là où le fichier les porte
+ *  (eventsHome) ; les événements au-delà de EVENTS_MAX sont gardés ; sans place pour eux (deux valeurs nues), rien n'est écrit. */
+export function withEventObjects(doc, list) {
+  const out = structuredClone(obj(doc)),
+    home = eventsHome(out);
+  if (!home) return out;
+  storeEvents(out, home, [...(Array.isArray(list) ? list : []).slice(0, EVENTS_MAX), ...eventsIn(out).slice(EVENTS_MAX)]);
+  return out;
+}
+
 /** Range les événements `all` là où le document les porte (`home` : eventsHome) : une liste reste une liste, `events` reste sous sa
  *  clé avec les autres clés de celle-ci ; sans événement, la liste part (et sa clé, si elle ne portait rien d'autre). */
 function storeEvents(out, home, all) {
@@ -1353,11 +1369,27 @@ function mapRefs(doc, fn) {
     held = home ? home.sub ? obj(d[home.key]).events : d[home.key] : null;
   if (held && typeof held === 'object') {
     const next = each(held, e => {
-      if (!scalar(e.place)) return e;
+      let q = e;
+      // SOG-0620 : le repère « le passage à un point » (`ref: point:<id>`) suit le lieu renommé ; un lieu retiré ne laisse pas un repère mort
+      // (le repère et le décalage partent, l'heure `at` écrite pour la V2 reste : le lecteur la lit comme une heure ancienne)
+      if (typeof e.ref === 'string' && e.ref.startsWith('point:')) {
+        const id = e.ref.slice(6),
+          r = word(id, 'event', '');
+        if (r !== id) {
+          q = {
+            ...q
+          };
+          if (r === null) {
+            delete q.ref;
+            delete q.offset_min;
+          } else q.ref = `point:${r}`;
+        }
+      }
+      if (!scalar(e.place)) return q;
       const r = word(e.place, 'event', '');
-      if (r === e.place) return e;
-      const q = {
-        ...e
+      if (r === e.place) return q;
+      q = {
+        ...q
       };
       if (r === null) delete q.place;
       else q.place = r;
