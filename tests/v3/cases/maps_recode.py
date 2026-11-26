@@ -1298,10 +1298,10 @@ _CH_LAYOUT = """async ([id, fam]) => { const C = await import('/modules/maps/cho
     hl: L.hl ? { text: L.hl.text, rows: L.hl.rows.map(r => r.id) } : null } }"""
 
 
-def _ch_open(c, cur, side='arr', icao='LFML', extra=(), file=None):
+def _ch_open(c, cur, side='arr', icao='LFML', extra=(), file=None, lfrs=None):
     f = flight()
     f['route']['procedures'] = {'dep': cur if side == 'dep' else {}, 'arr': cur if side == 'arr' else {}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
-    docs = [['proc/manual/LFML.json', file or _CH_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']] + [list(d) for d in extra]
+    docs = [['proc/manual/LFML.json', file or _CH_FILE, 'reference'], ['proc/manual/LFRS.json', lfrs or _LFRS_FILE, 'reference']] + [list(d) for d in extra]
     c.open(f'maps?choose={side}&icao={icao}', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
@@ -11187,3 +11187,36 @@ def d332(c):
     c.eq(c.js(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed')"), 'true', 'the follow is still pressed (nothing else changed)', what='aria-pressed')
     calm()
     c.shot(f'D332_{c.width}_reel.png')
+
+
+# SOG-0654: a SID read from Little Navmap (the three marks the reader gives it: status 'lnm', lnm true, local true), invented: ARS6 at LFRS, beside two SIDs of the file
+def _lnm_sid_file():
+    ars = dict(_proc('LFRS', 'SID', 'ARS6', '03', [_pp(1, 'XA01', 47.30, -1.45), _pp(2, 'XA02', 47.15, -1.25)], cycle=AERO_CYCLE), status='lnm', lnm=True, local=True)
+    other = _proc('LFRS', 'SID', 'BRS7', '03', [_pp(1, 'XB01', 47.28, -1.40), _pp(2, 'XB02', 47.12, -1.22)], cycle=AERO_CYCLE)
+    return dict(_LFRS_FILE, procedures=[ars, other]), ars['id'], other['id']
+
+
+@case('D333', 'SOG-0654: a SID read from Little Navmap chosen on the Map is TAKEN by Fuel (three ways: the row then « Choisir », two ticked then « Choisir » on the Little Navmap one, the touch of the trace then « Choisir »), and its line says « Little Navmap, local », never « X-Plane »',
+      'D', tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0654 (the user, ESSA, Little Navmap: « choisir ARS6 : rien n\'est choisi » and « lue depuis x-plane »): the Map returns #fuel?focus=dep&sid=<id>, Fuel\'s admission refused every Little Navmap record (« jamais la proposition par défaut », SOG-0210) although the pilot chose it, and the shared model of the choose pane tested `local` before `lnm` (the three marks are on a Little Navmap record: « X-Plane, local »); red before: the flight carries no SID, the line says X-Plane')
+def d333(c):
+    lfrs, ars, other = _lnm_sid_file()
+    tick = lambda i: c.tap(f'.mp-ch-row[data-id="{i}"]')
+    for way in ('row', 'two', 'trace'):
+        _ch_open(c, {'rwy': '03'}, side='dep', icao='LFRS', lfrs=lfrs)
+        c.until(f'() => !!document.querySelector(\'.mp-ch-row[data-id="{ars}"]\')', timeout=10000, what='the Little Navmap SID is listed')
+        line = norm(c.js(f'() => document.querySelector(\'.mp-ch-row[data-id="{ars}"]\').textContent'))
+        c.ok(norm(tx(M, 'procLnm', c.lang)) in line and norm(tx(M, 'procX', c.lang)) not in line, line, f'{way}: its line says « Little Navmap, local », never « X-Plane, local »')
+        if way == 'row':
+            tick(ars)
+        elif way == 'two':
+            tick(other)
+            tick(ars)
+        else:
+            c.js(f"async () => (await import('/modules/maps/choose.js')).tick('{ars}')")   # the touch of the trace calls the same function as the row
+        c.until(f'() => document.querySelector(\'.mp-ch-row[data-id="{ars}"]\').getAttribute("aria-checked") === "true"', timeout=6000, what='the SID is ticked (its number)')
+        c.tap(f'.mp-ch-pick[data-pick="{ars}"]')
+        c.until(f'() => document.querySelector(\'.mp-ch-row[data-id="{ars}"]\').dataset.state === "chosen"', timeout=6000, what='the SID is chosen on the Map')
+        c.tap('[data-done]')
+        doc = c.until_doc(PATH, lambda d: bool(d) and ((d.get('route') or {}).get('procedures') or {}).get('dep', {}).get('sid') == ars, timeout=15000, what=f'{way}: Fuel writes the Little Navmap SID in the flight')
+        c.eq(doc['route']['procedures']['dep']['sid'], ars, f'{way}: the flight of Fuel carries the SID chosen on the Map', what='dep sid')
