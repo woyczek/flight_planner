@@ -1,5 +1,9 @@
 [
   {
+    "fixture": "index.json",
+    "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, index des cartes de la page de l'aérodrome (titres et références de cartes). Aucune valeur n'est réelle."
+  },
+  {
     "fixture": "runways.html",
     "reference": "Page inventée, sur le modèle de l'AIP du Royaume-Uni, AD 2, rubrique AD 2.12 (caractéristiques physiques des pistes), page HTML. Aucune valeur n'est réelle."
   },

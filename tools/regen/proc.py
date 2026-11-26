@@ -122,12 +122,17 @@ UNKNOWN_CYCLE = '1970-01-01'      # le cycle d'un paquet dont le nom ne dit pas 
 
 
 def _read_ukpkg(env):
-    """Lit les SID d'UN aérodrome du Royaume-Uni dans le PAQUET eAIP de NATS posé à la main sous un dossier de l'utilisateur (SOG-0374 ; tools/uk_package.py, proc_uk_sid.py). Le paquet est reconnu par sa FORME dans les dossiers que le lanceur connaît (ctx['downloads'], jamais un chemin venu
-    de la page) ; seules les cartes SID de l'aérodrome sont recopiées dans data/local/upload/ (sous un nom canonique, ≤ 4 Mo chacune), puis lues par leur COUCHE TEXTE dans le sous-processus borné de pdf_guard. Chaque SID rendue est « lue en partie » : son point de sortie, sa piste, sa limite de niveau quand la carte la dit ;
-    son tracé n'est pas lu (statut `check`, champ `partial`). Rend { docs, formats, warnings, dropped, extra } ou un résultat final (aucun paquet : 'no-package' ; aucune carte SID : 'no-tables')."""
+    """Lit les procédures d'UN aérodrome du Royaume-Uni dans le PAQUET eAIP de NATS posé à la main sous un dossier de l'utilisateur (SOG-0374, SOG-0499 ; tools/uk_package.py, proc_uk_sid.py, proc_uk_iac.py). Le paquet est reconnu par sa FORME dans les dossiers que le lanceur connaît (ctx['downloads'], jamais un chemin venu
+    de la page) ; seules les cartes utiles de l'aérodrome (SID, tables de codage, approches ; au plus uk_package.MAX_PROCEDURE_CHARTS) sont recopiées dans data/local/upload/ (sous un nom canonique, ≤ 4 Mo chacune), puis lues dans le sous-processus borné de pdf_guard : les tables de codage et les approches par leurs LIGNES ordonnées par la
+    position (tools/pdf_rows_child.py, le même protocole que le sous-processus de pdf_guard), les anciennes cartes SID dessinées par leur COUCHE TEXTE brute (la première page). Une SID lue sans table de codage reste « lue en partie » (point de sortie, piste, niveau ; tracé non lu, statut `check`, champ `partial`) ; une table de codage donne la fiche
+    complète et l'emporte sur la lecture partielle de la même SID ; une carte d'approche sans table rend ses FAITS (profil ILS) et un axe indicatif, jamais une procédure complète ; une carte qu'aucune lecture ne reconnaît est dite (formats, avertissements), jamais perdue en silence.
+    Rend { docs, formats, warnings, dropped, extra } ou un résultat final (aucun paquet : 'no-package' ; aucune carte : 'no-tables')."""
     import pdf_guard
     import personal_use
+    import proc_manual
+    import proc_records
     import proc_uk_sid
+    import proc_uk_iac
     import uk_package
     if not personal_use.certified(env.data):      # NATS : « usage personnel » (SOG-0238) : la coche est CELLE DU LANCEUR (data/local/personal_use.json) ; sans elle, rien n'est lu ni écrit : ces points iraient dans proc/manual/ et dans le commit de data/, donc au groupe
         return {'ok': False, 'reason': 'not-personal', 'message': 'the personal-use box is not ticked on this workstation (Settings): the UK package is read for personal use only'}
@@ -144,47 +149,85 @@ def _read_ukpkg(env):
     try:
         page = uk_package.aerodrome_page(root, env.icao)
         index = uk_package.chart_index(page, env.icao)      # toutes les cartes de la page : le bloc `charts` du fichier (liens en ligne, lot B)
-        charts = uk_package.sid_charts(index)
+        charts = uk_package.procedure_charts(index)
     except ValueError as e:
         return {'ok': False, 'reason': 'no-tables', 'message': str(e)}
+    if len(charts) > uk_package.MAX_PROCEDURE_CHARTS:      # trop de documents : rien n'est recopié ni lu (jamais une sélection tronquée en silence)
+        return env.failed('too many procedure documents in this aerodrome: nothing copied or read')
     if not charts:
         return {'ok': False, 'reason': 'no-tables'}
     dest = os.path.join(env.data, 'local', 'upload')
-    done, refused = uk_package.copy_charts(root, env.icao, charts, dest)
-    procedures, warnings, formats, origin = [], list(refused), [], {}      # origin : la carte d'où chaque fiche est lue (id(fiche) → entrée de l'index)
+    done, refused = uk_package.copy_charts(root, env.icao, charts, dest, limit=uk_package.MAX_PROCEDURE_CHARTS)
+    procedures, warnings, formats, origin, pages, profiles = [], list(refused), [], {}, {}, []      # origin : la carte d'où chaque fiche est lue (id(fiche) → entrée de l'index) ; pages : les lignes des cartes à tables ; profiles : les faits des cartes d'approche
     day = uk_package.page_date(page) or uk_package.package_date(root)      # la date d'entrée en vigueur lue dans la page de l'aérodrome (meta EM.effectiveDateStart), sinon celle du nom du dossier ; réelle et ≤ aujourd'hui ; None sinon : cycle INCONNU, jamais la date du jour
+    runway_data = uk_package.runways(page, env.icao)      # les seuils et les axes vrais PUBLIÉS (AD 2.12) : la seule source des positions de l'axe d'une approche, jamais le dessin
+    partial_charts = {c['label'] for c in uk_package.sid_charts(index)}      # les anciennes cartes SID dessinées : lues par leur texte brut, première page seulement
     for k, chart in enumerate(charts):
         name = uk_package.canonical(env.icao, chart)
         env.step(f'{env.icao}: {chart["label"]}', k, len(charts), 'cartes')
         if name not in done:
             formats.append({'file': name, 'ok': False, 'reason': 'copy'})
             continue
+        legacy = chart['label'] in partial_charts      # sinon : une table de codage ou une approche, lue par lignes ordonnées
         try:
-            text = pdf_guard.read_text(env.data, os.path.join(dest, name), 0, 1)['texts'][0]
+            options = {} if legacy else {'child': os.path.join(TOOLS, 'pdf_rows_child.py')}      # le sous-processus des lignes ordonnées est un script de CE dépôt (jamais un chemin venu d'ailleurs), lancé par pdf_guard avec ses bornes (python -I, mémoire, délai, dossier vide)
+            read = pdf_guard.read_text(env.data, os.path.join(dest, name), 0,
+                                       1 if legacy else pdf_guard.MAX_PAGES, **options)
         except pdf_guard.PdfError as e:
             if e.args and e.args[0] in ('missing', 'version'):      # la bibliothèque optionnelle manque : un résultat final qui dit la commande (jamais une liste de cartes illisibles)
                 return {'ok': False, 'reason': 'failed', 'message': str(e.args[1] if len(e.args) > 1 else e)}
             warnings.append(f'{chart["label"]}: {e}')
             formats.append({'file': name, 'ok': False, 'reason': 'pdf'})
             continue
-        found, why = proc_uk_sid.read_chart(text, chart['title'], env.icao)
+        if not legacy:      # tables de codage et approches : jamais promues à une procédure complète sans table (cartes d'approche : faits et axe indicatif)
+            rows = [text.splitlines() for text in read['texts']]
+            iac = [proc_uk_iac.read_chart(r, env.icao, runway_data, name, day or UNKNOWN_CYCLE) for r in rows]
+            iac = [p for p in iac if p]
+            facts = [proc_uk_iac.read_profile(r, env.icao, name, day or UNKNOWN_CYCLE) for r in rows]
+            facts = [p for p in facts if p]
+            profiles += facts
+            if not iac:
+                iac = [p for p in (proc_uk_iac.profile_record(f, runway_data) for f in facts) if p]
+            if iac or facts:
+                procedures += iac
+                formats.append({'file': name, 'ok': True, 'procedures': len(iac), 'layout': 'uk-iac-profile', 'scope': 'partial-profile-facts'})
+            else:
+                pages[name] = rows
+            if read['pages'] > len(read['texts']):      # un PDF plus long que la limite de lecture : les pages au-delà ne sont pas lues, et le disent
+                warnings.append(f'{chart["label"]}: pages beyond the PDF read limit were not read')
+                formats.append({'file': name, 'ok': False, 'reason': 'pages'})
+            continue
+        found, why = proc_uk_sid.read_chart(read['texts'][0] if read['texts'] else '', chart['title'], env.icao)
         for p in found:
             origin[id(p)] = chart      # la carte d'où CETTE fiche est lue (SOG-0499 : une SID lue par ses blocs vient d'une carte dont le titre ne la nomme pas forcément)
         procedures += found
         warnings += why
         # une carte dont le texte ne donne aucune SID : code `no-table` (« carte sans table », proc_geometry.PAGE_CODES) — jamais « table non reconnue », aucune table n'est attendue sur une carte (essai de l'utilisateur sur EGGW, 18/11)
         formats.append({'file': name, 'ok': bool(found), 'procedures': len(found), **({} if found else {'reason': 'no-table'})})
+    if pages:
+        tables = proc_records.build_pdf_dir(env.icao, list(pages), lambda name: pages[name], day or UNKNOWN_CYCLE)
+        procedures += tables['procedures']
+        formats += tables['formats']
+        warnings += tables['warnings']
+    by_file = {uk_package.canonical(env.icao, c): c for c in charts}      # la carte d'une fiche : son fichier canonique (le nom vient de l'index, en chiffres)
+    for p in procedures:
+        chart = origin.get(id(p)) or by_file.get(p.get('source', {}).get('file')) or chart_of(p, charts)      # la carte lue, sinon son fichier, sinon celle dont le titre porte le désignateur
+        at = p.get('source', {}).get('at')
+        p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': uk_package.canonical(env.icao, chart) if chart else None,
+                       'cycle': day or UNKNOWN_CYCLE, 'at': at,
+                       'chart': uk_package.chart_path(chart) if chart else None,      # « graphics/<chiffres>.pdf » : le lien « Carte » de la fiche (aerodb.js chartUrl), sous la base du fichier
+                       **({} if day else {'cycle_unknown': True})}
+    # une fiche complète (table de codage) l'emporte sur l'interprétation partielle d'un seul point de la même SID
+    procedures = proc_manual.merge({'procedures': []}, {'procedures': procedures})['procedures']
     if not procedures:
         return {'docs': [], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {}}
-    for p in procedures:
-        chart = origin.get(id(p)) or chart_of(p, charts)      # la carte lue, sinon celle dont le titre porte le désignateur
-        p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': uk_package.canonical(env.icao, chart) if chart else None, 'cycle': day or UNKNOWN_CYCLE, 'at': None, **({} if day else {'cycle_unknown': True})}
-        p['source']['chart'] = uk_package.chart_path(chart) if chart else None      # « graphics/<chiffres>.pdf » : le lien « Carte » de la fiche (aerodb.js chartUrl), sous la base du fichier
-    doc = {'schema': 1, 'icao': env.icao, 'cycle': day or UNKNOWN_CYCLE, 'updated_at': None, 'procedures': procedures, 'formats': formats, 'warnings': warnings,
-           'notice': "Source : paquet eAIP du Royaume-Uni (NATS) posé à la main ; SID lues par la couche texte de leurs cartes : point de sortie et niveaux seulement, tracé non lu (voir la carte). Données NON OPÉRATIONNELLES : simulation seulement."}
+    doc = {'schema': 1, 'icao': env.icao, 'cycle': day or UNKNOWN_CYCLE, 'updated_at': None,
+           'procedures': procedures, 'formats': formats, 'warnings': warnings, 'approach_profiles': profiles,
+           'notice': "Source : paquet eAIP du Royaume-Uni (NATS) posé à la main ; tables de codage lues par leur texte natif ; cartes sans table signalées ; SID sans codage lues en partie, tracé non lu. Données NON OPÉRATIONNELLES : simulation seulement."}
     if day:      # cycle connu : les liens vers les cartes EN LIGNE (base composée du cycle, chemins en chiffres) ; cycle inconnu : aucune clé `charts`
         doc['charts'] = uk_package.charts_block(index, day)
-    return {'docs': [doc], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {'partial': len(procedures), 'cycleKnown': bool(day)}}
+    return {'docs': [doc], 'formats': formats, 'warnings': warnings, 'dropped': [],
+            'extra': {'partial': sum(bool(p.get('partial')) for p in procedures), 'cycleKnown': bool(day)}}
 
 
 def chart_of(proc, charts):
@@ -205,7 +248,7 @@ def name_of(proc, charts, icao):
 
 def _commit_message(source, icao):
     return (f":card_file_box: Procédures {icao} lues dans l'eAIP du SIA (à la demande)" if source == 'eaip' else
-            f':card_file_box: SID {icao} lues en partie dans le paquet eAIP du Royaume-Uni (à la demande, point de sortie et niveaux, tracé non lu)' if source == 'ukpkg' else
+            f':card_file_box: Procédures {icao} lues dans le paquet eAIP du Royaume-Uni (tables et cartes, à la demande)' if source == 'ukpkg' else
             f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)')
 
 

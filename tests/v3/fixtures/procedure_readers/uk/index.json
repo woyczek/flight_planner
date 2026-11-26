@@ -1,0 +1,34 @@
+[
+  {
+    "label": "AD 2.EGYA-6-2",
+    "part": 6,
+    "number": 2,
+    "pdf": "586452",
+    "title": "RNAV1 (DME/DME or GNSS) STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 25 MEMAK 3Y - ICAO",
+    "kind": "SID"
+  },
+  {
+    "label": "AD 2.EGYA-6-10",
+    "part": 6,
+    "number": 10,
+    "pdf": "586479",
+    "title": "STANDARD INSTRUMENT DEPARTURE CODING TABLES - RWY 25 MEMAK 3Y",
+    "kind": "OTHER"
+  },
+  {
+    "label": "AD 2.EGYA-7-10",
+    "part": 7,
+    "number": 10,
+    "pdf": "587532",
+    "title": "STANDARD INSTRUMENT ARRIVAL CODING TABLES LASER 1N PEMUR 1N RIXIZ 1N",
+    "kind": "OTHER"
+  },
+  {
+    "label": "AD 2.EGYA-8-4",
+    "part": 8,
+    "number": 4,
+    "pdf": "591370",
+    "title": "INSTRUMENT APPROACH CHART ILS/DME/NDB(L) RWY 25 - ICAO",
+    "kind": "IAC"
+  }
+]

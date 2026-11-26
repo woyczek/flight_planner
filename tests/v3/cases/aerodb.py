@@ -22977,3 +22977,125 @@ def k613(c):
     c.eq([p['name'] for p in read_conventional(text.replace('cross SEMOX at 6000', 'cross OTHER at 6000'), title, 'EGYB')[0]], ['XIRAT 1F', 'XIRAT 1G'], 'a different exit is not renamed to match the procedure', what='exit refusal')
     ambiguous = read_conventional(text+'\nSEMOX\n511402N 0024710W\n', title, 'EGYB')[0]
     c.ok('lat' not in ambiguous[0]['points'][0] and 'exit-position' in ambiguous[0]['partial']['unread'], str(ambiguous[0]), 'conflicting adjacent coordinates stay unknown')
+@case('K551', 'The UK package reads tables and IACs through bounded children, with native records winning over partial SIDs', 'K', static=True,
+      tags=('procedure-readers',), rule='User 25 Nov 2026: complete the UK reader; one aerodrome, personal-use gate, canonical local copies and source chart preserved')
+def k551(c):
+    import json
+    import tempfile
+    import types
+    from pathlib import Path
+    from unittest.mock import patch
+    R, L, U, I = _reader_modules()
+    import pdf_guard
+    import personal_use
+    RJ = _regen()
+    ns = types.SimpleNamespace(**RJ.REGISTRY[('proc', 'ukpkg-fetch')][0].__globals__)
+    index = json.loads(_reader_fixture('uk/index.json'))
+    class Job:
+        def log(self, *a): pass
+        def step(self, *a): pass
+        def cancelled(self): return False
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+        temp = Path(temp)
+        package = temp/'Downloads/UK-AIRAC-11-26/2026-10-29-AIRAC'
+        (package/'html/eAIP').mkdir(parents=True)
+        (package/'graphics').mkdir()
+        html = '<html><head><meta name="EM.effectiveDateStart" content="2026-10-29"/></head><body><table>'
+        for chart in index:
+            html += f'<tr><td>{chart["title"]}</td></tr><tr><td><a href="../../graphics/{chart["pdf"]}.pdf">{chart["label"]}</a></td></tr>'
+            (package/'graphics'/f'{chart["pdf"]}.pdf').write_bytes(b'%PDF-1.4 fixture')
+        html += '</table>'+_reader_fixture('uk/runways.html')+'</body></html>'
+        (package/'html/eAIP/EG-AD-2.EGYA-en-GB.html').write_text(html, encoding='utf-8')
+        data = str(temp/'data')
+        personal_use.write(data, True, False)
+        calls = []
+        def read(data, path, first=0, count=1, **options):
+            calls.append((Path(path).name, first, count, options.get('child')))
+            key = next((name for suffix, name in [('6-10.pdf', 'uk/uk_sid.rows.txt'), ('7-10.pdf', 'uk/uk_star.rows.txt'), ('8-4.pdf', 'uk/uk_ils25.rows.txt')] if path.endswith(suffix)), None)
+            text = _reader_fixture(key) if key else 'MEMAK 3Y Climb straight ahead.\nRWY 25 Cross MEMAK at 5000 then to MEMAK.'
+            return {'pages': 1, 'texts': [text]}
+        with patch.object(pdf_guard, 'require'), patch.object(pdf_guard, 'read_text', side_effect=read):
+            result = ns._read_ukpkg(ns.Env(Job(), 'EGYA', {'data': data, 'secrets': None, 'downloads': lambda: [str(temp/'Downloads')]}))
+        doc = result['docs'][0]
+        by_name = {p['name']: p for p in doc['procedures']}
+        c.eq(len(by_name['MEMAK 3Y']['points']), 8, 'a complete SID table replaces its one-point interpretation', what='MEMAK leg count')
+        c.eq(next(p for p in by_name['LASER 1N']['points'] if p['id'] == 'SOMAN').get('over'), True, 'native NATS text preserves the printed Y', what='SOMAN fly-over')
+        c.ok('ILS RWY 25' in by_name, str(sorted(by_name)), 'the ILS chart is read as an approach')
+        c.eq({p['source']['kind'] for p in doc['procedures']}, {'ukpkg'}, 'native package records are never attributed to EAD', what='source')
+        c.eq(by_name['LASER 1N']['source']['chart'], 'graphics/587532.pdf', 'the source is the actual coding table, not its diagram', what='STAR chart')
+        c.ok(all(child and Path(child).name == 'pdf_rows_child.py' for name, first, count, child in calls if not name.endswith('6-2.pdf')),
+             str(calls), 'coding tables and IACs use the bounded ordered-row child; legacy SID diagrams keep their raw-text child')
+        c.eq(len(list((temp/'data/local/upload').glob('*.pdf'))), 4, 'all selected documents are copied once under the guarded local root', what='local copies')
+
+
+@case('K608', 'The V3 UK launcher path uses the new native ILS profile reader through its existing bounded PDF seam', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Synthetic one-chart package wrapping measured Sezatipi native rows and AD2.12; actual production Env/reader/source wiring, no live data installation')
+def k608(c):
+    import tempfile
+    import types
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import pdf_guard
+    import personal_use
+    RJ = _regen()
+    ns = types.SimpleNamespace(**RJ.REGISTRY[('proc', 'ukpkg-fetch')][0].__globals__)
+    class Job:
+        def log(self, *args): pass
+        def step(self, *args): pass
+        def cancelled(self): return False
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+        temp = Path(temp)
+        package = temp/'Downloads/UK-AIRAC-11-26/2026-10-29-AIRAC'
+        (package/'html/eAIP').mkdir(parents=True)
+        (package/'graphics').mkdir()
+        page = '<meta name="EM.effectiveDateStart" content="2026-10-29"/><table><tr><td>INSTRUMENT APPROACH CHART ILS/DME I-AA RWY 09L - ICAO</td></tr><tr><td><a href="../../graphics/900001.pdf">AD 2.EGYB-8-1</a></td></tr></table>'
+        page += _reader_fixture('uk/metro/EGYB-AD2-12.html.txt')
+        (package/'html/eAIP/EG-AD-2.EGYB-en-GB.html').write_text(page, encoding='utf-8')
+        (package/'graphics/900001.pdf').write_bytes(b'%PDF-1.4 fixture')
+        data = str(temp/'data')
+        personal_use.write(data, True, False)
+        text = _reader_fixture('uk/metro/EGYB-8-1.rows.txt')
+        with patch.object(pdf_guard, 'require'), patch.object(pdf_guard, 'read_text', return_value={'pages': 1, 'texts': [text]}):
+            result = ns._read_ukpkg(ns.Env(Job(), 'EGYB', {'data': data, 'secrets': None, 'downloads': lambda: [str(temp/'Downloads')]}))
+        doc = result['docs'][0]
+        p = next(p for p in doc['procedures'] if p['name'] == 'ILS RWY 09L')
+        c.eq((p['source']['kind'], p['source']['file'], p['points'][-1]['alt'], len(doc['approach_profiles'])),
+             ('ukpkg', 'ukpkg_EGYB_8-1.pdf', {'type': 'at', 'ft': 130}, 1), 'the production package path retains the source and partial axis interpretation', what='launcher seam')
+        c.ok(bool(p['partial']) and any(f.get('layout') == 'uk-iac-profile' for f in doc['formats']), str(doc), 'profile reading is not promoted to complete manoeuvre geometry')
+
+
+@case('K615', 'The production V3 package reader retains the conventional Sezatipi SID facts and partial boundaries', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Synthetic one-chart local package wrapping frozen EGLL6-2 native text and real index title behind the existing bounded PDF seam; source/personal-use context retained')
+def k615(c):
+    import json
+    import tempfile
+    import types
+    from pathlib import Path
+    from unittest.mock import patch
+    _reader_modules()
+    import pdf_guard
+    import personal_use
+    RJ = _regen()
+    ns = types.SimpleNamespace(**RJ.REGISTRY[('proc', 'ukpkg-fetch')][0].__globals__)
+    class Job:
+        def log(self, *args): pass
+        def step(self, *args): pass
+        def cancelled(self): return False
+    title = json.loads(_reader_fixture('uk/conventional/source.json'))['title']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+        base = Path(folder)
+        package = base/'Downloads/UK-AIRAC-11-26/2026-10-29-AIRAC'
+        (package/'html/eAIP').mkdir(parents=True)
+        (package/'graphics').mkdir()
+        page = '<meta name="EM.effectiveDateStart" content="2026-10-29"/><table><tr><td>'+title+'</td></tr><tr><td><a href="../../graphics/900001.pdf">AD 2.EGYB-6-2</a></td></tr></table>'
+        (package/'html/eAIP/EG-AD-2.EGYB-en-GB.html').write_text(page, encoding='utf-8')
+        (package/'graphics/900001.pdf').write_bytes(b'%PDF-1.4 fixture')
+        data = str(base/'data')
+        personal_use.write(data, True, False)
+        text = _reader_fixture('uk/conventional/EGYB-6-2.rows.txt')
+        with patch.object(pdf_guard, 'require'), patch.object(pdf_guard, 'read_text', return_value={'pages': 1, 'texts': [text]}):
+            result = ns._read_ukpkg(ns.Env(Job(), 'EGYB', {'data': data, 'secrets': None, 'downloads': lambda: [str(base/'Downloads')]}))
+        records = result['docs'][0]['procedures']
+        c.eq(sorted(p['name'] for p in records), ['SEMOX 1J', 'SEMOX 1K', 'XIRAT 1F', 'XIRAT 1G'], 'the launcher calls the same reader as the source batch', what='production SIDs')
+        c.ok(all(p['source']['kind'] == 'ukpkg' and p['source']['file'] == 'ukpkg_EGYB_6-2.pdf' and 'path' in p['partial']['unread'] for p in records), str(records), 'source attribution and incomplete geometry survive normalization')

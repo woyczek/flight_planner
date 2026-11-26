@@ -293,7 +293,7 @@ def _run_child(argv_of, timeout, memory, child=None, max_out=MAX_OUT_BYTES):
 
 def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMORY_LIMIT, versions_of=None, child=None):
     """Le texte des pages [first, first + count) d'un PDF déposé : { pages (le total), texts [un texte par page lue], fonts }, lu par pypdf dans un SOUS-PROCESSUS (voir l'en-tête). PdfError : manque / version / path / timeout /
-    failed / output. `child` : le script du sous-processus (les essais seulement)."""
+    failed / output. `child` : le script du sous-processus : celui des essais, ou `tools/pdf_rows_child.py` (les lignes ordonnées des tables de codage, SOG-0499) ; toujours un script de CE dépôt, jamais un chemin venu d'une page ou d'un fichier."""
     path = safe_pdf(data, path)
     require('text', versions_of)
     first, count = max(0, int(first)), max(1, min(int(count), MAX_PAGES))
