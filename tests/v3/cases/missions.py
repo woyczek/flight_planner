@@ -9247,6 +9247,13 @@ def n116(c):
     _tab(c, 'mission')
     c.js(f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row')].find(r => r.textContent.includes('Contact radio')).click()")  # the event at the hidden place
     c.until(f"!!document.querySelector('{E} [data-flowsheet] select[data-f=place]')", what='the sheet of the event at the hidden place')
+    # SOG-0459 kept on the sheet of the Déroulé: the list « Lieu » of the event at the hidden PT2 has the empty option chosen and the visible
+    # places alone offered; with the sheet open, PT2 is still nowhere in the page
+    sel = c.js(f"(() => {{ const s = document.querySelector('{E} [data-flowsheet] select[data-f=place]'); "
+               f"return [s.value, [...s.options].map(o => o.value)]; }})()")
+    c.eq(sel, ['', ['', 'TARGET', 'PT1']], 'veiled: the sheet of the event at the hidden PT2 shows the empty option chosen, the visible places alone',
+         what='the list « Lieu » of the sheet')
+    c.eq(c.js(_VEIL_EV_VALUES)['hits'], [False] * 5, 'the sheet open: still nothing of PT2 in the page', what='the sheet open')
     c.page.select_option(f'{E} [data-flowsheet] select[data-f=place]', 'TARGET')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
