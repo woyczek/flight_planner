@@ -1,0 +1,47 @@
+EIZA AD 2.24 - 46.2 AIP IRELAND
+1 5 MAY 202 5
+RNP T RWY 28L via KIN
+WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed VPA (°) /
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) limit (kts) TCH (ft)
+RNP APCH KIN 532957.8 / 0083625.6 IF - - - A3000 / A3000 - - -
+RNP APCH ME 035 53 2956 . 8 / 0081 103 . 8 TF Fly - By 08 9 . 9 / 0 91 1 5 . 1 - 210 - -
+RNP APCH PIBEV 5324 02 . 7 / 008 1159 . 2 TF Fly - By 185. 3 / 187 5 . 9 - / +A3000 210 - Turn R
+RNP APCH RABIL 5324 26 . 5 / 0081 910 . 4 TF Fly - By 275. 3 / 277 4 . 3 - - - Turn R
+RNP APCH RW28D 532514.4 / 0083328.8 TF Fly - Over 275.4 / 277 8 . 6 - - 3.0 / 54 -
+RNP APCH MESAM 532606.5 / 0084933.8 TF Fly - By 275.3 / 277 9.7 - A3000 / - 200 - -
+RNP APCH ME034 533037.4 / 0085142.6 TF Fly - By 344.2 / 346 4.7 - A3000 / - 200 - Turn R
+RNP APCH KIN 532957.8 / 0083625.6 TF Fly - By 094.0 / 09 5 9.1 A3000 / A3000 200 - Turn R
+RNP T RWY 28L via PECOM
+WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed VPA (°) /
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) limit (kts) TCH (ft)
+RNP APCH PECOM 532844.3 / 0080633.6 IF - - - - / +A3000 220 - -
+RNP APCH PIBEV 5324 02 . 7 / 008 1159 . 2 TF Fly - By 214 . 7 / 216 5 . 7 - / +A3000 220 - -
+RNP APCH RABIL 5324 26 . 5 / 0081 910 . 4 TF Fly - By 275. 3 / 277 4 . 3 - - - Turn R
+RNP APCH RW28D 532514.4 / 0083328.8 TF Fly - Over 275.4 / 277 8 . 6 - - 3.0 / 54 -
+RNP APCH MESAM 532606.5 / 0084933.8 TF Fly - By 275.3 / 277 9.7 - A3000 / - 200 - -
+RNP APCH ME034 533037.4 / 0085142.6 TF Fly - By 344.2 / 346 4.7 - A3000 / - 200 - Turn R
+RNP APCH KIN 532957.8 / 0083625.6 TF Fly - By 094.0 / 09 5 9.1 A3000 / A3000 200 - Turn R
+RNP T RWY 28L via SOKUV
+WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed VPA (°) /
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) limit (kts) TCH (ft)
+RNP APCH SOKUV 532001.7 / 0080731.2 IF - - - - / +A3000 220 - -
+RNP APCH PIBEV 5324 02 . 7 / 008 1159 . 2 TF Fly - By 326 . 4 / 328 4 . 8 - / +A3000 220 - -
+RNP APCH RABIL 5324 26 . 5 / 0081 910 . 4 TF Fly - By 275. 3 / 277 4 . 3 - - - Turn L
+RNP APCH RW28D 532514.4 / 0083328.8 TF Fly - Over 275.4 / 277 8 . 6 - - 3.0 / 54 -
+RNP APCH MESAM 532606.5 / 0084933.8 TF Fly - By 275.3 / 277 9.7 - A3000 / - 200 - -
+RNP APCH ME034 533037.4 / 0085142.6 TF Fly - By 344.2 / 346 4.7 - A3000 / - 200 - Turn R
+RNP APCH KIN 532957.8 / 0083625.6 TF Fly - By 094.0 / 09 5 9.1 A3000 / A3000 200 - Turn R
+Hold Identification – ME032
+Maximum Minimum
+Holding Latitude (N) / Inbound True Inbound Mag Maximum Holding Rutaxari Direction
+Ximutolif Holding Level /
+Fix Longitude (W) Track (poguxug) Track (poguxug) Level / Altitude (FL/ft) noze (min) of Turn
+Puvoxize (kts) Altitude (FL/ft)
+5324 02 . 7 /
+PIBEV 275.6 27 7 220 + A3000 - FL100 1 L
+0081 159 . 2
+Note: Hold is rikilocebot only & xuzu only be beva guce tilaseso by ATC .
+AIRAC Amdt 00 5 / 202 5 IRISH DEVOMANO AUTHORITY

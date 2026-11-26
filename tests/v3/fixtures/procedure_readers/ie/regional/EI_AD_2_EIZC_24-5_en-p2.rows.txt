@@ -1,0 +1,59 @@
+EI ZC AD 2.24 - 5.2 AIP IRELAND
+2 6 NOV 2026
+MURIT 4A SID RWY05
+MURI 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI406 523915.6 / 0055639.8 DF Fly - By - - - / +FL090 - -
+RNAV 1 MURIT 523011.7 / 0052048.1 TF Fly - By 112.3 / 114 23.7 - - -
+COVEF 4A SID RWY05
+COVE 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI403 530431.3 / 0061914.9 DF Fly - By - - - / +FL090 - -
+RNAV 1 COVEF 530919.9 / 0061646.1 TF Fly - By 017.2 / 019 5.0 - - -
+GOFER 4A SID RWY05
+GOFE 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI404 525404.4 / 0060118.4 DF Fly - By - - - / +FL090 - -
+RNAV 1 GOFER 525612.8 / 0055351.3 TF Fly - By 064.5 / 067 5.0 - - -
+XUBIT 4A SID RWY05
+XUBI 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI401 525909.0 / 0070738.8 DF Fly - By - - - / +FL090 - Turn L
+RNAV 1 XUBIT 530053.5 / 0071603.3 TF Fly - By 289.0 / 291 5.4 - - -
+PALEP 4A SID RWY05
+PALE 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI408 521904.2 / 0062142.8 DF Fly - By - - - / +FL090 - Turn R
+RNAV 1 PALEP 521343.1 / 0062152.5 TF Fly - By 181.1 / 183 5.4 - - -
+VOZOZ 4A SID RWY05
+VOZO 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI407 522813.8 / 0060324.2 DF Fly - By - - - / +FL090 - Turn R
+RNAV 1 VOZOZ 522350.1 / 0055833.5 TF Fly - By 146.0 / 148 5.3 - - -
+CUZUK 4A SID RWY05
+CUZU 4A
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 - - CA - 052.2 / 054 (°) - - / +A2000 - -
+RNAV 1 LI402 530339.1 / 0065823.2 DF Fly - By - - - / +FL090 - Turn L
+RNAV 1 CUZUK 530648.2 / 0070533.6 TF Fly - By 306.2 / 308 5.4 - - -
+AIRAC A mdt 0 1 2 / 2026 AIRNAV IRELAND

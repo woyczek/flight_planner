@@ -1,0 +1,51 @@
+EIZA AD 2.24-30.2 AIP IRELAND
+06 OCT 2022
+Dublin INITIAL APP ILS RWY 28R via KORAT
+WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - over Mag track (NM) Lower limit (kts)
+RNP APCH KORAT 533142.4 / 0082503.6 IF - - - - / +A3000 - -
+RNP APCH ME017 533039.7 / 0081338.6 TF Fly - By 098.7 / 10 1 6.9 - 2 2 0 -
+RNP APCH BUMOF 532505.7 / 0081431.5 TF Fly - By 185.4 / 188 5.6 - 210 Turn R
+Dublin INITIAL APP ILS RWY 28R via PECOM
+WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - over Mag track (NM) Lower limit (kts)
+RNP APCH PECOM 532844.3 / 0080633.6 IF - - - - / +A3000 - -
+RNP APCH BUMOF 532505.7 / 0081431.5 TF Fly - By 232.6 / 23 5 6.0 - 2 1 0 -
+Dublin INITIAL APP ILS RWY 28R via SOKUV
+WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - over Mag track (NM) Lower limit (kts)
+RNP APCH SOKUV 532001.7 / 0080731.2 IF - - - - / +A3000 - -
+RNP APCH BUMOF 532505.7 / 0081431.5 TF Fly - By 320.5 / 323 6.6 - 2 1 0 -
+Dublin ILS CAT I and II or LOC Approach RWY 28R
+Descent Angle: 3.00 °
+FAF MAPt
+Fix
+(D6.9 THR – LOGEF ) (D0.4 THR)
+Fix Coordinates 532528.2N / 0082114.0W 532604.6 N / 0083202.9 W
+Fix Secexenoz Bearing (°T) 095.25 LOC 28R 095.24 LOC 28R
+Fix Secexenoz Distances 6.89 THR 0.39 THR
+Dublin MISSED APP ILS RWY 28R
+WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit
+Nav. Spec. Remarks
+Name Longitude (W) Term Fly - over Mag track (NM) Lower limit (kts)
+R 318 CEG /
+RNP APCH ME040 532623.8 / 0083744.4 CF Fly-Over 275.4 / 278 - - 200
+D1. 4 CEG
+RNP APCH ME041 533011.9 / 0084512.8 DF Fly - By - - - A 3 000 / - 200 Turn R
+RNP APCH ME042 533244.1 / 0083629.1 TF Fly - By 063.9 / 06 6 5.8 - A 3 000 / - 200 Turn R
+RNP APCH KORAT 533142.4 / 0082503.6 TF Fly - By 098.5 / 10 1 6.9 - A 3 000 / - - Turn R
+Hold Identification – BUMOF
+Maximum Minimum Maximum
+Inbound Inbound
+Holding Latitude (N) / Ximutolif Holding Holding Rutaxari Direction of
+True Track Mag Track
+Fix Longitude (W) Puvoxize Altitude/ Altitude/ noze (min) Turn
+(poguxug) (poguxug)
+(kts) Level (FL/ft) Level (FL/ft)
+532505.7 /
+BUMOF 275.4 278 220 +A3000 -FL100 1 R
+0081431.5
+AIRAC Amdt 010/2022 IRISH DEVOMANO AUTHORITY

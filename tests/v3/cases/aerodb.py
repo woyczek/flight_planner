@@ -23349,3 +23349,85 @@ def k589(c):
     c.eq((parsed['tables'], bool(parsed['warnings'])), ([], True), 'a missing fly-over cell refuses its block instead of shifting the remaining cells', what='incomplete row')
     doc = build_pdf_dir('ESZY', ['fixture.pdf'], lambda n: [rows], 'unknown')
     c.eq((doc['procedures'][0]['runways'], doc['procedures'][0]['status']), (['03'], 'doubt'), 'source runway header is bound before constructing identity; absent coordinates are a doubt', what='source binding')
+@case('K601', 'Dublin 28L published IF/FAF/MAPt fixes enrich all same-document ILS transitions while the missed entry remains a gap', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Invented page on the model of the Irish AIP AD 2.24, chart 27.1 page 2: ROBOR, CUDAX, ME038, MESAM; no threshold or LOC MAPt-to-ILS decision-point association is invented')
+def k601(c):
+    R, _, _, _ = _reader_modules()
+    rows = _reader_fixture('ie/metro/EIZA-27.1-p2.rows.txt').splitlines()
+    name = 'EI_AD_2_EIZA_24-27.1_en.pdf'
+    d = R.build_pdf_dir('EIZA', [name], lambda n: [rows], '2026-11-26')
+    records = [r for r in d['procedures'] if r['name'].startswith('ILS')]
+    c.eq(len(records), 3, 'all published initial transitions retain their identity', what='28L variants')
+    for r in records:
+        pts = r['points']; tail = [p['id'] for p in pts[-5:]]
+        c.eq(tail, ['CUDAX', 'ME038', 'MESAM', 'ME034', 'KIN'], 'the published final and coded missed sequence are retained in order', what=r['name'])
+        c.eq((pts[-5]['lat'], pts[-5]['lon'], pts[-3].get('gap'), pts[-3].get('phase')), (53.409306, -8.354806, True, 'missed'), 'independent DMS conversion and explicit unencoded missed entry', what='source roles')
+        c.ok('ILS-MAPt-association' in r['partial']['unread'] and not any(p['id'].startswith('RW') for p in pts), str(r), 'the chart MAPt is not relabelled as a physical runway threshold')
+
+
+@case('K602', 'Dublin 28R two-fix supplement preserves the initial/final gap and refuses cross-document or inconsistent final joins', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='28R final LOGEF and published MAPt coordinate (invented page), then four missed legs; same file/cycle/runway identity and collinear final fixes are required')
+def k602(c):
+    import copy
+    R, _, _, _ = _reader_modules()
+    import proc_ie_iac as I
+    rows = _reader_fixture('ie/metro/EIZA-30.1-p2.rows.txt').splitlines()
+    name = 'EI_AD_2_EIZA_24-30.1_en.pdf'
+    d = R.build_pdf_dir('EIZA', [name], lambda n: [rows], '2026-11-26')
+    r = next(r for r in d['procedures'] if 'via KORAT' in r['name'])
+    faf = next(p for p in r['points'] if p['id'] == 'LOGEF')
+    c.eq((faf['lat'], faf['lon'], faf.get('gap')), (53.4245, -8.353889, True), 'a two-fix table does not prove the initial-to-final connection', what='28R final')
+    c.eq([p['id'] for p in r['points'] if p.get('phase') == 'missed'], ['ME040', 'ME041', 'ME042', 'KORAT'], 'all coded missed legs remain, with their own entry gap', what='28R missed')
+    other = copy.deepcopy(d)
+    for r in other['procedures']:
+        r.pop('chart_data', None); r['source']['file'] = 'other.pdf'
+    c.eq(I.enrich(other, rows, name, '2026-11-26', 1), 0, 'another document never supplies a silently joined final', what='source guard')
+
+
+@case('K603', 'Irish RNP T headings are titles, not coding rows; split unconfirmed names remain refused and missed legs follow the coded runway endpoint', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Invented page on the model of a Dublin RNP T 28L page: PECOM/SOKUV accepted, KIN refused for unconfirmed ME 035; RW28D remains its published name')
+def k603(c):
+    _reader_modules()
+    import proc_layouts as L
+    rows = _reader_fixture('ie/metro/EIZA-46-p2.rows.txt').splitlines()
+    p = L.parse_ei_coding(rows)
+    c.eq([t['name'] for t in p['tables']], ['RNP T RWY 28L via PECOM', 'RNP T RWY 28L via SOKUV'], 'source titles do not become orphan coding rows', what='RNP T identity')
+    c.ok(any('ME 035' in w and 'NON retenue' in w for w in p['warnings']), str(p['warnings']), 'a split name still needs independent confirmation')
+    for table in p['tables']:
+        c.eq([(x['id'], x.get('phase')) for x in table['legs'][-4:]], [('RW28D', None), ('MESAM', 'missed'), ('ME034', 'missed'), ('KIN', 'missed')], 'published endpoint identity and phase boundary remain distinct', what='phases')
+
+
+@case('K605', 'Dublin parallel-runway final tables retain strict split coordinate columns and SDF as a separate chart role', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Invented pages on the model of charts 33.1 and 36.1 page 2; ZENUK/ME905 two-column coordinates, PICOG/MESAM/ME036/ME037/ME031 roles, no SDF altitude invented')
+def k605(c):
+    _reader_modules()
+    import proc_ie_iac as I
+    rows = _reader_fixture('ie/metro/EIZA-33.1-p2.rows.txt').splitlines()
+    p = I.read_final(rows, 'EIZA', 'fixture.pdf', '2026-11-26', 2)
+    c.eq([(f['id'], f['lat'], f['lon']) for f in p['fixes']], [('ZENUK', 53.450056, -8.817278), ('ME905', 53.438028, -8.596361)], 'two explicitly ordered columns, independently converted DMS coordinates', what='10L columns')
+    rows = _reader_fixture('ie/metro/EIZA-36.1-p2.rows.txt').splitlines()
+    p = I.read_final(rows, 'EIZA', 'fixture.pdf', '2026-11-26', 2)
+    c.eq([(f['id'], f['role']) for f in p['fixes']], [('PICOG', 'IF'), ('MESAM', 'FAF/FAP'), ('ME036', 'SDF'), ('ME037', 'MAPT'), ('ME031', 'TP')], 'SDF remains a source role, with no inferred ILS constraint', what='10R roles')
+    c.eq(p['glide_path_deg'], 3.0, 'the rendered Descent Angle field establishes the angle despite its missing degree glyph', what='10R angle')
+
+
+@case('K614', 'Shannon and Knock native coding typography is normalized without repairing unread waypoint cells', 'K', static=True,
+      tags=('procedure-readers', 'uk-ie'), rule='Invented rows on the model of page 2: Shannon RWY05/23 and split 3 D revisions, Knock degree labels and R W Y titles; broken K N698 and IF/HM cells remain refused')
+def k614(c):
+    _, L, _, _ = _reader_modules()
+    def rows(airport, number):
+        return _reader_fixture(f'ie/regional/EI_AD_2_{airport}_24-{number}_en-p2.rows.txt').splitlines()
+    sid = L.parse_ei_coding(rows('EIZC', 5))
+    c.eq([(t['name'], len(t['legs'])) for t in sid['tables']], [(n, 3) for n in ['MURI 4A', 'COVE 4A', 'GOFE 4A', 'XUBI 4A', 'PALE 4A', 'VOZO 4A', 'CUZU 4A']], 'all seven owned Shannon departure groups retain their three rows', what='Shannon SID')
+    first = sid['tables'][0]['legs'][0]
+    c.eq((first['id'], first['leg'], first['true'], first['crs'], first['alt']), (None, 'CA', 52.2, 54, {'type': 'min', 'ft': 2000}), 'the printed CA has no waypoint or fabricated coordinates', what='CA source facts')
+    for number, revision in [(7, '3E'), (8, '3D')]:
+        star = L.parse_ei_coding(rows('EIZC', number))
+        c.eq(len(star['tables']), 7, 'split title/designator revision still binds the seven published groups', what=f'Shannon STAR {number}')
+        c.eq(star['tables'][0]['name'], 'COVE '+revision, 'a spaced revision does not change the designator', what='COVEF')
+    knock = L.parse_ei_coding(rows('EIZB', 4))
+    c.eq([(t['name'], len(t['legs'])) for t in knock['tables']], [('SAGI1B', 3)], 'the unit annotation can be removed; K N698 cannot be silently reassembled', what='Knock SID')
+    c.ok(any('K N698' in problem for problem in knock['warnings']), str(knock), 'refused neighbour rows remain visible')
+    approach = L.parse_ei_coding(rows('EIZB', 8))
+    c.eq([(t['name'], len(t['legs'])) for t in approach['tables']], [('RNP RWY 26 Approach via DOCUB', 7)], 'a split RWY title is accepted only when every coding row is readable', what='Knock RNP')
+    c.eq(L.parse_ei_coding(rows('EIZB', 13))['tables'], [], 'known layout is not permission to guess malformed holding or initial cells', what='Knock refused groups')

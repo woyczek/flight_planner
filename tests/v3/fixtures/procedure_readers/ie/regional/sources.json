@@ -1,0 +1,26 @@
+[
+  {
+    "fixture": "EI_AD_2_EIZB_24-13_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EI_AD_2_EIZB_24-4_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EI_AD_2_EIZB_24-8_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EI_AD_2_EIZC_24-5_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EI_AD_2_EIZC_24-7_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EI_AD_2_EIZC_24-8_en-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage des départs, arrivées et approches (aérodromes régionaux). Aucune valeur n'est réelle."
+  }
+]

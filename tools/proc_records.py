@@ -142,8 +142,14 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
             formats.append({'file': f, 'pages': len(pages_of[f]), 'layout': detect_layout(first), 'fingerprint': fingerprint(first), 'ok': False, 'reason': 'no-table' if drawn else 'layout',
                             'problems': ['disposition non reconnue' + (' (très peu de texte ou aucun en-tête de table de codage: carte sans table, tableau dessiné en vecteurs ou image ? ' + str(most) + ' ligne(s))' if drawn else '')]})
             warnings.append(f'{f}: {len(pages_of[f])} page(s) NON lue(s), disposition non reconnue' + (' (carte sans table: aucun en-tête de table de codage lisible)' if drawn else ''))
-    return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
-            'warnings': warnings, 'notice': ead_notice(icao)}
+    doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
+           'warnings': warnings, 'notice': ead_notice(icao)}
+    if icao.startswith('EI'):
+        import proc_ie_iac
+        for file, pages in pages_of.items():
+            for n, rows in enumerate(pages, 1):
+                proc_ie_iac.enrich(doc, rows, file, cycle, n, ei_known)
+    return doc
 
 
 def ead_notice(icao):

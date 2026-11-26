@@ -1,0 +1,63 @@
+EI ZC AD 2.24 - 8 .2 AIP IRELAND
+2 6 NOV 2026
+COVEF 3 D STAR RWY23
+COVE 3 D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 COVEF 530919.9 / 0061646.1 IF - - - - / +FL100 - -
+RNAV 1 DIDUZ 525525.1 / 0060857.5 TF Fly - By 161.3 / 163 14.7 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 232.6 / 235 6.0 - / + A3000 - -
+KOCAS 4D STAR RWY23
+KOCA 4D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 KOCAS 522229.7 / 0071436.8 IF - - - - / +FL100 - -
+RNAV 1 TOKOX 525418.6 / 0063740.0 TF Fly - By 035.0 / 037 39.0 - - -
+RNAV 1 XILEF 525717.2 / 0062349.6 TF Fly - By 070.3 / 072 8.9 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 142.4 / 144 7.0 - / + A3000 - -
+GOFER 3 D STAR RWY23
+GOFE 3 D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 GOFER 525612.8 / 0055351.3 IF - - - - / +FL100 - -
+RNAV 1 DIDUZ 525525.1 / 0060857.5 TF Fly - By 265.1 / 267 9.2 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 232.6 / 235 6.0 - / + A3000 - -
+XUBIT 4D STAR RWY23
+XUBI 4D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 XUBIT 530053.5 / 0071603.3 IF - - - - / +FL100 - -
+RNAV 1 TOKOX 525418.6 / 0063740.0 TF Fly - By 105.6 / 108 24.1 - - -
+RNAV 1 XILEF 525717.2 / 0062349.6 TF Fly - By 070.3 / 072 8.9 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 142.4 / 144 7.0 - / + A3000 - -
+PALEP 3 D STAR RWY23
+PALE 3 D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 PALEP 521343.1 / 0062152.5 IF - - - - / +FL100 - -
+RNAV 1 ZASUT 524610.0 / 0060726.2 TF Fly - By 015.1 / 017 33.7 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 314.7 / 317 8.0 - / + A3000 - -
+FAZIZ 4D STAR RWY23
+FAZI 4D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 FAZIZ 523231.6 / 0072407.3 IF - - - - / +FL100 - -
+RNAV 1 TOKOX 525418.6 / 0063740.0 TF Fly - By 052.0 / 054 35.7 - - -
+RNAV 1 XILEF 525717.2 / 0062349.6 TF Fly - By 070.3 / 072 8.9 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 142.4 / 144 7.0 - / + A3000 - -
+CUZUK 4D STAR RWY23
+CUZU 4D
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 CUZUK 530648.2 / 0070533.6 IF - - - - / +FL100 - -
+RNAV 1 TOKOX 525418.6 / 0063740.0 TF Fly - By 126.4 / 12 8 21.0 - - -
+RNAV 1 XILEF 525717.2 / 0062349.6 TF Fly - By 070.3 / 072 8.9 - / +FL060 - -
+RNAV 1 BICAD 525146.6 / 0061649.4 TF Fly - By 142.4 / 144 7.0 - / + A3000 - -
+AIRAC Amdt 01 2 /2026 AIRNAV IRELAND

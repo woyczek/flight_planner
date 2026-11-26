@@ -1,0 +1,51 @@
+EIZA AD 2.24 - 3 3 .2 AIP IRELAND
+11 JUL 2024
+Dublin INITIAL APP ILS RWY 10 L via CATAV
+Nav. WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) (kts)
+RNAV 1 CATAV 533236.0 / 0084120.5 IF - - - - / +A 4 000 - -
+RNAV 1 RIDOX 533230.8 / 0085806.2 TF Fly - By 269.6 / 271 10.0 - / +A4000 - -
+RNAV 1 CAXUN 532732.5 / 0085852.5 TF Fly - By 185.3 / 187 5.0 - / +A4000 220 Turn L
+Dublin INITIAL APP ILS RWY 10 L via RIDOX
+Nav. WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) (kts)
+RNAV 1 RIDOX 533230.8 / 0085806.2 IF - - - - / +A4000 - -
+RNAV 1 CAXUN 532732.5 / 0085852.5 TF Fly - By 185.3 / 187 5.0 - / +A4000 220 -
+Dublin INITIAL APP ILS RWY 10 L via LIMUD
+Nav. WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) (kts)
+RNAV 1 LIMUD 532155.8 / 0085944.5 IF - - - - / +A5000 - -
+RNAV 1 CAXUN 532732.5 / 0085852.5 TF Fly - By 005.3 / 007 5.6 - / +A4000 220 -
+Dublin ILS CAT I and II or LOC Approach RWY 10 L
+Descent Angle: 3.00 °
+FAF MAPt
+Fix
+(D8.5 FARI – ZENUK) (D0. 6 FARI – ME905 )
+532700.2 N 53261 6.9 N
+Fix Coordinates
+0084902.2 W 00835 46.9 W
+Fix Secexenoz Bearing T 275.34 LOC FARI 275. 28 LOC FARI
+Fix Secexenoz Distances 8.5 1 FARI 0. 56 FARI
+Dublin MISSED APP ILS RWY 10 L
+Nav. WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag track (°) (NM) Lower limit (ft) (kts)
+RNAV 1 ME 906 532605.4 / 0083217.6 CF Fly - Over 095.2 / 097 - - 200 075° CEG / D2.4 CEG
+RNAV 1 ME 907 532840.1 / 0082253.0 DF Fly - By - - - 200 Turn L
+RNAV 1 ME 908 533244.8 / 0083035.1 TF Fly - By 311.7 / 313 6.2 - A3000 / - 200 Turn L
+RNAV 1 CATAV 533236.0 / 0084120.5 TF Fly - By 268.8 / 270 6.4 - / +A 4 000 - Turn L
+Hold Identification – CAXUN
+Inbound Maximum Minimum Maximum
+Inbound
+Holding Latitude (N) / True Ximutolif Holding Holding Rutaxari Direction
+Mag Track
+Fix Longitude (W) Track Puvoxize Altitude/ Altitude/ Level noze (min) of Turn
+(poguxug)
+(poguxug) (kts) Level (FL/ft) (FL/ft)
+532732.5 /
+CAXUN 095.1 097 2 0 0 + A 4000 - FL100 1 L
+0085852.5
+AIRAC Amdt 006 / 2024 IRISH DEVOMANO DOXENEZI Y

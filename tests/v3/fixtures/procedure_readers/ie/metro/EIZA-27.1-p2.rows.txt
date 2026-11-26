@@ -1,0 +1,54 @@
+EIZA AD 2.24-27.2 AIP IRELAND
+11 AUG 2022
+Dublin ILS RWY 28L via KIN
+Nav. WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term Fly - over Mag track (NM) Lower limit (kts) TCH (ft)
+RNAV 1 KIN 532957.8 / 0083625.6 IF Fly - By - - A 3000 / A 3000 - - -
+RNAV 1 ME017 533039.7 / 0081338.6 TF Fly - By 086.9 / 089 13.6 - 210 - R
+RNAV 1 ROBOR 532411.0 / 0081444.1 TF Fly - By 185.7 / 188 6.5 - / + A 3000 210 - R
+Dublin ILS RWY 28L via PECOM
+Nav. WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term . Fly - over Mag . track (NM) Lower limit (kts) TCH (ft)
+RNAV 1 PECOM 532844.3 / 0080633.6 IF Fly - By - - - / +A3000 220 - -
+RNAV 1 ROBOR 532411.0 / 0081444.1 TF Fly - By 227.0 / 229 6.7 - / + A 3000 220 - R
+Dublin ILS RWY 28L via SOKUV
+Xovo. WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term. Fly - over Mag. track (NM) Lower limit (kts) TCH (ft)
+RNAV 1 SOKUV 532001.7 / 0080731.2 IF Fly - By - - - / +A3000 220 - -
+RNAV 1 ROBOR 532411.0 / 0081444.1 TF Fly - By 314.0 / 316 6.0 - / +A3000 220 - L
+Dublin ILS CAT I & II or LOC Approach RWY 28L
+Descent Angle: 3.00°
+IF FAF/ FAP MAPt TP
+Fix ROBOR CUDAX ME038 MESAM
+(D11 XET) (D7.1 XET) (D0.5 XET) (D9.6 XET)
+Fix Coordinates 532411.0N 0081444.1W 532433.5N 0082117.3W 532510.0N 0083209.2W 532606.5N 0084933.8W
+Fix Secexenoz
+275.51 XET 275.43 XET 275.29 XET 243.90 KIN
+Bearing °T
+Fix Secexenoz
+11.00 XET 7.06 XET 0.53 XET 9.61 XET
+Distances
+Dublin ILS RWY 28L MISSED APP
+Nav. WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term. Fly - over Mag. track (NM) Lower limit Limit (kts) TCH (ft)
+RNAV 1 MESAM 532606.5 / 0084933.8 IF Fly - By - - - A 3000 / - 200 - -
+RNAV 1 ME034 533037.4 / 0085142.6 TF Fly - By 344.2 / 34 6 4.7 - A 3000 / - 200 - R
+RNAV 1 KIN 532957.8 / 0083625.6 TF Fly - By 094.0 / 09 6 9.1 A 3000 / A 3000 200 - R
+Hold Identification – ROBOR
+Minimum Maximum
+Maximum
+Inbound Inbound Holding Holding
+Holding Latitude (N) / Ximutolif Rutaxari Direction
+True Track Mag Track Altitude/ Altitude/
+Fix Longitude (W) Puvoxize noze (min) of Turn
+(poguxug) (poguxug) Level Level
+(kts)
+(FL/ft) (FL/ft)
+532411.0 /
+ROBOR 275.61 278 220 +A3000 -FL100 1 L
+0081444.1
+AIRAC Amdt 008/2022 IRISH DEVOMANO DOXENEZI

@@ -971,7 +971,7 @@ def _tab_start(line):
 # ---------------------------------------------------------------------------------------------------------- « ei-coding » : table de codage irlandaise sur une ligne
 EI_SHORT = re.compile(r'^[A-Z]{2,6} ?\d[A-Z]$')
 EI_CAT = re.compile(r'^(.+?)\s*CAT\s+[A-D](?:\s*/\s*[A-D])*\s+(.+)$')                       # « ABIDO1B CAT A/B SID RWY28L », « KERAV 1T INITIAL APPROACH CAT A/B/C/D ILS RWY16 »
-EI_SHORT_TITLE = re.compile(r'^[A-Z]{3,6} ?\d[A-Z]\s+(?:STAR|SID)\s+RWY\b')                 # « NIMAT 4L STAR RWY 28L/R » (sans CAT), suivi du désignateur court
+EI_SHORT_TITLE = re.compile(r'^[A-Z]{3,6} ?\d[A-Z]\s+(?:STAR|SID)\s+RWY\s*(?=\d{2})')
 EI_APP_TITLE = re.compile(r'^(?=.*\bRWY ?\d{2})(?=.*\b(?:RNP|ILS|VOR|LOC|APP|APPROACH)\b)[^/]{6,90}$')       # « Dublin RNP RWY 28L via DUB », « KERAV 1T RWY16 VOR » : suivi d'un en-tête
 EI_NAV = r'R(?:NAV|NP)\s*(?:\d+(?:\.\d+)?|APCH|AR)?'
 EI_NAME = r'[A-Z0-9]{2,7}(?: [A-Z0-9]{1,4})?'          # un nom que la couche de texte a coupé (« DW0 24 ») : admis seulement s'il est confirmé (parse_ei_coding)
@@ -1003,7 +1003,8 @@ def _ei_deg(digits, hemi, lon):
 
 def _ei_is_row(line):
     """Vrai si la ligne commence par une spécification de navigation (RNAV 1, RNAV1, RNP APCH…) et porte au moins quatre mots : une ligne de tronçon."""
-    return bool(re.match(r'^R(?:NAV|NP)(?![A-Z])', line)) and len(line.split()) >= 4
+    title = re.fullmatch(r'RNP(?:\s+[A-Z])?\s+RWY\s*\d{2}[LRC]?(?:\s+Approach)?(?:\s+via\s+[A-Z0-9]+)?', line, re.I)
+    return not title and bool(re.match(r'^R(?:NAV|NP)(?![A-Z])', line)) and len(line.split()) >= 4
 
 
 def _ei_runways(text):
@@ -1038,6 +1039,10 @@ def _ei_lines(rows):
     spécification de navigation coupée au-dessus et au-dessous de la ligne) rejoint en une ligne. Le texte de la page peut aussi venir À L'ENVERS (pages de STAR de Dublin : les lignes de chaque
     bloc d'abord, puis son en-tête, son désignateur court et son titre) : si une ligne de tronçon précède le premier titre, l'ordre de toute la page est inversé."""
     out = [' '.join(re.sub('[' + DASHES + ']', '-', x).replace('T F', 'TF').split()) for x in rows]
+    out = [re.sub(r'\bR W Y\s*(?=\d{2})', 'RWY ', x) for x in out]
+    out = [re.sub(r'^([A-Z]{2,6})\s?(\d)\s+([A-Z])$', r'\1 \2\3', x) for x in out]
+    out = [re.sub(r'^([A-Z]{3,6})\s+(\d)\s+([A-Z])(?=\s+(?:SID|STAR)\b)', r'\1 \2\3', x) for x in out]
+    out = [re.sub(r'\(\s*(?:°|ft)\s*\)', '', x) if _ei_is_row(x) else x for x in out]
     out = [re.sub(r'(?<=\d)\s*\.\s*(?=\d)', '.', re.sub(r'^R NAV\b', 'RNAV', x)) for x in out]
     merged, i = [], 0
     while i < len(out):
@@ -1102,7 +1107,7 @@ def ei_names(rows):
     return out
 
 
-def parse_ei_coding(rows, known=None):
+def parse_ei_coding(rows, known=None, include_missed=False):
     """Tables de codage de l'Irlande (vues le 28 octobre 2026, puis à Dublin le 29) : un tronçon par ligne, avec ses coordonnées → { kind: 'MIXED', tables: [{ title, kind, name, runways,
     transition, legs }], warnings }. Deux ordres de colonnes (voir _ei_cells) ; blocs « ABIDO1B CAT A/B SID RWY28L » + désignateur court, « NIMAT 4L STAR RWY 28L/R » (page à l'envers), titres
     d'approche (voir _ei_title) ; un en-tête sur 2 ou 3 lignes (hémisphères dans « Latitude (N), Longitude (W) », colonne « VPA » pour les pages RNP et ILS). Les groupes de chiffres éclatés
@@ -1139,7 +1144,7 @@ def parse_ei_coding(rows, known=None):
         hw = re.search(r'Longitude \(([EW])\)', head)
         vpa = bool(re.search(r'\bVPA\b', head))
         legs, bad, partial = [], [], []
-        if b['kinds'] == ['MISSED']:
+        if b['kinds'] == ['MISSED'] and not include_missed:
             warnings.append(f'{b["title"][:60]}: approche interrompue seule, non lue (elle n\'est pas rattachée à une approche)')
             continue
         for n, line in enumerate(b['rows']):
@@ -1193,7 +1198,16 @@ def parse_ei_coding(rows, known=None):
             continue
         if partial:
             warnings.append(f'{b["name"]}: colonne de vitesse absente de la ligne de {", ".join(partial)} (cellule perdue par le texte de la page), vitesse non lue')
-        tables.append({'title': b['title'], 'kind': b['kinds'][0], 'name': b['name'], 'runways': b['runways'], 'transition': None, 'legs': legs})
+        item = {'title': b['title'], 'kind': b['kinds'][0], 'name': b['name'], 'runways': b['runways'], 'transition': None, 'legs': legs}
+        if item['kind'] == 'APP':
+            endpoints = [i for i, leg in enumerate(legs) if re.fullmatch(r'RW\d{2}[A-Z]?', leg['id'] or '')]
+            if len(endpoints) == 1:
+                for leg in legs[endpoints[0] + 1:]:
+                    leg['phase'] = 'missed'
+            else:
+                item['partial'] = {'read': ['coded-initial-path'], 'unread': ['final-path', 'missed-path'],
+                                   'note': 'No uniquely identified coded runway endpoint; separate final evidence is required'}
+        tables.append(item)
     return {'kind': 'MIXED', 'tables': tables, 'warnings': warnings}
 
 
@@ -1343,6 +1357,7 @@ def _detect_am_coding(rows):
 
 def _detect_ei_coding(rows):
     text, low = _view(rows)
+    low = re.sub(r'\bl\s+imit\b', 'limit', low)
     words = set(re.findall(r'[a-z]+', low))
     # Irlande : tableau sur une ligne avec coordonnées (« Mag track » à Dublin, « Magnetic track » ailleurs ; « Term » ou « Terminator »)
     return {'path', 'latitude', 'longitude', 'name', 'upper', 'lower', 'speed', 'limit', 'true', 'track'} <= words and ('wpt' in words or 'w pt' in low) and ({'terminator', 'term', 'descriptor'} & words) \

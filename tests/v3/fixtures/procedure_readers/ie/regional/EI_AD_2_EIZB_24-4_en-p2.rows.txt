@@ -1,0 +1,27 @@
+E IZB AD 2.24 - 4 .2 AIP IRELAND
+1 1 JUN 2026
+SAGIX 1B SID RWY26
+SAGI1B
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 ZE001 535311.1 / 0064311.5 CF Fly - By 258.7 / 261 (°) - - 240 262° CON / D7.2 CON
+RNAV 1 ZE697 534628.6 / 0064054.1 TF Fly - By 168.6 / 171 6.9 - / +A 5 000 240 Turn L
+RNAV 1 SAGIX 534233.4 / 0060512.5 TF Fly - By 100.3 / 10 2 21.6 - FL090 / - 240 Turn L
+GETAX 1B SID RWY26
+GETA1B
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 ZE001 535311.1 / 0064311.5 CF Fly - By 258.7 / 261 (°) - - 240 262° CON / D7.2 CON
+RNAV 1 K N698 535953.6 / 0064529.7 TF Fly - By 348.6 / 351 6.9 - / +FL080 240 Turn R
+RNAV 1 GETAX 540636.0 / 0064748.6 TF Fly - By 348.5 / 351 6.9 - FL090 / - 240 -
+GAKAG 1B SID RWY26
+GAKA1B
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 ZE001 535311.1 / 0064311.5 CF Fly - By 258.7 / 261 (°) - - 240 262° CON / D7.2 CON
+RNAV 1 K N698 535953.6 / 0064529.7 TF Fly - By 348.6 / 351 6.9 - / +FL080 240 Turn R
+RNAV 1 GAKAG 540435.0 / 0063213.3 TF Fly - By 058.9 / 061 9.1 - FL090 / - 240 Turn R
+AIRAC Amdt 00 6 /2026 AIRNAV IRELAND

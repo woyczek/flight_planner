@@ -1,0 +1,59 @@
+EIZC AD 2.24 - 7 .2 AIP IRELAND
+2 6 NOV 2026
+COVEF 3E STAR RWY05
+COVE 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 COVEF 530919.9 / 0061646.1 IF - - - - / +FL100 - -
+RNAV 1 FIMUF 525210.0 / 0063455.0 TF Fly - By 212.6 / 215 20.4 - - -
+RNAV 1 FAXON 523907.4 / 0070231.4 TF Fly - By 232.3 / 234 21.3 - / +FL060 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 141.9 / 144 7.0 - / +A3000 - -
+KOCAS 3E STAR RWY05
+KOCA 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 KOCAS 522229.7 / 0071436.8 IF - - - - / +FL100 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 046.3 / 04 8 16.2 - / +A3000 - -
+GOFER 3E STAR RWY05
+GOFE 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 GOFER 525612.8 / 0055351.3 IF - - - - / +FL100 - -
+RNAV 1 FIMUF 525210.0 / 0063455.0 TF Fly - By 261.0 / 263 25.2 - - -
+RNAV 1 FAXON 523907.4 / 0070231.4 TF Fly - By 232.3 / 234 21.3 - / +FL060 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 141.9 / 144 7.0 - / +A3000 - -
+XUBIT 3E STAR RWY05
+XUBI 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 XUBIT 530053.5 / 0071603.3 IF - - - - / +FL100 - -
+RNAV 1 FAXON 523907.4 / 0070231.4 TF Fly - By 159.3 / 161 23.3 - / +FL060 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 141.9 / 144 7.0 - / +A3000 - -
+PALEP 3E STAR RWY05
+PALE 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 PALEP 521343.1 / 0062152.5 IF - - - - / +FL100 - -
+RNAV 1 BAMEF 522806.4 / 0064824.0 TF Fly - By 311.7 / 314 21.7 - / +FL060 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 322.1 / 324 7.0 - / +A3000 - -
+FAZIZ 3E STAR RWY05
+FAZI 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 FAZIZ 523231.6 / 0072407.3 IF - - - - / +FL100 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 086.2 / 08 8 17.5 - / +A3000 - -
+CUZUK 3E STAR RWY05
+CUZU 3E
+Nav. WPT Latitude (N) / Path Fly - By True Track / Distance Upper Limit / Speed Limit
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag Track (NM) Lower Limit (kts)
+RNAV 1 CUZUK 530648.2 / 0070533.6 IF - - - - / +FL100 - -
+RNAV 1 FAXON 523907.4 / 0070231.4 TF Fly - By 176.2 / 178 27.8 - / +FL060 - -
+RNAV 1 PEPAD 523337.1 / 0065527.1 TF Fly - By 141.9 / 144 7.0 - / +A3000 - -
+AIRAC Amdt 01 2 / 2026 BUCAG V IRELAND

@@ -1,0 +1,22 @@
+[
+  {
+    "fixture": "EIZA-27.1-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage et tableaux des repères d'approche (Dublin). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EIZA-30.1-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage et tableaux des repères d'approche (Dublin). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EIZA-33.1-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage et tableaux des repères d'approche (Dublin). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EIZA-36.1-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage et tableaux des repères d'approche (Dublin). Aucune valeur n'est réelle."
+  },
+  {
+    "fixture": "EIZA-46-p2.rows.txt",
+    "reference": "Page inventée, sur le modèle de l'AIP d'Irlande, AD 2.24, tables de codage et tableaux des repères d'approche (Dublin). Aucune valeur n'est réelle."
+  }
+]

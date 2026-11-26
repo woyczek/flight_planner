@@ -79,6 +79,7 @@ RULES = [
     ('tools/pdf_rows_child.py', ['K', 'I'], 'the bounded child process of the PDF reading and its aerodb cases'),
     ('tools/proc_inventory.py', ['K', 'I'], 'the read-only census of the local charts and stored procedure documents and its aerodb cases'),
     ('tools/proc_readers.py', ['K', 'I'], 'the register of the procedure readers (layout, State, source, licence of the source, test pages), read by the launcher, and its aerodb cases'),
+    ('tools/proc_ie_iac.py', ['K', 'I'], 'the Irish final fixes of an ILS and their aerodb cases'),
     ('tools/proc_se.py', ['K', 'I'], 'the Swedish LFV coding tables and their aerodb cases'),
     ('tools/proc_replay.py', ['K', 'I'], 'the immutable snapshot of the local corpus inputs and the offline replay, and their aerodb cases'),
     ('tools/proc_local_corpus.py', ['K', 'I'], 'the candidate builds from local packages and cached PDFs, and their aerodb cases'),
