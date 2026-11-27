@@ -17494,7 +17494,8 @@ def n292(c):
     peer_book = {'schema': 1, 'mission': 'X-905A', 'seance': f'A:{start[:10]}', 'reads': 1, 'held': {'EV-3': peer_held}, 'by': 'DEF', 'updated_at': peer_held}
     BOOK = 'pilot/ABC/missions/X-905A.json'
     S = f'{M} [data-drawers]'
-    lines = f"""(() => [...document.querySelectorAll('{S} [data-dw-planned] .pv-line')].map(l => [l.dataset.pv, l.querySelector('b').textContent.trim(),
+    # the lines SHOWN (children of the section); those folded under « 1 autre » are read apart (the fold, below)
+    lines = f"""(() => [...document.querySelectorAll('{S} [data-dw-planned] > .pv-line')].map(l => [l.dataset.pv, l.querySelector('b').textContent.trim(),
       l.textContent.replace(/\\s+/g, ' ').trim(), !!l.querySelector('[data-pv-state]')]))()"""
     try:
         c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -17529,6 +17530,9 @@ def n292(c):
         c.eq(rows['EV-3'][1], hhmm(start_dt + datetime.timedelta(minutes=17)), 'the imposed time does not slide: take-off + 5 + 12, not the rendez-vous held late + 12', what='imposed')
         c.ok(rows['EV-2'][1] != hhmm(start_dt + datetime.timedelta(minutes=15)), rows['EV-2'][1], 'the silence of Blue follows the REAL time of the rendez-vous (it slid past its plan)')
         c.eq(c.text(f'{S} [data-pv-fold] summary'), '1 autre', 'the fold', what='fold')
+        folded = c.js(f"[...document.querySelectorAll('{S} [data-pv-fold] .pv-line')].map(l => [l.dataset.pv, l.querySelector('b').textContent.trim()])")
+        c.ok([f[0] for f in folded] == ['EV-5'] and re.fullmatch(r'\d\d:\d\dZ', folded[0][1]) is not None, folded,
+             'the rest folded: the return of Red (EV-5) alone, with its clock time')
         c.ok(c.js(f"document.querySelector('{S} [data-pv=\"EV-1\"] .pv-chip.mine')?.textContent") == 'Blue'
              and c.js(f"document.querySelector('{S} [data-pv=\"EV-3\"] .pv-chip.other')?.textContent") == 'Red', '', 'the chips: Blue (mine, filled), Red (the others, outlined)')
         c.shot(f'N292_{c.width}_prevu.png')
