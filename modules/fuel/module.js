@@ -58,6 +58,7 @@ import * as PP from './proc_partial.js'; // SOG-0613 : des départs lus en parti
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
 import * as AL from './auto_limits.js'; // SOG-0653 : les bornes des niveaux d'« Auto » (extrait)
+import * as RF from './route_refused.js'; // SOG-0658 : la ligne d'un calcul de route refusé (extrait)
 import {
   copyAndTell,
   copyText
@@ -135,6 +136,7 @@ export const meta = {
     'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
     'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
+    'route_refused.js',
     'altn_wx.js', 'auto_limits.js', 'proc_partial.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
@@ -443,34 +445,9 @@ const TX = {
   rLimits: ['Ce que le contrôle ne couvre pas', 'What the check does not cover', 'Was die Prüfung nicht abdeckt',
     'Lo que la comprobación no cubre'
   ],
-  rNoRad: ['Aucun RAD importé', 'No RAD imported', 'Kein RAD importiert', 'Ningún RAD importado'],
-  rNoRadGo: ['Importer dans Données', 'Import in Data', 'In Daten importieren', 'Importar en Datos'],
   rFail: ['Le calcul de route n’a pas répondu.', 'The route computation did not answer.', 'Die Routenberechnung hat nicht geantwortet.',
     'El cálculo de ruta no ha respondido.'
   ],
-  // SOG-0206 : la cause quand le travail n'a rien rendu (jamais « n'a pas répondu » sans raison), avec « Réessayer »
-  rWhy: {
-    busy: ['Le poste termine une autre opération (lecture du sol, mise à jour des données…) : réessayez dans un instant.',
-      'The workstation is finishing another operation (ground reading, data update…): try again in a moment.',
-      'Der Rechner beendet gerade einen anderen Vorgang (Bodenlesung, Datenaktualisierung…): gleich noch einmal versuchen.',
-      'El puesto está terminando otra operación (lectura del suelo, actualización de datos…): inténtelo de nuevo en un momento.'
-    ],
-    offline: ['Le lanceur du poste ne répond pas : vérifiez qu’il tourne, puis réessayez.',
-      'The workstation launcher does not answer: check that it is running, then try again.',
-      'Der Launcher des Rechners antwortet nicht: prüfen, ob er läuft, dann erneut versuchen.',
-      'El lanzador del puesto no responde: compruebe que está en marcha y vuelva a intentarlo.'
-    ],
-    stopped: ['Le calcul a été arrêté avant la fin (lanceur relancé ou travail annulé) : réessayez.',
-      'The computation was stopped before the end (launcher restarted or job cancelled): try again.',
-      'Die Berechnung wurde vor dem Ende abgebrochen (Launcher neu gestartet oder Job abgebrochen): erneut versuchen.',
-      'El cálculo se detuvo antes del final (lanzador reiniciado o trabajo cancelado): inténtelo de nuevo.'
-    ],
-    failed: ['Le calcul a échoué sans donner de résultat (le journal du lanceur en dit la cause) : réessayez.',
-      'The computation failed without a result (the launcher log says why): try again.',
-      'Die Berechnung ist ohne Ergebnis fehlgeschlagen (das Launcher-Protokoll nennt die Ursache): erneut versuchen.',
-      'El cálculo falló sin resultado (el registro del lanzador dice por qué): inténtelo de nuevo.'
-    ]
-  },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
   // SOG-0224 : après « Choisir », les autres itinéraires disparaissent ; cette ligne dit celui qui a été pris
@@ -4733,10 +4710,8 @@ async function routeAskRun(s, act, r, o, box, retry) {
     now: !Number.isFinite(Date.parse(S.flight.planned_at || ''))
   });
   if (!n.ok) {
-    // SOG-0125 : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ; le message du
-    // lanceur, qui nomme un travail, n'est pas montré au pilote
-    if (box) box.innerHTML = n.reason === 'no-rad' ? `<p class="f-warn" data-rrefused="no-rad">${esc(tt(TX.rNoRad))} · <a href="${RAD_DATA_HREF}" data-radlink>${esc(tt(TX.rNoRadGo))}</a></p>` :
-      `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(!n.message && TX.rWhy[n.reason] ? tt(TX.rWhy[n.reason]) : n.message || tt(TX.rFail))}${!n.message && ['busy', 'offline', 'stopped', 'failed'].includes(n.reason) ? ` <button type="button" data-do="${act === 'compute' ? 'rcompute' : 'rcheck'}" data-rretry>${esc(tt(TX.rRetry))}</button>` : ''}</p>`;
+    // la ligne d'un calcul refusé (SOG-0206, SOG-0125 : sans RAD, le lien vers sa ligne de Données) : modules/fuel/route_refused.js
+    if (box) box.innerHTML = RF.refusedHtml(n, act, RLH);
     return;
   }
   if (act === 'check') {
@@ -5436,8 +5411,6 @@ function sectionsHtml(a) {
   const li = x => `<li data-section="${esc(x.control)}" data-layer="${esc(x.layer)}" data-nature="${esc(natOf(x))}">${[head(x), esc(`${x.from}–${x.to}`), `<span class="fu-ctrl-${esc(x.control)}">${esc(tt(TX.rCtrl[x.control]))}</span>`, x.nm !== null ? esc(`${x.nm} NM`) : '', x.reason ? esc(x.reason) : ''].filter(Boolean).join(' · ')}</li>`;
   return `<details class="fu-rsections" data-sections><summary class="f-muted">${esc(tt(TX.rSections, { n: list.length }))}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(li).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore"><summary class="f-muted">${esc(tt(TX.rMore, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
 }
-/** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
-const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 // « Ce que le contrôle ne couvre pas » : modules/fuel/route_limits.js (SOG-0669, extrait de ce fichier)
 const RLMH = {
   tt: (row, v) => tt(row, v),
