@@ -6223,7 +6223,7 @@ def k121(c):
         reg = {('t', 'build'): (lambda job, a, x: {'ok': True}, lambda a: {}), ('route', 'fra-points'): (lambda job, a, x: R.fra_points(job, a, ctx), R.check_fra_points)}
         j = RJ.Jobs(reg, ctx, min_gap={}, store=store)
         for key in (('t', 'build'), ('route', 'fra-points')):
-            j.start(*key, {})
+            j.start(*key, {'date': '2026-11-10'} if key[1] == 'fra-points' else {})  # a date: without one the job takes today's, and the book of 2026-11-26 is in force since
             for _ in range(100):
                 if j.cur.data['state'] != 'running':
                     break
