@@ -13024,6 +13024,9 @@ def a405(c):
       out.written = got('A-008A', { route_order: ['PT2', 'PT1'], vertical_profile: { route: 'PT3, PT1' } });
       out.writtenOne = got('A-009A', { route_order: ['PT2'] });
       out.none = got('A-010A', { turning_points: [], rendezvous: [], zones: [] });
+      out.direct = got('A-014A', { route_order: ['ORIGIN', 'DESTINATION'] });      // the author took every place out of the route: a direct flight, written
+      out.directEmpty = got('A-015A', { route_order: [] });   // present, empty: written too (the direct flight)
+      out.directBad = got('A-016A', { route_order: ['NOWHERE'] });   // present, names no place: written, nothing deduced
       // the pilot: a deduced route shows its turning points, never a work point (a zone, a rendezvous: the place of a closed drawer)
       const m = M.readMission(base('A-011A', { phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'RDV-1', duration_sec: 60, max_gap_sec: 10 }, fallback_delay_min: 60 }] }));
       const v = M.pilotView(m, []), o = M.pilotView(m, ['B']);
@@ -13046,6 +13049,7 @@ def a405(c):
     c.eq(r['written'], ['written', 'PT2 PT1', 'PT2 PT1'], 'route_order wins over the profile', what='written')
     c.eq(r['writtenOne'], ['written', 'PT2', 'PT2'], 'a written order is respected, even of one place (the V2 asked for two; the author said it)', what='written one')
     c.eq(r['none'], ['', '', ''], 'no place at all: no route', what='none')
+    c.eq((r['direct'], r['directEmpty'], r['directBad']), (['written', '', ''], ['written', '', ''], ['written', '', '']), 'a route_order that is PRESENT is a written order, even with no place (only the departure and the arrival, an empty list, a token that names nothing): an empty order, nothing deduced — the deduction only when it is ABSENT', what='direct')
     c.eq(r['pilot'], ['', '', '', ''], 'the pilot sees no place of a deduced route that nothing visible cites (the secret of the closed drawers holds: the places only a drawer may cite stay hidden)', what='pilot')
     c.eq(r['pilotOpen'], ['RDV-1', 'RDV-1'], 'the drawer opened: the place it cites is back, in its place on the route', what='pilot open')
     c.eq(r['noRoute'], 0, 'a mission object with no order has no route (the order of the keys of the file is never a route)', what='no keys')

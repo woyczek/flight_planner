@@ -849,7 +849,7 @@ export function mapLook(v) {
 /** SOG-0684 — L'ORDRE de la route : UNE règle, celle de la V2 (shared/mission_estimate.js, routeOf), pour la fiche du pilote, Carburant et la Carte. → { order: [identifiants de `points`], from }, from :
  *  « written » (route_order), « profile » (vertical_profile.route en texte — jetons séparés par virgule, point-virgule, saut de ligne, ou blancs — OU en liste, SEULEMENT si TOUS ses jetons nomment un lieu :
  *  jamais une route partielle), « deduced » (les tournants dans l'ordre, chaque point de travail — cible, rendez-vous, zones — après le tournant le plus proche, ceux à moins de 1 NM d'un point déjà là omis),
- *  '' (aucun lieu). Un ordre écrit est respecté s'il nomme un lieu au moins (la V2 en voulait deux) ; un profil en veut deux, sinon on déduit ; un aller-retour garde ses repassages ; l'ordre des clés du fichier n'est JAMAIS une route ; le fichier n'est pas réécrit. */
+ *  '' (aucun lieu). Un route_order PRÉSENT est un ordre écrit, même vide ou sans un lieu (la V2 en voulait deux : le vol direct [ORIGIN, DESTINATION] est écrit, ordre vide) — on ne déduit que s'il est ABSENT ; un profil en veut deux, sinon on déduit ; un aller-retour garde ses repassages ; l'ordre des clés du fichier n'est JAMAIS une route ; le fichier n'est pas réécrit. */
 const ROUTE_TOKENS = 400;
 
 function routeOf(d, points, origin) {
@@ -866,11 +866,11 @@ function routeOf(d, points, origin) {
     return ROUTE_START.has(w) || ROUTE_END.has(w) ? '' : w ? byUp.get(w) ?? byName.get(w) ?? null : null;
   };
   const places = list => list.filter(Boolean);
-  const wr = Array.isArray(d.route_order) ? places(d.route_order.slice(0, ROUTE_TOKENS).map(resolve)) : [];
-  if (wr.length) return {
-    order: wr,
-    from: 'written'
-  };
+  if (Array.isArray(d.route_order))
+    return { // un route_order PRÉSENT est un ordre écrit, même vide ou sans un lieu (le vol direct : [ORIGIN, DESTINATION]) : on ne déduit que s'il est ABSENT (SOG-0684, l'ergonome)
+      order: places(d.route_order.slice(0, ROUTE_TOKENS).map(resolve)),
+      from: 'written'
+    };
   const vp = plain(d.vertical_profile)?.route,
     parts = typeof vp === 'string' ? vp.split(/[,;\n→]+/).map(x => x.trim()).filter(Boolean) : [],
     toks = Array.isArray(vp) ? vp : parts.length === 1 ? parts[0].split(/\s+/) : parts,
