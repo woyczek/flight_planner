@@ -12029,3 +12029,52 @@ def f333(c):
             what='the terrain above the ceiling, said (never a level under it in silence)')
     c.js("document.querySelector('[data-module=fuel] input[data-k=fl]').scrollIntoView({block: 'center'})")
     c.shot(f'F333_{c.design}_390_{c.lang}_overceil.png')
+
+
+@case('F335', 'Route step: a cruise climb « C/point/speed level level|PLUS » is a valid form — never « Non compris », no orange line; the grey '
+      'line of what is not applied says it, composed with the speeds (one climb, several, speeds and climbs, the plural written in full); '
+      'from the point of the climb the quote keeps the level of before it (neither level of the climb is taken)', 'F', tags=('fuel',),
+      designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0679, the ergonomist\'s retouch of 27 Nov (the relay): « C/… » said « Non compris » in orange was a false alarm; no new '
+      'line, the grey line composed; the fact: at the point of a cruise climb the quote keeps the level of before; French only (SOG-0680); '
+      'invented routes')
+def f335(c):
+    # A. the four forms of the grey line (modules/fuel/route_lines.js readingPaint), on a bare element
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const L = await import('/modules/fuel/route_lines.js');
+      const h = { tt: (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v?.[k] ?? m), esc: s => String(s) };
+      const paint = r => { const b = document.createElement('div'); b.innerHTML = '<div data-rread></div>';
+        L.readingPaint(b, { rules: [], ...r }, 0, h);
+        return [...b.querySelectorAll('[data-rl]')].map(e => [e.dataset.rl, e.className, e.textContent]) };
+      return [paint({ speeds: ['N0300'] }), paint({ climbs: ['C/XPA/N0300F270F290'] }), paint({ climbs: ['C/XPA/N0300F270F290', 'C/XPB/M078F350PLUS'] }),
+        paint({ speeds: ['N0300'], climbs: ['C/XPA/N0300F270F290'] }), paint({ speeds: ['N0300'], climbs: ['C/XPA/N0300F270F290', 'C/XPB/M078F350PLUS'] })];
+    }""")
+    c.eq(got, [[['speeds', 'f-muted', 'Non appliqué au devis : les vitesses écrites dans la route.']],
+               [['speeds', 'f-muted', 'Non appliqué au devis : la montée en croisière écrite dans la route.']],
+               [['speeds', 'f-muted', 'Non appliqué au devis : les montées en croisière écrites dans la route.']],
+               [['speeds', 'f-muted', 'Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.']],
+               [['speeds', 'f-muted', 'Non appliqué au devis : les vitesses et les montées en croisière écrites dans la route.']]],
+         'one grey line, composed: speeds, one climb, several, speeds and one, speeds and several (red before: « Non compris : C/… » '
+         'in orange, the climb\'s speed said as a speed)', what='forms')
+    # B. under the route field of Fuel: « C/… » alone — no orange line, the grey line of the climb; NEPIX keeps the level of before
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    typed = 'LFRS C/NEPIX/N0300F270F290 LFML'
+    c.page.fill(f'{FUEL} [data-k="rtext"]', typed)
+    c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
+    want = [['speeds', 'f-muted', 'Non appliqué au devis : la montée en croisière écrite dans la route.']]
+    read = """() => { const b = document.querySelector('[data-module=fuel] [data-rread]'); if (!b || b.hidden) return null;
+      return [...b.querySelectorAll('[data-rl]')].filter(e => !e.hidden).map(e => [e.dataset.rl, e.classList.contains('f-warn') ? 'f-warn' :
+        e.classList.contains('f-muted') ? 'f-muted' : '', (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) }"""
+    c.until(f"() => JSON.stringify(({read})()) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')), ensure_ascii=False)}",
+            timeout=10000, what='the grey line of the climb, nothing in orange (red before: « Non compris : C/NEPIX/N0300F270F290. »)')
+    c.eq(c.count(f'{FUEL} [data-rread] .f-warn'), 0, 'no orange line', what='warnings')
+    # the flight is written at the Tab (the points of before, LUGEN among them), then by the reading (LUGEN gone): its write is awaited
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d['route'].get('text') or '') == typed and
+                    [p['id'] for p in d['route'].get('points') or []] == ['LFRS', 'NEPIX', 'LFML'], 'the points of the reading', timeout=10000)
+    nep = next(p for p in f['route']['points'] if p['id'] == 'NEPIX')
+    c.eq([nep.get('alt_ft'), nep.get('speed')], [None, None], 'at the point of the climb, no level of the climb: the quote keeps the '
+         'level of before', what='NEPIX')
+    c.js("document.querySelector('[data-module=fuel] [data-rread]').scrollIntoView({block: 'center'})")
+    c.shot(f'F335_{c.design}_{c.width}_{c.lang}.png')
