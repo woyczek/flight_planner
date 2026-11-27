@@ -605,7 +605,8 @@ def f13(c):
 @case('F14', 'Aerodrome without data: reading offered, refusal shown', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.20: "aucune procédure publiée" and one button; fetchProcedures refused with a reason, shown in a floating notification, never silent')
 def f14(c):
-    open_proc(c)
+    # SOG-0688: a code that is not an aerodrome of the base is refused at once (unknown-aerodrome, no reading): LFQQ is seeded in the base here, as the aerodrome "without data" of this case
+    open_proc(c, aero_extra={'aerodromes': [{'icao': 'LFQQ', 'name': 'LFQQ TEST', 'lat': 50.56, 'lon': 3.09, 'elev': 120}]})
     wait_rows(c)
     set_icao(c, 'dep', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]')", what='the departure row offers the reading')

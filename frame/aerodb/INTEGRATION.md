@@ -198,6 +198,7 @@ than `COMPAT` would be ignored; this one is not.
   | `reason` | What to tell the pilot |
   |---|---|
   | `bad-icao` | not a four-character code (a programming error: the button should not be there) |
+  | `unknown-aerodrome` | (SOG-0688) the code is not an aerodrome of the base although the zone of its State is published, and no hand-read file names it (« EGGL » typed for EGLL): nothing is started; the module says « terrain inconnu de la base » and offers no reading. A State whose zone is not published cannot be judged: the code goes on to its own answer |
   | `no-launcher` | this device has no workstation launcher; the SimBrief OFP stays the source of the flight's procedures |
   | `paired` | the device is paired to a workstation: do the reading on the workstation |
   | `no-tables` | « aucune table publiée pour cet État » (×4): no coding table is published for this State, or the aerodrome's page lists none (`outcome` says why: images, prose, VFR only…). When `lnm` is `true` the workstation has Little Navmap databases: add that they may hold the procedures (a hint only, not a coverage; reading them is planned, § 10.21) |

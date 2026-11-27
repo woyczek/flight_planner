@@ -837,6 +837,15 @@
       missing.delete('nat');
     }
 
+    /** SOG-0688 : vrai quand `k` (4 lettres) n'est PAS un aérodrome de la base alors que la zone de son État est publiée (une zone non
+     *  publiée ne permet pas de juger : faux) et qu'aucune procédure lue à la main ne le nomme (proc/manual : un terrain que la base
+     *  des aérodromes n'a pas encore peut déjà avoir ses procédures). Le contrôle que fait le champ de terrain (« inconnu »). */
+    async function unknownAd(k) {
+      const pub = (await published().catch(() => null))?.zones || {};
+      if (!Object.keys(pub).some(id => pub[id]?.prefixes?.includes(k.slice(0, 2)))) return false;
+      if ((await api.coordsAll(k).catch(() => null))?.some(x => x.kind === 'aerodrome')) return false;
+      return !(await indexParts().catch(() => null))?.out?.aerodromes?.[k];
+    }
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
       // une liste vide n'est pas une réponse sûre (réseau pas encore prêt au lancement, accès réglé depuis) : redemandée
@@ -2523,7 +2532,7 @@
        *  (verbe ead-fetch, un terrain par geste, EAD_BASIC.md § 1), tout autre État : rien à lire, 'no-tables'. Le poste installe le
        *  résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers seulement, sans envoi), puis
        *  procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit, source: 'eaip' | 'ead' | 'ukpkg' } ou
-       *  { ok: false, reason, message? } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
+       *  { ok: false, reason, message? } — reason : 'bad-icao', 'unknown-aerodrome' (SOG-0688 : le code n'est pas un aérodrome de la base, dont la zone de son État est publiée ; aucune lecture n'est lancée), 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
        *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'no-tables' (aucune table de codage publiée
        *  pour cet État, ou la page du terrain n'en cite pas ; pour un État sans lecture, `outcome` (EAD_STATES) dit pourquoi et `lnm`
        *  vaut true quand le poste a des bases de Little Navmap : indice, leur lecture est prévue à part, § 10.21), 'no-credentials'
@@ -2546,6 +2555,9 @@
           });
         if (!/^[A-Z0-9]{4}$/.test(k)) return no('bad-icao');
         if (signal?.aborted) return no('cancelled');
+        // SOG-0688 : un code qui n'est pas un terrain de la base (« EGGL » pour EGLL) ne lance aucune lecture : le lanceur n'aurait
+        // trouvé aucun document et l'écran aurait dit « 0 document(s) » sans la cause
+        if (await unknownAd(k)) return no('unknown-aerodrome');
         if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
         if (launcher.info().lan) return no('paired');
         if (eadBusy.has(k)) return no('busy');

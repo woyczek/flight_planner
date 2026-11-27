@@ -24075,3 +24075,37 @@ def k671(c):
     c.eq((p.get('procedure_coverage') or {}).get('ZZAA', {}).get('SID_partial'), 3, 'the engine counted them (the coverage said it already)', what='coverage')
     c.ok(any(i['level'] == 'ERREUR' and i.get('code') == 'connector_limit' for i in issues), str([(i['level'], i.get('code')) for i in issues]), 'the connector of 0 NM that no SID read in part serves stays an ERROR (the route is rendered and said refused by Eurocontrol)')
     c.ok(any(i.get('code') == 'network_gap' for i in issues), str([(i['level'], i.get('code')) for i in issues]), 'the network cut between P4 and Q1 is said (« Réseau absent »), the direct that joins the two groups is a simulation that is not validated')
+
+
+@case('K672', 'Procedures on demand (SOG-0688): a code that is not an aerodrome of the base — whose State\'s zone is published — answers { ok: false, reason: \'unknown-aerodrome\' } at once and starts NO reading; an aerodrome of the base starts it as before; a code of a State whose zone is not published cannot be judged and goes on to its own answer',
+      'K', tags=('procedures', 'aerodb'), designs=('standard',), screens=False,
+      rule='SOG-0688 (the user, 27 Nov 2026: « EGGL : lecture des procédures en échec … sans savoir pourquoi »; the relay, OUI to (1)): « EGGL » is not an aerodrome (Heathrow is EGLL); Fuel offered « Lire à la demande », the launcher found no document and the screen said « 0 document(s) » without the cause; aerodb answers the cause before any job. Invented aerodromes LFZA (in the base) and LFZZ (absent), a fake launcher that counts its jobs')
+def k672(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-27T12:00:00Z');
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const zone = (z, o = {}) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 23, data: {} } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: o[k] || [] }]));
+      const files = {
+        ...zone('fr', { aerodromes: [{ id: 'LFZA', icao: 'LFZA', lat: 46.5, lon: 2.5, name: 'ZETA TEST' }] }),
+        'sia/base/index.json': { schema: 2, kind: 'index', zones: { fr: { cycle: '2026-10-29', prefixes: ['LF'], kb: { aerodromes: 1 } } } }
+      };
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const jobs = [];
+      const launcher = { info: () => ({ data: true, lan: false }), request: async () => null, job: async (route, body) => { if (body.set === 'proc') jobs.push(body.args.icao); return { status: 200, result: { ok: false, reason: 'failed', message: 'fake' } }; } };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day, launcher });
+      const out = {};
+      out.unknown = await db.fetchProcedures('LFZZ');
+      out.jobsAfterUnknown = jobs.slice();
+      out.known = await db.fetchProcedures('LFZA');
+      out.jobsAfterKnown = jobs.slice();
+      out.noZone = await db.fetchProcedures('NZZZ');
+      out.jobsAfterNoZone = jobs.slice();
+      out.bad = await db.fetchProcedures('LF');
+      return out;
+    }""")
+    c.eq((r['unknown'].get('ok'), r['unknown'].get('reason')), (False, 'unknown-aerodrome'), 'LFZZ is not an aerodrome of the published French zone: the cause, at once (red before: the reading started and failed)', what='unknown')
+    c.eq(r['jobsAfterUnknown'], [], 'no job was started for it', what='no job')
+    c.eq((r['known'].get('reason'), r['jobsAfterKnown']), ('failed', ['LFZA']), 'LFZA, an aerodrome of the base, starts its reading as before (the fake launcher failed it)', what='known')
+    c.ok(r['noZone'].get('reason') != 'unknown-aerodrome' and r['jobsAfterNoZone'] == ['LFZA'], str(r['noZone']), 'a code of a State whose zone is not published cannot be judged: no « unknown-aerodrome », its own answer (no tables for this State)')
+    c.eq(r['bad'].get('reason'), 'bad-icao', 'a code that is not four characters is still bad-icao', what='bad')
