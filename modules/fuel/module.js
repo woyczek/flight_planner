@@ -138,7 +138,7 @@ export const meta = {
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
-    '../missions/reader.js', '../missions/reader_view.js',
+    '../missions/reader.js', '../missions/reader_view.js', '../missions/planned.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
