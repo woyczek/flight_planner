@@ -12219,3 +12219,34 @@ def l187(c):
         c.wait(400)
         c.shot(f'L187_{c.width}_{lang}_vieux.png')
     c.check_errors()
+
+
+@case('L188', 'Données: the card of an operation that the launcher refuses to double opens on « Le poste est occupé : {opération} » (the one sentence of the suite, SOG-0658), and an operation Données did not name (PDF · scan) is said in the words of the frame, never as an identifier', 'L', tags=('data',),
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0658 (the ergonomist: ONE « Le poste est occupé : … » sentence for the whole suite; Données takes the words of the frame, frame/lib/busy.js, for the sets and the verbs it does not name itself): the title of the card was « Une autre opération est en cours : {n} » and a set or a verb of the launcher that Données did not know was shown as its identifier (« pdf · scan »). French only (the translation of the frame is the debt SOG-0680: en, de and es keep their title); no waiting request here (a refused gesture is not queued in Données, the card stays), the three buttons are those of SOG-0245')
+def l188(c):
+    card = '[data-build] [data-busy-card]'
+    R = _running(set='pdf', verb='scan', args={})
+    cfg, _ = _fixture()
+    st = _launcher(c, [_view('running')], start=(409, {'reason': 'busy', 'job': 'o1', 'running': R}), busy_running=R, verbs=_VERBS)
+    # the other languages keep their title (written in clear: nothing is read back from the file to compare it with itself)
+    c.eq([_trow('title', 'en', after='  busy: {'), _trow('title', 'de', after='  busy: {'), _trow('title', 'es', after='  busy: {')],
+         ['Another operation is running: {n}', 'Ein anderer Vorgang läuft: {n}', 'Hay otra operación en curso: {n}'], 'en, de and es keep their title', what='other languages')
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.tap('[data-verb=build]')
+    c.until(f"!!document.querySelector('{card}')", timeout=8000, what='the card of the running operation')
+    c.eq(norm(c.text(f'{card} [data-busy-name]')), norm('Le poste est occupé : PDF · Parcourir'), 'the one sentence of the suite, and the set and the verb of the frame in plain words (not « pdf · scan »)', what='title, unknown set')
+    c.eq(c.count(f'{card} [data-busy-act]'), 3, 'the buttons are those of the card: Voir, Arrêter, Masquer', what='buttons')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L188_{c.width}_{c.lang}_occupe.png')
+    # a set that Données names in its own words: the same sentence with its word
+    R.update(set='proc', verb='fetch')
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.tap('[data-verb=build]')
+    c.until(f"!!document.querySelector('{card}')", timeout=8000, what='the card, a set of Données')
+    c.eq(norm(c.text(f'{card} [data-busy-name]')), norm('Le poste est occupé : Procédures · Télécharger'), 'a set that Données names: the same sentence, its own word', what='title, known set')
+    c.check_errors()
