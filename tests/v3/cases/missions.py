@@ -17517,7 +17517,9 @@ def n292(c):
         pos['fix'] = fix(44.8, 1.0)
         c.until(f"document.querySelector('{S} [data-pv=\"EV-1\"]')?.hasAttribute('data-held')", timeout=40000, what='the rendezvous held')
         rows = {r[0]: r for r in c.js(lines)}
-        c.eq(list(rows), ['EV-1', 'EV-2', 'EV-3'], 'the last event held and the next two, in time order', what='lines')
+        # in time order: the rendezvous held by my teammate at take-off + 10; the drop of Red, imposed, stays at take-off + 17; the silence of Blue
+        # slides with the rendezvous held, take-off + 20 — after the drop
+        c.eq(list(rows), ['EV-1', 'EV-3', 'EV-2'], 'the last event held and the next two, in time order', what='lines')
         c.ok(re.search(r'tenu à \d\d:\d\dZ, \d+ min de retard \(dans la tolérance\)', rows['EV-1'][2]) is not None, rows['EV-1'][2],
              'the rendezvous: « tenu à hh:mmZ, n min de retard (dans la tolérance) » (own team, held 7 minutes after its planned time)')
         c.ok(f'tenu à {hhmm(start_dt + datetime.timedelta(minutes=10))}' in rows['EV-1'][2], rows['EV-1'][2],
