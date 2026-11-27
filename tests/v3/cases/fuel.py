@@ -11923,7 +11923,8 @@ def f331(c):
     to_step(c, 1)
     for status, body, want in answers:
         c.page.unroute('**/www.simbrief.com/**')
-        c.page.route('**/www.simbrief.com/**', lambda r, s=status, b=body: r.fulfill(
+        # Playwright calls the handler with (route, request): the request must not take the place of the bound status (Essais, 27 Nov)
+        c.page.route('**/www.simbrief.com/**', lambda r, *_q, s=status, b=body: r.fulfill(
             status=s, content_type='application/json' if b is not None else 'text/plain', headers={'Access-Control-Allow-Origin': '*'},
             body=json.dumps(b) if b is not None else ''))
         n0 = len(c.note_log())
