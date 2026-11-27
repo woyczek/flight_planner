@@ -11248,3 +11248,25 @@ def d333(c):
         c.tap('[data-done]')
         doc = c.until_doc(PATH, lambda d: bool(d) and ((d.get('route') or {}).get('procedures') or {}).get('dep', {}).get('sid') == ars, timeout=15000, what=f'{way}: Fuel writes the Little Navmap SID in the flight')
         c.eq(doc['route']['procedures']['dep']['sid'], ars, f'{way}: the flight of Fuel carries the SID chosen on the Map', what='dep sid')
+
+
+@case('D337', 'SOG-0694: the vertical scale of the profile reaches the cruise level of a high flight (FL550) with a margin, and widens when a level is dragged up (it was shut at the highest level read plus 2 000 ft)', 'D', tags=('maps',),
+      designs=('standard',), night=False,
+      rule='SOG-0694 (the user, SIG-3f57372340: « le vol, à FL550, n\'apparaît pas dans le profil … si on monte le FL d\'un point enroute, on ne peut le monter que de 2000ft, le plafond de la fenêtre de profil vertical ne permet pas de monter plus »; the ergonomist: the scale goes up to the highest of the cruise level, the levels written in the route and the ceiling of the sheet, plus a margin, and widens when a point is dragged up): the top of the scale was the highest mark plus 1 500 ft rounded up (so a level dragged up could only gain 2 000 ft), and the level of the flight counted only through a mark of the first point. The top now counts the cruise level and every written level of the route (window or not) and the altitude a dragged level reaches (`reach`); the drag widens the scale by 3 000 ft each time the finger is within 500 ft of the top. The ceiling of the aircraft sheet is not known to the Map: it is not counted here')
+def d337(c):
+    f = flight()
+    f['level'] = {'ft': 55000}
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    top = lambda: int(c.js("() => (document.querySelector('.mp-pc').dataset.scale || '0,0').split(',')[1]"))
+    c.until("() => !!document.querySelector('.mp-pc') && (document.querySelector('.mp-pc').dataset.scale || '') !== ''", timeout=15000, what='the profile is drawn')
+    c.ge(top(), 56500, 'a flight at FL550: the scale reaches it, with a margin', what='scale of a high flight')
+    # a level dragged up: the scale widens (the same call the drag of the level makes: S.edit.reach)
+    before = top()
+    c.js("async () => { const S = window.__mp.S; S.edit.reach = before + 3000; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }".replace('before', str(before)))
+    c.ge(top(), before + 3000, 'the scale widens to the altitude the dragged level reaches', what='scale while dragging')
+    c.js("async () => { const S = window.__mp.S; S.edit.reach = 0; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
+    c.eq(top(), before, 'the drag over: the scale is the one of the route again', what='scale after the drag')
+    c.shot(f'D337_{c.width}_hauts.png')
+    c.check_errors()
