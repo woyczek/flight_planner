@@ -17758,3 +17758,149 @@ def n296(c):
     c.ok('title: Rendez-vous au point SIERRA' in t and 'place: SIERRA' in t and 'place: TANGO' in t and 'offset_min: 20' in t and 'at: H+20' in t, t[t.find('timeline'):][:900],
          'the two events written with their place; SIERRA has its offset and its `at` mirror')
     c.js(_REG_CLEAR)
+
+
+# ---- SOG-0684 : l'atelier montre l'ORDRE que le lecteur lit (route_order, sinon vertical_profile.route, sinon déduit des lieux), avec sa provenance. Six cas
+# (N297 à N302), missions INVENTÉES (trois points tournants, aucune donnée réelle) ; l'ordre est lu dans l'itinéraire de l'atelier (les lignes « connu au départ »,
+# « Hors itinéraire »), jamais dans le fichier.
+_ORD_BASE = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Ordre inventé
+summary: Une mission inventée pour l'ordre de l'itinéraire.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, name: Un, lat: 44.8, lon: 1.0 }
+  - { id: PT2, name: Deux, lat: 44.6, lon: 1.1 }
+  - { id: PT3, name: Trois, lat: 44.4, lon: 1.0 }
+"""
+_ORD_LINES = f"""(() => [...document.querySelectorAll('{E} [data-edplaces] [data-place]')].map(r => [r.dataset.at, (r.querySelector('.ms-plbody b')?.textContent || '').trim()]))()"""
+_ORD_FROM = f"""(() => [...document.querySelectorAll('{E} [data-itinfrom]')].map(p => [p.dataset.itinfrom, p.textContent.replace(/\\s+/g, ' ').trim()]))()"""
+_ORD_FILE = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+  const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA }); return { route: d.route_order ?? null, vp: d.vertical_profile ?? null, title: d.title } }""" % _TEXT_OF
+
+
+def _ord_open(c, extra):
+    """Opens the workshop of the invented mission (veil lifted) on its itinerary, at 390."""
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _ed_open(c, _ORD_BASE + extra)
+    ed_reveal(c)
+    _tab(c, 'itin')
+    c.until(f"!!document.querySelector('{E} [data-edplaces] [data-place]')", timeout=10000, what='the itinerary')
+
+
+def _ord_read(c):
+    """The itinerary as the workshop shows it: (the ids of the places of the route, between the departure and the arrival; how many lines are « Hors itinéraire »)."""
+    rows = c.js(_ORD_LINES)
+    start = [t for at, t in rows if at.startswith('start:')]
+    return [t.split(' ')[0] for t in start[1:-1]], len([1 for at, _ in rows if at.startswith('out:')]), len(start)
+
+
+def _ord_shots(c, name):
+    """The scene at 390 and at 1280."""
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot(f'{name}_390_ordre.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot(f'{name}_1280_ordre.png')
+
+
+@case('N297', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): `vertical_profile.route` WRITTEN AS A LIST and no route_order — the places are in the itinerary '
+      'in that order, between the departure and the arrival, none « Hors itinéraire », and a grey line « Ordre lu dans le profil vertical. »', 'N', tags=('missions',),
+      designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684 (the ergonomist, 27 Nov 2026): the workshop read route_order only; the reader (frame/lib/mission.js routeOf) is the one rule of the order, with its provenance')
+def n297(c):
+    _ord_open(c, 'vertical_profile:\n  route: [PT3, PT1, PT2]\n')
+    c.eq(_ord_read(c), (['PT3', 'PT1', 'PT2'], 0, 5), 'the three places in the order of the profile, between the departure and the arrival, none out of the itinerary', what='itinerary')
+    c.eq([[k, norm(t)] for k, t in c.js(_ORD_FROM)], [['profile', 'Ordre lu dans le profil vertical.']], 'a grey line says where the order comes from', what='provenance')
+    c.eq(c.js(f"document.querySelectorAll('{E} [data-itinfrom] button').length"), 0, 'no button: nothing to confirm', what='button')
+    _ord_shots(c, 'N297')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N298', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): `vertical_profile.route` written as a TEXT — « PT2 PT1 » (blanks) and « PT2, PT1, PT3 » (commas) — '
+      'the places in that order, the grey line, none « Hors itinéraire »', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684: the profile as a text (commas, semicolons, new lines or blanks) is read by the reader, never a partial route')
+def n298(c):
+    _ord_open(c, 'vertical_profile:\n  route: PT2 PT1\n')
+    c.eq(_ord_read(c)[0], ['PT2', 'PT1'], 'blanks: the places of the text, in its order, between the departure and the arrival', what='blanks')
+    c.eq([k for k, _ in c.js(_ORD_FROM)], ['profile'], 'the grey line', what='provenance')
+    _ord_shots(c, 'N298')
+    ed_leave(c)
+    _ord_open(c, 'vertical_profile:\n  route: PT2, PT1, PT3\n')
+    c.eq(_ord_read(c), (['PT2', 'PT1', 'PT3'], 0, 5), 'commas: the three places in the order of the text, none out of the itinerary', what='commas')
+    c.eq([k for k, _ in c.js(_ORD_FROM)], ['profile'], 'the grey line again', what='provenance')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N299', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): NO order at all, with turning points — the order is DEDUCED from the places, an ORANGE line '
+      '« Ordre déduit des lieux : vérifiez-le. » with « Garder cet ordre »; the button makes the order the session\'s (the line goes, ↶ gives it back); « Enregistrer » writes '
+      'route_order in the order shown and no vertical_profile', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684: a deduced order is said and checked by the author, never written silently; written only on « Enregistrer » when something changed')
+def n299(c):
+    _ord_open(c, '')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the turning points in the order of the file, between the departure and the arrival: nothing « Hors itinéraire »', what='itinerary')
+    c.eq([[k, norm(t)] for k, t in c.js(_ORD_FROM)], [['deduced', 'Ordre déduit des lieux : vérifiez-le. Garder cet ordre']], 'the orange line and its button', what='provenance')
+    _ord_shots(c, 'N299')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-do="edkeeporder"]')
+    c.until(f"!document.querySelector('{E} [data-itinfrom]')", what='the line gone: the session has its route')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the same order, now the session\'s', what='kept')
+    c.tap(f'{_EDHIST} [data-do="edmapundo"]')
+    c.until(f"!!document.querySelector('{E} [data-itinfrom=\"deduced\"]')", what='↶ gives the deduced order back')
+    c.tap(f'{E} [data-do="edkeeporder"]')
+    c.until(f"!document.querySelector('{E} [data-itinfrom]')", what='kept again')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    f = c.js(_ORD_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')
+    c.eq([f['route'], f['vp']], [['ORIGIN', 'PT1', 'PT2', 'PT3', 'DESTINATION'], None], 'route_order written in the order shown, no vertical_profile', what='file')
+    c.js(_REG_CLEAR)
+
+
+@case('N300', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a token of the profile that names NO place — never a partial route: the order is deduced from the '
+      'places, the orange line', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684: the profile is taken ONLY when every token names a place')
+def n300(c):
+    _ord_open(c, 'vertical_profile:\n  route: PT3, PT9, PT1\n')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the order is the deduced one (all three places), not the part of the profile that was readable', what='itinerary')
+    c.eq([k for k, _ in c.js(_ORD_FROM)], ['deduced'], 'the orange line', what='provenance')
+    _ord_shots(c, 'N300')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N301', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a round trip « PT1 PT2 PT3 PT2 PT1 » — the passages are shown, seven lines between the departure and '
+      'the arrival, none « Hors itinéraire »', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684: a round trip keeps its passages (the reader\'s order is not de-duplicated)')
+def n301(c):
+    _ord_open(c, 'vertical_profile:\n  route: PT1 PT2 PT3 PT2 PT1\n')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3', 'PT2', 'PT1'], 0, 7), 'the five passages in the order, the two places that come back shown twice', what='itinerary')
+    c.eq([k for k, _ in c.js(_ORD_FROM)], ['profile'], 'the grey line', what='provenance')
+    _ord_shots(c, 'N301')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N302', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a route_order WRITTEN — no line of provenance; « Enregistrer » after a change of title keeps route_order '
+      'and vertical_profile.route as they were (the profile is never touched)', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0684: a written order is the order; vertical_profile.route is never rewritten by the workshop')
+def n302(c):
+    _ord_open(c, 'route_order: [ORIGIN, PT2, PT1, DESTINATION]\nvertical_profile:\n  route: PT1 PT3\n')
+    c.eq(_ord_read(c)[0], ['PT2', 'PT1'], 'the written order, not the profile\'s', what='itinerary')
+    c.eq(c.js(_ORD_FROM), [], 'no line of provenance for a written order', what='provenance')
+    _ord_shots(c, 'N302')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _tab(c, 'mission')
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Titre retouché')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    f = c.js(_ORD_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.eq([f['route'], f['vp'], f['title']], [['ORIGIN', 'PT2', 'PT1', 'DESTINATION'], {'route': 'PT1 PT3'}, 'Titre retouché'], 'route_order unchanged, the profile as it was, the title changed', what='file')
+    c.ok('vertical_profile:\n  route: PT1 PT3\n' in t, t[t.find('vertical_profile'):][:80], 'the profile line, character for character')
+    c.js(_REG_CLEAR)
