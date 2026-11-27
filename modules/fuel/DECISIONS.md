@@ -1046,7 +1046,7 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   dropped in memory at mount) rather than remembered and ignored: a value nobody reads is a trap. Inside a mount the
   tabs work as before; a remount (dual view, language) goes back to the Plan.
 - **Result bar about half as high** (192 px → 104 px at 390 px, measured on a fictitious TEST_TP flight, route
-  `LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD`, wind ARPEGE FL060): context on one line (nowrap,
+  `XQAA XPA/F090 XPB XPC/F110 XPD XPE XPF/F070 XPG XQAB`, wind ARPEGE FL060): context on one line (nowrap,
   ellipsis, full text in `title`) written by `resultContext(q, range, short)` — short "Bloc · FL060→090→110→070 · vent
   ARPEGE FL060" / full "Carburant bloc · FL060 → FL090 → FL110 → FL070 · vent : prévision ARPEGE FL060", from new `TX`
   rows (`blockS`, `windByS`, `windRangeS`; `windShort(short)` picks the short wind texts); the figure at `--sog-h2`
@@ -1105,7 +1105,7 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   neighbours within 1 %, FL160 between its neighbours, marker = stepped quote, minima of the flat series, no steps →
   marker on the curve, no quote → no marker, and a control showing that the former basis fails the same criterion) and
   `quote.html` (58) pass. Screen (Chromium 1194, port 8814, 390 x 844 and 1280 x 800, `FrameData` seeding of TEST_TP and
-  a flight on "LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD" at FL160): no spike, two diamonds and the
+  a flight on "XQAA XPA/F090 XPB XPC/F110 XPD XPE XPF/F070 XPG XQAB" at FL160): no spike, two diamonds and the
   legend line "Plan: FL160, 856 kg, 0:54", axis "kg" with 800 / 850 / 900, then "lb" with 1,800 / 1,900 / 2,000 and
   "Plan: FL160, 1,888 lb, 0:54" when the display unit is lb; no `pageerror`, no horizontal scroll.
 
