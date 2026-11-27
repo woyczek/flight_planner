@@ -211,15 +211,18 @@ export const ROWS = {
   // SOG-0695 (l'ergonome, 27/11 ; le fait d'AeroDB : le moteur calcule sur une base périmée et le dit « non vérifiable ») : l'État en
   // tête, sans article (la tournure de « Suisse : sens de N850 inconnu. ») ; plusieurs États sur UNE ligne (mergeStale) ; les voies
   // concernées après la phrase ; français seul (SOG-0680)
-  stale_cycle: ['{zone} : données périmées (cycle {cycle}). Route calculée sur ces données. Voies concernées : {routes}.'],
+  // le cycle par son numéro AIRAC, comme l'écran Données (« Cycle 2612 ») ; sans numéro, la date sans le mot « cycle »
+  stale_cycle: ['{zone} : données périmées ({cycle}). Route calculée sur ces données. Voies concernées : {routes}.'],
   staleMany: ['{zones} : données périmées. Route calculée sur ces données. Voies concernées : {routes}.'],
   staleMany0: ['{zones} : données périmées. Route calculée sur ces données.'],
-  staleOne: ['{zone} (cycle {cycle})'],
+  staleOne: ['{zone} ({cycle})'],
+  staleNo: ['cycle {n}'],
+  staleDay: ['du {d}'],
   // SOG-0541 : les routes belges d'un jeu d'un cycle passé, avec le jour du dépôt du jeu (mots de l'ergonome)
   staleBe: ['Routes belges d’un cycle passé (déposées le {date}).', 'Belgian routes of a past cycle (deposited {date}).',
     'Belgische Routen eines vergangenen Zyklus (hinterlegt am {date}).', 'Rutas belgas de un ciclo pasado (depositadas el {date}).'
   ],
-  stale_cycle0: ['{zone} : données périmées (cycle {cycle}). Route calculée sur ces données.'],
+  stale_cycle0: ['{zone} : données périmées ({cycle}). Route calculée sur ces données.'],
   // 9
   network_gap: ['Aucune voie dans la base entre {from} et {to} : direct de {nm} NM',
     'No airway in the base between {from} and {to}: direct of {nm} NM',
@@ -315,6 +318,29 @@ export function ruleLine(item, t) {
   });
 }
 /** La phrase d'une raison (voir l'en-tête). */
+/** SOG-0695 : le numéro AIRAC (« 2610 ») d'un cycle donné par sa date de début (« 2026-10-01 ») ou déjà par son numéro ; '' sinon — la
+ *  règle de frame/lib/fms.js airacOf (cycles de 28 jours depuis le 2401, le 25 janvier 2024 ; le numéro compte depuis le premier
+ *  cycle de l'année), recopiée ici pour que ce fichier reste sans import. */
+function airacNo(c) {
+  const s = String(c ?? '').trim();
+  if (/^\d{4}$/.test(s)) return s;
+  const m = isDay(s) ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null, // un vrai jour (jamais « 2026-13-45 » ramené au mois suivant)
+    t = m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN;
+  if (!Number.isFinite(t)) return '';
+  const CYC = 28 * 864e5,
+    REF = Date.UTC(2024, 0, 25),
+    start = REF + Math.floor((t - REF) / CYC) * CYC,
+    year = new Date(start).getUTCFullYear();
+  return `${String(year).slice(2)}${String(Math.floor((start - Date.UTC(year, 0, 1)) / CYC) + 1).padStart(2, '0')}`;
+}
+/** SOG-0695 (le relais, 27/11) : le cycle dit « cycle 2610 » (le numéro AIRAC) ; sans numéro, un vrai jour « du 01/10/2026 » ; ni l'un ni
+ *  l'autre : '' (la ligne rend alors le texte du moteur, jamais une date fausse). */
+const cycleWords = (c, t, lang) => (n => n ? t(ROWS.staleNo, {
+  n
+}) : isDay(c) ? t(ROWS.staleDay, {
+  d: dayOf(c, lang)
+}) : '')(airacNo(c));
+
 /** SOG-0695 (l'ergonome) : les cycles périmés de plusieurs États d'une même route sur UNE ligne — les raisons stale_cycle réunies en une
  *  (values.zones [{ zone, cycle }], les voies réunies, dans l'ordre), à la place de la première ; la ligne belge du jour de dépôt
  *  (SOG-0541) reste la sienne ; une seule raison : la liste inchangée. */
@@ -433,19 +459,19 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
         date: dayOf(v.deposited, lang)
       });
       const routes = Array.isArray(v.routes) ? v.routes.filter(has) : [],
-        zones = Array.isArray(v.zones) ? v.zones.filter(z => has(z?.zone) && has(z?.cycle)) : [];
+        zones = Array.isArray(v.zones) ? v.zones.filter(z => has(z?.zone) && cycleWords(z?.cycle, t, lang)) : [];
       // SOG-0695 : plusieurs États (mergeStale) — « Allemagne (cycle …), Portugal (cycle …) : données périmées. … »
       if (zones.length > 1) return t(routes.length ? ROWS.staleMany : ROWS.staleMany0, {
         zones: zones.map(z => t(ROWS.staleOne, {
           zone: zoneName(z.zone, lang),
-          cycle: dayOf(z.cycle, lang)
+          cycle: cycleWords(z.cycle, t, lang)
         })).join(', '),
         routes: routes.join(', ')
       });
-      if (!has(v.zone) || !has(v.cycle)) return fallback;
+      if (!has(v.zone) || !cycleWords(v.cycle, t, lang)) return fallback;
       return t(routes.length ? ROWS.stale_cycle : ROWS.stale_cycle0, {
         zone: zoneName(v.zone, lang),
-        cycle: dayOf(v.cycle, lang),
+        cycle: cycleWords(v.cycle, t, lang),
         routes: routes.join(', ')
       });
     }
