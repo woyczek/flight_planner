@@ -17602,9 +17602,9 @@ def n293(c):
     c.tap(f'{_AS_BOX} [data-as-go]')
     doc = c.until_doc(P, lambda d: any(x.get('mission') == 'X-906A' for x in d['assignments']), what='the line of X-906A')
     c.eq(next(x for x in doc['assignments'] if x['mission'] == 'X-906A').get('team'), 'B', 'the line carries team: B', what='team')
-    # the notification « ok » of « Affecter » covers the bar of the form at 390: cleared before « ← »
-    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.tap(f'{_AS_BOX} [data-as-back]')
+    # the second mission from a fresh list, as N89 does: « ← Fiche » is hidden on a wide module (the form takes the column of the detail) and, on a
+    # phone, leads back to the sheet of X-906A, not to the list
+    c.open('missions', wait=False, app='company', trigram='QRS', docs=[['device/level.json', {'level': 2}, 'cache'], *folders])
     form('X-907A')
     c.eq(c.count(f'{_AS_BOX} [data-as=team]'), 0, 'a mission with one team: no list « Équipe »', what='no list')
     c.js(_DW_CLEAR)
