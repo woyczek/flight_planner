@@ -6908,7 +6908,7 @@ function noProcPaint() {
       const h = procHave(k),
         part = !!h?.part && k === String(r.dep || '').toUpperCase() && PP.farDep(S.ralts?.list?.length ? S.ralts.list : S.rkeep?.R?.list,
           k); // SOG-0613
-      if (!h || (h.any && !part)) return '';
+      if (!h || (h.any && !part) || S.AD?.nameKnown?.(k) === null) return ''; // SOG-0688 : un terrain inconnu de la base, rien de plus
       (S.noProcSaid ||= new Set()).add(k);
       const ps = procStateOf(k),
         none = !!ps && !ps.readable,
@@ -9647,6 +9647,8 @@ export async function mount(el, ctx) {
   S.P = createProcedures({
     zoneGap: icao => zoneGapOf(icao), // SOG-0143 : la ligne « zone manquante » d'un terrain sans procédures
     procState: icao => procStateOf(icao), // SOG-0157 : l'état des procédures de son État (le bouton de lecture le suit)
+    adUnknown: icao => S.AD?.nameKnown?.(String(icao || '').toUpperCase()) ===
+      null, // SOG-0688 : inconnu de la base (le champ le dit)
     ctx,
     flight: () => self.flight,
     route: () => self.flight.route ||= emptyFlight().route,

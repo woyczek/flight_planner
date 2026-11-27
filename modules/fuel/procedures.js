@@ -743,7 +743,7 @@ export function createProcedures(host) {
   // « Lire à la demande » ; le même geste, le même appel
   function readButtonFor(icao, again = false, action = false) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k)) return '';
+    if (!/^[A-Z]{4}$/.test(k) || host.adUnknown?.(k)) return ''; // SOG-0688 : un terrain inconnu de la base, rien à lire
     const ps = again ? null : host.procState?.(k);
     if (ps && !ps.readable) return '';
     return readButton(k, again ? tt(TX.procReread) : ps?.demand && !action ? tt(TX.procReadDemand) : tt(TX.procRead, {
@@ -815,8 +815,10 @@ export function createProcedures(host) {
   function metaHtml(m, side) {
     // SOG-0157 : l'état des procédures de l'État (Données, « Procédures par État »), connu de l'hôte : lisible à la demande → « Lire à la
     // demande » ; ne se lit pas (tables en images, étiquettes seules…) → pas de bouton qui échouerait, la ligne « zone manquante » le dit
+    // SOG-0688 : un terrain inconnu de la base (son champ dit « inconnu ») n'a pas de bouton de lecture : EAD n'y trouverait rien
     const ps = m.nodata ? host.procState?.(m.icao) : null,
-      parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable ? '' : readButton(m.icao, ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
+      parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable || host.adUnknown?.(m.icao) ? '' : readButton(m.icao, ps?.demand ? tt(TX
+        .procReadDemand) : tt(TX.procRead, {
         icao: m.icao
       }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     // SOG-0210 : « Lire depuis Little Navmap » seulement là où la base n'a pas de procédure pour ce terrain (KDEN), et sur un poste qui
