@@ -10110,8 +10110,9 @@ def f302(c):
     c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
     row = norm(c.text(f'{B} li[data-proposed]') or '')
-    c.ok(norm(tx(T, 'wxNoTaf', L, after='altnWhy')) in row and norm(tx(T, "wx-unread'", L, after='altnPropWhy')) not in row, row,
-         'XQPF says « no TAF read for this aerodrome », the existing sentence, not « météo non lue »')
+    # SOG-0690 (a): the sign said in words after the code, the cause of SOG-0559 (French only, SOG-0680), once
+    c.ok(norm('Non jugé : pas de TAF.') in row and norm(tx(T, "wx-unread'", L, after='altnPropWhy')) not in row, row,
+         'XQPF says « Non jugé : pas de TAF. », not « météo non lue »')
     c.eq(c.js(f"document.querySelector('{B} li[data-proposed]').dataset.state"), 'grey', 'its sign: not checked (?), never ✓', what='sign')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': 900})
@@ -10122,7 +10123,8 @@ def f302(c):
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=LFMT]')", timeout=8000, what='« Proposé : LFMT »')
     at = by['LFMT']['wxv']['at']
     row = norm(c.text(f'{B} li[data-proposed]') or '')
-    c.ok(norm(tx(T, 'wxOutside', L, after='altnWhy').replace('{at}', at)) in row, row, 'LFMT says the arrival outside the validity, its hour')
+    c.ok(norm(f'l’arrivée ({at}) est hors de la validité du TAF') in row, row, 'LFMT says the arrival outside the validity, its hour (SOG-0690: '
+         'the cause of SOG-0559)')
     c.check_errors()
 
 

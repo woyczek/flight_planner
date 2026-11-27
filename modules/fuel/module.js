@@ -6002,12 +6002,13 @@ function altnPropHtml() {
     row = (x, proposed) => {
       // SOG-0544 : chaque réserve dite par son vrai mot, la météo inconnue comprise (plus de « météo non lue » caché)
       const p = altnPropCrits(x),
-        why = [...p.why.filter(w => !(allNoTime && w === 'wx-notime')), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].flatMap(w =>
-          altnWhyBits(w, p)).map(([s, short]) =>
+        ws = [...p.why.filter(w => !(allNoTime && w === 'wx-notime')), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])],
+        say = AWX.signSay(p.sign, ws, p, RLH), // SOG-0690 : les mots du signe, une fois, après le code (« ✕ » : la ligne d'avant)
+        why = (say ? [] : ws).flatMap(w => altnWhyBits(w, p)).map(([s, short]) =>
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.tafFold(S.altnProp?.taf?.[x.icao], esc)}</li>`;
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.tafFold(S.altnProp?.taf?.[x.icao], esc)}</li>`;
     },
     // SOG-0544 (le critère de l'ergonome) : un terrain dont la météo n'est pas connue passe après ceux dont elle est lue
     unk = x => altnPropCrits(x).crits[2]?.state === 'grey' ? 1 : 0,

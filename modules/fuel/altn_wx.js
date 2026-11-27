@@ -7,6 +7,24 @@
 //   module.js : altnWxObs, altnWxNoTime, altnWxOutside, altnWxNoCat, altnWxNoTaf, altnWxNone), esc }.
 //   tafFold(taf, esc) → SOG-0660 : le texte du TAF d'un terrain proposé, replié sous sa ligne (« TAF », aucune phrase), ou « » sans texte
 //   lu ; CSS : son style, posé par module.js.
+//   signSay(sign, why, p, h) → SOG-0690 : les mots du signe d'une ligne proposée (« Possible. », « Possible avec réserve(s) : … »,
+//   « Non jugé : … »), '' pour « ✕ » ; why : ses codes de réserve (altn_check.js proposalOf) ; p : son état (crits, wxv, miss) ;
+//   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
+
+export const TX = {
+  // SOG-0690 (l'ergonome, 27/11) : chaque signe a ses mots, juste après le code du terrain, une seule fois ; le pluriel en clair
+  sayOk: ['Possible.'],
+  sayWarn: ['Possible avec réserve : {r}.'],
+  sayWarns: ['Possible avec réserves : {r}.'],
+  sayGrey: ['Non jugé : {r}.'],
+  sayGrey0: ['Non jugé.'],
+  // les causes de SOG-0559 (la ligne du dégagement choisi), sans le code du terrain
+  cNoTaf: ['pas de TAF'],
+  cNoTime: ['la durée du vol est inconnue'],
+  cOutside: ['l’arrivée ({at}) est hors de la validité du TAF'],
+  cNoCat: ['le TAF ne donne pas de catégorie à l’heure d’arrivée'],
+  cNoKey: ['TAF indisponible sur cet appareil']
+};
 
 /** SOG-0559 (l'ergonome, choix a) : la ligne d'une météo de dégagement non jugée — sa cause (pas de TAF ; sans date de vol ; arrivée
  *  hors de la validité du TAF ; pas de catégorie à l'heure d'arrivée), puis, quand un METAR existe, son observation « METAR de 14:20Z :
@@ -34,6 +52,36 @@ export function wxLine(c, id, h) {
     at: c.v?.at || ''
   }) + (row === h.TX.altnWxNone || !obs ? '' : ` ${obs}`);
   return `<p class="f-muted fu-altnwx" data-altnwx>${h.esc(text)}</p>`;
+}
+
+const CAUSE = {
+  'wx-notaf': 'cNoTaf',
+  'wx-notime': 'cNoTime',
+  'wx-outside': 'cOutside',
+  'wx-nocat': 'cNoCat'
+};
+
+/** SOG-0690 : les mots d'une réserve ou d'une cause (un code de proposalOf) — la cause de SOG-0559 pour la météo, sinon le mot court de
+ *  module.js (TX.altnPropWhy) ; « météo non lue » suivi de sa raison entre parenthèses. */
+function wordOf(w, p, h) {
+  if (CAUSE[w]) return h.tt(TX[CAUSE[w]], p.wxv || {});
+  const head = h.TX.altnPropWhy?.[w] ? h.tt(h.TX.altnPropWhy[w]) : '';
+  if (w !== 'wx-unread' || !head) return head;
+  const why = p.miss ? h.tt(h.TX.altnWhy.wxUnreachable) : p.crits?.[2]?.code === 'wxNoKey' ? h.tt(TX.cNoKey) : '';
+  return why ? `${head} (${why})` : head;
+}
+
+/** SOG-0690 (l'ergonome, 27/11) : les mots du signe d'une ligne proposée (voir l'en-tête) ; '' pour « ✕ » (jamais proposé). */
+export function signSay(sign, why, p, h) {
+  const r = (Array.isArray(why) ? why : []).map(w => wordOf(w, p || {}, h)).filter(Boolean);
+  if (sign === 'ok') return h.tt(TX.sayOk);
+  if (sign === 'warn') return r.length ? h.tt(r.length > 1 ? TX.sayWarns : TX.sayWarn, {
+    r: r.join(', ')
+  }) : h.tt(TX.sayOk);
+  if (sign === 'grey') return r.length ? h.tt(TX.sayGrey, {
+    r: r.join(', ')
+  }) : h.tt(TX.sayGrey0);
+  return '';
 }
 
 /** SOG-0660 : le style du repli du TAF — une ligne entière sous celle du terrain (la ligne est en flex), le texte coupé où il faut. */
