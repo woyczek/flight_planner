@@ -815,7 +815,8 @@ def opt_groups(c, k):
 @case('F20', 'Aerodrome with approaches only: they are listed, in one flat list sorted by runway, on both rows', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
       langs4=True, rule='V3 spec 10.20-10.23: a row lists all the procedures of the aerodrome in one flat list ordered by runway then name; the approaches show without a STAR')
 def f20(c):
-    open_proc(c)
+    # SOG-0688: a code the base does not know offers no reading — LFQQ is seeded as an aerodrome without procedures
+    open_proc(c, aero_extra={'aerodromes': [{'icao': 'LFQQ', 'name': 'LFQQ TEST', 'lat': 50.56, 'lon': 3.09, 'elev': 120}]})
     wait_rows(c, 'arr')
     # arrival: an aerodrome with approaches only; the row is not "no published procedure", the approaches are grouped by runway
     set_icao(c, 'arr', 'LFVA')
@@ -1110,7 +1111,8 @@ def narrow_selects(c):
       designs=('standard',), phone=False, screens=True,
       rule='V3 spec 10.23 / 10.27 / 10.29 d: "Départ LFPO Paris-Orly"; one muted line "lu le … · Relire · N non lues" (Relire outside the grid); runway · procedure · transition on columns identical on both sides; a select as wide as its longest label; one column under 600 px')
 def f34(c):
-    open_proc(c, procs=V2_PROCS)
+    # SOG-0688: a code the base does not know offers no reading — LFQQ is seeded WITHOUT a name (its title: the code alone)
+    open_proc(c, procs=V2_PROCS, aero_extra={'aerodromes': [{'icao': 'LFQQ', 'name': '', 'lat': 50.56, 'lon': 3.09, 'elev': 120}]})
     wait_rows(c, 'dep')
     wait_rows(c, 'arr')
     # the title: side, code, the name aerodb gives (the seeded base names its aerodromes "<code> TEST")
@@ -1134,11 +1136,11 @@ def f34(c):
         fit = c.js("(() => { const b = [...document.querySelectorAll('[data-module=fuel] .fu-procbox')].find(x => x.offsetParent); return { over: b.scrollWidth > b.clientWidth + 1, w: b.clientWidth } })()")
         c.ok(not fit['over'], f'{fit}', f'{w} px: the card never overflows its width')
     c.page.set_viewport_size({'width': 1280, 'height': 800})
-    # an aerodrome with nothing: the line says so and offers the reading; the title is the code alone when aerodb does not know the aerodrome
+    # an aerodrome with nothing: the line says so and offers the reading; the title is the code alone when the base gives it no name
     set_icao(c, 'dep', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]:not([data-again])')", what='the departure of LFQQ offers the reading')
     c.eq(meta_parts(c, 'dep'), [norm(row(c, 'procNoData')), norm(row(c, 'procRead').replace('{icao}', 'LFQQ'))], 'without data the line says so and offers the reading', what='departure line')
-    c.eq(norm(c.text(f'{FUEL} [data-proc="dep"] .fu-proctitle')), norm(f"{row(c, 'dep')} LFQQ"), 'an aerodrome unknown to aerodb is titled by its code alone', what='title')
+    c.eq(norm(c.text(f'{FUEL} [data-proc="dep"] .fu-proctitle')), norm(f"{row(c, 'dep')} LFQQ"), 'an aerodrome without a name in the base is titled by its code alone', what='title')
 
 
 @case('F35', 'Procedures card: when only the lists change they are updated in place, the focus stays', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
