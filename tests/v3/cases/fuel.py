@@ -11692,9 +11692,10 @@ def f327(c):
     c.until(f"() => JSON.stringify(({read})()) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')), ensure_ascii=False)}", timeout=10000,
             what='the six lines under the route (red before: no reading)')
     c.eq(c.js(read), want, 'the six lines, in order, the three last ones warnings', what='reading')
+    # the flight is written at the Tab (the new text, the points of before), then by the reading: its write is the one awaited
     f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and any(p['id'] == 'NEPIX' for p in d['route'].get('points') or [])
-                    and (d['route'].get('text') or '') == typed, 'NEPIX of the cruise climb is a point, the text kept word for word',
-                    timeout=10000)
+                    and (d['route'].get('text') or '') == typed and any(p['id'] == 'LUGEN' and p.get('alt_ft') for p in d['route']['points']),
+                    'NEPIX of the cruise climb is a point, the text kept word for word, the points of the reading', timeout=10000)
     lug = next(p for p in f['route']['points'] if p['id'] == 'LUGEN')
     c.eq([lug.get('alt_ft'), lug.get('speed')], [15000, 'N0280'], 'LUGEN/N0280F150: a step at FL150, its speed kept', what='LUGEN')
     unres = norm(c.text(f'{FUEL} [data-unres]') or '')
@@ -11756,8 +11757,10 @@ def f334(c):
         (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) }"""
     c.until(f"() => JSON.stringify(({read})()) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')), ensure_ascii=False)}",
             timeout=10000, what='the lines already decided and the line of the stops (the relay, 26 Nov), nothing else (red before: « Non compris : K0210VFR. », STAY1 looked up as a point)')
-    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d['route'].get('text') or '') == typed, 'the text kept word for word',
-                    timeout=10000)
+    # the flight is written at the Tab (the new text, the points of before), then by the reading: its write is the one awaited
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d['route'].get('text') or '') == typed and
+                    any(p['id'] == 'NEPIX' and p.get('alt_ft') for p in d['route'].get('points') or []),
+                    'the text kept word for word, the points of the reading', timeout=10000)
     nep = next(p for p in f['route']['points'] if p['id'] == 'NEPIX')
     c.eq([nep.get('alt_ft'), nep.get('alt_a')], [4500, True], 'NEPIX at 4 500 ft, an altitude', what='NEPIX')
     unres = norm(c.text(f'{FUEL} [data-unres]') or '')
@@ -11820,7 +11823,7 @@ def f329(c):
     _compute_now(c, st)
     L = f'{FUEL} [data-routealts] details[data-rlimits]'
     dir_line = f"(w) => {{ const e = document.querySelector('{L} [data-gapdir]'); return !!e && (e.textContent || '')" \
-               ".replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }}"
+               ".replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }"
     c.until(f"!!document.querySelector('{L}')", timeout=10000, what='« Ce que le contrôle ne couvre pas »')
     c.js(f"document.querySelector('{L}').open = true")
     c.until(dir_line, W['both'], timeout=10000, what='the direction line, per State (red before: no such line)')
@@ -11954,7 +11957,8 @@ def f332(c):
           (d?.querySelector('[data-tafraw]')?.textContent || '').trim()] }})""")
     c.eq(got, [[k, False, 'TAF', raws[k]] for k in ('XQPB', 'XQPC', 'XQPE')], 'each line: its TAF folded, closed, its text as read',
          what='folds')
-    c.eq(c.count(f'{B} [data-altnprop] li[data-cand] b'), 0, 'the text of a TAF is text, never markup', what='esc')
+    c.eq(c.count(f'{B} [data-altnprop] li[data-cand] details[data-candtaf] b'), 0, 'the text of a TAF is text, never markup (the code '
+         'of the line is the screen\'s own <b>)', what='esc')
     c.js(f"document.querySelector('{B} [data-altnprop] li[data-cand] details[data-candtaf]').open = true")
     c.js(f"document.querySelector('{B} [data-altnprop]').scrollIntoView({{block: 'start'}})")
     c.wait(300)
