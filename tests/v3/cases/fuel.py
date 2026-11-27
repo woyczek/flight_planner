@@ -3034,8 +3034,13 @@ def _route_launcher(c, verbs):
         elif u.path.endswith('/__setup/folders'):
             body = {'folders': st.get('folders', [])}   # the launcher's shape (tools/launch.py _get_folders)
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST' and st.get('busy'):
-            route.fulfill(status=409, content_type='application/json', body=json.dumps({'ok': False, 'reason': 'busy', 'message': 'a job is already running', 'job': 'g1'}))
+            # SOG-0658: the refusal says the operation that runs (`running`, as the launcher's 409 does), when the case gives one
+            route.fulfill(status=409, content_type='application/json', body=json.dumps(dict({'ok': False, 'reason': 'busy', 'message': 'a job is already running', 'job': 'g1'},
+                                                                                         **({'running': st['running']} if st.get('running') else {}))))
             return
+        elif u.path.endswith('/__setup/regen/job') and req.method != 'POST' and st.get('busy') and not urllib.parse.parse_qs(u.query).get('id'):
+            # SOG-0658: the frame's wait asks whether the station is still busy (GET regen/job, no id): the other job still runs
+            body = {'job': {'id': 'g1', 'state': 'running', 'set': (st.get('running') or {}).get('set', 'base'), 'verb': (st.get('running') or {}).get('verb', 'fetch')}}
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
             st['posts'].append(json.loads(req.post_data or '{}'))
             st['t'] = time.time()
@@ -12152,3 +12157,55 @@ def f335(c):
          'level of before', what='NEPIX')
     c.js("document.querySelector('[data-module=fuel] [data-rread]').scrollIntoView({block: 'center'})")
     c.shot(f'F335_{c.design}_{c.width}_{c.lang}.png')
+
+
+
+# SOG-0658: the operation a busy station runs, as the launcher's 409 says it (invented: the base of two zones fetched since 26 Nov 16:30Z)
+_BUSY_RUNNING = {'id': 'g1', 'set': 'base', 'verb': 'fetch', 'args': {'zones': ['fr', 'gb']}, 'started': 1795710600, 'alive': 'alive'}
+_BUSY_SAID = 'Le poste est occupé : Base · Télécharger (fr, gb), depuis 16:30Z. Votre demande partira dès qu’il aura fini.'
+
+
+@case('F336', 'A route computation, and a reading of the NAT tracks, refused because the station is busy: the ONE sentence of the frame '
+      '(« Le poste est occupé : {opération}, depuis {heure}. Votre demande partira dès qu’il aura fini. »), never « réessayez », no '
+      '« Réessayer »; the request waits (« En attente : Calcul de la route », one per screen) and starts ALONE once the station is free',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0658 (the ergonomist, from BUGS\' fact: a 409 carries `running`, Fuel threw it away and said « réessayez dans un instant »); '
+      'the frame\'s ctx.launcher.busy (frame/lib/busy.js, case A404); French only (SOG-0680); a fake launcher, an invented operation')
+def f336(c):
+    c.page.add_init_script(_NAT_STUB)
+    st = _route_launcher(c, ['route/compute'])
+    st['running'] = dict(_BUSY_RUNNING)
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
+    # A. « Calculer A → B » while another job runs
+    st['busy'] = True
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    B = f'{FUEL} [data-routealts] [data-rrefused=busy]'
+    said = "(w) => { const e = document.querySelector('" + B + "'); return !!e && (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }"
+    c.until(said, _BUSY_SAID, timeout=10000, what='the sentence of the frame, with the operation and its time (red before: « Le poste termine une '
+            'autre opération … réessayez dans un instant. » and « Réessayer »)')
+    c.eq(c.count(f'{B} [data-rretry]'), 0, 'no « Réessayer »: the request leaves by itself', what='retry')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", 'En attente : Calcul de la route',
+            timeout=5000, what='the pending request said, « En attente : Calcul de la route »')
+    c.eq(len(st['posts']), 0, 'nothing started while the station is busy', what='posts')
+    c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F336_{c.design}_{c.width}_{c.lang}.png')
+    st['busy'] = False
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length >= 1", timeout=20000,
+            what='free: the computation started ALONE and its routes are listed')
+    c.eq([(x.get('args') or {}).get('action') for x in st['posts']][:1], ['compute'], 'the request that waited is the computation', what='started')
+    # B. « Lire les routes NAT du jour » while another job runs: the same sentence in the NAT line, the reading waits and starts alone
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    L = f'{FUEL} [data-natline]'
+    c.until(f"!!document.querySelector('{L}:not([hidden]) [data-do=natread]')", timeout=15000, what='the NAT line with its gesture')
+    st['busy'] = True
+    c.tap(f'{L} [data-do="natread"]')
+    c.until("window.__nat.go !== null", timeout=8000, what='natEnsure asked')
+    c.js("(r) => window.__nat.go({ ...window.__nat.st, refreshed: false, busy: true, running: r })", dict(_BUSY_RUNNING))
+    nat = "(w) => { const e = document.querySelector('" + L + " [data-natfail=busy]'); return !!e && (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }"
+    c.until(nat, _BUSY_SAID, timeout=5000, what='the NAT line says the sentence of the frame (red before: « Le poste fait une autre opération : réessayez dans un instant. »)')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", 'En attente : Relecture des routes NAT',
+            timeout=5000, what='the pending reading said')
+    st['busy'] = False
+    c.until("window.__nat.asks === 2 && window.__nat.go !== null", timeout=20000, what='free: the reading of the NAT tracks asked again ALONE')
