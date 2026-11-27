@@ -92,6 +92,12 @@ from 26 November the screen texts are written in French only (see Notes › Know
   the workshop does not yet write the whole mission of the organisation.
 - Alpha: `current_flight.json`, `data/local/`, `proc/manual/` and `data/airline/<code>/` may still change.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.5.zip` — SHA-256 `9afff09d5f7b225ce5b107d107ec272d4e4610eb828ad429f4eea855bc29084b` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.5.zip` — SHA-256 `61cd559a8de2e8500bf7f32ddb2eca04f1c6f21488b5eb66f1a75e34b43e64fd` (outside the repository: `dist/` folder).
+- Non-regression suite: 2 116 cases, 2 112 green on the tagged commit (full pass of 27–28 November); K121 red by a date left in its own fixture, N276 unstable (green when replayed alone); neither is a product defect.
+
 ## 6.0.0-alpha.4 — 9 November 2026
 
 Fourth alpha of the **Pilot** and **Company** applications (V3), three days after the third: the pilot's bug notes of
