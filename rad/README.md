@@ -190,7 +190,7 @@ La chaîne comporte 15 points intermédiaires et plusieurs airways. La limite pr
 
 - FL180 : L620 GILDA–MID a un plancher de 24 500 ft dans les données chargées. Le repli par airways contourne cette portion par L610, LAM, Q3, OCK et M185 avant de rejoindre MID.
 - FL280 et FL350 : pas d’incompatibilité verticale détectée dans les portions couvertes de la route initiale, mais le contrôle reste incomplet.
-- Quatre portions restent non couvertes de bout en bout : NOSLI N850 MOKNI, ADVOP Z703 ALS, ALS N872 PAM et IDRID M40 NILON. Cela n’est pas une preuve d’interdiction ni une validation de ces portions.
+- Quatre portions restent non couvertes de bout en bout (nommées dans les notes de mesure, pas ici : la route est celle d’un vol de l’utilisateur). Cela n’est pas une preuve d’interdiction ni une validation de ces portions.
 - Des replis directs et par tronçons sont présentés aux trois niveaux. Une option FRA régionale peut être présentée aux niveaux compatibles.
 
 Pour les longues listes de passages, le repli FRA conserve des fenêtres régionales avec leurs portes publiées et leurs points I internes, puis recalcule le profil de tout le vol. Une portion est refusée si elle introduit une incompatibilité verticale dans l’assemblage, notamment en descente vers l’arrivée. Les intervalles géographiques sont mémorisés pour éviter de reprojeter les mêmes points pour chaque arête.
