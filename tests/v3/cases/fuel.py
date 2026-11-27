@@ -10336,7 +10336,8 @@ def f305(c):
 
 @case('F306', 'Route step, Belgian airways of a past cycle: when the engine gives the day the Belgian set was deposited, the reason reads '
       '« Routes belges d’un cycle passé (déposées le 03/10/2026). », the date in the format of the screen; without that day, or with a day '
-      'that cannot be read, the generic sentence « Belgique : données du …, périmées à la date du vol » unchanged',
+      'that cannot be read, the generic sentence (since SOG-0695 « Données de Belgique périmées (cycle …) : route calculée sur ces données. », '
+      'French only)',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0541 (the relay, 22 Nov: the words decided by the ergonomist; AeroDB e4a583cae, frame/aerodb/INTEGRATION.md: '
       '`stale_cycle` { zone, cycle, current, routes, deposited? }, deposited AAAA-MM-JJ, year 2000-2100); a fake launcher, invented routes')
@@ -10355,13 +10356,13 @@ def f306(c):
         dict(_alt(3, 'Via XQ3', 'LFRS NTS1A LUGEN XQ3 NEPIX MEN1A LFML', 374, 270, segs), verdict='unverifiable', violations=[],
              unverifiable=stale(deposited='1999-13-45'))]
     want = {'fr': ('Routes belges d’un cycle passé (déposées le 03/10/2026).',
-                   'Belgique : données du 01/10/2026, périmées à la date du vol — voies concernées : XQ1'),
+                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),
             'en': ('Belgian routes of a past cycle (deposited 10/03/2026).',
-                   'Belgium: data of 10/01/2026, out of date on the date of the flight — airways concerned: XQ1'),
+                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),  # SOG-0695: French only (SOG-0680)
             'de': ('Belgische Routen eines vergangenen Zyklus (hinterlegt am 03.10.2026).',
-                   'Belgien: Daten vom 01.10.2026, am Flugdatum veraltet — betroffene Luftstraßen: XQ1'),
+                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),
             'es': ('Rutas belgas de un ciclo pasado (depositadas el 03/10/2026).',
-                   'Bélgica: datos del 01/10/2026, caducados en la fecha del vuelo — aerovías afectadas: XQ1')}[c.lang]
+                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.')}[c.lang]
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):

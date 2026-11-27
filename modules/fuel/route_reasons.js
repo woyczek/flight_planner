@@ -208,19 +208,14 @@ export const ROWS = {
     'Die berechnete Route verletzt {n} bekannte Regel(n).', 'La ruta calculada infringe {n} regla(s) conocida(s).'
   ],
   // 8
-  stale_cycle: ['{zone} : données du {cycle}, périmées à la date du vol — voies concernées : {routes}',
-    '{zone}: data of {cycle}, out of date on the date of the flight — airways concerned: {routes}',
-    '{zone}: Daten vom {cycle}, am Flugdatum veraltet — betroffene Luftstraßen: {routes}',
-    '{zone}: datos del {cycle}, caducados en la fecha del vuelo — aerovías afectadas: {routes}'
-  ],
+  // SOG-0695 (l'ergonome, 27/11 ; le fait d'AeroDB : le moteur calcule sur une base périmée et le dit « non vérifiable ») : la route
+  // calculée sur ces données, dite ; les voies concernées après la phrase ; français seul (SOG-0680)
+  stale_cycle: ['Données de {zone} périmées (cycle {cycle}) : route calculée sur ces données. Voies concernées : {routes}.'],
   // SOG-0541 : les routes belges d'un jeu d'un cycle passé, avec le jour du dépôt du jeu (mots de l'ergonome)
   staleBe: ['Routes belges d’un cycle passé (déposées le {date}).', 'Belgian routes of a past cycle (deposited {date}).',
     'Belgische Routen eines vergangenen Zyklus (hinterlegt am {date}).', 'Rutas belgas de un ciclo pasado (depositadas el {date}).'
   ],
-  stale_cycle0: ['{zone} : données du {cycle}, périmées à la date du vol',
-    '{zone}: data of {cycle}, out of date on the date of the flight',
-    '{zone}: Daten vom {cycle}, am Flugdatum veraltet', '{zone}: datos del {cycle}, caducados en la fecha del vuelo'
-  ],
+  stale_cycle0: ['Données de {zone} périmées (cycle {cycle}) : route calculée sur ces données.'],
   // 9
   network_gap: ['Aucune voie dans la base entre {from} et {to} : direct de {nm} NM',
     'No airway in the base between {from} and {to}: direct of {nm} NM',
