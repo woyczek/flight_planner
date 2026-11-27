@@ -12393,3 +12393,29 @@ def f347(c):
     c.eq(said, norm('Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes.'), 'the cause in French (red before: '
          '« Le calcul a échoué sans donner de résultat … : réessayez. »)', what='sentence')
     c.ok('invalid' not in said.lower(), said, 'never the English message of the launcher')
+
+
+
+@case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
+      'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0688 (AeroDB\'s fact: Fuel offered « Lire à la demande » for any four-letter code of a readable State, even absent from the base; '
+      'the reading left, EAD found nothing, the screen said « … : aucune procédure lue — 0 document(s) … » without the cause; the ergonomist: '
+      'no button, no sentence of SOG-0638, nothing new said); an invented code absent from the test base')
+def f344(c):
+    _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    wait_rows(c)
+    set_icao(c, 'dep', 'LFQQ')
+    c.until(f"document.querySelector('{FUEL} [data-adline=dep]')?.dataset.state === 'unknown'", timeout=10000,
+            what='the field says « inconnu » (the base does not know LFQQ)')
+    c.until(f"!!document.querySelector('{FUEL} [data-proc=dep] .fu-procnone')", timeout=10000, what='the departure row: no procedure')
+    c.settle()
+    c.eq(c.count(f'{FUEL} [data-do=procfetch][data-icao=LFQQ]'), 0, 'no reading offered for a code the base does not know (red before: '
+         '« Lire les procédures de LFQQ »)', what='card')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.wait(1500)
+    c.eq(c.count(f'{FUEL} [data-noprocad=LFQQ]'), 0, 'no line « Aucune procédure de LFQQ … » when the route is asked', what='SOG-0638')
+    c.eq(c.count(f'{FUEL} [data-do=procfetch][data-icao=LFQQ]'), 0, 'and no reading offered anywhere', what='anywhere')
