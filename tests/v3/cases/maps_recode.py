@@ -1394,21 +1394,19 @@ def d60(c):
     L = c.js(_CH_LAYOUT, [s3, 'star'])
     c.eq([L['n'], L['dim'], L['last']], [9, 0, s3], 'the other STARs stay numbered candidates; the chosen one is drawn last, in the colour of the route', what='traces')
     c.eq(c.js('window.__hc'), [], 'the address does not change: the selection stays in the pane', what='address changes')
-    # the runway changed: S3A does not serve 13 (13 is folded under "All") — the line offers the first STAR of the group that does
+    # SOG-0654: the runway changed to 13: S3A does not serve it, its choice is REMOVED (one floating line), no correction line is needed
     c.ok(not c.count('.mp-ch-row[data-fam="rwy"][data-id="13"]'), 'runway 13 shown', 'S3A chosen: only the runway it serves is shown')
     c.tap('.mp-ch-fold[data-more="rwy"]')
-    c.until("() => !!document.querySelector('.mp-ch-row[data-fam=\"rwy\"][data-id=\"13\"]')", timeout=10000, what='the runways unfold')
+    c.until("() => !!document.querySelector('.mp-ch-row[data-fam=rwy][data-id=\"13\"]')", timeout=10000, what='the runways unfold')
     c.tap('.mp-ch-row[data-fam="rwy"][data-id="13"]')
-    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", timeout=10000, what='the correction line under the STARs')
+    c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /S3A/.test(n.textContent))", timeout=10000, what='the line of the removal of S3A')
     r = c.js(_CH_ROWS)
     g = _grp(r, 'star')
     serving13 = [x['id'] for x in g['rows'] if x['id'] not in (None, 'none') and re.search(r'S[24689]A', x['text'])]
-    c.eq(g['fixVal'], serving13[0], 'the first STAR of the group that serves 13 (PR.firstServing)', what='proposed STAR')
-    c.ok(norm(tx(M, 'chNotServes', c.lang).replace('{p}', 'S3A').replace('{r}', '13')) in norm(g['fix']), g['fix'], '"S3A ne sert pas la 13 — Choisir …"')
-    c.ok(any(x['id'] == s3 and '⚠' in x['text'] for x in g['rows']), f"{g['rows']}", 'S3A keeps its ⚠ meanwhile')
-    c.tap('.mp-ch-grp[data-fam=star] [data-fix]')
-    c.until("() => !document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", timeout=10000, what='the STAR is replaced, the line goes')
+    c.ok(not any(x['pressed'] for x in g['rows']) and not g['fix'], f"{g['rows']}", 'S3A is no longer chosen, and no correction line is offered (the removal said it)')
     star13 = serving13[0]
+    _ch_keep(c, star13)
+    _pressed(c, f'.mp-ch-row[data-id="{star13}"]', 'a STAR that serves 13 is chosen')
     # an approach that serves 31 only while 13 is chosen: "I31 sert la 31 — Passer en 31", one tap sets the runway
     i31 = 'LFML.APP.I31.RW31.NONE'
     c.tap('.mp-ch-fold[data-more="app"]')           # I31 does not fit runway 13: folded
@@ -1690,7 +1688,7 @@ def d66(c):
     star = [x for x in _grp(r, 'star')['rows'] if x['id'] != 'none']
     c.eq([x['id'] for x in star].count('fam:OKRI5'), 1, 'OKRI5L and OKRI5R make one row', what=f'rows {[x["id"] for x in star]}')
     fam = next(x for x in star if x['id'] == 'fam:OKRI5')
-    c.ok(norm(fam['text']).startswith('OKRI5') and '13' in fam['text'] and '31' in fam['text'], fam['text'], 'the row "OKRI5" carries its runways as tags')
+    c.ok(re.sub(r'^\d+', '', norm(fam['text'])).startswith('OKRI5') and '13' in fam['text'] and '31' in fam['text'], fam['text'], 'the row "OKRI5" (after its number) carries its runways as tags')
     # the family first: no record yet, the selection says the family and its runways
     _ch_keep(c, 'fam:OKRI5')
     c.until("() => !!document.querySelector('.mp-ch-sum[data-fam=star]')", timeout=10000, what='the family in the selection')
@@ -1826,7 +1824,7 @@ def d69(c):
     c.ok(i31 in L['traced'] and L['last'] == i31, f"{L['traced']}", 'an approach hovered while the STARs are the family touched: drawn, last')
     c.js(_SET_HL, None)
     L = c.js(_CH_LAYOUT, ['', 'app'])
-    c.ok(i31 not in L['traced'], f"{L['traced']}", 'leaving the row gives back the previous state')
+    c.ok(L['hl'] is None, f"{L['hl']}", 'leaving the row gives back the previous state: nothing highlighted (SOG-0654: the approach stays drawn, every family is)')
     # the summary is the table of contents: a tap on "Approach" scrolls to its group and unfolds it
     _ch_open(c, {'rwy': '13', 'star': 'LFML.STAR.OKRI5R.RW13.NONE'}, file=_CH2_FILE)
     c.ok(c.count('.mp-ch-fold[data-more=app]') == 1, 'no fold line', 'I31 does not fit runway 13: the approaches are folded')
@@ -10650,7 +10648,8 @@ def d317(c):
     ids = c.js(_CH_STARS)
     t = c.js(_CH_NUMS)
     c.eq({p: int(t[p]['n']) for p in ids}, {p: disc[p] for p in ids}, 'the list gives the same number as the map', what='list numbers')
-    first, second = ids[0], ids[1]
+    both = [p for p in ids if re.search(r'S[2468]A', p)]      # the STARs that serve 31 and 13: choosing one does not choose a runway, nothing leaves the map
+    first, second = both[0], both[1]
     c.tap(f'.mp-ch-row[data-id="{first}"]')
     _pressed(c, f'.mp-ch-row[data-id="{first}"]', 'one touch chooses')
     t, d = c.js(_CH_NUMS), c.js(_CH_DISCS)
@@ -10720,6 +10719,9 @@ def d336(c):
     c.eq([c.count('.mp-ch-row[data-fam="rwy"][aria-pressed="true"]'), c.js("() => (document.querySelector('.mp-ch-grp[data-fam=rwy] .mp-ch-none') || {}).dataset.state")], [0, 'chosen'],
          'a procedure that serves SEVERAL runways leaves the runway to be chosen: « Toutes » stays the chosen row', what='several')
     _ch_open(c, {})
+    if not c.count(f'.mp-ch-row[data-id="{_S3}"]'):
+        c.tap('.mp-ch-fold[data-more="star"]')
+    c.until(f"() => !!document.querySelector('.mp-ch-row[data-id=\"{_S3}\"]')", timeout=10000, what='S3A is listed')
     c.tap(f'.mp-ch-row[data-id="{_S3}"]')
     _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="31"]', 'the runway the procedure serves is chosen')
     say = norm(c.js(_CH_RWYROW, '31'))
@@ -11138,8 +11140,8 @@ def d331(c):
     stale = norm(row(c, 'procStale'))
     c.js(_TEXTS_JS)
     c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
-    c.until("() => (window.__mpTexts || []).length > 0", timeout=8000, what='the overlay is drawn with the procedure ticked')
+    c.js("async (id) => { (await import('/modules/maps/choose.js')).setHl(id); (await import('/modules/maps/draw.js')).schedule() }", pid)
+    c.until("() => (window.__mpTexts || []).length > 0", timeout=8000, what='the overlay is drawn with the procedure chosen and highlighted')
     c.wait(600)
     drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
     like = sorted({t for t in drawn if re.search('péri|veralt|out of date|desactual|⌛', t, re.I)})   # the texts that look like the word (the whole list is ticks and numbers)
