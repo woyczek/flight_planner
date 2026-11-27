@@ -14,6 +14,10 @@
 //     code inconnu ou `other` : le `text` du moteur (avec la mention de langue hors du français) ; '' sans rien.
 // Les valeurs sont posées telles quelles : l'appelant écrit la phrase par textContent ou esc, jamais en HTML.
 
+import {
+  airacOf
+} from '../../frame/lib/fms.js'; // SOG-0695 : le numéro du cycle AIRAC, la règle de la suite
+
 export const ROWS = {
   // les titres des groupes (le plus grave : enfreint > non vérifiable > aucune infraction trouvée)
   // SOG-0552 : une fois, au-dessus de la liste des routes (l'ergonome, 23/11)
@@ -318,20 +322,14 @@ export function ruleLine(item, t) {
   });
 }
 /** La phrase d'une raison (voir l'en-tête). */
-/** SOG-0695 : le numéro AIRAC (« 2610 ») d'un cycle donné par sa date de début (« 2026-10-01 ») ou déjà par son numéro ; '' sinon — la
- *  règle de frame/lib/fms.js airacOf (cycles de 28 jours depuis le 2401, le 25 janvier 2024 ; le numéro compte depuis le premier
- *  cycle de l'année), recopiée ici pour que ce fichier reste sans import. */
+/** SOG-0695 : le numéro AIRAC (« 2610 ») d'un cycle donné par sa date de début (« 2026-10-01 », un vrai jour) ou déjà par son numéro ;
+ *  '' sinon — frame/lib/fms.js airacOf, la règle unique de la suite (celle de l'écran Données). */
 function airacNo(c) {
   const s = String(c ?? '').trim();
   if (/^\d{4}$/.test(s)) return s;
-  const m = isDay(s) ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null, // un vrai jour (jamais « 2026-13-45 » ramené au mois suivant)
-    t = m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN;
-  if (!Number.isFinite(t)) return '';
-  const CYC = 28 * 864e5,
-    REF = Date.UTC(2024, 0, 25),
-    start = REF + Math.floor((t - REF) / CYC) * CYC,
-    year = new Date(start).getUTCFullYear();
-  return `${String(year).slice(2)}${String(Math.floor((start - Date.UTC(year, 0, 1)) / CYC) + 1).padStart(2, '0')}`;
+  if (!isDay(s)) return ''; // un vrai jour (jamais « 2026-13-45 » ramené au mois suivant)
+  const [y, m, d] = s.split('-').map(Number);
+  return airacOf(new Date(Date.UTC(y, m - 1, d)));
 }
 /** SOG-0695 (le relais, 27/11) : le cycle dit « cycle 2610 » (le numéro AIRAC) ; sans numéro, un vrai jour « du 01/10/2026 » ; ni l'un ni
  *  l'autre : '' (la ligne rend alors le texte du moteur, jamais une date fausse). */
