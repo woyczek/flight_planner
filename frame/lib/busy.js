@@ -13,7 +13,7 @@
 // Les textes (français seul, dette notée SOG-0680) : TX.
 
 // Les mots de chaque opération : { jeu: [mot], verbe: [mot] } ; une table fermée, un jeu ou un verbe inconnu se dit tel que le lanceur le nomme.
-const SETS = {
+export const SETS = {
   aircraft: 'Appareils',
   airline: 'Compagnie',
   base: 'Base',
@@ -32,7 +32,7 @@ const SETS = {
   weather: 'Météo',
   xplane: 'X-Plane'
 };
-const VERBS = {
+export const VERBS = {
   build: 'Construire',
   compute: 'Calculer la route',
   coverage: 'Relever la couverture',
