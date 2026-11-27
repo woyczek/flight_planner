@@ -172,11 +172,20 @@ export async function run(launcher, args, {
       signal
     } : undefined);
     if (r?.result && typeof r.result === 'object') return r.result;
-    const reason = r?.status === 409 ? 'busy' : r?.offline ? 'offline' : r?.cancelled || ['cancelled', 'interrupted'].includes(r?.state) ?
-      'stopped' : 'failed';
+    // SOG-0688 (le fait d'AeroDB) : un 400 est un refus des arguments à la porte (aucun travail) — « invalid », dit en français
+    const reason = r?.status === 409 ? 'busy' : r?.status === 400 ? 'invalid' : r?.offline ? 'offline' : r?.cancelled || ['cancelled',
+      'interrupted'
+    ].includes(r?.state) ? 'stopped' : 'failed';
     return {
       ok: false,
       reason,
+      // SOG-0688 : le statut et le message du lanceur gardés pour le diagnostic (jamais montrés : le message est anglais)
+      ...(Number.isInteger(r?.status) ? {
+        status: r.status
+      } : {}),
+      ...(typeof r?.message === 'string' ? {
+        launcherSaid: r.message.slice(0, 200)
+      } : {}),
       // SOG-0658 : l'opération que le poste occupé fait (le 409 du lanceur, bornée par frame/lib/launcher.js runningOf), pour la phrase du cadre
       ...(reason === 'busy' && r?.running && typeof r.running === 'object' ? {
         running: r.running
@@ -239,7 +248,9 @@ export async function levels(launcher, args, {
     if (r?.result && typeof r.result === 'object') return r.result;
     return {
       ok: false,
-      reason: r?.status === 409 ? 'busy' : r?.offline ? 'offline' : r?.cancelled || ['cancelled', 'interrupted'].includes(r?.state) ?
+      reason: r?.status === 409 ? 'busy' : r?.status === 400 ? 'invalid' : r?.offline ? 'offline' : r?.cancelled || ['cancelled',
+          'interrupted'
+        ].includes(r?.state) ?
         'stopped' : 'failed'
     };
   } catch {

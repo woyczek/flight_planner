@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel: a route computation refused at the door of the launcher says its cause** (SOG-0688; case F347; French only, translation debt SOG-0680) — « Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes. », never « Le calcul a échoué sans donner de résultat » nor the English message of the launcher.
 - **Fuel: each sign of a proposed alternate said in words** (SOG-0690; case F345; French only, translation debt SOG-0680) — « Possible. », « Possible avec réserve(s) : … », « Non jugé : {cause}. » right after the code of the terrain, once.
 - **Fuel: a route computed on stale data says so** (SOG-0695; case F343; French only, translation debt SOG-0680) — « Données de {État} périmées (cycle {cycle}) : route calculée sur ces données. », the airways concerned after it.
 - **Fuel: a route computed on stale data says so** (SOG-0695; case F343; French only, translation debt SOG-0680) — « {État} : données périmées (cycle {cycle}). Route calculée sur ces données. », several States on one line, the airways concerned after it.
