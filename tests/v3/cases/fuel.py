@@ -3972,9 +3972,10 @@ def f130(c):
     c.ok(not b['busy'] and not b['off'] and b['t'] == tx(F, 'newFlight', c.lang), b, 'the button is back to « Nouveau vol »')
 
 
-@case('F200', 'Route step: a check the launcher refuses (another job runs: 409) says WHY and offers « Réessayer », never a bare « n’a pas répondu » (SOG-0206)',
+@case('F200', 'Route step: a check the launcher refuses (another job runs: 409) says WHY, never a bare « n’a pas répondu » (SOG-0206); since '
+      'SOG-0658 the sentence of the frame without « Réessayer », the check waiting and starting alone once the station is free',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='SOG-0206 (10 Nov 2026): after the choice of a route, a runway and a SID, « Contrôler » answered « le contrôle n’a pas répondu »: the launcher had refused the job (409, the ground of the terrain being read in the background) and the screen kept the refusal to itself; the reason is now said (busy, offline, stopped, failed) with « Réessayer », which asks again')
+      rule='SOG-0206 (10 Nov 2026): after the choice of a route, a runway and a SID, « Contrôler » answered « le contrôle n’a pas répondu »: the launcher had refused the job (409, the ground of the terrain being read in the background) and the screen kept the refusal to itself; the reason is now said (busy, offline, stopped, failed); SOG-0658 (the ergonomist): busy, the frame\'s sentence (French only, SOG-0680; here a refusal without `running`) and the request waits, never « Réessayer »')
 def f200(c):
     st = _route_launcher(c, ['route/compute'])
     open_proc(c)
@@ -3982,12 +3983,12 @@ def f200(c):
     st['busy'] = True
     c.tap(f'{FUEL} [data-do="rcheck"]')
     c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy]')", what='the refusal says its reason')
-    c.ok(c.js(f"!!document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy] [data-rretry]')"), 'no retry', 'with « Réessayer »')
-    txt = c.js(f"document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy]').textContent")
-    c.ok('répondu' not in txt and 'answer' not in txt.lower().replace('another operation', ''), txt, 'and never « n’a pas répondu »')
+    c.eq(c.count(f'{FUEL} [data-routealts] [data-rrefused=busy] [data-rretry]'), 0, 'no « Réessayer »: the check waits (SOG-0658)', what='retry')
+    txt = norm(c.js(f"document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy]').textContent"))
+    c.eq(txt, 'Le poste est occupé par une autre opération. Votre demande partira dès qu’il aura fini.', 'the frame\'s sentence (no operation '
+         'in this refusal), never « n’a pas répondu »', what='sentence')
     st['busy'] = False
-    c.tap(f'{FUEL} [data-rrefused=busy] [data-rretry]')
-    c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='« Réessayer » asks again: the check answers')
+    c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", timeout=20000, what='free: the check starts alone and answers')
 
 
 # a second Fuel on the same flight (another tab, another synchronised device): its own profile written over ours (SOG-0209)

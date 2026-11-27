@@ -4711,7 +4711,8 @@ async function routeAskRun(s, act, r, o, box, retry) {
   });
   if (!n.ok) {
     // la ligne d'un calcul refusé (SOG-0206, SOG-0125 : sans RAD, le lien vers sa ligne de Données) : modules/fuel/route_refused.js
-    if (box) box.innerHTML = RF.refusedHtml(n, act, RLH);
+    if (box) box.innerHTML = RF.refusedHtml(n, act, RLH, n.reason === 'busy' ? RF.waitFree(S.ctx.launcher, n, tt(act === 'compute' ?
+      RF.TX.waitCompute : RF.TX.waitCheck), () => routeAsk(act)) : ''); // SOG-0658 : le poste occupé, la demande attend et part seule
     return;
   }
   if (act === 'check') {
@@ -5062,7 +5063,7 @@ async function natLine() {
   // SOG-0372 (a) : une lecture qui n'a pas rendu de routes valides le dit, avec sa raison, jusqu'à la suivante
   // SOG-0413 : le résultat d'une relecture forcée reste dit (ajoutées, rien de nouveau, trop tôt), même avec des routes valides
   const out = fresh && !s.natOut?.forced ? null : s.natOut,
-    why = !out ? '' : out.why === 'busy' ? tt(TX.natBusyL) : out.why === 'retry' ? tt(TX.natRetry, {
+    why = !out ? '' : out.why === 'busy' ? out.said || tt(TX.natBusyL) : out.why === 'retry' ? tt(TX.natRetry, {
       t: hm(out.t)
     }) : out.why === 'soon' ? tt(TX.natSoon, {
       t: zTime(out.t)
@@ -5204,6 +5205,8 @@ async function natRead(force = false) {
   } : undefined)).catch(() => null);
   s.natBusy = false;
   if (gone(s)) return;
+  // SOG-0658 : le poste occupé — la phrase du cadre, la relecture attend et part seule
+  const said = r?.busy ? RF.waitFree(s.ctx.launcher, r, tt(RF.TX.waitNat), () => natRead(force)) : '';
   if (force) {
     const after = r?.refreshed ? await natDirsNow(s) : null;
     if (gone(s)) return;
@@ -5222,6 +5225,7 @@ async function natRead(force = false) {
       forced: true
     } : r.busy ? {
       why: 'busy',
+      said,
       forced: true
     } : r.retryAt ? {
       why: 'retry',
@@ -5257,7 +5261,8 @@ async function natRead(force = false) {
   s.natOut = r?.present && r.expired === false ? null : !r ? {
     why: 'fail'
   } : r.busy ? {
-    why: 'busy'
+    why: 'busy',
+    said
   } : r.retryAt ? {
     why: 'retry',
     t: String(r.retryAt)

@@ -2,12 +2,18 @@
 // sans raison, avec « Réessayer » ; SOG-0125 : sans RAD, le lien vers sa ligne de Données). Sorti de routeAskRun de module.js (règle
 // « on extrait ce qu'on touche », SOG-0658), sans changer le comportement. Ce fichier ne lit ni n'écrit rien.
 //
-// API : refusedHtml(n, act, h) → le HTML de la ligne ; n : la réponse lue, refusée (route_engine.js normalize : { ok: false, reason,
+// API : refusedHtml(n, act, h, said) → le HTML de la ligne ; n : la réponse lue, refusée (route_engine.js normalize : { ok: false, reason,
 //   message }) ; act : 'compute' | 'check' (le geste que « Réessayer » refait) ; h = { tt(rangée, valeurs), esc, TX (les textes de
 //   module.js : rFail, rRetry) }. TX : les textes de ce fichier, quatre langues. Le message du lanceur, qui nomme un travail, n'est pas
-//   montré au pilote quand la raison a sa phrase.
+//   montré au pilote quand la raison a sa phrase. waitFree(launcher, refus, libellé, relance) → la phrase du poste occupé (SOG-0658),
+//   la demande mise en attente.
 
 export const TX = {
+  // SOG-0658 (l'ergonome) : la demande qu'un poste occupé met en attente, son libellé dans « En attente : {libellé} » (le cadre) ; français
+  // seul (SOG-0680)
+  waitCompute: ['Calcul de la route'],
+  waitCheck: ['Contrôle de la route'],
+  waitNat: ['Relecture des routes NAT'],
   rNoRad: ['Aucun RAD importé', 'No RAD imported', 'Kein RAD importiert', 'Ningún RAD importado'],
   rNoRadGo: ['Importer dans Données', 'Import in Data', 'In Daten importieren', 'Importar en Datos'],
   // SOG-0206 : la cause quand le travail n'a rien rendu (jamais « n'a pas répondu » sans raison), avec « Réessayer »
@@ -38,12 +44,23 @@ export const TX = {
 /** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
 export const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 
+/** SOG-0658 : un refus parce que le poste est occupé — LA demande de l'écran mise en attente par le cadre (ctx.launcher.busy.later :
+ *  « En attente : {libellé} » avec « Annuler », relancée seule quand le poste est libre, encore en attente si elle est refusée de nouveau),
+ *  et la phrase du cadre (busy.text : l'opération en cours et son heure, que le refus dit). '' sans le client du cadre (la phrase d'avant). */
+export function waitFree(launcher, refusal, label, again) {
+  const b = launcher?.busy;
+  if (typeof b?.text !== 'function' || typeof b?.later !== 'function') return '';
+  b.later(label, again);
+  return b.text(refusal);
+}
+
 /** La ligne d'un calcul refusé : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ;
- *  sinon la phrase de la raison (ou le message du lanceur sans phrase connue, ou « n'a pas répondu »), et « Réessayer » pour une raison
- *  passagère. */
-export function refusedHtml(n, act, h) {
+ *  le poste occupé (SOG-0658) : `said`, la phrase du cadre, sans « Réessayer » (la demande partira seule) ; sinon la phrase de la raison
+ *  (ou le message du lanceur sans phrase connue, ou « n'a pas répondu »), et « Réessayer » pour une raison passagère. */
+export function refusedHtml(n, act, h, said = '') {
   const tt = h.tt,
     esc = h.esc;
+  if (n.reason === 'busy' && said) return `<p class="f-warn" data-rrefused="busy" data-rwait>${esc(said)}</p>`;
   return n.reason === 'no-rad' ? `<p class="f-warn" data-rrefused="no-rad">${esc(tt(TX.rNoRad))} · <a href="${RAD_DATA_HREF}" data-radlink>${esc(tt(TX.rNoRadGo))}</a></p>` :
     `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(!n.message && TX.rWhy[n.reason] ? tt(TX.rWhy[n.reason]) : n.message || tt(h.TX.rFail))}${!n.message && ['busy', 'offline', 'stopped', 'failed'].includes(n.reason) ? ` <button type="button" data-do="${act === 'compute' ? 'rcompute' : 'rcheck'}" data-rretry>${esc(tt(h.TX.rRetry))}</button>` : ''}</p>`;
 }

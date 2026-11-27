@@ -8,7 +8,7 @@
 //   request({ action, dep, arr, points, text, fl, date, depRunway, arrRunway }) → la demande (champs du contrat seulement, jamais
 //     null) : compute = via, les points saisis entre les terrains (passages imposés, huit au plus) ; check = route, le texte saisi.
 //   run(launcher, args) → Promise<object | null> : le résultat du travail, null sans réponse.
-//   normalize(result, action, asked) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason } | { code: 'direction', known, unknown }],
+//   normalize(result, action, asked) → { ok, reason, running (SOG-0658 : l'opération d'un poste occupé), message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason } | { code: 'direction', known, unknown }],
 //     level } : level = { fl, basis: 'request' | 'default' } (SOG-0389 : le niveau du calcul et d'où il vient — sections.fl / fl_basis
 //     du moteur d'abord, puis `level` d'une réponse gardée, puis la demande `asked` : sans `fl`, le niveau par défaut du moteur) ou null ;
 //     plan = { role ('primary' | 'alternative'), name, route, distanceNm, fl, accepted, errors: [texte], faults, sid, star,
@@ -176,7 +176,11 @@ export async function run(launcher, args, {
       'stopped' : 'failed';
     return {
       ok: false,
-      reason
+      reason,
+      // SOG-0658 : l'opération que le poste occupé fait (le 409 du lanceur, bornée par frame/lib/launcher.js runningOf), pour la phrase du cadre
+      ...(reason === 'busy' && r?.running && typeof r.running === 'object' ? {
+        running: r.running
+      } : {})
     };
   } catch {
     return {
@@ -786,6 +790,9 @@ export function normalize(res, action = 'compute', asked = null) {
   if (!res || res.ok !== true) return {
     ok: false,
     reason: ['invalid', 'no-rad', 'failed', 'busy', 'offline', 'stopped'].includes(res?.reason) ? res.reason : 'failed',
+    ...(res?.reason === 'busy' && res?.running && typeof res.running === 'object' ? {
+      running: res.running // SOG-0658 : lu par ctx.launcher.busy.text du cadre, jamais écrit tel quel
+    } : {}),
     message: text(res?.message, 300),
     errors: [],
     plans: [],
