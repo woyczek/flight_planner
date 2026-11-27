@@ -577,7 +577,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-keyblock>.f-muted[data-dwnone]{margin:0 0 4px}
 [data-module="missions"] .ms-keynote{margin:0 0 6px;font-weight:600;color:var(--ms-key,#8a3ffc)}
 [data-module="missions"] .ms-stepmark[data-kind=ok]{display:none} /* lot 5 : plus de ✓ — seul « ! » est dessiné, les noms regagnent la largeur */
-[data-module="missions"] .ms-plrow[data-outbad] .ms-plbody>b::before,[data-module="missions"] .ms-plrow[data-needs] .ms-plbody>b::before{content:"!";display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;margin-right:6px;border-radius:50%;text-align:center;font-size:.9em;font-weight:600;background:color-mix(in srgb,var(--sog-warn,#b06f00) 14%,transparent);color:var(--sog-warn,#b06f00)} /* « ! » : rien ne cite ce lieu, le pilote ne le verra pas */
+[data-module="missions"] .ms-plrow[data-outbad] .ms-plbody>b::before,[data-module="missions"] .ms-plrow[data-needs] .ms-plbody>b::before{content:"!";display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;margin-right:6px;border-radius:50%;text-align:center;font-size:.9em;font-weight:600;background:color-mix(in srgb,var(--sog-warn,#b06f00) 14%,transparent);color:var(--sog-warn,#b06f00)} /* « ! » : rien ne cite ce lieu, le pilote ne le verra pas */ [data-module="missions"] [data-itinfrom="deduced"]{color:var(--sog-warn,#b06f00)} /* SOG-0684 : l'ordre déduit, à vérifier */
 [data-module="missions"] .ms-itin-list>.ms-plrow[data-at^="out:"] .ms-plbody>.f-muted{white-space:normal;overflow:visible;text-overflow:clip} /* « Hors itinéraire » : ce qui cite le lieu se lit en entier */
 [data-module="missions"] button.ms-atadd{grid-template-columns:minmax(0,1fr);justify-items:center;border-style:dashed;border-left-width:1px;font-weight:600}
 [data-module="missions"] .ms-kinds{margin:0 0 0 16px;padding-left:10px;border-left:2px solid var(--sog-accent,#1a73e8)}
@@ -1714,7 +1714,7 @@ function edItinHtml(s, doc, run = null) {
       html.push(`<h4 class="ms-itin-lim" data-itinlim="start">${esc(s.tt(EDTX.itHeadStart))}</h4>`);
       // SOG-0684 : d'où vient l'ordre, quand la séance n'a pas sa route : le profil (gris) ou une déduction (orange, « Garder cet ordre » la pose)
       if (!e.route && from === 'profile') html.push(`<p class="f-muted" data-itinfrom="profile">${esc(s.tt(EDTX.itFromProfile))}</p>`);
-      if (!e.route && from === 'deduced') html.push(`<p data-itinfrom="deduced" style="color:var(--sog-warn,#b45309)">${esc(s.tt(EDTX.itFromDeduced))} <button type="button" class="f-linkbtn" data-do="edkeeporder">${esc(s.tt(EDTX.itKeepOrder))}</button></p>`);
+      if (!e.route && from === 'deduced') html.push(`<p data-itinfrom="deduced">${esc(s.tt(EDTX.itFromDeduced))} <button type="button" class="f-linkbtn" data-do="edkeeporder">${esc(s.tt(EDTX.itKeepOrder))}</button></p>`);
       headDone = true;
     }
     if (l.kind === 'drawer' && !drawDone) {
