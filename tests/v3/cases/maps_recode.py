@@ -2169,7 +2169,9 @@ _CH_PAINT = """async ([full, reserved]) => { const C = await import('/modules/ma
   if (reserved) L.reserve(pl);                                   // the screen's reservations first, as in the drawing
   if (full) pl.add({ x0: -1e5, y0: -1e5, x1: 1e5, y1: 1e5 });   // every place taken afterwards (beacon boxes everywhere)
   L.paint(ctx, pl);
-  return { ad: L.ad ? L.ad.text : null, numbers: got.filter(t => /^\\d\\d[LRC]?$/.test(t)).sort() } }"""
+  // SOG-0654 (third version): the discs of the candidates carry their NUMBER (1, 2, … 11): one text per disc is taken out, what is left is the runway numbers
+  const nums = got.filter(t => /^\\d\\d[LRC]?$/.test(t)); for (const d of L.discs) { const i = nums.indexOf(String(d.n)); if (i >= 0) nums.splice(i, 1) }
+  return { ad: L.ad ? L.ad.text : null, numbers: nums.sort() } }"""
 
 
 # the texts of the Map's overlay canvas, FRAME by frame (SOG-0626): the overlay is cleared once at the start of each frame (draw.js: raw.clearRect(0, 0, CW, CH)); a text written twice in the SAME
