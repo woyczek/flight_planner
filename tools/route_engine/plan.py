@@ -56,7 +56,7 @@ def check_request(request):
         if not isinstance(v, t):
             raise ValueError(f'{k} : type invalide')
         out[k] = v
-    for k, lo, hi in (('speed_kt', 50, 1000), ('terminal_speed_kt', 50, 1000), ('climb_fpm', 100, 10000), ('descent_fpm', 100, 10000)):      # SOG-0532 (Sécurisation) : les vitesses (50 à 1 000 kt) et les taux (100 à 10 000 ft/min) bornés : la recherche et le profil divisent par la vitesse
+    for k, lo, hi in (('speed_kt', 30, 1500), ('terminal_speed_kt', 30, 400), ('climb_fpm', 50, 20000), ('descent_fpm', 50, 20000)):      # SOG-0532 (Sécurisation) : les vitesses et les taux bornés : la recherche et le profil divisent par la vitesse ; la vitesse de croisière (30 à 1 500 kt), la vitesse terminale (30 à 400 kt) et les taux (50 à 20 000 ft/min) sont ceux de la page (modules/fuel/route_engine.js perfFields), pas plus larges : un Concorde à 1 150 kt était refusé à la porte
         if k in out and not lo <= out[k] <= hi:
             raise ValueError(f'{k} : de {lo} à {hi}')
     for k in ('dep', 'arr', 'dep_runway', 'arr_runway'):
