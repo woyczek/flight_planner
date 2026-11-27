@@ -12210,3 +12210,49 @@ def f336(c):
             timeout=5000, what='the pending reading said')
     st['busy'] = False
     c.until("window.__nat.asks === 2 && window.__nat.go !== null", timeout=20000, what='free: the reading of the NAT tracks asked again ALONE')
+
+
+
+@case('F337', 'Route: a text rebuilt from the points never loses a word the points do not know — coordinates typed and not yet read, a '
+      'name the base does not place: they stay written, with their « DCT »; only a point the pilot removed goes; on the screen, a level set '
+      'in the list of points right after the route is typed keeps both coordinates in the text, the points and the flight', 'F',
+      tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0661 (SIG-0b5eeccc1f, 25 Nov, the user\'s report, by its form: a departure, a name, two points in coordinates with DCT, a name not placed, the arrival: the text rebuilt lost the second point and the name): RT.textFromPoints dropped every name or coordinates of the text that the points it was given did not hold — a '
+      'name not placed, or points of BEFORE the reading (the Map and Fuel rebuild the text from the points); invented coordinates and an '
+      'invented name around the seeded flight')
+def f337(c):
+    # A. the writer of the text (frame/lib/route_text.js textFromPoints), on invented points
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const RT = await import('/frame/lib/route_text.js');
+      const P = (id, lat, lon) => ({ id, lat, lon });
+      const before = [P('LFRS', 47.1569, -1.6078), P('LUGEN', 46.5833, -1.2), P('NEPIX', 44.9, 2.4), P('LFML', 43.4367, 5.215)];
+      const typed = 'LFRS LUGEN DCT 4630N00100W DCT 4500N00100E DCT NEPIX LFML';
+      const lvl = before.map(p => p.id === 'LUGEN' ? { ...p, alt_ft: 15000 } : p);
+      return [RT.textFromPoints(before, typed, before), RT.textFromPoints(lvl, typed, before),
+        RT.textFromPoints(before, 'LFRS LUGEN DCT ZQXYZ DCT NEPIX LFML', before),
+        RT.textFromPoints([before[0], before[1], before[3]], 'LFRS LUGEN DCT NEPIX LFML', before)];
+    }""")
+    c.eq(got, ['LFRS LUGEN DCT 4630N00100W DCT 4500N00100E DCT NEPIX LFML', 'LFRS LUGEN/F150 DCT 4630N00100W DCT 4500N00100E DCT NEPIX LFML',
+               'LFRS LUGEN ZQXYZ NEPIX LFML', 'LFRS LUGEN LFML'],
+         'coordinates the points of before do not hold stay written, with their « DCT » and next to a level set; a name not placed stays; '
+         'a point removed goes (red before: « LFRS LUGEN DCT NEPIX LFML », « LFRS LUGEN NEPIX LFML »)', what='texts')
+    # B. on the screen: the route typed, and at once (the reading waits 500 ms) a level set on LUGEN in the list of points
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    typed = 'LFRS LUGEN DCT 4630N00100W DCT 4500N00100E DCT NEPIX LFML'
+    done = c.js("""(t) => { const m = document.querySelector('[data-module=fuel]'), ta = m.querySelector('[data-k="rtext"]'),
+        a = m.querySelector('[data-k="ptalt"][data-i="1"]');
+      if (!ta || !a) return false;
+      ta.focus(); ta.value = t; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.blur(); ta.dispatchEvent(new Event('change', { bubbles: true }));
+      a.value = '150'; a.dispatchEvent(new Event('input', { bubbles: true })); a.dispatchEvent(new Event('change', { bubbles: true }));
+      return true }""", typed)
+    c.ok(done, done, 'the route typed, then the level of LUGEN set at once')
+    want = ['LFRS', 'LUGEN', '4630N00100W', '4500N00100E', 'NEPIX', 'LFML']
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and [p.get('id') for p in d['route'].get('points') or []] == want,
+                    'the points of the reading: both coordinates kept (red before: « LFRS LUGEN NEPIX LFML »)', timeout=10000)
+    text = f['route'].get('text') or ''
+    c.ok('4630N00100W' in text and '4500N00100E' in text and 'LUGEN/F150' in text, text, 'the text keeps both coordinates and the level set',
+         what='text')
+    c.eq(norm(c.js("document.querySelector('[data-module=fuel] [data-k=\"rtext\"]').value")), norm(text), 'the field says the same text',
+         what='field')
