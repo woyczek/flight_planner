@@ -5,6 +5,93 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 6.0.0-alpha.5 — 27 November 2026
+
+Fifth alpha of the **Pilot** and **Company** applications (V3), following the alpha.4 of 9 November. Flight preparation
+is the main part: the level « Auto » of Fuel judges each level with the route control, the route is read back in plain
+words, and the Map chooses a procedure with one touch. Missions gain one reading order for the route, a timeline of
+events and a sequel that follows the flight on every screen; the Data screen reads more States. This is still an alpha:
+from 26 November the screen texts are written in French only (see Notes › Known gaps).
+
+### Summary
+
+- **Missions, reading and flying**: the order of the route is one rule for the workshop, the pilot's sheet and Fuel
+  (written order, else the vertical profile, else deduced from the places, with its provenance said); « Suite de la mission » is one block with one reading
+  order; the mission of the flight in progress comes first and is followed on the Map and in Fuel (« Un message de la
+  mission est arrivé »); the sequel judges landing, hover, overflight, step sequence and retardant refill; the debrief
+  lists each precision landing with its tier; the registry is a sortable table with the drafts at its head.
+- **Mission workshop**: one « Itinéraire » card (the departure, the places in order, each drawer under its place), a
+  « Déroulé » that sorts the events and the drawers by time, a drawer and an event that turn into each other, mission
+  models (« Changer de modèle », « Enregistrer comme modèle »), the tolerances (stopover 2 NM, aerodrome 1 NM), a draft
+  kept on the device while you work; an old mission file opens and is saved again without loss.
+- **Fuel, route and level**: « Auto » judges seven levels first, then draws the list, keeps each level as soon as it is
+  judged and says where its search is; it never proposes a level under the terrain of the route, and a level above the
+  ceiling the aircraft sheet declares is said; the route is read back in plain words under its field (flight rules,
+  cruise climb « C/… », stops, speed groups) with no false alert on valid forms.
+- **Route verdicts**: three verdicts, never confused (« enfreint N règles connues », « Non vérifiable : N points »,
+  « conforme à ce que nous savons lire »); « Aucune infraction trouvée » where nothing known is broken; the direction of
+  the airways is said State by State; each proposed route gives its distance, time and trip fuel; « Seul Eurocontrol
+  valide un plan ».
+- **Route calculation**: the control is the only judge of a computed route and of its alternatives, the free route is
+  crossed from one area to the next, the limits of a direct in UK airspace and the semicircular rule of France are
+  checked, the search keeps to a budget of work instead of taking minutes, all the North Atlantic routes of the day are
+  seen and a valid one is taken when it lengthens the free route by less than 5 %.
+- **Procedures and alternates**: the Map shows every candidate procedure with its number and one touch chooses (the
+  runway first); a procedure read from Little Navmap is named as such and taken by Fuel; « Proposer un dégagement »
+  reads the weather of the seven aerodromes (METAR and TAF, source and age said) and never shows an unread one as good.
+- **Map**: choosing on the map, the loupe (find a place), « Suivre » that keeps the aircraft and its ghost centred, the
+  mission as a chip of the sheet, holding points shown with the main taxiways, « périmé » said in words.
+- **Aeronautical data**: Germany (DFS: points, airspaces, aerodromes, SID, STAR and approaches), Iceland and Portugal
+  (points and routes), Belgium (route sheet dropped by hand, official page given), readers for Sweden, Ireland, Italy and
+  Spain on the workstation, the table of cruising levels and the R / D / P conditions of France, a country sheet that
+  says the right pack and what an update brings, GFS winds without a false « À jour ».
+- **Aircraft**: the fleet and the sheets open from their own entries, a sheet gets two alternate-time fields, the RPM
+  table is grouped by altitude with an optional TAS, values taken from a ChatGPT reply are said as such, the French
+  register is read on screen, and the fleet sheet opens on a tap.
+- **Reports and flight log**: the airline is chosen on the report, a family added by the airline is a family of the
+  report, « Mesures » finds the flight by departure, arrival and times, photos work on iOS and without the launcher
+  (three at most), « my last flight » is measured on the tracks of the network.
+- **Settings and airlines**: the language of the screen can be chosen (Automatic, Français, English, Deutsch, Español);
+  « Rejoindre la compagnie » for a GitLab project, with its tutorial; a Diagnostic line « Refused writes »; a work that
+  exists only in memory is signed « Non gardé ».
+- **Help, test paths and reports**: « Mes signalements » is a list with search, priority and comments; a report and a
+  comment take 5 000 signs; the test screen (Recette) has a comment per step, a third verdict « Accepter avec réserves »
+  and an « À trancher » tab; the roadmap opens on « Priorités » with an overview by capability.
+
+### Actions to take
+
+1. **Workstation**: pull `v3`, restart the launcher (Python verbs and jobs changed in this alpha: reports, journal of the
+   last results, route calculation, procedures, ground, NAT), then reload `/frame/`.
+2. **Aeronautical data**: a zone published with a parser older than 31 is « old » until rebuilt. In Settings ›
+   Maintenance › Aeronautical data use « Mettre à jour »; rebuild once a Germany zone built with parser 30 and the Portugal zone
+   (to get the flag of the points on the limit of a FIR); « Mettre à jour » on France also reads the table of cruising
+   levels (ENR 1.7) and the R / D / P conditions (ENR 5.1).
+3. **Ground layer**: ground files read before the apron was kept have none: « Relire » the ground of an aerodrome
+   (Données › Sol, or « Réessayer » on the Map).
+4. **Belgium**: if you use the Belgian routes, drop the PDF of the ENR 3.2 on the Belgium card (the card names the file
+   and gives a direct link to it, and the official page); redo it at each AIRAC cycle.
+5. **Missions**: open a mission whose itinerary read « Hors itinéraire »: the order is now read or deduced and its
+   provenance is shown; when it is deduced (orange line), check it and press « Garder cet ordre ».
+
+### Notes
+
+- **Known gaps**: the screen texts and the manuals are up to date in French. English, German and Spanish have been
+  behind since 26 November: from that day each new or changed text was written in French only, and the other three
+  languages keep their old text or fall back on French (register SOG-0680: about 60 text keys so far, plus one paragraph
+  of the Data manual in en, de and es). This debt is translated in one batch and blocks the first version that is no
+  longer an alpha.
+- The direction of the airways is known for France, Germany and the United Kingdom; for every other State, a route
+  against the direction of an airway is not seen.
+- The Map does not yet draw the mission route in that order: it follows after this alpha.
+- The readers of Sweden, Ireland, Italy and Spain run on the workstation (local corpus, tested on invented pages); the
+  Data screen still says « no reader » for Sweden.
+- Route calculation and the level « Auto » need the launcher of the workstation; without it they are not offered.
+- Fuel, procedures: on a code the base does not know, « Lire » is still offered and says « Lecture de … refusée
+  (unknown-aerodrome) », with the raw code, instead of a sentence; it follows after this alpha.
+- Missions: assigning a mission to a crew, the page-by-page reading of the sealed envelope and the PDF brief stay in V2;
+  the workshop does not yet write the whole mission of the organisation.
+- Alpha: `current_flight.json`, `data/local/`, `proc/manual/` and `data/airline/<code>/` may still change.
+
 ## 6.0.0-alpha.4 — 9 November 2026
 
 Fourth alpha of the **Pilot** and **Company** applications (V3), three days after the third: the pilot's bug notes of

@@ -10,6 +10,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+
+## [6.0.0-alpha.5] — 2026-11-27
+
+Fifth alpha of the **Pilot** and **Company** applications (V3), after the alpha.4 of 9 November. Flight preparation: the
+level « Auto » of Fuel judges each level with the route control and says where its search is; the route is read back in
+plain words; the three verdicts (known rule broken, not verifiable, conforming) are never confused; the Map chooses a
+procedure with one touch; the alternates have their weather read. Route calculation: the control is the only judge of a
+computed route and the search keeps to a budget of work. Missions: one rule for the order of the route (workshop, sheet, Fuel), a timeline of
+events, a sequel that follows the flight on every screen, a sortable registry. Data: Germany, Iceland, Portugal, Belgium
+and the readers of Sweden, Ireland, Italy and Spain. From 26 November the screen texts are written in French only; the
+translation debt is held in the register SOG-0680 and blocks the first version that is no longer an alpha. Detail below.
+
+### V3
+
 - **Fuel: a route computation refused at the door of the launcher says its cause** (SOG-0688; case F347; French only, translation debt SOG-0680) — « Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes. », never « Le calcul a échoué sans donner de résultat » nor the English message of the launcher.
 - **Fuel: each sign of a proposed alternate said in words** (SOG-0690; case F345; French only, translation debt SOG-0680) — « Possible. », « Possible avec réserve(s) : … », « Non jugé : {cause}. » right after the code of the terrain, once.
 - **Fuel: a route computed on stale data says so** (SOG-0695; case F343; French only, translation debt SOG-0680) — « Données de {État} périmées (cycle {cycle}) : route calculée sur ces données. », the airways concerned after it.
