@@ -580,26 +580,20 @@ export const TX = {
     app: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
     appTrans: ['Transition de l’approche', 'Approach transition', 'Anflugübergang', 'Transición de la aproximación']
   },
+  // SOG-0654 (troisième version) : un toucher choisit ; français seul (dette de traduction SOG-0680 : chHint, chRwyBy, chDropped)
   chHint: [
-    'Touchez une procédure, sur la carte ou dans la liste : elle est cochée pour être comparée ; « Choisir » la retient pour le vol ; « Terminer » rend le choix à Carburant.',
-    'Tap a procedure, on the map or in the list: it is ticked to be compared; "Choose" keeps it for the flight; "Done" hands the choice to Fuel.',
-    'Verfahren auf der Karte oder in der Liste antippen: es wird zum Vergleich angekreuzt; „Wählen“ übernimmt es für den Flug; „Fertig“ gibt die Wahl an Kraftstoff.',
-    'Toque un procedimiento, en el mapa o en la lista: se marca para compararlo; «Elegir» lo retiene para el vuelo; «Terminar» entrega la elección a Combustible.'
+    'Touchez une procédure, sur la carte ou dans la liste : elle est choisie pour le vol. Une piste choisie ne laisse que les procédures qui la desservent. « Terminer » rend le choix à Carburant.'
   ],
-  // (a1) cocher pour comparer (huit au plus), puis « Choisir » : titres de groupe, état de la ligne choisie, refus de la neuvième
+  chAll: ['Toutes', 'All', 'Alle', 'Todas'],
+  chRwyBy: ['celle de {p}'],
+  chDropped: ['{p} ne dessert pas la piste {r} : choix retiré.'],
+  // titres de groupe, état de la ligne choisie
   chGrp: {
     sid: ['Départs', 'Departures', 'Abflüge', 'Salidas'],
     star: ['Arrivées', 'Arrivals', 'Ankünfte', 'Llegadas'],
     app: ['Approches', 'Approaches', 'Anflüge', 'Aproximaciones']
   },
-  chPick: ['Choisir', 'Choose', 'Wählen', 'Elegir'],
   chChosen: ['choisie pour le vol', 'chosen for the flight', 'für den Flug gewählt', 'elegida para el vuelo'],
-  chMax: ['Huit procédures à comparer au plus : décochez-en une.', 'At most eight procedures to compare: untick one.',
-    'Höchstens acht Verfahren zum Vergleich: nehmen Sie bei einem das Häkchen weg.',
-    'Ocho procedimientos como máximo para comparar: desmarque uno.'
-  ],
-  chTick: ['Cocher pour comparer', 'Tick to compare', 'Zum Vergleich ankreuzen', 'Marcar para comparar'],
-  chUntick: ['Décocher', 'Untick', 'Häkchen entfernen', 'Desmarcar'],
   // couche « sol » (§ 10.40, ground.js) : voies, postes et points d'attente du départ et de l'arrivée
   gTitle: ['Sol · {icao}', 'Ground · {icao}', 'Boden · {icao}', 'Suelo · {icao}'],
   gBtn: ['Sol', 'Ground', 'Boden', 'Suelo'],

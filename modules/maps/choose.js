@@ -14,14 +14,13 @@
 // transitions, approches listées une fois, pistes, piste d'une procédure) sont celles de frame/lib/procedures.js, le vent celui de
 // frame/lib/wind.js, sans copie.
 //
-// (a1, SOG-0569) COCHER pour comparer, puis CHOISIR (contrat : modules/maps/maquette/procedures.html, scènes #choisir0, #choisir5, #choisir8) :
-// toutes les procédures de la famille touchée sont dessinées en CANDIDATES (trait fin, gris, sans nom) ; un toucher sur l'une, sur la carte
-// ou dans la liste, la COCHE : elle prend la première teinte libre des huit (--sog-proc-1…8) et son numéro dans une pastille, son nom s'il a
-// la place ; huit cochées au plus (la neuvième est refusée par une notification). « Choisir » n'est offert que sur une ligne cochée : la
-// procédure prend la couleur et l'épaisseur de la route, n'est plus cochée (son numéro est libéré), celle qu'elle remplace redevient une
-// candidate grise. Aucun geste « retirer le choix » : on en choisit une autre. Les cochées vivent dans S.choose.slot (id → numéro) ;
-// le choix du volet (pane_model.js : sel) reste le seul état de ce qui est choisi, rendu à Carburant à « Terminer ».
-const MAX_TICKS = 8;
+// (SOG-0654, troisième version ; contrat : modules/maps/maquette/choisir_v3.html, règles pures : choose_rules.js) UN toucher CHOISIT : sur le tracé, la pastille ou la
+// ligne. Chaque candidate (SID, STAR, approche ; celles que la piste choisie dessert) est identifiée à l'ouverture : son NUMÉRO (son identité ; il ne change plus : S.choose.slot,
+// id → numéro) dans une pastille sur son tracé et sur sa ligne, sa teinte (les huit jetons --sog-proc-1…8 dans l'ordre ; la neuvième reprend celle de la première), son nom près de la
+// pastille s'il a la place. La choisie prend la couleur et l'épaisseur de la route (« choisie pour le vol ») ; en toucher une autre de la famille la remplace ; elle ne se retire que par
+// « Aucune » (les candidates de la famille restent dessinées, estompées). Les pistes : « Toutes » en première ligne ; une piste choisie ne laisse que les procédures qui la desservent ;
+// en changer GARDE les choix qui desservent la nouvelle et RETIRE les autres (une notification par retrait) ; choisir une procédure qui ne dessert qu'UNE piste choisit cette piste
+// (« Piste 27 · celle de BRAVO 3A », S.choose.rwyBy) ; le choix du volet (pane_model.js : sel) reste le seul état de ce qui est choisi, rendu à Carburant à « Terminer ».
 
 import {
   S,
@@ -61,6 +60,12 @@ import {
   ROUTE_HALO,
   ROUTE_W
 } from './procs.js';
+import {
+  numbering,
+  dropsFor,
+  withoutChoice,
+  forReturn
+} from './choose_rules.js';
 import {
   radiusFor,
   pick as hitPick
@@ -128,6 +133,7 @@ function askOf(side, icao, fromCard = false) {
     state: paneState(),
     model: null,
     slot: new Map(),
+    rwyBy: null, // la procédure qui a choisi la piste : { fam, name } (« Piste 27 · celle de BRAVO 3A »)
     hits: {
       lines: [],
       rows: []
@@ -203,8 +209,8 @@ const familyText = name => {
  *  sur celui de la surlignée (g.full : g.text). */
 const cartText = (it, g = null) => g?.full ? g.text : it.fam === 'app' || it.fam === 'appTrans' ? labelText(it.label) : familyText(it
   .family || PR.nameOf(it.rec, it.id) || labelText(it.label));
-/** Teinte d'une ligne : la procédure choisie (et la transition de son approche) a la couleur de la route ; une cochée, la teinte de son numéro
- *  (la première libre des huit, jour ou nuit) ; une candidate, le gris neutre. */
+/** Teinte d'une ligne : la procédure choisie (et la transition de son approche) a la couleur de la route ; une candidate, la teinte de son numéro
+ *  (les huit jetons dans l'ordre, la neuvième reprend la première) ; le gris neutre sans numéro. */
 const hueOf = it => {
   const P = MapsRender.palette(!!S.theme?.dark),
     n = S.choose?.slot.get(it.id);
@@ -315,6 +321,7 @@ export async function chooseLoad() {
     C.fit = box;
     S.fit = box;
   }
+  C.slot = numbering(C.model, C.side); // l'identité de chaque candidate, une fois pour toutes
   C.ready = true;
 }
 /** Après un choix : la procédure choisie qui sort de la vue l'élargit à elle seule (la vue ne rétrécit jamais d'elle-même). */
@@ -379,7 +386,7 @@ export async function chooseOpen(side, icao) {
 export async function chooseClose() {
   const C = S?.choose;
   if (!C) return;
-  const to = paneReturn(C.side, C.state);
+  const to = paneReturn(C.side, forReturn(C.state));
   if (C.sheetFrom && S.sh && S.sh.pos !== C.sheetFrom) S.sh.set(C.sheetFrom, true); // la position d'avant le choix
   if (to || !C.fromCard) return location.replace(to || `#fuel?focus=${C.side}`);
   S.choose = null;
@@ -391,44 +398,42 @@ export async function chooseClose() {
 }
 
 // ---------------------------------------------------------------- choisir
-/** Pose le choix de la famille fam (id, « none » pour « Aucune ») dans le volet (panePick : l'attente d'une famille, la piste posée
- *  par une procédure, la transition remise à « Aucune ») ; rien n'est écrit : la sélection reste dans le volet et sur la carte jusqu'à
- *  la fermeture. */
+/** Pose le choix de la famille fam (id, « none » pour « Aucune » ou, pour les pistes, « Toutes ») dans le volet (panePick : l'attente d'une famille, la piste posée
+ *  par une procédure, la transition remise à « Aucune ») ; rien n'est écrit : la sélection reste dans le volet et sur la carte jusqu'à la fermeture. Une piste choisie
+ *  retire les choix qui ne la desservent pas (une notification par retrait) ; une procédure qui ne dessert qu'une piste, choisie sans piste, la choisit (rwyBy). */
 export function choosePick(fam, id) {
   const C = S?.choose;
   if (!C?.ready) return;
-  const before = C.state;
+  const before = C.state,
+    rwyBefore = PR.rwNum(C.model.choice.rwy);
   setState(C, panePick(C.input, C.state, fam, id));
   if (C.state === before) return;
-  C.slot.delete(id); // la choisie prend la couleur de la route et libère son numéro
+  if (fam === 'rwy') C.rwyBy = null;
+  else if (C.rwyBy?.fam === fam) C.rwyBy =
+    null; // la procédure qui avait choisi la piste est remplacée : la piste reste, la ligne ne dit plus « celle de … »
+  const rwy = PR.rwNum(C.model.choice.rwy);
+  if (fam !== 'rwy' && !rwyBefore && rwy) {
+    const it = rowsOf(C, fam).find(i => i.chosen);
+    if (it) C.rwyBy = {
+      fam,
+      name: it.family || PR.nameOf(it.rec, it.id) || it.id
+    };
+  }
+  if (fam === 'rwy' && rwy) {
+    const drops = dropsFor(C.model, rwy);
+    if (drops.length) {
+      setState(C, withoutChoice(C.state, drops.map(d => d.fam)));
+      for (const d of drops) S.ctx.notify?.(tt(TX.chDropped, {
+        p: d.p,
+        r: rwy
+      }), 'warn', {
+        key: `maps-choose-drop-${d.fam}`
+      });
+    }
+  }
   chooseRender();
   if (C.state.sel[fam] && fam !== 'rwy' && C.state.sel !== before.sel) widenTo(rowsOf(C, fam).find(it => it.chosen));
   schedule();
-}
-/** Coche (ou décoche) la procédure id pour la comparer (ligne de la liste ou toucher de la carte) : elle prend le plus petit numéro libre ; la
- *  neuvième est refusée par la phrase décidée, en notification flottante, et rien ne change. Une choisie, une piste ou une transition ne se
- *  cochent pas. Vrai si l'état a changé. */
-export function tick(id) {
-  const C = S?.choose;
-  if (!C?.ready) return false;
-  const it = C.model.rows.find(i => i.id === id);
-  if (!tickable(it) || it.chosen) return false;
-  if (C.slot.has(id)) C.slot.delete(id);
-  else {
-    if (C.slot.size >= MAX_TICKS) {
-      S.ctx.notify?.(tt(TX.chMax), 'warn', {
-        key: 'maps-choose-max'
-      });
-      return false;
-    }
-    const used = new Set(C.slot.values());
-    let n = 1;
-    while (used.has(n)) n++;
-    C.slot.set(id, n);
-  }
-  chooseRender();
-  schedule();
-  return true;
 }
 /** Le groupe d'une famille sous les yeux (une tape sur son libellé dans la sélection) : déplié s'il était replié, la feuille
  *  défile jusqu'à lui. */
@@ -475,15 +480,15 @@ function rowHtml(C, it) {
     off = offText(it.off),
     proc = tickable(it),
     n = proc ? C.slot.get(it.id) || 0 : 0,
-    tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...why, wind?.tip || '', proc && !it.chosen ? tt(n ? TX.chUntick : TX
-      .chTick) : ''].filter(Boolean).join(' · '),
-    // une procédure : cochable (rôle case à cocher) ou, choisie, un état (la couleur de la route, « choisie pour le vol », ni case ni bouton)
-    mark = !proc ? (it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>') : it.chosen ?
-    '<i class="mp-ch-sw" aria-hidden="true"></i>' : `<i class="mp-ch-n" data-n="${n}" aria-hidden="true">${n || ''}</i>`,
-    kind = !proc ? ` aria-pressed="${it.chosen}"` : it.chosen ? ` aria-pressed="true" data-state="chosen"` : ` role="checkbox" aria-checked="${!!n}" data-state="${n ? 'tick' : 'cand'}"`,
-    row = `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}"${kind}${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}"`}${tip ? ` title="${esc(tip)}"` : ''}>${mark}<span class="mp-ch-name">${esc(labelText(it.label))}${proc && it.chosen ? `<small>${esc(tt(TX.chChosen))}</small>` : ''}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}" data-tail="${it.wind.k.head < 0 ? 1 : 0}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" title="${esc(tt(TX.procOutdated))}">${esc(tt(TX.procStale))}</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
-  // « Choisir » seulement sur une ligne cochée (huit boutons au plus, aucun quand rien n'est coché)
-  return n ? `<div class="mp-ch-item" style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}">${row}<button type="button" class="f-btn mp-ch-pick" data-pick="${esc(it.id)}" data-fam="${it.fam}">${esc(tt(TX.chPick))}</button></div>` : row;
+    // une famille dont « Aucune » est choisie : ses candidates restent, estompées (le toucher en choisit une à tout moment)
+    faded = proc && !it.chosen && C.model.choice[it.fam] === null,
+    tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...why, wind?.tip || ''].filter(Boolean).join(' · '),
+    // une procédure : son numéro dans sa teinte (celle de la route, choisie) ; un toucher la choisit, la choisie est un état (« choisie pour le vol »)
+    mark = !proc ? (it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>') : `<i class="mp-ch-n" data-n="${n}" aria-hidden="true">${n || ''}</i>`,
+    kind = it.fam === 'rwy' ? ` aria-pressed="${it.chosen}"` : it.chosen ? ` aria-pressed="true" data-state="chosen"` : ` aria-pressed="false" data-state="cand"`,
+    name = labelText(it.label) + (it.fam === 'rwy' && it.chosen && C.rwyBy ? ` · ${tt(TX.chRwyBy, { p: C.rwyBy.name })}` : ''),
+    row = `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}"${kind}${faded ? ' data-faded' : ''}${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)};--ink:${inkOn(hueOf(it))}"`}${tip ? ` title="${esc(tip)}"` : ''}>${mark}<span class="mp-ch-name">${esc(name)}${(proc || it.fam === 'rwy') && it.chosen ? `<small>${esc(tt(TX.chChosen))}</small>` : ''}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}" data-tail="${it.wind.k.head < 0 ? 1 : 0}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" title="${esc(tt(TX.procOutdated))}">${esc(tt(TX.procStale))}</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return row;
 }
 /** La liaison manquante entre l'arrivée choisie et l'approche choisie (SOG-0569, décision 4 : la liste de la scène « Sans raccord » de la maquette EST celle de ce mode) : la
  *  phrase procNoLink, MOT POUR MOT celle de la note sous le profil (procs.js gapNote), sous la ligne d'état de l'approche ; rien quand l'approche reprend la fin de la STAR (même
@@ -518,7 +523,9 @@ function groupHtml(C, fam) {
   const g = C.model.groups[fam],
     list = g.rows,
     o = C.model.choice,
-    noneOn = fam in o && o[fam] === null,
+    // les pistes : « Toutes » (sans filtre : aucune piste choisie) ; les procédures : « Aucune »
+    noneOn = fam === 'rwy' ? !PR.rwNum(o.rwy) : fam in o && o[fam] === null,
+    noneWord = fam === 'rwy' ? TX.chAll : TX.chNone,
     fold = g.folded > 0 ? tt(TX.chFold, {
       n: g.folded
     }) : C.state.open.more[fam] && list.some(it => it.why.length) ? tt(TX.chFoldLess) : '',
@@ -529,7 +536,7 @@ function groupHtml(C, fam) {
     rows = (head ? `<div class="mp-ch-subh">${esc(head)}</div>` : '') + shownOf(C, fam).map(it => rowHtml(C, it) + (fam === 'app' && it
       .chosen ? gapHtml(C) + subsHtml(C) : '')).join('');
   const title = tt((TX.chGrp[fam] || TX.chFam[fam]));
-  return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(title)}</h4><div class="mp-ch-list" role="group" aria-label="${esc(title)}">${noneOn ? `<div class="mp-ch-row mp-ch-none" data-state="chosen" data-fam="${fam}" data-id="none" data-hl="0"><span class="mp-ch-name">${esc(tt(TX.chNone))} · ${esc(tt(TX.chChosen))}</span></div>` : `<button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="false"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>`}${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.state.open.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
+  return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(title)}</h4><div class="mp-ch-list" role="group" aria-label="${esc(title)}">${noneOn ? `<div class="mp-ch-row mp-ch-none" data-state="chosen" data-fam="${fam}" data-id="none" data-hl="0"><span class="mp-ch-name">${esc(tt(noneWord))}${fam === 'rwy' ? '' : ` · ${esc(tt(TX.chChosen))}`}</span></div>` : `<button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="false"><span class="mp-ch-name">${esc(tt(noneWord))}</span></button>`}${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.state.open.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
 }
 /** La sélection en tête du volet (le résumé du modèle) : une ligne par famille (« Piste 28L · ↑ 12 kt · ← 6 kt », « ABLI4L », « I28L
  *  via PIZSA ») ; une famille posée avant sa piste dit son nom et ses pistes. */
@@ -540,7 +547,7 @@ function summaryHtml(C) {
     line = (f, text) => {
       const it = rowsOf(C, f).find(i => i.chosen),
         k = tt(TX.chFam[f]),
-        v = text === undefined ? '—' : text === null ? tt(TX.chNone) : text;
+        v = text === undefined ? '—' : text === null ? tt(f === 'rwy' ? TX.chAll : TX.chNone) : text;
       // le libellé mène au groupe de la famille (table des matières du volet)
       lines.push(`<div class="mp-ch-sum" data-fam="${f}"${f === 'rwy' || !it ? '' : ` style="--c:${hueOf(it)}"`}><button type="button" class="mp-ch-sum-k" data-goto="${f}" title="${esc(tt(TX.chGoto, { f: k }))}">${esc(k)}</button><span class="mp-ch-sum-v">${esc(v)}</span></div>`);
     };
@@ -553,7 +560,7 @@ function summaryHtml(C) {
 /** Le corps de la feuille : la consigne, la sélection, les groupes du côté, « Terminer ». */
 function bodyHtml(C) {
   const lnm = C.model.rows.some(it => it.label?.src === 'lnm'); // une procédure lue de Little Navmap le dit là où on la choisit (SOG-0210)
-  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))} <b class="mp-ch-cnt" role="status">${C.slot.size} / ${MAX_TICKS}</b></p>${lnm ? `<p class="mp-ch-lnm" role="note">${esc(tt(TX.procLnmWarn))}</p>` : ''}${summaryHtml(C)}${FAMS[C.side].map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
+  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${lnm ? `<p class="mp-ch-lnm" role="note">${esc(tt(TX.procLnmWarn))}</p>` : ''}${summaryHtml(C)}${FAMS[C.side].map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
 }
 /** (Re)dessine le contenu de la feuille ; écrit seulement si le HTML change (openData). */
 export function chooseRender() {
@@ -599,15 +606,12 @@ export function chooseEvents() {
         setState(C, paneFold(C.input, C.state, more.dataset.more));
         return chooseRender();
       }
-      const keep = e.target.closest('[data-pick]');
-      if (keep) return choosePick(keep.dataset.fam, keep.dataset.pick);
       const go = e.target.closest('[data-goto]');
       if (go) return gotoFamily(go.dataset.goto);
       if (fix) return choosePick(fix.dataset.fix, fix.dataset.val);
       if (!row) return;
-      // une procédure se coche ; la choisie est un état (rien à toucher) ; « Aucune », une piste et une transition se posent
+      // un toucher choisit (une procédure, une piste, « Aucune », « Toutes », une transition) ; la choisie est un état : rien à toucher
       if (row.dataset.state === 'chosen') return;
-      if (row.dataset.state) return tick(row.dataset.id);
       choosePick(row.dataset.fam, row.dataset.id);
     },
     over = e => {
@@ -673,16 +677,8 @@ function namesOf(C, L) {
   if (L.nameList) return L.nameList;
   const own = it => L.traces.find(t => t.it.id === it.id && !t.dash && !t.join),
     out = [];
-  for (const it of C.model.rows.filter(i => i.chosen && tickable(i))) {
-    const t = own(it);
-    if (t && t.pts.length > 1) out.push({
-      it,
-      text: cartText(it),
-      pts: t.pts,
-      disc: null
-    });
-  }
-  for (const d of L.discs) {
+  // la choisie d'abord (sa pastille est celle de la route), puis les candidates dans l'ordre de leur numéro
+  for (const d of [...L.discs].sort((a, b) => !!b.it.chosen - !!a.it.chosen)) {
     const t = own(d.it);
     if (t) out.push({
       it: d.it,
@@ -728,7 +724,9 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       L.traces.push({
         it,
         pts,
-        dim: !it.chosen && !C.slot.has(it.id) && it.id !== hl, // une candidate : trait fin gris
+        dim: !it.chosen && !C.slot.has(it.id) && it.id !== hl, // une transition sans numéro : trait fin gris
+        fade: !it.chosen && it.fam !== 'appTrans' && C.model.choice[it.fam] ===
+          null, // « Aucune » est choisie dans sa famille : estompée
         ...extra
       });
       if (!it.chosen) C.hits.lines.push({
@@ -755,14 +753,12 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       if (drawn.has(it.id)) return;
       drawn.add(it.id);
       for (const m of it.members || [it]) trace(it, m.pts.map(p => toC(p.lat, p.lon)), extra);
-    },
-    first = C.model.focus === 'rwy' || !C.model.focus ? FAMS[C.side].find(f => f !== 'rwy' && shownOf(C, f).length) : null;
+    };
+  // SOG-0654 : toutes les candidates (celles que la piste choisie dessert, PR.compatible : `ok` du modèle) de TOUTES les familles, et la choisie
   for (const f of FAMS[C.side].filter(f => f !== 'rwy')) {
-    const list = rowsOf(C, f);
-    if (f === C.model.focus || (f === first && !list.some(i => i.chosen)))
-      for (const it of shownOf(C, f)) add(it);
-    for (const it of list)
-      if (it.chosen || C.slot.has(it.id)) add(it);
+    const ok = new Set(C.model.groups[f].ok);
+    for (const it of rowsOf(C, f))
+      if (it.chosen || ok.has(it.id)) add(it);
   }
   // la ligne survolée, de quelque famille qu'elle soit (V3 § 10.30) : sa trace aussi, même hors de la famille touchée
   const over = hl && !drawn.has(hl) && C.model.rows.find(i => i.id === hl && i.fam !== 'rwy');
@@ -959,7 +955,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
         c.lineWidth = halo;
         path();
       }
-      c.globalAlpha = strong || lit ? 1 : .55;
+      c.globalAlpha = (strong || lit) && !t.fade ? 1 : t.fade ? .45 : .55;
       c.strokeStyle = strong ? hueOf(t.it) : lit ? S.theme.fg : S.theme.muted;
       c.lineWidth = chosen ? ROUTE_W : ticked ? (lit ? 5 : 3.5) : lit ? 3 : 1.5;
       path();
@@ -971,6 +967,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     for (const d of L.discs) {
+      c.globalAlpha = !d.it.chosen && C.model.choice[d.it.fam] === null ? .45 : 1;
       c.beginPath();
       c.arc(d.x, d.y, DISC_R, 0, Math.PI * 2);
       c.fillStyle = d.col;
@@ -981,6 +978,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       c.fillStyle = inkOn(d.col);
       c.fillText(String(d.n), d.x, d.y + .5);
     }
+    c.globalAlpha = 1;
     // le point de sortie ou d'entrée de chaque cartouche
     for (const g of [...L.groups, ...(L.hl ? [L.hl] : [])]) {
       const lit = g.rows.find(i => i.id === hl) || g.rows.find(i => i.chosen);
@@ -1014,12 +1012,14 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     c.textBaseline = 'middle';
     c.lineJoin = 'round';
     for (const t of L.names || []) {
+      c.globalAlpha = !t.it.chosen && C.model.choice[t.it.fam] === null ? .45 : 1;
       c.lineWidth = 3;
       c.strokeStyle = S.theme.bg;
       c.strokeText(t.text, t.r.x0 + 2, (t.r.y0 + t.r.y1) / 2);
       c.fillStyle = hueOf(t.it);
       c.fillText(t.text, t.r.x0 + 2, (t.r.y0 + t.r.y1) / 2);
     }
+    c.globalAlpha = 1;
     // la surlignée en dernier, au-dessus de tout, son nom complet (la primitive du noyau, R-M5)
     for (const g of [...L.groups, ...(L.hl ? [L.hl] : [])]) {
       if (g.hidden || !g.r) continue;
@@ -1086,14 +1086,12 @@ export function chooseAt(x, y, radius = radiusFor()) {
   if (r) return r.id;
   return hitPick(h.lines, x, y, radius, l => nearestOn(l.pts, x, y))?.item.id ?? null;
 }
-/** Toucher sur la carte en mode choix : une procédure dessous se coche (ou se décoche), une piste ou une transition se pose ; rien dessous : rien. */
+/** Toucher sur la carte en mode choix : ce qui est dessous est CHOISI (une procédure, une piste, une transition) ; la choisie ne se retire pas d'un toucher ; rien dessous : rien. */
 export function chooseTap(x, y) {
   const C = S?.choose,
     id = chooseAt(x, y),
     it = id && C.model.rows.find(i => i.id === id);
-  if (!it) return;
-  if (tickable(it)) tick(it.id);
-  else choosePick(it.fam, it.id);
+  if (it && !(it.chosen && it.fam !== 'rwy')) choosePick(it.fam, it.id);
 }
 /** Survol de la carte à la souris : l'élément dessous est surligné (sa ligne, son cartouche, ses transitions). */
 export function chooseHover(x, y) {

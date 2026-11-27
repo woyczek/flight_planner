@@ -486,18 +486,21 @@ enters it.
   and the candidates of the first family not chosen are drawn — the runways with their numbers, then, while only runways are
   touched, the compatible procedures of the next family (SID at departure, STAR at arrival), faded and without cartouches, as
   « N others ». The sheet is half the view at most (§ 7.1); nothing is written before « Done ».
-- **Tick to compare, then choose** (SOG-0569 (a1), 24 Nov 2026; contract: `maquette/procedures.html`, scenes `#choisir0`, `#choisir5`,
-  `#choisir8`): the procedures of the family touched are **candidates** — thin, neutral grey (`--sog-muted`), no name, no cartouche.
-  A touch on a row, or on a trace (`chooseAt`: the NEAREST trace inside the common target of the pointer, `frame/lib/hit_target.js`,
-  22 px for a finger, 8 px for a mouse, even where several converge: no treatment of the ambiguity), **ticks** it (`tick(id)`, state
-  `S.choose.slot`: id → number); a second touch unticks. A ticked one takes the lowest free number (1–8) and its hue
-  (`--sog-proc-n`), drawn 3.5 px with a halo, a disc with its number on the part of its trace that is alone (`DISC_AT`: far from the
-  other traces, the other discs and the aerodrome), its name beside the disc when there is room (`place`, never forced). **Eight at most**:
-  the ninth is refused by « Huit procédures à comparer au plus : décochez-en une. » (`notify`, key `maps-choose-max`), the counter
-  « n / 8 » in the hint line says the state. **« Choisir »** (`.mp-ch-pick`) is offered only on a ticked row (`choosePick`): the procedure
-  takes the colour and the thickness of the route (`flightCol`, `ROUTE_W`), is no longer ticked (its number is freed), the one it
-  replaces becomes a grey candidate; the chosen row is a state (`data-state="chosen"`, the route's sample and « choisie pour le vol »,
-  no button, a touch changes nothing): **no gesture « remove the choice »**. « Aucune » of the family (the explicit « no procedure », a datum distinct from « not chosen yet ») follows the same rule: offered under each title until it is the choice, then a state « Aucune · choisie pour le vol » (`data-state="chosen"`, no button), replaced by a procedure chosen afterwards; the ✕ of the summary lines is removed (same effect as « Aucune », under a wrong word). The ink of the number in a disc is `inkOn(hue)` (the first of white, #101820, black that holds 4.5 : 1).
+- **One touch chooses, the runway first** (SOG-0654, 27 Nov 2026; contract: `maquette/choisir_v3.html`; the pure rules: `choose_rules.js`): every candidate procedure
+  of the side (SID, or STAR and approach; those that the chosen runway serves, `groups[f].ok` of the model) is drawn **from the opening** with its **number** (its identity,
+  `numbering()`: the order of the families then of their lists, kept in `S.choose.slot`, never renumbered) in a disc on the part of its trace that is alone (`DISC_AT`) and on
+  its row (`.mp-ch-n`), its hue (`--sog-proc-1…8` in order; the ninth takes the hue of the first), drawn 3.5 px with a halo, its name beside the disc when there is room (`place`,
+  never forced). **No cap of eight, no counter, no « Choisir »**. A touch on a row, a disc or a trace (`chooseAt`: the NEAREST trace inside the common target of the pointer,
+  `frame/lib/hit_target.js`) **chooses** (`choosePick`): the chosen procedure takes the colour and the thickness of the route (`ROUTE_W`), its row is a state (`data-state="chosen"`,
+  « choisie pour le vol », its number kept); another of the family replaces it; a touch on the chosen one changes nothing: it goes only through **« Aucune »** (the explicit « no
+  procedure », distinct from « not chosen yet »: offered under each title until it is the choice), after which the candidates of the family stay drawn, faded (`data-faded`).
+  **The runways**: the first row is **« Toutes »** (`TX.chAll`, chosen while no runway is; it takes the runway filter off); a chosen runway leaves drawn, on the map and in the list,
+  only the procedures that serve it (the numbers stay those of the opening). **Changing the runway keeps the choices that serve the new one and removes the others**
+  (`dropsFor` then `withoutChoice`: `sel[family] = undefined`, neither chosen nor « Aucune »), one floating line per removal (`TX.chDropped`: « {p} ne dessert pas la piste {r} : choix
+  retiré. »); a removed choice is written back to Fuel as « Aucune » (`forReturn`: « none », or the flight's former procedure would stay). **The inverse way**: choosing a procedure that
+  serves only ONE runway, with no runway chosen, chooses that runway (`panePick`), and the runway row says « Piste 27 · celle de BRAVO 3A » (`S.choose.rwyBy`, `TX.chRwyBy`); a
+  procedure that serves several leaves the runway to be chosen; when that procedure is replaced the runway **stays** and its row only loses « celle de … ». The ink of the number
+  in a disc is `inkOn(hue)` (the first of white, #101820, black that holds 4.5 : 1).
   **The missing link** (SOG-0569, decision 4): under the status line of the chosen approach, when the chosen arrival does not lead to it (`gapHtml`, the rule of `procGap`: same point within 3 NM by name, 0.3 NM otherwise), the list says `TX.procNoLink`, word for word the sentence of the note under the profile (Fuel's own sentence stays Features'). **The reserved place of an aerodrome** is that of its whole drawn symbol plus 2 px (`aero_symbols.js`: ×1.95 for an open aerodrome's ticks, ×1.7 for a long runway's rectangle, ×1.2 otherwise): a procedure name no longer sticks to it. The chosen trace is not touchable on the map (a candidate under it stays reachable). Group titles: « Départs », « Arrivées »,
   « Approches » (`TX.chGrp`).
 
