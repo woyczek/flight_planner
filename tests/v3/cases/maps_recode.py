@@ -1422,7 +1422,8 @@ def d60(c):
     c.eq([x[0] for x in c.js(_CH_ROWS)['sums']], ['rwy', 'star', 'app'], 'the selection reads as three lines at the top', what='summary')
     # Terminer: one trip back with every family touched; the Map wrote nothing
     q = _back(c, 'done')
-    c.eq(q, {'focus': 'arr', 'rwy': '31', 'star': star13, 'app': i31}, 'one return with the runway, the STAR and the approach chosen', what='keys')
+    # SOG-0654: « Passer en 31 » changed the runway: the STAR chosen for 13 (S9A serves 13 only) is removed, written back as « Aucune »
+    c.eq(q, {'focus': 'arr', 'rwy': '31', 'star': 'none', 'app': i31}, 'one return with the runway and the approach; the STAR that does not serve 31 was removed by the change of runway (« Aucune »)', what='keys')
     c.eq(c.js('window.__wr'), [], 'the Map wrote nothing (no put, no remove on its data adapter)', what='writes')
     # nothing chosen yet: a STAR that serves one runway sets it; Escape returns both
     _ch_open(c, {})
