@@ -216,7 +216,8 @@ function compose(base, e, id, was = null) {
   const at = mirror({
     ...flat
   });
-  const kept = was && was.refKind === flat.refKind && was.refId === flat.refId && was.offset === flat.offset && typeof o.at === 'string' && o.at.trim();
+  const kept = was && was.refKind === flat.refKind && was.refId === flat.refId && was.offset === flat.offset && typeof o.at === 'string' &&
+    o.at.trim();
   if (at && !kept) o.at = at; // une heure de la V2 non lue (off null), ou lue et non retouchée, reste telle quelle
   return o;
 }
