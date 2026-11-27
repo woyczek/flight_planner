@@ -12421,3 +12421,60 @@ def f344(c):
     c.wait(1500)
     c.eq(c.count(f'{FUEL} [data-noprocad=LFQQ]'), 0, 'no line « Aucune procédure de LFQQ … » when the route is asked', what='SOG-0638')
     c.eq(c.count(f'{FUEL} [data-do=procfetch][data-icao=LFQQ]'), 0, 'and no reading offered anywhere', what='anywhere')
+
+
+# SOG-0688: the answer of the base for LFQQ held by the case (window.__ad.go(place | null)), and the reading refused « unknown-aerodrome »;
+# window.__ad.hold = true holds the next reading until window.__ad.release() (the base answers during the reading)
+_AD_HOLD = """(() => { window.__ad = { go: null, asks: 0, hold: false, release: null };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a), coords = db.coords;
+      try { db.coords = (id, o) => id === 'LFQQ' ? new Promise(res => { window.__ad.asks++; const was = window.__ad.go;
+          window.__ad.go = x => { was?.(x); window.__ad.go = null; res(x); }; }) : coords.call(db, id, o);
+        db.fetchProcedures = async () => {
+          if (window.__ad.hold) await new Promise(r => { window.__ad.release = () => { window.__ad.release = null; r(); }; });
+          return { ok: false, reason: 'unknown-aerodrome' }; }; } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F346', 'Procedures, a reading refused « unknown-aerodrome »: the PAGE chooses the sentence by what it knows of the code when the answer '
+      'comes — the base has not answered yet: « La base n’a pas encore répondu pour LFQQ. Réessayez dans un instant. »; it has answered '
+      'during the reading and does not know the code: « LFQQ n’est pas dans la base : aucune procédure à lire. »', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0688 (the ergonomist, 27 Nov: two cases, two sentences, chosen by the page — a single « not in the base » would be false while '
+      'the base has not answered, SOG-0687 again); French only (SOG-0680); the answer of the base held by the case, an invented code')
+def f346(c):
+    # the flight leaves LFQQ, the answer of the base for it held by the case. While the base has not answered, the Procedures card waits
+    # (« Lecture des procédures de LFQQ… », Essais, train 8: no button there); the line of SOG-0638 under « Calculer » carries the reading
+    _route_launcher(c, ['route/compute'])
+    c.page.add_init_script(_AD_HOLD)
+    docs = proc_flight()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route']['dep'] = 'LFQQ'
+            d[1]['route']['text'] = 'LFQQ ' + ' '.join(d[1]['route']['text'].split()[1:])
+            d[1]['route']['points'] = d[1]['route']['points'][1:]
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    c.until("window.__ad.go !== null", timeout=10000, what='the name of LFQQ asked to the base (held)')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    B = f'{FUEL} [data-noprocad=LFQQ] [data-do=procfetch][data-icao=LFQQ]'
+    c.until(f"!!document.querySelector('{B}:not([disabled])')", timeout=10000,
+            what='while the base has not answered: the line of the route offers the reading of LFQQ')
+    note = "(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)"
+    # 1. the base has not answered when the reading is refused
+    c.tap(B)
+    c.until(note, 'La base n’a pas encore répondu pour LFQQ. Réessayez dans un instant.', timeout=8000,
+            what='the base has not answered: said so (red before: « Lecture de LFQQ refusée (unknown-aerodrome) »)')
+    # 2. a second reading, held; the base answers during it (it does not know LFQQ), then the reading is refused
+    c.js("window.__ad.hold = true")
+    c.until(f"!!document.querySelector('{B}:not([disabled])')", timeout=8000, what='the reading of LFQQ offered again')
+    c.tap(B)
+    c.until("typeof window.__ad.release === 'function'", timeout=8000, what='the second reading of LFQQ under way (held)')
+    c.js("window.__ad.go(null)")
+    c.until(f"document.querySelector('{FUEL} [data-adline=dep]')?.dataset.state === 'unknown'", timeout=8000, what='the field says « inconnu »')
+    c.js("window.__ad.release()")
+    c.until(note, 'LFQQ n’est pas dans la base : aucune procédure à lire.', timeout=8000,
+            what='the base has answered during the reading and does not know the code: said so')
+    c.until(f"!document.querySelector('{FUEL} [data-do=procfetch][data-icao=LFQQ]')", timeout=8000,
+            what='and the reading of LFQQ is offered no more (F344: a code the base does not know)')
