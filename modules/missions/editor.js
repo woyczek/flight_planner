@@ -42,7 +42,11 @@
 //     ou pour un contour illisible, gardé tel quel) ; ringOf(row) → [[lat, lon]…] | null ; ringMiddle(ring) ; moveVertex, insertVertex,
 //     removeVertex(rows, i, k[, pos]) ; toContour(rows, i) et toRound(rows, i) ; movePlace déplace un contour d'un bloc ; VERTICES :
 //     3 à 100 sommets ; withPlaces écrit les sommets retouchés sous la clé du fichier (points, polygon ou vertices) ;
-//     la route du départ (Tracé, push 3b) : routeOf(doc) → ses identifiants (route_order, soixante au plus) ; withRoute(doc, ids) → un
+//     la route du départ (Tracé, push 3b) : routeOf(doc) → ses identifiants (route_order, soixante au plus) ; routeShown(doc) → { ids, from } :
+//     l'ORDRE que l'atelier montre (SOG-0684 : le lecteur, `readMission(doc).route`, est la seule règle d'ordre — `written` : route_order tel quel (ids = routeOf) ;
+//     `profile` / `deduced` : « ORIGIN », les lieux dans l'ordre lu, « DESTINATION », soixante au plus ; sans lecteur : routeOf, from `written` ou '') ;
+//     withShownRoute(doc) → le document écrit à l'enregistrement : `route_order` posé depuis l'ordre montré quand il vient du profil ou d'une déduction
+//     (vertical_profile.route n'est jamais retouché) ; withRoute(doc, ids) → un
 //     NOUVEAU document (rien de changé, rien de réécrit ; une entrée du fichier garde sa forme) ; routeToken(ligne) → « ORIGIN »,
 //     « DESTINATION » ou l'identifiant du lieu ; ROUTE_MAX ; deadRefs(doc) → les références qui ne
 //     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc), drawersNoKey(doc) → les cartes au centre vidé, les parties au délai
@@ -1599,6 +1603,32 @@ function routeParts(doc) {
  *  une entrée sans identifiant est sautée. */
 export function routeOf(doc) {
   return routeParts(doc).ids;
+}
+
+/** L'ORDRE de la route que l'atelier montre (voir l'en-tête) : { ids, from } — from : 'written' | 'profile' | 'deduced' | ''. Ne lève jamais. */
+export function routeShown(doc) {
+  const own = routeOf(doc),
+    written = arrOf(obj(doc).route_order).length > 0;
+  try {
+    const r = MS.readMission(obj(doc))?.route;
+    if (r && (r.from === 'profile' || r.from === 'deduced') && Array.isArray(r.order)) return {
+      ids: ['ORIGIN', ...r.order.map(x => cut(x, 40)).filter(Boolean).slice(0, ROUTE_MAX - 2), 'DESTINATION'],
+      from: r.from
+    };
+  } catch {
+    /* le fichier tel qu'il est */
+  }
+  return {
+    ids: own,
+    from: written ? 'written' : ''
+  };
+}
+
+/** Le document à ÉCRIRE : `route_order` posé depuis l'ordre montré quand il vient du profil vertical ou d'une déduction (la mission ne l'écrivait pas) ;
+ *  vertical_profile.route n'est jamais retouché ; un ordre écrit : le document tel quel. */
+export function withShownRoute(doc) {
+  const r = routeShown(doc);
+  return r.from === 'profile' || r.from === 'deduced' ? withRoute(doc, r.ids) : doc;
 }
 
 /** Le document avec cette route du départ (un NOUVEAU document). Rien de changé — les mêmes identifiants dans le même ordre — : rien

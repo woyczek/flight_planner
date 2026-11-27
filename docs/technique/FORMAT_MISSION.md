@@ -55,6 +55,8 @@ phases:
 - **Not a secret**: a pilot who opens the file reads the drawer. It is a game's seal, as the V2's sealed folds are.
 - **The route of a drawer** never enters the mission's own route (`route_order` at the top): the pilot takes it by a
   gesture. Its first id is the splice — the trigger point in a V2 part, the last point of the part before in the workshop.
+- **The order of the mission's route** is read by the reader (`readMission(doc).route`): `route_order`, else `vertical_profile.route`, else a deduction from the places. When the file
+  has no `route_order`, the workshop shows that order and, on « Enregistrer » (only when something else changed), writes `route_order` from it; `vertical_profile.route` is never touched.
 - A private block `x_mission_editor` and `coordination` (the workshop's) are not read; whoever rewrites the file keeps them as
   they are. `emit_event` is read as `emits` (§ 4) and written by the V3 workshop (§ 4 quinquies).
 

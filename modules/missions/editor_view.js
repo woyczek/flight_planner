@@ -1173,7 +1173,7 @@ function edPlaceFormHtml(s, r, i, {
 }
 
 /** La route du départ de la séance : ses identifiants (s.ed.route quand elle a été retouchée, sinon ceux du fichier). */
-const edRoute = e => e.route || ED.routeOf(edDoc(e));
+const edRoute = e => e.route || ED.routeShown(edDoc(e)).ids; // SOG-0684 : l'ordre que le lecteur lit (écrit, profil vertical ou déduit)
 
 /** L'étape Récit (cinq éléments : résumé, description, objectif principal, objectifs secondaires, charge). */
 function edStoryHtml(s) {
@@ -1690,6 +1690,7 @@ function edItinHtml(s, doc, run = null) {
       object: EDTX.plObject
     },
     route = edRoute(e),
+    from = ED.routeShown(doc).from,
     ok = edStepOk(e, doc, 'places') && !lines.some(l => l.kind === 'place' && l.where !== 'out' && said.needs(rows[l
       .i])), // lot 4 : « ! » dès qu'une ligne est à remplir ou à placer
     todo = new Set(edDrawersTodo(doc).map(t => t.name)),
@@ -1711,6 +1712,9 @@ function edItinHtml(s, doc, run = null) {
     // lot 3 : la limite « connu au départ / caché jusqu'au tiroir » — deux intitulés
     if (!headDone) {
       html.push(`<h4 class="ms-itin-lim" data-itinlim="start">${esc(s.tt(EDTX.itHeadStart))}</h4>`);
+      // SOG-0684 : d'où vient l'ordre, quand la séance n'a pas sa route : le profil (gris) ou une déduction (orange, « Garder cet ordre » la pose)
+      if (!e.route && from === 'profile') html.push(`<p class="f-muted" data-itinfrom="profile">${esc(s.tt(EDTX.itFromProfile))}</p>`);
+      if (!e.route && from === 'deduced') html.push(`<p data-itinfrom="deduced" style="color:var(--sog-warn,#b45309)">${esc(s.tt(EDTX.itFromDeduced))} <button type="button" class="f-linkbtn" data-do="edkeeporder">${esc(s.tt(EDTX.itKeepOrder))}</button></p>`);
       headDone = true;
     }
     if (l.kind === 'drawer' && !drawDone) {
@@ -4667,7 +4671,7 @@ async function edSave(s) {
   draw(s);
   try {
     if (!globalThis.jsyaml) await edYamlReady();
-    const doc = edDoc(e, c);
+    const doc = ED.withShownRoute(edDoc(e, c)); // SOG-0684 : route_order écrit depuis l'ordre montré
     await s.ctx.data.put(path, ED.yamlText(doc, globalThis.jsyaml), {
       module: 'missions'
     });
@@ -4820,6 +4824,10 @@ export function edClick(s, b) {
       return edResume(s, String(b.dataset.key || ''));
     case 'edsave':
       return edSave(s);
+    case 'edkeeporder': // SOG-0684 : « Garder cet ordre » — la route de la séance devient l'ordre déduit ; ↶ la rend
+      edMapRemember(s.ed);
+      s.ed.route = ED.routeShown(edDoc(s.ed)).ids;
+      return draw(s);
     case 'edtrial': { // « Essayer les clés » : le volet de l'essai prend la place de la fiche ; rien n'est écrit dans la mission
       const e = s.ed,
         m = edLocated(s, edDoc(e)).m, // le départ et l'arrivée situés par la base, comme la carte et l'essai (SOG-0625)
