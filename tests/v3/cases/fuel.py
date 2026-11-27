@@ -10128,7 +10128,7 @@ def f302(c):
 
 @case('F303', '« Proposer un dégagement »: a FAILED read of the weather says « météo non lue » with its reason (« source météo injoignable »), '
       'never « aucun TAF lu »; the terrain is « warn » in the document of the Map and comes after the terrains whose weather is read; a '
-      'flight without its date: « wx-notime », the existing sentence', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True,
+      'flight without its date leaves now (SOG-0690): its terrains judged on their TAF, never « wx-notime »', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True,
       langs4=True,
       rule='SOG-0544 (the relay, 21 Nov: « je vérifierai au go qu\'un W.taf en échec dit la lecture manquée (« météo non lue » avec sa '
       'raison), jamais « aucun TAF » »); a fake launcher whose relay answers 500, invented aerodromes and TAFs')
@@ -10164,25 +10164,17 @@ def f303(c):
         c.settle()
         c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F303_{c.design}_{w}_{L}_failed.png')
-    # a flight without its date: no hour of arrival at the alternate, « wx-notime » for every terrain
+    # a flight without its date leaves now (SOG-0690, the user: « la suite doit être faite »; it replaces the « wx-notime » of SOG-0559):
+    # its terrains judged on their TAF at the present time, nothing said « without a date »
     _prop_open(c, tafs={'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'}, planned=False)
     c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
     c.tap(f'{B} [data-do=altnpropose]')
-    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) > 0 and d.get('key') and all(x['why'] for x in d['list']),
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) > 0 and d.get('key') and any(x['icao'] == 'XQPB' for x in d['list']),
                     'the document of the Map', timeout=20000)
-    c.ok(all(x['state'] == 'warn' and x['why'][-1] == 'wx-notime' for x in d['list']), d['list'],
-         'no date: every terrain « warn » with « wx-notime » (red before: « ok », « wx-unread »)')
+    c.ok(not any('wx-notime' in (x.get('why') or []) for x in d['list']), d['list'], 'no date: no terrain « wx-notime » (SOG-0690)')
+    c.eq({x['icao']: x['state'] for x in d['list']}.get('XQPB'), 'ok', 'XQPB, a VFR TAF, judged at the present time', what='no date')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
-    # SOG-0559 (the ergonomist, 23 Nov) — changed on purpose: every one « ? » for the same cause (no date): the cause said ONCE above the
-    # list, the rows keep « ? » without the sentence
-    once = {'fr': 'Sans date de vol, la météo des dégagements n’est pas jugée.', 'en': 'Without a flight date, the weather of the alternates is not judged.',
-            'de': 'Ohne Flugdatum wird das Wetter der Ausweichflugplätze nicht beurteilt.',
-            'es': 'Sin fecha de vuelo, la meteorología de los alternativos no se evalúa.'}[L]
-    c.eq(norm(c.text(f'{B} [data-altnprop] [data-altnwxall]') or ''), norm(once), 'the cause once, above the list', what='once')
-    rows = [norm(x) for x in c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.textContent)")]
-    c.ok(not any(norm(tx(T, 'wxNoTime', L, after='altnWhy')) in r for r in rows), rows, 'no row repeats it')
-    c.ok('ok' not in c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(e => e.dataset.state)"), 'ok',
-         'the rows keep their sign, never judged good without a date')
+    c.eq(c.count(f'{B} [data-altnprop] [data-altnwxall]'), 0, 'no « Sans date de vol » above the list', what='once')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': 900})
         c.settle()
@@ -10960,8 +10952,8 @@ _AW_WORDS = {
 
 @case('F313', 'Flight step, the alternate whose weather is not judged: the sign stays « ? » (never the colour of a category from the '
       'METAR), and the line itself says why — « LFMT : pas de TAF. » —, then, when a METAR exists, the observation « METAR de 14:20Z : '
-      'VFR. »; without a METAR either: « LFMT : ni TAF ni METAR. »; without a flight date: « Sans date de vol, la météo du dégagement '
-      'n’est pas jugée. »; the fold keeps the rule without saying the cause again',
+      'VFR. »; without a METAR either: « LFMT : ni TAF ni METAR. »; without a flight date the flight leaves now (SOG-0690): the same '
+      '« pas de TAF » and the observation; the fold keeps the rule without saying the cause again',
       'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0559 (the user, EGGW → LQSA: « lqtz a bien un metar, il est lu en page 3. en page 1, il apparaît en « ? »; the ergonomist '
       'chose (a), 23 Nov: a METAR is an observation, it never judges an alternate; the cause on the line, always visible); a fake '
@@ -11002,10 +10994,10 @@ def f313(c):
         c.wait(400)
         c.shot(f'F313_{c.design}_{w}_{c.lang}_notaf.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    # 3. no flight date: the sentence, then the observation
+    # 3. no flight date: the flight leaves now (SOG-0690) — its TAF asked, none: the same cause and the observation, never « Sans date »
     _prop_net(c, tafs={}, metars={'LFMT': metar})
     _prop_open(c, tafs={}, planned=False)
-    c.eq(line(), norm(f"{W['notime']} {W['obs'].format(t=at)}"), 'without a flight date, then the observation', what='no date')
+    c.eq(line(), norm(f"{W['notaf']} {W['obs'].format(t=at)}"), 'without a flight date: « pas de TAF », then the observation', what='no date')
     c.check_errors()
 
 

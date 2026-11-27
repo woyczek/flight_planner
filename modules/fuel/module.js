@@ -3865,13 +3865,12 @@ const WX_METAR_OLD_S = 3600,
   WX_TAF_OLD_S = 7 * 3600;
 /** METAR et TAF des terrains du couloir par la couche météo du cadre (ctx.weather.metar / taf : aviationweather.gov
  *  relayé par le lanceur, sinon metar.vatsim.net et avwx.rest avec la clé de l'appareil ; gardés 30 min par terrain) ;
- *  hors ligne, sa réserve. Les TAF seulement quand une date de vol les rend utiles (terrains avec METAR, départ,
- *  arrivée, dégagement). Fiche des terrains (axe de piste) par aerodb. loud : les refus sont dits. */
+ *  hors ligne, sa réserve. Les TAF des terrains avec METAR, du départ, de l'arrivée et du dégagement (SOG-0690 : un vol sans date part
+ *  maintenant, ses TAF sont lus aussi). Fiche des terrains (axe de piste) par aerodb. loud : les refus sont dits. */
 async function wxFetch(loud = false) {
   // lecture programmée (scheduleWx) partie après le démontage ; SOG-0493 : ou un montage dont le vol n'est pas encore lu (completeMount)
   if (!S?.flight) return;
-  const s = S,
-    when = wxWhen();
+  const s = S;
   await wxCorridor();
   if (gone(s)) return;
   const ids = wxIds();
@@ -3894,7 +3893,7 @@ async function wxFetch(loud = false) {
         cacheOnly
       }),
       r = s.flight.route || {},
-      tafIds = when == null ? [] : ids.filter(id => m.items[id] || [r.dep, r.arr, r.altn].includes(id)),
+      tafIds = ids.filter(id => m.items[id] || [r.dep, r.arr, r.altn].includes(id)),
       t = tafIds.length ? await W.taf(tafIds, {
         cacheOnly
       }) : null;
@@ -4215,6 +4214,8 @@ const wxWhen = () => {
   const t = Date.parse(S?.flight?.planned_at || ''); // SOG-0493 : un montage dont le vol n'est pas encore lu n'a pas de date
   return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
+/** SOG-0690 : l'heure du départ (ms) pour juger la météo — la date du vol, sinon maintenant (un vol sans date part maintenant, whenField). */
+const depMs = () => Date.parse(S?.flight?.planned_at || '') || Date.now();
 /** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
 const wxStations = () => {
   const r = S.flight.route || {},
@@ -5659,7 +5660,7 @@ async function altnChkDraw(C) {
   }
   const sheet = C?.sheet || null,
     q = C?.q,
-    dep = Date.parse(S.flight.planned_at || ''),
+    dep = depMs(), // SOG-0690 : sans date, le vol part maintenant
     min = Number.isFinite(+q?.minutes) ? +q.minutes + (Number.isFinite(+q?.alternate?.min) ? +q.alternate.min : 0) : NaN,
     t = Number.isFinite(dep) && Number.isFinite(min) ? Math.round(dep / 1000 + min * 60) : null,
     crits = [AC.runwayOf(S.altnData.ad, sheet?.minRunwayLengthFt, sheet?.runwayType), AC.aidsOf(S.altnData.cov),
@@ -5758,7 +5759,7 @@ async function altnArrPos(r) {
  *  départ du vol + durée de l'étape + son dégagement), sinon le mot de la météo inconnue (SOG-0544 : « météo non lue » pour une lecture qui n'a pas eu lieu). */
 function altnPropCrits(x) {
   const P = S.altnProp,
-    dep = Date.parse(S.flight.planned_at || ''),
+    dep = depMs(), // SOG-0690 : sans date, le vol part maintenant
     q = S.altnIn?.q,
     min = Number.isFinite(+q?.minutes) && Number.isFinite(+x.cost?.min) ? +q.minutes + +x.cost.min : NaN,
     t = Number.isFinite(dep) && Number.isFinite(min) ? Math.round(dep / 1000 + min * 60) : null,
