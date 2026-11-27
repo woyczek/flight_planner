@@ -17888,7 +17888,8 @@ def n301(c):
 
 
 @case('N302', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a route_order WRITTEN — no line of provenance; « Enregistrer » after a change of title keeps route_order '
-      'and vertical_profile.route as they were (the profile is never touched)', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      'and vertical_profile.route as they were (the profile is never touched); a direct flight (route_order: [ORIGIN, DESTINATION]) is written too: no line, '
+      'every place « Hors itinéraire »', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
       rule='SOG-0684: a written order is the order; vertical_profile.route is never rewritten by the workshop')
 def n302(c):
     _ord_open(c, 'route_order: [ORIGIN, PT2, PT1, DESTINATION]\nvertical_profile:\n  route: PT1 PT3\n')
@@ -17906,4 +17907,11 @@ def n302(c):
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
     c.eq([f['route'], f['vp'], f['title']], [['ORIGIN', 'PT2', 'PT1', 'DESTINATION'], {'route': 'PT1 PT3'}, 'Titre retouché'], 'route_order unchanged, the profile as it was, the title changed', what='file')
     c.ok('vertical_profile:\n  route: PT1 PT3\n' in t, t[t.find('vertical_profile'):][:80], 'the profile line, character for character')
+    ed_leave(c)
+    # a DIRECT flight: a route_order that names the departure and the arrival only is a written order too (V3 Frame, faefa979a) — no line, no
+    # deduced order, the three places « Hors itinéraire », even with a profile that names them
+    _ord_open(c, 'route_order: [ORIGIN, DESTINATION]\nvertical_profile:\n  route: PT1 PT2 PT3\n')
+    c.eq(_ord_read(c), ([], 3, 0), 'a direct flight: no place on the route, the three « Hors itinéraire »', what='direct')
+    c.eq(c.js(_ORD_FROM), [], 'no line of provenance: the order is written (empty)', what='direct provenance')
+    ed_leave(c)
     c.js(_REG_CLEAR)

@@ -1608,7 +1608,7 @@ export function routeOf(doc) {
 /** L'ORDRE de la route que l'atelier montre (voir l'en-tête) : { ids, from } — from : 'written' | 'profile' | 'deduced' | ''. Ne lève jamais. */
 export function routeShown(doc) {
   const own = routeOf(doc),
-    written = arrOf(obj(doc).route_order).length > 0;
+    written = Array.isArray(obj(doc).route_order); // la règle du lecteur : un route_order PRÉSENT est écrit, même vide
   try {
     const r = MS.readMission(obj(doc))?.route;
     if (r && (r.from === 'profile' || r.from === 'deduced') && Array.isArray(r.order)) return {
