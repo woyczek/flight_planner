@@ -1313,9 +1313,8 @@ def _ch_open(c, cur, side='arr', icao='LFML', extra=(), file=None, lfrs=None):
 
 
 def _ch_keep(c, pid):
-    """(a1, SOG-0569) A procedure is chosen in TWO touches: its row ticks it (a number, a hue), « Choisir » on the ticked row keeps it for the flight."""
+    """(SOG-0654) A procedure is chosen in ONE touch: its row."""
     c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.tap(f'.mp-ch-pick[data-pick="{pid}"]')
 
 
 def _grp(r, fam):
@@ -1375,27 +1374,25 @@ def d60(c):
     L = c.js(_CH_LAYOUT, ['LFML.STAR.S3A.RW31.NONE', 'star'])
     hues = [x['c'] for x in star]
     c.eq(L['focus'], 'star', 'the runway is chosen: the STARs are the family drawn', what='focus')
-    c.eq(len(set(hues)), 1, 'every STAR is a CANDIDATE: one neutral grey for all the rows, no hue taken before a tick', what=f'hues {hues}')
-    c.eq(L['n'], 9, 'one trace per STAR, nothing chosen yet', what='traces')
-    c.eq(L['dim'], 9, 'the nine are candidates: thin, grey', what='candidate traces')
+    c.eq(len(set(hues)), 8, 'every STAR carries the number of the opening: the eight hues in order, the ninth takes the first (SOG-0654)', what=f'hues {hues}')
+    c.eq(L['n'], 9, 'one trace per procedure that serves 31 (eight STARs and the approach I31), nothing chosen yet', what='traces')
+    c.eq(L['dim'], 0, 'none is a thin grey candidate: each has its number and its hue', what='candidate traces')
     c.eq(L['groups'], [], 'no label of a family on the map: a candidate carries no name', what='labels')
     c.eq(L['at'], 'LFML.STAR.S3A.RW31.NONE', 'a tap on a trace finds its procedure', what='hit on the S3A trace')
     c.eq(L['nothing'], None, 'a tap on nothing finds nothing', what='hit on nothing')
     c.eq(sorted(a[0] for a in L['arrows']), ['13', '31'], 'every runway is drawn', what='runways')
-    # (a1) a STAR ticked, then chosen: the tick takes the first hue and number 1, « Choisir » keeps it for the flight (route colour, the number freed);
-    # it stays in the pane and on the map, the other STARs candidates, nothing written, the address unchanged
+    # SOG-0654: ONE touch chooses: S3A takes the colour of the route and keeps its number; the other STARs stay candidates with theirs;
+    # it stays in the pane and on the map, nothing written, the address unchanged
     s3 = 'LFML.STAR.S3A.RW31.NONE'
+    n3 = c.js("(id) => document.querySelector(`.mp-ch-row[data-id=\"${id}\"] .mp-ch-n`).textContent", s3)
+    c.ok(n3.isdigit(), n3, 'its row carries its number from the opening')
     c.tap(f'.mp-ch-row[data-id="{s3}"]')
-    c.until("(id) => { const b = document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`); return !!b && b.getAttribute('aria-checked') === 'true' }", s3,
-            what='the STAR is ticked in the pane')
-    c.eq(c.js("(id) => document.querySelector(`.mp-ch-row[data-id=\"${id}\"] .mp-ch-n`).textContent", s3), '1', 'it takes the number 1', what='number')
-    c.eq(c.count('.mp-ch-pick'), 1, '« Choisir » is offered on the ticked row only', what='pick buttons')
-    c.tap(f'.mp-ch-pick[data-pick="{s3}"]')
     c.until("(id) => { const b = document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`); return !!b && b.getAttribute('aria-pressed') === 'true' }", s3,
             what='the STAR is chosen in the pane')
-    c.eq(c.count('.mp-ch-pick'), 0, 'chosen: no ticked row left, no « Choisir »', what='pick buttons')
+    c.eq([c.count('.mp-ch-pick'), c.js("(id) => document.querySelector(`.mp-ch-row[data-id=\"${id}\"] .mp-ch-n`).textContent", s3)], [0, n3],
+         'no « Choisir » any more; the chosen row keeps its number', what='chosen row')
     L = c.js(_CH_LAYOUT, [s3, 'star'])
-    c.eq(L['dim'], 8, 'the other eight STARs stay candidates, the chosen one drawn in the colour of the route', what='candidate traces')
+    c.eq([L['n'], L['dim'], L['last']], [9, 0, s3], 'the other STARs stay numbered candidates; the chosen one is drawn last, in the colour of the route', what='traces')
     c.eq(c.js('window.__hc'), [], 'the address does not change: the selection stays in the pane', what='address changes')
     # the runway changed: S3A does not serve 13 (13 is folded under "All") — the line offers the first STAR of the group that does
     c.ok(not c.count('.mp-ch-row[data-fam="rwy"][data-id="13"]'), 'runway 13 shown', 'S3A chosen: only the runway it serves is shown')
@@ -2659,9 +2656,9 @@ def d91(c):
     got = c.js("""async (p) => { const ch = await import('/modules/maps/choose.js'), S = window.__mp.S, id = ch.chooseAt(p.x, p.y);
       ch.chooseTap(p.x, p.y); const row = S.choose.model.rows.find(i => i.id === id);
       const btn = document.querySelector(`.mp-ch-row[data-id="${id}"]`);
-      return { id, ticked: S.choose.slot.has(id), chosen: !!row && row.chosen, fam: row && row.fam, checked: btn && btn.getAttribute('aria-checked') } }""", e['spot'])
-    c.ok(got['id'] and got['ticked'] and not got['chosen'], f'{got}', 'touching a candidate trace TICKS its procedure (it is not chosen until « Choisir »)')
-    c.eq(got['checked'], 'true', 'its row in the pane is ticked', what=f'row {got["id"]}')
+      return { id, ticked: S.choose.slot.has(id), chosen: !!row && row.chosen, fam: row && row.fam, checked: btn && btn.getAttribute('aria-pressed') } }""", e['spot'])
+    c.ok(got['id'] and got['chosen'], f'{got}', 'touching a candidate trace CHOOSES its procedure (SOG-0654: one touch)')
+    c.eq(got['checked'], 'true', 'its row in the pane is chosen', what=f'row {got["id"]}')
     c.eq(c.doc(PATH), before, 'nothing written before « Done »', what='the flight')
 
 
@@ -10624,112 +10621,150 @@ def d316(c):
 
 
 # ------------------------------------------------------------------------------------------------------ D317, D318 (SOG-0569, (a1))
-# the STARs of the pane that are shown (six), by id, and what each row says of itself: its state, its number, a « Choisir » beside it
+# the STARs of the pane that are shown (six), by id, and what each row says of itself: its state, its number, its hue, faded or not (SOG-0654: one touch chooses)
 _CH_STARS = """() => [...document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => b.dataset.id)"""
-_CH_TICKS = """() => Object.fromEntries([...document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id,
-  { state: b.dataset.state, n: (b.querySelector('.mp-ch-n') || {}).textContent || '', pick: b.parentElement.classList.contains('mp-ch-item'), small: !!b.querySelector('small') }])) """
-_CH_COUNT = "() => (document.querySelector('.mp-ch-cnt') || {}).textContent.replace(/\\s+/g, ' ').trim()"
+_CH_NUMS = """() => Object.fromEntries([...document.querySelectorAll('.mp-ch-grp:not([data-fam=rwy]) .mp-ch-row')].filter(b => b.querySelector('.mp-ch-n')).map(b => [b.dataset.id,
+  { state: b.dataset.state, n: b.querySelector('.mp-ch-n').textContent, c: b.style.getPropertyValue('--c'), faded: b.hasAttribute('data-faded'), small: !!b.querySelector('small') }])) """
 _CH_DISCS = """async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC);
-  return { discs: L.discs.map(d => [d.it.id, d.n]).sort((a, b) => a[1] - b[1]), dim: L.traces.filter(t => t.dim).length, n: L.traces.length } }"""
+  return { discs: L.discs.map(d => [d.it.id, d.n, d.col]).sort((a, b) => a[1] - b[1]), dim: L.traces.filter(t => t.dim).length, n: L.traces.length, route: MapsRender.palette(!!S.theme.dark).route } }"""
+_CH_RWYROW = "(r) => (document.querySelector(`.mp-ch-row[data-fam=rwy][data-id=\"${r}\"]`) || {}).textContent || ''"
+_S2, _S3, _I31 = 'LFML.STAR.S2A.RW31.NONE', 'LFML.STAR.S3A.RW31.NONE', 'LFML.APP.I31.RW31.NONE'
 
 
-@case('D317', 'Choosing on the Map (a1): a touch TICKS a candidate (the lowest free number), eight at most, « Choisir » keeps one for the flight', 'D', tags=('maps',),
-      screens=False, designs=('standard',), night=False, langs4=True,
-      rule='SOG-0569 (a1), maquette v2 #choisir0/5/8: the procedures of the family are CANDIDATES (grey, thin, unnamed); a touch on a row or a trace ticks (number in a disc, the first free hue), a second touch unticks; the counter says n / 8; the ninth is refused by the decided sentence in the frame notification; « Choisir » is offered only on a ticked row; the chosen procedure takes the colour of the route, is no longer ticked (its number is freed), the one it replaces becomes a grey candidate; the chosen row is a state (no button), a touch on it changes nothing; no gesture « remove the choice »')
+def _pressed(c, sel, what):
+    c.until(f"() => {{ const b = document.querySelector('{sel}'); return !!b && b.getAttribute('aria-pressed') === 'true' }}", timeout=10000, what=what)
+
+
+@case('D317', 'Choosing on the Map (SOG-0654, third version): every candidate has its NUMBER and its hue from the opening, no cap of eight; ONE touch chooses (route colour, « choisie pour le vol »), another of the family replaces it, the chosen one is never removed by a touch, « Aucune » fades the candidates of its family', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='SOG-0654, mock-up choisir_v3.html read by the ergonomist (26 Nov): replaces the second version (tick, « Choisir », eight at most). Invented LFML: nine STARs and two approaches, eleven candidates, all drawn with a numbered disc (no cap); the ninth takes the hue of the first, the list gives the same number and hue as the map; a touch on a row or a trace chooses; a touch on the chosen one changes nothing; « Aucune » chosen: the candidates of the family stay, faded. French only (the new texts, debt SOG-0680)')
 def d317(c):
-    _ch_open(c, {'rwy': '31'})
+    _ch_open(c, {})
+    d = c.js(_CH_DISCS)
+    c.eq(len(d['discs']), 11, 'no runway, nothing chosen: the eleven candidates (nine STARs, two approaches) are all drawn with their disc: no cap of eight', what='discs')
+    c.eq([x[1] for x in d['discs']], list(range(1, 12)), 'the numbers are 1 to 11, each once', what='numbers')
+    cols = [x[2] for x in d['discs']]
+    c.eq([cols[8] == cols[0], cols[9] == cols[1], len(set(cols))], [True, True, 8], 'the ninth takes the hue of the first, the tenth of the second: the number is the identity', what='hues')
+    c.eq(c.count('.mp-ch-pick') + c.count('.mp-ch-cnt'), 0, 'no « Choisir » button and no counter any more', what='old controls')
+    disc = {p: n for p, n, _ in d['discs']}
     ids = c.js(_CH_STARS)
-    c.eq(len(ids), 6, 'six STARs shown, the rest folded', what='rows')
-    c.eq(c.js(_CH_COUNT), '0 / 8', 'nothing ticked: the counter says 0 / 8', what='counter')
-    c.eq(c.count('.mp-ch-pick'), 0, 'and no « Choisir » anywhere', what='pick buttons')
-    d = c.js(_CH_DISCS)
-    c.eq([d['discs'], d['dim'] == d['n']], [[], True], 'every trace is a candidate, no disc', what='map at the start')
-    # three ticks: 1, 2, 3 ; the second unticked: its number is free and the next tick takes it (the lowest free)
-    for pid in ids[:3]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    t = c.js(_CH_TICKS)
-    c.eq([t[p]['n'] for p in ids[:3]], ['1', '2', '3'], 'three ticks take 1, 2, 3', what='numbers')
-    c.eq([t[p]['pick'] for p in ids[:4]], [True, True, True, False], '« Choisir » only on the ticked rows', what='pick buttons')
-    c.eq(c.js(_CH_DISCS)['discs'], [[ids[0], 1], [ids[1], 2], [ids[2], 3]], 'the map: one disc per tick, the same numbers', what='discs')
-    c.tap(f'.mp-ch-row[data-id="{ids[1]}"]')
-    c.tap(f'.mp-ch-row[data-id="{ids[3]}"]')
-    t = c.js(_CH_TICKS)
-    c.eq([t[ids[1]]['state'], t[ids[1]]['n'], t[ids[3]]['n']], ['cand', '', '2'], 'unticked: back to a candidate with no number; the next tick takes the freed 2', what='lowest free')
-    # a touch on a trace ticks too (the nearest candidate in the finger\'s target), a second one unticks
-    # eight at most: the ninth is refused by the sentence, nothing changes
-    c.tap('.mp-ch-fold[data-more="star"]')
-    c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
-    every = [p for p in c.js(_CH_STARS) if p not in (ids[0], ids[2], ids[3])]
-    for pid in every[:5]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked: 8 / 8', what='counter')
-    ninth = [p for p in c.js(_CH_STARS) if c.js(_CH_TICKS)[p]['state'] == 'cand'][0]
-    before = c.js(_CH_TICKS)
-    c.tap(f'.mp-ch-row[data-id="{ninth}"]')
-    want = norm(tx(M, 'chMax', c.lang))
-    c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(want)}))", timeout=8000,
-            what='the notification of the ninth, in the decided words')
-    c.eq(c.js(_CH_TICKS), before, 'the ninth is refused: nothing ticked, nothing changed', what='refused')
-    c.eq(c.js(_CH_COUNT), '8 / 8', 'still 8 / 8', what='counter')
-    # « Choisir » on the first: route colour, no longer ticked, its number is free, a state (no button, a line « choisie pour le vol »)
-    first = ids[0]
-    c.tap(f'.mp-ch-pick[data-pick="{first}"]')
-    c.until("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`) || {}).dataset.state === 'chosen'", first, what='the STAR is chosen')
-    t = c.js(_CH_TICKS)
-    c.eq([t[first]['state'], t[first]['pick'], t[first]['small']], ['chosen', False, True], 'the chosen row is a state: no « Choisir », « choisie pour le vol » below', what='chosen row')
-    c.eq(c.js(_CH_COUNT), '7 / 8', 'its number is freed: 7 / 8', what='counter')
-    d = c.js(_CH_DISCS)
-    c.ok(all(p != first for p, n in d['discs']) and len(d['discs']) == 7, str(d['discs']), 'the map: no disc on the chosen one, seven discs left')
+    t = c.js(_CH_NUMS)
+    c.eq({p: int(t[p]['n']) for p in ids}, {p: disc[p] for p in ids}, 'the list gives the same number as the map', what='list numbers')
+    first, second = ids[0], ids[1]
     c.tap(f'.mp-ch-row[data-id="{first}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{first}"]', 'one touch chooses')
+    t, d = c.js(_CH_NUMS), c.js(_CH_DISCS)
+    c.eq([t[first]['state'], t[first]['small'], t[first]['n']], ['chosen', True, str(disc[first])], 'the chosen row is a state with « choisie pour le vol » and keeps its number', what='chosen row')
+    c.eq([{p: col for p, n, col in d['discs']}[first], len(d['discs'])], [d['route'], 11], 'on the map its disc takes the colour of the route; the ten others stay numbered candidates', what='map')
+    c.tap(f'.mp-ch-row[data-id="{second}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{second}"]', 'another of the family replaces it')
+    t = c.js(_CH_NUMS)
+    c.eq([t[first]['state'], t[first]['n'], t[second]['state']], ['cand', str(disc[first]), 'chosen'], 'the first is a candidate again, with its own number', what='replaced')
+    c.tap(f'.mp-ch-row[data-id="{second}"]')
     c.wait(300)
-    c.eq(c.js(_CH_TICKS)[first]['state'], 'chosen', 'a touch on the chosen row changes nothing (no gesture « remove the choice »)', what='chosen stays')
-    # another one chosen: the first becomes a grey candidate (no number taken by itself); the freed number is taken again by the next tick
-    second = ids[2]
-    c.tap(f'.mp-ch-pick[data-pick="{second}"]')
-    c.until("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`) || {}).dataset.state === 'chosen'", second, what='the second is chosen')
-    t = c.js(_CH_TICKS)
-    c.eq([t[first]['state'], t[first]['n'], t[first]['pick'], t[second]['state']], ['cand', '', False, 'chosen'], 'the replaced one is a plain candidate again', what='replaced')
-    c.eq(c.js(_CH_COUNT), '6 / 8', '6 / 8', what='counter')
+    c.eq(c.js(_CH_NUMS)[second]['state'], 'chosen', 'a touch on the chosen one does not remove it', what='chosen stays')
+    c.tap('.mp-ch-grp[data-fam=star] .mp-ch-row[data-id="none"]')
+    c.until("() => (document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-none') || {}).dataset.state === 'chosen'", timeout=10000, what='« Aucune » is chosen')
+    t = c.js(_CH_NUMS)
+    c.ok(all(t[p]['faded'] and t[p]['state'] == 'cand' for p in ids), str({p: t[p] for p in ids}), '« Aucune »: the STARs stay as candidates, faded')
+    c.eq(len(c.js(_CH_DISCS)['discs']), 11, 'and stay drawn on the map', what='discs after Aucune')
+    c.eq(_back(c, 'done'), {'focus': 'arr', 'star': 'none'}, '« Aucune » is the one thing written for the family', what='keys')
+
+
+@case('D335', 'Choosing on the Map (SOG-0654): « Toutes » is the first runway row; a chosen runway leaves only the procedures that serve it, the numbers staying those of the opening; changing the runway KEEPS the choices that serve the new one and REMOVES the others, one line per removal, written back as « Aucune »', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0654 (the ergonomist, 26 Nov): « changer de piste garde les choix qui desservent la nouvelle piste et retire les autres », one floating line per removal (« {procédure} ne dessert pas la piste {n} : choix retiré. »); a procedure whose runway is changed under it is not left chosen in silence. Invented LFML: S2A serves 31 and 13 (kept), I31 serves 31 only (removed by the touch of « Piste 13 »)')
+def d335(c):
+    _ch_open(c, {})
+    first = c.js("() => { const b = document.querySelector('.mp-ch-grp[data-fam=rwy] .mp-ch-none'); return [b.dataset.state, b.textContent.trim()] }")
+    c.eq(first, ['chosen', 'Toutes' if c.lang == 'fr' else first[1]], 'the first row of the runways is « Toutes », chosen while no runway is', what='first row')
+    d0 = c.js(_CH_DISCS)
+    n0 = {p: n for p, n, _ in d0['discs']}
+    c.tap('.mp-ch-row[data-fam="rwy"][data-id="31"]')
+    _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="31"]', 'runway 31 chosen')
+    d1 = c.js(_CH_DISCS)
+    gone = sorted(set(n0) - {p for p, _, _ in d1['discs']})
+    c.ok(0 < len(d1['discs']) < len(d0['discs']) and all(n0[p] == n for p, n, _ in d1['discs']) and any('S9A' in p for p in gone) and any('I13' in p for p in gone),
+         f'{len(d0["discs"])} -> {len(d1["discs"])}, gone {gone}', 'runway 31 leaves drawn only the procedures that serve it (S9A and I13 go), the numbers those of the opening')
+    c.tap('.mp-ch-grp[data-fam=rwy] .mp-ch-row[data-id="none"]')
+    c.until("() => !document.querySelector('.mp-ch-row[data-fam=rwy][aria-pressed=true]')", timeout=10000, what='« Toutes » removes the filter')
+    c.eq(len(c.js(_CH_DISCS)['discs']), len(d0['discs']), '« Toutes »: every candidate is drawn again', what='all again')
+    c.tap('.mp-ch-row[data-fam="rwy"][data-id="31"]')
+    _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="31"]', 'runway 31 chosen again')
+    c.tap(f'.mp-ch-row[data-id="{_S2}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{_S2}"]', 'S2A chosen')
+    c.tap(f'.mp-ch-row[data-id="{_I31}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{_I31}"]', 'I31 chosen')
+    c.tap('.mp-ch-fold[data-more="rwy"]')
+    c.until("() => !!document.querySelector('.mp-ch-row[data-fam=rwy][data-id=\"13\"]')", timeout=10000, what='the runways unfold')
+    c.tap('.mp-ch-row[data-fam="rwy"][data-id="13"]')
+    _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="13"]', 'runway 13 chosen')
+    c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /I31/.test(n.textContent) && /13/.test(n.textContent))", timeout=8000, what='one line for the removal of I31')
+    notes = [norm(n) for n in c.notes()]
+    c.ok(sum(1 for n in notes if 'ne dessert pas la piste' in n) == 1 or c.lang != 'fr', str(notes), 'one floating line per removal, and only one (S2A serves 13 and stays)')
+    c.eq(c.js(f"() => document.querySelector('.mp-ch-row[data-id=\"{_S2}\"]').getAttribute('aria-pressed')"), 'true', 'S2A, which serves 13, stays chosen', what='S2A')
+    c.ok(c.js(f"() => !document.querySelector('.mp-ch-row[data-id=\"{_I31}\"][aria-pressed=\"true\"]')"), 'I31 still pressed', 'I31 is no longer chosen (and « Aucune » is not marked either)')
+    if c.width in (390, 1280):
+        c.wait(300)
+        c.shot(f'D335_{c.width}_{c.lang}_change.png')
+    c.eq(_back(c, 'done'), {'focus': 'arr', 'rwy': '13', 'star': _S2, 'app': 'none'}, 'Terminer: the runway, the STAR kept, the removed approach written as « Aucune »', what='keys')
+
+
+@case('D336', 'Choosing on the Map (SOG-0654): choosing a procedure that serves ONE runway chooses that runway (« Piste 31 · celle de S3A »); one that serves several leaves the runway to be chosen; replacing the procedure by one that serves two keeps the runway and loses « celle de … »', 'D', tags=('maps',),
+      screens=True, designs=('standard',), night=False,
+      rule='SOG-0654 (the ergonomist, 26 Nov): the inverse way; when the runway came from a procedure that is later replaced by one that serves two, the runway STAYS and its row only loses « celle de … » (the screen does not change by itself what the gesture did not touch). French only (debt SOG-0680)')
+def d336(c):
+    _ch_open(c, {})
+    c.tap(f'.mp-ch-row[data-id="{_S2}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{_S2}"]', 'S2A chosen')
+    c.eq([c.count('.mp-ch-row[data-fam="rwy"][aria-pressed="true"]'), c.js("() => (document.querySelector('.mp-ch-grp[data-fam=rwy] .mp-ch-none') || {}).dataset.state")], [0, 'chosen'],
+         'a procedure that serves SEVERAL runways leaves the runway to be chosen: « Toutes » stays the chosen row', what='several')
+    _ch_open(c, {})
+    c.tap(f'.mp-ch-row[data-id="{_S3}"]')
+    _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="31"]', 'the runway the procedure serves is chosen')
+    say = norm(c.js(_CH_RWYROW, '31'))
+    if c.lang == 'fr':
+        c.ok(say.startswith('Piste 31 · celle de S3A'), say, 'its line says whose it is: « Piste 31 · celle de S3A »')
+    if c.width in (390, 1280):
+        c.wait(300)
+        c.shot(f'D336_{c.width}_{c.lang}_inverse.png')
+    c.tap(f'.mp-ch-row[data-id="{_S2}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{_S2}"]', 'S2A replaces S3A')
+    say = norm(c.js(_CH_RWYROW, '31'))
+    c.ok('celle de' not in say and c.js("() => document.querySelector('.mp-ch-row[data-fam=\"rwy\"][data-id=\"31\"]').getAttribute('aria-pressed')") == 'true', say,
+         'the runway STAYS chosen and its line loses « celle de … » (the screen does not change what the gesture did not touch)')
+    c.eq(_back(c, 'done'), {'focus': 'arr', 'star': _S2, 'rwy': '31'}, 'Terminer: the STAR and the runway', what='keys')
 
 
 def _choose_scenes(c, tag):
-    """The three scenes of the validated mock-up (#choisir0, #choisir5, #choisir8), on the pane of the arrival of LFML, captured at 390 and 1280."""
-    _ch_open(c, {'rwy': '31'})
-    c.tap('.mp-ch-fold[data-more="star"]')
-    c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
-    ids = c.js(_CH_STARS)
-    c.wait(400)
-    c.shot(f'{tag}_{c.width}_choisir0.png')
-    for pid in ids[:5]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.tap(f'.mp-ch-pick[data-pick="{ids[4]}"]')
-    c.until("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`) || {}).dataset.state === 'chosen'", ids[4], what='one chosen')
-    c.wait(400)
-    c.shot(f'{tag}_{c.width}_choisir5.png')
-    for pid in ids[5:9]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked beside one chosen', what='counter')
-    c.js("async () => (await import('/modules/maps/choose.js')).tick(window.__mp.S.choose.model.rows.find(r => (r.fam === 'star' || r.fam === 'app') && !window.__mp.S.choose.slot.has(r.id) && !r.chosen).id)")
-    c.until("[...document.querySelectorAll('#fNotes .f-note')].length > 0", timeout=8000, what='the ninth is refused')
-    c.wait(400)
-    c.shot(f'{tag}_{c.width}_choisir8.png')
-    # « Aucune » chosen: a state (« Aucune · choisie pour le vol »), no button, no box, no sample
+    """The scenes of the mock-up choisir_v3 on the pane of the arrival of LFML, captured at 390 and 1280: plus (eleven candidates), piste (runway 31), choisie (one STAR chosen), aucune."""
+    _ch_open(c, {})
+    c.wait(500)
+    c.shot(f'{tag}_{c.width}_plus.png')
+    c.tap('.mp-ch-row[data-fam="rwy"][data-id="31"]')
+    _pressed(c, '.mp-ch-row[data-fam="rwy"][data-id="31"]', 'runway 31 chosen')
+    c.wait(500)
+    c.shot(f'{tag}_{c.width}_piste.png')
+    c.tap(f'.mp-ch-row[data-id="{_S3}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{_S3}"]', 'one STAR chosen')
+    c.wait(500)
+    c.shot(f'{tag}_{c.width}_choisie.png')
     c.tap('.mp-ch-grp[data-fam=star] .mp-ch-row[data-id="none"]')
-    c.until("() => (document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-none') || {}).dataset.state === 'chosen'", timeout=10000, what='« Aucune » becomes a state')
-    c.wait(400)
+    c.until("() => (document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-none') || {}).dataset.state === 'chosen'", timeout=10000, what='« Aucune » is chosen')
+    c.wait(500)
     c.shot(f'{tag}_{c.width}_aucune.png')
 
 
-@case('D318', 'SOG-0569 (a1) captures, day: the three scenes of the choose mode (nothing ticked, five ticked and one chosen, eight ticked and the ninth refused)', 'D',
+@case('D318', 'SOG-0654 captures, day: the scenes of the choose mode (plus: eleven candidates numbered; piste; choisie; aucune)', 'D',
       tags=('maps',), screens=True, designs=('standard',), night=False,
-      rule='SOG-0569 (a1): D318_<width>_choisir0 / choisir5 / choisir8 (390 and 1280, day) are the captures of the mock-up #choisir0, #choisir5, #choisir8 made on the real pane')
+      rule='SOG-0654: D318_<width>_plus / piste / choisie / aucune (390 and 1280, day) are the captures of the mock-up choisir_v3 made on the real pane')
 def d318(c):
     _choose_scenes(c, 'D318')
 
 
-@case('D319', 'SOG-0569 (a1) captures, night: the same three scenes', 'D',
+@case('D319', 'SOG-0654 captures, night: the same scenes', 'D',
       tags=('maps',), screens=True, designs=('standard',), night=False, tone='night',
-      rule='SOG-0569 (a1): D319_<width>_choisir0 / choisir5 / choisir8 (390 and 1280, night)')
+      rule='SOG-0654: D319_<width>_plus / piste / choisie / aucune (390 and 1280, night)')
 def d319(c):
     _choose_scenes(c, 'D319')
 
@@ -10835,11 +10870,8 @@ def d327(c):
     _ch_open(c, {'rwy': '31'})
     c.tap('.mp-ch-fold[data-more="star"]')
     c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
-    ids = c.js(_CH_STARS)
-    for pid in ids[:8]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked', what='counter')
-    # the hook is set AFTER the ticks and a drawing is asked: the last frames are those of the eight ticked procedures
+    c.wait(400)      # SOG-0654: every candidate has its disc and its name from the opening: nothing to tick
+    # the hook is set once the mode is drawn
     c.js(_NAME_HOOK)
     c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
     # the name written along a trace is the FAMILY name (familyText), not the label of the row: it is told by its font (NAME_FONT of choose.js, 600 11px), the only text of the overlay set in it
@@ -10871,18 +10903,13 @@ def d328(c):
     c.tap('.mp-ch-fold[data-more="star"]')
     c.until("() => document.querySelectorAll('.mp-ch-grp[data-fam=star] .mp-ch-row').length >= 10", timeout=10000, what='the STARs unfold')
     ids = c.js(_CH_STARS)
-    for pid in ids[:5]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.tap(f'.mp-ch-pick[data-pick="{ids[4]}"]')
-    c.until("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`) || {}).dataset.state === 'chosen'", ids[4], what='one chosen')
-    for pid in ids[5:9]:
-        c.tap(f'.mp-ch-row[data-id="{pid}"]')
-    c.eq(c.js(_CH_COUNT), '8 / 8', 'eight ticked beside one chosen', what='counter')
+    c.tap(f'.mp-ch-row[data-id="{ids[4]}"]')
+    _pressed(c, f'.mp-ch-row[data-id="{ids[4]}"]', 'one chosen')
     c.wait(600)
     d = c.js("""async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, r = document.querySelector('.mp-over').getBoundingClientRect();
       const L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC, r.width, r.height);
       return { w: r.width, h: r.height, discs: L.discs.map(x => [x.n, Math.round(x.x), Math.round(x.y)]) } }""")
-    c.eq(len(d['discs']), 8, 'eight discs', what='discs')
+    c.ok(len(d['discs']) >= 8, str(d['discs']), 'a disc for each candidate that serves the runway (SOG-0654: no ticking)')
     # the disc radius is 9 px (DISC_R of choose.js)
     bad = [f'n{n} @{x},{y}' for n, x, y in d['discs'] if x - 9 < 4 - .5 or y - 9 < 4 - .5 or x + 9 > d['w'] - 56 + .5 or y + 9 > d['h'] - 4 + .5]
     c.eq(bad, [], f'every disc lies whole inside the map ({d["w"]:.0f} × {d["h"]:.0f}): 4 px from the edges, 56 px from the right edge', what='discs across an edge')
@@ -11213,9 +11240,7 @@ def d333(c):
             tick(other)
             tick(ars)
         else:
-            c.js(f"async () => (await import('/modules/maps/choose.js')).tick('{ars}')")   # the touch of the trace calls the same function as the row
-        c.until(f'() => document.querySelector(\'.mp-ch-row[data-id="{ars}"]\').getAttribute("aria-checked") === "true"', timeout=6000, what='the SID is ticked (its number)')
-        c.tap(f'.mp-ch-pick[data-pick="{ars}"]')
+            c.js(f"async () => (await import('/modules/maps/choose.js')).choosePick('sid', '{ars}')")   # the touch of the trace calls the same function as the row
         c.until(f'() => document.querySelector(\'.mp-ch-row[data-id="{ars}"]\').dataset.state === "chosen"', timeout=6000, what='the SID is chosen on the Map')
         c.tap('[data-done]')
         doc = c.until_doc(PATH, lambda d: bool(d) and ((d.get('route') or {}).get('procedures') or {}).get('dep', {}).get('sid') == ars, timeout=15000, what=f'{way}: Fuel writes the Little Navmap SID in the flight')
