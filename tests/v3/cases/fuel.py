@@ -12178,7 +12178,8 @@ def f336(c):
     st['running'] = dict(_BUSY_RUNNING)
     open_proc(c)
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
-    # A. « Calculer A → B » while another job runs
+    # A. « Calculer A → B » while another job runs (the posts of the opening of the screen — ground, FRA points — are not counted)
+    n0 = len(st['posts'])
     st['busy'] = True
     c.tap(f'{FUEL} [data-do="rcompute"]')
     B = f'{FUEL} [data-routealts] [data-rrefused=busy]'
@@ -12188,13 +12189,14 @@ def f336(c):
     c.eq(c.count(f'{B} [data-rretry]'), 0, 'no « Réessayer »: the request leaves by itself', what='retry')
     c.until("(w) => (window.__notes || []).some(n => { const t = n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(); return t.startsWith(w) && t.slice(w.length).includes('Annuler') })", 'En attente : Calcul de la route',
             timeout=5000, what='the pending request said, « En attente : Calcul de la route », with its « Annuler » (the note carries its button)')
-    c.eq(len(st['posts']), 0, 'nothing started while the station is busy', what='posts')
+    c.eq(st['posts'][n0:], [], 'nothing started while the station is busy', what='posts')
     c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F336_{c.design}_{c.width}_{c.lang}.png')
     st['busy'] = False
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length >= 1", timeout=20000,
             what='free: the computation started ALONE and its routes are listed')
-    c.eq([(x.get('args') or {}).get('action') for x in st['posts']][:1], ['compute'], 'the request that waited is the computation', what='started')
+    c.eq([(x.get('args') or {}).get('action') for x in st['posts'][n0:]][:1], ['compute'], 'the request that waited is the computation',
+         what='started')
     # B. « Lire les routes NAT du jour » while another job runs: the same sentence in the NAT line, the reading waits and starts alone
     c.open('fuel', docs=_nat_flight())
     to_step(c, 1)
