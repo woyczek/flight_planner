@@ -12282,3 +12282,25 @@ def f342(c):
          what='XQPB')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     c.eq(c.count(f'{B} [data-altnprop] [data-altnwxall]'), 0, 'no « Sans date de vol » above the list', what='once')
+
+
+
+@case('F343', 'Route: a route computed on the data of a State whose cycle has passed says it in the decided sentence — « Données de {État} '
+      'périmées (cycle {cycle}) : route calculée sur ces données. », the airways concerned after it when the reason lists them, never '
+      'said twice', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0695 (the user\'s report of 27 Nov; AeroDB\'s fact: the engine never refuses a stale base, it computes and answers '
+      '« unverifiable » with stale_cycle; the ergonomist\'s sentence); French only (SOG-0680); invented zone, cycle and airways')
+def f343(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const R = await import('/modules/fuel/route_reasons.js');
+      const t = (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v?.[k] ?? m);
+      const r = v => R.compose({ code: 'stale_cycle', values: v, text: 'x' }, t, 'fr');
+      return [r({ zone: 'de', cycle: '2026-10-01', current: '2026-10-29', routes: ['XQ1', 'XQ2'] }),
+        r({ zone: 'de', cycle: '2026-10-01', current: '2026-10-29', routes: [] })];
+    }""")
+    c.eq([x.replace('\u202f', ' ').replace('\u00a0', ' ') for x in got],
+         ['Données de Allemagne périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1, XQ2.',
+          'Données de Allemagne périmées (cycle 01/10/2026) : route calculée sur ces données.'],
+         'the decided sentence, the airways after it (red before: « Allemagne : données du 01/10/2026, périmées à la date du vol — voies '
+         'concernées : XQ1, XQ2 »)', what='stale')
