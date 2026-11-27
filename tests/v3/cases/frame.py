@@ -12998,3 +12998,56 @@ def a404(c):
     c.js("() => { [...document.querySelectorAll('#fNotes .f-note button')].find(b => b.textContent.trim() === 'Annuler').click(); }")
     c.until("![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.includes('En attente'))", timeout=8000, what='« Annuler » removes the note')
     c.check_errors()
+
+
+@case('A405', 'The ORDER of the route is ONE rule (SOG-0684, the V2 rule of routeOf): readMission gives `route { order, from }` — « written » (route_order), « profile » (vertical_profile.route as a list OR a text, only when EVERY token names a place), « deduced » (the turning points in order, each work point after the nearest one) — and missionFlight reads it (the order of the keys of the file is never a route); a round trip keeps its passages; a token that names no place gives the deduction, never a partial route; the pilot\'s view keeps the turning points of a deduced route and never a work point of a closed drawer', 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0684 (the ergonomist, P1; a regression of the READING of V3, not an error in the missions): the V2 ordered the route by route_order, then the profile, then a deduction; V3 had three readers that disagreed (the workshop read route_order only, mission.js took the profile as a text only, missionFlight took the order of the keys)")
+def a405(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => {
+      const M = await import('/frame/lib/mission.js');
+      const base = (id, extra = {}) => ({ schema: 'helo-xp-mission', mission: { id, type: 'REG' }, title: 'Test', cruise_speed_kt: 240,
+        origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+        turning_points: [{ id: 'PT1', name: 'Col', lat: 45.1, lon: 1.5 }, { id: 'PT2', name: 'Crête', lat: 45.3, lon: 2.0 }, { id: 'PT3', name: 'Lac', lat: 45.1, lon: 2.5 }],
+        rendezvous: [{ id: 'RDV-1', name: 'Refuge', lat: 45.32, lon: 2.02 }], zones: [{ id: 'Z1', name: 'Secteur', centre: { lat: 45.12, lon: 2.55 } }], ...extra });
+      const got = (id, extra) => { const m = M.readMission(base(id, extra)); return m.route ? [m.route.from, m.route.order.join(' '), M.missionFlight(m).route.points.map(p => p.id).join(' ')] : null; };
+      const out = {};
+      out.list = got('A-001A', { vertical_profile: { route: ['ORIGIN', 'PT3', 'PT1', 'DESTINATION'] } });
+      out.text = got('A-002A', { vertical_profile: { route: 'ORIGIN, PT2/FL100, PT1 , DESTINATION' } });
+      out.spaces = got('A-003A', { vertical_profile: { route: 'ORIGIN PT3 PT2 DESTINATION' } });
+      out.names = got('A-004A', { vertical_profile: { route: 'Lac, Col' } });
+      out.deduced = got('A-005A');
+      out.badToken = got('A-006A', { vertical_profile: { route: 'ORIGIN, PT3, NOWHERE, PT1, DESTINATION' } });
+      out.roundTrip = got('A-007A', { route_order: ['PT1', 'PT2', 'PT3', 'PT2', 'PT1'] });
+      out.written = got('A-008A', { route_order: ['PT2', 'PT1'], vertical_profile: { route: 'PT3, PT1' } });
+      out.writtenOne = got('A-009A', { route_order: ['PT2'] });
+      out.none = got('A-010A', { turning_points: [], rendezvous: [], zones: [] });
+      // the pilot: a deduced route shows its turning points, never a work point (a zone, a rendezvous: the place of a closed drawer)
+      const m = M.readMission(base('A-011A', { phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'RDV-1', duration_sec: 60, max_gap_sec: 10 }, fallback_delay_min: 60 }] }));
+      const v = M.pilotView(m, []), o = M.pilotView(m, ['B']);
+      out.pilot = [v.route.from, v.route.order.join(' '), Object.keys(v.points).join(' '), M.missionFlight(v).route.points.map(p => p.id).join(' ')];
+      out.pilotOpen = [o.route.order.join(' '), Object.keys(o.points).join(' ')];
+      out.noRoute = M.missionFlight({ ...m, route: undefined, routeOrder: [] }).route.points.length;   // an object with no order: no route (never the keys of the file)
+      // Security (SOG-0684): a closed drawer with a ZONE key and no written order: no place, and `from` is empty too (« deduced » with no place would say that a drawer hides places); with a written order the zone stays hidden, the written places are there
+      const zdoc = { phases: [{ id: 'B', title: 'Zone', trigger_zone: 'Z1', fallback_delay_min: 60 }] };
+      out.zoneNone = M.pilotView(M.readMission(base('A-012A', zdoc)), []).route;
+      out.zoneWritten = M.pilotView(M.readMission(base('A-013A', { ...zdoc, route_order: ['PT1', 'PT2'] })), []).route;
+      return out; }""")
+    c.ok(r['list'] is not None, r, 'readMission gives `route`')
+    c.eq(r['list'], ['profile', 'PT3 PT1', 'PT3 PT1'], 'the profile as a LIST of tokens', what='profile list')
+    c.eq(r['text'], ['profile', 'PT2 PT1', 'PT2 PT1'], 'the profile as a TEXT (commas, a level after a slash ignored)', what='profile text')
+    c.eq(r['spaces'], ['profile', 'PT3 PT2', 'PT3 PT2'], 'the profile as a text separated by blanks', what='profile blanks')
+    c.eq(r['names'], ['profile', 'PT3 PT1', 'PT3 PT1'], 'the tokens may name the places by their NAMES', what='profile names')
+    c.eq(r['deduced'], ['deduced', 'PT1 PT2 RDV-1 PT3 Z1', 'PT1 PT2 RDV-1 PT3 Z1'], 'no order at all: the turning points in order, each work point after the nearest one (the V2)', what='deduced')
+    c.eq(r['badToken'], ['deduced', 'PT1 PT2 RDV-1 PT3 Z1', 'PT1 PT2 RDV-1 PT3 Z1'], 'a token of the profile that names no place: the deduction, never a partial route', what='bad token')
+    c.eq(r['roundTrip'], ['written', 'PT1 PT2 PT3 PT2 PT1', 'PT1 PT2 PT3 PT2 PT1'], 'a round trip keeps its passages', what='round trip')
+    c.eq(r['written'], ['written', 'PT2 PT1', 'PT2 PT1'], 'route_order wins over the profile', what='written')
+    c.eq(r['writtenOne'], ['written', 'PT2', 'PT2'], 'a written order is respected, even of one place (the V2 asked for two; the author said it)', what='written one')
+    c.eq(r['none'], ['', '', ''], 'no place at all: no route', what='none')
+    c.eq(r['pilot'], ['', '', '', ''], 'the pilot sees no place of a deduced route that nothing visible cites (the secret of the closed drawers holds: the places only a drawer may cite stay hidden)', what='pilot')
+    c.eq(r['pilotOpen'], ['RDV-1', 'RDV-1'], 'the drawer opened: the place it cites is back, in its place on the route', what='pilot open')
+    c.eq(r['noRoute'], 0, 'a mission object with no order has no route (the order of the keys of the file is never a route)', what='no keys')
+    c.eq((r['zoneNone'], r['zoneWritten']), ({'order': [], 'from': ''}, {'order': ['PT1', 'PT2'], 'from': 'written'}), 'a closed drawer with a zone key and NO written order: route == { order: [], from: "" } (nothing says a drawer hides places); with route_order [PT1, PT2] and the zone hidden: the written order, nothing more', what='zone key')
+    c.check_errors()

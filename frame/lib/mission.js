@@ -6,7 +6,7 @@
 //
 // API :
 //   readMission(doc) → mission { id, type, subtype, theatre, country, title, summary, organisation, operation, origin, destination, target, points,
-//     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category, teams, zones, rendezvous,
+//     routeOrder (le route_order écrit), route { order: [identifiants de points], from: 'written' | 'profile' | 'deduced' | '' } (SOG-0684 : L'ORDRE de la route, une règle — voir routeOf), aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category, teams, zones, rendezvous,
 //     turns, maps, objectives, payload, details, hasCoords } ; null sans mission.id ou mission.type (seuls champs exigés). origin /
 //     destination / target : { name, icao, lat, lon } ou null ; points : { id → { id, name, lat, lon, kind } } (tournants, rendez-vous,
 //     zones par leur centre, cible). La fiche en deux niveaux (§ 10.45, SOG-0051), tout facultatif et borné (le fichier est écrit par
@@ -846,6 +846,62 @@ export function mapLook(v) {
 }
 
 /** Une mission lue (voir l'en-tête). */
+/** SOG-0684 — L'ORDRE de la route : UNE règle, celle de la V2 (shared/mission_estimate.js, routeOf), pour la fiche du pilote, Carburant et la Carte. → { order: [identifiants de `points`], from }, from :
+ *  « written » (route_order), « profile » (vertical_profile.route en texte — jetons séparés par virgule, point-virgule, saut de ligne, ou blancs — OU en liste, SEULEMENT si TOUS ses jetons nomment un lieu :
+ *  jamais une route partielle), « deduced » (les tournants dans l'ordre, chaque point de travail — cible, rendez-vous, zones — après le tournant le plus proche, ceux à moins de 1 NM d'un point déjà là omis),
+ *  '' (aucun lieu). Un ordre écrit est respecté s'il nomme un lieu au moins (la V2 en voulait deux) ; un profil en veut deux, sinon on déduit ; un aller-retour garde ses repassages ; l'ordre des clés du fichier n'est JAMAIS une route ; le fichier n'est pas réécrit. */
+const ROUTE_TOKENS = 400;
+
+function routeOf(d, points, origin) {
+  const keys = Object.keys(points),
+    byUp = new Map(keys.map(k => [k.toUpperCase(), k])),
+    byName = new Map();
+  for (const k of keys) {
+    const n = clean(points[k]?.name).toUpperCase();
+    if (n && !byName.has(n)) byName.set(n, k);
+  }
+  // un jeton → la clé du lieu, '' pour le départ ou l'arrivée, null s'il ne nomme aucun lieu (le « /niveau » d'un jeton est ignoré)
+  const resolve = raw => {
+    const w = clean(plain(raw) ? raw.id ?? raw.name : raw).split('/')[0].trim().toUpperCase();
+    return ROUTE_START.has(w) || ROUTE_END.has(w) ? '' : w ? byUp.get(w) ?? byName.get(w) ?? null : null;
+  };
+  const places = list => list.filter(Boolean);
+  const wr = Array.isArray(d.route_order) ? places(d.route_order.slice(0, ROUTE_TOKENS).map(resolve)) : [];
+  if (wr.length) return {
+    order: wr,
+    from: 'written'
+  };
+  const vp = plain(d.vertical_profile)?.route,
+    parts = typeof vp === 'string' ? vp.split(/[,;\n→]+/).map(x => x.trim()).filter(Boolean) : [],
+    toks = Array.isArray(vp) ? vp : parts.length === 1 ? parts[0].split(/\s+/) : parts,
+    got = toks.slice(0, ROUTE_TOKENS).map(resolve);
+  if (got.length && !got.includes(null) && places(got).length >= 2) return {
+    order: places(got),
+    from: 'profile'
+  };
+  const turns = keys.filter(k => points[k]?.kind === 'turn'),
+    at = p => p && latOf(p.lat) !== null && lonOf(p.lon) !== null,
+    far = (a, b) => at(points[a]) && at(points[b]) ? gcNm(points[a], points[b]) : Infinity,
+    from0 = k => at(origin) && at(points[k]) ? gcNm(origin, points[k]) : 0,
+    work = [...keys.filter(k => points[k]?.kind === 'target'), ...keys.filter(k => points[k]?.kind === 'rdv'), ...keys.filter(k => points[k]
+      ?.kind === 'zone')]
+    .sort((a, b) => from0(a) - from0(b)),
+    order = [...turns];
+  for (const w of work) {
+    if (order.some(q => far(q, w) < 1)) continue; // déjà sur la route
+    let i = order.length;
+    if (turns.length) {
+      const near = turns.reduce((m, q) => far(q, w) < far(m, w) ? q : m, turns[0]);
+      i = order.indexOf(near) + 1;
+      while (i < order.length && !turns.includes(order[i])) i++; // après les points de travail déjà placés là
+    }
+    order.splice(i, 0, w);
+  }
+  return {
+    order,
+    from: order.length ? 'deduced' : ''
+  };
+}
 export function readMission(doc) {
   const d = doc && typeof doc === 'object' ? doc : {},
     m = d.mission || {},
@@ -911,6 +967,8 @@ export function readMission(doc) {
     holdUnread: unread, // les clés de durée non reconnues (§ 1 ter : rien ne tombe en silence)
     mapLook: mapLook(d.mission_map), // le fond et la couche de la carte de la mission, choisis par l'auteur (SOG-0456)
     routeOrder: (Array.isArray(d.route_order) ? d.route_order : []).map(x => clean(typeof x === 'object' ? x?.id : x)).filter(Boolean),
+    route: routeOf(d, points, placeOf(d
+      .origin)), // SOG-0684 : L'ORDRE de la route, avec sa provenance (routeOrder : le fichier tel qu'il l'écrit)
     // le cheminement du profil vertical (`vertical_profile.route`, un texte ; `route_points`, les points résolus par le studio), borné :
     // la Carte en tire ses jetons de route ; pilotView en retire ce qui nomme un lieu que la vue ne garde pas (SOG-0459)
     profileRoute: typeof plain(d.vertical_profile)?.route === 'string' ? cut(d.vertical_profile.route, PROFILE_TEXT) : '',
@@ -1135,6 +1193,14 @@ export function keyPlaces(key) {
   }
   return [...out];
 }
+/** SOG-0684 : la route vue par le pilote — l'ordre filtré aux lieux que la vue garde ; vide, `from` l'est aussi (« déduite » sans un lieu dirait qu'un tiroir cache des lieux : Sécurisation). */
+const routeSeen = (route, points) => {
+  const order = (Array.isArray(route.order) ? route.order : []).filter(id => Object.hasOwn(points, id));
+  return {
+    order,
+    from: order.length ? route.from : ''
+  };
+};
 export function pilotView(mission, opened = [], options = null) {
   const m = plain(mission),
     // `mine` se lit STRICTEMENT (Sécurisation, 18 nov. 2026) : sans options (absentes, null) ou sans `mine`, la mission est la mienne
@@ -1254,6 +1320,7 @@ export function pilotView(mission, opened = [], options = null) {
     rendezvous,
     turns,
     drawers: drawers.filter(d => open.has(d.id)), // les ouverts seuls, entiers ; un fermé ne laisse rien (SOG-0459)
+    route: plain(m.route) ? routeSeen(m.route, points) : m.route,
     events: (Array.isArray(m.events) ? m.events : []).filter(e => !hiddenEv.has(e?.id)),
     drawersRefused: 0,
     profileRoute,
@@ -1388,7 +1455,8 @@ export function missionFlight(mission, assignment = null) {
   const a = assignment || {},
     dep = mission.origin?.icao || clean(a.departure).toUpperCase() || '',
     arr = mission.destination?.icao || mission.origin?.icao || '',
-    order = mission.routeOrder.length ? mission.routeOrder : Object.keys(mission.points),
+    order = Array.isArray(mission.route?.order) ? mission.route.order : Array.isArray(mission.routeOrder) ? mission.routeOrder :
+  [], // SOG-0684 : jamais l'ordre des clés du fichier
     // un identifiant du fichier n'est lu que s'il est une clé propre des points (« constructor » n'est pas un point)
     points = order.map(id => Object.hasOwn(mission.points, id) ? mission.points[id] : null).filter(Boolean).map(flightPoint);
   // SOG-0193 : la position de l'origine et de la destination (celle de l'origine pour un aller-retour), pour qu'un terrain que la base
