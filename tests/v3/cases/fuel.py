@@ -12305,3 +12305,54 @@ def f343(c):
           'Données de Allemagne périmées (cycle 01/10/2026) : route calculée sur ces données.'],
          'the decided sentence, the airways after it (red before: « Allemagne : données du 01/10/2026, périmées à la date du vol — voies '
          'concernées : XQ1, XQ2 »)', what='stale')
+
+
+@case('F345', '« Proposer un dégagement »: each sign of a line said in words, right after the code of the terrain, ONCE — « ✓ » « Possible. », '
+      '« ! » « Possible avec réserve : {réserve}. » (two: « Possible avec réserves : à vue seulement, météo IFR. », the plural written in full), '
+      '« ? » « Non jugé : {cause}. » (the cause of SOG-0559, « pas de TAF »); the reservation or the cause no longer repeated further in the '
+      'line', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0690 (a) (the user, 27 Nov: « plusieurs AD notés avec un « ! », pas de météo claire »; the ergonomist, 27 Nov: a sign without a '
+      'word is a defect — the words of each sign, once, the plural in full; « ✕ » never proposed); French only (SOG-0680); a fake launcher, '
+      'invented aerodromes and TAFs')
+def f345(c):
+    B = f'{FUEL} [data-altnchk]'
+    # A. the words of a sign (modules/fuel/altn_wx.js signSay)
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure modules
+    got = c.js("""async () => {
+      const A = await import('/modules/fuel/altn_wx.js');
+      const t = (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v?.[k] ?? m);
+      const h = { tt: t, TX: { altnPropWhy: { 'aids-visual': ['à vue seulement'], 'wx-ifr': ['météo IFR'], 'rwy-unread': ['piste non vérifiée'],
+        'wx-unread': ['météo non lue'] }, altnWhy: { wxUnreachable: ['source météo injoignable'] } } };
+      const p = { crits: [null, null, { code: 'wxNoTaf' }], wxv: null, miss: false };
+      return [A.signSay('ok', [], p, h), A.signSay('warn', ['aids-visual'], p, h), A.signSay('warn', ['aids-visual', 'wx-ifr'], p, h),
+        A.signSay('grey', ['wx-notaf'], p, h), A.signSay('grey', ['wx-unread'], { ...p, miss: true }, h), A.signSay('err', ['wx-lifr'], p, h)];
+    }""")
+    c.eq(got, ['Possible.', 'Possible avec réserve : à vue seulement.', 'Possible avec réserves : à vue seulement, météo IFR.',
+               'Non jugé : pas de TAF.', 'Non jugé : météo non lue (source météo injoignable).', ''],
+         'the words of each sign, the plural written in full, « ✕ » without words (never proposed) (red before: no such function)',
+         what='words')
+    # B. on the screen: one line of each sign — XQPB ✓, XQPC ! (visual only), XQPE ✕ (LIFR), XQPF ? (touched on the Map: no TAF)
+    _prop_net(c, {})
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c, tafs={'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR'})
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
+    rows = c.js(f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state,
+        (li.querySelector('[data-altnsay]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
+        (li.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ')])""")
+    by = {r[0]: r for r in rows}
+    c.eq({k: [by[k][1], by[k][2]] for k in by}, {'XQPF': ['grey', 'Non jugé : pas de TAF.'], 'XQPB': ['ok', 'Possible.'],
+                                                 'XQPC': ['warn', 'Possible avec réserve : à vue seulement.'], 'XQPE': ['err', '']},
+         'each sign said in words after the code (red before: the sign alone)', what='signs')
+    c.eq([by['XQPC'][3].count('à vue seulement'), by['XQPF'][3].count('pas de TAF')], [1, 1], 'the reservation and the cause said ONCE',
+         what='once')
+    c.ok('aucun TAF lu' not in by['XQPF'][3], by['XQPF'][3], 'the long sentence of the weather not repeated further in the line')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F345_{c.design}_{w}_{c.lang}.png')
