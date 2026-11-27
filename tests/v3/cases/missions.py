@@ -17790,10 +17790,11 @@ def _ord_open(c, extra):
 
 
 def _ord_read(c):
-    """The itinerary as the workshop shows it: (the ids of the places of the route, between the departure and the arrival; how many lines are « Hors itinéraire »)."""
+    """The itinerary as the workshop shows it: (the ids of the places of the route — the lines `start:<n>`, between the departure and the arrival, which have their
+    own lines `dep` and `arr` —; how many lines are « Hors itinéraire »; how many lines the route has)."""
     rows = c.js(_ORD_LINES)
     start = [t for at, t in rows if at.startswith('start:')]
-    return [t.split(' ')[0] for t in start[1:-1]], len([1 for at, _ in rows if at.startswith('out:')]), len(start)
+    return [t.split(' ')[0] for t in start], len([1 for at, _ in rows if at.startswith('out:')]), len(start)
 
 
 def _ord_shots(c, name):
@@ -17811,7 +17812,7 @@ def _ord_shots(c, name):
       rule='SOG-0684 (the ergonomist, 27 Nov 2026): the workshop read route_order only; the reader (frame/lib/mission.js routeOf) is the one rule of the order, with its provenance')
 def n297(c):
     _ord_open(c, 'vertical_profile:\n  route: [PT3, PT1, PT2]\n')
-    c.eq(_ord_read(c), (['PT3', 'PT1', 'PT2'], 0, 5), 'the three places in the order of the profile, between the departure and the arrival, none out of the itinerary', what='itinerary')
+    c.eq(_ord_read(c), (['PT3', 'PT1', 'PT2'], 0, 3), 'the three places in the order of the profile, between the departure and the arrival, none out of the itinerary', what='itinerary')
     c.eq([[k, norm(t)] for k, t in c.js(_ORD_FROM)], [['profile', 'Ordre lu dans le profil vertical.']], 'a grey line says where the order comes from', what='provenance')
     c.eq(c.js(f"document.querySelectorAll('{E} [data-itinfrom] button').length"), 0, 'no button: nothing to confirm', what='button')
     _ord_shots(c, 'N297')
@@ -17829,7 +17830,7 @@ def n298(c):
     _ord_shots(c, 'N298')
     ed_leave(c)
     _ord_open(c, 'vertical_profile:\n  route: PT2, PT1, PT3\n')
-    c.eq(_ord_read(c), (['PT2', 'PT1', 'PT3'], 0, 5), 'commas: the three places in the order of the text, none out of the itinerary', what='commas')
+    c.eq(_ord_read(c), (['PT2', 'PT1', 'PT3'], 0, 3), 'commas: the three places in the order of the text, none out of the itinerary', what='commas')
     c.eq([k for k, _ in c.js(_ORD_FROM)], ['profile'], 'the grey line again', what='provenance')
     ed_leave(c)
     c.js(_REG_CLEAR)
@@ -17841,14 +17842,14 @@ def n298(c):
       rule='SOG-0684: a deduced order is said and checked by the author, never written silently; written only on « Enregistrer » when something changed')
 def n299(c):
     _ord_open(c, '')
-    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the turning points in the order of the file, between the departure and the arrival: nothing « Hors itinéraire »', what='itinerary')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 3), 'the turning points in the order of the file, between the departure and the arrival: nothing « Hors itinéraire »', what='itinerary')
     c.eq([[k, norm(t)] for k, t in c.js(_ORD_FROM)], [['deduced', 'Ordre déduit des lieux : vérifiez-le. Garder cet ordre']], 'the orange line and its button', what='provenance')
     _ord_shots(c, 'N299')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     c.tap(f'{E} [data-do="edkeeporder"]')
     c.until(f"!document.querySelector('{E} [data-itinfrom]')", what='the line gone: the session has its route')
-    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the same order, now the session\'s', what='kept')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 3), 'the same order, now the session\'s', what='kept')
     c.tap(f'{_EDHIST} [data-do="edmapundo"]')
     c.until(f"!!document.querySelector('{E} [data-itinfrom=\"deduced\"]')", what='↶ gives the deduced order back')
     c.tap(f'{E} [data-do="edkeeporder"]')
@@ -17865,19 +17866,19 @@ def n299(c):
       rule='SOG-0684: the profile is taken ONLY when every token names a place')
 def n300(c):
     _ord_open(c, 'vertical_profile:\n  route: PT3, PT9, PT1\n')
-    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 5), 'the order is the deduced one (all three places), not the part of the profile that was readable', what='itinerary')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3'], 0, 3), 'the order is the deduced one (all three places), not the part of the profile that was readable', what='itinerary')
     c.eq([k for k, _ in c.js(_ORD_FROM)], ['deduced'], 'the orange line', what='provenance')
     _ord_shots(c, 'N300')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
 
-@case('N301', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a round trip « PT1 PT2 PT3 PT2 PT1 » — the passages are shown, seven lines between the departure and '
+@case('N301', 'Missions › the workshop shows the ORDER the reader reads (SOG-0684): a round trip « PT1 PT2 PT3 PT2 PT1 » — the passages are shown, five lines between the departure and '
       'the arrival, none « Hors itinéraire »', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
       rule='SOG-0684: a round trip keeps its passages (the reader\'s order is not de-duplicated)')
 def n301(c):
     _ord_open(c, 'vertical_profile:\n  route: PT1 PT2 PT3 PT2 PT1\n')
-    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3', 'PT2', 'PT1'], 0, 7), 'the five passages in the order, the two places that come back shown twice', what='itinerary')
+    c.eq(_ord_read(c), (['PT1', 'PT2', 'PT3', 'PT2', 'PT1'], 0, 5), 'the five passages in the order, the two places that come back shown twice', what='itinerary')
     c.eq([k for k, _ in c.js(_ORD_FROM)], ['profile'], 'the grey line', what='provenance')
     _ord_shots(c, 'N301')
     ed_leave(c)
