@@ -11005,10 +11005,20 @@ _FB_CASES = [
     ('X-621D', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'turning_points': [_FB_POINT('PT1', 45.3, 1.4)], 'alternate': _FB_POINT('XDEG', 45.9, 2.6),
                 'rendezvous': [_FB_POINT('R1', 45.4, 1.5)]},
      ['XAAA', 'PT1', 'XZZZ'], 'with a turning point the line is the same as before: departure, turning point, arrival'),
+    # SOG-0704 (SOG-0621 stands): the places the reader only DEDUCES the place of (the target, the rendezvous) are on the map, off the line; a written order goes through everything
+    ('X-704A', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'turning_points': [_FB_POINT('PT1', 45.3, 1.4)], 'target': _FB_POINT('CIBLE', 45.5, 2.0),
+                'alternate': _FB_POINT('XDEG', 45.9, 2.6), 'rendezvous': [_FB_POINT('R1', 45.4, 1.5)]},
+     ['XAAA', 'PT1', 'XZZZ'], 'a deduced order: the target and the rendezvous (their place is deduced) stay on the map and are NOT on the line; no alternate'),
+    ('X-704B', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'turning_points': [_FB_POINT('PT1', 45.3, 1.4)], 'target': _FB_POINT('CIBLE', 45.5, 2.0),
+                'alternate': _FB_POINT('XDEG', 45.9, 2.6), 'rendezvous': [_FB_POINT('R1', 45.4, 1.5)], 'route_order': ['XAAA', 'CIBLE', 'R1', 'XZZZ']},
+     ['XAAA', 'CIBLE', 'R1', 'XZZZ'], 'a WRITTEN order goes through everything, the target included (the turning point left out by the writer stays out)'),
+    ('X-704C', {'origin': _FB_POINT('XAAA', 45.0, 1.0), 'destination': _FB_POINT('XZZZ', 45.6, 2.4), 'turning_points': [_FB_POINT('PT1', 45.3, 1.4)], 'target': _FB_POINT('CIBLE', 45.5, 2.0),
+                'route_order': ['XAAA', 'XZZZ']},
+     ['XAAA', 'XZZZ'], 'a written direct flight: from the departure to the arrival, the turning point does not join the line'),
 ]
 
 
-@case('D324', 'SOG-0621: the mission view draws no line from a mission that holds fewer than two route points, and never joins an alternate or a rendezvous as a route point', 'D', tags=('maps',), designs=('standard',),
+@case('D324', 'SOG-0621: the mission view draws no line from a mission that holds fewer than two route points, never joins an alternate or a rendezvous as a route point, and (SOG-0704) leaves the places whose position the reader only deduced off the line', 'D', tags=('maps',), designs=('standard',),
       rule='SOG-0621 (ergonomist, F10): MapsMission.routeTokens fell back on ALL the points of the mission in their order when it found fewer than two route points: the alternate and the rendezvous were joined as route points, a false line; and a rendezvous whose code does not start with « RDV » (« R1 ») joined the route as a turning point. Now: no line without two route points (a false line is worse than none), and a point of the keys rendezvous / rdv has its role « RDV » from the parse. Red before (checked with a stub of the parse): A draws CIBLE XDEG RDV-1, B XAAA R1, C XAAA R1 XZZZ, D XAAA PT1 R1 XZZZ')
 def d324(c):
     import json as _json
@@ -11022,6 +11032,9 @@ def d324(c):
         got = c.js("() => ({ shown: window.__mp.S.route.points.map(p => p.id), kept: window.__mp.S.route.profilePoints.map(p => p.id) })")
         c.eq(got['shown'], want, f'{mid}: {why}', what=str(got))
         c.eq(got['kept'], want, f'{mid}: the profile of the mission takes the same points', what=str(got))
+        if mid == 'X-704A':
+            held = c.js("() => window.__mp.S.mission.points.map(p => p.id)")
+            c.ok('CIBLE' in held and 'R1' in held, held, 'SOG-0704: the places left off the line are still on the mission map (they are drawn as places, off the line)')
         c.wait(800)
         c.shot(f'D324_{c.width}_{mid}.png')                   # one capture per scene AND per width (the two widths wrote the same file; a failing run's capture overwrote a good one)
 

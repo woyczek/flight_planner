@@ -63,6 +63,21 @@ function readerDoc(root) {
     zones: root.zones ?? box.zones
   };
 }
+/** L'ordre de la route de la mission tel que le pilote le voit (SOG-0684) : celui du lecteur (readMission(...).route, sa vue pilotView(...).route quand la mission a des tiroirs), sans règle propre
+ *  à la Carte → { order: [identifiants de lieux], from: 'written' | 'profile' | 'deduced' | '', deduced: [identifiants marqués] } ; null quand le lecteur ne lit pas la mission. */
+export function routeRead(root, opened = [], mine = false) {
+  const rm = plain(root) ? readMission(readerDoc(root)) : null;
+  if (!rm) return null;
+  const r = Array.isArray(rm.drawers) && rm.drawers.length ? pilotView(rm, opened, {
+    mine: mine === true
+  }).route : rm.route;
+  return r && Array.isArray(r.order) ? {
+    order: r.order.map(String),
+    from: String(r.from || ''),
+    deduced: (Array.isArray(r.deduced) ? r.deduced : []).map(
+      String) // SOG-0704 : les lieux dont l'ordre déduit ne fait que DÉDUIRE la place : sur la carte, jamais sur le trait
+  } : null;
+}
 /** Le YAML analysé que la Carte dessine : celui du fichier, moins ce que le pilote ne voit pas.
  *  `opened` : les lettres des tiroirs ouverts de MA mission ; `mine` : faux pour une mission qu'on feuillette (aucun tiroir ouvert). Une
  *  lecture qui échoue, ou une mission sans tiroir, rend le YAML tel quel quand il n'a rien à cacher — jamais un lieu de plus. */

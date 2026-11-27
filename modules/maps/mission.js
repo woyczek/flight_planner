@@ -306,14 +306,22 @@
       source: 'builtin-type'
     };
   }
-  /** Jetons du cheminement de la mission : vertical_profile.route, sinon départ, points tournants (ou cible),
-   *  destination (map_parser.html, vprofDefaultRoute). SOG-0621 : sans au moins deux points de route (départ, points tournants ou cible, destination) il n'y a PAS de cheminement — '' —,
+  /** Jetons du cheminement de la mission : l'ordre du LECTEUR de missions (SOG-0684 : écrit, profil, sinon déduit ; frame/lib/mission.js), entre le départ et l'arrivée ; sans lecteur (mission.routeRead absent) :
+   *  vertical_profile.route, sinon départ, points tournants (ou cible), destination (map_parser.html, vprofDefaultRoute). SOG-0621 : sans au moins deux points de route (départ, points tournants ou cible, destination) il n'y a PAS de cheminement — '' —,
    *  jamais « tous les points dans l'ordre » : le dégagement et le rendez-vous ne sont pas des points de route, un trait faux est pire que pas de trait. */
   function routeTokens(mission) {
-    const v = mission.vprof;
-    if (v.route) return v.route;
-    const ps = mission.points,
-      by = role => ps.find(p => p.role === role || p.id === role),
+    const v = mission.vprof,
+      ps = mission.points,
+      by = role => ps.find(p => p.role === role || p.id === role);
+    // SOG-0684 : l'ORDRE est celui du lecteur de missions (frame/lib/mission.js, routeOf : écrit, profil, déduit), sans règle propre à la Carte : le départ, les lieux de l'ordre, l'arrivée
+    if (mission.routeRead) {
+      // SOG-0621 tient (SOG-0704) : le trait ne passe pas par un lieu dont l'ordre déduit ne fait que DÉDUIRE la place (route.deduced : il reste sur la carte, hors du trait) ; un ordre écrit ou de profil passe par tout
+      const out = new Set(mission.routeRead.deduced || []),
+        list = [by('ORIGIN')?.id, ...mission.routeRead.order.filter(id => !out.has(id)), by('DESTINATION')?.id].filter(Boolean);
+      return list.length >= 2 ? list.join(' ') : '';
+    }
+    if (v.route) return v.route; // le lecteur n'a pas pu lire la mission : le texte du profil, comme avant
+    const
       tps = ps.filter(p => !p.role && !/^(ORIGIN|DESTINATION|TARGET|ALTERNATE)$/.test(p.id) && !/^RDV/i.test(p.id)),
       list = [by('ORIGIN'), ...(tps.length ? tps : [by('TARGET')]), by('DESTINATION')].filter(Boolean);
     return list.length >= 2 ? list.map(p => p.id).join(' ') : '';

@@ -55,6 +55,7 @@ import {
 } from './view_state.js';
 import {
   pilotRoot,
+  routeRead,
   drawersState,
   stateKey,
   openDocPath
@@ -191,6 +192,7 @@ async function loadMission(id, reuse = false) {
       st = await drawersState(S.ctx, hit.id);
     if (S !== me) return;
     S.mission = MapsMission.parse(pilotRoot(root, st.opened, st.mine));
+    S.mission.routeRead = routeRead(root, st.opened, st.mine); // l'ordre de la route : celui du lecteur (SOG-0684)
     S.missionShown = {
       id: hit.id,
       key: stateKey(st)
