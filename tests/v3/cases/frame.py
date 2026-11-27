@@ -13055,3 +13055,64 @@ def a405(c):
     c.eq(r['noRoute'], 0, 'a mission object with no order has no route (the order of the keys of the file is never a route)', what='no keys')
     c.eq((r['zoneNone'], r['zoneWritten']), ({'order': [], 'from': ''}, {'order': ['PT1', 'PT2'], 'from': 'written'}), 'a closed drawer with a zone key and NO written order: route == { order: [], from: "" } (nothing says a drawer hides places); with route_order [PT1, PT2] and the zone hidden: the written order, nothing more', what='zone key')
     c.check_errors()
+
+
+@case('A406', 'A comment on a report is never silent (SOG-0691): the station BUSY with another operation (409) says « Le poste est occupé : … Votre demande partira dès qu\'il aura fini » and the comment waits and is written ALONE when the station is free (the text stays in the field meanwhile); the launcher GONE says it with the frame\'s note and « Réessayer », the text kept — never the same bare « pas écrit » for every cause', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0691 (the user: « plus de commentaire possible sur un bug ? », priority): signaler.js tools().call turned EVERY refusal (a stopped launcher, a 409 busy, an error) into the same { offline: true } and the gesture said « le lanceur ne l\'a pas écrit » with no cause and no retry; the verb and the page were sound (probe on the real verbs)")
+def a406(c):
+    import tempfile
+    import time
+    from pathlib import Path
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation' / 'images').mkdir(parents=True)
+        sid = 'SIG-0123456789'
+        (root / 'organisation' / 'SIGNALEMENTS.json').write_text(json.dumps({'schema': 'sog-signalements/1', 'items': {sid: {'kind': 'bug', 'title': 'Un bug', 'text': 'Texte du bug', 'screen': 'fuel', 'at': '2026-11-10T08:00:00Z', 'state': 'new'}}}), encoding='utf-8')
+        st = _sg_launcher(c, root)
+        mode = {'busy': False, 'gone': False, 'tries': 0}
+        run = {'id': 'j1', 'set': 'base', 'verb': 'fetch', 'args': {'zones': ['fr']}, 'started': int(time.time()) - 90, 'alive': 'alive'}
+
+        def over(route):
+            req = route.request
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                if post.get('verb') == 'commenter':
+                    mode['tries'] += 1
+                    if mode['gone']:
+                        return route.abort('failed')
+                    if mode['busy']:
+                        return route.fulfill(status=409, content_type='application/json', body=json.dumps({'ok': False, 'reason': 'busy', 'message': 'a job is already running', 'job': 'j1', 'running': run}))
+            elif '?id=' not in req.url and mode['busy']:
+                return route.fulfill(status=200, content_type='application/json', body=json.dumps({'job': {'id': 'j1', 'state': 'running', 'set': 'base', 'verb': 'fetch'}}))
+            return route.fallback()
+        c.context.route(re.compile(r'/__setup/regen/job'), over)
+        c.open('signaler', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-mine] li[data-id]')", timeout=20000, what='the list')
+        c.js("window.__nl = []; window.addEventListener('frame-note', e => window.__nl.push([e.detail.text, e.detail.label, e.detail.kind]))")
+        c.tap(f'[data-mine] li[data-id="{sid}"] a')
+        c.until("!!document.querySelector('[data-cm-text]')", timeout=15000, what='the sheet of the report')
+        # 1. the station is busy with another operation
+        mode['busy'] = True
+        c.page.fill('[data-cm-text]', 'Mon commentaire')
+        c.tap('[data-cmadd]')
+        c.until("window.__nl.some(n => n[0].includes('est occupé'))", timeout=15000, what='the busy sentence')
+        nl = c.js('window.__nl')
+        busy = next(n for n in nl if 'est occupé' in n[0])
+        c.ok(re.fullmatch(r'Le poste est occupé : Base · Télécharger \(fr\), depuis \d\d:\d\dZ\. Votre demande partira dès qu’il aura fini\.', re.sub('[  ]', ' ', busy[0])) is not None, busy, 'the sentence says what runs, since when, and that the request will go by itself')
+        c.until("window.__nl.some(n => n[0].startsWith('En attente') && n[1] === 'Annuler')", timeout=8000, what='the pending note with « Annuler »')
+        c.eq(c.js("document.querySelector('[data-cm-text]').value"), 'Mon commentaire', 'the text stays in the field while it waits', what='text kept')
+        c.eq(c.count('[data-cmlist] li'), 0, 'nothing listed yet', what='nothing yet')
+        # the station is free: the comment goes ALONE (the waiter asks the launcher every 5 s)
+        mode['busy'] = False
+        c.until("document.querySelectorAll('[data-cmlist] li').length === 1", timeout=20000, what='the comment written alone once the station is free')
+        c.eq((c.js("document.querySelector('[data-cm-text]').value"), mode['tries']), ('', 2), 'the field is empty again, the request was made twice (refused, then accepted)', what='written alone')
+        # 2. the launcher is gone: the frame's note, with « Réessayer », the text kept
+        mode['gone'] = True
+        c.js("window.__nl.length = 0")
+        c.page.fill('[data-cm-text]', 'Un autre')
+        c.tap('[data-cmadd]')
+        c.until("window.__nl.some(n => n[1] === 'Réessayer')", timeout=15000, what='the note of the frame with « Réessayer »')
+        c.eq(c.js("document.querySelector('[data-cm-text]').value"), 'Un autre', 'the text stays in the field', what='text kept 2')
+        c.ok(not any('le lanceur ne l’a pas écrit' in n[0] for n in c.js('window.__nl')), c.js('window.__nl'), 'not the bare « pas écrit »: the cause is said')
+        c.check_errors()

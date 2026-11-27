@@ -5072,10 +5072,10 @@
     }) : null) || null,
     // Signaler (SOG-0316) : de quoi noter d'où l'on vient et laisser un signalement de pilote dans le dépôt de données
     from: () => current?.id || '',
-    fromLabel: () => { // le nom du module d'où l'on vient (sa langue), pour le contexte du signalement
-      const m = (APP.modules || []).find(x => x.id === current?.id);
-      return Array.isArray(m?.label) ? t(m.label) : '';
-    },
+    fromLabel: () => t((APP.modules || []).find(x => x.id === current?.id)?.label ||
+      ''), // le nom du module d'où l'on vient (sa langue)
+    needLauncher: o => (sayLauncher(launcherState(), o?.retry),
+      null), // SOG-0691 : la note du cadre quand le lanceur est parti, avec « Réessayer » (comme ctx.needLauncher d'un module)
     version: () => suiteVersion,
     trigram: () => identity.trigram || '',
     data: signalData(),

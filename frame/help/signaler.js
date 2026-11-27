@@ -379,6 +379,7 @@
       'Su comentario ({max} signos)'
     ],
     add: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    cmWait: ['Ajout du commentaire'], // français seul (dette SOG-0680)
     cmFail: ['Le commentaire n’a pas été ajouté : le lanceur ne l’a pas écrit. Votre texte reste dans le champ.',
       'The comment was not added: the launcher did not write it. Your text stays in the field.',
       'Der Kommentar wurde nicht hinzugefügt: Der Launcher hat ihn nicht geschrieben. Ihr Text bleibt im Feld.',
@@ -697,9 +698,11 @@
     const {
       t
     } = c;
+    let held =
+      null; // SOG-0691 : UN objet lanceur par montage (c.launcher() en fait un neuf à chaque appel : sa demande en attente ne serait jamais « la » demande de l'écran)
     const launcher = () => {
       try {
-        return c.launcher?.() || null;
+        return held ||= c.launcher?.() || null;
       } catch {
         return null;
       }
@@ -720,6 +723,9 @@
       if (r.ok && r.result && typeof r.result === 'object') return r.result;
       if (r.status === 400 && /unknown operation/.test(String(r.message || ''))) return {
         old: true
+      };
+      if (r.status === 409) return {
+        busy: r // SOG-0691 : le poste fait une autre opération : « occupé », jamais un « pas écrit » muet
       };
       return {
         offline: true // le travail n'a pas tourné (lanceur arrêté, occupé, en erreur) : rien n'a été écrit de ce côté
@@ -1829,10 +1835,11 @@
         b = $('[data-cmadd]');
       if (b.disabled !== off) b.disabled = off;
     };
-    const addCm = async () => {
+    // SOG-0691 : un geste n'est jamais muet — le poste occupé : sa phrase et la demande en attente, qui repart seule ; le lanceur parti : la note du cadre, avec « Réessayer » ; sinon « pas écrit »
+    const addCm = async (text, again = false) => {
       const x = $('[data-cm-text]'),
-        body = multi(x.value, MAX_CM);
-      if (!body || cmBusy) return;
+        body = text ?? multi(x.value, MAX_CM);
+      if (!body || cmBusy && !again) return;
       cmBusy = true;
       paintCm();
       const res = await K.call('commenter', {
@@ -1847,10 +1854,24 @@
         $('[data-cmlist]').insertAdjacentHTML('beforeend', cmLi(cm));
         $('[data-cmnone]')?.remove();
         $('[data-cmn]').textContent = String(it.comments.length);
-        x.value = '';
-      } else c.notify?.(t(T.cmFail), 'warn');
+        if (multi(x.value, MAX_CM) === body) x.value = '';
+      } else if (res.busy) {
+        const wait = K.launcher()?.busy;
+        if (again) {
+          paintCm();
+          return res.busy; // encore occupé : la demande reste en attente
+        }
+        c.notify?.(wait ? wait.text(res.busy) : t(T.cmFail), 'warn');
+        wait?.later(t(T.cmWait), () => addCm(body, true));
+      } else if (res.offline && c.needLauncher) c.needLauncher({
+        retry: () => void addCm(body)
+      });
+      else c.notify?.(t(T.cmFail), 'warn');
       paintCm();
     };
+    mount.signal.addEventListener('abort', () => K.launcher()?.busy?.cancel(), {
+      once: true
+    }); // le démontage de la fiche abandonne la demande en attente
     on('input', e => e.target.matches('[data-cm-text]') && paintCm());
     on('click', e => {
       const p = e.target.closest('[data-grav],[data-freq]');

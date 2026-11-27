@@ -3235,6 +3235,13 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Offline**: the file of each watcher of the table is added to the precache of every application (`moduleFiles`); its heavy dynamic imports are kept at their first use by the service worker, like any file a page asks for.
 - **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
 
+## 27 November 2026 — a comment on a report is never silent: the cause is said, the request waits (SOG-0691)
+
+- **Fact**: the verb `signalement/commenter` is sound (run on a COPY of the real `organisation/`, 92 reports: `ok`), the page too (a probe on the real verbs: « Ajouter » writes and lists). `signaler.js` `tools().call` returned `{ offline: true }` for EVERY failure (launcher stopped, 409 busy, 429, error) and the gesture said « le lanceur ne l'a pas écrit » whatever the cause: since SOG-0410 (18 Nov), no pushed commit broke it. The likely cause for the user: the launcher off (SOG-0692 the same day) or busy with a long operation (a write is not in `PARALLEL`).
+- **Decision** (the ergonomist, via the relay): a gesture is never silent (SOG-0208): `call` says `{ busy }` for a 409; the comment then says the SOG-0658 sentence and holds THE request of the sheet (`ctx.launcher.busy.later`), which restarts alone; a launcher that is gone: the frame's note (`needLauncher`, with « Réessayer »; added to the help screens' ctx in ONE line, `frame/app.js` stays at 6 830 lines) and the text kept. The sheet holds ONE launcher object (the waiter is per object).
+- **Not changed**: the verb (BUGS, Security), the other gestures of the screen (`noter`, `ajouter`: the same treatment later), SOG-0692 (the launcher that disappears is noticed at the next call or the next synchronisation: not a regression, after the tag).
+- **Noreg A406**, red before (a 409 then success; the launcher aborted).
+
 ## 27 November 2026 — the order of the route: one rule, with its provenance (SOG-0684)
 
 - **Fact** (the ergonomist, P1): a regression of the reading of V3. The V2 ordered the route by `route_order`, then `vertical_profile.route` (a text or a list, tokens resolved on the places), then a deduction (the turning points in order, each work point after the nearest). V3 had three readers: the workshop (`routeParts`) read `route_order` only; `mission.js` took `profileRoute` as a text only; `missionFlight` took, without `route_order`, the order of the KEYS of the file.
