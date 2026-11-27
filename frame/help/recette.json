@@ -2,9 +2,9 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-23",
-  "tests": 387,
-  "verdicts": 257
+  "at": "2026-11-27",
+  "tests": 459,
+  "verdicts": 305
  },
  "apps": [
   "pilote",
@@ -219,7 +219,8 @@
    },
    "test": "Après une construction réussie, la zone passe au vert sur la carte et dans la liste sans recharger la page.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-25T13:28:42Z"
   },
   {
    "id": "SOG-0073",
@@ -384,6 +385,20 @@
    "at": "2026-11-13T09:10:02Z"
   },
   {
+   "id": "SOG-0101",
+   "app": "pilote",
+   "title": {
+    "fr": "Tutoriel « Rejoindre la compagnie » réécrit pour GitLab (jeton reçu de l'administrateur, pas de compte à créer), captures refaites",
+    "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
+    "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
+    "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas"
+   },
+   "test": "Aide › tutoriels › « Rejoindre la compagnie » (français, puis anglais) : trois étapes, sans compte ni invitation ; les trois images montrent un assistant GitLab (« Étape n sur 3 ») ; le texte nomme les boutons que l'écran montre et dit « carte « Identité » (rangée sous « Mise en route »…) ».",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T19:19:52Z"
+  },
+  {
    "id": "SOG-0102",
    "app": "maintenance",
    "title": {
@@ -439,8 +454,9 @@
    },
    "test": "Relance le lanceur, recharge. Maintenance › Données, les autres jeux : chaque ligne dit son état et pourquoi (par exemple « Procédures · à faire — LF : téléchargé, pas construit », « Points VFR · à faire — incomplet »). « Tout mettre à jour » compte les mêmes jeux.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:15:17Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:15:17Z",
+   "at": "2026-11-25T13:08:04Z"
   },
   {
    "id": "SOG-0125",
@@ -656,8 +672,10 @@
    },
    "test": "Carburant › Route avec un point d'un pays sans points : une ligne dit ce qui manque, propose le geste vers Données (zone cochée, « Mettre à jour » prêt) et les replis Navigraph et ChartFox.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T16:43:32Z"
+   "state": "reserve",
+   "delivered": "2026-11-09T16:43:32Z",
+   "comment": "certaines zones toujours absentes.",
+   "at": "2026-11-25T13:42:02Z"
   },
   {
    "id": "SOG-0144",
@@ -1072,8 +1090,10 @@
    },
    "test": "Maintenance › Données › « Couverture par pays » (bloc replié, en bas) : un tableau d'une ligne par pays dit ce que la base porte (points, voies, espaces, FIR, procédures, sol : un nombre ou « non ») ; un en-tête trie ; un pays déplié donne ses sources avec leur licence. C'est l'état des lieux ; les pays manquants viendront source par source.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T12:26:32Z"
+   "state": "ko",
+   "delivered": "2026-11-10T12:26:32Z",
+   "comment": "le bloc n’existe plus. ou alors, je ne l’ai pas trouvé.",
+   "at": "2026-11-25T13:28:12Z"
   },
   {
    "id": "SOG-0175",
@@ -1284,8 +1304,17 @@
    },
    "test": "Après relance du lanceur. Maintenance › Données, une zone qui attend un fichier (Royaume-Uni, Suède) : sous sa ligne, un pas-à-pas : 1. le lien direct vers la page de la source, 2. le nom exact de chaque fichier à télécharger et ce qu'il apporte, 3. « Prendre le fichier téléchargé ». Vérifie que les liens suédois sont bien les tiens. (Danemark : pas encore.)",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T13:31:01Z"
+   "state": "ko",
+   "delivered": "2026-11-10T13:31:01Z",
+   "comment": "pas pour la belquique en tout cas.  Autre point : collision entre les hachures de « procédures disponibles » et « partiellement à jour ». la légende n’affiche que l’un des deux. L’affichage oscille entre les deux affichages de hachures.",
+   "at": "2026-11-25T13:29:55Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "pas pour la belquique en tout cas.",
+     "at": "2026-11-25T13:28:25Z"
+    }
+   ]
   },
   {
    "id": "SOG-0190",
@@ -1313,8 +1342,9 @@
    },
    "test": "Après relance du lanceur. Maintenance › Données › points VFR : après un téléchargement arrêté puis une construction, l'état est « En partie à jour » avec le détail par cycle (« 28 en 2611, 385 en 2610 »), plus « à jour ».",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T13:07:27Z"
+   "state": "ok",
+   "delivered": "2026-11-10T13:07:27Z",
+   "at": "2026-11-25T13:28:46Z"
   },
   {
    "id": "SOG-0192",
@@ -1869,8 +1899,9 @@
    },
    "test": "Maintenance › Données : après une construction, « Publier la base » dit « Tout est déjà publié : les commits de la construction sont partis à … » au lieu de « 0 fichier envoyé ».",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:30:24Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:30:24Z",
+   "at": "2026-11-25T13:28:52Z"
   },
   {
    "id": "SOG-0231",
@@ -1963,8 +1994,10 @@
    },
    "test": "Lanceur relancé. Maintenance › Données › Procédures, ligne « Route (RAD, points FRA) » : une ligne dit où créer le compte EUROCONTROL (lien) ; « Choisir le fichier… » prend le classeur RAD ou le classeur des points FRA téléchargé, puis l'import suit. Dis-moi si le lien mène bien au formulaire d'inscription : il n'a pas été vérifié.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T23:02:41Z"
+   "state": "ok",
+   "delivered": "2026-11-10T23:02:41Z",
+   "comment": "oui.",
+   "at": "2026-11-25T13:39:52Z"
   },
   {
    "id": "SOG-0239",
@@ -1990,8 +2023,9 @@
    },
    "test": "Relance le lanceur, recharge la page. Données, Islande : la source « Avians » est listée ; avec la case d'usage personnel cochée, « Mettre à jour ce pays ». DEUX issues possibles, les deux sont des réponses : (1) l'Islande gagne des points et des voies (son compte le dit) — valide ; (2) un message dit qu'une page n'a pas été trouvée, avec l'adresse essayée, et que rien n'a été écrit — refuse en copiant ce message : le lecteur n'a été essayé que sur un faux réseau, je te demanderai alors deux pages enregistrées à la main.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-13T14:41:30Z"
+   "state": "ok",
+   "delivered": "2026-11-13T14:41:30Z",
+   "at": "2026-11-25T13:28:59Z"
   },
   {
    "id": "SOG-0241",
@@ -2989,8 +3023,9 @@
    },
    "test": "Relance le lanceur et recharge. (1) Design Material : « Administration » tient sur une ligne. (2) Maintenance › Administration › « Réglage des seuils de la carte » : tu arrives sur la page de réglage de la Carte. (3) Maintenance › Données : « Pays définis » remplace « Ma couverture » (« Ajouter ce pays », « Retirer ce pays »). (4) Compagnie › aéronefs, « registre français non déposé — le déposer » : tu arrives sur le pli « Registre français des aéronefs » de Données ; « Choisir le fichier… » le dépose et donne le nombre d'immatriculations lues.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:29:51Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:29:51Z",
+   "at": "2026-11-25T09:19:53Z"
   },
   {
    "id": "SOG-0316",
@@ -3018,8 +3053,9 @@
    },
    "test": "Recharge la page. Carburant, un vol avec une ATIS de réseau à lire : quitte l'écran aussitôt ouvert (vers la Carte), plusieurs fois — aucune erreur ne s'affiche et la console ne porte pas « Cannot read properties of null ».",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:40:57Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:40:57Z",
+   "at": "2026-11-25T13:40:36Z"
   },
   {
    "id": "SOG-0318",
@@ -3122,8 +3158,9 @@
    },
    "test": "Recharge la page. (1) Données, « Tout mettre à jour » : les tuiles restent bleues « en cours » d'un bout à l'autre, plus de marron. (2) Réglages : dans « État », la ligne « Quelque chose semble bizarre ? » mène à « Repartir de zéro sur cet appareil » ; il dit en chiffres ce qui part et ce qui reste, demande une confirmation, puis l'appareil relit le dépôt ; tes vols, tes réglages et ta compagnie sont toujours là. (3) Coupe le réseau et refais le geste : il refuse, « rien n'a été vidé ».",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-14T10:15:09Z"
+   "state": "ok",
+   "delivered": "2026-11-14T10:15:09Z",
+   "at": "2026-11-27T09:44:37Z"
   },
   {
    "id": "SOG-0325",
@@ -3134,12 +3171,15 @@
     "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
     "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo"
    },
-   "test": "Recharge la page. Carburant, un vol vers un terrain contrôlé dont un ATIS est en ligne sur IVAO ou VATSIM, « Lire la météo des terrains » : côté arrivée du bloc « Procédures », la ligne de l'ATIS donne sa lettre, sa piste, son QNH et son vent ; dessous, une ligne « Terrain » donne l'altitude du terrain et le QNH (celui de l'ATIS d'abord, puis celui du METAR avec son heure). Un terrain sans ATIS : le QNH du METAR seul. Sans météo : « QNH inconnu ».",
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prépare un vol dont la météo n'a pas encore été lue, puis ouvre le bloc Procédures de l'arrivée. Ce qu'on doit voir : sur la ligne « Terrain », « … QNH inconnu », et juste dessous « Lire la météo des terrains ». Touche-le, sans changer d'écran : le QNH s'affiche et le lien disparaît.",
    "since": "2026-11-13",
-   "state": "ko",
-   "delivered": "2026-11-13T22:14:57Z",
-   "comment": "lire la météo des terrains est dans l’écran 3, on est sur l’écran 1.",
-   "at": "2026-11-23T10:27:04Z"
+   "state": "todo",
+   "delivered": "2026-11-23T13:42:15Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "lire la météo des terrains est dans l’écran 3, on est sur l’écran 1.",
+    "at": "2026-11-23T10:27:04Z"
+   }
   },
   {
    "id": "SOG-0326",
@@ -3152,8 +3192,9 @@
    },
    "test": "Recharge la page. Carburant, un vol démarré, « Direct vers… » un point plus loin sur la route ; ouvre la Carte : le morceau de route abandonné reste visible, en violet fin ; le direct est un trait plein or foncé marqué « DCT ». Dis si la teinte te va (tu proposais jaune ou vert). Au passage : survoler un nom de point dans le profil le surligne sur la carte, comme depuis la liste de la route.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T15:37:53Z"
+   "state": "ok",
+   "delivered": "2026-11-13T15:37:53Z",
+   "at": "2026-11-25T13:04:27Z"
   },
   {
    "id": "SOG-0329",
@@ -3507,7 +3548,14 @@
    "since": "2026-11-16",
    "state": "ok",
    "delivered": "2026-11-16T22:05:22Z",
-   "at": "2026-11-23T10:16:46Z"
+   "comment": "oui, mais elle ne passe pas eurocontrol.  BTW : 2000 signes, c’est trop peu pour un vrai bug report.",
+   "at": "2026-11-25T10:09:51Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-23T10:16:46Z"
+    }
+   ]
   },
   {
    "id": "SOG-0355",
@@ -3899,8 +3947,9 @@
    },
    "test": "RELANCE LE LANCEUR. Ouvre Maintenance › Données. Attendu : en deux secondes environ la ligne du cycle, l'état de la base (plus de « L'état de votre base n'est pas connu : il n'a pas encore été lu »), les groupes de pays avec leurs comptes et la carte en couleurs. Recharge la page deux ou trois fois : même résultat à chaque fois.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T15:31:28Z"
+   "state": "ok",
+   "delivered": "2026-11-16T15:31:28Z",
+   "at": "2026-11-25T13:07:40Z"
   },
   {
    "id": "SOG-0385",
@@ -3956,7 +4005,7 @@
     "de": "Kraftstoff, KABQ → EGLL: die berechnete Route erscheint und verschwindet, es bleibt ein Direkt",
     "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo"
    },
-   "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (« … RAFIN NATV ATSUR … » ce soir) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. (4) Un vol SANS niveau (vide le champ Niveau à l'étape Vol), « Calculer A → B » : une ligne orange dit « Niveau non donné : route calculée à FL180 par défaut », le lien « Donne",
+   "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (un point, la route NAT, un point) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. (4) Un vol SANS niveau (vide le champ Niveau à l'étape Vol), « Calculer A → B » : une ligne orange dit « Niveau non donné : route calculée à FL180 par défaut », le lien « Donne",
    "since": "2026-11-16",
    "state": "ok",
    "delivered": "2026-11-16T22:25:46Z",
@@ -3966,15 +4015,16 @@
    "id": "SOG-0390",
    "app": "pilote",
    "title": {
-    "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (N71B-N90B)",
-    "en": "Fuel: taking an itinerary removes the North American routes (N71B-N90B) from the route text",
-    "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (N71B-N90B) aus dem Routentext",
-    "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)"
+    "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (un nom de deux voies jointes)",
+    "en": "Fuel: taking an itinerary removes the North American routes (a name of two joined airways) from the route text",
+    "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (ein Name zweier verbundener Strecken) aus dem Routentext",
+    "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (un nombre de dos aerovías unidas)"
    },
-   "test": "Recharge la page. Carburant, étape Route, KABQ → EGLL à FL350, « Calculer A → B ». (1) Sur la carte de l'itinéraire, le texte de la route montre la route nord-américaine entre ses deux points (« … TUSKY N71B-N90B RAFIN NATV ATSUR … » ce soir). (2) Touche « Choisir » : le champ Route garde « N71B-N90B » entre TUSKY et RAFIN — il n'y a pas « TUSKY RAFIN » tout seul. (3) Recharge la page : la route est toujours écrite avec sa voie. (4) Au téléphone, « 0 écart » tient d'un seul morceau sur la carte de l'itinéraire.",
+   "test": "Recharge la page. Carburant, étape Route, KABQ → EGLL à FL350, « Calculer A → B ». (1) Sur la carte de l'itinéraire, le texte de la route montre la route nord-américaine entre ses deux points (un point, la voie nord-américaine, un point, la route NAT, un point). (2) Touche « Choisir » : le champ Route garde la voie nord-américaine entre ses deux points — jamais les deux points seuls. (3) Recharge la page : la route est toujours écrite avec sa voie. (4) Au téléphone, « 0 écart » tient d'un seul morceau sur la carte de l'itinéraire.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T22:24:33Z"
+   "state": "ok",
+   "delivered": "2026-11-16T22:24:33Z",
+   "at": "2026-11-25T12:57:26Z"
   },
   {
    "id": "SOG-0391",
@@ -3987,8 +4037,9 @@
    },
    "test": "Après avoir RELANCÉ le lanceur et rechargé la page. CARBURANT, étape Route : (1) un vol qui traverse l'Atlantique Nord à une heure où aucune route NAT de son sens n'est valable (KABQ → EGLL à FL350 en journée) ; « Calculer ». Sous « Calculé à … », une ligne orange : « Route libre : aucune route NAT valable à l'entrée de l'océan vers … Z (routes vers l'est : 01 h 00 – 08 h 00 Z) » ; si ton vol n'a pas d'heure, elle finit par « Départ pris à … Z (maintenant). ». (2) Recharge la page : la ligne, la preuve de chaque section et le pli des routes écartées sont toujours là. (3) Un vol à un niveau qu'aucune route NAT n'offre, dans leur fenêtre : la ligne dit « aucune route NAT n'offre le FL… » et un",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T10:02:30Z"
+   "state": "ok",
+   "delivered": "2026-11-17T10:02:30Z",
+   "at": "2026-11-25T13:54:31Z"
   },
   {
    "id": "SOG-0392",
@@ -4029,8 +4080,9 @@
    },
    "test": "Sur le poste, APRÈS avoir relancé le lanceur. Carburant, étape Route : un vol vers l'est, par exemple KJFK → EGLL, départ ce soir à 23 h 00 Z, puis « Calculer A → B ». Attendu : (1) tant que le message vers l'est n'est pas paru, la réponse vient en quelques secondes (la relecture de la source prend 4 s au plus) et la remarque du calcul dit : « Le dernier message NAT lu (…, lu à …) n'a aucune route vers l'est valable à ce passage ; la source n'en publie pas encore. » ; (2) une fois le message paru, le MÊME calcul, sans rien relire toi-même, rend une route qui suit une route NAT vers l'est ; (3) deux calculs à moins de cinq minutes : la source n'est relue qu'une fois, et c'est dit ; (4) demain",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T12:55:13Z"
+   "state": "ok",
+   "delivered": "2026-11-17T12:55:13Z",
+   "at": "2026-11-25T13:54:08Z"
   },
   {
    "id": "SOG-0396",
@@ -4043,8 +4095,9 @@
    },
    "test": "Sur le poste (pas besoin de relancer le lanceur). Carburant, étape Route, tant qu'aucune route NAT vers l'est n'est lue (la ligne dit « aucune vers l'est ») : (1) KJFK → LEMD, puis « Calculer A → B » : une route arrive en moins de 5 s (elle n'en trouvait aucune ce matin) ; l'écran dit que c'est une route libre et pourquoi ; (2) KORD → EIDW : la route traverse l'océan vers 15° W devant l'Irlande (environ 3 500 NM), elle ne descend pas par le golfe de Gascogne et l'Espagne ; (3) la portion océanique ne remonte pas à contresens une route NAT vers l'ouest en vigueur ; (4) les mêmes vols recalculés rendent la même route.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T14:07:43Z"
+   "state": "ok",
+   "delivered": "2026-11-17T14:07:43Z",
+   "at": "2026-11-25T13:54:36Z"
   },
   {
    "id": "SOG-0398",
@@ -4094,8 +4147,9 @@
    },
    "test": "Après avoir RELANCÉ le lanceur (une dernière fois) et rechargé la page. (1) La PREMIÈRE fois après la relance, le lanceur met ses données en ordre (jusqu'à 30 à 45 s) : une bande en haut dit « Mise en ordre des données de ce poste : n / N fichiers. Les écrans qui lisent le dépôt attendent ; le reste fonctionne. » — ce que tu as sur l'appareil se lit et s'écrit pendant ce temps. (2) Arrête et relance le lanceur une seconde fois : plus d'attente (moins d'une seconde), plus de bande. (3) Pendant une synchronisation (« Synchronisation… »), « Calculer » part tout de suite. (4) Prendre un itinéraire pendant « Variantes en recherche… » ne relance pas de calcul. (5) Carburant s'ouvre avec son devis ",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T11:56:33Z"
+   "state": "ok",
+   "delivered": "2026-11-17T11:56:33Z",
+   "at": "2026-11-25T12:57:26Z"
   },
   {
    "id": "SOG-0401",
@@ -4119,10 +4173,12 @@
     "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
     "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol"
    },
-   "test": "Carburant, étape Route, après avoir rechargé la page. (1) Un vol avec sa route (par exemple EDDF → LFMN, la route calculée) : sous l'itinéraire, le bouton « Copier pour Eurocontrol ». (2) Ouvre le pli « Plan de vol OACI (relecture) » : le message est écrit case par case — « (FPL-CHECK01-IG », le type et l'équipement supposé, le départ et son heure, la vitesse et le niveau puis la route, l'arrivée, la durée et le dégagement, « PBN/… DOF/… ) ». (3) Les mentions disent : identifiant neutre par défaut, équipement supposé pour ne contrôler que la route, l'heure de départ prise, aucune SID écrite quand le terrain n'en a pas. (4) Change l'identifiant dans le champ : le message suit, en majuscules ;",
-   "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T11:11:00Z"
+   "test": "Carburant, étape 2 « Route », après avoir rechargé la page. Calcule la route (« Auto » ou « Calculer A → B ») ou contrôle-la : le bouton n'apparaît que sur une route jugée ; si une ligne dit la route périmée, recalcule d'abord. (1) Un vol avec sa route (par exemple EDDF → LFMN, la route calculée) : sous l'itinéraire, le bouton « Copier pour Eurocontrol ». (2) Ouvre le pli « Plan de vol OACI (relecture) » : le message est écrit case par case — « (FPL-CHECK01-IG », le type et l'équipement supposé, le départ et son heure, la vitesse et le niveau puis la route, l'arrivée, la durée et le dégagement, « PBN/… DOF/… ) ». (3) Les mentions disent : identifiant neutre par défaut, équipement supposé pou",
+   "since": "2026-11-26",
+   "state": "ko",
+   "delivered": "2026-11-17T11:11:00Z",
+   "comment": "Quel écran ? Ni le 2, ni le 5 (qui semble pourtant adapté).",
+   "at": "2026-11-25T13:04:17Z"
   },
   {
    "id": "SOG-0403",
@@ -4135,8 +4191,9 @@
    },
    "test": "Carburant, après avoir rechargé la page. (1) Un vol vers l'ouest qui passe le 30° ouest DANS la fenêtre du jour (EGGW → KJFK, départ vers 09 h 30 Z) : route par une route NAT du jour. (2) Le même vol à une heure qui passe le 30° ouest HORS de la fenêtre (départ vers 21 h Z) : la route suit quand même le système de routes, écrite POINT PAR POINT (« … RESNO DCT 56/20 DCT 56/30 … »), sans « NATx », et la preuve dit « hors de sa fenêtre » avec le système suivi. (3) Un vol vers l'EST aujourd'hui : pas encore de route NAT (le message de la nuit n'est pas paru et rien n'est gardé) — route libre depuis Londres, Dublin, Amsterdam ; rien depuis Francfort, Madrid, Paris, c'est la suite. Dis ce qui te s",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T12:39:05Z"
+   "state": "ok",
+   "delivered": "2026-11-17T12:39:05Z",
+   "at": "2026-11-25T13:54:11Z"
   },
   {
    "id": "SOG-0405",
@@ -4186,8 +4243,9 @@
    },
    "test": "Carburant, étape Route, après avoir rechargé la page. (1) Tape une route avec un point de coordonnées court, par exemple « … RESNO 51/20 52/30 … », et attends que les points soient résolus (la carte se dessine) : le champ garde « 51/20 » et « 52/30 », il ne les réécrit plus « 5100N02000W ». (2) Prends un itinéraire calculé qui traverse l'Atlantique : son texte garde « 51/50 ». (3) Un point avec un niveau accroché garde la forme longue (c'est voulu). (4) L'arrivée n'apparaît qu'une fois à la fin du texte — dis-le si tu la vois deux fois.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T10:39:32Z"
+   "state": "ok",
+   "delivered": "2026-11-17T10:39:32Z",
+   "at": "2026-11-25T11:01:26Z"
   },
   {
    "id": "SOG-0409",
@@ -4216,8 +4274,9 @@
    },
    "test": "Après la relance du lanceur : bouton « Signaler » (la coccinelle) › « Mes signalements ». Attendu : UN champ de recherche, tes signalements groupés Maintenant / Ensuite / Plus tard / À classer, 7 par groupe puis « Voir les n suivants », chacun avec sa couleur ET son mot d'état ; touche-en un : sa fiche s'ouvre (fiche liée, priorité par deux rangées de trois boutons, commentaires) ; « Ouvrir dans la feuille de route » mène à la fiche liée ; le Retour du navigateur ramène à la liste.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T18:12:54Z"
+   "state": "ok",
+   "delivered": "2026-11-18T18:12:54Z",
+   "at": "2026-11-25T09:20:17Z"
   },
   {
    "id": "SOG-0411",
@@ -4230,8 +4289,9 @@
    },
    "test": "Après avoir relancé le lanceur et rechargé la page. (1) EGGW → KJFK, « Calculer », « Choisir », « Contrôler » : plus de « Portion NATF non couverte ». (2) Dans « Tronçons », les lignes de l'océan disent leurs deux bouts : « HIGH · RESNO–51/50 · … », « HIGH · 51/50–NICSO · … ». (3) La remarque du cycle nomme le tronçon en cause (« … source de N260B-N271B (NICSO → ALLEX) … »). (4) Dans le pli des routes NAT écartées, une route écartée pour l'heure à moins d'une heure près finit par « — à N min près : partir au plus tôt à … Z ». (5) Pas encore là : les autres routes NAT atteignables depuis Londres (SOG-0412, en mesure).",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T11:55:23Z"
+   "state": "ok",
+   "delivered": "2026-11-17T11:55:23Z",
+   "at": "2026-11-25T13:54:19Z"
   },
   {
    "id": "SOG-0412",
@@ -4244,8 +4304,9 @@
    },
    "test": "Carburant, après avoir rechargé la page. (1) EGGW → KJFK (ou un autre départ d'Europe vers l'Amérique) dans la fenêtre des routes NAT du jour, « Calculer » : la réponse arrive en 2 à 3 s. (2) Dans le pli des routes NAT écartées, plus de « son entrée n'est pas atteignable depuis le départ à ce niveau » ; une route non examinée dit « non essayée ». (3) La route prise est la moins chère des routes NAT du jour pour ton vol — dis-le si une autre te paraissait meilleure. (4) Depuis Madrid, la route NAT prise peut rallonger nettement le vol : c'est la question Q-0082.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T12:36:46Z"
+   "state": "ok",
+   "delivered": "2026-11-17T12:36:46Z",
+   "at": "2026-11-25T13:54:11Z"
   },
   {
    "id": "SOG-0413",
@@ -4258,8 +4319,10 @@
    },
    "test": "Sur le poste, appli à jour. Carburant, étape Route. Attendu : (1) sous la route, la ligne dit les sens et leurs fenêtres : « Routes NAT du 17/11 : vers l'ouest 11 h 30 – 19 h 00 Z ; aucune vers l'est » (ou les deux sens si le message vers l'est est paru) ; (2) à l'ouverture, si la dernière lecture a plus d'une heure, les routes sont relues sans rien demander ; (3) le lien « Relire les routes NAT » est toujours là ; un clic relit la source et dit ce qui a changé (« 8 routes ajoutées vers l'est » ou message inchangé) ; (4) deux clics à moins d'une minute : le second ne relit pas et le dit ; (5) sur un téléphone appairé : pas de lien. Après la retouche (à venir) : le résultat de la relecture es",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T13:12:34Z"
+   "state": "ko",
+   "delivered": "2026-11-17T13:12:34Z",
+   "comment": "vite fait. cf. screenshot de 14:45 :  Routes NAT du 25/11 : vers l’ouest 11 h 30 – 19 h 00 Z ; aucune vers l’est (lues à 08 h 14 Z) Le poste fait une autre opération : réessayez dans un instant. Relire les routes NAT",
+   "at": "2026-11-25T13:46:16Z"
   },
   {
    "id": "SOG-0414",
@@ -4272,8 +4335,9 @@
    },
    "test": "Sur le poste (pas besoin de relancer le lanceur). Carburant, étape Route : EGGW → KJFK, départ aujourd'hui à 12 h 00 Z, « Calculer A → B ». Attendu : (1) la route ne porte plus « NATF » ; la portion océanique est écrite point par point (« … RESNO DCT 56/20 DCT 56/30 DCT 54/40 DCT 51/50 DCT NICSO … ») ; (2) la remarque dit : « Route NAT F suivie de RESNO à 51/50 seulement : sa sortie ALLRY n'est pas dans la base ; les routes nord-américaines N484E / N468A du message ne sont pas suivies ; écrite point par point, jamais sous son nom. » ; (3) « Contrôler » sur cette route ne dit plus « portion NATF non couverte ».",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T13:07:54Z"
+   "state": "ok",
+   "delivered": "2026-11-17T13:07:54Z",
+   "at": "2026-11-25T13:54:15Z"
   },
   {
    "id": "SOG-0416",
@@ -4300,8 +4364,9 @@
    },
    "test": "Sur le poste (pas besoin de relancer le lanceur). D'ABORD : Réglages › Maintenance › Données aéronautiques, ligne Portugal, bouton de mise à jour (pour que les points de la limite de Santa Maria portent leur marque). PUIS Carburant, étape Route, tant que la ligne dit « aucune vers l'est » : (1) KJFK → LEMD, « Calculer A → B » : environ 3 260 NM (3 880 avant), en moins de 5 s ; la traversée arrive par le sud, vers 42° N à 15° W, pas par l'Irlande ; (2) KMIA → LPPT : la traversée passe sous 40° N et la route dépasse le grand cercle de 3 % environ au plus ; (3) KJFK → LPPR : environ 6 % de plus que le grand cercle (36 % avant) ; (4) un vol du nord (KJFK → EGLL) rend la même route qu'avant.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T14:26:00Z"
+   "state": "ok",
+   "delivered": "2026-11-17T14:26:00Z",
+   "at": "2026-11-26T17:15:54Z"
   },
   {
    "id": "SOG-0418",
@@ -4354,8 +4419,9 @@
    },
    "test": "Carburant, la traversée EGGW → KJFK que tu as collée (page rechargée), bouton « Copier pour Eurocontrol », puis colle dans la validation d'Eurocontrol. Attendu : (1) plus AUCUNE erreur de syntaxe (SYN…) : la ligne de route n'a plus de tiret — le tronçon s'écrit « NICSO N260B ALLEX », et le pli dit « Deux indicatifs pour le même tracé (N260B-N271B) : le premier est écrit » ; (2) plus de « WAL/N0403F340 » (un changement identique au niveau en vigueur n'est pas écrit) ; (3) la fin de route s'écrit « ENE PARCH4 », sans « DCT » devant l'arrivée ; (4) « REG/… » est en case 18 : l'immatriculation de la fiche de l'aéronef, ou « REG/CHECK01 » avec la mention « immatriculation neutre » si la fiche n'e",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T15:34:34Z"
+   "state": "ok",
+   "delivered": "2026-11-17T15:34:34Z",
+   "at": "2026-11-26T17:15:58Z"
   },
   {
    "id": "SOG-0424",
@@ -4370,7 +4436,14 @@
    "since": "2026-11-17",
    "state": "ok",
    "delivered": "2026-11-17T16:29:58Z",
-   "at": "2026-11-23T10:16:46Z"
+   "comment": "oui, mais elle ne passe pas eurocontrol.  BTW : 2000 signes, c’est trop peu pour un vrai bug report.",
+   "at": "2026-11-25T10:09:51Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-23T10:16:46Z"
+    }
+   ]
   },
   {
    "id": "SOG-0427",
@@ -4383,8 +4456,9 @@
    },
    "test": "Sur le poste, APRÈS avoir relancé le lanceur. Données : lance la reconstruction VFR. Attendu : (1) la console du lanceur ne se remplit plus de lignes « fontTools is required… » : UNE ligne à la fin, du genre « n documents lus ; dans m des polices n'ont pas pu être décodées entièrement — contournement appliqué » ; (2) la reconstruction ne dure pas plus longtemps qu'avant ; (3) dans le résultat, un nom à apostrophe se lit juste (« l'Erdre », plus de caractère étrange à la place de l'apostrophe) ; (4) rien n'est à installer.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:38:42Z"
+   "state": "ok",
+   "delivered": "2026-11-17T16:38:42Z",
+   "at": "2026-11-25T13:28:50Z"
   },
   {
    "id": "SOG-0428",
@@ -4410,8 +4484,16 @@
    },
    "test": "Sur le poste, APRÈS avoir relancé le lanceur et rechargé la page. Données, ligne « Synoptique monde (GFS) », « Construire ». (1) Pendant la construction, QUITTE l'écran Données (va dans Carburant) puis reviens : la ligne montre toujours le travail en cours et son avancement — elle ne dit plus « une autre opération est en cours » ; (2) à la fin, la ligne dit le résultat même si tu étais ailleurs ; (3) INTERROMPS une construction en route (ferme le lanceur au milieu, ou « Arrêter »), relance le lanceur, puis « Construire » de nouveau : la ligne dit « Reprise : n échéances sur 25 déjà là » et ne retélécharge que le reste ; (4) une construction déjà complète pour le même calcul du modèle ne reté",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:54:58Z"
+   "state": "ok",
+   "delivered": "2026-11-17T16:54:58Z",
+   "comment": "oui, mais au moment où on lit construire, on voit : « consrtuction impossible. 600s d’attente minimum entre deux consrtuctions. consrtuction démarrée à (heure actuelle). délai d’attente : 599s »",
+   "at": "2026-11-25T13:38:38Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-25T13:37:54Z"
+    }
+   ]
   },
   {
    "id": "SOG-0430",
@@ -4477,8 +4559,9 @@
    },
    "test": "Carburant, page rechargée, un vol DÉMARRÉ (en cours de progression), de préférence sur le téléphone. Attendu : (1) plus de saccade toutes les quelques secondes : faire défiler l'écran, ouvrir un pli, taper dans un champ restent fluides pendant que le vol avance ; (2) la carte « Progression prévue » continue de se mettre à jour ; (3) le devis ne change pas tout seul ; (4) dès que tu changes une entrée — le niveau, le vent, la réserve, le terrain de dégagement, la route — le devis est bien recalculé aussitôt.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:53:37Z"
+   "state": "ok",
+   "delivered": "2026-11-17T16:53:37Z",
+   "at": "2026-11-25T13:04:25Z"
   },
   {
    "id": "SOG-0437",
@@ -4794,6 +4877,20 @@
    "delivered": "2026-11-18T20:47:37Z"
   },
   {
+   "id": "SOG-0468",
+   "app": "pilote",
+   "title": {
+    "fr": "Passe d'optimisation et de factorisation du code",
+    "en": "Code optimisation and factoring pass",
+    "de": "Durchgang zur Optimierung und Zusammenführung des Codes",
+    "es": "Pasada de optimización y factorización del código"
+   },
+   "test": "Rien de neuf à l'écran : c'est un rangement. Missions › Atelier : l'essai des clés, la lecture d'une mission et l'enregistrement marchent comme avant.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T20:50:53Z"
+  },
+  {
    "id": "SOG-0469",
    "app": "compagnie",
    "title": {
@@ -4861,8 +4958,9 @@
    },
    "test": "Réglages, fenêtre étroite (ou téléphone) : coche puis décoche « Utilisation sur cette machine seule » (et d'autres cases de la carte Usages). Attendu : l'écran ne se décale pas, la case reste sous ton doigt, et un second clic tombe bien sur ce que tu vises.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T15:16:04Z"
+   "state": "ok",
+   "delivered": "2026-11-18T15:16:04Z",
+   "at": "2026-11-25T09:19:36Z"
   },
   {
    "id": "SOG-0474",
@@ -4891,8 +4989,10 @@
    },
    "test": "Après la relance du lanceur : Carburant, un vol de Stockholm Arlanda (ESSA) à Malaga (LEMG), calcul de route. Attendu : une route rendue (plus de « calcul impossible »), en une quinzaine de secondes au plus quand le poste n'est pas chargé.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T12:14:40Z"
+   "state": "ko",
+   "delivered": "2026-11-18T12:14:40Z",
+   "comment": "il fait au moins 15\" de calcul, alors que la route est censée être en cache.",
+   "at": "2026-11-25T12:57:21Z"
   },
   {
    "id": "SOG-0476",
@@ -4921,8 +5021,9 @@
    },
    "test": "Réglages › Affichage : une ligne « Langue » (Automatique, Français, English, Deutsch, Español). Choisis Français : la page se recharge en français ; choisis English : en anglais ; Automatique : la langue de ton navigateur. Rappel : tes réglages vivent sur http://localhost:8000 (127.0.0.1 est une autre adresse, avec ses propres réglages).",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T15:16:13Z"
+   "state": "ok",
+   "delivered": "2026-11-18T15:16:13Z",
+   "at": "2026-11-25T09:17:28Z"
   },
   {
    "id": "SOG-0478",
@@ -4981,6 +5082,20 @@
    "delivered": "2026-11-18T20:47:37Z"
   },
   {
+   "id": "SOG-0482",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : une liste de points n'est pas un itinéraire — déplacer points, zones et objets dans l'ordre",
+    "en": "Mission workshop: a list of points is not an itinerary — reorder points, areas and objects",
+    "de": "Missionswerkstatt: Eine Punkteliste ist keine Route – Punkte, Gebiete und Objekte umordnen",
+    "es": "Taller de misiones: una lista de puntos no es un itinerario — reordenar puntos, zonas y objetos"
+   },
+   "test": "Recharge la page. Missions › Registre › une mission › Atelier, onglet Itinéraire. Chaque ligne (sauf le départ) a une poignée de six points. Au téléphone, tiens la poignée et glisse : la ligne devient pâle, un trait bleu montre où elle va ; lâche, l'ordre change. Glisse un tiroir : sa suite part avec lui. ↶ annule. Enregistre : l'ordre est gardé. À l'ordinateur, même chose à la souris.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T02:19:27Z"
+  },
+  {
    "id": "SOG-0483",
    "app": "pilote",
    "title": {
@@ -4991,8 +5106,10 @@
    },
    "test": "Carburant : un vol qui part d'une hélistation à code de liste (par exemple LF418, après la reconstruction de la zone fr) vers un terrain OACI. Au plan de vol OACI (étape Départ) : la case départ porte ZZZZ, et la case 18 « DEP/ » avec le nom et la position de l'hélistation ; un terrain à indicatif OACI reste écrit tel quel.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T16:49:26Z"
+   "state": "ko",
+   "delivered": "2026-11-18T16:49:26Z",
+   "comment": "Où est le plan de vol à copier ? Où est la case 18 ? BTW : si c’est une mission HEMS ou FIRE, il y a des champs en STS à renseigner. En CAM probablement aussi.  Voici l'intégralité des 13 descripteurs officiels reconnus après STS/ : • ALTRV : vol effectué selon une réservation d'altitude. • ATFMX : vol exempté des mesures de régulation ATFCM (créneaux). • FFR : lutte contre l'incendie (Fire-Fighting). • FLTCK : vol de vérification/calibration des aides à la navigation (Flight Check). • HAZMAT : transport de matières dangereuses. • HEAD : vol avec statut de chef d'État (Head of State). • HOSP : vol médical déclaré par les autorités médicales. • HUM : mission humanitaire. • MARSA : responsabilité militaire de la séparation entre aéronefs militaires. • MEDEVAC : évacuation médicale d'urgence vitale (priorité supérieure à HOSP). • NONRVSM : vol non homologué RVSM demandant à évoluer en espace RVSM. • SAR : mission de recherche et sauvetage (Search and Rescue). • STATE : vol militaire, de douane ou de police (vol d'État). (Note : en aviation française de Sécurité Civile, on utilise aussi l'indicatif radio ou l'immatriculation — comme les Pélican ou Tracker — couplé à STS/FFR en case 18).    À propos de plan de vol, gérer « stay » (et le « stayinfo » subséquent) N0120VFR DCT 48N002W DCT RNS270015 DCT LFRN STAY1/0045 DCT RNS/N0150F080 IFR RNS1E RNS A34 LUKIP/N0160F100 G4 C/KORER/N0165F100F120 DCT 4915N00130W/N0140A045 VFR DCT LFRG (Note : en case 18, un indicateur STAY1/... impose d'ajouter la mention STAYINFO1/ suivie du motif de l'arrêt, par exemple STAYINFO1/TRAINING APPROACHES ou STAYINFO1/REFUELING).  Autre use case : • Case 13 : ZZZZ0900 (départ d'un terrain sans code OACI) • Case 15 : K0210VFR DCT 4815N00130W DCT RNS270015 DCT LFRN STAY1/0045 DCT RNS/N0150F080 IFR RNS1E RNS A34 LUKIP/N0160F100 G4 C/KORER/N0165F100PLUS DCT 4915N00130W/N0140A045 VFR DCT LFRG • Case 18 : STS/SAR PBN/B2D2 DEP/4812N00132W TERRAIN PRIVE DLE/LUKIP0015 PER/A STAYINFO1/AVITAILLEMENT ET BRIEF",
+   "at": "2026-11-26T17:29:15Z"
   },
   {
    "id": "SOG-0484",
@@ -5005,8 +5122,9 @@
    },
    "test": "Réglages › Affichage › Langue : change de langue trois ou quatre fois de suite rapidement (Français, English, Deutsch, Français). Attendu : aucune alerte « Rechargements en série » ; après chaque rechargement, Réglages se rouvre PAR-DESSUS l'écran d'avant, et Échap le referme sur cet écran.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T18:13:06Z"
+   "state": "ok",
+   "delivered": "2026-11-18T18:13:06Z",
+   "at": "2026-11-25T09:18:17Z"
   },
   {
    "id": "SOG-0485",
@@ -5077,8 +5195,9 @@
    },
    "test": "Mes appareils : ouvre un appareil de ta flotte et touche sa « Base ». Tape deux lettres (par exemple « LF ») : la liste propose des terrains (et des hélistations) avec leur nom ; choisis-en un : le code s'écrit et le nom paraît sous le champ. Un texte tapé à la main reste possible.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T15:08:49Z"
+   "state": "ok",
+   "delivered": "2026-11-18T15:08:49Z",
+   "at": "2026-11-25T09:23:00Z"
   },
   {
    "id": "SOG-0491",
@@ -5116,12 +5235,15 @@
     "de": "Kraftstoff: Kein Ausweichflugplatz für Sarajevo (LQSA) – keiner im Umkreis von 30–300 NM besteht Piste und Hilfen",
     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas"
    },
-   "test": "Carburant, vol EGGW → LQSA, étape Vol : touche « Proposer un dégagement ». Attendu : des terrains proposés autour de Sarajevo, en orange, avec « Moyens : non vérifiés » (ou « Piste : non vérifiée ») ; les terrains vérifiés, s'il y en a, passent devant. Plus de ligne « Aucun terrain … ne passe la piste et les moyens ».",
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prépare EGGW → LQSA sans date de vol et touche « Proposer un dégagement » : au-dessus de la liste, une seule fois, « Sans date de vol, la météo des dégagements n'est pas jugée. » Mets alors la date et l'heure du vol : la proposition dit « Périmé (calculé à …) » avec « Recalculer » ; touche « Recalculer » : la météo de chaque terrain proposé est jugée (catégorie, ou sa cause sur la ligne).",
    "since": "2026-11-18",
-   "state": "ko",
-   "delivered": "2026-11-18T15:09:00Z",
-   "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul.",
-   "at": "2026-11-23T10:25:52Z"
+   "state": "todo",
+   "delivered": "2026-11-23T13:42:15Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul.",
+    "at": "2026-11-23T10:25:52Z"
+   }
   },
   {
    "id": "SOG-0495",
@@ -5162,8 +5284,9 @@
    },
    "test": "Page de recette : valide un test (par exemple SOG-0474, que tu avais validé sans qu'il soit écrit), puis RECHARGE la page : il reste validé. Valide-en un autre d'un double clic rapide : un seul est validé (la carte suivante, remontée sous le pointeur, ne l'est pas). Si le lanceur ne répond pas, un avertissement « pas encore enregistrée » paraît et le verdict part tout seul au retour du lanceur.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T18:13:17Z"
+   "state": "ok",
+   "delivered": "2026-11-18T18:13:17Z",
+   "at": "2026-11-25T09:20:37Z"
   },
   {
    "id": "SOG-0499",
@@ -5198,9 +5321,26 @@
    },
    "test": "Recharge la page. Carte : une route dont la croisière passe sous le relief, puis une autre où elle passe à moins de 500 ft au-dessus. Sur la coupe, la partie fautive du trait de croisière est rouge (sous le relief) ou orange (moins de 500 ft), avec une marque au point le plus bas qui porte le nombre ; sous la coupe, une phrase : « Croisière sous le relief : … ft trop bas, à … NM après {point} » ou « Croisière à … ft seulement au-dessus du relief, à … NM après {point} ». Au-dessus de 500 ft : rien. La même chose dans le profil de l'atelier de missions. Dis si la distance « après {point} » te paraît fausse.",
    "since": "2026-11-21",
-   "state": "ok",
+   "state": "reserve",
    "delivered": "2026-11-21T16:56:44Z",
-   "at": "2026-11-21T18:27:09Z"
+   "comment": "le niveau de vol auto passe sans aucun complexes à A 6000 ft, au milieu des Alpes. Donc, oui, ce bug est accepté. mais, il y a un autre bug à ouvrir (auto). Je met en « mauvais », tu fermeras le SOG-0502 pour mettre ce défaut au bon endroit. Toujours pas de sélecteur VFR (le niveau auto en dépend : là 6000ft, et me laisse monter au 120, alors que je suis VFR.",
+   "at": "2026-11-25T13:14:53Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-21T18:27:09Z"
+    },
+    {
+     "verdict": "ko",
+     "comment": "le niveau de vol auto passe sans aucun complexes à A 6000 ft, au milieu des Alpes. Donc, oui, ce bug est accepté. mais, il y a un autre bug à ouvrir (auto). Je met en « mauvais », tu fermeras.",
+     "at": "2026-11-25T13:06:00Z"
+    },
+    {
+     "verdict": "ko",
+     "comment": "le niveau de vol auto passe sans aucun complexes à A 6000 ft, au milieu des Alpes. Donc, oui, ce bug est accepté. mais, il y a un autre bug à ouvrir (auto). Je met en « mauvais », tu fermeras le SOG-0502 pour mettre ce défaut au bon endroit.",
+     "at": "2026-11-25T13:06:32Z"
+    }
+   ]
   },
   {
    "id": "SOG-0503",
@@ -5366,8 +5506,9 @@
    },
    "test": "Recharge la page. (1) Carburant, colle la route de ton IFPS du matin (MID L612 HAWKE DCT NEVIL G27 ANGLO G273 RAVIG T501 LUKEM T493 UPALO V20 LUVOP) au FL270, « Contrôler » : G27, G273 et T501 sont dites hors de leurs niveaux, LF3564 à NEVIL aussi, comme l'IFPS — et plus L612 ni T493 en trop. (2) Calcule LPPT → KMIA au FL370 sans message NAT : une route existe (par 39/15, environ 3 700 NM). (3) Un calcul sans niveau dit en tête « Niveau du vol absent : le calcul est fait au FL180 ».",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T13:57:18Z"
+   "state": "ok",
+   "delivered": "2026-11-19T13:57:18Z",
+   "at": "2026-11-25T11:01:04Z"
   },
   {
    "id": "SOG-0514",
@@ -5422,9 +5563,15 @@
     "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
    },
-   "test": "Recharge la page. Carburant, un vol au niveau VIDÉ : « Calculer ». Attendu : la page 1 porte le niveau du calcul (celui de la fiche de l'avion, sinon FL180) et le dit dans une notification ; le profil et le devis sont à ce niveau.",
+   "test": "Recharge la page (relance du lanceur faite). (1) Carburant, un vol au niveau VIDÉ : « Calculer ». Attendu : la page 1 indique le niveau du calcul (celui de la fiche de l'avion, sinon FL180), une notification le dit, et le profil et le devis sont à ce niveau. (2) Un vol dont la descente finit à un niveau qui n'est pas un multiple de dix : le plan de vol écrit deux changements de niveau, le premier à un niveau de la règle semi-circulaire.",
    "since": "2026-11-19",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-23T15:21:26Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "j’ai vidé le niveau de vol. j’ai calculé. accepté. le niveau de vol n’est pas renseigné dans la page 1. le profil est donc incohérent, visuellement (mais irl également) entre egll et thred. Sans surprise : (FPL-CHECK01-IG -BE9L/L-SDGRWY/S -EGLL1650 -N0246F270 GASGU N866 SAM Q41 THRED/N0246F190 Q41 DOMOK UT260 UPALO V20 LUVOP -LFRN0104 LFRS -PBN/B2D2 DOF/261119 REG/FGLRZ)  PROF195: THRED Q41 ORTAC DOES NOT EXIST IN FL RANGE F135..F999   PROF195: DOMOK UT260 UPALO DOES NOT EXIST IN FL RANGE F000..F195   PROF204: RS: TRAFFIC VIA EG:F105..F999 IS ON FORBIDDEN ROUTE REF:[EG2626B] SAM Q41 ORTAC   PROF204: RS: TRAFFIC VIA ORTAC IS ON FORBIDDEN ROUTE REF:[EG2924A] ORTAC   PROF204: RS: TRAFFIC VIA THRED Q41 ORTAC NEDUL Q41 THRED SAM Q41 NEDUL IS ON FORBIDDEN ROUTE REF:[EG2626A] SAM Q41 ORTAC",
+    "at": "2026-11-19T16:49:24Z"
+   }
   },
   {
    "id": "SOG-0518",
@@ -5492,8 +5639,10 @@
    },
    "test": "Carburant : calcule ESSA → LEMG, puis refais-le pendant que le poste est occupé (une reconstruction de zone en cours, par exemple). Attendu : la même route les deux fois (environ 1 650 NM). Si le poste est vraiment trop lent, la réponse dit « calcul interrompu, poste trop lent », jamais « calcul impossible ».",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T16:57:36Z"
+   "state": "ko",
+   "delivered": "2026-11-19T16:57:36Z",
+   "comment": "il fait au moins 15\" de calcul, alors que la route est censée être en cache.",
+   "at": "2026-11-25T12:57:21Z"
   },
   {
    "id": "SOG-0525",
@@ -5506,8 +5655,9 @@
    },
    "test": "RELANCE le lanceur (sur 17dd57d88 ou plus récent), puis recharge la page. (1) Données, ligne « Synoptique monde (GFS) » : si la publication est ancienne, le lanceur la relit tout seul au démarrage (environ 2 minutes) ; la ligne dit ensuite « À jour. Le lanceur relira la NOAA à HH:MM… », ou, après un échec, la cause puis « prochaine tentative à HH:MM ». (2) Pendant cette lecture automatique, calcule une route ou lis des procédures : ton geste passe tout de suite (la lecture automatique s'arrête), jamais « occupé ». (3) Le bouton « Construire » garde son refus « trop tôt » expliqué (heure du dernier départ, attente, reste). Dis ce que tu as vu, avec la capture si ça diffère.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T23:10:42Z"
+   "state": "ok",
+   "delivered": "2026-11-19T23:10:42Z",
+   "at": "2026-11-25T13:37:53Z"
   },
   {
    "id": "SOG-0526",
@@ -5608,8 +5758,9 @@
    },
    "test": "Recharge la page (pas de relance du lanceur). Carburant : calcule une route au FL270, puis change le niveau du vol (FL250) sans recalculer. Attendu : sous la route, « Route calculée pour le FL270 — à recalculer : le vol est au FL250 » et un lien « Recalculer » ; au-dessus de « Copier pour Eurocontrol », « Plan de vol au FL250 sur une route calculée pour le FL270 : recalculez la route avant de copier ». Après « Recalculer », les deux phrases disparaissent et le plan copié porte le même niveau en tête et dans la route.",
    "since": "2026-11-20",
-   "state": "todo",
-   "delivered": "2026-11-20T17:27:52Z"
+   "state": "ok",
+   "delivered": "2026-11-20T17:27:52Z",
+   "at": "2026-11-25T10:54:24Z"
   },
   {
    "id": "SOG-0535",
@@ -5637,8 +5788,10 @@
    },
    "test": "Relance le lanceur, puis recharge la page. Carburant, une route en infraction avec une règle du RAD et un raccord trop long : le message « aucune route conforme » compte les deux (« 2 règles », plus « 1 » seulement) ; la part « en infraction » n'est plus à 0 % quand le raccord est fautif ; la liste des États dont le RAD n'est pas lu ne cite que les États que la route traverse.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T18:41:58Z"
+   "state": "ko",
+   "delivered": "2026-11-21T18:41:58Z",
+   "comment": "(FPL-CHECK01-IG -BE9L/L-SDGRWY/S -EGGW1045 -N0247F210 RODNI1B RODNI N27 ICTAM Q63 CPT N859 DRAKE L151 SITET UN859 LGL UN491 RESMI UM728 KETEX DCT ENUPA DCT IBNIT DCT LSE DCT ROBEX DCT NITAM DCT KEB -LQSA0432 LYUZ -PBN/B2D2 DOF/261125 REG/FGLRZ)  PROF204: RS: TRAFFIC VIA EMMEF ROBEX ORRAJ IS ON FORBIDDEN ROUTE REF:[LF3203A] ANNEX 2B ROBEX,EMMEF   PROF204: RS: TRAFFIC VIA EMMEF ROBEX ORRAJ IS ON FORBIDDEN ROUTE REF:[LSLF1140A] ANX2B LSASFRA   PROF204: RS: TRAFFIC VIA LFR221AZ:F195..F240 [202611250600..202611252015] IS ON FORBIDDEN ROUTE REF:[LFR221AZRA] LFR221AZ / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LILDD35B IS ON FORBIDDEN ROUTE REF:[LILDD35BR] RAD ANNEX 2C / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LIR21A IS ON FORBIDDEN ROUTE REF:[LIR21AR] RAD ANNEX 2C / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LIR65 IS ON FORBIDDEN ROUTE REF:[EULIR65R] LI AIP   PROF204: RS: TRAFFIC VIA NITAM:F195..F999 IS ON FORBIDDEN ROUTE REF:[LI2474A] RAD ANNEX2B NITAM   PROF204: RS: TRAFFIC VIA SITET IS ON FORBIDDEN ROUTE REF:[LF3049A] ANX2B LFRRQX,LFFFUK NOT AVBL FOR TFC   PROF205: RS: TRAFFIC VIA ENUPA IS OFF MANDATORY ROUTE REF:[LF3787A] ENUPA   PROF205: RS: TRAFFIC VIA IBNIT IS OFF MANDATORY ROUTE REF:[LF2720A] ANN2B IBNIT NOT AVBL FOR TFC   PROF205: RS: TRAFFIC VIA KETEX IS OFF MANDATORY ROUTE REF:[LF3613A] KETEX",
+   "at": "2026-11-25T10:49:19Z"
   },
   {
    "id": "SOG-0538",
@@ -5651,9 +5804,16 @@
    },
    "test": "Recharge la page. Carburant, « Calculer A → B » sur une route qui traverse des États : sous « Non vérifiable » (ou sous « conforme »), la note dit « Les règles du RAD qui ne portent que sur des espaces ne sont pas vérifiées. », sans nombre.",
    "since": "2026-11-21",
-   "state": "ok",
+   "state": "ko",
    "delivered": "2026-11-21T15:38:58Z",
-   "at": "2026-11-21T18:27:24Z"
+   "comment": "(FPL-CHECK01-IG -BE9L/L-SDGRWY/S -EGGW1045 -N0247F210 RODNI1B RODNI N27 ICTAM Q63 CPT N859 DRAKE L151 SITET UN859 LGL UN491 RESMI UM728 KETEX DCT ENUPA DCT IBNIT DCT LSE DCT ROBEX DCT NITAM DCT KEB -LQSA0432 LYUZ -PBN/B2D2 DOF/261125 REG/FGLRZ)  PROF204: RS: TRAFFIC VIA EMMEF ROBEX ORRAJ IS ON FORBIDDEN ROUTE REF:[LF3203A] ANNEX 2B ROBEX,EMMEF   PROF204: RS: TRAFFIC VIA EMMEF ROBEX ORRAJ IS ON FORBIDDEN ROUTE REF:[LSLF1140A] ANX2B LSASFRA   PROF204: RS: TRAFFIC VIA LFR221AZ:F195..F240 [202611250600..202611252015] IS ON FORBIDDEN ROUTE REF:[LFR221AZRA] LFR221AZ / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LILDD35B IS ON FORBIDDEN ROUTE REF:[LILDD35BR] RAD ANNEX 2C / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LIR21A IS ON FORBIDDEN ROUTE REF:[LIR21AR] RAD ANNEX 2C / ACTIVATION BY AUP/UUP   PROF204: RS: TRAFFIC VIA LIR65 IS ON FORBIDDEN ROUTE REF:[EULIR65R] LI AIP   PROF204: RS: TRAFFIC VIA NITAM:F195..F999 IS ON FORBIDDEN ROUTE REF:[LI2474A] RAD ANNEX2B NITAM   PROF204: RS: TRAFFIC VIA SITET IS ON FORBIDDEN ROUTE REF:[LF3049A] ANX2B LFRRQX,LFFFUK NOT AVBL FOR TFC   PROF205: RS: TRAFFIC VIA ENUPA IS OFF MANDATORY ROUTE REF:[LF3787A] ENUPA   PROF205: RS: TRAFFIC VIA IBNIT IS OFF MANDATORY ROUTE REF:[LF2720A] ANN2B IBNIT NOT AVBL FOR TFC   PROF205: RS: TRAFFIC VIA KETEX IS OFF MANDATORY ROUTE REF:[LF3613A] KETEX",
+   "at": "2026-11-25T10:49:19Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-21T18:27:24Z"
+    }
+   ]
   },
   {
    "id": "SOG-0540",
@@ -5681,8 +5841,9 @@
    },
    "test": "Relance le lanceur, puis recharge la page. Dans Données, ouvre la Belgique : la carte « AIM Belgique » dit de déposer la partie ENR 3.2. Coche la case d'usage personnel si elle ne l'est pas, puis « Choisir le fichier… » et prends ton EB_ENR_3_2_en.pdf. Ce qu'on doit voir : « Pages déposées le … (cycle …). Dernier amendement lu : … », puis « Mettre à jour ce pays » construit la Belgique. Ensuite, dans Carburant, calcule une route qui traverse la Belgique (par exemple EHAM → LFPG) : des voies belges apparaissent, sans raison « Routes belges d'un cycle passé ». (Dépose aussi une autre page, 3.3 ou 3.4 : elle doit être refusée, « cette page ne sert pas au calcul des routes ».)",
    "since": "2026-11-22",
-   "state": "todo",
-   "delivered": "2026-11-22T09:32:03Z"
+   "state": "ok",
+   "delivered": "2026-11-22T09:32:03Z",
+   "at": "2026-11-25T13:41:46Z"
   },
   {
    "id": "SOG-0542",
@@ -5695,8 +5856,9 @@
    },
    "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T20:13:55Z"
+   "state": "ok",
+   "delivered": "2026-11-21T20:13:55Z",
+   "at": "2026-11-25T13:41:34Z"
   },
   {
    "id": "SOG-0543",
@@ -5709,8 +5871,9 @@
    },
    "test": "Couvert par le « Parcours de l'atelier » (SOG-0526) : rien à tester ici.",
    "since": "2026-11-21",
-   "state": "todo",
-   "delivered": "2026-11-21T20:13:55Z"
+   "state": "ok",
+   "delivered": "2026-11-21T20:13:55Z",
+   "at": "2026-11-25T13:41:41Z"
   },
   {
    "id": "SOG-0544",
@@ -5721,12 +5884,15 @@
     "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
    },
-   "test": "Recharge la page. Carburant, vol EGGW → LQSA, étape Vol : touche « Proposer un dégagement ». La météo est lue pour tous les terrains proposés. Un terrain sans TAF indique « pas de TAF » (ou « hors validité du TAF »), jamais « météo non lue », et n'est jamais en vert ; « météo non lue » ne paraît que si la lecture a échoué, avec sa raison. Sur la Carte, un terrain dont la météo n'est pas connue est orange « À vérifier », après les terrains bons.",
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prépare EGGW → LQSA sans date de vol et touche « Proposer un dégagement » : au-dessus de la liste, une seule fois, « Sans date de vol, la météo des dégagements n'est pas jugée. » Mets alors la date et l'heure du vol : la proposition dit « Périmé (calculé à …) » avec « Recalculer » ; touche « Recalculer » : la météo de chaque terrain proposé est jugée (catégorie, ou sa cause sur la ligne).",
    "since": "2026-11-21",
-   "state": "ko",
-   "delivered": "2026-11-21T19:16:32Z",
-   "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul. / tous les terrains proposés sont en « ? »",
-   "at": "2026-11-23T10:26:15Z",
+   "state": "todo",
+   "delivered": "2026-11-23T13:42:15Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "pas de meteo lue. · Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue). On met à jour l’horaire, mais on ne peut pas redemander un calcul. / tous les terrains proposés sont en « ? »",
+    "at": "2026-11-23T10:26:15Z"
+   },
    "history": [
     {
      "verdict": "ko",
@@ -5746,8 +5912,9 @@
    },
    "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prends un vol avec un appareil, laisse le niveau sur « Auto » et touche « Calculer ». Ce qu'on doit voir : une ligne par niveau (cinq au plus) ; la ligne gardée par « Auto » est en tête avec la pastille « Auto » et un bouton « Choisir », et AUCUNE ligne n'est encadrée ; sur chaque ligne, le niveau puis le verdict, une ligne « Non vérifiable : … » en gras s'il y a lieu, puis les motifs en orange (« raccord direct », « hors règle semi-circulaire ») ; les pastilles « la plus rapide » / « la plus économe » seulement s'il y a une vraie différence à l'affichage. Touche « Choisir » sur une ligne : la route de la ligne va dans le champ Route",
    "since": "2026-11-23",
-   "state": "todo",
-   "delivered": "2026-11-23T07:55:15Z"
+   "state": "ok",
+   "delivered": "2026-11-23T07:55:15Z",
+   "at": "2026-11-25T13:41:08Z"
   },
   {
    "id": "SOG-0546",
@@ -5762,6 +5929,34 @@
    "since": "2026-11-21",
    "state": "todo",
    "delivered": "2026-11-21T21:06:30Z"
+  },
+  {
+   "id": "SOG-0547",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : au départ, la recherche part d'un point qui n'est la fin d'aucune SID (EGLL → MATCH, 32 NM pour une limite de 0) alors que des SID lues en partie existent",
+    "en": "Routes: on departure, the search starts from a point that ends no SID (EGLL → MATCH, 32 NM for a limit of 0) although partly read SIDs exist",
+    "de": "Routen: beim Abflug beginnt die Suche an einem Punkt, an dem keine SID endet (EGLL → MATCH, 32 NM bei Grenze 0), obwohl teilweise gelesene SIDs vorhanden sind",
+    "es": "Rutas: en la salida, la búsqueda parte de un punto que no es el final de ninguna SID (EGLL → MATCH, 32 NM para un límite de 0) aunque existen SID leídas en parte"
+   },
+   "test": "Recharge la page (relance du lanceur faite). Carburant, un vol EGLL → LQSA : « Calculer ». Attendu : la route quitte EGLL par le dernier point d'une SID, et non plus par « DCT MATCH ». Puis un vol depuis EBBR : la route quitte le terrain par un point situé à 30 NM au plus, et non plus par LESDO.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T14:26:52Z"
+  },
+  {
+   "id": "SOG-0548",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : un raccord au-delà de sa limite faute de procédure lue — la ligne dit ce qui manque et propose le geste de lecture",
+    "en": "Fuel: a connector beyond its limit for lack of a read procedure — the line says what is missing and offers the reading gesture",
+    "de": "Kraftstoff: eine Verbindung über ihrer Grenze mangels gelesenem Verfahren — die Zeile sagt, was fehlt, und bietet die Lesegeste an",
+    "es": "Combustible: un enlace más allá de su límite por falta de procedimiento leído — la línea dice qué falta y ofrece el gesto de lectura"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, calcule une route vers un terrain dont les procédures ne sont pas lues (par exemple un terrain français jamais lu). Ce qu'on doit voir : sous « Règles connues enfreintes », la ligne du raccord finit par « — aucune arrivée lue pour {terrain} », et juste dessous un lien « Lire les procédures de {terrain} ». Touche-le : la lecture se fait, puis la liste dit « Périmé (calculé à …) » avec « Recalculer » ; rien ne se recalcule tout seul.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T11:13:38Z"
   },
   {
    "id": "SOG-0549",
@@ -5786,8 +5981,9 @@
    },
    "test": "Recharge la page. Dans Carburant, calcule une route à un niveau fixé, par exemple au FL270. Ce qu'on doit voir : au-dessus de la liste des routes, une seule fois, « Seul Eurocontrol valide un plan. Les règles du RAD qui visent un espace aérien entier ne sont pas examinées. » ; dans les cartes de route, plus aucune ligne sur les règles du RAD ; le mot « conforme » n'apparaît plus comme verdict. (Une route « Aucune infraction trouvée » ne sort presque jamais sur les vraies données aujourd'hui : si tu en vois une, le libellé est celui-là, en gris sous le niveau.)",
    "since": "2026-11-23",
-   "state": "todo",
-   "delivered": "2026-11-23T08:22:06Z"
+   "state": "ok",
+   "delivered": "2026-11-23T08:22:06Z",
+   "at": "2026-11-25T13:41:14Z"
   },
   {
    "id": "SOG-0554",
@@ -5797,8 +5993,20 @@
    },
    "test": "Recharge la page. Dans Carburant, calcule une route qui donne au moins une carte « Non vérifiable » (par exemple un vol avec un tronçon sans voie). Ce qu'on doit voir : sous le verdict en gras « Non vérifiable : N points », le repli dit « Voir pourquoi » et l'ouvre sur le motif ; le verdict n'est plus écrit deux fois. Puis tape une route et touche « Contrôler » : la boîte garde « Non vérifiable : N points » comme titre de son repli.",
    "since": "2026-11-23",
+   "state": "ok",
+   "delivered": "2026-11-23T08:51:37Z",
+   "at": "2026-11-25T13:41:17Z"
+  },
+  {
+   "id": "SOG-0556",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, calcule EGGW → LQSA au FL330 et ouvre « Voir pourquoi » sur une route « non vérifiable ». Ce qu'on doit voir : « Royaume-Uni : … règles du RAD concernent cette route », « Pays-Bas », « Tchéquie »… et plus jamais « Sahara occidental », « Égypte » ni « Sri Lanka » ; un code sans nom (YX) reste tel quel.",
+   "since": "2026-11-23",
    "state": "todo",
-   "delivered": "2026-11-23T08:51:37Z"
+   "delivered": "2026-11-23T11:13:38Z"
   },
   {
    "id": "SOG-0558",
@@ -5808,11 +6016,842 @@
    },
    "test": "Recharge la page, puis ouvre Recette › Chemins de test et déplie un chemin. Ce qu'on doit voir : sous chaque étape, un lien « Ajouter un commentaire ». Ouvre-le sur une étape pas encore jouée : le champ s'ouvre, avec dessous « Le commentaire est enregistré avec « Bon » ou « Mauvais ». ». Écris un mot, touche « Bon » : le mot reste affiché sous l'étape et le lien devient « Modifier le commentaire ». Sur une autre étape, touche « Mauvais » : le champ s'ouvre de lui-même ; écris, puis « Enregistrer le commentaire » (un seul toucher, plus besoin de retoucher « Mauvais »). Recharge la page : les deux commentaires sont toujours là.",
    "since": "2026-11-23",
+   "state": "ok",
+   "delivered": "2026-11-23T10:45:41Z",
+   "at": "2026-11-25T13:41:28Z"
+  },
+  {
+   "id": "SOG-0559",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prends EGGW → LQSA avec LQTZ en dégagement. Ce qu'on doit voir, si LQTZ n'a pas de TAF : la pastille « ? » et, sur la ligne, « LQTZ : pas de TAF. METAR de hh:mmZ : … » ; jamais la couleur tirée du METAR. Efface la date du vol puis « Proposer un dégagement » : au-dessus de la liste, une seule fois, « Sans date de vol, la météo des dégagements n'est pas jugée. »",
+   "since": "2026-11-23",
    "state": "todo",
-   "delivered": "2026-11-23T10:45:41Z"
+   "delivered": "2026-11-23T11:13:38Z"
+  },
+  {
+   "id": "SOG-0562",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, prends un BE9L et tape FL330. Ce qu'on doit voir : sous le champ Niveau, « Au-dessus du plafond du BE9L (FL290). », et la même mention sur la carte de la route ; le calcul se fait quand même. Repasse en « Auto » : aucun niveau proposé au-dessus du FL290.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T11:13:38Z"
+  },
+  {
+   "id": "SOG-0563",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement"
+   },
+   "test": "Recharge la page (relance du lanceur faite). Carburant, un vol : « Auto ». Attendu : l'avancement dit « niveau n sur 7 » pendant le calcul. Clique « Auto » une seconde fois sans rien changer : la liste revient aussitôt et dit « Du cache, calculé à » suivi de l'heure du premier calcul, pas de l'heure du clic.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T21:28:29Z"
+  },
+  {
+   "id": "SOG-0566",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, touche « Proposer un dégagement », puis change l'heure du vol. Ce qu'on doit voir : au-dessus de la proposition, « Périmé (calculé à hh:mmZ (hh:mm)) » et « Recalculer » ; touche « Recalculer » : la proposition est refaite avec la nouvelle heure ; sans ton geste, rien ne se recalcule.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T11:13:38Z"
+  },
+  {
+   "id": "SOG-0568",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la France est dite « à jour » alors qu'il lui manque la table des niveaux (levels_fr.json) — aucun geste pour l'obtenir"
+   },
+   "test": "Recharge la page (relance du lanceur faite). Maintenance › Données, la France : (1) sur la carte et dans la liste, un pays à jour mais relu par une version ancienne du lecteur est en VERT STRIÉ (pas marron), avec « à jour · relecture possible » ; (2) sa fiche dit ce qu'une relecture apporte et propose « Relire ce pays » (sans téléchargement) ; elle dit à part ce qu'une mise à jour apporte (par exemple la règle semi-circulaire) avec « Mettre à jour ce pays » ; (3) « Relire ce pays » remplace la lecture actuelle sans rien télécharger, et le pays repasse en vert plein ; les données d'avant ne sont jamais perdues.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T16:10:15Z"
+  },
+  {
+   "id": "SOG-0569",
+   "app": "pilote",
+   "title": {
+    "fr": "Procédures : la STAR VATR3 d'EIDW est dessinée en zigzag — un tracé qu'on ne sait pas ordonner n'est pas une trajectoire"
+   },
+   "test": "Recharge la page. Carburant, une arrivée dont la STAR ne rejoint pas l'approche choisie : sous l'approche, « Aucune liaison publiée entre … (fin de …) et … (début de l'approche). ». Sur la Carte, « choisir sur la carte » dit la même chose.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T10:09:41Z"
+  },
+  {
+   "id": "SOG-0571",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : un calcul coupé par le garde-fou de 120 s rend un verdict qui dépend de la charge du poste"
+   },
+   "test": "Lance « Auto » sur un long vol transatlantique : la réponse vient en une vingtaine de secondes au plus, sans « interrompu ».",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0572",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : « Copier pour Eurocontrol » reste offert sur une route prise devenue périmée — la copie part avec un niveau ou un appareil que la route n'a pas"
+   },
+   "test": "Relance le lanceur, puis recharge la page. Dans Carburant, calcule une route et prends-en une. Change ensuite l'appareil (ou le niveau). Ce qu'on doit voir : sous la route, « Route calculée pour le FL…, … : le vol a changé. » et « Recalculer » ; « Copier pour Eurocontrol » a disparu, remplacé par « La copie pour Eurocontrol revient après le recalcul de la route. ». Touche « Recalculer », choisis une route de la nouvelle liste : la copie revient. Tape enfin une route toi-même : la copie reste offerte.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T14:02:47Z"
+  },
+  {
+   "id": "SOG-0574",
+   "app": "pilote",
+   "title": {
+    "fr": "Sécurité : aucune image chargée d'un autre site (img-src fermé ; adresse d'image absolue rendue en texte)"
+   },
+   "test": "Recharge la page. Ouvre une page d'aide ou un texte qui contient une image d'un autre site (par exemple un compte rendu où l'on colle « ![x](https://exemple.invalid/x.png) ») : l'image n'est pas chargée, le texte de remplacement et l'adresse s'affichent en texte ; les cartes s'affichent normalement.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0575",
+   "app": "compagnie",
+   "title": {
+    "fr": "Réglages : sur une configuration GitLab, les messages d'échec du test du jeton parlent d'étapes et de cases qui n'existent pas"
+   },
+   "test": "Recharge la page. Réglages › « Rejoindre la compagnie » avec une configuration GitLab et un jeton faux : « Tester » dit « Jeton refusé : mal copié ou expiré… » ; les étapes disent « Étape n sur 3 » ; sous les étapes, « Ce qui est fait reste sur cet appareil… » ; la dernière étape dit « Téléchargez la zone de vos vols… ». Aucun message ne parle d'invitation, de « pas 3 » ou de case « repo ».",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T19:19:52Z"
+  },
+  {
+   "id": "SOG-0577",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier des missions : en ton sombre, le fond de carte reste clair et les étiquettes sombres se lisent mal"
+   },
+   "test": "Recharge la page, passe en ton sombre (nuit). Missions › Atelier, onglet Carte : les étiquettes des points (PT1, ZONE-1, TARGET…) sont écrites clair sur leur pastille sombre et se lisent.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0578",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : textes d'écran justes là où ils s'affichent (lot 1 de la liste des textes du cadre)"
+   },
+   "test": "Recharge la page. Réglages : la ligne de l'État dit « Touchez pour régler l'accès » (plus de « dans les Réglages ») ; l'infobulle de la pastille « Trigramme ? » dit « (Réglages › Identité) » ; Diagnostic : « « Copier » les inclut avec le reste ».",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0580",
+   "app": "pilote",
+   "title": {
+    "fr": "Manuels : plus de « porte / portent / porter » au sens de contenir ou afficher (passe par propriétaire de manuel)"
+   },
+   "test": "Aide › manuel du pilote (français) : cherche « porte » ou « porter » au sens de contenir ou afficher : il n'en reste pas (« la barre du bas affiche… », « une page contient… »).",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0585",
+   "app": "maintenance",
+   "title": {
+    "fr": "Maintenance › Administration › Dossiers du poste : à 390, un chemin long fait défiler la page en largeur"
+   },
+   "test": "Recharge la page sur un téléphone (ou une fenêtre de 390 px). Maintenance › Administration › Dossiers du poste : un chemin long passe à la ligne ; la page ne défile pas en largeur.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0586",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, « Auto » : les meilleurs niveaux d'abord (cinq calculés, la suite au geste)"
+   },
+   "test": "Recharge la page (relance du lanceur faite). Carburant, un vol : « Auto », puis « Calculer A → B ». Attendu : la liste s'affiche ; sous elle, « Calcul des n autres niveaux en cours… » ; la liste ne bouge pas pendant ce temps ; à la fin, « Les n autres niveaux n'apportent rien de mieux. » ou « Un niveau plus économe a été trouvé : FL… » avec « Voir », qui seul refait la liste.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T21:28:29Z"
+  },
+  {
+   "id": "SOG-0588",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la fiche d'un pays affiche le premier groupe venu (« FR · groupe Amérique du Nord »)"
+   },
+   "test": "Recharge la page. Maintenance › Données : ouvre la fiche de la France sans avoir ouvert de paquet. Attendu : sous le titre, « FR · groupe Europe de l'Ouest » (et non « Amérique du Nord »). Ouvre ensuite le paquet Méditerranée, puis la fiche de la France : « groupe Méditerranée ».",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T17:40:18Z"
+  },
+  {
+   "id": "SOG-0589",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : « Mettre à jour (7) » compte les pays du paquet, pas ceux que le geste traitera"
+   },
+   "test": "Recharge la page. Maintenance › Données : ouvre un paquet où un ou deux pays sont à faire. Attendu : « Mettre à jour ce paquet (n) », n égal au nombre de pays à faire (le même compte que « Tout mettre à jour »). Ouvre un paquet où tout est à jour : aucun bouton de mise à jour.",
+   "since": "2026-11-23",
+   "state": "todo",
+   "delivered": "2026-11-23T17:40:18Z"
+  },
+  {
+   "id": "SOG-0592",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : la bordure colorée des groupes SID / STAR / approche de la liste des points ne correspondra plus à la carte"
+   },
+   "test": "Recharge la page. Carburant, étape Route, déplie « Points » : les lignes « SID … », « STAR … » et de l'approche ont une bordure gauche grise, plus de couleur.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T10:09:41Z"
+  },
+  {
+   "id": "SOG-0600",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : « GPS ou réseau non activés : pas de position réelle. » reste à l'écran après l'arrivée d'une position"
+   },
+   "test": "Recharge la page. Carte, un vol sans position réelle : la note « GPS ou réseau non activés : pas de position réelle. » paraît une fois. Allume le simulateur (ou une source de position) : la note disparaît aussitôt que l'avion apparaît sur la carte.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:18Z"
+  },
+  {
+   "id": "SOG-0602",
+   "app": "maintenance",
+   "title": {
+    "fr": "Carte : « ⌛ » remplacé par le mot « périmé » partout où il sert encore"
+   },
+   "test": "Recharge la page. Carte, mode « choisir » d'une arrivée dont une procédure vient d'un cycle passé : sa ligne dit « périmé » en toutes lettres (plus de sablier) ; à l'ordinateur, l'étiquette en haut à gauche de la carte dit « … périmé ». La légende de la couche Couverture et la fiche du terrain disent aussi « périmé ».",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T04:07:51Z"
+  },
+  {
+   "id": "SOG-0603",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : un poste qui n'a jamais vu son lanceur, avec une détection lente, reste au canal « pilote » jusqu'au rechargement"
+   },
+   "test": "Lanceur éteint, ouvre la page ; puis allume le lanceur et recharge : la page le trouve. Cas rare à essayer si tu peux : lanceur lent à répondre (premier démarrage) : une note propose « Recharger » au lieu de rester sans lanceur jusqu'au rechargement.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:06Z"
+  },
+  {
+   "id": "SOG-0604",
+   "app": "pilote",
+   "title": {
+    "fr": "Outils : format_sources.py coupe un littéral « <script>…</script> » placé dans une chaîne JS d'un fichier Python"
+   },
+   "test": "Outil de développement, pas d'écran : rien à essayer par le pilote. (Vérifié par le cas I56 : un .py, un .md, un .json qui contiennent « <script>x</script> » ressortent identiques du formateur.)",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T00:16:49Z"
+  },
+  {
+   "id": "SOG-0605",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : au téléphone, une note fraîche se pose un instant sur la barre du bas et peut prendre un toucher"
+   },
+   "test": "Sur un téléphone (ou une fenêtre de 390 px). Missions › Atelier : provoque une note (par exemple un enregistrement refusé) puis touche aussitôt « Fermer » ou « Enregistrer » : le bouton répond, la note ne prend pas le toucher, et elle apparaît au-dessus de la barre « Enregistrer / Fermer / À compléter », jamais dessus.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T02:44:18Z"
+  },
+  {
+   "id": "SOG-0607",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier : stockage plein, la mission en cours est perdue en quittant Missions et l'écran dit « Brouillon gardé »"
+   },
+   "test": "Cas rare (stockage plein), à essayer seulement si tu peux remplir le stockage du navigateur : Missions › Atelier, change le titre ; la note « Brouillon non gardé : … Libérez de la place dans Réglages › Données hors ligne. » paraît une fois et le ⚙ prend un point rouge. Va dans Réglages, reviens : l'atelier est là avec ton titre. Libère de la place : « Brouillon gardé » s'affiche et le point rouge part.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T20:50:53Z"
+  },
+  {
+   "id": "SOG-0608",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : stockage plein, l'édition d'une route est perdue en quittant la Carte"
+   },
+   "test": "Pas facile à reproduire : il faut un appareil dont le stockage est plein. Si cela arrive : sur la Carte, modifie la route ; la note « Route non enregistrée : le stockage de cet appareil est plein. Libérez de la place dans Réglages › Données hors ligne. » s'affiche et le ⚙ a un point rouge. Va dans Réglages, libère de la place, reviens : la route modifiée est là, enregistrée, la note et le point rouge ont disparu.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T03:36:40Z"
+  },
+  {
+   "id": "SOG-0609",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : depuis l'atelier ouvert d'une fiche du registre, le ⚙ ou le rail ne mènent nulle part et ferment l'atelier"
+   },
+   "test": "Recharge la page. Missions › Registre, ouvre une fiche puis l'atelier, change le titre ; touche ⚙ : les Réglages s'affichent et y restent. Reviens : l'atelier est là, avec ton titre. Touche ensuite un autre module dans la barre (ou la colonne) : tu y arrives, sans être renvoyé au registre.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T19:33:18Z"
+  },
+  {
+   "id": "SOG-0610",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route : la route libre de la Suisse n'est pas traversée, le modèle impose un contournement (Milan → Francfort)"
+   },
+   "test": "Calcule une route qui traverse la Suisse au-dessus du plancher de la route libre : elle passe en route libre, au niveau demandé, sans palier inséré.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0611",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route : une tête « enfreint » garde la place alors qu'une route que le contrôle ne refuse pas existe"
+   },
+   "test": "Quand une route est refusée par le contrôle, la route proposée en tête est une route que le contrôle accepte ; la refusée reste visible plus bas.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0613",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route : EGLL vers l'Islande, SID partielles et réseau coupé (à instruire)"
+   },
+   "test": "Carburant : un départ du Royaume-Uni dont les SID ne sont lues qu'en partie ; la phrase dit que la route part en direct, avec le bouton de lecture.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-27T16:18:09Z"
+  },
+  {
+   "id": "SOG-0615",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : l'écran invite à déposer des fichiers que la suite ne lit pas, et « Procédures : non » ne dit pas pourquoi"
+   },
+   "test": "Relance le lanceur une fois (il donne maintenant la raison du « Procédures : non »), puis recharge la page. Données : ouvre la fiche d'un pays qui a une source que la suite ne lit pas. Son bloc n'a plus de bouton ni de ligne orange : il dit « La suite ne lit pas les fichiers de cette source : inutile de les déposer. », et le nombre de fichiers déjà déposés, non lus. « Procédures : non. » dit pourquoi sur la même ligne. La pastille du pays ne change pas.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T01:17:56Z"
+  },
+  {
+   "id": "SOG-0617",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : en vol, la mission ne vit plus hors de sa fiche (tiroirs non jugés sur la Carte, rien ne dit « mission en cours »)"
+   },
+   "test": "Recharge la page. Démarre un vol qui a une mission. (1) Missions : la mission est en tête, « En vol ». (2) Le bloc d'état dit « Mission … en cours ». (3) Sur la Carte, la puce « Mission … » est sur la ligne de la feuille, à droite de « Couches » ; un toucher ouvre la fiche de la mission dans Carburant, avec « Suite de la mission » en tête. (4) Reste sur la Carte : quand un tiroir s'ouvre, une note « Un message de la mission est arrivé. » + « Ouvrir » apparaît ; « Ouvrir » mène au volet. Sans mission au vol, pas de puce.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-24T23:20:09Z"
+  },
+  {
+   "id": "SOG-0618",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : départ et arrivée ne sont repris que si le nom du lieu finit par un code (« ? → ? »)"
+   },
+   "test": "Recharge la page. Prends une mission dont un point de route n'a pas de code mais un nom (par exemple un col). Dans Carburant, départ et arrivée sont repris même sans code. Sur la Carte, ce point est écrit sous son nom (plus sous ses coordonnées), et la coupe verticale en bas le nomme de la même façon.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T02:49:17Z"
+  },
+  {
+   "id": "SOG-0619",
+   "app": "compagnie",
+   "title": {
+    "fr": "Carte et « Vol en cours » : la mission en vol (lieux des tiroirs ouverts, volet de la fiche en un toucher)"
+   },
+   "test": "Recharge la page. Démarre un vol avec une mission (Missions, une mission à toi). Ouvre la fiche de la mission (appli Compagnie) ou, dans Carburant, la puce « Mission … » : en tête, « Suite de la mission » dit « En vol depuis … » et la position ; quand un tiroir s'ouvre, une ENVELOPPE arrive (« Un message de la mission ») : rien ne s'affiche avant que tu touches « Ouvrir l'enveloppe ». « Objet en vue » et « Demander la suite » sont toujours là ; leur réponse s'écrit juste au-dessus d'eux. Au téléphone, ces deux boutons restent en bas de l'écran.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T20:50:53Z"
+  },
+  {
+   "id": "SOG-0620",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : niveaux de guidage du pilote (de la prise en charge totale au « brief et messages seulement »)"
+   },
+   "test": "Missions : ouvre une mission en vol ; « Prévu » range les événements par heure, dit « tenu à … » et le retard dans ou hors de la tolérance ; dans l'atelier, le déroulé suit l'heure prévue.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T14:31:52Z"
+  },
+  {
+   "id": "SOG-0621",
+   "app": "compagnie",
+   "title": {
+    "fr": "Carte (vue mission) : à défaut de route, le trait relie aussi le dégagement et le rendez-vous comme des points de route"
+   },
+   "test": "Recharge la page. Carte, vue d'une mission qui n'a ni départ ni arrivée (seulement une cible, un dégagement, un rendez-vous) : aucun trait n'est tracé. Une mission avec départ et arrivée : le trait va du départ à l'arrivée par ses points de route ; le terrain de dégagement est posé seul, jamais relié.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T02:49:17Z"
+  },
+  {
+   "id": "SOG-0622",
+   "app": "maintenance",
+   "title": {
+    "fr": "Vol en cours : le suivi de position meurt après un changement de lieu dans X-Plane, et rien ne le dit"
+   },
+   "test": "Relance le lanceur et recharge la page. Démarre un vol dans la suite, puis change de lieu (ou recharge le vol) DANS X-Plane : la position sur la Carte suit le nouveau lieu, sans relancer le lanceur. Coupe X-Plane en vol : au bout de 2 minutes, « Position perdue depuis 2 min. » s'affiche une fois, et disparaît quand X-Plane revient.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T15:06:41Z"
+  },
+  {
+   "id": "SOG-0624",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : le lieu d'une clé de condition (poser, stationnaire, survol, étapes, ravitaillement) n'est jamais cité"
+   },
+   "test": "Recharge la page. Missions › Atelier : dans une mission, un tiroir dont la clé est « se poser » (ou stationnaire, survol, étapes, ravitaillement) à un point. « À compléter » ne dit plus de ce point « cité nulle part : le pilote ne le verra pas ». En vol, une fois le tiroir ouvert, le pilote voit ce point.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-24T22:54:58Z"
+  },
+  {
+   "id": "SOG-0625",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier : « Essayer les clés » part du premier point situé quand le départ n'est donné que par son code"
+   },
+   "test": "Recharge la page. Missions › Atelier : une mission dont le départ n'est écrit que par son code (sans coordonnées). « Essayer les clés » : l'avion part du terrain de départ, plus du premier point de la mission. Avec un code inconnu, l'essai refuse : « Pas d'essai : la mission n'a pas de route à suivre (un départ et une arrivée situés). »",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-24T22:54:58Z"
+  },
+  {
+   "id": "SOG-0626",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : l'étiquette d'un terrain (et ses pistes) peut s'écrire deux fois selon l'ordre du dessin (cas D79)"
+   },
+   "test": "Recharge la page. Carte, un vol vers un terrain (par exemple Marseille) : ouvre « Choisir » sur l'arrivée : les numéros de piste du terrain ne s'écrivent qu'une fois (en noir), sans pavé gris collé à l'anneau.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T18:37:06Z"
+  },
+  {
+   "id": "SOG-0627",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : resceller un tiroir laisse les suivants verrouillés puis rouverts d'un coup sur leurs anciens constats"
+   },
+   "test": "Niveau Complet. Une mission à toi en vol avec trois tiroirs ouverts : sur le premier, « Resceller » demande « Resceller ce tiroir et les suivants ? » ; accepte : les trois se referment. Rouvre le premier : le deuxième et le troisième restent fermés.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T21:55:58Z"
+  },
+  {
+   "id": "SOG-0628",
+   "app": "pilote",
+   "title": {
+    "fr": "Outil : format_sources coupe en deux une chaîne JS longue dans le script module d'un .html (SyntaxError silencieuse)"
+   },
+   "test": "Outil de développement, pas d'écran : rien à essayer par le pilote. (Vérifié par le cas I62 : un script module invalide dans un .html ressort intact et l'outil le dit ; un node posé dans le dépôt n'est jamais lancé.)",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T17:35:11Z"
+  },
+  {
+   "id": "SOG-0629",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : un message déplié dans « Avant » se replie seul au dessin suivant du bloc « Suite de la mission »"
+   },
+   "test": "Recharge la page. Pendant un vol avec une mission, ouvre la fiche (ou le volet de la puce Mission dans Carburant). Dans « Suite de la mission », déplie « Avant », puis un message : il reste déplié quand le bloc se met à jour (un passage, un relevé, ou en changeant la largeur de la fenêtre). Il ne se replie que si tu le replies.",
+   "since": "2026-11-24",
+   "state": "todo",
+   "delivered": "2026-11-24T22:30:50Z"
+  },
+  {
+   "id": "SOG-0630",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : le veilleur de module charge les module.js de toutes les applis sur chaque page (+2 à +4 Mo)"
+   },
+   "test": "Rien de neuf à voir : les pages s'ouvrent plus légères. Recharge la page. Sans vol, la Carte et Données s'ouvrent comme avant. Démarre un vol avec une mission : la note « Un message de la mission est arrivé. » et la puce « Mission … » marchent comme avant ; le volet de Carburant montre « Suite de la mission » à sa première ouverture.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T00:49:48Z"
+  },
+  {
+   "id": "SOG-0631",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : un module dont l'import échoue une fois affiche « impossible à charger » sans nouvel essai"
+   },
+   "test": "Rien à voir d'habitude. Recharge la page. Sur une liaison faible, un écran qui ratait son chargement une fois et affichait « Module … impossible à charger » s'ouvre maintenant normalement ; si le chargement rate deux fois, la même carte qu'avant s'affiche, avec « Réessayer ».",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T02:01:01Z"
+  },
+  {
+   "id": "SOG-0633",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : « Suivre » doit garder l'appareil ET son fantôme en vue"
+   },
+   "test": "Recharge la page. Démarre un vol et laisse X-Plane donner la position. Sur la Carte, touche « Suivre » (l'avion) : le zoom ne change pas. Si l'avion prévu (creux, « prévu … ») est près de ton avion, la carte se centre entre les deux et les garde à l'écran ; s'il est loin, la carte suit ton avion seul.",
+   "since": "2026-11-25",
+   "state": "todo",
+   "delivered": "2026-11-25T08:44:51Z"
+  },
+  {
+   "id": "SOG-0635",
+   "app": "compagnie",
+   "title": {
+    "fr": "Flotte : un appui modifie l'appareil, on voudrait d'abord voir ses détails ; titre lisible, une seule écriture de l'immatriculation"
+   },
+   "test": "Recharge la page. Maintenance › Fiches (ou Mes appareils), Flotte : touche un appareil : sa fiche s'ouvre en lecture, son titre est le nom du modèle (par exemple « C-130J ») avec l'immatriculation ; « Modifier » est en bas. Si deux fiches ont la même immatriculation écrite autrement (avec ou sans tiret), la fiche le dit et propose d'en garder une ; la question montre ce que l'autre a de différent avant de la retirer.",
+   "since": "2026-11-25",
+   "state": "known"
+  },
+  {
+   "id": "SOG-0638",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : une route demandée sans SID ni STAR lues doit dire le geste qui manque"
+   },
+   "test": "Carburant : demander une route vers un terrain sans SID ni STAR lues ; la phrase près de « Calculer » dit le geste qui manque, avec son bouton.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0647",
+   "app": "maintenance",
+   "title": {
+    "fr": "Signaler : 2000 signes, c'est trop peu pour un vrai rapport de bug"
+   },
+   "test": "Colle un texte de 3 000 à 5 000 signes dans un signalement : il est gardé en entier ; au-delà de 5 000, le formulaire refuse.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T19:24:22Z"
+  },
+  {
+   "id": "SOG-0651",
+   "app": "maintenance",
+   "title": {
+    "fr": "Signaler : un brouillon tapé juste avant de toucher une ligne de la liste est perdu (erreur dans la console)"
+   },
+   "test": "Dans Signaler, tape un début de texte puis touche aussitôt une ligne de la liste, reviens : ton brouillon est là.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T19:24:22Z"
+  },
+  {
+   "id": "SOG-0653",
+   "app": "pilote",
+   "title": {
+    "fr": "Niveau proposé : « Auto » propose 6000 ft au milieu des Alpes ; aucun choix VFR alors que le niveau en dépend"
+   },
+   "test": "Carburant : « Auto » sur une route en montagne ; le niveau proposé passe au-dessus du relief, ou la phrase dit qu'aucun n'est possible sous le plafond.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0654",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte, choix d'une SID : le choix n'est pas appliqué, toutes les sorties en noir, le chemin piste → SID perdu (régression)"
+   },
+   "test": "Carte : ouvre l'arrivée d'un terrain ; chaque STAR a son numéro et sa couleur ; touche une piste, seules celles qui la desservent restent ; choisis une STAR puis « Aucune » : elle est retirée.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-27T14:47:38Z"
+  },
+  {
+   "id": "SOG-0655",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, choix d'une SID : chaque SID essayée laisse son dernier point dans le plan de vol"
+   },
+   "test": "Carburant : choisir trois SID de suite sur un départ ; seule la sortie de la dernière reste dans la route.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0656",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, Belgique : le lien vers le fichier à prendre n'est pas affiché ; pourquoi pas directement par l'EAD ?"
+   },
+   "test": "Ouvre Données › Belgique : la phrase de dépôt et les deux liens sont là ; « Ouvrir l'ENR 3.2 de la Belgique (PDF) » ouvre le PDF de 229 Ko ; déposer le zip ou l'ENR entier est refusé avec sa cause.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-26T23:49:05Z"
+  },
+  {
+   "id": "SOG-0658",
+   "app": "maintenance",
+   "title": {
+    "fr": "« Le poste fait une autre opération » : dire laquelle, et reprendre seul quand elle finit"
+   },
+   "test": "Carburant : lance une mise à jour de Données puis « Calculer A → B » ; la phrase du poste occupé s'affiche et le calcul part seul à la fin.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T16:18:09Z"
+  },
+  {
+   "id": "SOG-0660",
+   "app": "pilote",
+   "title": {
+    "fr": "Proposer un dégagement : le TAF n'est toujours pas affiché sur les terrains proposés"
+   },
+   "test": "Carburant : « Proposer un dégagement » ; chaque terrain proposé a son TAF, replié sous sa ligne.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0661",
+   "app": "pilote",
+   "title": {
+    "fr": "Route : les points géographiques ajoutés ne sont pas gardés dans le plan de vol"
+   },
+   "test": "Carburant : écris une route avec deux points en coordonnées et DCT, pose un niveau sur un point dans la liste ; les coordonnées restent dans le texte de la route.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T16:01:13Z"
+  },
+  {
+   "id": "SOG-0666",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, vents GFS : ne pas offrir « Construire » pendant l'attente de dix minutes ; une heure, jamais des secondes"
+   },
+   "test": "Ouvre Données › Météo › Synoptique monde : « Construire » est offert sans refus en secondes ; un synoptique ancien dit seulement « Prochaine lecture de la NOAA à hh:mm. », un récent « À jour. Prochaine lecture… ».",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T19:24:22Z"
+  },
+  {
+   "id": "SOG-0668",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route : un direct d'un point vers LUI-MÊME (ROUTE138)"
+   },
+   "test": "Calcule plusieurs routes : aucun texte ne contient deux fois le même point de suite.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0669",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route : le SENS des voies — dans la base ? respecté par la recherche ?"
+   },
+   "test": "Contrôle une route qui passe en France ou en Allemagne : la ligne « Sens des voies vérifié : … » nomme les États dont la base porte le sens, « Inconnu : … » les autres.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0674",
+   "app": "pilote",
+   "title": {
+    "fr": "Concorde : le plafond dit à l'écran (« FL547 ») n'est pas celui que la fiche déclare (600)"
+   },
+   "test": "Carburant : un appareil à plafond élevé ; le plafond affiché est celui de sa fiche, la limite du modèle est dite « limite de montée calculée ».",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0675",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : les vitesses écrites dans la route (Mach, changement en route) ne sont pas appliquées — le dire"
+   },
+   "test": "Carburant : écrire une vitesse dans la route (« N0450F370 ») ; la ligne grise dit qu'elle n'est pas appliquée au devis.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0677",
+   "app": "maintenance",
+   "title": {
+    "fr": "SimBrief : HTTP 400 à l'import du dernier plan — lire la cause et la dire en français"
+   },
+   "test": "Carburant : importer le dernier plan SimBrief sans plan déposé ; l'écran dit la cause en français.",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T09:50:37Z"
+  },
+  {
+   "id": "SOG-0679",
+   "app": "pilote",
+   "title": {
+    "fr": "Route (case 15) : règles de vol, vitesses et niveaux écrits dans la route — fiche mère, trois temps"
+   },
+   "test": "Carburant : écrire « LFRS C/NEPIX/N0300F270F290 LFML » (ou une route de cette forme) ; aucune ligne orange, la ligne grise dit « la montée en croisière écrite dans la route ».",
+   "since": "2026-11-27",
+   "state": "known"
+  },
+  {
+   "id": "SOG-0682",
+   "app": "maintenance",
+   "title": {
+    "fr": "Recette : la limite des commentaires (2000 signes) est trop basse"
+   },
+   "test": "Dans la page recette, colle un commentaire de 3 000 à 5 000 signes : il est gardé en entier après « recharger » ; le compteur apparaît vers 4 500.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T19:24:22Z"
+  },
+  {
+   "id": "SOG-0683",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : deux travaux qui finissent ensemble peuvent perdre une entrée du journal du « dernier résultat »"
+   },
+   "test": "Lance deux constructions à la suite dans Données : la liste des derniers résultats les garde toutes les deux.",
+   "since": "2026-11-26",
+   "state": "todo",
+   "delivered": "2026-11-26T21:29:47Z"
+  },
+  {
+   "id": "SOG-0684",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : l'ordre de l'itinéraire n'est plus lu comme en V2 (départ / arrivée, le reste « Hors itinéraire »)"
+   },
+   "test": "Missions, atelier : ouvre une mission sans ordre écrit ; l'itinéraire montre ses lieux dans l'ordre, avec « Ordre déduit des lieux : vérifiez-le. » et « Garder cet ordre » ; une mission dont le profil vertical donne l'ordre dit « Ordre lu dans le profil vertical. ».",
+   "since": "2026-11-27",
+   "state": "todo",
+   "delivered": "2026-11-27T14:31:52Z"
   }
  ],
- "decisions": [],
+ "decisions": [
+  {
+   "id": "Q-0140",
+   "fiche": "",
+   "app": "",
+   "question": "Trois bibliothèques de la suite sont anciennes : faut-il chercher les avis officiels puis les mettre à jour ?",
+   "context": "Relevé de Sécurisation (lecture seule) : js-yaml 4.1.0 (deux copies) lit les fichiers de missions, qu'écrit n'importe quel pilote ; jsPDF 2.5.2 fait les PDF de brief et de compte rendu ; pdf.js 4.10.38 est chargé depuis cdn.jsdelivr.net, sans contrôle d'intégrité, pour la page de maintenance. Les failles corrigées par les versions récentes sont citées DE MÉMOIRE, NON VÉRIFIÉES : il faut une recherche sur les avis officiels (ton mot est nécessaire), puis le téléchargement de chaque fichier depuis sa source officielle (nom, source et taille te seront donnés avant). Trois lots séparés, chacun avec un cas de contre-épreuve : (A) js-yaml 4.1.1, (C) pdf.js copié dans le dépôt et jsdelivr retiré de la CSP, (B) jsPDF 3.x. PRÉCISIONS DE SÉCURISATION (23/11, sans réseau) : (A) frame/lib/js-yaml.min.js et sa copie shared/mission_core/vendor/js-yaml.min.js (39 432 octets chacune, identiques), remplacées par dist/js-yaml.min.js du paquet npm js-yaml@4.1.1 (dépôt nodeca/js-yaml, MIT) ; la contre-épreuve est DÉJÀ MESURÉE ROUGE sur 4.1.0 (une clé de fusion « << » d'un YAML de mission peut changer le prototype de l'objet lu). (C) pdfjs-dist@4.10.38 (dépôt mozilla/pdf.js, Apache-2.0), même version, copié dans le dépôt : pdf.min.mjs et pdf.worker.min.mjs, tailles non mesurées (centaines de Ko, environ 1 Mo) ; cdn.jsdelivr.net quitte la liste des scripts. (B) apps/cpco/jspdf.umd.min.js (366 128 octets, 2.5.2) par dist/jspdf.umd.min.js d'une version 3 de jsPDF (dépôt parallax/jsPDF, MIT), version exacte fixée d'après l'avis officiel. Chaque fichier est contrôlé à la réception par la somme SHA-512 publiée par le registre npm. Rien n'est téléchargé ni cherché avant ton clic. AJOUT (23/11, 16 h 31) : ce oui couvre aussi la lecture, sur cdnjs, du fichier acorn.min.js 8.11.3 que la page de contrôle tools/verify_format.html charge déjà, pour en calculer l'empreinte d'intégrité (aucun hôte nouveau). C'est un téléchargement, d'où sa place ici.",
+   "options": [
+    "Oui aux trois (recherche d'avis, puis js-yaml 4.1.1, pdf.js 4.10.38, jsPDF 3.x depuis leurs sources officielles)",
+    "Oui, mais (A) seulement pour commencer",
+    "Pas maintenant",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-23",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0141",
+   "fiche": "SOG-0573",
+   "app": "maintenance",
+   "question": "Rouvrir le projet du registre signé pour que la suite choisisse l'application (cpco, client) par le rôle du pilote ?",
+   "context": "Les applications pilot, company et maintenance sont livrées (SOG-0112, choisies par ?app=). « cpco » (aujourd'hui les pages V2) et « client » n'existent pas, et le choix par le rôle demande le registre signé de Sécurisation, projet clos le 21/10 (code dormant). Ce que ce oui autorise : rouvrir CE projet, dans le seul périmètre du rôle du pilote lu depuis le registre signé (aucun nouvel hôte, aucun secret nouveau) ; Sécurisation dresse d'abord l'état de ce qu'il faudrait, l'ergonome décide ensuite des lots. Rien n'est codé avant.",
+   "options": [
+    "Oui : rouvrir le registre signé, périmètre « rôle du pilote » seulement, état de Sécurisation d'abord",
+    "Pas maintenant : cpco reste en pages V2",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-23",
+   "state": "todo",
+   "recommended": 1
+  },
+  {
+   "id": "Q-0142",
+   "fiche": "SOG-0113",
+   "app": "maintenance",
+   "question": "IVAO sur le téléphone : te connecter à IVAO depuis le téléphone, avec ton propre jeton gardé sur le téléphone ?",
+   "context": "Les briques existent (relais sur le NAS, connexion IVAO par le relais en OpenID/PKCE, jetons gardés sur l'appareil). Ce que ce oui autorise : que le téléphone fasse lui-même la connexion IVAO (OpenID/PKCE), garde TON jeton sur TON téléphone seulement (jamais dans data/, jamais envoyé à une autre session ni à un autre appareil), et lise le tracker IVAO directement. Qui manipule le jeton : le code du cadre sur ton téléphone, rien d'autre ; aucune session Claude ne le voit. Sécurisation relit avant tout push ; V3 Frame dresse d'abord le relevé de ce qui existe et de ce qui manque. PRÉCISION (relevé de V3 Frame, 23/11, RELEVE_SOG-0113.md) : la connexion passe par le relais du lanceur ; le relais n'utilise que le secret de l'APPLICATION (secrets/ivao_oauth.json) et ne garde rien de ton jeton ; ton jeton arrive dans le cadre seul et est gardé dans device/keys.json sur l'appareil, hors sauvegardes, jamais synchronisé, jamais rendu aux modules ; étendue « tracker » seule. Ce oui ouvre un lot « lecteur du tracker + renouvellement », essayé contre un IVAO simulé, après relecture du dessin par Sécurisation. Un VRAI téléphone demande en plus l'exposition du lanceur (R3), qui reste ta décision à part : ce oui ne l'inclut pas. AVIS DE SÉCURISATION (23/11, 16 h 28, securisation_POINTS_SOG-0113_2026-11-23.md) : dessin acceptable pour ta décision, à dix conditions écrites — entre autres : réponse du relais recopiée par liste blanche (id_token écarté) ; le relais refuse toute étendue plus large que « openid tracker » ; appareil perdu = déappairage au relais + jeton court + retrait dans ton compte IVAO ; le lecteur du tracker n arrive qu APRÈS SOG-0574 (images) et le lot du rendu des textes ; le jeton n est envoyé qu à l hôte exact d IVAO, sans redirection.",
+   "options": [
+    "Oui, dans ce périmètre : connexion IVAO depuis le téléphone, mon jeton sur mon téléphone seulement, Sécurisation avant le push",
+    "Pas maintenant",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-23",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0144",
+   "fiche": "SOG-0620",
+   "app": "compagnie",
+   "question": "Niveaux de guidage d'une mission : qui règle le niveau d'aide ?",
+   "context": "Vous voulez guider le pilote avec plusieurs niveaux, de la prise en charge totale à « tu as le brief, tu auras les messages, pour le reste débrouille-toi ». L'ergonome concevra les niveaux et en fera une maquette ; il faut d'abord savoir qui choisit le niveau.",
+   "options": [
+    "L'auteur de la mission fixe l'aide MAXIMALE permise ; le pilote peut choisir moins",
+    "Le pilote seul",
+    "L'auteur de la mission seul"
+   ],
+   "since": "2026-11-24",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0145",
+   "fiche": "SOG-0620",
+   "app": "compagnie",
+   "question": "Clé composite d'un tiroir (plusieurs objets ou conditions) : quand s'ouvre-t-elle par défaut ?",
+   "context": "Vous voulez qu'une clé puisse être un ensemble (plusieurs objets à trouver, ou plusieurs conditions). Aujourd'hui une clé est unique. L'ergonome la conçoit avec la route qui se déplie et les niveaux de guidage ; il faut savoir la règle par défaut.",
+   "options": [
+    "Quand TOUT est réuni ; l'auteur peut cocher « l'un ou l'autre »",
+    "Dès que l'un des éléments est réuni",
+    "L'auteur choisit toujours, sans défaut"
+   ],
+   "since": "2026-11-24",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0146",
+   "fiche": "SOG-0695",
+   "app": "maintenance",
+   "question": "« Si base pas à jour, refus de calcul » : qu'affichait l'écran au moment du refus ?",
+   "context": "Le moteur ne refuse pas une base périmée : il calcule et le dit (verdict « Non vérifiable », « Aucun RAD fourni ne couvre cette date : contrôle RAD indisponible » depuis la fin du classeur RAD du 26/11). Ses seuls refus liés à la base : un vol daté avant le premier cycle de la base, aucun classeur RAD importé, ou une fusion en attente dans data/. Votre phrase exacte (ou une capture jointe au signalement) dit lequel corriger.",
+   "options": [
+    "« Non vérifiable » et « contrôle RAD indisponible » : je l'ai pris pour un refus",
+    "« Aucun segment airway dans les cycles disponibles à cette date »",
+    "Un message sur l'absence de RAD (aucun classeur importé)",
+    "Autre (je colle la phrase ou une capture en commentaire)"
+   ],
+   "since": "2026-11-27",
+   "state": "todo"
+  },
+  {
+   "id": "Q-0147",
+   "fiche": "SOG-0688",
+   "app": "maintenance",
+   "question": "« Calculer » avec un code de terrain inconnu a dit « Le calcul a échoué sans donner de résultat » : que dit la console du lanceur ?",
+   "context": "Sur la pointe, le moteur et le verbe du lanceur rendent bien la cause (« Aérodrome absent d'AeroDB : … »), et l'écran l'afficherait. La phrase générique ne sort que si le travail du lanceur finit sans résultat : peut-être un lanceur qui tournait un code plus ancien. Relancez le lanceur, appuyez sur « Calculer » avec le même code, puis copiez en commentaire la dernière ligne « error: » de la console du lanceur (ou dites que la cause s'affiche maintenant).",
+   "options": [
+    "Après relance, l'écran dit « Aucune route » et la cause : c'était un lanceur ancien",
+    "Toujours la phrase générique : je colle la ligne « error: » en commentaire",
+    "Je ne peux pas refaire le test maintenant"
+   ],
+   "since": "2026-11-27",
+   "state": "todo"
+  }
+ ],
  "paths": {
   "preamble": "Relance le lanceur, puis recharge la page.",
   "order": [

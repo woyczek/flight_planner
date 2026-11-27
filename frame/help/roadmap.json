@@ -1,12 +1,12 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-23",
+ "updated": "2026-11-27",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d063296",
-  "fiches": 566,
-  "untranslated": 18,
+  "organisation": "1c86d56",
+  "fiches": 698,
+  "untranslated": 150,
   "priorities": 481,
   "capabilities_untranslated": 0
  },
@@ -168,8 +168,8 @@
     "de": "6.0.0-alpha.5",
     "es": "6.0.0-alpha.5"
    },
-   "date": "2026-11-14",
-   "state": "doing",
+   "date": "2026-11-27",
+   "state": "done",
    "items": [
     "SOG-0028",
     "SOG-0030",
@@ -204,10 +204,10 @@
     "SOG-0306"
    ],
    "content": {
-    "fr": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR",
-    "en": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR",
-    "de": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR",
-    "es": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR"
+    "fr": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR ; trains de correctifs du 27/11, tag par l'ergonome après la noreg complète",
+    "en": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR ; trains de correctifs du 27/11, tag par l'ergonome après la noreg complète",
+    "de": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR ; trains de correctifs du 27/11, tag par l'ergonome après la noreg complète",
+    "es": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR ; trains de correctifs du 27/11, tag par l'ergonome après la noreg complète"
    }
   },
   {
@@ -278,6 +278,48 @@
  ],
  "lanes": [
   {
+   "id": "pilote-aerodb-catalogue-des-types-degagements",
+   "app": "pilote",
+   "label": {
+    "fr": "AeroDB ; catalogue des types ; dégagements",
+    "en": "AeroDB ; catalogue des types ; dégagements",
+    "de": "AeroDB ; catalogue des types ; dégagements",
+    "es": "AeroDB ; catalogue des types ; dégagements"
+   },
+   "items": [
+    {
+     "id": "SOG-0649",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Base des types d'aéronefs : longueur de piste minimale absente pour beaucoup de types, le choix des dégagements casse",
+     "en": "Base des types d'aéronefs : longueur de piste minimale absente pour beaucoup de types, le choix des dégagements casse",
+     "de": "Base des types d'aéronefs : longueur de piste minimale absente pour beaucoup de types, le choix des dégagements casse",
+     "es": "Base des types d'aéronefs : longueur de piste minimale absente pour beaucoup de types, le choix des dégagements casse"
+    }
+   ]
+  },
+  {
+   "id": "pilote-aerodb-lecteurs-de-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "AeroDB ; lecteurs de procédures",
+    "en": "AeroDB ; lecteurs de procédures",
+    "de": "AeroDB ; lecteurs de procédures",
+    "es": "AeroDB ; lecteurs de procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0667",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Intégrer la branche v3-ead (lecteurs de procédures) PAR LOTS sur v3 — trois portes",
+     "en": "Intégrer la branche v3-ead (lecteurs de procédures) PAR LOTS sur v3 — trois portes",
+     "de": "Intégrer la branche v3-ead (lecteurs de procédures) PAR LOTS sur v3 — trois portes",
+     "es": "Intégrer la branche v3-ead (lecteurs de procédures) PAR LOTS sur v3 — trois portes"
+    }
+   ]
+  },
+  {
    "id": "pilote-aerodb-procedures-royaume-uni",
    "app": "pilote",
    "label": {
@@ -334,12 +376,13 @@
     {
      "id": "SOG-0101",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Tutoriel « Rejoindre la compagnie » réécrit pour GitLab (jeton reçu de l'administrateur, pas de compte à créer), captures refaites",
      "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
      "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
      "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas",
-     "rank": 2
+     "rank": 2,
+     "test": true
     }
    ]
   },
@@ -460,6 +503,28 @@
    ]
   },
   {
+   "id": "pilote-aide-vocabulaire",
+   "app": "pilote",
+   "label": {
+    "fr": "Aide ; vocabulaire",
+    "en": "Aide ; vocabulaire",
+    "de": "Aide ; vocabulaire",
+    "es": "Aide ; vocabulaire"
+   },
+   "items": [
+    {
+     "id": "SOG-0580",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Manuels : plus de « porte / portent / porter » au sens de contenir ou afficher (passe par propriétaire de manuel)",
+     "en": "Manuels : plus de « porte / portent / porter » au sens de contenir ou afficher (passe par propriétaire de manuel)",
+     "de": "Manuels : plus de « porte / portent / porter » au sens de contenir ou afficher (passe par propriétaire de manuel)",
+     "es": "Manuels : plus de « porte / portent / porter » au sens de contenir ou afficher (passe par propriétaire de manuel)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-architecture",
    "app": "pilote",
    "label": {
@@ -509,8 +574,7 @@
      "en": "Free route over the North Atlantic: its ocean entries and exits depend on the day's NAT message — half of the crossings get no route",
      "de": "Freie Route über den Nordatlantik: Ein- und Ausflugpunkte hängen von der NAT-Meldung des Tages ab — die Hälfte der Überquerungen erhält keine Route",
      "es": "Ruta libre sobre el Atlántico Norte: sus entradas y salidas del océano dependen del mensaje NAT del día — la mitad de los cruces se queda sin ruta",
-     "rank": 378,
-     "test": true
+     "rank": 378
     },
     {
      "id": "SOG-0403",
@@ -520,8 +584,7 @@
      "en": "NAT tracks: EGGW → KJFK flies a free route alongside track F instead of taking it — the window is judged at entry, not at 30° west",
      "de": "NAT-Tracks: EGGW → KJFK fliegt eine freie Route neben Track F statt ihn zu nehmen — das Zeitfenster wird am Eintritt statt bei 30° West geprüft",
      "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste",
-     "rank": 379,
-     "test": true
+     "rank": 379
     },
     {
      "id": "SOG-0412",
@@ -531,8 +594,7 @@
      "en": "NAT tracks: from Europe the engine can only join ONE track in six — the links start from airways that are too low",
      "de": "NAT-Tracks: von Europa aus erreicht die Berechnung nur EINEN von sechs Tracks — die Anschlüsse beginnen an zu niedrigen Luftstraßen",
      "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas",
-     "rank": 380,
-     "test": true
+     "rank": 380
     },
     {
      "id": "SOG-0415",
@@ -552,8 +614,7 @@
      "en": "North Atlantic from Spain and Portugal: enter the ocean through the Santa Maria boundary points",
      "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
      "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María",
-     "rank": 382,
-     "test": true
+     "rank": 382
     },
     {
      "id": "SOG-0421",
@@ -630,6 +691,288 @@
      "de": "Leistungsblatt: nach dem Import einer ChatGPT-Antwort fehlt die Tabelle Leistung / Verbrauch / Höhe, und Felder heißen „V2-Basis“",
      "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»",
      "rank": 385
+    }
+   ]
+  },
+  {
+   "id": "pilote-csp-rendu-des-textes",
+   "app": "pilote",
+   "label": {
+    "fr": "CSP ; rendu des textes",
+    "en": "CSP ; rendu des textes",
+    "de": "CSP ; rendu des textes",
+    "es": "CSP ; rendu des textes"
+   },
+   "items": [
+    {
+     "id": "SOG-0574",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Sécurité : aucune image chargée d'un autre site (img-src fermé ; adresse d'image absolue rendue en texte)",
+     "en": "Sécurité : aucune image chargée d'un autre site (img-src fermé ; adresse d'image absolue rendue en texte)",
+     "de": "Sécurité : aucune image chargée d'un autre site (img-src fermé ; adresse d'image absolue rendue en texte)",
+     "es": "Sécurité : aucune image chargée d'un autre site (img-src fermé ; adresse d'image absolue rendue en texte)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route",
+    "en": "Calcul de route",
+    "de": "Calcul de route",
+    "es": "Calcul de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0668",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Calcul de route : un direct d'un point vers LUI-MÊME (ROUTE138)",
+     "en": "Calcul de route : un direct d'un point vers LUI-MÊME (ROUTE138)",
+     "de": "Calcul de route : un direct d'un point vers LUI-MÊME (ROUTE138)",
+     "es": "Calcul de route : un direct d'un point vers LUI-MÊME (ROUTE138)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-choix-de-la-tete-tools",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; choix de la tête ; tools",
+    "en": "Calcul de route ; choix de la tête ; tools",
+    "de": "Calcul de route ; choix de la tête ; tools",
+    "es": "Calcul de route ; choix de la tête ; tools"
+   },
+   "items": [
+    {
+     "id": "SOG-0611",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Calcul de route : une tête « enfreint » garde la place alors qu'une route que le contrôle ne refuse pas existe",
+     "en": "Calcul de route : une tête « enfreint » garde la place alors qu'une route que le contrôle ne refuse pas existe",
+     "de": "Calcul de route : une tête « enfreint » garde la place alors qu'une route que le contrôle ne refuse pas existe",
+     "es": "Calcul de route : une tête « enfreint » garde la place alors qu'une route que le contrôle ne refuse pas existe",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-controle",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; contrôle",
+    "en": "Calcul de route ; contrôle",
+    "de": "Calcul de route ; contrôle",
+    "es": "Calcul de route ; contrôle"
+   },
+   "items": [
+    {
+     "id": "SOG-0639",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Zones réglementées activées par l'AUP / UUP du jour : la suite ne lit pas l'AUP",
+     "en": "Routes (à instruire) : Zones réglementées activées par l'AUP / UUP du jour : la suite ne lit pas l'AUP",
+     "de": "Routes (à instruire) : Zones réglementées activées par l'AUP / UUP du jour : la suite ne lit pas l'AUP",
+     "es": "Routes (à instruire) : Zones réglementées activées par l'AUP / UUP du jour : la suite ne lit pas l'AUP"
+    },
+    {
+     "id": "SOG-0640",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Espace réservé PBN : le PBN du vol n'est ni une entrée du calcul ni une entrée du contrôle",
+     "en": "Routes (à instruire) : Espace réservé PBN : le PBN du vol n'est ni une entrée du calcul ni une entrée du contrôle",
+     "de": "Routes (à instruire) : Espace réservé PBN : le PBN du vol n'est ni une entrée du calcul ni une entrée du contrôle",
+     "es": "Routes (à instruire) : Espace réservé PBN : le PBN du vol n'est ni une entrée du calcul ni une entrée du contrôle"
+    },
+    {
+     "id": "SOG-0641",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Limite des directs par espace (0 NM) : seule la limite de l'espace de Londres est lue",
+     "en": "Routes (à instruire) : Limite des directs par espace (0 NM) : seule la limite de l'espace de Londres est lue",
+     "de": "Routes (à instruire) : Limite des directs par espace (0 NM) : seule la limite de l'espace de Londres est lue",
+     "es": "Routes (à instruire) : Limite des directs par espace (0 NM) : seule la limite de l'espace de Londres est lue"
+    },
+    {
+     "id": "SOG-0642",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Route libre : un direct long vers un point hors liste, sortie non permise, bande basse d'une autre aire",
+     "en": "Routes (à instruire) : Route libre : un direct long vers un point hors liste, sortie non permise, bande basse d'une autre aire",
+     "de": "Routes (à instruire) : Route libre : un direct long vers un point hors liste, sortie non permise, bande basse d'une autre aire",
+     "es": "Routes (à instruire) : Route libre : un direct long vers un point hors liste, sortie non permise, bande basse d'une autre aire"
+    },
+    {
+     "id": "SOG-0643",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Limites de SID et de STAR : les procédures d'EDDF et de LFMN ne sont pas lues (catalogues vides)",
+     "en": "Routes (à instruire) : Limites de SID et de STAR : les procédures d'EDDF et de LFMN ne sont pas lues (catalogues vides)",
+     "de": "Routes (à instruire) : Limites de SID et de STAR : les procédures d'EDDF et de LFMN ne sont pas lues (catalogues vides)",
+     "es": "Routes (à instruire) : Limites de SID et de STAR : les procédures d'EDDF et de LFMN ne sont pas lues (catalogues vides)"
+    },
+    {
+     "id": "SOG-0644",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Source de l'AIP italien : la base des voies d'Italie est périmée et ne vient pas d'une source de l'AIP",
+     "en": "Routes (à instruire) : Source de l'AIP italien : la base des voies d'Italie est périmée et ne vient pas d'une source de l'AIP",
+     "de": "Routes (à instruire) : Source de l'AIP italien : la base des voies d'Italie est périmée et ne vient pas d'une source de l'AIP",
+     "es": "Routes (à instruire) : Source de l'AIP italien : la base des voies d'Italie est périmée et ne vient pas d'une source de l'AIP"
+    },
+    {
+     "id": "SOG-0645",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Jonction de deux voies en un point nommé : restrictions non lues",
+     "en": "Routes (à instruire) : Jonction de deux voies en un point nommé : restrictions non lues",
+     "de": "Routes (à instruire) : Jonction de deux voies en un point nommé : restrictions non lues",
+     "es": "Routes (à instruire) : Jonction de deux voies en un point nommé : restrictions non lues"
+    },
+    {
+     "id": "SOG-0646",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Forme du RAD « sauf via » une suite ordonnée de voies : non lisible",
+     "en": "Routes (à instruire) : Forme du RAD « sauf via » une suite ordonnée de voies : non lisible",
+     "de": "Routes (à instruire) : Forme du RAD « sauf via » une suite ordonnée de voies : non lisible",
+     "es": "Routes (à instruire) : Forme du RAD « sauf via » une suite ordonnée de voies : non lisible"
+    },
+    {
+     "id": "SOG-0669",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Calcul de route : le SENS des voies — dans la base ? respecté par la recherche ?",
+     "en": "Calcul de route : le SENS des voies — dans la base ? respecté par la recherche ?",
+     "de": "Calcul de route : le SENS des voies — dans la base ? respecté par la recherche ?",
+     "es": "Calcul de route : le SENS des voies — dans la base ? respecté par la recherche ?",
+     "test": true
+    },
+    {
+     "id": "SOG-0670",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Routes obligatoires au départ et à l'arrivée (PROF205)",
+     "en": "Routes (à instruire) : Routes obligatoires au départ et à l'arrivée (PROF205)",
+     "de": "Routes (à instruire) : Routes obligatoires au départ et à l'arrivée (PROF205)",
+     "es": "Routes (à instruire) : Routes obligatoires au départ et à l'arrivée (PROF205)"
+    },
+    {
+     "id": "SOG-0671",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Niveaux indisponibles sur un tronçon : montée / descente et croisière fermées (PROF201, PROF197)",
+     "en": "Routes (à instruire) : Niveaux indisponibles sur un tronçon : montée / descente et croisière fermées (PROF201, PROF197)",
+     "de": "Routes (à instruire) : Niveaux indisponibles sur un tronçon : montée / descente et croisière fermées (PROF201, PROF197)",
+     "es": "Routes (à instruire) : Niveaux indisponibles sur un tronçon : montée / descente et croisière fermées (PROF201, PROF197)"
+    },
+    {
+     "id": "SOG-0672",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Route conditionnelle (CDR) fermée (PROF200)",
+     "en": "Routes (à instruire) : Route conditionnelle (CDR) fermée (PROF200)",
+     "de": "Routes (à instruire) : Route conditionnelle (CDR) fermée (PROF200)",
+     "es": "Routes (à instruire) : Route conditionnelle (CDR) fermée (PROF200)"
+    },
+    {
+     "id": "SOG-0673",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes (à instruire) : Direct le long d'une frontière d'espaces (PROF53)",
+     "en": "Routes (à instruire) : Direct le long d'une frontière d'espaces (PROF53)",
+     "de": "Routes (à instruire) : Direct le long d'une frontière d'espaces (PROF53)",
+     "es": "Routes (à instruire) : Direct le long d'une frontière d'espaces (PROF53)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-controle-rad-route-libre",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; contrôle ; RAD ; route libre",
+    "en": "Calcul de route ; contrôle ; RAD ; route libre",
+    "de": "Calcul de route ; contrôle ; RAD ; route libre",
+    "es": "Calcul de route ; contrôle ; RAD ; route libre"
+   },
+   "items": [
+    {
+     "id": "SOG-0636",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : validation Eurocontrol du 25/11 (EDDF → LFMN, FL270, turbopropulseur) refusée quinze fois — mesure, classement par mécanisme",
+     "en": "Routes : validation Eurocontrol du 25/11 (EDDF → LFMN, FL270, turbopropulseur) refusée quinze fois — mesure, classement par mécanisme",
+     "de": "Routes : validation Eurocontrol du 25/11 (EDDF → LFMN, FL270, turbopropulseur) refusée quinze fois — mesure, classement par mécanisme",
+     "es": "Routes : validation Eurocontrol du 25/11 (EDDF → LFMN, FL270, turbopropulseur) refusée quinze fois — mesure, classement par mécanisme"
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-procedures-cause-dite",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; procédures ; cause dite",
+    "en": "Calcul de route ; procédures ; cause dite",
+    "de": "Calcul de route ; procédures ; cause dite",
+    "es": "Calcul de route ; procédures ; cause dite"
+   },
+   "items": [
+    {
+     "id": "SOG-0612",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Calcul de route : la cause d'un raccordement trop long ne dit pas que les procédures du terrain manquent",
+     "en": "Calcul de route : la cause d'un raccordement trop long ne dit pas que les procédures du terrain manquent",
+     "de": "Calcul de route : la cause d'un raccordement trop long ne dit pas que les procédures du terrain manquent",
+     "es": "Calcul de route : la cause d'un raccordement trop long ne dit pas que les procédures du terrain manquent"
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-procedures-partielles-reseau",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; procédures partielles ; réseau",
+    "en": "Calcul de route ; procédures partielles ; réseau",
+    "de": "Calcul de route ; procédures partielles ; réseau",
+    "es": "Calcul de route ; procédures partielles ; réseau"
+   },
+   "items": [
+    {
+     "id": "SOG-0613",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Calcul de route : EGLL vers l'Islande, SID partielles et réseau coupé (à instruire)",
+     "en": "Calcul de route : EGLL vers l'Islande, SID partielles et réseau coupé (à instruire)",
+     "de": "Calcul de route : EGLL vers l'Islande, SID partielles et réseau coupé (à instruire)",
+     "es": "Calcul de route : EGLL vers l'Islande, SID partielles et réseau coupé (à instruire)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-calcul-de-route-route-libre-fra-tools",
+   "app": "pilote",
+   "label": {
+    "fr": "Calcul de route ; route libre (FRA) ; tools",
+    "en": "Calcul de route ; route libre (FRA) ; tools",
+    "de": "Calcul de route ; route libre (FRA) ; tools",
+    "es": "Calcul de route ; route libre (FRA) ; tools"
+   },
+   "items": [
+    {
+     "id": "SOG-0610",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Calcul de route : la route libre de la Suisse n'est pas traversée, le modèle impose un contournement (Milan → Francfort)",
+     "en": "Calcul de route : la route libre de la Suisse n'est pas traversée, le modèle impose un contournement (Milan → Francfort)",
+     "de": "Calcul de route : la route libre de la Suisse n'est pas traversée, le modèle impose un contournement (Milan → Francfort)",
+     "es": "Calcul de route : la route libre de la Suisse n'est pas traversée, le modèle impose un contournement (Milan → Francfort)",
+     "test": true
     }
    ]
   },
@@ -897,8 +1240,7 @@
      "en": "Fuel: the ATIS read still runs after the screen is left (exception)",
      "de": "Kraftstoff: das ATIS-Lesen läuft nach Verlassen des Bildschirms weiter (Ausnahme)",
      "es": "Combustible: la lectura del ATIS sigue tras salir de la pantalla (excepción)",
-     "rank": 319,
-     "test": true
+     "rank": 319
     },
     {
      "id": "SOG-0393",
@@ -1007,11 +1349,12 @@
     {
      "id": "SOG-0556",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
      "en": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
      "de": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
-     "es": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie"
+     "es": "Carburant : un préfixe OACI du RAD est lu comme un code de pays — « Sahara occidental », « Égypte », « Sri Lanka » au lieu des Pays-Bas, du Royaume-Uni, de la Tchéquie",
+     "test": true
     }
    ]
   },
@@ -1033,6 +1376,156 @@
      "en": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette",
      "de": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette",
      "es": "Carburant : par vent inconnu, l'« Étape » de la barre du bas est une valeur seule alors que la ligne de route donne une fourchette"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-calcul",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; calcul",
+    "en": "Carburant ; calcul",
+    "de": "Carburant ; calcul",
+    "es": "Carburant ; calcul"
+   },
+   "items": [
+    {
+     "id": "SOG-0659",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : proposer un niveau de vol prend 20 s",
+     "en": "Carburant : proposer un niveau de vol prend 20 s",
+     "de": "Carburant : proposer un niveau de vol prend 20 s",
+     "es": "Carburant : proposer un niveau de vol prend 20 s"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-calcul-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; calcul de route",
+    "en": "Carburant ; calcul de route",
+    "de": "Carburant ; calcul de route",
+    "es": "Carburant ; calcul de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0652",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : avec un passage imposé, « aucune route trouvée » au FL170 EDDF → LFMN, repli en directs, 11 s chez le lanceur ; message répété trois fois",
+     "en": "Carburant : avec un passage imposé, « aucune route trouvée » au FL170 EDDF → LFMN, repli en directs, 11 s chez le lanceur ; message répété trois fois",
+     "de": "Carburant : avec un passage imposé, « aucune route trouvée » au FL170 EDDF → LFMN, repli en directs, 11 s chez le lanceur ; message répété trois fois",
+     "es": "Carburant : avec un passage imposé, « aucune route trouvée » au FL170 EDDF → LFMN, repli en directs, 11 s chez le lanceur ; message répété trois fois"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-calcul-de-route-controle",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; calcul de route ; contrôle",
+    "en": "Carburant ; calcul de route ; contrôle",
+    "de": "Carburant ; calcul de route ; contrôle",
+    "es": "Carburant ; calcul de route ; contrôle"
+   },
+   "items": [
+    {
+     "id": "SOG-0637",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant, « Voir pourquoi » : les règles du RAD sont rangées sous un faux pays (« Lesotho » pour la Suisse, « Liechtenstein » pour l'Italie), « portent sur », accord faux",
+     "en": "Carburant, « Voir pourquoi » : les règles du RAD sont rangées sous un faux pays (« Lesotho » pour la Suisse, « Liechtenstein » pour l'Italie), « portent sur », accord faux",
+     "de": "Carburant, « Voir pourquoi » : les règles du RAD sont rangées sous un faux pays (« Lesotho » pour la Suisse, « Liechtenstein » pour l'Italie), « portent sur », accord faux",
+     "es": "Carburant, « Voir pourquoi » : les règles du RAD sont rangées sous un faux pays (« Lesotho » pour la Suisse, « Liechtenstein » pour l'Italie), « portent sur », accord faux"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-calcul-de-route-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; calcul de route ; procédures",
+    "en": "Carburant ; calcul de route ; procédures",
+    "de": "Carburant ; calcul de route ; procédures",
+    "es": "Carburant ; calcul de route ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0638",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant : une route demandée sans SID ni STAR lues doit dire le geste qui manque",
+     "en": "Carburant : une route demandée sans SID ni STAR lues doit dire le geste qui manque",
+     "de": "Carburant : une route demandée sans SID ni STAR lues doit dire le geste qui manque",
+     "es": "Carburant : une route demandée sans SID ni STAR lues doit dire le geste qui manque",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-carte-couleurs",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; carte ; couleurs",
+    "en": "Carburant ; carte ; couleurs",
+    "de": "Carburant ; carte ; couleurs",
+    "es": "Carburant ; carte ; couleurs"
+   },
+   "items": [
+    {
+     "id": "SOG-0592",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant : la bordure colorée des groupes SID / STAR / approche de la liste des points ne correspondra plus à la carte",
+     "en": "Carburant : la bordure colorée des groupes SID / STAR / approche de la liste des points ne correspondra plus à la carte",
+     "de": "Carburant : la bordure colorée des groupes SID / STAR / approche de la liste des points ne correspondra plus à la carte",
+     "es": "Carburant : la bordure colorée des groupes SID / STAR / approche de la liste des points ne correspondra plus à la carte",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-champ-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; champ Route",
+    "en": "Carburant ; champ Route",
+    "de": "Carburant ; champ Route",
+    "es": "Carburant ; champ Route"
+   },
+   "items": [
+    {
+     "id": "SOG-0661",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Route : les points géographiques ajoutés ne sont pas gardés dans le plan de vol",
+     "en": "Route : les points géographiques ajoutés ne sont pas gardés dans le plan de vol",
+     "de": "Route : les points géographiques ajoutés ne sont pas gardés dans le plan de vol",
+     "es": "Route : les points géographiques ajoutés ne sont pas gardés dans le plan de vol",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-champ-route-devis",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; champ Route ; devis",
+    "en": "Carburant ; champ Route ; devis",
+    "de": "Carburant ; champ Route ; devis",
+    "es": "Carburant ; champ Route ; devis"
+   },
+   "items": [
+    {
+     "id": "SOG-0679",
+     "kind": "bug",
+     "state": "later",
+     "fr": "Route (case 15) : règles de vol, vitesses et niveaux écrits dans la route — fiche mère, trois temps",
+     "en": "Route (case 15) : règles de vol, vitesses et niveaux écrits dans la route — fiche mère, trois temps",
+     "de": "Route (case 15) : règles de vol, vitesses et niveaux écrits dans la route — fiche mère, trois temps",
+     "es": "Route (case 15) : règles de vol, vitesses et niveaux écrits dans la route — fiche mère, trois temps"
     }
    ]
   },
@@ -1077,6 +1570,37 @@
      "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "rank": 31
+    },
+    {
+     "id": "SOG-0675",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carburant : les vitesses écrites dans la route (Mach, changement en route) ne sont pas appliquées — le dire",
+     "en": "Carburant : les vitesses écrites dans la route (Mach, changement en route) ne sont pas appliquées — le dire",
+     "de": "Carburant : les vitesses écrites dans la route (Mach, changement en route) ne sont pas appliquées — le dire",
+     "es": "Carburant : les vitesses écrites dans la route (Mach, changement en route) ne sont pas appliquées — le dire",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-devis-fiches-de-performances",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; devis ; fiches de performances",
+    "en": "Carburant ; devis ; fiches de performances",
+    "de": "Carburant ; devis ; fiches de performances",
+    "es": "Carburant ; devis ; fiches de performances"
+   },
+   "items": [
+    {
+     "id": "SOG-0676",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Devis : deux régimes de vol et vitesse (Mach) par tronçon — subsonique sur les terres, supersonique sur les mers",
+     "en": "Devis : deux régimes de vol et vitesse (Mach) par tronçon — subsonique sur les terres, supersonique sur les mers",
+     "de": "Devis : deux régimes de vol et vitesse (Mach) par tronçon — subsonique sur les terres, supersonique sur les mers",
+     "es": "Devis : deux régimes de vol et vitesse (Mach) par tronçon — subsonique sur les terres, supersonique sur les mers"
     }
    ]
   },
@@ -1114,11 +1638,12 @@
     {
      "id": "SOG-0566",
      "kind": "bug",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
      "en": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
      "de": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
-     "es": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée"
+     "es": "Carburant : après correction de la date ou de l'horaire du vol, la proposition de dégagements ne peut pas être relancée",
+     "test": true
     }
    ]
   },
@@ -1139,7 +1664,27 @@
      "fr": "Carburant : « Proposer un dégagement » ne lit la météo que de trois terrains sur sept, et « météo non lue » couvre des cas où elle a été lue",
      "en": "Fuel: “Suggest an alternate” reads the weather of only three airfields out of seven, and “weather not read” covers cases where it was read",
      "de": "Kraftstoff: „Ausweichplatz vorschlagen“ liest das Wetter nur für drei von sieben Plätzen, und „Wetter nicht gelesen“ deckt Fälle ab, in denen es gelesen wurde",
-     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó"
+     "es": "Combustible: «Proponer una alternativa» solo lee la meteorología de tres aeródromos de siete, y «meteorología no leída» cubre casos en que sí se leyó",
+     "test": true
+    },
+    {
+     "id": "SOG-0660",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Proposer un dégagement : le TAF n'est toujours pas affiché sur les terrains proposés",
+     "en": "Proposer un dégagement : le TAF n'est toujours pas affiché sur les terrains proposés",
+     "de": "Proposer un dégagement : le TAF n'est toujours pas affiché sur les terrains proposés",
+     "es": "Proposer un dégagement : le TAF n'est toujours pas affiché sur les terrains proposés",
+     "test": true
+    },
+    {
+     "id": "SOG-0690",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant, dégagements : la météo n'est jamais lue à la demande, le « ! » n'est pas dit en mots",
+     "en": "Carburant, dégagements : la météo n'est jamais lue à la demande, le « ! » n'est pas dit en mots",
+     "de": "Carburant, dégagements : la météo n'est jamais lue à la demande, le « ! » n'est pas dit en mots",
+     "es": "Carburant, dégagements : la météo n'est jamais lue à la demande, le « ! » n'est pas dit en mots"
     }
    ]
   },
@@ -1160,8 +1705,7 @@
      "fr": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
      "en": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
      "de": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
-     "es": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre",
-     "test": true
+     "es": "Carburant : « Non vérifiable : N points » dit deux fois sur une carte de route — le repli dit ce qu'il ouvre"
     }
    ]
   },
@@ -1231,11 +1775,34 @@
     {
      "id": "SOG-0559",
      "kind": "bug",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
      "en": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
      "de": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
-     "es": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR"
+     "es": "Carburant : la page 1 affiche « ? » pour la météo d'un dégagement (LQTZ) dont la page Météo lit bien le METAR",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-niveau-de-vol-relief",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; niveau de vol ; relief",
+    "en": "Carburant ; niveau de vol ; relief",
+    "de": "Carburant ; niveau de vol ; relief",
+    "es": "Carburant ; niveau de vol ; relief"
+   },
+   "items": [
+    {
+     "id": "SOG-0653",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Niveau proposé : « Auto » propose 6000 ft au milieu des Alpes ; aucun choix VFR alors que le niveau en dépend",
+     "en": "Niveau proposé : « Auto » propose 6000 ft au milieu des Alpes ; aucun choix VFR alors que le niveau en dépend",
+     "de": "Niveau proposé : « Auto » propose 6000 ft au milieu des Alpes ; aucun choix VFR alors que le niveau en dépend",
+     "es": "Niveau proposé : « Auto » propose 6000 ft au milieu des Alpes ; aucun choix VFR alors que le niveau en dépend",
+     "test": true
     }
    ]
   },
@@ -1252,11 +1819,12 @@
     {
      "id": "SOG-0563",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
      "en": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
      "de": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
-     "es": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement"
+     "es": "Carburant : pendant les 70 à 106 s d'« Auto », l'écran ne dit aucun avancement",
+     "test": true
     }
    ]
   },
@@ -1273,11 +1841,34 @@
     {
      "id": "SOG-0562",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
      "en": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
      "de": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
-     "es": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil"
+     "es": "Carburant : la suite chiffre et propose le FL330 pour un BE9L — un niveau au-dessus du plafond de l'appareil",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-niveaux-auto",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; niveaux ; « Auto »",
+    "en": "Carburant ; niveaux ; « Auto »",
+    "de": "Carburant ; niveaux ; « Auto »",
+    "es": "Carburant ; niveaux ; « Auto »"
+   },
+   "items": [
+    {
+     "id": "SOG-0586",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant, « Auto » : les meilleurs niveaux d'abord (cinq calculés, la suite au geste)",
+     "en": "Carburant, « Auto » : les meilleurs niveaux d'abord (cinq calculés, la suite au geste)",
+     "de": "Carburant, « Auto » : les meilleurs niveaux d'abord (cinq calculés, la suite au geste)",
+     "es": "Carburant, « Auto » : les meilleurs niveaux d'abord (cinq calculés, la suite au geste)",
+     "test": true
     }
    ]
   },
@@ -1305,6 +1896,28 @@
    ]
   },
   {
+   "id": "pilote-carburant-plafond-fiches-de-performances",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; plafond ; fiches de performances",
+    "en": "Carburant ; plafond ; fiches de performances",
+    "de": "Carburant ; plafond ; fiches de performances",
+    "es": "Carburant ; plafond ; fiches de performances"
+   },
+   "items": [
+    {
+     "id": "SOG-0674",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Concorde : le plafond dit à l'écran (« FL547 ») n'est pas celui que la fiche déclare (600)",
+     "en": "Concorde : le plafond dit à l'écran (« FL547 ») n'est pas celui que la fiche déclare (600)",
+     "de": "Concorde : le plafond dit à l'écran (« FL547 ») n'est pas celui que la fiche déclare (600)",
+     "es": "Concorde : le plafond dit à l'écran (« FL547 ») n'est pas celui que la fiche déclare (600)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-plan-de-vol",
    "app": "pilote",
    "label": {
@@ -1321,7 +1934,28 @@
      "fr": "Carburant : le plan de vol OACI d'un vol qui part d'une hélistation ou y arrive (ZZZZ et DEP/, DEST/)",
      "en": "Fuel: the ICAO flight plan of a flight from or to a heliport (ZZZZ and DEP/, DEST/)",
      "de": "Kraftstoff: ICAO-Flugplan eines Fluges von oder zu einem Hubschrauberlandeplatz (ZZZZ und DEP/, DEST/)",
-     "es": "Combustible: el plan de vuelo OACI de un vuelo desde o hacia un helipuerto (ZZZZ y DEP/, DEST/)",
+     "es": "Combustible: el plan de vuelo OACI de un vuelo desde o hacia un helipuerto (ZZZZ y DEP/, DEST/)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-plan-de-vol-eurocontrol",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; plan de vol ; Eurocontrol",
+    "en": "Carburant ; plan de vol ; Eurocontrol",
+    "de": "Carburant ; plan de vol ; Eurocontrol",
+    "es": "Carburant ; plan de vol ; Eurocontrol"
+   },
+   "items": [
+    {
+     "id": "SOG-0572",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carburant : « Copier pour Eurocontrol » reste offert sur une route prise devenue périmée — la copie part avec un niveau ou un appareil que la route n'a pas",
+     "en": "Carburant : « Copier pour Eurocontrol » reste offert sur une route prise devenue périmée — la copie part avec un niveau ou un appareil que la route n'a pas",
+     "de": "Carburant : « Copier pour Eurocontrol » reste offert sur une route prise devenue périmée — la copie part avec un niveau ou un appareil que la route n'a pas",
+     "es": "Carburant : « Copier pour Eurocontrol » reste offert sur une route prise devenue périmée — la copie part avec un niveau ou un appareil que la route n'a pas",
      "test": true
     }
    ]
@@ -1343,8 +1977,7 @@
      "fr": "Carburant : le calcul de route est demandé au FL350 et le plan de vol déposé au FL330 ; le texte affiche « F330 » en tête et « /F350 » plus loin",
      "en": "Fuel: the route is computed at FL350 and the flight plan filed at FL330; the text carries “F330” at the start and “/F350” further on",
      "de": "Kraftstoff: Die Route wird für FL350 berechnet und der Flugplan mit FL330 aufgegeben; der Text trägt „F330“ am Anfang und „/F350“ weiter hinten",
-     "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante",
-     "test": true
+     "es": "Combustible: la ruta se calcula a FL350 y el plan de vuelo se presenta a FL330; el texto lleva «F330» al principio y «/F350» más adelante"
     },
     {
      "id": "SOG-0534",
@@ -1442,6 +2075,15 @@
      "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
      "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS",
      "rank": 322
+    },
+    {
+     "id": "SOG-0662",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Choix des procédures : la liste des procédures connues et un lien vers leur carte, quel que soit le pays",
+     "en": "Choix des procédures : la liste des procédures connues et un lien vers leur carte, quel que soit le pays",
+     "de": "Choix des procédures : la liste des procédures connues et un lien vers leur carte, quel que soit le pays",
+     "es": "Choix des procédures : la liste des procédures connues et un lien vers leur carte, quel que soit le pays"
     }
    ]
   },
@@ -1463,6 +2105,28 @@
      "en": "Fuel: an “out of date” message with no gesture to fix it — procedures (no “Re-read”) and airfield weather (the page knows what it lacks and should fetch it)",
      "de": "Kraftstoff: eine Meldung „nicht aktuell“ ohne Abhilfe — Verfahren (kein „Neu lesen“) und Platzwetter (die Seite weiß, was ihr fehlt, und soll es holen)",
      "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-procedures-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures ; route",
+    "en": "Carburant ; procédures ; route",
+    "de": "Carburant ; procédures ; route",
+    "es": "Carburant ; procédures ; route"
+   },
+   "items": [
+    {
+     "id": "SOG-0655",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carburant, choix d'une SID : chaque SID essayée laisse son dernier point dans le plan de vol",
+     "en": "Carburant, choix d'une SID : chaque SID essayée laisse son dernier point dans le plan de vol",
+     "de": "Carburant, choix d'une SID : chaque SID essayée laisse son dernier point dans le plan de vol",
+     "es": "Carburant, choix d'une SID : chaque SID essayée laisse son dernier point dans le plan de vol",
+     "test": true
     }
    ]
   },
@@ -1562,11 +2226,12 @@
     {
      "id": "SOG-0517",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carburant : « Calculer » impose comme passages les points d'une route déjà présente, et le plan de vol perd les changements de niveau écrits par le moteur",
      "en": "Fuel: “Compute” imposes the points of an existing route as waypoints, and the flight plan loses the level changes written by the engine",
      "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
-     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
+     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor",
+     "test": true
     },
     {
      "id": "SOG-0538",
@@ -1593,8 +2258,28 @@
      "fr": "Routes : durée et carburant sur chaque route proposée, « la plus rapide », « la plus économe », cinq au plus",
      "en": "Routes: time and fuel on each proposed route, “the fastest”, “the most economical”, five at most",
      "de": "Routen: Dauer und Kraftstoff für jede vorgeschlagene Route, „die schnellste“, „die sparsamste“, höchstens fünf",
-     "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo",
-     "test": true
+     "es": "Rutas: duración y combustible en cada ruta propuesta, «la más rápida», «la más económica», cinco como máximo"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-routes-explication",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; routes ; explication",
+    "en": "Carburant ; routes ; explication",
+    "de": "Carburant ; routes ; explication",
+    "es": "Carburant ; routes ; explication"
+   },
+   "items": [
+    {
+     "id": "SOG-0593",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : « Voir pourquoi » dit les voies écartées après le contrôle quand la route a été reprise",
+     "en": "Carburant : « Voir pourquoi » dit les voies écartées après le contrôle quand la route a été reprise",
+     "de": "Carburant : « Voir pourquoi » dit les voies écartées après le contrôle quand la route a été reprise",
+     "es": "Carburant : « Voir pourquoi » dit les voies écartées après le contrôle quand la route a été reprise"
     }
    ]
   },
@@ -1611,11 +2296,12 @@
     {
      "id": "SOG-0548",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : un raccord au-delà de sa limite faute de procédure lue — la ligne dit ce qui manque et propose le geste de lecture",
      "en": "Fuel: a connector beyond its limit for lack of a read procedure — the line says what is missing and offers the reading gesture",
      "de": "Kraftstoff: eine Verbindung über ihrer Grenze mangels gelesenem Verfahren — die Zeile sagt, was fehlt, und bietet die Lesegeste an",
-     "es": "Combustible: un enlace más allá de su límite por falta de procedimiento leído — la línea dice qué falta y ofrece el gesto de lectura"
+     "es": "Combustible: un enlace más allá de su límite por falta de procedimiento leído — la línea dice qué falta y ofrece el gesto de lectura",
+     "test": true
     }
    ]
   },
@@ -1659,8 +2345,7 @@
      "en": "Fuel: the whole quote is recomputed at every progress write of a started flight (a stutter every 5 s on a phone)",
      "de": "Kraftstoff: die gesamte Berechnung wird bei jedem Fortschrittseintrag eines gestarteten Flugs neu gerechnet (ein Ruckeln alle 5 s auf dem Telefon)",
      "es": "Combustible: todo el cálculo se rehace en cada escritura de progreso de un vuelo iniciado (un tirón cada 5 s en el teléfono)",
-     "rank": 394,
-     "test": true
+     "rank": 394
     }
    ]
   },
@@ -1682,7 +2367,8 @@
      "en": "Flight data: arrival QNH, the ATIS (letter, runway, QNH, wind) when the aerodrome is controlled, and the field elevation",
      "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
      "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo",
-     "rank": 326
+     "rank": 326,
+     "test": true
     }
    ]
   },
@@ -1771,8 +2457,7 @@
      "en": "Fuel: copy a complete ICAO flight plan, ready to paste into the Eurocontrol validation",
      "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
      "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol",
-     "rank": 395,
-     "test": true
+     "rank": 395
     },
     {
      "id": "SOG-0408",
@@ -1782,8 +2467,7 @@
      "en": "Fuel, Route field: a coordinate point typed “51/20” is rewritten “5100N02000W” once resolved",
      "de": "Kraftstoff, Feld Route: ein als „51/20“ getippter Koordinatenpunkt wird nach dem Auflösen zu „5100N02000W“ umgeschrieben",
      "es": "Combustible, campo Ruta: un punto de coordenadas escrito «51/20» se reescribe «5100N02000W» una vez resuelto",
-     "rank": 396,
-     "test": true
+     "rank": 396
     }
    ]
   },
@@ -1811,12 +2495,11 @@
      "id": "SOG-0390",
      "kind": "feature",
      "state": "done",
-     "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (N71B-N90B)",
-     "en": "Fuel: taking an itinerary removes the North American routes (N71B-N90B) from the route text",
-     "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (N71B-N90B) aus dem Routentext",
-     "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)",
-     "rank": 398,
-     "test": true
+     "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (un nom de deux voies jointes)",
+     "en": "Fuel: taking an itinerary removes the North American routes (a name of two joined airways) from the route text",
+     "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (ein Name zweier verbundener Strecken) aus dem Routentext",
+     "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (un nombre de dos aerovías unidas)",
+     "rank": 398
     },
     {
      "id": "SOG-0411",
@@ -1826,8 +2509,7 @@
      "en": "Route through a NAT track: “Check” does not recognise the NAT portion that “Compute” has just taken, and three reading defects around it",
      "de": "Route über einen NAT-Track: „Prüfen“ erkennt den NAT-Abschnitt nicht, den „Berechnen“ gerade genommen hat, und drei Lesefehler darum herum",
      "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor",
-     "rank": 399,
-     "test": true
+     "rank": 399
     },
     {
      "id": "SOG-0413",
@@ -1837,8 +2519,7 @@
      "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
      "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
      "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje",
-     "rank": 400,
-     "test": true
+     "rank": 400
     }
    ]
   },
@@ -1860,8 +2541,7 @@
      "en": "Free route over the North Atlantic: the screen does not say why no NAT track is taken, and the map draws every NAT track the same way",
      "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
      "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual",
-     "rank": 401,
-     "test": true
+     "rank": 401
     }
    ]
   },
@@ -2273,8 +2953,7 @@
      "en": "Direct on ATC instruction: keep the initial route in purple, draw the direct with another line",
      "de": "Direct auf Anweisung der Flugsicherung: die ursprüngliche Route violett behalten, den Direct anders zeichnen",
      "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo",
-     "rank": 328,
-     "test": true
+     "rank": 328
     },
     {
      "id": "SOG-0348",
@@ -2462,6 +3141,49 @@
    ]
   },
   {
+   "id": "pilote-carte-espaces-etats-unis",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; espaces ; États-Unis",
+    "en": "Carte ; espaces ; États-Unis",
+    "de": "Carte ; espaces ; États-Unis",
+    "es": "Carte ; espaces ; États-Unis"
+   },
+   "items": [
+    {
+     "id": "SOG-0698",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carte : pourquoi aucun espace autour de Newark (KEWR) ?",
+     "en": "Carte : pourquoi aucun espace autour de Newark (KEWR) ?",
+     "de": "Carte : pourquoi aucun espace autour de Newark (KEWR) ?",
+     "es": "Carte : pourquoi aucun espace autour de Newark (KEWR) ?"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-mode-choisir-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; mode « choisir » ; procédures",
+    "en": "Carte ; mode « choisir » ; procédures",
+    "de": "Carte ; mode « choisir » ; procédures",
+    "es": "Carte ; mode « choisir » ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0654",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte, choix d'une SID : le choix n'est pas appliqué, toutes les sorties en noir, le chemin piste → SID perdu (régression)",
+     "en": "Carte, choix d'une SID : le choix n'est pas appliqué, toutes les sorties en noir, le chemin piste → SID perdu (régression)",
+     "de": "Carte, choix d'une SID : le choix n'est pas appliqué, toutes les sorties en noir, le chemin piste → SID perdu (régression)",
+     "es": "Carte, choix d'une SID : le choix n'est pas appliqué, toutes les sorties en noir, le chemin piste → SID perdu (régression)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-meteo-le-long-du-vol",
    "app": "pilote",
    "label": {
@@ -2484,6 +3206,28 @@
    ]
   },
   {
+   "id": "pilote-carte-position-notifications",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; position ; notifications",
+    "en": "Carte ; position ; notifications",
+    "de": "Carte ; position ; notifications",
+    "es": "Carte ; position ; notifications"
+   },
+   "items": [
+    {
+     "id": "SOG-0600",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte : « GPS ou réseau non activés : pas de position réelle. » reste à l'écran après l'arrivée d'une position",
+     "en": "Carte : « GPS ou réseau non activés : pas de position réelle. » reste à l'écran après l'arrivée d'une position",
+     "de": "Carte : « GPS ou réseau non activés : pas de position réelle. » reste à l'écran après l'arrivée d'une position",
+     "es": "Carte : « GPS ou réseau non activés : pas de position réelle. » reste à l'écran après l'arrivée d'une position",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-profil",
    "app": "pilote",
    "label": {
@@ -2502,6 +3246,27 @@
      "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
      "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)",
      "rank": 82
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-profil-vertical",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; profil vertical",
+    "en": "Carte ; profil vertical",
+    "de": "Carte ; profil vertical",
+    "es": "Carte ; profil vertical"
+   },
+   "items": [
+    {
+     "id": "SOG-0694",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carte, profil vertical : l'échelle coupe le niveau de croisière, un point ne monte que de 2 000 ft",
+     "en": "Carte, profil vertical : l'échelle coupe le niveau de croisière, un point ne monte que de 2 000 ft",
+     "de": "Carte, profil vertical : l'échelle coupe le niveau de croisière, un point ne monte que de 2 000 ft",
+     "es": "Carte, profil vertical : l'échelle coupe le niveau de croisière, un point ne monte que de 2 000 ft"
     }
    ]
   },
@@ -2711,6 +3476,28 @@
    ]
   },
   {
+   "id": "pilote-carte-suivi-de-la-position",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; suivi de la position",
+    "en": "Carte ; suivi de la position",
+    "de": "Carte ; suivi de la position",
+    "es": "Carte ; suivi de la position"
+   },
+   "items": [
+    {
+     "id": "SOG-0633",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carte : « Suivre » doit garder l'appareil ET son fantôme en vue",
+     "en": "Carte : « Suivre » doit garder l'appareil ET son fantôme en vue",
+     "de": "Carte : « Suivre » doit garder l'appareil ET son fantôme en vue",
+     "es": "Carte : « Suivre » doit garder l'appareil ET son fantôme en vue",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-terrain",
    "app": "pilote",
    "label": {
@@ -2853,6 +3640,50 @@
    ]
   },
   {
+   "id": "pilote-carte-edition-de-route-stockage",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; édition de route ; stockage",
+    "en": "Carte ; édition de route ; stockage",
+    "de": "Carte ; édition de route ; stockage",
+    "es": "Carte ; édition de route ; stockage"
+   },
+   "items": [
+    {
+     "id": "SOG-0608",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte : stockage plein, l'édition d'une route est perdue en quittant la Carte",
+     "en": "Carte : stockage plein, l'édition d'une route est perdue en quittant la Carte",
+     "de": "Carte : stockage plein, l'édition d'une route est perdue en quittant la Carte",
+     "es": "Carte : stockage plein, l'édition d'une route est perdue en quittant la Carte",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-etiquettes-de-terrain-et-de-pistes",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; étiquettes de terrain et de pistes",
+    "en": "Carte ; étiquettes de terrain et de pistes",
+    "de": "Carte ; étiquettes de terrain et de pistes",
+    "es": "Carte ; étiquettes de terrain et de pistes"
+   },
+   "items": [
+    {
+     "id": "SOG-0626",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte : l'étiquette d'un terrain (et ses pistes) peut s'écrire deux fois selon l'ordre du dessin (cas D79)",
+     "en": "Carte : l'étiquette d'un terrain (et ses pistes) peut s'écrire deux fois selon l'ordre du dessin (cas D79)",
+     "de": "Carte : l'étiquette d'un terrain (et ses pistes) peut s'écrire deux fois selon l'ordre du dessin (cas D79)",
+     "es": "Carte : l'étiquette d'un terrain (et ses pistes) peut s'écrire deux fois selon l'ordre du dessin (cas D79)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-cartes-officielles",
    "app": "pilote",
    "label": {
@@ -2876,6 +3707,27 @@
    ]
   },
   {
+   "id": "pilote-cas-moteur-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Cas ; moteur de route",
+    "en": "Cas ; moteur de route",
+    "de": "Cas ; moteur de route",
+    "es": "Cas ; moteur de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0685",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Dépôt : des routes tapées par l'utilisateur servent encore de données de cas",
+     "en": "Dépôt : des routes tapées par l'utilisateur servent encore de données de cas",
+     "de": "Dépôt : des routes tapées par l'utilisateur servent encore de données de cas",
+     "es": "Dépôt : des routes tapées par l'utilisateur servent encore de données de cas"
+    }
+   ]
+  },
+  {
    "id": "pilote-code-modules-vitesse",
    "app": "pilote",
    "label": {
@@ -2888,12 +3740,13 @@
     {
      "id": "SOG-0468",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Passe d'optimisation et de factorisation du code",
      "en": "Code optimisation and factoring pass",
      "de": "Durchgang zur Optimierung und Zusammenführung des Codes",
      "es": "Pasada de optimización y factorización del código",
-     "rank": 414
+     "rank": 414,
+     "test": true
     }
    ]
   },
@@ -3026,6 +3879,48 @@
    ]
   },
   {
+   "id": "pilote-depot-maintenabilite",
+   "app": "pilote",
+   "label": {
+    "fr": "Dépôt ; maintenabilité",
+    "en": "Dépôt ; maintenabilité",
+    "de": "Dépôt ; maintenabilité",
+    "es": "Dépôt ; maintenabilité"
+   },
+   "items": [
+    {
+     "id": "SOG-0678",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Maintenabilité : les gros fichiers de code V3 ne grossissent plus (plafonds tenus par un cas I)",
+     "en": "Maintenabilité : les gros fichiers de code V3 ne grossissent plus (plafonds tenus par un cas I)",
+     "de": "Maintenabilité : les gros fichiers de code V3 ne grossissent plus (plafonds tenus par un cas I)",
+     "es": "Maintenabilité : les gros fichiers de code V3 ne grossissent plus (plafonds tenus par un cas I)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-depot-organisation",
+   "app": "pilote",
+   "label": {
+    "fr": "Dépôt ; organisation",
+    "en": "Dépôt ; organisation",
+    "de": "Dépôt ; organisation",
+    "es": "Dépôt ; organisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0650",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Dépôt : rationaliser les dossiers (tools, doc, maquettes, data, l'appli ; à la racine, seuls les lanceurs et le README)",
+     "en": "Dépôt : rationaliser les dossiers (tools, doc, maquettes, data, l'appli ; à la racine, seuls les lanceurs et le README)",
+     "de": "Dépôt : rationaliser les dossiers (tools, doc, maquettes, data, l'appli ; à la racine, seuls les lanceurs et le README)",
+     "es": "Dépôt : rationaliser les dossiers (tools, doc, maquettes, data, l'appli ; à la racine, seuls les lanceurs et le README)"
+    }
+   ]
+  },
+  {
    "id": "pilote-en-vol",
    "app": "pilote",
    "label": {
@@ -3056,6 +3951,81 @@
      "es": "En vuelo: velocidad respecto al suelo, velocidad aerodinámica y rumbo en la página « En vuelo », en la mirada del piloto",
      "milestone": "6.0.0-beta.1",
      "rank": 98
+    }
+   ]
+  },
+  {
+   "id": "pilote-essais",
+   "app": "pilote",
+   "label": {
+    "fr": "Essais",
+    "en": "Essais",
+    "de": "Essais",
+    "es": "Essais"
+   },
+   "items": [
+    {
+     "id": "SOG-0591",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas : 72 chaînes contiennent « \\s » hors chaîne brute (SyntaxWarning, future erreur de Python)",
+     "en": "Cas : 72 chaînes contiennent « \\s » hors chaîne brute (SyntaxWarning, future erreur de Python)",
+     "de": "Cas : 72 chaînes contiennent « \\s » hors chaîne brute (SyntaxWarning, future erreur de Python)",
+     "es": "Cas : 72 chaînes contiennent « \\s » hors chaîne brute (SyntaxWarning, future erreur de Python)"
+    },
+    {
+     "id": "SOG-0594",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas I39 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas I39 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas I39 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas I39 instable sous charge : la cause lue dans le cas, puis la correction du cas"
+    },
+    {
+     "id": "SOG-0595",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas A197 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas A197 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas A197 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas A197 instable sous charge : la cause lue dans le cas, puis la correction du cas"
+    },
+    {
+     "id": "SOG-0596",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas A71 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas A71 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas A71 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas A71 instable sous charge : la cause lue dans le cas, puis la correction du cas"
+    },
+    {
+     "id": "SOG-0597",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas D183 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas D183 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas D183 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas D183 instable sous charge : la cause lue dans le cas, puis la correction du cas"
+    },
+    {
+     "id": "SOG-0598",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas L55 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas L55 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas L55 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas L55 instable sous charge : la cause lue dans le cas, puis la correction du cas"
+    },
+    {
+     "id": "SOG-0599",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cas L179 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "en": "Cas L179 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "de": "Cas L179 instable sous charge : la cause lue dans le cas, puis la correction du cas",
+     "es": "Cas L179 instable sous charge : la cause lue dans le cas, puis la correction du cas"
     }
    ]
   },
@@ -3148,6 +4118,27 @@
    ]
   },
   {
+   "id": "pilote-fiches-de-performances",
+   "app": "pilote",
+   "label": {
+    "fr": "Fiches de performances",
+    "en": "Fiches de performances",
+    "de": "Fiches de performances",
+    "es": "Fiches de performances"
+   },
+   "items": [
+    {
+     "id": "SOG-0663",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Fiches de performances : ajouter un appareil (« concorde », « CONC ») avec les infos minimales",
+     "en": "Fiches de performances : ajouter un appareil (« concorde », « CONC ») avec les infos minimales",
+     "de": "Fiches de performances : ajouter un appareil (« concorde », « CONC ») avec les infos minimales",
+     "es": "Fiches de performances : ajouter un appareil (« concorde », « CONC ») avec les infos minimales"
+    }
+   ]
+  },
+  {
    "id": "pilote-guidage-pilote",
    "app": "pilote",
    "label": {
@@ -3178,6 +4169,27 @@
      "es": "Colocar las transiciones de ascenso y descenso en los dos perfiles",
      "milestone": "6.0.0-alpha.3",
      "rank": 103
+    }
+   ]
+  },
+  {
+   "id": "pilote-mes-signalements-etats-des-signalements",
+   "app": "pilote",
+   "label": {
+    "fr": "Mes signalements ; états des signalements",
+    "en": "Mes signalements ; états des signalements",
+    "de": "Mes signalements ; états des signalements",
+    "es": "Mes signalements ; états des signalements"
+   },
+   "items": [
+    {
+     "id": "SOG-0699",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Mes signalements : les bugs « à vérifier » se distinguent mal des autres, il manque « drop » et un code couleur par état",
+     "en": "Mes signalements : les bugs « à vérifier » se distinguent mal des autres, il manque « drop » et un code couleur par état",
+     "de": "Mes signalements : les bugs « à vérifier » se distinguent mal des autres, il manque « drop » et un code couleur par état",
+     "es": "Mes signalements : les bugs « à vérifier » se distinguent mal des autres, il manque « drop » et un code couleur par état"
     }
    ]
   },
@@ -3214,6 +4226,70 @@
    ]
   },
   {
+   "id": "pilote-meteo-carte-coupe",
+   "app": "pilote",
+   "label": {
+    "fr": "Météo ; Carte ; coupe",
+    "en": "Météo ; Carte ; coupe",
+    "de": "Météo ; Carte ; coupe",
+    "es": "Météo ; Carte ; coupe"
+   },
+   "items": [
+    {
+     "id": "SOG-0665",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Météo de la route : l'heure de l'affichage suit-elle l'avancement réel du vol ? (« météo à l'altitude de vol réelle »)",
+     "en": "Météo de la route : l'heure de l'affichage suit-elle l'avancement réel du vol ? (« météo à l'altitude de vol réelle »)",
+     "de": "Météo de la route : l'heure de l'affichage suit-elle l'avancement réel du vol ? (« météo à l'altitude de vol réelle »)",
+     "es": "Météo de la route : l'heure de l'affichage suit-elle l'avancement réel du vol ? (« météo à l'altitude de vol réelle »)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-outils-dependances",
+   "app": "pilote",
+   "label": {
+    "fr": "Outils ; dépendances",
+    "en": "Outils ; dépendances",
+    "de": "Outils ; dépendances",
+    "es": "Outils ; dépendances"
+   },
+   "items": [
+    {
+     "id": "SOG-0582",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Outils : copie d'Acorn dans le dépôt pour le contrôle de format hors ligne",
+     "en": "Outils : copie d'Acorn dans le dépôt pour le contrôle de format hors ligne",
+     "de": "Outils : copie d'Acorn dans le dépôt pour le contrôle de format hors ligne",
+     "es": "Outils : copie d'Acorn dans le dépôt pour le contrôle de format hors ligne"
+    }
+   ]
+  },
+  {
+   "id": "pilote-outils-formatage",
+   "app": "pilote",
+   "label": {
+    "fr": "Outils ; formatage",
+    "en": "Outils ; formatage",
+    "de": "Outils ; formatage",
+    "es": "Outils ; formatage"
+   },
+   "items": [
+    {
+     "id": "SOG-0604",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Outils : format_sources.py coupe un littéral « <script>…</script> » placé dans une chaîne JS d'un fichier Python",
+     "en": "Outils : format_sources.py coupe un littéral « <script>…</script> » placé dans une chaîne JS d'un fichier Python",
+     "de": "Outils : format_sources.py coupe un littéral « <script>…</script> » placé dans une chaîne JS d'un fichier Python",
+     "es": "Outils : format_sources.py coupe un littéral « <script>…</script> » placé dans une chaîne JS d'un fichier Python",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "pilote-plan-de-vol-atlantique-nord",
    "app": "pilote",
    "label": {
@@ -3231,8 +4307,7 @@
      "en": "“Copy for Eurocontrol”: a hyphen in the route (two joined route designators) cuts the flight plan — five syntax errors",
      "de": "„Für Eurocontrol kopieren“: ein Bindestrich in der Route (zwei verbundene Streckenbezeichner) zerschneidet den Flugplan — fünf Syntaxfehler",
      "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis",
-     "rank": 418,
-     "test": true
+     "rank": 418
     }
    ]
   },
@@ -3276,6 +4351,49 @@
      "en": "United Kingdom: read conventional SIDs (EGGW: 0 of 9 charts read, “table not recognised”)",
      "de": "Vereinigtes Königreich: konventionelle SIDs lesen (EGGW: 0 von 9 Karten gelesen, „Tabelle nicht erkannt“)",
      "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-procedures-carte-arrivees",
+   "app": "pilote",
+   "label": {
+    "fr": "Procédures ; carte ; arrivées",
+    "en": "Procédures ; carte ; arrivées",
+    "de": "Procédures ; carte ; arrivées",
+    "es": "Procédures ; carte ; arrivées"
+   },
+   "items": [
+    {
+     "id": "SOG-0569",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Procédures : la STAR VATR3 d'EIDW est dessinée en zigzag — un tracé qu'on ne sait pas ordonner n'est pas une trajectoire",
+     "en": "Procédures : la STAR VATR3 d'EIDW est dessinée en zigzag — un tracé qu'on ne sait pas ordonner n'est pas une trajectoire",
+     "de": "Procédures : la STAR VATR3 d'EIDW est dessinée en zigzag — un tracé qu'on ne sait pas ordonner n'est pas une trajectoire",
+     "es": "Procédures : la STAR VATR3 d'EIDW est dessinée en zigzag — un tracé qu'on ne sait pas ordonner n'est pas une trajectoire",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-procedures-lecteur-de-l-italie",
+   "app": "pilote",
+   "label": {
+    "fr": "Procédures ; lecteur de l'Italie",
+    "en": "Procédures ; lecteur de l'Italie",
+    "de": "Procédures ; lecteur de l'Italie",
+    "es": "Procédures ; lecteur de l'Italie"
+   },
+   "items": [
+    {
+     "id": "SOG-0657",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Italie : les pages d'AD de Malpensa ne sont pas lues (« carte sans table ») — le lecteur ne convient pas",
+     "en": "Italie : les pages d'AD de Malpensa ne sont pas lues (« carte sans table ») — le lecteur ne convient pas",
+     "de": "Italie : les pages d'AD de Malpensa ne sont pas lues (« carte sans table ») — le lecteur ne convient pas",
+     "es": "Italie : les pages d'AD de Malpensa ne sont pas lues (« carte sans table ») — le lecteur ne convient pas"
     }
    ]
   },
@@ -3495,8 +4613,7 @@
      "fr": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
      "en": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
      "de": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
-     "es": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un",
-     "test": true
+     "es": "Recette : une étape d'un chemin de test n'accepte aucun commentaire, même quand elle en demande un"
     }
    ]
   },
@@ -3549,8 +4666,7 @@
      "fr": "Routes : IFPS du jour, EGLL → LFRN (BE9L, F270) — 8 erreurs : voies basses au FL270, RAD EGLF1034D/E et LF3564A via NEVIL, limite de SID EGLL, DCT en FRA du Royaume-Uni",
      "en": "Routes: today's IFPS, EGLL → LFRN (BE9L, F270) — 8 errors: low airways at FL270, RAD via NEVIL, EGLL SID limit, DCT in UK FRA",
      "de": "Routen: IFPS von heute, EGLL → LFRN (BE9L, F270) — 8 Fehler: untere Luftstraßen auf FL270, RAD über NEVIL, SID-Grenze EGLL, DCT im FRA des Vereinigten Königreichs",
-     "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido",
-     "test": true
+     "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido"
     },
     {
      "id": "SOG-0524",
@@ -3559,8 +4675,7 @@
      "fr": "Routes : la réponse du calcul dépend de la charge du poste — ESSA → LEMG « calcul impossible (budget de recherche) » quand le poste est chargé ; borner en états, pas en temps",
      "en": "Routes: the computed answer depends on machine load — ESSA → LEMG “impossible (search budget)” when busy; bound by states, not time",
      "de": "Routen: die Antwort hängt von der Last des Rechners ab — ESSA → LEMG „unmöglich (Suchbudget)“ unter Last; nach Zuständen begrenzen, nicht nach Zeit",
-     "es": "Rutas: la respuesta depende de la carga del equipo — ESSA → LEMG «imposible (presupuesto de búsqueda)» con carga; acotar por estados, no por tiempo",
-     "test": true
+     "es": "Rutas: la respuesta depende de la carga del equipo — ESSA → LEMG «imposible (presupuesto de búsqueda)» con carga; acotar por estados, no por tiempo"
     },
     {
      "id": "SOG-0539",
@@ -3662,8 +4777,7 @@
      "fr": "Routes : trois défauts de contrat du moteur — no_conforming_route sans valeurs et au mauvais compte, partage « en infraction 0 % » malgré un raccord fautif, rad_unread pour des États non traversés",
      "en": "Routes: three contract defects of the engine — no_conforming_route without values and miscounted, “in breach 0 %” share despite a faulty connector, rad_unread for States not crossed",
      "de": "Routen: drei Vertragsfehler der Engine — no_conforming_route ohne Werte und falsch gezählt, Anteil „regelwidrig 0 %“ trotz fehlerhafter Anbindung, rad_unread für nicht überflogene Staaten",
-     "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados",
-     "test": true
+     "es": "Rutas: tres defectos de contrato del motor — no_conforming_route sin valores y mal contado, reparto «en infracción 0 %» pese a un enlace en falta, rad_unread para Estados no atravesados"
     }
    ]
   },
@@ -3737,8 +4851,7 @@
      "en": "Routes: on a long European flight, the free-route graph uses up the whole lead phase — “computation impossible”",
      "de": "Routen: Auf einem langen Europaflug verbraucht der Free-Route-Graph die ganze Anfangsphase – „Berechnung unmöglich“",
      "es": "Rutas: en un vuelo largo por Europa, el grafo de ruta libre agota toda la fase inicial — «cálculo imposible»",
-     "rank": 426,
-     "test": true
+     "rank": 426
     },
     {
      "id": "SOG-0476",
@@ -3792,6 +4905,48 @@
    ]
   },
   {
+   "id": "pilote-routes-rad-eurocontrol",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; RAD ; Eurocontrol",
+    "en": "Routes ; RAD ; Eurocontrol",
+    "de": "Routes ; RAD ; Eurocontrol",
+    "es": "Routes ; RAD ; Eurocontrol"
+   },
+   "items": [
+    {
+     "id": "SOG-0576",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Routes : troisième validation Eurocontrol réelle (LFMT → EIDW, FL250, route recalculée) refusée huit fois — mesure règle par règle, AVANT tout code",
+     "en": "Routes : troisième validation Eurocontrol réelle (LFMT → EIDW, FL250, route recalculée) refusée huit fois — mesure règle par règle, AVANT tout code",
+     "de": "Routes : troisième validation Eurocontrol réelle (LFMT → EIDW, FL250, route recalculée) refusée huit fois — mesure règle par règle, AVANT tout code",
+     "es": "Routes : troisième validation Eurocontrol réelle (LFMT → EIDW, FL250, route recalculée) refusée huit fois — mesure règle par règle, AVANT tout code"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-rad-espaces",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; RAD ; espaces",
+    "en": "Routes ; RAD ; espaces",
+    "de": "Routes ; RAD ; espaces",
+    "es": "Routes ; RAD ; espaces"
+   },
+   "items": [
+    {
+     "id": "SOG-0583",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : relier un nom d'espace du RAD à son contour et juger « tronçon dans l'espace » aux bons niveaux (code)",
+     "en": "Routes : relier un nom d'espace du RAD à son contour et juger « tronçon dans l'espace » aux bons niveaux (code)",
+     "de": "Routes : relier un nom d'espace du RAD à son contour et juger « tronçon dans l'espace » aux bons niveaux (code)",
+     "es": "Routes : relier un nom d'espace du RAD à son contour et juger « tronçon dans l'espace » aux bons niveaux (code)"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-rad-validation-eurocontrol",
    "app": "pilote",
    "label": {
@@ -3829,7 +4984,28 @@
      "fr": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
      "en": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
      "de": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
-     "es": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour",
+     "es": "Routes : un « conforme » reste possible sans que rien ne dise les règles RAD dont la cible est un espace sans contour"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-calcul-temps",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; calcul ; temps",
+    "en": "Routes ; calcul ; temps",
+    "de": "Routes ; calcul ; temps",
+    "es": "Routes ; calcul ; temps"
+   },
+   "items": [
+    {
+     "id": "SOG-0571",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Routes : un calcul coupé par le garde-fou de 120 s rend un verdict qui dépend de la charge du poste",
+     "en": "Routes : un calcul coupé par le garde-fou de 120 s rend un verdict qui dépend de la charge du poste",
+     "de": "Routes : un calcul coupé par le garde-fou de 120 s rend un verdict qui dépend de la charge du poste",
+     "es": "Routes : un calcul coupé par le garde-fou de 120 s rend un verdict qui dépend de la charge du poste",
      "test": true
     }
    ]
@@ -3868,11 +5044,12 @@
     {
      "id": "SOG-0547",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : au départ, la recherche part d'un point qui n'est la fin d'aucune SID (EGLL → MATCH, 32 NM pour une limite de 0) alors que des SID lues en partie existent",
      "en": "Routes: on departure, the search starts from a point that ends no SID (EGLL → MATCH, 32 NM for a limit of 0) although partly read SIDs exist",
      "de": "Routen: beim Abflug beginnt die Suche an einem Punkt, an dem keine SID endet (EGLL → MATCH, 32 NM bei Grenze 0), obwohl teilweise gelesene SIDs vorhanden sind",
-     "es": "Rutas: en la salida, la búsqueda parte de un punto que no es el final de ninguna SID (EGLL → MATCH, 32 NM para un límite de 0) aunque existen SID leídas en parte"
+     "es": "Rutas: en la salida, la búsqueda parte de un punto que no es el final de ninguna SID (EGLL → MATCH, 32 NM para un límite de 0) aunque existen SID leídas en parte",
+     "test": true
     }
    ]
   },
@@ -3962,6 +5139,48 @@
    ]
   },
   {
+   "id": "pilote-routes-route-libre",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; route libre",
+    "en": "Routes ; route libre",
+    "de": "Routes ; route libre",
+    "es": "Routes ; route libre"
+   },
+   "items": [
+    {
+     "id": "SOG-0587",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Routes : les voisins de route libre calculés une fois pour tous les niveaux d'un clic",
+     "en": "Routes : les voisins de route libre calculés une fois pour tous les niveaux d'un clic",
+     "de": "Routes : les voisins de route libre calculés une fois pour tous les niveaux d'un clic",
+     "es": "Routes : les voisins de route libre calculés une fois pour tous les niveaux d'un clic"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-voies-route-libre-rad",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; voies ; route libre ; RAD",
+    "en": "Routes ; voies ; route libre ; RAD",
+    "de": "Routes ; voies ; route libre ; RAD",
+    "es": "Routes ; voies ; route libre ; RAD"
+   },
+   "items": [
+    {
+     "id": "SOG-0570",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : deuxième validation Eurocontrol réelle (LFMT → EIDW, FL250) — seize erreurs, dont cinq voies volées à un niveau où elles n'existent pas — mesure AVANT tout code",
+     "en": "Routes : deuxième validation Eurocontrol réelle (LFMT → EIDW, FL250) — seize erreurs, dont cinq voies volées à un niveau où elles n'existent pas — mesure AVANT tout code",
+     "de": "Routes : deuxième validation Eurocontrol réelle (LFMT → EIDW, FL250) — seize erreurs, dont cinq voies volées à un niveau où elles n'existent pas — mesure AVANT tout code",
+     "es": "Routes : deuxième validation Eurocontrol réelle (LFMT → EIDW, FL250) — seize erreurs, dont cinq voies volées à un niveau où elles n'existent pas — mesure AVANT tout code"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-fiabilite-europe",
    "app": "pilote",
    "label": {
@@ -4038,6 +5257,27 @@
    ]
   },
   {
+   "id": "pilote-signalements-organisation",
+   "app": "pilote",
+   "label": {
+    "fr": "Signalements ; organisation",
+    "en": "Signalements ; organisation",
+    "de": "Signalements ; organisation",
+    "es": "Signalements ; organisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0648",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Signalements : que deviennent les « bugs à vérifier » ? (traités, mis en fiche, purgés)",
+     "en": "Signalements : que deviennent les « bugs à vérifier » ? (traités, mis en fiche, purgés)",
+     "de": "Signalements : que deviennent les « bugs à vérifier » ? (traités, mis en fiche, purgés)",
+     "es": "Signalements : que deviennent les « bugs à vérifier » ? (traités, mis en fiche, purgés)"
+    }
+   ]
+  },
+  {
    "id": "pilote-socle-signaler",
    "app": "pilote",
    "label": {
@@ -4082,6 +5322,27 @@
    ]
   },
   {
+   "id": "pilote-textes-traduction",
+   "app": "pilote",
+   "label": {
+    "fr": "Textes ; traduction",
+    "en": "Textes ; traduction",
+    "de": "Textes ; traduction",
+    "es": "Textes ; traduction"
+   },
+   "items": [
+    {
+     "id": "SOG-0680",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Dette de traduction : les textes écrits en français seul depuis le 26/11 (registre)",
+     "en": "Dette de traduction : les textes écrits en français seul depuis le 26/11 (registre)",
+     "de": "Dette de traduction : les textes écrits en français seul depuis le 26/11 (registre)",
+     "es": "Dette de traduction : les textes écrits en français seul depuis le 26/11 (registre)"
+    }
+   ]
+  },
+  {
    "id": "pilote-transverse",
    "app": "pilote",
    "label": {
@@ -4114,6 +5375,27 @@
    ]
   },
   {
+   "id": "pilote-vol-en-cours-vitesse",
+   "app": "pilote",
+   "label": {
+    "fr": "Vol en cours ; vitesse",
+    "en": "Vol en cours ; vitesse",
+    "de": "Vol en cours ; vitesse",
+    "es": "Vol en cours ; vitesse"
+   },
+   "items": [
+    {
+     "id": "SOG-0581",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Vol en cours : le Mach de croisière des avions rapides",
+     "en": "Vol en cours : le Mach de croisière des avions rapides",
+     "de": "Vol en cours : le Mach de croisière des avions rapides",
+     "es": "Vol en cours : le Mach de croisière des avions rapides"
+    }
+   ]
+  },
+  {
    "id": "pilote-x-plane-feu-pelicandromes",
    "app": "pilote",
    "label": {
@@ -4131,6 +5413,28 @@
      "en": "X-Plane: a generated scenery placing retardant stations on all listed pelicandromes (permanent: hatch and two containers; temporary: tanker truck and one container)",
      "de": "X-Plane: eine erzeugte Szenerie mit Löschmittelstationen auf allen erfassten Pelicandromen (dauerhaft: Bodenklappe und zwei Container; vorläufig: Tankwagen und ein Container)",
      "es": "X-Plane: un escenario generado que coloca estaciones de retardante en todos los pelicandromos (permanente: trampilla y dos contenedores; provisional: camión cisterna y un contenedor)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-tools",
+   "app": "pilote",
+   "label": {
+    "fr": "tools",
+    "en": "tools",
+    "de": "tools",
+    "es": "tools"
+   },
+   "items": [
+    {
+     "id": "SOG-0628",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Outil : format_sources coupe en deux une chaîne JS longue dans le script module d'un .html (SyntaxError silencieuse)",
+     "en": "Outil : format_sources coupe en deux une chaîne JS longue dans le script module d'un .html (SyntaxError silencieuse)",
+     "de": "Outil : format_sources coupe en deux une chaîne JS longue dans le script module d'un .html (SyntaxError silencieuse)",
+     "es": "Outil : format_sources coupe en deux une chaîne JS longue dans le script module d'un .html (SyntaxError silencieuse)",
+     "test": true
     }
    ]
   },
@@ -4439,6 +5743,50 @@
    ]
   },
   {
+   "id": "compagnie-carte-vue-mission-traits",
+   "app": "compagnie",
+   "label": {
+    "fr": "Carte ; vue mission ; traits",
+    "en": "Carte ; vue mission ; traits",
+    "de": "Carte ; vue mission ; traits",
+    "es": "Carte ; vue mission ; traits"
+   },
+   "items": [
+    {
+     "id": "SOG-0621",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte (vue mission) : à défaut de route, le trait relie aussi le dégagement et le rendez-vous comme des points de route",
+     "en": "Carte (vue mission) : à défaut de route, le trait relie aussi le dégagement et le rendez-vous comme des points de route",
+     "de": "Carte (vue mission) : à défaut de route, le trait relie aussi le dégagement et le rendez-vous comme des points de route",
+     "es": "Carte (vue mission) : à défaut de route, le trait relie aussi le dégagement et le rendez-vous comme des points de route",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-carte-vol-en-cours-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Carte ; « Vol en cours » ; Missions",
+    "en": "Carte ; « Vol en cours » ; Missions",
+    "de": "Carte ; « Vol en cours » ; Missions",
+    "es": "Carte ; « Vol en cours » ; Missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0619",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carte et « Vol en cours » : la mission en vol (lieux des tiroirs ouverts, volet de la fiche en un toucher)",
+     "en": "Carte et « Vol en cours » : la mission en vol (lieux des tiroirs ouverts, volet de la fiche en un toucher)",
+     "de": "Carte et « Vol en cours » : la mission en vol (lieux des tiroirs ouverts, volet de la fiche en un toucher)",
+     "es": "Carte et « Vol en cours » : la mission en vol (lieux des tiroirs ouverts, volet de la fiche en un toucher)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "compagnie-company",
    "app": "compagnie",
    "label": {
@@ -4665,6 +6013,27 @@
    ]
   },
   {
+   "id": "compagnie-flotte-carburant-carte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Flotte ; Carburant ; Carte",
+    "en": "Flotte ; Carburant ; Carte",
+    "de": "Flotte ; Carburant ; Carte",
+    "es": "Flotte ; Carburant ; Carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0634",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Flotte : partir avec un appareil de la flotte — Carburant reprend l'appareil et son terrain",
+     "en": "Flotte : partir avec un appareil de la flotte — Carburant reprend l'appareil et son terrain",
+     "de": "Flotte : partir avec un appareil de la flotte — Carburant reprend l'appareil et son terrain",
+     "es": "Flotte : partir avec un appareil de la flotte — Carburant reprend l'appareil et son terrain"
+    }
+   ]
+  },
+  {
    "id": "compagnie-flotte-mes-appareils",
    "app": "compagnie",
    "label": {
@@ -4681,8 +6050,16 @@
      "fr": "Mes appareils : la « base » d'un appareil de la flotte n'a pas la complétion des terrains",
      "en": "My aircraft: the “base” of a fleet aircraft lacks the aerodrome completion",
      "de": "Meine Luftfahrzeuge: Die „Basis“ eines Flottenluftfahrzeugs hat keine Flugplatz-Vervollständigung",
-     "es": "Mis aeronaves: la «base» de una aeronave de la flota no tiene el autocompletado de aeródromos",
-     "test": true
+     "es": "Mis aeronaves: la «base» de una aeronave de la flota no tiene el autocompletado de aeródromos"
+    },
+    {
+     "id": "SOG-0635",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Flotte : un appui modifie l'appareil, on voudrait d'abord voir ses détails ; titre lisible, une seule écriture de l'immatriculation",
+     "en": "Flotte : un appui modifie l'appareil, on voudrait d'abord voir ses détails ; titre lisible, une seule écriture de l'immatriculation",
+     "de": "Flotte : un appui modifie l'appareil, on voudrait d'abord voir ses détails ; titre lisible, une seule écriture de l'immatriculation",
+     "es": "Flotte : un appui modifie l'appareil, on voudrait d'abord voir ses détails ; titre lisible, une seule écriture de l'immatriculation"
     }
    ]
   },
@@ -4839,6 +6216,27 @@
      "de": "Missionswerkstatt: „＋ Schublade“ öffnet ein Fenster zur Wahl der Bausteine, ein Tippen legt die Schublade an — wie im Entwurf des Nutzers",
      "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-cpco-acteurs-joinfs-x-plane",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; CPCO ; acteurs ; JoinFS ; X-Plane",
+    "en": "Missions ; CPCO ; acteurs ; JoinFS ; X-Plane",
+    "de": "Missions ; CPCO ; acteurs ; JoinFS ; X-Plane",
+    "es": "Missions ; CPCO ; acteurs ; JoinFS ; X-Plane"
+   },
+   "items": [
+    {
+     "id": "SOG-0623",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Les acteurs en jeu : les voir, les juger, sans relais public",
+     "en": "Les acteurs en jeu : les voir, les juger, sans relais public",
+     "de": "Les acteurs en jeu : les voir, les juger, sans relais public",
+     "es": "Les acteurs en jeu : les voir, les juger, sans relais public"
     }
    ]
   },
@@ -5029,12 +6427,13 @@
     {
      "id": "SOG-0482",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : une liste de points n'est pas un itinéraire — déplacer points, zones et objets dans l'ordre",
      "en": "Mission workshop: a list of points is not an itinerary — reorder points, areas and objects",
      "de": "Missionswerkstatt: Eine Punkteliste ist keine Route – Punkte, Gebiete und Objekte umordnen",
      "es": "Taller de misiones: una lista de puntos no es un itinerario — reordenar puntos, zonas y objetos",
-     "rank": 446
+     "rank": 446,
+     "test": true
     },
     {
      "id": "SOG-0485",
@@ -5073,8 +6472,7 @@
      "fr": "Atelier de missions : « Annuler » ne couvre pas les gestes de la liste, et supprimer un lieu vide l'historique d'annulation",
      "en": "Mission workshop: “Undo” does not cover the gestures of the list, and deleting a place clears the undo history",
      "de": "Missionswerkstatt: „Rückgängig“ deckt die Gesten der Liste nicht ab, und das Löschen eines Ortes leert den Verlauf",
-     "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial",
-     "test": true
+     "es": "Taller de misiones: «Deshacer» no cubre los gestos de la lista, y borrar un lugar vacía el historial"
     },
     {
      "id": "SOG-0543",
@@ -5083,7 +6481,37 @@
      "fr": "Atelier de missions : le menu « ajouter à la route » propose des objets, que le lecteur ne résout pas dans une route",
      "en": "Mission workshop: the “add to route” menu offers objects, which the reader does not resolve in a route",
      "de": "Missionswerkstatt: Das Menü „zur Route hinzufügen“ bietet Objekte an, die der Leser in einer Route nicht auflöst",
-     "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta",
+     "es": "Taller de misiones: el menú «añadir a la ruta» propone objetos, que el lector no resuelve en una ruta"
+    },
+    {
+     "id": "SOG-0664",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions : reprendre les paramètres utiles de la V2 (avec ou sans rendez-vous, choix de l'appareil, durée…)",
+     "en": "Missions : reprendre les paramètres utiles de la V2 (avec ou sans rendez-vous, choix de l'appareil, durée…)",
+     "de": "Missions : reprendre les paramètres utiles de la V2 (avec ou sans rendez-vous, choix de l'appareil, durée…)",
+     "es": "Missions : reprendre les paramètres utiles de la V2 (avec ou sans rendez-vous, choix de l'appareil, durée…)"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-brouillon",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; brouillon",
+    "en": "Missions ; atelier ; brouillon",
+    "de": "Missions ; atelier ; brouillon",
+    "es": "Missions ; atelier ; brouillon"
+   },
+   "items": [
+    {
+     "id": "SOG-0607",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Atelier : stockage plein, la mission en cours est perdue en quittant Missions et l'écran dit « Brouillon gardé »",
+     "en": "Atelier : stockage plein, la mission en cours est perdue en quittant Missions et l'écran dit « Brouillon gardé »",
+     "de": "Atelier : stockage plein, la mission en cours est perdue en quittant Missions et l'écran dit « Brouillon gardé »",
+     "es": "Atelier : stockage plein, la mission en cours est perdue en quittant Missions et l'écran dit « Brouillon gardé »",
      "test": true
     }
    ]
@@ -5134,6 +6562,28 @@
    ]
   },
   {
+   "id": "compagnie-missions-atelier-carte-ton-sombre",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; carte ; ton sombre",
+    "en": "Missions ; atelier ; carte ; ton sombre",
+    "de": "Missions ; atelier ; carte ; ton sombre",
+    "es": "Missions ; atelier ; carte ; ton sombre"
+   },
+   "items": [
+    {
+     "id": "SOG-0577",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Atelier des missions : en ton sombre, le fond de carte reste clair et les étiquettes sombres se lisent mal",
+     "en": "Atelier des missions : en ton sombre, le fond de carte reste clair et les étiquettes sombres se lisent mal",
+     "de": "Atelier des missions : en ton sombre, le fond de carte reste clair et les étiquettes sombres se lisent mal",
+     "es": "Atelier des missions : en ton sombre, le fond de carte reste clair et les étiquettes sombres se lisent mal",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-atelier-champs",
    "app": "compagnie",
    "label": {
@@ -5153,6 +6603,49 @@
      "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)",
      "rank": 450,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-essai-des-cles",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; essai des clés",
+    "en": "Missions ; atelier ; essai des clés",
+    "de": "Missions ; atelier ; essai des clés",
+    "es": "Missions ; atelier ; essai des clés"
+   },
+   "items": [
+    {
+     "id": "SOG-0625",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Atelier : « Essayer les clés » part du premier point situé quand le départ n'est donné que par son code",
+     "en": "Atelier : « Essayer les clés » part du premier point situé quand le départ n'est donné que par son code",
+     "de": "Atelier : « Essayer les clés » part du premier point situé quand le départ n'est donné que par son code",
+     "es": "Atelier : « Essayer les clés » part du premier point situé quand le départ n'est donné que par son code",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-fiche-aide",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; fiche ; aide",
+    "en": "Missions ; atelier ; fiche ; aide",
+    "de": "Missions ; atelier ; fiche ; aide",
+    "es": "Missions ; atelier ; fiche ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0632",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions : la différence entre un tiroir et un événement n'est pas claire (et « événement » a trois sens)",
+     "en": "Missions : la différence entre un tiroir et un événement n'est pas claire (et « événement » a trois sens)",
+     "de": "Missions : la différence entre un tiroir et un événement n'est pas claire (et « événement » a trois sens)",
+     "es": "Missions : la différence entre un tiroir et un événement n'est pas claire (et « événement » a trois sens)"
     }
    ]
   },
@@ -5195,6 +6688,28 @@
      "en": "Mission workshop: also write the 1.1 keys (hover, landing, overflight, sequence of steps, event)",
      "de": "Missionswerkstatt: auch die Schlüssel der Version 1.1 schreiben (Schweben, Landung, Überflug, Schrittfolge, Ereignis)",
      "es": "Taller de misiones: escribir también las claves de la 1.1 (estacionario, aterrizaje, sobrevuelo, secuencia de etapas, evento)"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-cadre-atelier-carburant-carte-priorite-p1-pour-les-missions-avant-le-lot-deroule-de-sog-0620-qui-s-appuie-sur-cet-ordre",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; cadre ; atelier ; Carburant ; Carte. **Priorité :** P1 pour les missions — AVANT le lot « déroulé » de SOG-0620, qui s'appuie sur cet ordre",
+    "en": "Missions ; cadre ; atelier ; Carburant ; Carte. **Priorité :** P1 pour les missions — AVANT le lot « déroulé » de SOG-0620, qui s'appuie sur cet ordre",
+    "de": "Missions ; cadre ; atelier ; Carburant ; Carte. **Priorité :** P1 pour les missions — AVANT le lot « déroulé » de SOG-0620, qui s'appuie sur cet ordre",
+    "es": "Missions ; cadre ; atelier ; Carburant ; Carte. **Priorité :** P1 pour les missions — AVANT le lot « déroulé » de SOG-0620, qui s'appuie sur cet ordre"
+   },
+   "items": [
+    {
+     "id": "SOG-0684",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : l'ordre de l'itinéraire n'est plus lu comme en V2 (départ / arrivée, le reste « Hors itinéraire »)",
+     "en": "Missions : l'ordre de l'itinéraire n'est plus lu comme en V2 (départ / arrivée, le reste « Hors itinéraire »)",
+     "de": "Missions : l'ordre de l'itinéraire n'est plus lu comme en V2 (départ / arrivée, le reste « Hors itinéraire »)",
+     "es": "Missions : l'ordre de l'itinéraire n'est plus lu comme en V2 (départ / arrivée, le reste « Hors itinéraire »)",
+     "test": true
     }
    ]
   },
@@ -5394,6 +6909,28 @@
    ]
   },
   {
+   "id": "compagnie-missions-guidage-niveaux-de-difficulte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; guidage ; niveaux de difficulté",
+    "en": "Missions ; guidage ; niveaux de difficulté",
+    "de": "Missions ; guidage ; niveaux de difficulté",
+    "es": "Missions ; guidage ; niveaux de difficulté"
+   },
+   "items": [
+    {
+     "id": "SOG-0620",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Missions : niveaux de guidage du pilote (de la prise en charge totale au « brief et messages seulement »)",
+     "en": "Missions : niveaux de guidage du pilote (de la prise en charge totale au « brief et messages seulement »)",
+     "de": "Missions : niveaux de guidage du pilote (de la prise en charge totale au « brief et messages seulement »)",
+     "es": "Missions : niveaux de guidage du pilote (de la prise en charge totale au « brief et messages seulement »)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-import-transfert",
    "app": "compagnie",
    "label": {
@@ -5433,6 +6970,28 @@
      "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
      "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto",
      "rank": 458,
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-pre-remplissage-du-vol-carburant",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; pré-remplissage du vol ; Carburant",
+    "en": "Missions ; pré-remplissage du vol ; Carburant",
+    "de": "Missions ; pré-remplissage du vol ; Carburant",
+    "es": "Missions ; pré-remplissage du vol ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0618",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : départ et arrivée ne sont repris que si le nom du lieu finit par un code (« ? → ? »)",
+     "en": "Missions : départ et arrivée ne sont repris que si le nom du lieu finit par un code (« ? → ? »)",
+     "de": "Missions : départ et arrivée ne sont repris que si le nom du lieu finit par un code (« ? → ? »)",
+     "es": "Missions : départ et arrivée ne sont repris que si le nom du lieu finit par un code (« ? → ? »)",
      "test": true
     }
    ]
@@ -5514,6 +7073,28 @@
    ]
   },
   {
+   "id": "compagnie-missions-registre-historique-du-navigateur",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; registre ; historique du navigateur",
+    "en": "Missions ; registre ; historique du navigateur",
+    "de": "Missions ; registre ; historique du navigateur",
+    "es": "Missions ; registre ; historique du navigateur"
+   },
+   "items": [
+    {
+     "id": "SOG-0609",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : depuis l'atelier ouvert d'une fiche du registre, le ⚙ ou le rail ne mènent nulle part et ferment l'atelier",
+     "en": "Missions : depuis l'atelier ouvert d'une fiche du registre, le ⚙ ou le rail ne mènent nulle part et ferment l'atelier",
+     "de": "Missions : depuis l'atelier ouvert d'une fiche du registre, le ⚙ ou le rail ne mènent nulle part et ferment l'atelier",
+     "es": "Missions : depuis l'atelier ouvert d'une fiche du registre, le ⚙ ou le rail ne mènent nulle part et ferment l'atelier",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-registre-import",
    "app": "compagnie",
    "label": {
@@ -5575,6 +7156,72 @@
      "en": "Missions: drawer 1 of M23 shows before the object is found — a hidden drawer must stay hidden until it opens",
      "de": "Missionen: Schublade 1 von M23 ist sichtbar, bevor das Objekt gefunden ist – eine verborgene Schublade bleibt verborgen",
      "es": "Misiones: el cajón 1 de M23 se ve antes de encontrar el objeto — un cajón oculto debe seguir oculto hasta abrirse",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-tiroirs-resceller-niveau-complet",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; tiroirs ; resceller (niveau Complet)",
+    "en": "Missions ; tiroirs ; resceller (niveau Complet)",
+    "de": "Missions ; tiroirs ; resceller (niveau Complet)",
+    "es": "Missions ; tiroirs ; resceller (niveau Complet)"
+   },
+   "items": [
+    {
+     "id": "SOG-0627",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : resceller un tiroir laisse les suivants verrouillés puis rouverts d'un coup sur leurs anciens constats",
+     "en": "Missions : resceller un tiroir laisse les suivants verrouillés puis rouverts d'un coup sur leurs anciens constats",
+     "de": "Missions : resceller un tiroir laisse les suivants verrouillés puis rouverts d'un coup sur leurs anciens constats",
+     "es": "Missions : resceller un tiroir laisse les suivants verrouillés puis rouverts d'un coup sur leurs anciens constats",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-tiroirs-vol-en-cours-cadre",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; tiroirs ; vol en cours ; cadre",
+    "en": "Missions ; tiroirs ; vol en cours ; cadre",
+    "de": "Missions ; tiroirs ; vol en cours ; cadre",
+    "es": "Missions ; tiroirs ; vol en cours ; cadre"
+   },
+   "items": [
+    {
+     "id": "SOG-0617",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : en vol, la mission ne vit plus hors de sa fiche (tiroirs non jugés sur la Carte, rien ne dit « mission en cours »)",
+     "en": "Missions : en vol, la mission ne vit plus hors de sa fiche (tiroirs non jugés sur la Carte, rien ne dit « mission en cours »)",
+     "de": "Missions : en vol, la mission ne vit plus hors de sa fiche (tiroirs non jugés sur la Carte, rien ne dit « mission en cours »)",
+     "es": "Missions : en vol, la mission ne vit plus hors de sa fiche (tiroirs non jugés sur la Carte, rien ne dit « mission en cours »)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-tiroirs-vue-du-pilote-atelier",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; tiroirs ; vue du pilote ; atelier",
+    "en": "Missions ; tiroirs ; vue du pilote ; atelier",
+    "de": "Missions ; tiroirs ; vue du pilote ; atelier",
+    "es": "Missions ; tiroirs ; vue du pilote ; atelier"
+   },
+   "items": [
+    {
+     "id": "SOG-0624",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : le lieu d'une clé de condition (poser, stationnaire, survol, étapes, ravitaillement) n'est jamais cité",
+     "en": "Missions : le lieu d'une clé de condition (poser, stationnaire, survol, étapes, ravitaillement) n'est jamais cité",
+     "de": "Missions : le lieu d'une clé de condition (poser, stationnaire, survol, étapes, ravitaillement) n'est jamais cité",
+     "es": "Missions : le lieu d'une clé de condition (poser, stationnaire, survol, étapes, ravitaillement) n'est jamais cité",
      "test": true
     }
    ]
@@ -5643,6 +7290,49 @@
      "de": "Für alle geöffnete Schubladen: ein Live-Kanal zwischen Geräten, der nicht das Datenrepository ist — Studie",
      "es": "Cajones abiertos para todos: un canal en directo entre dispositivos que no sea el repositorio de datos — estudio",
      "rank": 462,
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-reglages-rejoindre-la-compagnie",
+   "app": "compagnie",
+   "label": {
+    "fr": "Réglages ; « Rejoindre la compagnie »",
+    "en": "Réglages ; « Rejoindre la compagnie »",
+    "de": "Réglages ; « Rejoindre la compagnie »",
+    "es": "Réglages ; « Rejoindre la compagnie »"
+   },
+   "items": [
+    {
+     "id": "SOG-0590",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Rejoindre la compagnie : la ligne « test en cours » s'affiche comme un avertissement",
+     "en": "Rejoindre la compagnie : la ligne « test en cours » s'affiche comme un avertissement",
+     "de": "Rejoindre la compagnie : la ligne « test en cours » s'affiche comme un avertissement",
+     "es": "Rejoindre la compagnie : la ligne « test en cours » s'affiche comme un avertissement"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-reglages-rejoindre-la-compagnie-gitlab",
+   "app": "compagnie",
+   "label": {
+    "fr": "Réglages ; « Rejoindre la compagnie » ; GitLab",
+    "en": "Réglages ; « Rejoindre la compagnie » ; GitLab",
+    "de": "Réglages ; « Rejoindre la compagnie » ; GitLab",
+    "es": "Réglages ; « Rejoindre la compagnie » ; GitLab"
+   },
+   "items": [
+    {
+     "id": "SOG-0575",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Réglages : sur une configuration GitLab, les messages d'échec du test du jeton parlent d'étapes et de cases qui n'existent pas",
+     "en": "Réglages : sur une configuration GitLab, les messages d'échec du test du jeton parlent d'étapes et de cases qui n'existent pas",
+     "de": "Réglages : sur une configuration GitLab, les messages d'échec du test du jeton parlent d'étapes et de cases qui n'existent pas",
+     "es": "Réglages : sur une configuration GitLab, les messages d'échec du test du jeton parlent d'étapes et de cases qui n'existent pas",
      "test": true
     }
    ]
@@ -5721,6 +7411,28 @@
      "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)",
      "milestone": "6.0.0-alpha.5",
      "rank": 40
+    }
+   ]
+  },
+  {
+   "id": "compagnie-bloc-suite-de-la-mission-modules",
+   "app": "compagnie",
+   "label": {
+    "fr": "bloc « Suite de la mission » (modules",
+    "en": "bloc « Suite de la mission » (modules",
+    "de": "bloc « Suite de la mission » (modules",
+    "es": "bloc « Suite de la mission » (modules"
+   },
+   "items": [
+    {
+     "id": "SOG-0629",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Missions : un message déplié dans « Avant » se replie seul au dessin suivant du bloc « Suite de la mission »",
+     "en": "Missions : un message déplié dans « Avant » se replie seul au dessin suivant du bloc « Suite de la mission »",
+     "de": "Missions : un message déplié dans « Avant » se replie seul au dessin suivant du bloc « Suite de la mission »",
+     "es": "Missions : un message déplié dans « Avant » se replie seul au dessin suivant du bloc « Suite de la mission »",
+     "test": true
     }
    ]
   },
@@ -5851,8 +7563,7 @@
      "en": "NAT tracks: the engine writes “NATF” for a NAT track it leaves before its end",
      "de": "NAT-Tracks: die Berechnung schreibt „NATF“ für einen NAT-Track, den sie vor seinem Ende verlässt",
      "es": "Rutas NAT: el cálculo escribe «NATF» para una ruta NAT que abandona antes de su final",
-     "rank": 464,
-     "test": true
+     "rank": 464
     }
    ]
   },
@@ -5874,8 +7585,7 @@
      "en": "NAT tracks: keep the dated messages (the previous day's, the one of the crossing) instead of one file overwritten at each read",
      "de": "NAT-Tracks: die datierten Meldungen behalten (Vortag, Zeitpunkt der Überquerung) statt einer bei jedem Lesen überschriebenen Datei",
      "es": "Rutas NAT: conservar los mensajes fechados (el de la víspera, el del cruce) en lugar de un solo archivo sobrescrito en cada lectura",
-     "rank": 465,
-     "test": true
+     "rank": 465
     }
    ]
   },
@@ -6030,8 +7740,7 @@
      "de": "Quellen für Punkte und Luftstraßen der Zonen ohne solche finden (76 von 83): zuerst die AIPs, sonst EUROCONTROL",
      "es": "Encontrar fuentes de puntos y aerovías para las zonas que no tienen (76 de 83): primero los AIP, si no EUROCONTROL",
      "milestone": "6.0.0-alpha.6",
-     "rank": 122,
-     "test": true
+     "rank": 122
     },
     {
      "id": "SOG-0182",
@@ -6225,8 +7934,7 @@
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
      "es": "Datos aeronáuticos para TODOS los países, empezando por Europa y Estados Unidos",
-     "rank": 196,
-     "test": true
+     "rank": 196
     },
     {
      "id": "SOG-0203",
@@ -6325,7 +8033,7 @@
     {
      "id": "SOG-0112",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
      "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
      "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
@@ -6530,6 +8238,81 @@
    ]
   },
   {
+   "id": "maintenance-cadre-reglages-aide",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; Réglages ; aide",
+    "en": "Cadre ; Réglages ; aide",
+    "de": "Cadre ; Réglages ; aide",
+    "es": "Cadre ; Réglages ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0579",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cadre : les modes d'emploi passent de l'écran à l'aide (lot 2 de la liste des textes du cadre)",
+     "en": "Cadre : les modes d'emploi passent de l'écran à l'aide (lot 2 de la liste des textes du cadre)",
+     "de": "Cadre : les modes d'emploi passent de l'écran à l'aide (lot 2 de la liste des textes du cadre)",
+     "es": "Cadre : les modes d'emploi passent de l'écran à l'aide (lot 2 de la liste des textes du cadre)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-reglages-vocabulaire",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; Réglages ; vocabulaire",
+    "en": "Cadre ; Réglages ; vocabulaire",
+    "de": "Cadre ; Réglages ; vocabulaire",
+    "es": "Cadre ; Réglages ; vocabulaire"
+   },
+   "items": [
+    {
+     "id": "SOG-0578",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Cadre : textes d'écran justes là où ils s'affichent (lot 1 de la liste des textes du cadre)",
+     "en": "Cadre : textes d'écran justes là où ils s'affichent (lot 1 de la liste des textes du cadre)",
+     "de": "Cadre : textes d'écran justes là où ils s'affichent (lot 1 de la liste des textes du cadre)",
+     "es": "Cadre : textes d'écran justes là où ils s'affichent (lot 1 de la liste des textes du cadre)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-signaler-frame",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; Signaler (frame",
+    "en": "Cadre ; Signaler (frame",
+    "de": "Cadre ; Signaler (frame",
+    "es": "Cadre ; Signaler (frame"
+   },
+   "items": [
+    {
+     "id": "SOG-0647",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Signaler : 2000 signes, c'est trop peu pour un vrai rapport de bug",
+     "en": "Signaler : 2000 signes, c'est trop peu pour un vrai rapport de bug",
+     "de": "Signaler : 2000 signes, c'est trop peu pour un vrai rapport de bug",
+     "es": "Signaler : 2000 signes, c'est trop peu pour un vrai rapport de bug",
+     "test": true
+    },
+    {
+     "id": "SOG-0651",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Signaler : un brouillon tapé juste avant de toucher une ligne de la liste est perdu (erreur dans la console)",
+     "en": "Signaler : un brouillon tapé juste avant de toucher une ligne de la liste est perdu (erreur dans la console)",
+     "de": "Signaler : un brouillon tapé juste avant de toucher une ligne de la liste est perdu (erreur dans la console)",
+     "es": "Signaler : un brouillon tapé juste avant de toucher une ligne de la liste est perdu (erreur dans la console)",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "maintenance-cadre-aide",
    "app": "maintenance",
    "label": {
@@ -6578,6 +8361,27 @@
      "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
      "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)",
      "rank": 349
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-applications-roles",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; applications ; rôles",
+    "en": "Cadre ; applications ; rôles",
+    "de": "Cadre ; applications ; rôles",
+    "es": "Cadre ; applications ; rôles"
+   },
+   "items": [
+    {
+     "id": "SOG-0573",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Applications : « cpco » et « client », choisies par le rôle (suite de SOG-0112)",
+     "en": "Applications : « cpco » et « client », choisies par le rôle (suite de SOG-0112)",
+     "de": "Applications : « cpco » et « client », choisies par le rôle (suite de SOG-0112)",
+     "es": "Applications : « cpco » et « client », choisies par le rôle (suite de SOG-0112)"
     }
    ]
   },
@@ -6638,6 +8442,49 @@
    ]
   },
   {
+   "id": "maintenance-cadre-demarrage-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; démarrage ; lanceur",
+    "en": "Cadre ; démarrage ; lanceur",
+    "de": "Cadre ; démarrage ; lanceur",
+    "es": "Cadre ; démarrage ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0603",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Cadre : un poste qui n'a jamais vu son lanceur, avec une détection lente, reste au canal « pilote » jusqu'au rechargement",
+     "en": "Cadre : un poste qui n'a jamais vu son lanceur, avec une détection lente, reste au canal « pilote » jusqu'au rechargement",
+     "de": "Cadre : un poste qui n'a jamais vu son lanceur, avec une détection lente, reste au canal « pilote » jusqu'au rechargement",
+     "es": "Cadre : un poste qui n'a jamais vu son lanceur, avec une détection lente, reste au canal « pilote » jusqu'au rechargement",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-lanceur-etat",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; lanceur ; état",
+    "en": "Cadre ; lanceur ; état",
+    "de": "Cadre ; lanceur ; état",
+    "es": "Cadre ; lanceur ; état"
+   },
+   "items": [
+    {
+     "id": "SOG-0692",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Lanceur éteint en cours de session : que dit l'appli ?",
+     "en": "Lanceur éteint en cours de session : que dit l'appli ?",
+     "de": "Lanceur éteint en cours de session : que dit l'appli ?",
+     "es": "Lanceur éteint en cours de session : que dit l'appli ?"
+    }
+   ]
+  },
+  {
    "id": "maintenance-cadre-navigation",
    "app": "maintenance",
    "label": {
@@ -6656,6 +8503,28 @@
      "de": "Verlässt man eine Seite mit ungespeicherten Änderungen über das Menü oder „Zurück“, gehen sie ohne Rückfrage verloren",
      "es": "Salir de una pantalla con cambios sin guardar, por el menú o con «Atrás», los pierde sin preguntar",
      "rank": 467,
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-notifications-telephone",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; notifications ; téléphone",
+    "en": "Cadre ; notifications ; téléphone",
+    "de": "Cadre ; notifications ; téléphone",
+    "es": "Cadre ; notifications ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0605",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Cadre : au téléphone, une note fraîche se pose un instant sur la barre du bas et peut prendre un toucher",
+     "en": "Cadre : au téléphone, une note fraîche se pose un instant sur la barre du bas et peut prendre un toucher",
+     "de": "Cadre : au téléphone, une note fraîche se pose un instant sur la barre du bas et peut prendre un toucher",
+     "es": "Cadre : au téléphone, une note fraîche se pose un instant sur la barre du bas et peut prendre un toucher",
      "test": true
     }
    ]
@@ -6727,6 +8596,27 @@
    ]
   },
   {
+   "id": "maintenance-cadre-signalements-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; signalements ; lanceur",
+    "en": "Cadre ; signalements ; lanceur",
+    "de": "Cadre ; signalements ; lanceur",
+    "es": "Cadre ; signalements ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0691",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Mes signalements : plus de commentaire possible (régression)",
+     "en": "Mes signalements : plus de commentaire possible (régression)",
+     "de": "Mes signalements : plus de commentaire possible (régression)",
+     "es": "Mes signalements : plus de commentaire possible (régression)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-cadre-synchronisation",
    "app": "maintenance",
    "label": {
@@ -6755,6 +8645,70 @@
      "de": "BLOCKIEREND: GitLab antwortet am Telefon mit 429 und die App sagt nichts; Anfragen auf das Minimum senken",
      "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo",
      "rank": 351
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-textes-francais",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; textes ; français",
+    "en": "Cadre ; textes ; français",
+    "de": "Cadre ; textes ; français",
+    "es": "Cadre ; textes ; français"
+   },
+   "items": [
+    {
+     "id": "SOG-0601",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Français : une seule règle pour l'apostrophe à l'affichage (à instruire)",
+     "en": "Français : une seule règle pour l'apostrophe à l'affichage (à instruire)",
+     "de": "Français : une seule règle pour l'apostrophe à l'affichage (à instruire)",
+     "es": "Français : une seule règle pour l'apostrophe à l'affichage (à instruire)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-telephone",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; téléphone",
+    "en": "Cadre ; téléphone",
+    "de": "Cadre ; téléphone",
+    "es": "Cadre ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0585",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Maintenance › Administration › Dossiers du poste : à 390, un chemin long fait défiler la page en largeur",
+     "en": "Maintenance › Administration › Dossiers du poste : à 390, un chemin long fait défiler la page en largeur",
+     "de": "Maintenance › Administration › Dossiers du poste : à 390, un chemin long fait défiler la page en largeur",
+     "es": "Maintenance › Administration › Dossiers du poste : à 390, un chemin long fait défiler la page en largeur",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-ecriture-locale-messages-d-erreur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; écriture locale ; messages d'erreur",
+    "en": "Cadre ; écriture locale ; messages d'erreur",
+    "de": "Cadre ; écriture locale ; messages d'erreur",
+    "es": "Cadre ; écriture locale ; messages d'erreur"
+   },
+   "items": [
+    {
+     "id": "SOG-0606",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Écran : le texte brut d'une erreur du navigateur s'affiche au pilote (« Mission non enregistrée : quota exceeded »)",
+     "en": "Écran : le texte brut d'une erreur du navigateur s'affiche au pilote (« Mission non enregistrée : quota exceeded »)",
+     "de": "Écran : le texte brut d'une erreur du navigateur s'affiche au pilote (« Mission non enregistrée : quota exceeded »)",
+     "es": "Écran : le texte brut d'une erreur du navigateur s'affiche au pilote (« Mission non enregistrée : quota exceeded »)"
     }
    ]
   },
@@ -6931,6 +8885,27 @@
    ]
   },
   {
+   "id": "maintenance-carburant-calcul-de-route-base-aeronautique",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; calcul de route ; base aéronautique",
+    "en": "Carburant ; calcul de route ; base aéronautique",
+    "de": "Carburant ; calcul de route ; base aéronautique",
+    "es": "Carburant ; calcul de route ; base aéronautique"
+   },
+   "items": [
+    {
+     "id": "SOG-0695",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Calcul de route : une base périmée refuse le calcul au lieu de le dire (régression)",
+     "en": "Calcul de route : une base périmée refuse le calcul au lieu de le dire (régression)",
+     "de": "Calcul de route : une base périmée refuse le calcul au lieu de le dire (régression)",
+     "es": "Calcul de route : une base périmée refuse le calcul au lieu de le dire (régression)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-carburant-carte-couverture-des-donnees",
    "app": "maintenance",
    "label": {
@@ -6968,7 +8943,8 @@
      "fr": "Carburant : aucun dégagement proposé pour Sarajevo (LQSA) — « aucun terrain entre 30 et 300 NM ne passe la piste et les moyens »",
      "en": "Fuel: no alternate offered for Sarajevo (LQSA) — no aerodrome within 30–300 NM passes runway and aids",
      "de": "Kraftstoff: Kein Ausweichflugplatz für Sarajevo (LQSA) – keiner im Umkreis von 30–300 NM besteht Piste und Hilfen",
-     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas"
+     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas",
+     "test": true
     }
    ]
   },
@@ -6992,6 +8968,27 @@
      "es": "LFPO: pista 02 propuesta para la salida sin ninguna salida publicada",
      "milestone": "6.0.0-beta.1",
      "rank": 96
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-procedures-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; procédures ; Données",
+    "en": "Carburant ; procédures ; Données",
+    "de": "Carburant ; procédures ; Données",
+    "es": "Carburant ; procédures ; Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0688",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : la lecture des procédures d'un terrain échoue sans dire pourquoi",
+     "en": "Carburant : la lecture des procédures d'un terrain échoue sans dire pourquoi",
+     "de": "Carburant : la lecture des procédures d'un terrain échoue sans dire pourquoi",
+     "es": "Carburant : la lecture des procédures d'un terrain échoue sans dire pourquoi"
     }
    ]
   },
@@ -7059,6 +9056,27 @@
      "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
      "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)",
      "rank": 354
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-route-base-aeronautique-priorite-p1-avant-le-tag-de-v6-0-0-alpha-5-corrigee-ou-dite-dans-known-gaps-sur-decision-de-l-ergonome",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; route ; base aéronautique. **Priorité :** P1 — avant le tag de v6.0.0-alpha.5 (corrigée, ou dite dans « Known gaps » sur décision de l'ergonome)",
+    "en": "Carburant ; route ; base aéronautique. **Priorité :** P1 — avant le tag de v6.0.0-alpha.5 (corrigée, ou dite dans « Known gaps » sur décision de l'ergonome)",
+    "de": "Carburant ; route ; base aéronautique. **Priorité :** P1 — avant le tag de v6.0.0-alpha.5 (corrigée, ou dite dans « Known gaps » sur décision de l'ergonome)",
+    "es": "Carburant ; route ; base aéronautique. **Priorité :** P1 — avant le tag de v6.0.0-alpha.5 (corrigée, ou dite dans « Known gaps » sur décision de l'ergonome)"
+   },
+   "items": [
+    {
+     "id": "SOG-0687",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carburant : un code de terrain dit « point inconnu de la base » (régression)",
+     "en": "Carburant : un code de terrain dit « point inconnu de la base » (régression)",
+     "de": "Carburant : un code de terrain dit « point inconnu de la base » (régression)",
+     "es": "Carburant : un code de terrain dit « point inconnu de la base » (régression)"
     }
    ]
   },
@@ -7169,6 +9187,28 @@
      "de": "BLOCKIEREND am Telefon: die Karte endet ohne Daten nach dem Ankreuzen von « Um den Flug » — die Basis wird von gitlab.com nicht vollständig gelesen",
      "es": "BLOQUEANTE en el teléfono: el Mapa acaba sin datos tras marcar « Alrededor del vuelo » — la base no se lee entera desde gitlab.com",
      "rank": 355,
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carte-procedures-fiabilite-des-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carte ; procédures ; fiabilité des données",
+    "en": "Carte ; procédures ; fiabilité des données",
+    "de": "Carte ; procédures ; fiabilité des données",
+    "es": "Carte ; procédures ; fiabilité des données"
+   },
+   "items": [
+    {
+     "id": "SOG-0602",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Carte : « ⌛ » remplacé par le mot « périmé » partout où il sert encore",
+     "en": "Carte : « ⌛ » remplacé par le mot « périmé » partout où il sert encore",
+     "de": "Carte : « ⌛ » remplacé par le mot « périmé » partout où il sert encore",
+     "es": "Carte : « ⌛ » remplacé par le mot « périmé » partout où il sert encore",
      "test": true
     }
    ]
@@ -7310,8 +9350,7 @@
      "en": "Data: a country stays orange “new” after recompute and publication, until a forced reload",
      "de": "Daten: ein Land bleibt nach Neuberechnung und Veröffentlichung orange „neu“, bis zu einem erzwungenen Neuladen",
      "es": "Datos: un país sigue en naranja «nuevo» tras recalcular y publicar, hasta una recarga forzada",
-     "rank": 244,
-     "test": true
+     "rank": 244
     },
     {
      "id": "SOG-0079",
@@ -7411,8 +9450,7 @@
      "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
      "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
      "es": "Fuentes para descargar uno mismo: enlaces directos (AIP danés y sueco) y un paso a paso que dice qué archivo tomar",
-     "rank": 254,
-     "test": true
+     "rank": 254
     },
     {
      "id": "SOG-0191",
@@ -7422,8 +9460,7 @@
      "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
      "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
      "es": "Puntos VFR: una descarga detenida y una construcción dicen «al día» en vez de «parcialmente al día»",
-     "rank": 255,
-     "test": true
+     "rank": 255
     },
     {
      "id": "SOG-0197",
@@ -7483,8 +9520,7 @@
      "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
      "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
      "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)",
-     "rank": 261,
-     "test": true
+     "rank": 261
     },
     {
      "id": "SOG-0244",
@@ -7649,6 +9685,27 @@
    ]
   },
   {
+   "id": "maintenance-donnees-espagne-sol",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; Espagne ; sol",
+    "en": "Données ; Espagne ; sol",
+    "de": "Données ; Espagne ; sol",
+    "es": "Données ; Espagne ; sol"
+   },
+   "items": [
+    {
+     "id": "SOG-0697",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Espagne : le sol de l'AIP ENAIRE est lisible (au moins en partie)",
+     "en": "Espagne : le sol de l'AIP ENAIRE est lisible (au moins en partie)",
+     "de": "Espagne : le sol de l'AIP ENAIRE est lisible (au moins en partie)",
+     "es": "Espagne : le sol de l'AIP ENAIRE est lisible (au moins en partie)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-donnees-aide",
    "app": "maintenance",
    "label": {
@@ -7666,8 +9723,7 @@
      "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
      "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
      "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros",
-     "rank": 270,
-     "test": true
+     "rank": 270
     }
    ]
   },
@@ -7717,6 +9773,48 @@
    ]
   },
   {
+   "id": "maintenance-donnees-chaine-ead-sources-enr-par-etat",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; chaîne EAD ; sources ENR par État",
+    "en": "Données ; chaîne EAD ; sources ENR par État",
+    "de": "Données ; chaîne EAD ; sources ENR par État",
+    "es": "Données ; chaîne EAD ; sources ENR par État"
+   },
+   "items": [
+    {
+     "id": "SOG-0616",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Les pages ENR des États par la chaîne EAD du lanceur, au lieu d'un dépôt à la main",
+     "en": "Les pages ENR des États par la chaîne EAD du lanceur, au lieu d'un dépôt à la main",
+     "de": "Les pages ENR des États par la chaîne EAD du lanceur, au lieu d'un dépôt à la main",
+     "es": "Les pages ENR des États par la chaîne EAD du lanceur, au lieu d'un dépôt à la main"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-espaces-rad",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; espaces ; RAD",
+    "en": "Données ; espaces ; RAD",
+    "de": "Données ; espaces ; RAD",
+    "es": "Données ; espaces ; RAD"
+   },
+   "items": [
+    {
+     "id": "SOG-0584",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : contours des FIR et secteurs nommés par les règles du RAD (source décidée par écrit)",
+     "en": "Données : contours des FIR et secteurs nommés par les règles du RAD (source décidée par écrit)",
+     "de": "Données : contours des FIR et secteurs nommés par les règles du RAD (source décidée par écrit)",
+     "es": "Données : contours des FIR et secteurs nommés par les règles du RAD (source décidée par écrit)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-donnees-lanceur",
    "app": "maintenance",
    "label": {
@@ -7744,8 +9842,7 @@
      "en": "Data: ten seconds after opening, the state of the base is still not read",
      "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
      "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse",
-     "rank": 471,
-     "test": true
+     "rank": 471
     }
    ]
   },
@@ -7767,8 +9864,72 @@
      "en": "GFS weather: leaving the page during the rebuild stops everything — resume where it was, without downloading again",
      "de": "GFS-Wetter: das Verlassen der Seite während des Neuaufbaus stoppt alles — dort fortsetzen, wo es war, ohne erneut herunterzuladen",
      "es": "Meteorología GFS: salir de la página durante la reconstrucción lo detiene todo — reanudar donde estaba, sin volver a descargar",
-     "rank": 472,
+     "rank": 472
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-paquets-mise-a-jour",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; paquets ; mise à jour",
+    "en": "Données ; paquets ; mise à jour",
+    "de": "Données ; paquets ; mise à jour",
+    "es": "Données ; paquets ; mise à jour"
+   },
+   "items": [
+    {
+     "id": "SOG-0589",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données : « Mettre à jour (7) » compte les pays du paquet, pas ceux que le geste traitera",
+     "en": "Données : « Mettre à jour (7) » compte les pays du paquet, pas ceux que le geste traitera",
+     "de": "Données : « Mettre à jour (7) » compte les pays du paquet, pas ceux que le geste traitera",
+     "es": "Données : « Mettre à jour (7) » compte les pays du paquet, pas ceux que le geste traitera",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-pays-paquets",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; pays ; paquets",
+    "en": "Données ; pays ; paquets",
+    "de": "Données ; pays ; paquets",
+    "es": "Données ; pays ; paquets"
+   },
+   "items": [
+    {
+     "id": "SOG-0588",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données : la fiche d'un pays affiche le premier groupe venu (« FR · groupe Amérique du Nord »)",
+     "en": "Données : la fiche d'un pays affiche le premier groupe venu (« FR · groupe Amérique du Nord »)",
+     "de": "Données : la fiche d'un pays affiche le premier groupe venu (« FR · groupe Amérique du Nord »)",
+     "es": "Données : la fiche d'un pays affiche le premier groupe venu (« FR · groupe Amérique du Nord »)",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-poste-occupe",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; poste occupé",
+    "en": "Données ; poste occupé",
+    "de": "Données ; poste occupé",
+    "es": "Données ; poste occupé"
+   },
+   "items": [
+    {
+     "id": "SOG-0696",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "« Une opération est en cours : voyez son avancement. » sans lien ni nom",
+     "en": "« Une opération est en cours : voyez son avancement. » sans lien ni nom",
+     "de": "« Une opération est en cours : voyez son avancement. » sans lien ni nom",
+     "es": "« Une opération est en cours : voyez son avancement. » sans lien ni nom"
     }
    ]
   },
@@ -7795,6 +9956,136 @@
    ]
   },
   {
+   "id": "maintenance-donnees-procedures-aerodb",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; procédures ; AeroDB",
+    "en": "Données ; procédures ; AeroDB",
+    "de": "Données ; procédures ; AeroDB",
+    "es": "Données ; procédures ; AeroDB"
+   },
+   "items": [
+    {
+     "id": "SOG-0686",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Procédures : le CIFP d'X-Plane comme source de repli (convertisseur retrouvé)",
+     "en": "Procédures : le CIFP d'X-Plane comme source de repli (convertisseur retrouvé)",
+     "de": "Procédures : le CIFP d'X-Plane comme source de repli (convertisseur retrouvé)",
+     "es": "Procédures : le CIFP d'X-Plane comme source de repli (convertisseur retrouvé)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-procedures-chaine-de-lecture",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; procédures ; chaîne de lecture",
+    "en": "Données ; procédures ; chaîne de lecture",
+    "de": "Données ; procédures ; chaîne de lecture",
+    "es": "Données ; procédures ; chaîne de lecture"
+   },
+   "items": [
+    {
+     "id": "SOG-0614",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Données : lecteur de procédures pour le Danemark et la Suède (à instruire après le gel)",
+     "en": "Données : lecteur de procédures pour le Danemark et la Suède (à instruire après le gel)",
+     "de": "Données : lecteur de procédures pour le Danemark et la Suède (à instruire après le gel)",
+     "es": "Données : lecteur de procédures pour le Danemark et la Suède (à instruire après le gel)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-sources-sans-lecteur-procedures-par-etat",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; sources sans lecteur ; procédures par État",
+    "en": "Données ; sources sans lecteur ; procédures par État",
+    "de": "Données ; sources sans lecteur ; procédures par État",
+    "es": "Données ; sources sans lecteur ; procédures par État"
+   },
+   "items": [
+    {
+     "id": "SOG-0615",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données : l'écran invite à déposer des fichiers que la suite ne lit pas, et « Procédures : non » ne dit pas pourquoi",
+     "en": "Données : l'écran invite à déposer des fichiers que la suite ne lit pas, et « Procédures : non » ne dit pas pourquoi",
+     "de": "Données : l'écran invite à déposer des fichiers que la suite ne lit pas, et « Procédures : non » ne dit pas pourquoi",
+     "es": "Données : l'écran invite à déposer des fichiers que la suite ne lit pas, et « Procédures : non » ne dit pas pourquoi",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-sources-a-la-main",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; sources à la main",
+    "en": "Données ; sources à la main",
+    "de": "Données ; sources à la main",
+    "es": "Données ; sources à la main"
+   },
+   "items": [
+    {
+     "id": "SOG-0656",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données, Belgique : le lien vers le fichier à prendre n'est pas affiché ; pourquoi pas directement par l'EAD ?",
+     "en": "Données, Belgique : le lien vers le fichier à prendre n'est pas affiché ; pourquoi pas directement par l'EAD ?",
+     "de": "Données, Belgique : le lien vers le fichier à prendre n'est pas affiché ; pourquoi pas directement par l'EAD ?",
+     "es": "Données, Belgique : le lien vers le fichier à prendre n'est pas affiché ; pourquoi pas directement par l'EAD ?",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-vents-gfs",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; vents GFS",
+    "en": "Données ; vents GFS",
+    "de": "Données ; vents GFS",
+    "es": "Données ; vents GFS"
+   },
+   "items": [
+    {
+     "id": "SOG-0666",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données, vents GFS : ne pas offrir « Construire » pendant l'attente de dix minutes ; une heure, jamais des secondes",
+     "en": "Données, vents GFS : ne pas offrir « Construire » pendant l'attente de dix minutes ; une heure, jamais des secondes",
+     "de": "Données, vents GFS : ne pas offrir « Construire » pendant l'attente de dix minutes ; une heure, jamais des secondes",
+     "es": "Données, vents GFS : ne pas offrir « Construire » pendant l'attente de dix minutes ; une heure, jamais des secondes",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-etat-des-sources-routes",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; état des sources ; routes",
+    "en": "Données ; état des sources ; routes",
+    "de": "Données ; état des sources ; routes",
+    "es": "Données ; état des sources ; routes"
+   },
+   "items": [
+    {
+     "id": "SOG-0568",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données : la France est dite « à jour » alors qu'il lui manque la table des niveaux (levels_fr.json) — aucun geste pour l'obtenir",
+     "en": "Données : la France est dite « à jour » alors qu'il lui manque la table des niveaux (levels_fr.json) — aucun geste pour l'obtenir",
+     "de": "Données : la France est dite « à jour » alors qu'il lui manque la table des niveaux (levels_fr.json) — aucun geste pour l'obtenir",
+     "es": "Données : la France est dite « à jour » alors qu'il lui manque la table des niveaux (levels_fr.json) — aucun geste pour l'obtenir",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "maintenance-donnees-aeronautiques-routes",
    "app": "maintenance",
    "label": {
@@ -7813,6 +10104,27 @@
      "de": "Standardabflüge und -anflüge fehlen in der Basis für große Flugplätze (EDDF, EGGW, Anflüge LFMN): die Anschlussgrenze (ROUTE135) bleibt unentscheidbar",
      "es": "Salidas y llegadas normalizadas ausentes de la base para grandes aeródromos (EDDF, EGGW, llegadas de LFMN): el límite de enlace (ROUTE135) sigue sin poder decidirse",
      "rank": 474
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-d-essai-aerodb-outils",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données d'essai ; AeroDB ; outils",
+    "en": "Données d'essai ; AeroDB ; outils",
+    "de": "Données d'essai ; AeroDB ; outils",
+    "es": "Données d'essai ; AeroDB ; outils"
+   },
+   "items": [
+    {
+     "id": "SOG-0681",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Empaqueter les données d'essai : constituer le corpus réel de chaque poste hors du dépôt",
+     "en": "Empaqueter les données d'essai : constituer le corpus réel de chaque poste hors du dépôt",
+     "de": "Empaqueter les données d'essai : constituer le corpus réel de chaque poste hors du dépôt",
+     "es": "Empaqueter les données d'essai : constituer le corpus réel de chaque poste hors du dépôt"
     }
    ]
   },
@@ -8097,6 +10409,50 @@
    ]
   },
   {
+   "id": "maintenance-lanceur-cadre-messages",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; cadre ; messages",
+    "en": "Lanceur ; cadre ; messages",
+    "de": "Lanceur ; cadre ; messages",
+    "es": "Lanceur ; cadre ; messages"
+   },
+   "items": [
+    {
+     "id": "SOG-0658",
+     "kind": "bug",
+     "state": "done",
+     "fr": "« Le poste fait une autre opération » : dire laquelle, et reprendre seul quand elle finit",
+     "en": "« Le poste fait une autre opération » : dire laquelle, et reprendre seul quand elle finit",
+     "de": "« Le poste fait une autre opération » : dire laquelle, et reprendre seul quand elle finit",
+     "es": "« Le poste fait une autre opération » : dire laquelle, et reprendre seul quand elle finit",
+     "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-journal-des-travaux-tools",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; journal des travaux (tools",
+    "en": "Lanceur ; journal des travaux (tools",
+    "de": "Lanceur ; journal des travaux (tools",
+    "es": "Lanceur ; journal des travaux (tools"
+   },
+   "items": [
+    {
+     "id": "SOG-0683",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Lanceur : deux travaux qui finissent ensemble peuvent perdre une entrée du journal du « dernier résultat »",
+     "en": "Lanceur : deux travaux qui finissent ensemble peuvent perdre une entrée du journal du « dernier résultat »",
+     "de": "Lanceur : deux travaux qui finissent ensemble peuvent perdre une entrée du journal du « dernier résultat »",
+     "es": "Lanceur : deux travaux qui finissent ensemble peuvent perdre une entrée du journal du « dernier résultat »",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "maintenance-lanceur-lecture-des-pdf",
    "app": "maintenance",
    "label": {
@@ -8114,8 +10470,7 @@
      "en": "Launcher: the console is flooded by a repeated PDF-reading warning (“fontTools is required…”)",
      "de": "Starter: die Konsole wird von einer wiederholten PDF-Lesewarnung überflutet („fontTools is required…“)",
      "es": "Lanzador: la consola se inunda con un aviso repetido de lectura de PDF («fontTools is required…»)",
-     "rank": 477,
-     "test": true
+     "rank": 477
     }
    ]
   },
@@ -8334,8 +10689,7 @@
      "fr": "Météo GFS : le rafraîchissement n'aboutit jamais — toujours « réessayer dans … s » ; comprendre, corriger, puis une case « Laisser le lanceur mettre à jour la météo GFS »",
      "en": "GFS weather: refresh never succeeds — always “retry in … s”; understand, fix, then a “Let the launcher update GFS weather” box",
      "de": "GFS-Wetter: Aktualisierung gelingt nie — immer „erneut in … s“; verstehen, beheben, dann ein Kästchen „Den Starter das GFS-Wetter aktualisieren lassen“",
-     "es": "Meteo GFS: la actualización nunca termina — siempre «reintentar en … s»; entender, corregir y luego una casilla «Dejar que el lanzador actualice la meteo GFS»",
-     "test": true
+     "es": "Meteo GFS: la actualización nunca termina — siempre «reintentar en … s»; entender, corregir y luego una casilla «Dejar que el lanzador actualice la meteo GFS»"
     }
    ]
   },
@@ -8390,7 +10744,16 @@
      "fr": "Recette : un verdict validé n'est pas enregistré, deux validations partent d'un seul geste, et ce qui est répondu revient au rechargement",
      "en": "Acceptance page: a validated verdict is not saved, one gesture validates two, and answers come back on reload",
      "de": "Abnahmeseite: ein bestätigtes Urteil wird nicht gespeichert, eine Geste bestätigt zwei, Antworten kehren beim Neuladen zurück",
-     "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar",
+     "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar"
+    },
+    {
+     "id": "SOG-0682",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Recette : la limite des commentaires (2000 signes) est trop basse",
+     "en": "Recette : la limite des commentaires (2000 signes) est trop basse",
+     "de": "Recette : la limite des commentaires (2000 signes) est trop basse",
+     "es": "Recette : la limite des commentaires (2000 signes) est trop basse",
      "test": true
     }
    ]
@@ -8421,8 +10784,7 @@
      "fr": "Routes : lire les voies de la Belgique (ENR 3) dans l'eAIP de skeyes pendant la mise à jour des données",
      "en": "Routes: read the airways of Belgium (ENR 3) from the skeyes eAIP during the data update",
      "de": "Routen: die Luftstraßen Belgiens (ENR 3) während der Datenaktualisierung aus dem eAIP von skeyes lesen",
-     "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos",
-     "test": true
+     "es": "Rutas: leer las aerovías de Bélgica (ENR 3) en el eAIP de skeyes durante la actualización de datos"
     }
    ]
   },
@@ -8455,8 +10817,7 @@
      "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
      "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento",
      "milestone": "6.0.0-alpha.5",
-     "rank": 48,
-     "test": true
+     "rank": 48
     },
     {
      "id": "SOG-0118",
@@ -8557,8 +10918,7 @@
      "en": "Settings: ticking some boxes shifts the screen, and the second click lands anywhere",
      "de": "Einstellungen: Manche Kästchen verschieben den Bildschirm, der zweite Klick landet irgendwo",
      "es": "Ajustes: al marcar ciertas casillas la pantalla se desplaza y el segundo clic cae en cualquier sitio",
-     "rank": 479,
-     "test": true
+     "rank": 479
     }
    ]
   },
@@ -8580,8 +10940,7 @@
      "en": "Settings and Data: three label and link touch-ups",
      "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
      "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces",
-     "rank": 365,
-     "test": true
+     "rank": 365
     },
     {
      "id": "SOG-0324",
@@ -8591,8 +10950,7 @@
      "en": "Settings › Status: one gesture to start again from scratch on this device; the green-brown-green flicker during a rebuild",
      "de": "Einstellungen › Zustand: eine Geste, um auf diesem Gerät neu anzufangen; das Grün-Braun-Grün-Flackern beim Neuaufbau",
      "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir",
-     "rank": 366,
-     "test": true
+     "rank": 366
     }
    ]
   },
@@ -8635,8 +10993,7 @@
      "fr": "Réglages : changer de langue recharge l'application hors du cadre — alerte « rechargements en série » au troisième essai, et Échap ne ferme plus Réglages",
      "en": "Settings: changing language reloads the app outside the frame — “reload loop” alert on the third try, and Escape no longer closes Settings",
      "de": "Einstellungen: Sprachwechsel lädt die App am Rahmen vorbei neu – Warnung „Neuladeschleife“ beim dritten Mal, Escape schließt die Einstellungen nicht mehr",
-     "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes",
-     "test": true
+     "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes"
     }
    ]
   },
@@ -8659,8 +11016,7 @@
      "de": "Einstellungen auf 127.0.0.1:8000 verloren, Oberfläche bleibt auf Englisch",
      "es": "Ajustes perdidos en 127.0.0.1:8000 y la interfaz bloqueada en inglés",
      "milestone": "6.0.0-alpha.5",
-     "rank": 44,
-     "test": true
+     "rank": 44
     }
    ]
   },
@@ -8688,6 +11044,28 @@
    ]
   },
   {
+   "id": "maintenance-simbrief-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "SimBrief ; lanceur",
+    "en": "SimBrief ; lanceur",
+    "de": "SimBrief ; lanceur",
+    "es": "SimBrief ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0677",
+     "kind": "bug",
+     "state": "done",
+     "fr": "SimBrief : HTTP 400 à l'import du dernier plan — lire la cause et la dire en français",
+     "en": "SimBrief : HTTP 400 à l'import du dernier plan — lire la cause et la dire en français",
+     "de": "SimBrief : HTTP 400 à l'import du dernier plan — lire la cause et la dire en français",
+     "es": "SimBrief : HTTP 400 à l'import du dernier plan — lire la cause et la dire en français",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "maintenance-socle-signaler-roadmap-recette",
    "app": "maintenance",
    "label": {
@@ -8705,8 +11083,7 @@
      "en": "Reports: a list of bugs and requests, with search, comments and priority",
      "de": "Meldungen: eine Liste der Fehler und Wünsche, mit Suche, Kommentaren und Priorität",
      "es": "Informes: una lista de errores y peticiones, con búsqueda, comentarios y prioridad",
-     "rank": 480,
-     "test": true
+     "rank": 480
     }
    ]
   },
@@ -8728,8 +11105,7 @@
      "en": "Itinerary chosen on the map: back in Fuel it only shows much later when a synchronisation is running",
      "de": "Auf der Karte gewählte Route: zurück im Kraftstoff erscheint sie erst viel später, wenn eine Synchronisierung läuft",
      "es": "Itinerario elegido en el mapa: de vuelta en Combustible solo aparece mucho después cuando hay una sincronización en curso",
-     "rank": 481,
-     "test": true
+     "rank": 481
     }
    ]
   },
@@ -8871,7 +11247,28 @@
      "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
      "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
      "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)",
-     "rank": 311,
+     "rank": 311
+    }
+   ]
+  },
+  {
+   "id": "maintenance-vol-en-cours-position-x-plane-cadre-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Vol en cours ; position ; X-Plane ; cadre ; lanceur",
+    "en": "Vol en cours ; position ; X-Plane ; cadre ; lanceur",
+    "de": "Vol en cours ; position ; X-Plane ; cadre ; lanceur",
+    "es": "Vol en cours ; position ; X-Plane ; cadre ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0622",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Vol en cours : le suivi de position meurt après un changement de lieu dans X-Plane, et rien ne le dit",
+     "en": "Vol en cours : le suivi de position meurt après un changement de lieu dans X-Plane, et rien ne le dit",
+     "de": "Vol en cours : le suivi de position meurt après un changement de lieu dans X-Plane, et rien ne le dit",
+     "es": "Vol en cours : le suivi de position meurt après un changement de lieu dans X-Plane, et rien ne le dit",
      "test": true
     }
    ]
@@ -8900,6 +11297,28 @@
    ]
   },
   {
+   "id": "maintenance-cadre-chargeur-de-modules",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; chargeur de modules",
+    "en": "cadre ; chargeur de modules",
+    "de": "cadre ; chargeur de modules",
+    "es": "cadre ; chargeur de modules"
+   },
+   "items": [
+    {
+     "id": "SOG-0631",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Cadre : un module dont l'import échoue une fois affiche « impossible à charger » sans nouvel essai",
+     "en": "Cadre : un module dont l'import échoue une fois affiche « impossible à charger » sans nouvel essai",
+     "de": "Cadre : un module dont l'import échoue une fois affiche « impossible à charger » sans nouvel essai",
+     "es": "Cadre : un module dont l'import échoue une fois affiche « impossible à charger » sans nouvel essai",
+     "test": true
+    }
+   ]
+  },
+  {
    "id": "maintenance-cadre-signalements",
    "app": "maintenance",
    "label": {
@@ -8918,6 +11337,24 @@
      "de": "Melden: dieselbe Meldung kommt zwei- oder dreimal im Repository an",
      "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio",
      "rank": 370
+    },
+    {
+     "id": "SOG-0689",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Mes signalements : voir la capture jointe d'un geste",
+     "en": "Mes signalements : voir la capture jointe d'un geste",
+     "de": "Mes signalements : voir la capture jointe d'un geste",
+     "es": "Mes signalements : voir la capture jointe d'un geste"
+    },
+    {
+     "id": "SOG-0693",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Signaler : coller une image dans la fenêtre d'ajout",
+     "en": "Signaler : coller une image dans la fenêtre d'ajout",
+     "de": "Signaler : coller une image dans la fenêtre d'ajout",
+     "es": "Signaler : coller une image dans la fenêtre d'ajout"
     }
    ]
   },
@@ -8985,6 +11422,28 @@
      "de": "Sicherheit: eine aus dem Daten-Repository gelesene Datei hat keine Größengrenze (bis zum Ende gelesen, im Speicher, am Telefon)",
      "es": "Seguridad: un archivo leído del repositorio de datos no tiene tope de tamaño (leído hasta el final, en memoria, en el teléfono)",
      "rank": 373
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-veilleur-de-module-meta-watch-poids-de-page",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; veilleur de module (meta.watch) ; poids de page",
+    "en": "cadre ; veilleur de module (meta.watch) ; poids de page",
+    "de": "cadre ; veilleur de module (meta.watch) ; poids de page",
+    "es": "cadre ; veilleur de module (meta.watch) ; poids de page"
+   },
+   "items": [
+    {
+     "id": "SOG-0630",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Cadre : le veilleur de module charge les module.js de toutes les applis sur chaque page (+2 à +4 Mo)",
+     "en": "Cadre : le veilleur de module charge les module.js de toutes les applis sur chaque page (+2 à +4 Mo)",
+     "de": "Cadre : le veilleur de module charge les module.js de toutes les applis sur chaque page (+2 à +4 Mo)",
+     "es": "Cadre : le veilleur de module charge les module.js de toutes les applis sur chaque page (+2 à +4 Mo)",
+     "test": true
     }
    ]
   },
@@ -10194,14 +12653,77 @@
   }
  ],
  "reports": {
+  "SIG-00481683d9": {
+   "fiche": "SOG-0350"
+  },
+  "SIG-01b15ed33f": {
+   "fiche": "SOG-0696"
+  },
   "SIG-02d3670a2b": {
    "fiche": "SOG-0409"
+  },
+  "SIG-091cf7d2c6": {
+   "fiche": "SOG-0214"
   },
   "SIG-0a6b49a578": {
    "fiche": "SOG-0473"
   },
+  "SIG-0b5eeccc1f": {
+   "fiche": "SOG-0661"
+  },
+  "SIG-0e221f694d": {
+   "fiche": "SOG-0378"
+  },
+  "SIG-1018b02553": {
+   "fiche": "SOG-0365"
+  },
+  "SIG-1152f2bcd7": {
+   "fiche": "SOG-0377"
+  },
+  "SIG-12b4a586f4": {
+   "fiche": "SOG-0697"
+  },
+  "SIG-1746100209": {
+   "fiche": "SOG-0335"
+  },
+  "SIG-18c25190d3": {
+   "fiche": "SOG-0699"
+  },
+  "SIG-1b18097955": {
+   "fiche": "SOG-0362"
+  },
+  "SIG-1ebd7c77e6": {
+   "fiche": "SOG-0346"
+  },
+  "SIG-2065df6937": {
+   "fiche": "SOG-0368"
+  },
+  "SIG-2240676cf1": {
+   "fiche": "SOG-0370"
+  },
+  "SIG-2279f3ecbc": {
+   "fiche": "SOG-0349"
+  },
+  "SIG-24061986af": {
+   "fiche": "SOG-0359"
+  },
+  "SIG-247671f519": {
+   "fiche": "SOG-0343"
+  },
   "SIG-2f5a1fda7f": {
    "fiche": "SOG-0477"
+  },
+  "SIG-3aafd2c5d2": {
+   "fiche": "SOG-0398"
+  },
+  "SIG-3c1a7157a9": {
+   "fiche": "SOG-0698"
+  },
+  "SIG-3f57372340": {
+   "fiche": "SOG-0694"
+  },
+  "SIG-402c3bb654": {
+   "fiche": "SOG-0363"
   },
   "SIG-434254a246": {
    "fiche": "SOG-0369"
@@ -10209,11 +12731,44 @@
   "SIG-4789f2f9a6": {
    "fiche": "SOG-0515"
   },
+  "SIG-4a8b8c3e66": {
+   "fiche": "SOG-0687"
+  },
+  "SIG-505d36df8f": {
+   "fiche": "SOG-0335"
+  },
+  "SIG-52299137e0": {
+   "fiche": "SOG-0345"
+  },
+  "SIG-533be27920": {
+   "fiche": "SOG-0387"
+  },
   "SIG-53e48e89e6": {
    "fiche": "SOG-0384"
   },
   "SIG-553e91e7b9": {
    "fiche": "SOG-0434"
+  },
+  "SIG-57676090f8": {
+   "fiche": "SOG-0359"
+  },
+  "SIG-5985be4155": {
+   "fiche": "SOG-0364"
+  },
+  "SIG-5a0fb13413": {
+   "fiche": "SOG-0361"
+  },
+  "SIG-5a912f9cff": {
+   "fiche": "SOG-0373"
+  },
+  "SIG-6074158155": {
+   "fiche": "SOG-0361"
+  },
+  "SIG-6118cebc17": {
+   "fiche": "SOG-0374"
+  },
+  "SIG-612c92c861": {
+   "fiche": "SOG-0695"
   },
   "SIG-6afcbd61c3": {
    "fiche": "SOG-0519"
@@ -10221,14 +12776,74 @@
   "SIG-6fe9d5751f": {
    "fiche": "SOG-0518"
   },
+  "SIG-714ae8d87b": {
+   "fiche": "SOG-0393"
+  },
+  "SIG-75dd5d8449": {
+   "fiche": "SOG-0361"
+  },
+  "SIG-76004c9aba": {
+   "fiche": "SOG-0690"
+  },
   "SIG-7b206c7a34": {
    "fiche": "SOG-0503"
+  },
+  "SIG-7e08d10ee2": {
+   "fiche": "SOG-0362"
+  },
+  "SIG-82c0bdfa32": {
+   "fiche": "SOG-0689"
+  },
+  "SIG-84487d6ca3": {
+   "fiche": "SOG-0399"
+  },
+  "SIG-85c0675fe9": {
+   "fiche": "SOG-0380"
+  },
+  "SIG-85c7175fbf": {
+   "fiche": "SOG-0381"
+  },
+  "SIG-869164bf9f": {
+   "fiche": "SOG-0654"
+  },
+  "SIG-869e60dbce": {
+   "fiche": "SOG-0379"
+  },
+  "SIG-88a5feb299": {
+   "fiche": "SOG-0660"
+  },
+  "SIG-88ac8414df": {
+   "fiche": "SOG-0658"
   },
   "SIG-89463320ce": {
    "fiche": "SOG-0527"
   },
+  "SIG-89de9df5bd": {
+   "fiche": "SOG-0656"
+  },
+  "SIG-8d404db8bf": {
+   "fiche": "SOG-0657"
+  },
   "SIG-905ec186d3": {
    "fiche": "SOG-0385"
+  },
+  "SIG-92f9b416bf": {
+   "fiche": "SOG-0655"
+  },
+  "SIG-954996e25a": {
+   "fiche": "SOG-0656"
+  },
+  "SIG-9709eade1c": {
+   "fiche": "SOG-0648"
+  },
+  "SIG-975a2fd17b": {
+   "fiche": "SOG-0567"
+  },
+  "SIG-9a3ed101a5": {
+   "fiche": "SOG-0649"
+  },
+  "SIG-9ab775b5ac": {
+   "fiche": "SOG-0410"
   },
   "SIG-9cdb5bd567": {
    "fiche": "SOG-0372"
@@ -10236,8 +12851,35 @@
   "SIG-a8e8977878": {
    "fiche": "SOG-0528"
   },
+  "SIG-aae3d04ef6": {
+   "fiche": "SOG-0665"
+  },
+  "SIG-adf8af6e6e": {
+   "fiche": "SOG-0415"
+  },
+  "SIG-b0df6d5945": {
+   "fiche": "SOG-0691"
+  },
+  "SIG-b3724ebe3e": {
+   "fiche": "SOG-0662"
+  },
   "SIG-b576067218": {
    "fiche": "SOG-0510"
+  },
+  "SIG-b6041e4e4c": {
+   "fiche": "SOG-0664"
+  },
+  "SIG-bba1ce0154": {
+   "fiche": "SOG-0368"
+  },
+  "SIG-c14d0ed692": {
+   "fiche": "SOG-0360"
+  },
+  "SIG-c23cba5ed4": {
+   "fiche": "SOG-0663"
+  },
+  "SIG-c3b88a2de5": {
+   "fiche": "SOG-0382"
   },
   "SIG-c3d5390007": {
    "fiche": "SOG-0462"
@@ -10245,8 +12887,47 @@
   "SIG-c89712c514": {
    "fiche": "SOG-0509"
   },
+  "SIG-ce4fb8127b": {
+   "fiche": "SOG-0335"
+  },
+  "SIG-cf81915b6a": {
+   "fiche": "SOG-0634"
+  },
+  "SIG-cf9beb003e": {
+   "fiche": "SOG-0659"
+  },
+  "SIG-d07788b715": {
+   "fiche": "SOG-0688"
+  },
+  "SIG-d45d692f6f": {
+   "fiche": "SOG-0360"
+  },
+  "SIG-d58814f728": {
+   "fiche": "SOG-0401"
+  },
+  "SIG-e5eef07755": {
+   "fiche": "SOG-0344"
+  },
+  "SIG-eb2f2f0a40": {
+   "fiche": "SOG-0362"
+  },
+  "SIG-ed3861b599": {
+   "fiche": "SOG-0212"
+  },
   "SIG-f53a8897b8": {
    "fiche": "SOG-0388"
+  },
+  "SIG-f61406f59d": {
+   "fiche": "SOG-0407"
+  },
+  "SIG-fb2edb7d93": {
+   "fiche": "SOG-0404"
+  },
+  "SIG-fb7a436f4c": {
+   "fiche": "SOG-0692"
+  },
+  "SIG-fccfe4101b": {
+   "fiche": "SOG-0635"
   }
  },
  "capabilities": {
