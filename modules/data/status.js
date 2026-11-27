@@ -28,6 +28,9 @@ import {
   refreshRows
 } from './screen.js';
 import {
+  greyReasonHtml
+} from './busy.js';
+import {
   uploadHtml,
   zoneUploadOff
 } from './upload.js';
@@ -307,7 +310,7 @@ function pickHtml(id, z, st, msg, main = 'data-zone-action') {
   const off = busy || g.disabled,
     grey = greyOnce(busy ? 'busy' : g.reason,
       'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
-  return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick data-seen><span class="f-muted">${esc(tt(TX.zm.seen, { zip: seen.zip }))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p><p class="d-zact d-zalt" data-zone-alt="${esc(id)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
+  return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick data-seen><span class="f-muted">${esc(tt(TX.zm.seen, { zip: seen.zip }))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${greyReasonHtml(grey)}</span>` : ''}</p><p class="d-zact d-zalt" data-zone-alt="${esc(id)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
 }
 /** La ligne d'une zone qu'aucune construction ne traite faute de la coche d'usage personnel : ce que la coche ouvre (la source nommée) et le lien qui y mène — aucun fichier à prendre ni à choisir (la source est là). */
 function personalHtml(id, z) {
@@ -367,7 +370,7 @@ export function zoneActionHtml(id) {
       off = busy || g.disabled,
       grey = greyOnce(busy ? 'busy' : g.reason,
         'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
-    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
+    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${greyReasonHtml(grey)}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
   }
   return st === 'up-to-date' && S.zoneMsg.get(id)?.kind === 'hand' ? msg :
     ''; // l'édition lue d'un fichier pris à la main reste dite quand la zone est à jour

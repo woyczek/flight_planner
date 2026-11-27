@@ -48,6 +48,7 @@ import {
 } from './follow.js';
 import {
   busyCardHtml,
+  greyReasonHtml,
   showBusy
 } from './busy.js';
 
@@ -216,7 +217,7 @@ function changeHtml() {
     extra = (data?.local || []).filter(l => !CHANGE.some(c => c.id === l.id)),
     lines = CHANGE.map(c => changeLine(c, data, grey)).join('') + extra.map(extraLine).join(''),
     why = [...grey].find(r => greyOnce(r, 'base'));
-  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${greyReasonHtml(why)}</p>` : ''}`, tt(TX.d2.pillSources, {
     n: CHANGE.length + extra.length
   }));
 }

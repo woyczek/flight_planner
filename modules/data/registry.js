@@ -23,6 +23,7 @@ import {
   uploadOff
 } from './upload.js';
 import {
+  greyReasonHtml,
   showBusy
 } from './busy.js';
 
@@ -63,7 +64,7 @@ export function registryBody() {
     up = reg.up,
     pct = up && up.total > 0 ? Math.min(100, Math.floor(100 * up.loaded / up.total)) : 0,
     gesture = up ? `<p data-reg-uploading><progress max="100" value="${pct}" aria-label="${esc(tt(TX.up.running, { name: up.name, p: pct }))}"></progress> <span data-reg-up-text>${esc(tt(TX.up.running, { name: up.name, p: pct }))}</span> <button type="button" data-act="reg-cancel">${esc(tt(TX.up.cancel))}</button></p>` :
-    `<p><button type="button" class="f-btn primary" data-act="reg-choose"${why ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${why ? ` <span class="f-muted" data-reg-why="${why}">${esc(tt(TX.greyReason[why]))}</span>` : ''}</p>`;
+    `<p><button type="button" class="f-btn primary" data-act="reg-choose"${why ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${why ? ` <span class="f-muted" data-reg-why="${why}">${greyReasonHtml(why)}</span>` : ''}</p>`;
   return `<p class="f-muted">${esc(word('hint'))}</p>
     <p data-reg-state>${esc(dep ? word('stateOn', { d: dateOf(dep.at) || '?' }) : word('stateOff'))}</p>
     <p>${esc(word('get'))} <a href="${DGAC_URL}" target="_blank" rel="noopener noreferrer">${esc(word('site'))}</a></p>

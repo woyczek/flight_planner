@@ -38,6 +38,50 @@ export function opName(r) {
     text = [set ? tt(set) : frame(SETS, r.set) || r.set, verb ? tt(verb) : frame(VERBS, r.verb) || r.verb].filter(Boolean).join(' · ');
   return (text || '?') + zones;
 }
+/** Le nom de l'opération qui tient le poste, en mots (SOG-0696) : celle de cet écran (S.run, la mise à jour d'un pays, la chaîne, une publication, les routes, le synoptique) ou celle que le lanceur dit en
+ *  cours (S.busy, S.other) ; '' quand l'écran ne sait pas la nommer. */
+export function busyName() {
+  const other = S.busy?.running || (S.other?.id ? M.runningOf(S.other) : null);
+  if (S.run?.verb) return opName({
+    set: S.run.set,
+    verb: S.run.verb,
+    args: S.run.args || {}
+  });
+  if (S.chain) return tt(TX.updateAll);
+  if (S.zop) return tt(TX.cwb.update);
+  if (other) return opName(other);
+  if (S.pub?.phase) return tt(TX.busy.verbs.publish);
+  if (S.route?.phase) return opName({
+    set: 'route',
+    verb: 'import-rad'
+  });
+  if (S.world?.phase === 'running') return opName({
+    set: 'weather',
+    verb: 'world'
+  });
+  return '';
+}
+/** La raison grise « une opération est en cours » (SOG-0696 : « voyez son avancement » sans lien ni nom) : la phrase qui NOMME l'opération, puis le lien qui mène à l'endroit où son avancement se lit ; en HTML. */
+export function greyBusyHtml() {
+  const name = busyName(),
+    link = ` <button type="button" class="d-link" data-act="see-busy">${esc(tt(TX.zx.seeBusy))}</button>`;
+  if (name) return `${esc(tt(TX.zx.greyBusy, { op: name }))}${link}`;
+  // une opération lancée ailleurs, que l'écran ne sait pas nommer : sa phrase, avec son point (celui de la ponctuation, le même dans les quatre langues), et le lien SEULEMENT si la carte de cette opération est à l'écran (S.busy, S.other)
+  return `${esc(tt(TX.greyReason.busy))}.${S.busy?.running || S.other?.id ? link : ''}`;
+}
+/** La raison grise d'un bouton, en HTML (SOG-0696, la règle de l'ergonome pour TOUT geste gris de raison « busy » : la phrase nomme l'opération et donne « Voir son avancement »). */
+export function greyReasonHtml(reason) {
+  return reason === 'busy' ? greyBusyHtml() : esc(tt(TX.greyReason[reason]));
+}
+/** Le lien « Voir son avancement » : la carte de l'opération, ou son avancement, vient sous les yeux. */
+export function seeBusy() {
+  const at = [...(S.body?.querySelectorAll(
+    '[data-busy-card], [data-running], [data-publishing], [data-route-running], [data-world-running]') || [])].find(el => el
+    .getClientRects().length);
+  at?.scrollIntoView({
+    block: 'center'
+  });
+}
 /** L'heure de départ, en UTC (« 16:30Z », avec le jour et le mois quand ce n'est pas aujourd'hui), '' si le lanceur ne l'a pas dite. */
 function startedText(r) {
   if (!r.started) return '';

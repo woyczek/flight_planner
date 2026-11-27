@@ -103,7 +103,8 @@ import {
   removeZones
 } from './screen.js';
 import {
-  busyCardHtml
+  busyCardHtml,
+  greyBusyHtml
 } from './busy.js';
 import {
   selBarHtml
@@ -152,7 +153,7 @@ const uploadWhy = () => !S.ctx.launcher ? 'no-launcher' : busyNow() || S.upload 
 /** La raison écrite À CÔTÉ d'un bouton gris de la fiche (jamais un bouton gris seul) ; '' quand la carte de l'opération en cours, dans la fiche, la dit déjà. */
 function sheetGrey(reason) {
   if (!reason || reason === 'busy' && busyCardHtml('base', 'sheet')) return '';
-  return ` <span class="f-muted" data-grey="${esc(reason)}">${esc(tt(reason === 'busy' && progressHere() ? TX.zx.greyBusy : M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>`;
+  return ` <span class="f-muted" data-grey="${esc(reason)}">${reason === 'busy' && progressHere() ? greyBusyHtml() : esc(tt(M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>`;
 }
 /** Une zone qui n'est PAS un pays (Atlantique Nord) : toutes les sources que le catalogue lui donne sont hors du groupe « base » (les routes NAT : groupe météo) — sa fiche est courte, sans cases construit ni publié (SOG-0370). */
 export function offCountry(id) {
@@ -857,8 +858,9 @@ function updateBlockHtml(id, seenAny = false, step = null) {
   if (progressOn(id)) return `<div class="d-upd" data-sheet-update data-running>${progressHtml(id)}</div>`; // le bouton DEVIENT son avancement, sur place : l'étape, « n sur m », la barre, « Arrêter »
   let retake = false,
     off = gate.disabled,
-    why = gate.disabled && greyOnce(gate.reason, 'base', 'sheet') ? [gate.reason, tt(gate.reason === 'busy' && progressHere() ? TX.zx
-      .greyBusy : TX.greyReason[gate.reason])] : null,
+    why = gate.disabled && greyOnce(gate.reason, 'base', 'sheet') ? [gate.reason, tt(TX.greyReason[gate.reason]), gate.reason === 'busy' &&
+      progressHere() ? greyBusyHtml() : null
+    ] : null,
     line = '',
     tick = false;
   if (!off && plan) {
@@ -881,7 +883,7 @@ function updateBlockHtml(id, seenAny = false, step = null) {
       l: [plan.fetch.includes(id) ? tt(T.doDl) : '', plan.build.includes(id) ? tt(T.doBuild) : ''].filter(Boolean).join(', ')
     });
   }
-  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${off ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}"${retake ? ' data-retake="1"' : ''}${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
+  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${off ? '' : ' class="primary"'} data-act="sheet-update" data-zone="${esc(id)}"${retake ? ' data-retake="1"' : ''}${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${why[2] ?? esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
 }
 /** Ce qu'une relecture et une mise à jour apporteraient à un pays à jour (SOG-0568) : une ligne par geste, chacune avec son verbe — « Relire ce pays » (sans téléchargement : le lecteur de la suite relit les sources déjà sur le
  *  poste) et « Mettre à jour ce pays » (une pièce jamais lue : une page à télécharger). Les phrases des gains sont écrites dans la table du lanceur (tools/base_gains.py), une par langue ; '' sans gain. */

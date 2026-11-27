@@ -42,7 +42,8 @@ import {
   renderLater
 } from './later.js';
 import {
-  busyCardHtml
+  busyCardHtml,
+  greyReasonHtml
 } from './busy.js';
 import {
   chainBelowHtml,
@@ -695,7 +696,7 @@ function verbsHtml(gate, panel, pk) {
   const base = panel === 'base';
   const dl = `<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>`,
     pick = pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>` : '',
-    pickWhy = pk?.disabled && greyOnce(pk.reason, panel) ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason[pk.reason]))}</p>` : '', // le bouton est gris : sa raison est écrite à côté de lui
+    pickWhy = pk?.disabled && greyOnce(pk.reason, panel) ? `<p class="f-muted" data-pickup-reason>${greyReasonHtml(pk.reason)}</p>` : '', // le bouton est gris : sa raison est écrite à côté de lui
     rebuild = `<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>`,
     purge = `<button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button>`;
   if (!base) return `<p class="d-verbs">${dl}\n      ${pick}${rebuild}\n      ${purge}</p>`;
@@ -774,7 +775,7 @@ function stateHeadHtml() {
     reason = greyOnce(all.gate.reason, 'base', all.only ? 'head' : 'chain'),
     action = none ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : S.attn?.base ? '' : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
     `<p class="d-verbs" data-update-row>${all.html}</p>`,
-    why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(all.gate.reason)}">${esc(tt(TX.greyReason[all.gate.reason]))}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
+    why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(all.gate.reason)}">${greyReasonHtml(all.gate.reason)}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
   const left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
   [], // les zones qui attendent un fichier et que le bouton ne traite pas : à la main de l'utilisateur
     leftTick = sc.counts ? sc.counts.personal.filter(id => !sc.todo.includes(id)) : [], // celles qui attendent la coche d'usage personnel
@@ -844,24 +845,24 @@ export const panelId = box => box.dataset.setPanel || 'base';
 function setInner(panel) {
   if (panel === 'sheets') {
     const gate = gateOf(M.SHEETS.set, undefined, [M.SHEETS.verb]),
-      why = greyOnce(gate.reason, 'sheets') ? tt(TX.greyReason[gate.reason]) : '';
+      why = greyOnce(gate.reason, 'sheets') ? greyReasonHtml(gate.reason) : '';
     return `<h2>${esc(tt(TX.setTitle.sheets))}</h2>
       <p class="d-verbs"><button type="button" class="primary" data-verb="publish-sheets"${gate.verbs[M.SHEETS.verb].disabled ? ' disabled' : ''}>${esc(tt(TX.publish))}</button></p>
-      ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+      ${why ? `<p class="f-muted" data-reason="${gate.reason}">${why}</p>` : ''}
       ${opAreaHtml('sheets')}`;
   }
   const spec = M.SETS[panel],
     ui = PANEL_UI[panel],
     sel = selection(panel),
     gate = gateOf(panel, spec.free ? undefined : sel.ids.length),
-    why = greyOnce(gate.reason, panel) ? tt(TX.greyReason[gate.reason]) : '',
+    why = greyOnce(gate.reason, panel) ? greyReasonHtml(gate.reason) : '',
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2${panel === 'base' ? ' class="f-sr"' : ''}>${esc(tt(ui.title))}</h2>
     ${panel === 'base' ? stateHeadHtml() : `<h3>${esc(tt(ui.items))}</h3>`}
     ${panel === 'base' ? missingHtml() + countriesHtml() : spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
-    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${why}</p>` : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${panel === 'base' ? '' : opAreaHtml(panel)}`;
 }

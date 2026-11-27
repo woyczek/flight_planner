@@ -2894,9 +2894,11 @@ export const TX = {
       'No se pudo leer el estado del país: no se inició nada.'
     ],
     stWhy: ['Pourquoi pas à jour : {r}', 'Why not up to date: {r}', 'Warum nicht aktuell: {r}', 'Por qué no está al día: {r}'],
-    greyBusy: ['Une opération est en cours : voyez son avancement.', 'An operation is running: see its progress.',
-      'Ein Vorgang läuft: sehen Sie seinen Fortschritt.', 'Hay una operación en curso: vea su avance.'
+    // SOG-0696 : la phrase NOMME l'opération et le lien mène à l'endroit où son avancement se lit
+    greyBusy: ['Une opération est en cours : {op}.', 'An operation is running: {op}.', 'Ein Vorgang läuft: {op}.',
+      'Hay una operación en curso: {op}.'
     ],
+    seeBusy: ['Voir son avancement', 'See its progress', 'Fortschritt ansehen', 'Ver su avance'],
     // une source calculée sur ce poste : un fait du pays, jamais une ligne à faire
     computed: ['{s} : calculée le {d}', '{s}: computed on {d}', '{s}: berechnet am {d}', '{s}: calculada el {d}'],
     computedHere: ['{s} : calculée sur ce poste', '{s}: computed on this workstation', '{s}: auf diesem Rechner berechnet',

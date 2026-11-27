@@ -23,6 +23,7 @@ import {
   uploadOff
 } from './upload.js';
 import {
+  greyReasonHtml,
   showBusy
 } from './busy.js';
 import {
@@ -54,7 +55,7 @@ export function toursBody() {
     up = st.up,
     pct = up && up.total > 0 ? Math.min(100, Math.floor(100 * up.loaded / up.total)) : 0,
     gesture = up ? `<p data-trk-uploading><progress max="100" value="${pct}" aria-label="${esc(tt(TX.up.running, { name: up.name, p: pct }))}"></progress> <span data-trk-up-text>${esc(tt(TX.up.running, { name: up.name, p: pct }))}</span> <button type="button" data-act="trk-cancel">${esc(tt(TX.up.cancel))}</button></p>` :
-    `<p><button type="button" class="f-btn primary" data-act="trk-choose"${why ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${why ? ` <span class="f-muted" data-trk-why="${why}">${esc(tt(TX.greyReason[why]))}</span>` : ''}</p>`;
+    `<p><button type="button" class="f-btn primary" data-act="trk-choose"${why ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${why ? ` <span class="f-muted" data-trk-why="${why}">${greyReasonHtml(why)}</span>` : ''}</p>`;
   return `<p class="f-muted">${esc(word('hint'))}</p>${gesture}${st.msg ? `<p data-trk-msg data-level="${esc(st.msg.level)}"${st.msg.level === 'err' ? ' role="alert"' : ''}>${esc(st.msg.text)}</p>` : ''}`;
 }
 /** « Choisir le fichier… » : le sélecteur du système s'ouvre (le champ caché de l'écran) ; la source `vfr_circuits` dit à onChange que le fichier est celui des tours de piste. */

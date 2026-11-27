@@ -30,7 +30,8 @@ import {
   statusKnown
 } from './status.js';
 import {
-  busyCardHtml
+  busyCardHtml,
+  greyBusyHtml
 } from './busy.js';
 
 /** Le nom d'un paquet dans la langue (index li). */
@@ -58,7 +59,7 @@ export function packUpdateHtml(p, st) {
     off = frozen() || gate.disabled,
     reason = off ? gate.reason || 'busy' : '',
     carded = reason === 'busy' && !!busyCardHtml('base', 'group'); // la carte de l'opération en cours, dans le paquet, le dit déjà
-  return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off ? ' disabled' : ''}>${esc(tt(TX.upd.updatePack, { n }))}</button>${off && !carded ? ` <span class="f-muted" data-grey="${esc(reason)}">${esc(tt(M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>` : ''}`;
+  return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off ? ' disabled' : ''}>${esc(tt(TX.upd.updatePack, { n }))}</button>${off && !carded ? ` <span class="f-muted" data-grey="${esc(reason)}">${reason === 'busy' ? greyBusyHtml() : esc(tt(M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>` : ''}`;
 }
 /** La rangée d'un paquet régional : UN INTERRUPTEUR « tout le paquet dans la couverture » (coché quand toutes ses zones y sont, « à moitié » quand une partie y est) : l'allumer ajoute les zones qui manquent, l'éteindre retire toutes ses
  *  zones de la couverture après une confirmation qui nomme ce qui sera décoché (jamais purgé). Le survol ou l'appui de la rangée surligne ses zones sur la carte. */

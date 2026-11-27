@@ -6,6 +6,9 @@ import {
   TX
 } from './texts.js';
 import {
+  greyReasonHtml
+} from './busy.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -154,7 +157,7 @@ function bodyHtml() {
     <p class="f-muted" data-route-hint>${esc(tt(TX.route.hint))}</p>
     <p class="f-muted" data-route-account>${accountHtml()}</p>
     ${r.phase === 'asking' ? askHtml() : `<p><button type="button" data-verb="route-import"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.route.import))}</button> <button type="button" data-act="zone-upload" data-zone="route"${gate.disabled || uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button></p>${uploadHtml('route')}
-      ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`}
+      ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${greyReasonHtml(gate.reason)}</p>` : ''}`}
     ${r.phase === 'planning' || r.phase === 'running' ? runningHtml() : resultHtml()}`;
 }
 /** La ligne : le même gabarit que les autres jeux (résumé avec le nom, le texte de méta et la pastille d'état ; détail replié). */

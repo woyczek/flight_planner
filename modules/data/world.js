@@ -5,6 +5,9 @@ import {
   TX
 } from './texts.js';
 import {
+  greyReasonHtml
+} from './busy.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -144,7 +147,7 @@ function bodyHtml() {
     ${lastHtml()}
     ${gate.reason === 'gap' ? gapHtml() : autoHtml()}
     ${gate.reason === 'gap' ? '' : `<p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>`}
-    ${gate.reason && gate.reason !== 'gap' && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
+    ${gate.reason && gate.reason !== 'gap' && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${greyReasonHtml(gate.reason)}</p>` : ''}
     ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span>${r.resumedNow ? `<span class="f-muted" data-world-resumed>${esc(tt(TX.world.resumed, { k: r.resumedNow.have, n: r.resumedNow.of }))}</span>` : ''}<div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
 }
 /** La ligne : le même gabarit que les autres jeux. */

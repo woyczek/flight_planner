@@ -123,6 +123,7 @@ import {
 } from './follow.js';
 import {
   busyAct,
+  seeBusy,
   startGesture
 } from './busy.js';
 import {
@@ -331,6 +332,7 @@ function onClick(e) {
     if (ac.dataset.act === 'change-act') return changeAct(ac.dataset.kind);
     return /^[a-z0-9_-]{2,12}$/.test(ac.dataset.zone || '') ? startPublish(false, ac.dataset.zone) : undefined;
   }
+  if (e.target.closest?.('[data-act="see-busy"]')) return seeBusy(); // SOG-0696 : « Voir son avancement »
   if (e.target.closest?.('[data-act="focus-states"]'))
     return focusStates(); // « Cochez au moins un État » (un geste grisé) : le lien qui mène aux États des procédures
   if (e.target.closest?.('[data-act="legend-more"]')) return toggleLegend();

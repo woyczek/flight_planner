@@ -60,7 +60,8 @@ import {
   chooseFile
 } from './upload.js';
 import {
-  busyCardHtml
+  busyCardHtml,
+  greyBusyHtml
 } from './busy.js';
 
 /** La coche « téléchargé » d'une source dans la liste : celle de la fiche d'un pays (l'état du fichier, sa date, son édition), mais un fichier plus ancien que le cycle dit sa raison en dates (« en retard : fichier du 1 oct., le cycle est du 29 oct. »). */
@@ -122,7 +123,7 @@ function greyNote(reason) {
   if (!reason || reason === 'busy' && busyCardHtml('base', 'todo') || reason === 'reading')
     return ''; // « reading » : la ligne de lecture de la tête le dit déjà (SOG-0511)
   if (reason === 'no-state') return ` <span class="f-muted" data-grey="no-state"><button type="button" class="d-link" data-act="focus-states">${esc(tt(TX.greyReason['no-state']))}</button></span>`; // « Cochez au moins un État » : le lien qui mène à la case
-  return ` <span class="f-muted" data-grey="${esc(reason)}">${esc(reason === 'busy' ? tt(TX.zx.greyBusy) : M.own(TX.greyReason, reason) ? tt(TX.greyReason[reason]) : M.own(TX.pubReason, reason) ? publishReason(reason) : tt(TX.greyReason.busy))}</span>`;
+  return ` <span class="f-muted" data-grey="${esc(reason)}">${reason === 'busy' ? greyBusyHtml() : esc(M.own(TX.greyReason, reason) ? tt(TX.greyReason[reason]) : M.own(TX.pubReason, reason) ? publishReason(reason) : tt(TX.greyReason.busy))}</span>`;
 }
 /** Le geste d'une ligne : celui qui fait CE travail. { html, n } — une source prise à la main : « Prendre le fichier » quand un fichier est vu dans Téléchargements, sinon « Choisir le fichier… » (pour son premier pays de la couverture) ; une source que le lanceur prend ou calcule : « Mettre à jour (n pays) »
  *  (en retard), « Construire (n pays) » (à construire) sur les seuls pays qui en ont besoin ; « Publier… » (à publier). Un bouton gris dit pourquoi à côté de lui ; rien à faire seul : la ligne le dit. */
