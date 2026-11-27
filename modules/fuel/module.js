@@ -6952,7 +6952,7 @@ function verdictWord(a, good = null) {
   // SOG-0545 (l'ergonome, maquette v2) : « conforme » en un mot sur la route ; son sens et « Seul Eurocontrol valide un plan. » une fois,
   // sous « Calculé à … » (SOG-0552 : « Seul Eurocontrol valide un plan. » seul, RR.ROWS.onlyEurocontrol)
   if (a.verdict === 'conform') return ` <span class="f-muted" data-verdict="conform">${esc(tt(TX.rConformShort))}</span>`;
-  if (a.verdict === 'unverifiable') return `<b class="f-warn fu-rh2" data-verdict="unverifiable">${esc(unverifTitle(a.reasons.unverifiable, a.uCount))}</b>`;
+  if (a.verdict === 'unverifiable') return `<b class="f-warn fu-rh2" data-verdict="unverifiable">${esc(unverifTitle(RR.mergeStale(a.reasons.unverifiable), a.uCount))}</b>`;
   return '';
 }
 /** SOG-0532 (l'ergonome) : le titre « Non vérifiable : N point(s) » — UN compte, celui des lignes du groupe, quelle que soit leur nature
@@ -6981,9 +6981,13 @@ function verdictsHtml(a, open = false) {
       return it.length ? `<li data-reason="${esc(r.code)}"><details class="fu-faultmore" data-staterules><summary>${text}</summary><ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? `<details class="fu-faultmore" data-rulesmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: it.length - 7 }))}</summary><ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul></details>` : ''}</details></li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
     },
     group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
-    R = a.reasons || {
+    R0 = a.reasons || {
       violates: [],
       unverifiable: []
+    },
+    R = {
+      ...R0,
+      unverifiable: RR.mergeStale(R0.unverifiable) // SOG-0695 : les cycles périmés de plusieurs États sur une ligne
     };
   // la ligne des règles qui visent un espace aérien entier (SOG-0538, sans nombre) : SOG-0552 (l'ergonome, 23/11) — jamais dans les cartes
   // de la liste (dite une fois au-dessus) ; le contrôle d'une route tapée (open, pas une liste) la garde sous son verdict

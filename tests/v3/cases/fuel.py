@@ -10338,7 +10338,7 @@ def f305(c):
 
 @case('F306', 'Route step, Belgian airways of a past cycle: when the engine gives the day the Belgian set was deposited, the reason reads '
       '« Routes belges d’un cycle passé (déposées le 03/10/2026). », the date in the format of the screen; without that day, or with a day '
-      'that cannot be read, the generic sentence (since SOG-0695 « Données de Belgique périmées (cycle …) : route calculée sur ces données. », '
+      'that cannot be read, the generic sentence (since SOG-0695 « Belgique : données périmées (cycle …). Route calculée sur ces données. », '
       'French only)',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0541 (the relay, 22 Nov: the words decided by the ergonomist; AeroDB e4a583cae, frame/aerodb/INTEGRATION.md: '
@@ -10358,13 +10358,13 @@ def f306(c):
         dict(_alt(3, 'Via XQ3', 'LFRS NTS1A LUGEN XQ3 NEPIX MEN1A LFML', 374, 270, segs), verdict='unverifiable', violations=[],
              unverifiable=stale(deposited='1999-13-45'))]
     want = {'fr': ('Routes belges d’un cycle passé (déposées le 03/10/2026).',
-                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),
+                   'Belgique : données périmées (cycle 01/10/2026). Route calculée sur ces données. Voies concernées : XQ1.'),
             'en': ('Belgian routes of a past cycle (deposited 10/03/2026).',
-                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),  # SOG-0695: French only (SOG-0680)
+                   'Belgique : données périmées (cycle 01/10/2026). Route calculée sur ces données. Voies concernées : XQ1.'),  # SOG-0695: French only (SOG-0680)
             'de': ('Belgische Routen eines vergangenen Zyklus (hinterlegt am 03.10.2026).',
-                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.'),
+                   'Belgique : données périmées (cycle 01/10/2026). Route calculée sur ces données. Voies concernées : XQ1.'),
             'es': ('Rutas belgas de un ciclo pasado (depositadas el 03/10/2026).',
-                   'Données de Belgique périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1.')}[c.lang]
+                   'Belgique : données périmées (cycle 01/10/2026). Route calculée sur ces données. Voies concernées : XQ1.')}[c.lang]
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):
@@ -12288,9 +12288,9 @@ def f342(c):
 
 
 
-@case('F343', 'Route: a route computed on the data of a State whose cycle has passed says it in the decided sentence — « Données de {État} '
-      'périmées (cycle {cycle}) : route calculée sur ces données. », the airways concerned after it when the reason lists them, never '
-      'said twice', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+@case('F343', 'Route: a route computed on the data of a State whose cycle has passed says it in the decided sentence, the State first — '
+      '« {État} : données périmées (cycle {cycle}). Route calculée sur ces données. »; several States on ONE line « Allemagne (cycle …), '
+      'Portugal (cycle …) : données périmées. … »; the airways concerned after it when the reason lists them, never said twice', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0695 (the user\'s report of 27 Nov; AeroDB\'s fact: the engine never refuses a stale base, it computes and answers '
       '« unverifiable » with stale_cycle; the ergonomist\'s sentence); French only (SOG-0680); invented zone, cycle and airways')
 def f343(c):
@@ -12299,12 +12299,19 @@ def f343(c):
       const R = await import('/modules/fuel/route_reasons.js');
       const t = (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v?.[k] ?? m);
       const r = v => R.compose({ code: 'stale_cycle', values: v, text: 'x' }, t, 'fr');
+      const two = R.mergeStale([{ code: 'stale_cycle', values: { zone: 'de', cycle: '2026-10-01', routes: ['XQ1'] } }, { code: 'other', values: {} },
+        { code: 'stale_cycle', values: { zone: 'pt', cycle: '2026-09-03', routes: ['XQ2', 'XQ1'] } }]);
       return [r({ zone: 'de', cycle: '2026-10-01', current: '2026-10-29', routes: ['XQ1', 'XQ2'] }),
-        r({ zone: 'de', cycle: '2026-10-01', current: '2026-10-29', routes: [] })];
+        r({ zone: 'de', cycle: '2026-10-01', current: '2026-10-29', routes: [] }),
+        two.map(x => x.code), R.compose(two[0], t, 'fr')];
     }""")
-    c.eq([x.replace('\u202f', ' ').replace('\u00a0', ' ') for x in got],
-         ['Données de Allemagne périmées (cycle 01/10/2026) : route calculée sur ces données. Voies concernées : XQ1, XQ2.',
-          'Données de Allemagne périmées (cycle 01/10/2026) : route calculée sur ces données.'],
+    sp = lambda x: x.replace('\u202f', ' ').replace('\u00a0', ' ')
+    c.eq([sp(got[0]), sp(got[1]), got[2], sp(got[3])],
+         ['Allemagne : données périmées (cycle 01/10/2026). Route calculée sur ces données. Voies concernées : XQ1, XQ2.',
+          'Allemagne : données périmées (cycle 01/10/2026). Route calculée sur ces données.',
+          ['stale_cycle', 'other'],
+          'Allemagne (cycle 01/10/2026), Portugal (cycle 03/09/2026) : données périmées. Route calculée sur ces données. Voies concernées : '
+          'XQ1, XQ2.'],
          'the decided sentence, the airways after it (red before: « Allemagne : données du 01/10/2026, périmées à la date du vol — voies '
          'concernées : XQ1, XQ2 »)', what='stale')
 

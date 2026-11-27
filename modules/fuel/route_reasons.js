@@ -208,14 +208,18 @@ export const ROWS = {
     'Die berechnete Route verletzt {n} bekannte Regel(n).', 'La ruta calculada infringe {n} regla(s) conocida(s).'
   ],
   // 8
-  // SOG-0695 (l'ergonome, 27/11 ; le fait d'AeroDB : le moteur calcule sur une base périmée et le dit « non vérifiable ») : la route
-  // calculée sur ces données, dite ; les voies concernées après la phrase ; français seul (SOG-0680)
-  stale_cycle: ['Données de {zone} périmées (cycle {cycle}) : route calculée sur ces données. Voies concernées : {routes}.'],
+  // SOG-0695 (l'ergonome, 27/11 ; le fait d'AeroDB : le moteur calcule sur une base périmée et le dit « non vérifiable ») : l'État en
+  // tête, sans article (la tournure de « Suisse : sens de N850 inconnu. ») ; plusieurs États sur UNE ligne (mergeStale) ; les voies
+  // concernées après la phrase ; français seul (SOG-0680)
+  stale_cycle: ['{zone} : données périmées (cycle {cycle}). Route calculée sur ces données. Voies concernées : {routes}.'],
+  staleMany: ['{zones} : données périmées. Route calculée sur ces données. Voies concernées : {routes}.'],
+  staleMany0: ['{zones} : données périmées. Route calculée sur ces données.'],
+  staleOne: ['{zone} (cycle {cycle})'],
   // SOG-0541 : les routes belges d'un jeu d'un cycle passé, avec le jour du dépôt du jeu (mots de l'ergonome)
   staleBe: ['Routes belges d’un cycle passé (déposées le {date}).', 'Belgian routes of a past cycle (deposited {date}).',
     'Belgische Routen eines vergangenen Zyklus (hinterlegt am {date}).', 'Rutas belgas de un ciclo pasado (depositadas el {date}).'
   ],
-  stale_cycle0: ['Données de {zone} périmées (cycle {cycle}) : route calculée sur ces données.'],
+  stale_cycle0: ['{zone} : données périmées (cycle {cycle}). Route calculée sur ces données.'],
   // 9
   network_gap: ['Aucune voie dans la base entre {from} et {to} : direct de {nm} NM',
     'No airway in the base between {from} and {to}: direct of {nm} NM',
@@ -311,6 +315,27 @@ export function ruleLine(item, t) {
   });
 }
 /** La phrase d'une raison (voir l'en-tête). */
+/** SOG-0695 (l'ergonome) : les cycles périmés de plusieurs États d'une même route sur UNE ligne — les raisons stale_cycle réunies en une
+ *  (values.zones [{ zone, cycle }], les voies réunies, dans l'ordre), à la place de la première ; la ligne belge du jour de dépôt
+ *  (SOG-0541) reste la sienne ; une seule raison : la liste inchangée. */
+export function mergeStale(list) {
+  const all = Array.isArray(list) ? list : [],
+    st = all.filter(r => r?.code === 'stale_cycle' && !(String(r.values?.zone).toLowerCase() === 'be' && isDay(r.values?.deposited)));
+  if (st.length < 2) return all;
+  const routes = [...new Set(st.flatMap(r => Array.isArray(r.values?.routes) ? r.values.routes : []))],
+    one = {
+      ...st[0],
+      values: {
+        zones: st.map(r => ({
+          zone: r.values?.zone,
+          cycle: r.values?.cycle
+        })),
+        routes
+      }
+    };
+  return all.filter(r => !st.includes(r) || r === st[0]).map(r => r === st[0] ? one : r);
+}
+
 export function compose(reason, t, lang = 'fr', ctx = {}) {
   const c = reason?.code,
     v = reason?.values || {},
@@ -407,8 +432,17 @@ export function compose(reason, t, lang = 'fr', ctx = {}) {
       if (String(v.zone).toLowerCase() === 'be' && isDay(v.deposited)) return t(ROWS.staleBe, {
         date: dayOf(v.deposited, lang)
       });
+      const routes = Array.isArray(v.routes) ? v.routes.filter(has) : [],
+        zones = Array.isArray(v.zones) ? v.zones.filter(z => has(z?.zone) && has(z?.cycle)) : [];
+      // SOG-0695 : plusieurs États (mergeStale) — « Allemagne (cycle …), Portugal (cycle …) : données périmées. … »
+      if (zones.length > 1) return t(routes.length ? ROWS.staleMany : ROWS.staleMany0, {
+        zones: zones.map(z => t(ROWS.staleOne, {
+          zone: zoneName(z.zone, lang),
+          cycle: dayOf(z.cycle, lang)
+        })).join(', '),
+        routes: routes.join(', ')
+      });
       if (!has(v.zone) || !has(v.cycle)) return fallback;
-      const routes = Array.isArray(v.routes) ? v.routes.filter(has) : [];
       return t(routes.length ? ROWS.stale_cycle : ROWS.stale_cycle0, {
         zone: zoneName(v.zone, lang),
         cycle: dayOf(v.cycle, lang),
