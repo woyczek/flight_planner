@@ -1458,7 +1458,7 @@ def d60(c):
     _ch_open(c, {'rwy': '03'}, 'dep', 'LFRS')
     r = c.js(_CH_ROWS)
     c.eq([g['fam'] for g in r['groups']], ['rwy', 'sid'], 'the departure: runway and SID', what='groups')
-    c.eq(sorted(re.match(r'[A-Z]{2}\d[A-Z]', norm(x['text'])).group(0) for x in _grp(r, 'sid')['rows'][1:]), ['XX1A', 'ZZ9Z'], 'both SIDs listed (not the transition)', what='rows')
+    c.eq(sorted(re.search(r'[A-Z]{2}\d[A-Z]', norm(x['text'])).group(0) for x in _grp(r, 'sid')['rows'][1:]), ['XX1A', 'ZZ9Z'], 'both SIDs listed (not the transition)', what='rows')
     sid = 'LFRS.SID.XX1A.RW03.NONE'
     c.eq(c.js(_CH_LAYOUT, [sid, 'sid'])['dashed'], 0, 'no transition drawn while nothing is highlighted', what='dashed traces')
     c.js("async (id) => { (await import('/modules/maps/choose.js')).setHl(id) }", sid)
