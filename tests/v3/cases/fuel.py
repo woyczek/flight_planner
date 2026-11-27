@@ -12186,8 +12186,8 @@ def f336(c):
     c.until(said, _BUSY_SAID, timeout=10000, what='the sentence of the frame, with the operation and its time (red before: « Le poste termine une '
             'autre opération … réessayez dans un instant. » and « Réessayer »)')
     c.eq(c.count(f'{B} [data-rretry]'), 0, 'no « Réessayer »: the request leaves by itself', what='retry')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", 'En attente : Calcul de la route',
-            timeout=5000, what='the pending request said, « En attente : Calcul de la route »')
+    c.until("(w) => (window.__notes || []).some(n => { const t = n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(); return t.startsWith(w) && t.slice(w.length).includes('Annuler') })", 'En attente : Calcul de la route',
+            timeout=5000, what='the pending request said, « En attente : Calcul de la route », with its « Annuler » (the note carries its button)')
     c.eq(len(st['posts']), 0, 'nothing started while the station is busy', what='posts')
     c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F336_{c.design}_{c.width}_{c.lang}.png')
@@ -12206,8 +12206,8 @@ def f336(c):
     c.js("(r) => window.__nat.go({ ...window.__nat.st, refreshed: false, busy: true, running: r })", dict(_BUSY_RUNNING))
     nat = "(w) => { const e = document.querySelector('" + L + " [data-natfail=busy]'); return !!e && (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }"
     c.until(nat, _BUSY_SAID, timeout=5000, what='the NAT line says the sentence of the frame (red before: « Le poste fait une autre opération : réessayez dans un instant. »)')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", 'En attente : Relecture des routes NAT',
-            timeout=5000, what='the pending reading said')
+    c.until("(w) => (window.__notes || []).some(n => { const t = n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(); return t.startsWith(w) && t.slice(w.length).includes('Annuler') })", 'En attente : Relecture des routes NAT',
+            timeout=5000, what='the pending reading said, with its « Annuler »')
     st['busy'] = False
     c.until("window.__nat.asks === 2 && window.__nat.go !== null", timeout=20000, what='free: the reading of the NAT tracks asked again ALONE')
 
@@ -12252,7 +12252,6 @@ def f337(c):
     f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and [p.get('id') for p in d['route'].get('points') or []] == want,
                     'the points of the reading: both coordinates kept (red before: « LFRS LUGEN NEPIX LFML »)', timeout=10000)
     text = f['route'].get('text') or ''
-    c.ok('4630N00100W' in text and '4500N00100E' in text and 'LUGEN/F150' in text, text, 'the text keeps both coordinates and the level set',
-         what='text')
+    c.ok('4630N00100W' in text and '4500N00100E' in text and 'LUGEN/F150' in text, text, 'the text keeps both coordinates and the level set')
     c.eq(norm(c.js("document.querySelector('[data-module=fuel] [data-k=\"rtext\"]').value")), norm(text), 'the field says the same text',
          what='field')
