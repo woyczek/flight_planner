@@ -2157,7 +2157,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the page's route pattern `^[A-Z0-9/]{1,16}$` drops a North American route token such as « N71B-N90B » from the route text.
 - **16 Nov 2026 — SOG-0390, a compound airway name kept in the launcher's route** (seen on the KABQ → EGLL answers of SOG-0389: the
   North American routes « N71B-N90B », « N264B-N275B », « N185B-N194A » between the US airways and the NAT entry; the page's pattern
-  `^[A-Z0-9/]{1,16}$` dropped them, so a route taken would have read « TUSKY RAFIN » without its airway). `RE.ROUTE_WORD` accepts an
+  `^[A-Z0-9/]{1,16}$` dropped them, so a route taken would have read its two points without the airway between them). `RE.ROUTE_WORD` accepts an
   identifier, a NAT point, or a compound airway name — letters and digits joined by hyphens, four parts at most, the parts in the form
   of an airway (`[A-Z]{1,2}\d{1,4}[A-Z]?`) —, 24 signs at most; anything else is still left out. `RE.routeWords` is used by the three
   readers of a route of the launcher (`altOf`, the list read again from route_alts.json, the list for the Map); a segment's `via` is

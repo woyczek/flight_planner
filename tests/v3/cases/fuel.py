@@ -6795,7 +6795,7 @@ def f241(c):
       'the token is kept in the route line, after a reload, and in the route taken into the flight, airway by airway, as text; a '
       'longer chain or a token that is markup is left out', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0390 (seen on the KABQ → EGLL answers of 16/11: « N71B-N90B » dropped by the page\'s pattern ^[A-Z0-9/]{1,16}$, the route '
-      'taken would have read « TUSKY RAFIN » without its airway); the ergonomist: the text of the route kept in the flight is the '
+      'taken would have read its two points without the airway between them); the ergonomist: the text of the route kept in the flight is the '
       'launcher\'s, airway by airway; a compound name accepted, bounded, shown as text; invented answer, a fake launcher')
 def f242(c):
     st = _route_launcher(c, ['route/compute'])
