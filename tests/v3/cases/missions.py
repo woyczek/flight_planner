@@ -17544,8 +17544,11 @@ def n292(c):
              'one entry in my book: the rendezvous held, an ISO time — written once, not at every fix')
         pos['fix'] = fix(45.0, 1.0)
         c.page.reload()
-        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list again')
-        c.tap(f'{M} [data-list] [data-id="X-905A"]')
+        # the reload gives the sheet of X-905A back by itself (its address); the list is touched only when it does not
+        open_again = f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-905A'"
+        c.until(f"{open_again} || !!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the sheet or the list again')
+        if not c.js(open_again):
+            c.tap(f'{M} [data-list] [data-id="X-905A"]')
         c.until(f"document.querySelector('{S} [data-pv=\"EV-1\"]')?.hasAttribute('data-held')", timeout=40000, what='« tenu à » kept after the reload')
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
