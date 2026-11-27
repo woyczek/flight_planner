@@ -710,7 +710,7 @@ def a19(c):
     errors = []
 
     def launch():
-        kw = dict(viewport={'width': 390, 'height': 844}, locale='fr-FR', args=['--no-sandbox'])
+        kw = dict(viewport={'width': 390, 'height': 844}, locale='fr-FR', args=['--no-sandbox', '--force_low_power_gpu'])
         if CHROME:
             kw['executable_path'] = CHROME
         ctx = _W['pw'].chromium.launch_persistent_context(home, **kw)

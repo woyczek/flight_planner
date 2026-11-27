@@ -895,7 +895,7 @@ def worker_init(base, parent=None):
     from playwright.sync_api import sync_playwright
     load_cases()
     pw = sync_playwright().start()
-    _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else pw.chromium.launch(args=['--no-sandbox']))
+    _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox', '--force_low_power_gpu']) if CHROME else pw.chromium.launch(args=['--no-sandbox', '--force_low_power_gpu']))
     if parent:
         import parent_watch
         parent_watch.watch(parent, worker_close)
@@ -917,7 +917,7 @@ def _relaunch():
         _W['browser'].close()
     except Exception:
         pass
-    _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else _W['pw'].chromium.launch(args=['--no-sandbox'])
+    _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox', '--force_low_power_gpu']) if CHROME else _W['pw'].chromium.launch(args=['--no-sandbox', '--force_low_power_gpu'])
 
 
 def _run_or_crash(job):

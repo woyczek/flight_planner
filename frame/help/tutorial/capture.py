@@ -113,7 +113,7 @@ class Browser:
     def __init__(self, chrome, extra=()):
         self.port, self.prof = free_port(), tempfile.mkdtemp(prefix='sog-tut-')
         self.proc = subprocess.Popen([chrome, '--headless=new', f'--remote-debugging-port={self.port}', f'--user-data-dir={self.prof}',
-                                      f'--window-size={W},{H}', '--hide-scrollbars', '--no-first-run', *extra, 'about:blank'],
+                                      f'--window-size={W},{H}', '--hide-scrollbars', '--no-first-run', '--force_low_power_gpu', *extra, 'about:blank'],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(100):
             try:
