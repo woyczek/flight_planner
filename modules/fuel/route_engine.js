@@ -29,7 +29,7 @@ import {
 
 export const VERB = 'route/compute';
 /** SOG-0390 : un mot du texte de route rendu par le lanceur — identifiant, point NAT (« 54/50 »), ou nom de voie COMPOSÉ, lettres et
- *  chiffres reliés par des tirets (« N71B-N90B », les voies nord-américaines : quatre parts au plus) ; 24 signes au plus ; le reste
+ *  chiffres reliés par des tirets (« N10A-N20B », les voies nord-américaines : quatre parts au plus) ; 24 signes au plus ; le reste
  *  est écarté. Le champ Route lit la voie composée (route_model AIRWAY_WORD). */
 export const ROUTE_WORD = /^(?:[A-Z0-9/]{1,16}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?){1,3})$/;
 /** Le texte de route du lanceur, mot à mot (ROUTE_WORD), en majuscules, `max` signes au plus. */
@@ -647,7 +647,7 @@ function altOf(a, role, errors, reviews = []) {
   return {
     role,
     name: text(a?.name, 60),
-    route: routeWords(text(a?.route, 800)), // SOG-0390 : la voie composée (« N71B-N90B ») gardée
+    route: routeWords(text(a?.route, 800)), // SOG-0390 : la voie composée (« N10A-N20B ») gardée
     distanceNm: num(a?.distanceNm, 0, 19999),
     fl: num(a?.fl, 0, 700) !== null ? Math.round(+a.fl) : null,
     incomplete: a?.incomplete === true,

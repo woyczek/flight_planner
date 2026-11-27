@@ -6794,7 +6794,7 @@ def f241(c):
 @case('F242', 'Route step, a route of the launcher through a COMPOUND airway name (« N12A-N34B », the form of the North American routes): '
       'the token is kept in the route line, after a reload, and in the route taken into the flight, airway by airway, as text; a '
       'longer chain or a token that is markup is left out', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0390 (seen on the KABQ → EGLL answers of 16/11: « N71B-N90B » dropped by the page\'s pattern ^[A-Z0-9/]{1,16}$, the route '
+      rule='SOG-0390 (seen on the KABQ → EGLL answers of 16/11: « N10A-N20B » dropped by the page\'s pattern ^[A-Z0-9/]{1,16}$, the route '
       'taken would have read its two points without the airway between them); the ergonomist: the text of the route kept in the flight is the '
       'launcher\'s, airway by airway; a compound name accepted, bounded, shown as text; invented answer, a fake launcher')
 def f242(c):
@@ -7269,7 +7269,7 @@ def f249(c):
 # SID and a level change, an Atlantic one through a NAT track and coordinates « 54/50 »
 _FPL_EU = ('(FPL-CHECK01-IG\n-C30J/M-SDGRWY/S\n-LFPO0930\n-N0330F270 OPAL2E OPALE UN491 NEPIX DCT LUGEN/N0330F250 DCT TOU\n'
            '-LFML0115 LFMT\n-PBN/B2D2 DOF/261118 REG/FZZAB)')
-_FPL_NAT = ('(FPL-ABC123-IG\n-B744/H-SDGRWY/S\n-EIDW2355\n-N0480F350 DOGAL NATE 54N050W DCT NICSO N71B ZZEND\n'
+_FPL_NAT = ('(FPL-ABC123-IG\n-B744/H-SDGRWY/S\n-EIDW2355\n-N0480F350 DOGAL NATE 54N050W DCT NICSO N10A ZZEND\n'
             '-KJFK0712\n-PBN/B2D2 DOF/261231 REG/EIZZC)')
 
 
@@ -7290,7 +7290,7 @@ def f247(c):
       F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', altn: 'LFMT', reg: 'F-ZZAB', eobt: F.eobtOf('2026-11-18T09:30:00Z'),
         speedKt: 330, levelFt: 27000, routeText: 'LFPO OPAL2E OPALE UN491 NEPIX LUGEN/F250 TOU LFML', eetMin: 75 }).text,
       F.message({ id: 'abc123', type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', reg: 'EI-ZZC', eobt: F.eobtOf('2026-12-31T23:55:00Z'),
-        speedKt: 480, levelFt: 35000, routeText: 'EIDW DOGAL NATE 54/50 DCT NICSO N71B-N90B ZZEND KJFK', eetMin: 432 }).text,
+        speedKt: 480, levelFt: 35000, routeText: 'EIDW DOGAL NATE 54/50 DCT NICSO N10A-N20B ZZEND KJFK', eetMin: 432 }).text,
       F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', reg: 'F-ZZAB', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330,
         levelFt: 27000, routeText: 'LFPO LFML', eetMin: 75 }).errors,
       F.eobtOf(null, Date.parse('2026-11-17T10:51:10Z')).at.toISOString(),

@@ -2154,9 +2154,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   next redraw of the NAT line, leaving the flight's own direct. Now a route is of another message when it is stale or its track starts
   BEFORE the day the message read starts (`natBefore(issued, from)`, the year of the message within six months; false without a
   readable day: nothing removed on a doubt). F241 (red on the parent: the eastbound routes removed). Seen in passing, not in this lot:
-  the page's route pattern `^[A-Z0-9/]{1,16}$` drops a North American route token such as « N71B-N90B » from the route text.
+  the page's route pattern `^[A-Z0-9/]{1,16}$` drops a North American route token such as « N10A-N20B » from the route text.
 - **16 Nov 2026 — SOG-0390, a compound airway name kept in the launcher's route** (seen on the KABQ → EGLL answers of SOG-0389: the
-  North American routes « N71B-N90B », « N264B-N275B », « N185B-N194A » between the US airways and the NAT entry; the page's pattern
+  North American routes « N10A-N20B », « N30B-N40B », « N50B-N60A » between the US airways and the NAT entry; the page's pattern
   `^[A-Z0-9/]{1,16}$` dropped them, so a route taken would have read its two points without the airway between them). `RE.ROUTE_WORD` accepts an
   identifier, a NAT point, or a compound airway name — letters and digits joined by hyphens, four parts at most, the parts in the form
   of an airway (`[A-Z]{1,2}\d{1,4}[A-Z]?`) —, 24 signs at most; anything else is still left out. `RE.routeWords` is used by the three

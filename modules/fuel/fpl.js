@@ -41,7 +41,7 @@ export const EQUIPMENT = 'SDGRWY/S';
 export const PBN = 'B2D2';
 
 const pad = (n, w) => String(Math.max(0, Math.round(n))).padStart(w, '0');
-/** Une voie nord-américaine composée (« N71B-N90B ») ou une route NAT (« NATV ») : hors du contrôle d'Eurocontrol. */
+/** Une voie nord-américaine composée (« N10A-N20B ») ou une route NAT (« NATV ») : hors du contrôle d'Eurocontrol. */
 const OCEANIC = /^(?:NAT[A-Z]{1,2}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+)$/;
 /** SOG-0422 : un tronçon que la source nomme de plusieurs voies jointes par un tiret (le fichier AIXM publie un seul nom, « L457-M325 »,
  *  quand deux voies ont exactement les mêmes segments : AeroDB, parseAixm). Le tiret ouvre une nouvelle case du message : jamais écrit ;
