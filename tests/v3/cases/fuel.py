@@ -12372,7 +12372,7 @@ def f345(c):
 
 
 @case('F347', 'Route step: a computation the launcher refuses at the door (HTTP 400, « invalid arguments », no job) says its cause in '
-      'French — « Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes. » —, never « Le calcul a échoué sans donner '
+      'French — « Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes. » —, never « Le calcul a échoué sans donner '
       'de résultat », never the English message of the launcher', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
       langs4=False,
       rule='SOG-0688 (AeroDB\'s fact, 27 Nov: the only path to the generic sentence is a refusal of the arguments at the door — 400 '
@@ -12389,6 +12389,6 @@ def f347(c):
     c.eq(c.js(f"document.querySelector('{B}').dataset.rrefused"), 'invalid', 'a refusal of the arguments: « invalid » (red before: « failed »)',
          what='reason')
     said = norm(c.text(B) or '')
-    c.eq(said, norm('Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes.'), 'the cause in French (red before: '
+    c.eq(said, norm('Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes.'), 'the cause in French (red before: '
          '« Le calcul a échoué sans donner de résultat … : réessayez. »)', what='sentence')
     c.ok('invalid' not in said.lower(), said, 'never the English message of the launcher')

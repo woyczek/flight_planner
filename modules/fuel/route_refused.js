@@ -18,8 +18,8 @@ export const TX = {
   rNoRadGo: ['Importer dans Données', 'Import in Data', 'In Daten importieren', 'Importar en Datos'],
   // SOG-0206 : la cause quand le travail n'a rien rendu (jamais « n'a pas répondu » sans raison), avec « Réessayer »
   rWhy: {
-    // SOG-0688 (le fait d'AeroDB) : les arguments refusés à la porte du lanceur (400) — phrase proposée, français seul (SOG-0680)
-    invalid: ['Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes.'],
+    // SOG-0688 (le fait d'AeroDB) : les arguments refusés à la porte du lanceur (400) — la phrase de l'ergonome (27/11), français seul (SOG-0680)
+    invalid: ['Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes.'],
     busy: ['Le poste termine une autre opération (lecture du sol, mise à jour des données…) : réessayez dans un instant.',
       'The workstation is finishing another operation (ground reading, data update…): try again in a moment.',
       'Der Rechner beendet gerade einen anderen Vorgang (Bodenlesung, Datenaktualisierung…): gleich noch einmal versuchen.',
