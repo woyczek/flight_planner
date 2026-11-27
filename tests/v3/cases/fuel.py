@@ -3033,6 +3033,10 @@ def _route_launcher(c, verbs):
             body = {'verbs': st['verbs']}
         elif u.path.endswith('/__setup/folders'):
             body = {'folders': st.get('folders', [])}   # the launcher's shape (tools/launch.py _get_folders)
+        elif u.path.endswith('/__setup/regen/job') and req.method == 'POST' and st.get('invalid'):
+            # SOG-0688 (AeroDB's fact): the launcher refuses the arguments at the door — 400, no job
+            route.fulfill(status=400, content_type='application/json', body=json.dumps({'ok': False, 'message': 'invalid arguments'}))
+            return
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST' and st.get('busy'):
             # SOG-0658: the refusal says the operation that runs (`running`, as the launcher's 409 does), when the case gives one
             route.fulfill(status=409, content_type='application/json', body=json.dumps(dict({'ok': False, 'reason': 'busy', 'message': 'a job is already running', 'job': 'g1'},
@@ -12365,3 +12369,26 @@ def f345(c):
         c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
         c.wait(300)
         c.shot(f'F345_{c.design}_{w}_{c.lang}.png')
+
+
+@case('F347', 'Route step: a computation the launcher refuses at the door (HTTP 400, « invalid arguments », no job) says its cause in '
+      'French — « Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes. » —, never « Le calcul a échoué sans donner '
+      'de résultat », never the English message of the launcher', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0688 (AeroDB\'s fact, 27 Nov: the only path to the generic sentence is a refusal of the arguments at the door — 400 '
+      '« invalid arguments », RE.run read only r.result and threw away the status and the message; a Concorde at its reference level, about '
+      '1 150 kt, went out that way); French only (SOG-0680); a fake launcher')
+def f347(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    st['invalid'] = True
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    B = f'{FUEL} [data-routealts] [data-rrefused]'
+    c.until(f"!!document.querySelector('{B}')", timeout=10000, what='the refusal said')
+    c.eq(c.js(f"document.querySelector('{B}').dataset.rrefused"), 'invalid', 'a refusal of the arguments: « invalid » (red before: « failed »)',
+         what='reason')
+    said = norm(c.text(B) or '')
+    c.eq(said, norm('Le calcul de route a refusé la demande : une valeur envoyée sort de ses bornes.'), 'the cause in French (red before: '
+         '« Le calcul a échoué sans donner de résultat … : réessayez. »)', what='sentence')
+    c.ok('invalid' not in said.lower(), said, 'never the English message of the launcher')
