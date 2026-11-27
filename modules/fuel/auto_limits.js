@@ -8,6 +8,7 @@
 //   routeMoraFt(points, mora) → { ft, cells, unknown } : la plus haute MORA des cases d'un degré que la route traverse (chaque case
 //   demandée une fois ; mora(lat, lon) : aerodb.mora) ; create(state, refresh) → { floorFt() } : la même, lue une fois par route
 //   (state() : l'état du montage de module.js, S — ses points, son aerodb ; refresh() quand elle arrive et qu'« Auto » est en marche).
+//   climbTo(lim, on, levelFt) → { h } | null : le niveau où « Auto » monte quand le relief est au-dessus de toute la série chiffrée.
 
 /** Les bornes : en bas le plus haut de FL030 et des contraintes des procédures choisies ; en haut le plafond (SOG-0562 : le plus bas de
  *  celui de la fiche et de celui du modèle), FL200 sans plafond. */
@@ -25,6 +26,16 @@ export const TX = {
   // SOG-0653 : le relief de la route au-dessus du plafond — aucun niveau n'est proposé, et c'est dit (français seul, SOG-0680)
   overCeil: ['Relief de la route (MORA {m} ft) au-dessus du plafond (FL{c}) : aucun niveau proposé.']
 };
+
+/** SOG-0653 (cas F333) : la série que « Auto » lit est chiffrée autour du niveau du vol (FL030 : jusqu'au FL080) — un relief plus haut
+ *  qu'elle ne laisse aucun candidat. on : « Auto » en marche, une série chiffrée et aucun candidat. Le niveau monte alors au premier
+ *  millier au-dessus du plancher (sous le plafond) ; la série suivante est chiffrée autour de lui, et « Auto » y choisit. null sinon. */
+export function climbTo(lim, on, levelFt) {
+  const h = Math.ceil(lim.minFt / 1000) * 1000;
+  return on && lim.minFt > (+levelFt || 0) && h <= lim.maxFt ? {
+    h
+  } : null;
+}
 
 /** SOG-0653 : la phrase d'un plancher du relief au-dessus du plafond (« Auto » n'a alors aucun candidat), { main } pour la ligne sous le
  *  champ Niveau, ou null. */

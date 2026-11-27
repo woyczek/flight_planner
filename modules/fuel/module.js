@@ -7107,7 +7107,7 @@ function levelAuto(C) {
     lvlLines(line, '', J.none); // aucun niveau valide : le niveau n'est pas changé, et c'est dit (la raison du moteur dans le pli)
     return false;
   }
-  const a = J?.pick || null;
+  const a = J?.pick || AL.climbTo(lim, !why && f.level?.auto && !!C.D && !cands.length, f.level?.ft); // SOG-0653 : relief au-dessus
   if (a && a.h !== +f.level?.ft && (S.autoTries || 0) < 2) {
     S.autoTries = (S.autoTries || 0) + 1;
     f.level = {
