@@ -7647,10 +7647,12 @@ function renderPts() {
 }
 /** Points changés à la main : texte de la route réécrit, distance et route vraie déduites, vol courant écrit, devis
  *  refait ; la liste est redessinée sauf pendant la frappe d'un niveau (le champ garde la main). */
-function routeEdited(redraw = true) {
+function routeEdited(redraw = true, was = S.flight.route?.points || []) {
   const r = S.flight.route,
     before = r.text || '';
-  r.text = withRwys(RT.textFromPoints(r.points || [], r.text || '')); // voies gardées entre deux points restés voisins ; pistes (SOG-0089)
+  // voies gardées entre deux points restés voisins ; pistes (SOG-0089) ; SOG-0661 : `was`, les points d'avant le geste — un mot du texte
+  // qu'ils ne connaissent pas (non situé, tapé et pas encore lu) reste écrit, seul un point retiré disparaît
+  r.text = withRwys(RT.textFromPoints(r.points || [], r.text || '', was));
   r.typed = typedNames(r, before, r.text); // SOG-0517 : un point ajouté à la main est un passage voulu
   r.from = 'points';
   const ta = S.body?.querySelector('[data-k="rtext"]');
@@ -7667,7 +7669,8 @@ function routeEdited(redraw = true) {
 async function pointAction(act, i) {
   const s = S,
     r = S.flight.route ||= emptyFlight().route,
-    pts = r.points ||= [];
+    pts = r.points ||= [],
+    was = pts.slice(); // SOG-0661 : les points d'avant le geste (routeEdited)
   if (['ptup', 'ptdown', 'ptdel'].includes(act) && pts[i]?.lock === 'mission') return S.ctx.notify(tt(TX.ptLocked, {
     id: pts[i].mission || pts[i].id
   }), 'warn'); // SOG-0193 L3 : un point imposé par la mission
@@ -7697,7 +7700,7 @@ async function pointAction(act, i) {
     pts.length && pts.at(-1).id === r.arr ? pts.splice(pts.length - 1, 0, p) : pts.push(p);
     inp.value = '';
   } else return;
-  routeEdited();
+  routeEdited(true, was);
 }
 /** Paliers du devis : niveau des points intermédiaires (alt_ft) à leur distance cumulée du départ, ramenée à la
  *  distance du vol si elle a été tapée. */
@@ -10419,7 +10422,7 @@ async function directApply() {
     notOverflown: locked.map(x => x.lock)
   }];
   s.direct = null;
-  routeEdited();
+  routeEdited(true, before.points); // SOG-0661 : les points d'avant le direct — les points sautés partent du texte
   s.directUndo = {
     before,
     to: d.to,

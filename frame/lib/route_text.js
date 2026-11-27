@@ -22,7 +22,10 @@
 //     consécutifs inchangés qui se suivaient déjà dans previousText, les mots qui les séparaient (voie, procédure) sont
 //     gardés ; ailleurs, rien (direct). Inchangé : même identifiant, et même position à 0,5 NM près si previousPoints
 //     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable. Écrit par textFromTokens
-//     en forme OACI, avec ses « DCT » (refonte § 10.33 R-F4c : un seul écrivain du texte, la Carte et Carburant).
+//     en forme OACI, avec ses « DCT » (refonte § 10.33 R-F4c : un seul écrivain du texte, la Carte et Carburant). SOG-0661 : avec
+//     previousPoints, un nom ou des coordonnées de previousText qui ne sont NI dans points NI dans previousPoints (un nom non situé, un
+//     point tapé que la lecture n'a pas encore placé) restent écrits à leur place : seul un point retiré (dans previousPoints, plus dans
+//     points) disparaît du texte.
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
 //   runwaysOfText(text, { dep, arr }), withRunways(text, { dep, arr, depRwy, arrRwy }) : la piste écrite après le terrain, au format
 //     des plans de vol des outils (« LFPO/07 OPAL2E … LFML/31R », SOG-0089) : lue du premier et du dernier mot, écrite depuis le choix.
@@ -420,8 +423,12 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
       ...t,
       id: t.point
     } : t),
-    // dans l'ancien texte : un point est un identifiant ou des coordonnées qui ne sont pas des mots à garder
-    isPoint = t => t.kind === 'coord' || t.form === 'cruise' || (t.kind === 'name' && (!t.airway || ids.has(t.id) || prevPos?.has(t.id))),
+    // dans l'ancien texte : un point est un identifiant ou des coordonnées qui ne sont pas des mots à garder ; SOG-0661 (un départ, un nom,
+    // deux points en coordonnées avec DCT, un nom non situé, l'arrivée : le texte rebâti perdait le second point et le nom) : un point du
+    // texte que ni les points ni ceux d'avant ne connaissent (non situé, ou tapé et pas encore lu) est un mot gardé, jamais effacé
+    isPoint = t => (t.kind === 'coord' || t.form === 'cruise' || (t.kind === 'name' && (!t.airway || ids.has(t.id) || prevPos?.has(t
+      .id)))) &&
+    (!prevPos || ids.has(t.id) || prevPos.has(t.id)),
     between = new Map();
   let last = null,
     kept = [];
@@ -430,7 +437,17 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
       if (last && kept.length) between.set(`${last}>${t.id}`, kept);
       last = t.id;
       kept = [];
-    } else kept.push(t.id);
+    } else if (t.kind === 'coord' && Number.isFinite(+t.lat) && Number.isFinite(+t.lon)) kept.push({ // SOG-0661 : des coordonnées gardées
+      pt: { // se situent d'elles-mêmes : un point écrit, avec ses « DCT » et son niveau
+        id: t.id,
+        lat: +t.lat,
+        lon: +t.lon,
+        ...(t.alt_ft > 0 ? {
+          alt_ft: t.alt_ft
+        } : {})
+      }
+    });
+    else kept.push(t.id);
   }
   const prevIds = new Set(toks.filter(isPoint).map(t => t.id)),
     unchanged = p => {
@@ -446,9 +463,9 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
     if (i) {
       const a = pts[i - 1],
         key = `${String(a.id || '').toUpperCase()}>${String(p.id || '').toUpperCase()}`;
-      if (between.has(key) && unchanged(a) && unchanged(p)) out.push(...between.get(key).map(keep => ({
+      if (between.has(key) && unchanged(a) && unchanged(p)) out.push(...between.get(key).map(keep => typeof keep === 'string' ? {
         keep
-      })));
+      } : keep));
       else if (p.via && /^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(String(p.via).toUpperCase())) out.push({
         keep: String(p.via).toUpperCase()
       });
