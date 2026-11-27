@@ -328,6 +328,9 @@ export const TX = {
   procConflictStarApp: ['Ne dessert aucune piste de {app}', 'Serves no runway of {app}', 'Bedient keine Piste von {app}',
     'No sirve a ninguna pista de {app}'
   ],
+  // SOG-0688 (l'ergonome, 27/11) : une lecture refusée « unknown-aerodrome », la phrase choisie par la page ; français seul (SOG-0680)
+  procAdNotInBase: ['{icao} n’est pas dans la base : aucune procédure à lire.'],
+  procAdPending: ['La base n’a pas encore répondu pour {icao}. Réessayez dans un instant.'],
   procReasons: {
     // SOG-0438 : un travail arrêté par le lanceur (libéré) ou fini sans que sa fin puisse être lue : rien n'est relancé
     released: ['{icao} : la lecture a été arrêtée par le lanceur ; à relire.',

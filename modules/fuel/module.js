@@ -9647,8 +9647,9 @@ export async function mount(el, ctx) {
   S.P = createProcedures({
     zoneGap: icao => zoneGapOf(icao), // SOG-0143 : la ligne « zone manquante » d'un terrain sans procédures
     procState: icao => procStateOf(icao), // SOG-0157 : l'état des procédures de son État (le bouton de lecture le suit)
-    adUnknown: icao => S.AD?.nameKnown?.(String(icao || '').toUpperCase()) ===
-      null, // SOG-0688 : inconnu de la base (le champ le dit)
+    // SOG-0688 : ce que la page sait d'un code (le champ) — 'unknown' (la base ne le connaît pas), 'pending' (pas encore répondu), 'known'
+    adState: icao => (n => n === null ? 'unknown' : n === undefined ? 'pending' : 'known')(S.AD?.nameKnown?.(String(icao || '')
+      .toUpperCase())),
     ctx,
     flight: () => self.flight,
     route: () => self.flight.route ||= emptyFlight().route,

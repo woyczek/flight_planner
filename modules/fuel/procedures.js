@@ -743,7 +743,7 @@ export function createProcedures(host) {
   // « Lire à la demande » ; le même geste, le même appel
   function readButtonFor(icao, again = false, action = false) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k) || host.adUnknown?.(k)) return ''; // SOG-0688 : un terrain inconnu de la base, rien à lire
+    if (!/^[A-Z]{4}$/.test(k) || host.adState?.(k) === 'unknown') return ''; // SOG-0688 : un terrain inconnu de la base, rien à lire
     const ps = again ? null : host.procState?.(k);
     if (ps && !ps.readable) return '';
     return readButton(k, again ? tt(TX.procReread) : ps?.demand && !action ? tt(TX.procReadDemand) : tt(TX.procRead, {
@@ -817,7 +817,7 @@ export function createProcedures(host) {
     // demande » ; ne se lit pas (tables en images, étiquettes seules…) → pas de bouton qui échouerait, la ligne « zone manquante » le dit
     // SOG-0688 : un terrain inconnu de la base (son champ dit « inconnu ») n'a pas de bouton de lecture : EAD n'y trouverait rien
     const ps = m.nodata ? host.procState?.(m.icao) : null,
-      parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable || host.adUnknown?.(m.icao) ? '' : readButton(m.icao, ps?.demand ? tt(TX
+      parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable || host.adState?.(m.icao) === 'unknown' ? '' : readButton(m.icao, ps?.demand ? tt(TX
         .procReadDemand) : tt(TX.procRead, {
         icao: m.icao
       }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
@@ -1798,7 +1798,11 @@ export function createProcedures(host) {
         wn
       }, 'warn');
     } else {
-      const row = noneReadOld(res) ? TX.procReasons['none-read'] : TX.procReasons[res?.reason] || TX.procReasons.other,
+      // SOG-0688 (l'ergonome) : « unknown-aerodrome », la phrase choisie par ce que la page sait du code (la base a répondu, ou pas encore)
+      const ua = res?.reason === 'unknown-aerodrome' ? host.adState?.(icao) : null,
+        row = ua === 'unknown' ? TX.procAdNotInBase : ua === 'pending' ? TX.procAdPending : noneReadOld(res) ? TX.procReasons[
+          'none-read'] :
+        TX.procReasons[res?.reason] || TX.procReasons.other,
         st = res?.stats;
       say(row, {
         icao,
