@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Maintainability: `frame/aerodb/aerodb.js` back to its ceiling** (SOG-0678, case I65; no change of behaviour) — the check of SOG-0688 (`unknownAd`) takes 5 lines and the list of the reasons of `fetchProcedures` in its comment is shortened with a pointer to INTEGRATION.md (where the table is): 4 284 → 4 272 lines.
 - **Procedures: a code that is not an aerodrome of the base starts no reading** (SOG-0688, the user: « EGGL : lecture des procédures en échec … sans savoir pourquoi »; case K672, red before) — `aerodb.fetchProcedures` answers `{ ok: false, reason: 'unknown-aerodrome' }` at once, without a job, when the code is not an aerodrome of the base although the zone of its State is published (and no hand-read file names it); before, the launcher found no document and the screen said « 0 document(s) » without the cause. A State whose zone is not published cannot be judged. Fuel's side (no reading offered for an unknown code) is Features'. Nothing under `tools/`.
 
 ## [6.0.0-alpha.5] — 2026-11-27

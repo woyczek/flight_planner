@@ -837,14 +837,11 @@
       missing.delete('nat');
     }
 
-    /** SOG-0688 : vrai quand `k` (4 lettres) n'est PAS un aérodrome de la base alors que la zone de son État est publiée (une zone non
-     *  publiée ne permet pas de juger : faux) et qu'aucune procédure lue à la main ne le nomme (proc/manual : un terrain que la base
-     *  des aérodromes n'a pas encore peut déjà avoir ses procédures). Le contrôle que fait le champ de terrain (« inconnu »). */
+    /** SOG-0688 : `k` n'est pas un aérodrome de la base alors que la zone de son État est publiée (sinon on ne juge pas) et aucune procédure lue à la main ne le nomme. */
     async function unknownAd(k) {
       const pub = (await published().catch(() => null))?.zones || {};
-      if (!Object.keys(pub).some(id => pub[id]?.prefixes?.includes(k.slice(0, 2)))) return false;
-      if ((await api.coordsAll(k).catch(() => null))?.some(x => x.kind === 'aerodrome')) return false;
-      return !(await indexParts().catch(() => null))?.out?.aerodromes?.[k];
+      return Object.keys(pub).some(id => pub[id]?.prefixes?.includes(k.slice(0, 2))) && !(await api.coordsAll(k).catch(() => null))
+        ?.some(x => x.kind === 'aerodrome') && !(await indexParts().catch(() => null))?.out?.aerodromes?.[k];
     }
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
@@ -2532,15 +2529,8 @@
        *  (verbe ead-fetch, un terrain par geste, EAD_BASIC.md § 1), tout autre État : rien à lire, 'no-tables'. Le poste installe le
        *  résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers seulement, sans envoi), puis
        *  procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit, source: 'eaip' | 'ead' | 'ukpkg' } ou
-       *  { ok: false, reason, message? } — reason : 'bad-icao', 'unknown-aerodrome' (SOG-0688 : le code n'est pas un aérodrome de la base, dont la zone de son État est publiée ; aucune lecture n'est lancée), 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
-       *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'no-tables' (aucune table de codage publiée
-       *  pour cet État, ou la page du terrain n'en cite pas ; pour un État sans lecture, `outcome` (EAD_STATES) dit pourquoi et `lnm`
-       *  vaut true quand le poste a des bases de Little Navmap : indice, leur lecture est prévue à part, § 10.21), 'no-credentials'
-       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'no-package' (SOG-0374, `source: 'ukpkg'` : aucun paquet eAIP du Royaume-Uni sous les dossiers de l'utilisateur), 'too-soon' (EAD : une lecture il y a moins de 30 s ; `wait` dit les
-       *  secondes restantes), 'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre
-       *  travail), 'cancelled', 'failed' (`message` : refus de connexion, page non publiée, aucune procédure lue, contrôle de
-       *  géométrie, lanceur plus ancien…). `onProgress({ step, done, total, source })`, `signal` (AbortSignal). Jamais silencieux,
-       *  jamais deux fois pour le même terrain en même temps. */
+       *  { ok: false, reason, message? } — raisons : bad-icao, unknown-aerodrome, no-launcher, paired, no-tables, no-credentials, no-package, too-soon,
+       *  busy, cancelled, failed (leur sens : INTEGRATION.md). `onProgress({ step, done, total, source })`, `signal`. Jamais silencieux, jamais deux fois à la fois. */
       async fetchProcedures(icao, {
         onProgress,
         signal,
@@ -2555,9 +2545,7 @@
           });
         if (!/^[A-Z0-9]{4}$/.test(k)) return no('bad-icao');
         if (signal?.aborted) return no('cancelled');
-        // SOG-0688 : un code qui n'est pas un terrain de la base (« EGGL » pour EGLL) ne lance aucune lecture : le lanceur n'aurait
-        // trouvé aucun document et l'écran aurait dit « 0 document(s) » sans la cause
-        if (await unknownAd(k)) return no('unknown-aerodrome');
+        if (await unknownAd(k)) return no('unknown-aerodrome'); // SOG-0688 : « EGGL » pour EGLL : aucune lecture, la cause d'emblée
         if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
         if (launcher.info().lan) return no('paired');
         if (eadBusy.has(k)) return no('busy');
