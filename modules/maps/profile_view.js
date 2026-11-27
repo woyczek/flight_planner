@@ -298,6 +298,8 @@ function paintProfile(ctx, pl, W, H) {
     scale: W < 500 ? .78 : 1,
     window: windowNm(),
     select: S.selSpace,
+    reach: S.edit?.reach || 0, // SOG-0694 : le glisser d'un palier élargit l'échelle
+    levelFt: S.route?.levelFt || 0,
     placer: pl
   });
   // la marge de la croisière sur le relief lu (SOG-0502) : la part fautive de la ligne et son chiffre, peints par le bloc du profil

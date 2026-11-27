@@ -53,7 +53,8 @@ import {
   drawCursor,
   setCursor,
   yAtAlt,
-  altAtY
+  altAtY,
+  drawProfile
 } from './profile_view.js';
 import {
   hitTest,
@@ -689,6 +690,11 @@ function levelGestures() {
     const [, y] = pos(e);
     if (!d.moved && Math.abs(y - d.y0) > 6) d.moved = true;
     if (!d.moved) return;
+    // SOG-0694 : tiré vers le haut, le palier n'est pas arrêté par le haut de l'échelle : elle s'agrandit (3 000 ft de plus à chaque fois que le doigt est à moins de 500 ft du haut, jusqu'à FL600)
+    if (altAtY(S.geo, y) > S.geo.top - 500 && S.geo.top < 60000) {
+      S.edit.reach = Math.min(60000, S.geo.top + 3000);
+      drawProfile();
+    }
     d.ft = Math.max(1000, Math.min(S.geo.top, Math.round(altAtY(S.geo, y) / 1000) * 1000));
     drawCursor();
   }, true);
@@ -697,6 +703,10 @@ function levelGestures() {
     if (!d || e.pointerId !== d.id) return;
     e.stopPropagation();
     S.edit.ldrag = null;
+    if (S.edit.reach) { // le glisser est fini : l'échelle revient à celle de la route (le niveau écrit l'a déjà montée, s'il le faut)
+      S.edit.reach = 0;
+      if (e.type === 'pointercancel') drawProfile();
+    }
     if (e.type === 'pointercancel') return drawCursor();
     if (d.moved) setLevel(d.i, d.ft);
     else setCursor(MapsProfile.sOf(S.geo, d.x));

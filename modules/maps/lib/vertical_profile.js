@@ -546,6 +546,8 @@
     H,
     ceiling = 0,
     floor = 0,
+    reach = 0, // SOG-0694 : l'altitude que le glisser d'un palier atteint : l'échelle monte au moins jusque-là
+    levelFt = 0, // SOG-0694 : le niveau de croisière du vol : l'échelle monte au moins jusqu'à lui, plus une marge
     scale = 1,
     limitFt,
     title = '',
@@ -645,9 +647,14 @@
       return (rel(v.c.a.lower) ? data.samples[mid].center : 0) + limitFt(v.c.a.lower, false);
     };
     const zoneMax = Math.max(0, ...crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
-    const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, zoomed ? 2500 :
-        5000)) /
-      1000) * 1000;
+    // SOG-0694 : l'échelle va jusqu'au plus haut du niveau de croisière et des niveaux écrits dans la route (tous les points, fenêtre ou non), plus une marge de 1 500 ft, et jusqu'à l'altitude
+    // qu'un palier glissé atteint (`reach`) : sans cela un point ne se montait que de 2 000 ft au-dessus du plus haut niveau lu
+    const writtenMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0)),
+      highest = zoomed ? 0 : Math.max(levelFt, writtenMax) + 1500,
+      top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, highest, reach, zoomed ?
+          2500 :
+          5000)) /
+        1000) * 1000;
     // fenêtre : sans plancher demandé, le bas monte sous le plus bas du relief et de la trajectoire visibles quand ils sont hauts
     // (un vol en montagne ou en altitude : la place sous le relief ne sert à rien)
     const lowest = Math.min(...vis.map(q => q.terrain), ...(data.plan?.alt ? data.plan.alt.slice(iLo, iHi + 1).filter(v => v != null) : [
