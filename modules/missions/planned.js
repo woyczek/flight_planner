@@ -48,6 +48,17 @@ const asObject = m => Object.fromEntries([...m].slice(0, 100));
 /** Un instant ISO, ou null. */
 const iso = ms => Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 
+/** Les événements tenus par MON équipe : id → l'heure ISO la plus ancienne, entre mon constat (k.held, ISO) et ceux de mes équipiers
+ *  (c.mates, en ms). Le lecteur en tire l'heure des événements qui les suivent, et « n min après … tenu » s'en sert. */
+function teamHeld(c, k) {
+  const m = new Map(k.held);
+  for (const [id, t] of c.mates instanceof Map ? c.mates : []) {
+    const cur = m.has(id) ? Date.parse(m.get(id)) : Infinity;
+    if (Number.isFinite(t) && t < cur) m.set(id, new Date(t).toISOString());
+  }
+  return m;
+}
+
 export function model(c, view, o = {}) {
   try {
     const evs = Array.isArray(view?.events) ? view.events.slice(0, 60) : [],
@@ -59,7 +70,7 @@ export function model(c, view, o = {}) {
           takeoffAt: c.startIso || null,
           orderReadAt: iso(o.orderReadAt),
           passed: asObject(k.passed),
-          held: asObject(k.held),
+          held: asObject(teamHeld(c, k)), // l'événement tenu par un équipier fait glisser la suite, comme le mien
           drawersOpenAt: open
         });
         // le lecteur rend une LISTE [{ id, plannedAt, clock, imposed }] dans l'ordre du fichier : rangée par identifiant (une Map ou un objet reste lu)
@@ -71,6 +82,7 @@ export function model(c, view, o = {}) {
       fold: []
     };
     const k = RUN.constatsOf(c),
+      held = teamHeld(c, k), // tenu par mon équipe : moi ou un équipier
       letter = RUN.ownLetter(c),
       plan = typeof MS.plannedMin === 'function' ? MS.plannedMin(c.mission) : null,
       takeoff = Date.parse(c.startIso || ''),
@@ -105,7 +117,7 @@ export function model(c, view, o = {}) {
           etaMin: Number.isFinite(eta) ? eta : null,
           etaLate: Number.isFinite(eta) && Number.isFinite(atMs) ? Math.max(0, Math.round((now + eta * 60000 - atMs) / 60000)) : null,
           soon: own && heldMs === null && Number.isFinite(atMs) && atMs > now ? Math.max(1, Math.round((atMs - now) / 60000)) : null,
-          after: refEv && Number.isFinite(e.offsetMin) && e.offsetMin > 0 && k.held.has(refEv.id) ? {
+          after: refEv && Number.isFinite(e.offsetMin) && e.offsetMin > 0 && held.has(refEv.id) ? {
             k: e.offsetMin,
             r: String(refEv.title || refEv.text || '')
           } : null,
