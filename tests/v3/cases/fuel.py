@@ -12260,3 +12260,33 @@ def f337(c):
     c.ok('4630N00100W' in text and '4500N00100E' in text and 'LUGEN/F150' in text, text, 'the text keeps both coordinates and the level set')
     c.eq(norm(c.js("document.querySelector('[data-module=fuel] [data-k=\"rtext\"]').value")), norm(text), 'the field says the same text',
          what='field')
+
+
+
+@case('F342', 'A flight WITHOUT a date leaves now — for the weather too: the TAF of the alternate chosen is read and judged at the present '
+      'time (its weather criterion « ok » for a VFR TAF, never « ? » nor « Sans date de vol »), and « Proposer un dégagement » judges the '
+      'terrains proposed on their TAF read (never « wx-notime », no « Sans date de vol » above the list)', 'F', tags=('fuel', 'weather'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0690 (the user, 27 Nov: « Le « ? » dans le texte est systématique, toujours aucune météo chargée à la demande. pourtant le '
+      'geste est proposé, la suite doit être faite. »; the fact: a flight without planned_at — « leaves now », its Date field showing the '
+      'present time — had no hour for the weather: the Weather of the flight never asked a TAF, every alternate judged « without a date »); '
+      'invented aerodromes and TAFs kept on the device')
+def f342(c):
+    B = f'{FUEL} [data-altnchk]'
+    D = 'cache/fuel/altn_candidates.json'
+    _prop_open(c, tafs={'LFMT': 'VFR', 'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR', 'XQPF': 'VFR'}, planned=False)
+    # A. the alternate chosen (LFMT, a VFR TAF kept): read by the Weather of the flight, judged at the present time
+    c.until(f"document.querySelector('{B} li[data-crit=wx]')?.dataset.state === 'ok'", timeout=20000,
+            what='the alternate judged on its TAF: VFR (red before: « ? », « Sans date de vol, la météo du dégagement n’est pas jugée. »)')
+    c.eq(c.count(f'{B} [data-altnwx]'), 0, 'no line of a weather not judged', what='alternate line')
+    # B. the terrains proposed: judged on their TAF, never « without a date »
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    d = c.until_doc(D, lambda d: bool(d) and len(d.get('list') or []) > 0 and any(x['icao'] == 'XQPB' for x in d['list']),
+                    'the document of the Map', timeout=20000)
+    by = {x['icao']: x for x in d['list']}
+    c.ok(not any('wx-notime' in (x.get('why') or []) for x in d['list']), d['list'], 'no terrain « wx-notime » (red before: all of them)')
+    c.eq((by['XQPB']['state'], by['XQPB']['why']), ('ok', []), 'XQPB, a VFR TAF, judged good (red before: « warn », « wx-notime »)',
+         what='XQPB')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    c.eq(c.count(f'{B} [data-altnprop] [data-altnwxall]'), 0, 'no « Sans date de vol » above the list', what='once')
