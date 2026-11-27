@@ -19242,9 +19242,11 @@ def k487(c):
             return None
         except ValueError as e:
             return str(e)
-    c.eq([refused(speed_kt=0), refused(speed_kt=1001), refused(speed_kt=float('nan')), refused(climb_fpm=99), refused(descent_fpm=10001), refused(terminal_speed_kt=10)],
-         ['speed_kt : de 50 à 1000', 'speed_kt : de 50 à 1000', 'speed_kt : de 50 à 1000', 'climb_fpm : de 100 à 10000', 'descent_fpm : de 100 à 10000', 'terminal_speed_kt : de 50 à 1000'], 'each value out of the bounds (a speed of 0, 1 001, not a number; a rate of 99 or 10 001; a terminal speed of 10) is refused with its field (red before: accepted, a ZeroDivisionError in the search)', what='refused')
-    c.eq([refused(speed_kt=450), refused(speed_kt=238, climb_fpm=2000, descent_fpm=1500, terminal_speed_kt=220), refused(speed_kt=50), refused(speed_kt=1000, climb_fpm=10000)], [None] * 4, 'the values of a real flight, and the bounds themselves, are accepted', what='accepted')
+    # (the relay, 27 Nov, the user's Concorde: a Concorde at its reference level, about 1 150 kt, was refused by the door « invalid arguments » while the page sends 30 to 1 500 kt and 50 to 20 000 ft/min): the bounds of the engine are those of the page, no wider
+    c.eq([refused(speed_kt=0), refused(speed_kt=29), refused(speed_kt=1501), refused(speed_kt=float('nan')), refused(climb_fpm=49), refused(descent_fpm=20001), refused(terminal_speed_kt=10)],
+         ['speed_kt : de 30 à 1500', 'speed_kt : de 30 à 1500', 'speed_kt : de 30 à 1500', 'speed_kt : de 30 à 1500', 'climb_fpm : de 50 à 20000', 'descent_fpm : de 50 à 20000', 'terminal_speed_kt : de 30 à 400'], 'each value out of the bounds (a speed of 0, 29, 1 501, not a number; a rate of 49 or 20 001; a terminal speed of 10) is refused with its field (red before: accepted, a ZeroDivisionError in the search)', what='refused')
+    c.eq([refused(speed_kt=450), refused(speed_kt=238, climb_fpm=2000, descent_fpm=1500, terminal_speed_kt=220), refused(speed_kt=30), refused(speed_kt=1500, climb_fpm=20000, descent_fpm=50, terminal_speed_kt=30), refused(speed_kt=1150, climb_fpm=3000, descent_fpm=3000, terminal_speed_kt=400)], [None] * 5,
+         'the values of a real flight (a Concorde at about 1 150 kt: refused before), and the bounds themselves (30 and 1 500 kt, 50 and 20 000 ft/min, 30 and 400 kt for the terminal speed), are accepted', what='accepted')
 
 
 @case('K488', 'Route engine, SOG-0532 lot 2 (the review of Sécurisation): the reading of the reasons of a rule (`rad_flight.reasons_of`) has a bounded cost whatever the cell — the cells are cut at MAX_CONDITION signs before any pattern, and the test « a space after a keyword » runs once per segment (linear, no `.*?` retried at every keyword); the RAD comes from an untrusted file of data/',
