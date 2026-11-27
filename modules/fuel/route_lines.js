@@ -7,8 +7,8 @@
 //   (« » sans eux) ; h = { tt(rangée, valeurs) (la traduction du module), TX (les textes de module.js : awyBad, unresolved, farPt,
 //   homonyms, jump), esc (l'échappement de module.js), lang() (la langue du montage, pour les nombres) }.
 //   readingPaint(body, reading, flightFt, h) : SOG-0679, la lecture en clair de la route sous son champ (reading de
-//   frame/lib/route_model.js, flightFt : le niveau du devis) — règles de vol, paliers, vitesses, niveau de tête, « Non compris », points
-//   non situés ; TX : ses textes, quatre langues. Les noms viennent du texte du pilote ou du vol : textContent, esc.
+//   frame/lib/route_model.js, flightFt : le niveau du devis) — règles de vol, paliers, vitesses et montées en croisière, niveau de tête,
+//   « Non compris », points non situés ; TX : ses textes, quatre langues (les lignes ajoutées depuis le 26/11 : français seul). Les noms viennent du texte du pilote ou du vol : textContent, esc.
 
 import {
   formatLevel
@@ -72,6 +72,12 @@ export const TX = {
     'Flughöhe am Anfang der Route ({a}) nicht übernommen: die Berechnung behält die Flughöhe des Flugs ({b}).',
     'Nivel al inicio de la ruta ({a}) no aplicado: el presupuesto mantiene el nivel del vuelo ({b}).'
   ],
+  // SOG-0679 (l'ergonome, 27/11) : la ligne des vitesses se compose avec les montées en croisière « C/… » (une forme valide, non
+  // appliquée) ; le pluriel écrit en clair ; français seul (SOG-0680)
+  climbOne: ['Non appliqué au devis : la montée en croisière écrite dans la route.'],
+  climbMany: ['Non appliqué au devis : les montées en croisière écrites dans la route.'],
+  speedsClimbOne: ['Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.'],
+  speedsClimbMany: ['Non appliqué au devis : les vitesses et les montées en croisière écrites dans la route.'],
   // SOG-0679 (addendum, le relais) : un arrêt écrit dans la route n'est pas compté dans le temps du devis ; français seul (SOG-0680)
   stays: ['Non appliqué au devis : la durée des arrêts écrits dans la route (STAY).'],
   notUnderstood: ['Non compris : {l}.', 'Not understood: {l}.', 'Nicht verstanden: {l}.', 'No comprendido: {l}.'],
@@ -117,7 +123,11 @@ export function readingPaint(body, reading, flightFt, h) {
     }));
   }
   if (R.steps) line('steps', false, h.tt(TX.steps));
-  if (Array.isArray(R.speeds) && R.speeds.length) line('speeds', false, h.tt(TX.speeds));
+  // SOG-0679 (l'ergonome, 27/11) : UNE ligne pour ce qui n'est pas appliqué de la route — les vitesses, les montées en croisière, ou les deux
+  const sp = Array.isArray(R.speeds) && R.speeds.length > 0,
+    nc = Array.isArray(R.climbs) ? R.climbs.length : 0,
+    spRow = nc ? sp ? nc > 1 ? TX.speedsClimbMany : TX.speedsClimbOne : nc > 1 ? TX.climbMany : TX.climbOne : sp ? TX.speeds : null;
+  if (spRow) line('speeds', false, h.tt(spRow));
   if (Array.isArray(R.stays) && R.stays.length) line('stays', false, h.tt(TX.stays));
   if (+R.headLevel > 0 && +flightFt > 0 && Math.round(+R.headLevel / 100) !== Math.round(+flightFt / 100)) line('head', true, h.tt(TX
     .head, {

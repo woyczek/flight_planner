@@ -4,8 +4,8 @@
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
 //   routeModel(text, { dep, arr, known, chain, base, procs, nat }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks,
-//   natDirect, reading } (voir la fonction ; SOG-0679 : reading = { notUnderstood (les mots non compris dans l'ordre du texte, « C/… »
-//   compris), unplaced (les points par relèvement et distance, pas placés), rules ([{ rule: 'VFR' | 'IFR', after: le point qui précède
+//   natDirect, reading } (voir la fonction ; SOG-0679 : reading = { notUnderstood (les mots non compris dans l'ordre du texte ;
+//   « C/… » n'en est plus depuis la retouche de l'ergonome du 27/11), climbs (les montées en croisière « C/… » écrites), unplaced (les points par relèvement et distance, pas placés), rules ([{ rule: 'VFR' | 'IFR', after: le point qui précède
 //   ou null }]), speeds (les vitesses écrites), stays (les arrêts « STAY… » écrits), headLevel (le niveau du groupe de tête, 0 sans lui), steps (un niveau écrit à un point) } ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
 //   jour lues et valides, [{ id, points: [{ id, lat, lon }] }] — aerodb.natTracks() —, null si elles ne le sont pas ; natDirect : les routes
 //   NAT gardées NON dépliées, [{ l, why: 'unread' | 'gone' | 'ends' }]).
@@ -68,6 +68,7 @@ export async function routeModel(text, {
     rules = [],
     // SOG-0679 : les points par relèvement et distance (lus, pas placés), les vitesses écrites, le niveau du groupe de tête
     unplaced = [],
+    climbs = [], // SOG-0679 (l'ergonome, 27/11) : les montées en croisière écrites, une forme valide
     speeds = [],
     stays = []; // SOG-0679 (addendum, le relais) : les arrêts écrits (« STAY1/0045 »), leur durée jamais appliquée au devis
   let headLevel = 0;
@@ -288,8 +289,9 @@ export async function routeModel(text, {
       'cruise') { // SOG-0679 : la montée en croisière ; son point est un point de la route, ses niveaux ne s'appliquent pas
       const inner = tokenize(t.point)[0],
         c = inner?.kind === 'coord' ? inner : inner?.kind === 'name' ? await find(inner.id, points.at(-1) || mid) : null;
-      notUnderstood.push(t.id); // SOG-0679 (l'ergonome) : « Non compris : C/… », son point reste un point de la route
-      if (t.speed) speeds.push(t.speed);
+      // SOG-0679 (l'ergonome, 27/11) : une forme valide, jamais « Non compris » ; sa vitesse et ses niveaux sont ceux de la montée (non
+      // appliqués : le devis garde au point de la montée le niveau d'avant ce point), jamais comptés parmi les vitesses écrites
+      climbs.push(t.id);
       if (c) {
         add(t.point, c, 0);
         points.at(-1).cruise = t.id;
@@ -406,6 +408,7 @@ export async function routeModel(text, {
       unplaced,
       rules,
       speeds,
+      climbs,
       headLevel,
       steps: points.slice(1, -1).some(p => p.alt_ft > 0),
       stays

@@ -11604,9 +11604,9 @@ def f325(c):
 
 @case('F327', 'Route step: under the route field, the reading of the route in plain words, each line only when it has a reason to be — the '
       'flight rules deduced from « VFR » / « IFR » (the letter, never typed; VFR and IFR never points), the levels written at points applied '
-      'as steps, the speeds written in the route not applied, a level at the head different from the flight\'s not applied, « Non compris » '
-      'for « C/… » (its point a point of the route) and any word not understood, and a WARNING for a point by bearing and distance, not '
-      'located', 'F', tags=('fuel',), designs=('standard',), screens=True, langs4=True,
+      'as steps, the speeds and the cruise climbs « C/… » written in the route not applied (one grey line; « C/… » is a valid form, its point '
+      'a point of the route, never « Non compris »: the ergonomist, 27 Nov), a level at the head different from the flight\'s not applied, '
+      '« Non compris » for any word not understood, and a WARNING for a point by bearing and distance, not located', 'F', tags=('fuel',), designs=('standard',), screens=True, langs4=True,
       rule='SOG-0679 temps 1 (the relay, 26 Nov, on a word of the user: the flight rule is not a setting of the flight, item 15 says it with '
       'the speeds and the levels; the ergonomist\'s six lines of 26 Nov; the fact of 26 Nov: « VFR » was looked up as a point, « C/… » and '
       '« TOU180040 » were dropped in silence); an invented route of the same shape')
@@ -11634,10 +11634,11 @@ def f327(c):
          'each form its token: the rules, the cruise climb and its point, the point by bearing and distance, the speed of a group and of a '
          'point (red before: VFR and IFR were names, C/… and XPA180040 bare words)', what='tokens')
     c.eq(got[1], ['XDEP', 'XPA', 'XPB', 'XARR'], 'the point of the cruise climb is a point of the route; VFR and IFR are not', what='points')
-    c.eq(got[2], {'notUnderstood': ['C/XPB/N0450F350F390', 'ZZ*9'], 'unplaced': ['XPA180040'],
-                  'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPA'}], 'speeds': ['N0450'], 'headLevel': 0,
-                  'steps': False, 'stays': []}, 'the reading: « C/… » and ZZ*9 not understood, the bearing-distance point apart, each change of rule after '
-         'its point, the speed of the cruise climb', what='reading')
+    c.eq(got[2], {'notUnderstood': ['ZZ*9'], 'unplaced': ['XPA180040'],
+                  'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPA'}], 'speeds': [], 'climbs': ['C/XPB/N0450F350F390'],
+                  'headLevel': 0, 'steps': False, 'stays': []}, 'the reading: ZZ*9 not understood, « C/… » a cruise climb (its speed is the '
+         'climb\'s, not a speed written; the ergonomist, 27 Nov), the bearing-distance point apart, each change of rule after its point',
+         what='reading')
     c.eq(got[3], [], 'nothing « not recognised »: VFR and IFR are never looked up as points', what='unresolved')
     c.eq(got[4], 'XDEP VFR XPA IFR C/XPB/N0450F350F390 XPA180040 ZZ*9 XARR', 'the normalised text keeps every word as written',
          what='text')
@@ -11647,7 +11648,7 @@ def f327(c):
                      {'letter': 'Y', 'start': 'IFR', 'changes': [{'rule': 'VFR', 'at': 'XPA'}]}, None],
          'the letter deduced: VFR then IFR Z, IFR then VFR Y, VFR alone V, a first change to VFR means the flight left IFR; no rule '
          'written, nothing', what='letter')
-    c.eq(got[10], {'notUnderstood': [], 'unplaced': [], 'rules': [], 'speeds': ['N0300', 'N0280', 'N0450'], 'headLevel': 25000,
+    c.eq(got[10], {'notUnderstood': [], 'unplaced': [], 'rules': [], 'speeds': ['N0300', 'N0280', 'N0450'], 'climbs': [], 'headLevel': 25000,
                    'steps': True, 'stays': []}, 'the speeds written (head group, point, group in the middle), the level of the head group, steps',
          what='groups')
     c.eq(got[11], [['XDEP', 0, ''], ['XPA', 15000, 'N0280'], ['XPB', 37000, 'N0450'], ['XARR', 0, '']],
@@ -11662,27 +11663,27 @@ def f327(c):
     c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
     W = {'fr': ['Règles de vol : Z — VFR jusqu’à LUGEN, IFR de LUGEN à NEPIX, puis VFR.',
                 'Niveaux écrits aux points : appliqués comme paliers.',
-                'Non appliqué au devis : les vitesses écrites dans la route.',
+                'Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.',  # French only (SOG-0680)
                 'Niveau en tête de la route (FL250) non appliqué : le devis garde le niveau du vol (FL270).',
-                'Non compris : C/NEPIX/N0300F270F290, ZZ*9.',
+                'Non compris : ZZ*9.',
                 'Point non situé : LUGEN180040 (relèvement et distance) : il n’est pas dans le tracé ni dans le devis.'],
          'en': ['Flight rules: Z — VFR up to LUGEN, IFR from LUGEN to NEPIX, then VFR.',
                 'Levels written at points: applied as steps.',
-                'Not applied to the quote: the speeds written in the route.',
+                'Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.',  # French only (SOG-0680)
                 'Level at the head of the route (FL250) not applied: the quote keeps the flight level (FL270).',
-                'Not understood: C/NEPIX/N0300F270F290, ZZ*9.',
+                'Not understood: ZZ*9.',
                 'Point not located: LUGEN180040 (bearing and distance): it is neither in the track nor in the quote.'],
          'de': ['Flugregeln: Z — VFR bis LUGEN, IFR von LUGEN bis NEPIX, danach VFR.',
                 'An Punkten geschriebene Flughöhen: als Stufen angewendet.',
-                'Nicht in die Berechnung übernommen: die in der Route geschriebenen Geschwindigkeiten.',
+                'Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.',  # French only (SOG-0680)
                 'Flughöhe am Anfang der Route (FL250) nicht übernommen: die Berechnung behält die Flughöhe des Flugs (FL270).',
-                'Nicht verstanden: C/NEPIX/N0300F270F290, ZZ*9.',
+                'Nicht verstanden: ZZ*9.',
                 'Punkt nicht verortet: LUGEN180040 (Peilung und Entfernung): er ist weder im Streckenverlauf noch in der Berechnung.'],
          'es': ['Reglas de vuelo: Z — VFR hasta LUGEN, IFR de LUGEN a NEPIX, después VFR.',
                 'Niveles escritos en los puntos: aplicados como escalones.',
-                'No aplicado al presupuesto: las velocidades escritas en la ruta.',
+                'Non appliqué au devis : les vitesses et la montée en croisière écrites dans la route.',  # French only (SOG-0680)
                 'Nivel al inicio de la ruta (FL250) no aplicado: el presupuesto mantiene el nivel del vuelo (FL270).',
-                'No comprendido: C/NEPIX/N0300F270F290, ZZ*9.',
+                'No comprendido: ZZ*9.',
                 'Punto no situado: LUGEN180040 (marcación y distancia): no está en el trazado ni en el presupuesto.']}[c.lang]
     want = [['rules', 'f-muted', W[0]], ['steps', 'f-muted', W[1]], ['speeds', 'f-muted', W[2]], ['head', 'f-warn', W[3]],
             ['notund', 'f-warn', W[4]], ['unplaced', 'f-warn', W[5]]]
@@ -11736,9 +11737,9 @@ def f334(c):
     c.eq(got[1], [['XDEP', 0, ''], ['XPA', 0, ''], ['XPB', 4500, 'A'], ['XPC', 35000, ''], ['XPD', 0, ''], ['XPE', 0, ''], ['XPF', 0, ''],
                   ['5530N02000W', 0, ''], ['XARR', 0, '']], 'the points: never STAY, OAT, GAT, NATD; XPB at 4 500 ft (an altitude), XPC '
          'at FL350', what='points')
-    c.eq(got[2], {'notUnderstood': ['C/XPF/M082F370PLUS', 'C/NTR270010/N0450F350F390'], 'unplaced': ['NTR270010'],
-                  'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPB'}], 'speeds': ['K0210', 'K0300', 'M078', 'M082', 'N0450'],
-                  'headLevel': 0, 'steps': True, 'stays': ['STAY1/0045']}, 'the reading: the VFR rule of the head group, the speeds in knots, km/h and Mach, the point '
+    c.eq(got[2], {'notUnderstood': [], 'unplaced': ['NTR270010'],
+                  'rules': [{'rule': 'VFR', 'after': 'XDEP'}, {'rule': 'IFR', 'after': 'XPB'}], 'speeds': ['K0210', 'K0300', 'M078'],
+                  'climbs': ['C/XPF/M082F370PLUS', 'C/NTR270010/N0450F350F390'], 'headLevel': 0, 'steps': True, 'stays': ['STAY1/0045']}, 'the reading: the VFR rule of the head group, the speeds in knots, km/h and Mach, the point '
          'of a cruise climb by bearing and distance « non situé »', what='reading')
     c.eq(got[3], [], 'nothing « not recognised »', what='unresolved')
     c.eq(got[4], 'XDEP K0210VFR XPA STAY1/0045 XPB/K0300A045 IFR XPC/M078F350 DCT XPD OAT XPE GAT C/XPF/M082F370PLUS NATD 5530N02000W '
@@ -12029,6 +12030,7 @@ def f333(c):
             what='the terrain above the ceiling, said (never a level under it in silence)')
     c.js("document.querySelector('[data-module=fuel] input[data-k=fl]').scrollIntoView({block: 'center'})")
     c.shot(f'F333_{c.design}_390_{c.lang}_overceil.png')
+
 
 
 @case('F335', 'Route step: a cruise climb « C/point/speed level level|PLUS » is a valid form — never « Non compris », no orange line; the grey '
