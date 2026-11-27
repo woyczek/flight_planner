@@ -1,6 +1,6 @@
 // V3 missions — « Prévu » du bloc « Suite de la mission » du pilote (SOG-0620, lot 3) : les ÉVÉNEMENTS que le pilote voit (MS.pilotView, qui
-// cache déjà celui dont le repère est un tiroir fermé), rangés par l'heure, chacun avec son heure — une heure d'horloge (« 14:45Z ») dès que son
-// repère est connu, sinon l'heure prévue après le décollage (« H+45 ») —, l'équipe en puces (la mienne pleine, les autres au trait) et, pour
+// cache déjà celui dont le repère est un tiroir fermé), rangés par l'heure, chacun avec son heure — une heure d'horloge (« 14:45Z ») dès que le
+// lecteur en donne une (en vol, toujours), sinon l'heure prévue après le décollage (« H+45 ») —, l'équipe en puces (la mienne pleine, les autres au trait) et, pour
 // MON équipe seulement (ou un événement sans équipe), une ligne d'état. La maquette : modules/missions/maquette/deroule.html, scène (e).
 //
 // Les constats sont ceux du juge (drawers_run.js constatsOf : tenu à, passé à, temps restant) ; le lecteur de la suite donne les heures
@@ -132,9 +132,10 @@ export function model(c, view, o = {}) {
   }
 }
 
-/** L'heure d'une ligne : « 14:45Z » une fois le repère connu, sinon « H+45 » (ou « H-15 ») ; '' sans heure du tout. */
+/** L'heure d'une ligne : « 14:45Z » dès que le lecteur donne une heure (en vol, toujours : le repère constaté, ou le décollage plus le
+ * décalage, pour lequel le lecteur rend clock: false), sinon « H+45 » (ou « H-15 ») ; '' sans heure du tout. */
 function whenOf(l) {
-  if (l.clock) return fmtZ(new Date(l.atMs));
+  if (l.atMs !== null) return fmtZ(new Date(l.atMs));
   return l.rel === null ? '' : l.rel === 0 ? 'H' : `H${l.rel < 0 ? '-' : '+'}${Math.abs(l.rel)}`;
 }
 

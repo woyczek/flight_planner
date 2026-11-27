@@ -33,6 +33,8 @@ const STYLE = `<style>
 [data-module="missions"] .fl{--ev:#0b6b5c;--ev-bg:#e3f4f0;--dw:#6b3fb8;--dw-bg:#f1ebfb}
 [data-module="missions"] .fl-def{margin:0 0 8px}
 [data-module="missions"] .fl-list{display:flex;flex-direction:column;gap:6px}
+[data-module="missions"] .fl-ul{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+[data-module="missions"] .fl-ul>li{margin:0;padding:0}
 [data-module="missions"] .fl-row{display:grid;grid-template-columns:74px minmax(0,1fr);gap:8px;align-items:start;width:100%;min-height:44px;margin:0;padding:8px;text-align:left;border:1px solid var(--sog-line,#d0d5dd);border-left:4px solid var(--ev);background:var(--sog-surface,#fff);color:inherit;border-radius:0}
 [data-module="missions"] .fl-row[data-kind="drawer"]{border-left-color:var(--dw)}
 [data-module="missions"] .fl-row[data-under]{margin-left:40px;width:calc(100% - 40px);border-left-color:var(--dw)}
@@ -146,13 +148,15 @@ function rowsHtml(s, h) {
     teams = new Map(EF.teamLetters(c.doc).map(x => [x.letter, x.name])),
     rows = EF.rows(c.doc, c.list, c.drawers, t, c.places);
   if (!rows.length) return `<p class="f-muted" data-noevent>${esc(s.tt(s.ed.veil ? FTX.flNoneVeil : FTX.flNone))}</p>`;
-  return rows.map(r => {
+  // une vraie liste : chaque ligne est un élément (son heure de repli, sa tolérance et son lieu sont des données de la ligne, pas des textes
+  // d'explication du groupe — N132)
+  return `<ul class="fl-ul">${rows.map(r => {
     const ev = r.kind === 'event',
       cur = ev ? e.flowSel === r.n : e.sel === r.id && (e.sel || 'start') !== 'start';
-    return `<button type="button" class="fl-row" data-do="${ev ? 'edflowsel' : 'edsel'}" ${ev ? `data-n="${r.n}"` : `data-sel="${esc(r.id)}"`} data-kind="${r.kind}"${r.under ? ' data-under="1"' : ''}${cur ? ' aria-current="true"' : ''}>
+    return `<li><button type="button" class="fl-row" data-do="${ev ? 'edflowsel' : 'edsel'}" ${ev ? `data-n="${r.n}"` : `data-sel="${esc(r.id)}"`} data-kind="${r.kind}"${r.under ? ' data-under="1"' : ''}${cur ? ' aria-current="true"' : ''}>
       <span class="fl-when"><b>${esc(r.when)}</b><span class="f-muted">${esc(r.tol)}</span></span>
-      <span class="fl-what"><span class="fl-kind" data-kind="${r.kind}">${esc(s.tt(ev ? FTX.flEvent : FTX.flDrawer))}</span><b>${esc(r.title)}</b>${r.sub ? `<span class="f-muted fl-sub">${esc(r.sub)}</span>` : ''}${r.teams.length ? `<span class="fl-chips">${r.teams.map(l => `<span class="fl-chip">${esc(teams.get(l) || l)}</span>`).join('')}</span>` : ''}</span></button>`;
-  }).join('');
+      <span class="fl-what"><span class="fl-kind" data-kind="${r.kind}">${esc(s.tt(ev ? FTX.flEvent : FTX.flDrawer))}</span><b>${esc(r.title)}</b>${r.sub ? `<span class="f-muted fl-sub">${esc(r.sub)}</span>` : ''}${r.teams.length ? `<span class="fl-chips">${r.teams.map(l => `<span class="fl-chip">${esc(teams.get(l) || l)}</span>`).join('')}</span>` : ''}</span></button></li>`;
+  }).join('')}</ul>`;
 }
 
 /** La fiche de l'événement choisi (sinon ''). */

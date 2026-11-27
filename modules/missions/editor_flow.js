@@ -181,8 +181,9 @@ const core = e => JSON.stringify({
   legacy: 0
 });
 
-/** L'objet du fichier d'une ligne retouchée : les autres clés gardées, celles du déroulé réécrites (une valeur vide retire sa clé). */
-function compose(base, e, id) {
+/** L'objet du fichier d'une ligne retouchée : les autres clés gardées, celles du déroulé réécrites (une valeur vide retire sa clé). `was` : la
+ *  ligne telle que le fichier la lisait ; tant que son repère et son décalage n'ont pas changé, l'heure écrite (`at`, « H+40mn » de la V2) reste. */
+function compose(base, e, id, was = null) {
   const o = {
       ...rec(base)
     },
@@ -215,7 +216,8 @@ function compose(base, e, id) {
   const at = mirror({
     ...flat
   });
-  if (at) o.at = at; // une heure de la V2 non lue (off null) reste telle quelle tant que l'auteur n'a pas choisi de repère
+  const kept = was && was.refKind === flat.refKind && was.refId === flat.refId && was.offset === flat.offset && typeof o.at === 'string' && o.at.trim();
+  if (at && !kept) o.at = at; // une heure de la V2 non lue (off null), ou lue et non retouchée, reste telle quelle
   return o;
 }
 
@@ -239,7 +241,7 @@ export function withFlow(doc, entries) {
             if (!used.has(`EV-${n}`)) id = `EV-${n}`;
           if (id) used.add(id);
         }
-        return compose(Number.isInteger(e.i) && e.i >= 0 ? raw[e.i] : {}, e, id);
+        return compose(Number.isInteger(e.i) && e.i >= 0 ? raw[e.i] : {}, e, id, was);
       });
     return ED.withEventObjects(doc, objs);
   } catch {

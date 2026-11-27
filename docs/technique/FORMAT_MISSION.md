@@ -441,7 +441,8 @@ timeline:
   there.
 - **A V2 event** (`at: H+30mn` alone) is read as the take-off + 30 minutes when it can be (shown « H+30 »); a time that is not of that form is
   read as « old » (`legacy`): shown as written, planned at no time (last in the sequence). **It is not rewritten until it is edited** — a
-  file that is only opened and saved keeps the same keys and values; the first edit gives it its `id`.
+  file that is only opened and saved keeps the same keys and values; the first edit gives it its `id` and its `offset_min`, and its `at` stays
+  as the file wrote it (« H+40mn ») while its reference and offset are the ones read from it — the mirror replaces it only when the time changes.
 - **How the workshop names a reference**: never by an event's identifier — another event by the NAME of its place when it has one, else by its
   title cut at fourteen signs (« Rendez-vous a… »); a drawer by its rank (« T2 »); a point by its name; the order as « ordre ».
 - **An event that became a drawer** (the switch « Annoncé au brief » ⇄ « Caché jusqu'à un stimulus » of the workshop): the drawer keeps the event's
