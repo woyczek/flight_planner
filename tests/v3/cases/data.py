@@ -1034,7 +1034,9 @@ def l8(c):
     want = _trow('busy', 'fr', 'refused: {')
     c.eq(norm(c.text('[data-build-result]')), norm(want), '« Une autre opération est en cours »', what='409 text')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
-         [True, 'busy', norm(want)], 'the button is grey with the same reason, written once', what='409 reason')
+         # SOG-0696 (the ergonomist): an operation started elsewhere that the screen cannot name keeps its own sentence WITH its full stop, and NO link (no card of that operation on the screen)
+         [True, 'busy', 'Une autre opération est en cours.'], 'the button is grey with the sentence « Une autre opération est en cours. » (with its full stop), written once, without a link', what='409 reason')
+    c.eq(c.count('[data-build] [data-reason] [data-act=see-busy]'), 0, 'no card of that operation on the screen: no link « Voir son avancement »', what='409 no link')
     c.until("!!document.querySelector('[data-other]') && document.querySelector('[data-other]').textContent.includes('Analyse')", timeout=6000, what='the running operation is followed')
     c.until("!document.querySelector('[data-other]') && !document.querySelector('[data-verb=build]').disabled", timeout=10000, what='the button is live again when that operation ends')
     c.eq(c.count('[data-build] [data-running]'), 0, 'it was not a build of the base: no bar, no summary of it', what='running')
@@ -1816,7 +1818,10 @@ def l15(c):
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=build]')", timeout=8000, what='the build runs')
     _grey(c, 'a build running')
-    c.eq(norm(c.text('[data-build] [data-reason]')), norm(_trow('busy', lang, 'greyReason: {')), '« Une autre opération est en cours »', what='reason text')
+    # SOG-0696: the grey reason of a running operation names it and gives the link (no longer the bare « Une autre opération est en cours »)
+    said = norm(c.text('[data-build] [data-reason]'))
+    c.ok(said.startswith(norm(_trow('greyBusy', lang, after='    greyBusy: [').split('{op}')[0])) and c.count('[data-build] [data-reason] [data-act=see-busy]') == 1, said,
+         '« Une opération est en cours : … » with the link « Voir son avancement »')
     _screen_ok(c, 'a build running')
     c.check_errors()
 
@@ -12251,4 +12256,46 @@ def l188(c):
     c.tap('[data-verb=build]')
     c.until(f"!!document.querySelector('{card}')", timeout=8000, what='the card, a set of Données')
     c.eq(norm(c.text(f'{card} [data-busy-name]')), norm('Le poste est occupé : Procédures · Télécharger'), 'a set that Données names: the same sentence, its own word', what='title, known set')
+    c.check_errors()
+
+
+@case('L189', 'Données: « Une opération est en cours : voyez son avancement. » names the operation and carries the link « Voir son avancement » that brings the progress under the eyes (SOG-0696)', 'L', tags=('data',),
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0696 (the user, SIG-01b15ed33f: « opération en cours, voyez son avancement. - pas de lien »; the ergonomist: a sentence that says « voyez » gives the link to the place where the progress is read, and names the operation): the grey reason of the sheet and of the month block said « voyez son avancement » with no link and no name. It now says « Une opération est en cours : {opération}. » (the words of the screen first, then those of the frame: SOG-0658) and a link `data-act=see-busy`; an operation the screen cannot name says the old sentence of the grey reason, still with the link. French (the new words in four languages)')
+def l189(c):
+    lang = c.lang
+    cfg, _ = _fixture()
+    st = _launcher(c, [_view('running')], start=(200, {'job': 'j1'}), verbs=_VERBS)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    # the sentence and its link, from each operation the screen can name (the state of the screen is set as the gesture sets it)
+    html = lambda setup: c.js("async (setup) => { const B = await import('/modules/data/busy.js'), St = await import('/modules/data/state.js'), S = St.S, keep = { run: S.run, chain: S.chain, zop: S.zop };"
+                              " S.run = null; S.chain = null; S.zop = null; Object.assign(S, setup); const h = B.greyBusyHtml(); Object.assign(S, keep); return h }", setup)
+    plain = lambda h: norm(re.sub(r'<[^>]+>', '', h))
+    G = lambda key: _trow(key, lang, after='    greyBusy: [')
+    h = html({'run': {'phase': 'running', 'set': 'proc', 'verb': 'fetch', 'args': {'zones': ['fr', 'gb']}}})
+    want = norm(G('greyBusy').replace('{op}', f"{_trow('proc', lang, after='  groups: {')} · {_trow('fetch', lang, after='Ruta (RAD, FRA)')} (fr, gb)")) + ' ' + norm(G('seeBusy'))
+    c.eq(plain(h), want, 'a run of the screen: the sentence NAMES the operation (the set, the verb, the countries) and the link follows', what='named run')
+    c.ok('data-act="see-busy"' in h, h, 'the link is the action « see-busy »')
+    c.eq(plain(html({'chain': {'phase': 'running'}})), norm(G('greyBusy').replace('{op}', _trow('updateAll', lang))) + ' ' + norm(G('seeBusy')), 'the chain « Tout mettre à jour » is named by its button', what='named chain')
+    h0 = html({})
+    c.eq(plain(h0), norm(_trow('busy', lang, after='  greyReason: {')) + '.', 'an operation the screen cannot name, with no card of it on the screen: the sentence of the grey reason with its full stop, no link', what='unnamed')
+    c.ok('data-act="see-busy"' not in h0, h0, 'no link without the card of that operation')
+    # the real screen: start the update, the grey reasons of the sheet and of the month block carry the link; a touch brings the progress under the eyes
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-running]')", timeout=10000, what='the operation runs')
+    c.wait(500)
+    # SOG-0696, the REAL screen (no « if »: a link that is never there delivers nothing): under « Mettre à jour » the sentence of the grey reason names the operation started from this screen and carries the link
+    SEL = '[data-update-reason=busy] [data-act=see-busy]'
+    c.eq(c.count(SEL), 1, 'under « Mettre à jour » the grey reason carries the link « Voir son avancement »', what='link on the real screen')
+    said = norm(c.js("document.querySelector('[data-update-reason=busy]').textContent"))
+    c.ok(said.startswith(norm(G('greyBusy').split('{op}')[0])) and not said.startswith(norm(_trow('busy', lang, after='  greyReason: {'))), said,
+         'the sentence names the operation launched from this screen, not « une autre opération »')
+    c.js(f"document.querySelector('{SEL}').scrollIntoView({{ block: 'center' }})")
+    if c.width in (390, 1280):
+        c.shot(f'L189_{c.width}_{lang}_occupe.png')
+    c.tap(SEL)
+    c.wait(300)
+    vis = c.js("(() => { const e = document.querySelector('[data-running], [data-busy-card]'); if (!e) return false; const q = e.getBoundingClientRect(); return q.bottom > 0 && q.top < innerHeight })()")
+    c.ok(vis, str(vis), 'the link brings the progress of the operation under the eyes')
     c.check_errors()
