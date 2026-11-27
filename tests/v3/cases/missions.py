@@ -2597,7 +2597,9 @@ _PLACES_JS = f"""[...document.querySelectorAll('{E} [data-edplaces] [data-place]
       rule='SOG-0287 step 3, the mock-up editeur_lieux_*.png: « Cible, zones, points tournants et rendez-vous. Une ligne par lieu »')
 def n52(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    reg_open(c, _ED_TEXTS)
+    # SOG-0684: a mission without route_order now shows the order the reader DEDUCES (cases N297 to N302); this case measures the Lieux, so
+    # its mission WRITES its route — the departure, the arrival — and the other places stay « Hors itinéraire », in the order of the file
+    reg_open(c, [_ED_TEXTS[0], [_ED_TEXTS[1][0], _ED_FULL + 'route_order: [ORIGIN, DESTINATION]\n']])
     c.tap(f'{R} [data-rowid="X-001A"]')
     c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
