@@ -189,7 +189,8 @@ export const meta = {
     '../../frame/lib/plural.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par model_sets.js
     '../../frame/lib/sortlist.js', // SOG-0498 : le tri du tableau de couverture (covtable.js)
     '../../frame/lib/fold.js', // SOG-0468 (3) : le pli (fold) et son écouteur (wireFolds) : screen.js, packs.js, panels.js, later.js, todo.js, covtable.js, inventory.js, module.js
-    '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
+    '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js',
+    '../../frame/lib/busy.js' // SOG-0658 : les mots du cadre (SETS, VERBS) pour le nom de l'opération en cours (busy.js)
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
   lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],

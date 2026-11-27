@@ -6548,11 +6548,13 @@ def l87(c):
     _l87_ready(c, st, 'busy')
     st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})      # the status is read; now every start is refused: an operation runs
     busy = norm(_trow('busy', lang, after='  greyReason: {'))
+    title = norm(_trow('title', lang, after='  busy: {')).split('{n}')[0].strip()      # SOG-0658: the card opens on its own sentence (« Le poste est occupé : »); en, de, es keep the words of the grey reason
     _untick(c, *[z for z in ALL if z != 'ca'])      # the coverage is Canada alone: « Tout recalculer » is one run (more than 60 are cut into several)
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build] [data-busy-card]')", timeout=8000, what='the card of the running operation')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.eq([c.count('[data-build] [data-busy-card]'), norm(c.text('[data-build]')).count(busy)], [1, 1], 'the busy sentence is said once on the base panel: the card’s title', what='said once')
+    c.eq([c.count('[data-build] [data-busy-card]'), norm(c.text('[data-build]')).count(title), norm(c.text('[data-build]')).count(busy)], [1, 1, 0 if lang == 'fr' else 1],
+         'the busy sentence is said once on the base panel: the card’s title (in French the old grey reason is nowhere: never repeated under the button)', what='said once')
     c.eq([c.count('[data-build] [data-update-reason]'), c.count('[data-build] [data-pickup-reason]'), c.count('[data-build] [data-reason]'), c.count('[data-build] [data-zone-grey]')], [0, 0, 0, 0],
          'no grey-reason line under the update button, in the fold, under the buttons or on a zone line', what='no grey line')
     if c.width in (390, 1280):
