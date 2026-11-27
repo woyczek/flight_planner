@@ -12210,8 +12210,11 @@ def f336(c):
     c.until(nat, _BUSY_SAID, timeout=5000, what='the NAT line says the sentence of the frame (red before: « Le poste fait une autre opération : réessayez dans un instant. »)')
     c.until("(w) => (window.__notes || []).some(n => { const t = n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(); return t.startsWith(w) && t.slice(w.length).includes('Annuler') })", 'En attente : Relecture des routes NAT',
             timeout=5000, what='the pending reading said, with its « Annuler »')
+    # the asks counted from here: the line asks once at its opening, then the tap (Essais, train 7c: 3, never 2)
+    n0 = c.js('window.__nat.asks')
     st['busy'] = False
-    c.until("window.__nat.asks === 2 && window.__nat.go !== null", timeout=20000, what='free: the reading of the NAT tracks asked again ALONE')
+    c.until("(n) => window.__nat.asks === n + 1 && window.__nat.go !== null", n0, timeout=20000,
+            what='free: the reading of the NAT tracks asked again ALONE, once')
 
 
 
