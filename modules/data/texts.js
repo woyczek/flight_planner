@@ -2314,7 +2314,8 @@ export const TX = {
   },
   // la carte de l'opération en cours que le lanceur refuse de doubler (SOG-0245) : laquelle, depuis quand, où elle en est, si elle répond ; Voir, Arrêter, Libérer
   busy: {
-    title: ['Une autre opération est en cours : {n}', 'Another operation is running: {n}', 'Ein anderer Vorgang läuft: {n}',
+    // SOG-0658 : la phrase du cadre (frame/lib/busy.js), en français seul : en, de et es gardent leur titre (dette SOG-0680)
+    title: ['Le poste est occupé : {n}', 'Another operation is running: {n}', 'Ein anderer Vorgang läuft: {n}',
       'Hay otra operación en curso: {n}'
     ],
     started: ['Démarrée : {t}', 'Started: {t}', 'Gestartet: {t}', 'Iniciada: {t}'],

@@ -18,6 +18,10 @@ import {
   fmtZ
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 import {
+  SETS,
+  VERBS
+} from '../../frame/lib/busy.js'; // les mots du cadre pour un jeu ou un verbe que l'écran ne nomme pas (SOG-0658)
+import {
   follow
 } from './follow.js';
 import {
@@ -25,12 +29,13 @@ import {
   runUnit
 } from './panels.js';
 
-/** Le nom de l'opération, en mots : « Procédures · Télécharger (fr, gb) » ; le jeu et le verbe tels que le lanceur les nomme quand l'écran n'a pas leur mot. */
+/** Le nom de l'opération, en mots : « Procédures · Télécharger (fr, gb) » ; les mots de l'écran d'abord (quatre langues), puis ceux du cadre (SETS, VERBS : français seul) ; le jeu ou le verbe tel que le lanceur le nomme seulement quand aucun des deux n'a son mot. */
 export function opName(r) {
   const set = M.own(TX.groups, r.set) || M.own(TX.setLabel, r.set) || M.own(TX.busy.sets, r.set),
     verb = M.own(TX.busy.verbs, r.verb),
     zones = r.args?.zones?.length ? ` (${r.args.zones.join(', ')})` : '';
-  const text = [set ? tt(set) : r.set, verb ? tt(verb) : r.verb].filter(Boolean).join(' · ');
+  const frame = (table, k) => typeof k === 'string' && Object.hasOwn(table, k) ? table[k] : '',
+    text = [set ? tt(set) : frame(SETS, r.set) || r.set, verb ? tt(verb) : frame(VERBS, r.verb) || r.verb].filter(Boolean).join(' · ');
   return (text || '?') + zones;
 }
 /** L'heure de départ, en UTC (« 16:30Z », avec le jour et le mois quand ce n'est pas aujourd'hui), '' si le lanceur ne l'a pas dite. */
