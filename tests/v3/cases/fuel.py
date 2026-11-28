@@ -1480,7 +1480,9 @@ def f41(c):
       rule='SOG-0024, SOG-0031 (lot C2: aerodb.chartsUrl): the address comes from aerodb alone, never composed in the module: LFML the SIA '
       'eAIP AD 2 page, LEMD ENAIRE, EIDW AirNav Ireland (a published ie zone), a new tab without opener; KJFK: no link, no text')
 def f42(c):
-    docs = aero_docs(airfields=True)
+    # SOG-0688 / SOG-0703: a code the base does not know says « n'est pas dans la base » and carries no link: LEMD and EIDW are in the base of the case (KJFK stays unknown: no link, no text)
+    docs = aero_docs(airfields=True, extra={'aerodromes': [{'icao': 'LEMD', 'name': 'MADRID TEST', 'lat': 40.47, 'lon': -3.56, 'elev': 600},
+                                                          {'icao': 'EIDW', 'name': 'DUBLIN TEST', 'lat': 53.42, 'lon': -6.27, 'elev': 242}]})
     for d in docs:
         if d[0] == 'sia/base/index.json':   # a published ie zone (no row of it is read: the address needs its cycle only)
             d[1]['zones']['ie'] = {'cycle': AERO_CYCLE, 'prefixes': ['EI'], 'kb': {}, 'cells': {}}
@@ -8458,7 +8460,9 @@ def f275(c):
     rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.textContent])")
     c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the closest, by distance (all equally unchecked on the aids)', what='list')
     want = norm(tx(T, "aids-unread'", L, after='altnPropWhy'))
-    c.ok(all(want in norm(r[1]) for r in rows), [r[1] for r in rows], 'each line says « moyens non vérifiés »')
+    # SOG-0702 (« ✕ » in words, the cause alone, once, in place of the words further on): the lines of the aerodromes not judged keep « moyens non vérifiés »; the « ✕ » line says its cause instead
+    c.ok(all(want in norm(r[1]) for r in rows if r[0] != 'XQPE'), [r[1] for r in rows], 'each line not « ✕ » says « moyens non vérifiés »')
+    c.ok(any(r[0] == 'XQPE' and 'Impossible : météo LIFR.' in norm(r[1]) for r in rows), [r[1] for r in rows], 'the « ✕ » line (XQPE, LIFR) says « Impossible : météo LIFR. » (SOG-0702)')
     c.eq(c.count(f'{B} [data-altnprop][data-msg]'), 0, 'never « Aucun terrain … » (no message in place of the list)', what='none')
 
 
