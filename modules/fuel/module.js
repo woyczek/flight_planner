@@ -5675,12 +5675,6 @@ async function altnChkDraw(C) {
       AC.distOf(altnArrNm(S.altnArr?.pos, S.altnData.ad))
     ].filter(Boolean),
     J = AC.judge(crits),
-    SIGN = {
-      ok: '✓',
-      warn: '!',
-      err: '✕',
-      grey: '?'
-    },
     w = crits.filter(c => c.state === J.state).map(c => tt(TX.altnK[c.k])).join(', '),
     fmt = n => Number(n).toLocaleString(S.ctx.lang()),
     why = c => ['wxNotRead', 'wxNoTaf', 'wxNoKey'].includes(c.code) && (S.wxBusy || S.wxFail) ? (S.wxBusy ? tt(TX.altnWhy.wxReading) : tt(
@@ -5700,7 +5694,7 @@ async function altnChkDraw(C) {
     whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
     open = !!box.querySelector('details[data-altnfold]')?.open,
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(whyOf(c))}</span>${altnReadHtml(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary>${AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc })}</details>${altnPropHtml()}`;
 }
 /** SOG-0559 : la ligne d'une météo de dégagement non jugée (modules/fuel/altn_wx.js, SOG-0660 : extrait de ce fichier). */
 const altnWxLine = (c, id) => AWX.wxLine(c, id, {
@@ -5716,12 +5710,7 @@ const altnWxLine = (c, id) => AWX.wxLine(c, id, {
 const ALTN_DOC = 'cache/fuel/altn_candidates.json',
   // la lecture des terrains autour de l'arrivée (aerodromes.json des zones) attend au plus tant
   ALTN_PROP_WAIT_MS = 8000;
-const ALTN_SIGN = {
-  ok: '✓',
-  warn: '!',
-  err: '✕',
-  grey: '?'
-};
+const ALTN_SIGN = AWX.SIGN;
 /** Un nom de terrain venu de la base (texte tiers) : sans caractère de contrôle ni de format, espaces réduits, 60 signes au plus. */
 const altnName = v => String(v ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 /** La clé du vol d'une proposition : départ, arrivée, aéronef (la Carte et Carburant la tiennent pour périmée quand elle change). */

@@ -11,6 +11,8 @@
 //   « Non jugé : … », SOG-0702 « Impossible : … ») ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
 //   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
+//   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
+//   dégagement » (un signe et sa phrase par critère, le geste de lecture, la note de la météo) ; h = { why(c), read(c, id), note, esc }.
 
 export const TX = {
   // SOG-0690 (l'ergonome, 27/11) : chaque signe a ses mots, juste après le code du terrain, une seule fois ; le pluriel en clair
@@ -97,6 +99,20 @@ export function signSay(sign, why, p, h) {
     }) : h.tt(TX.sayErr0);
   }
   return '';
+}
+
+/** Le signe de chaque état d'un critère ou d'un terrain (la couleur seule ne suffit pas). */
+export const SIGN = {
+  ok: '✓',
+  warn: '!',
+  err: '✕',
+  grey: '?'
+};
+
+/** La liste des critères du pli « Critères du dégagement » (sorti de module.js, inchangé) : par critère son signe, sa phrase (h.why) et le
+ *  geste de lecture de ses procédures (h.read, du HTML déjà échappé) ; puis la note de la météo (h.note). */
+export function critsHtml(crits, id, h) {
+  return `<ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${h.esc(h.why(c))}</span>${h.read(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${h.esc(h.note)}</span></li></ul>`;
 }
 
 /** SOG-0660 : le style du repli du TAF — une ligne entière sous celle du terrain (la ligne est en flex), le texte coupé où il faut. */
