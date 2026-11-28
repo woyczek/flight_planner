@@ -127,6 +127,9 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-mark{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:700}
 [data-module="fuel"] .fu-mark[data-mark="ok"]{background:color-mix(in srgb,var(--sog-ok) 16%,transparent);color:var(--sog-ok)}
 [data-module="fuel"] .fu-mark[data-mark="todo"],[data-module="fuel"] .fu-mark[data-mark="old"]{background:color-mix(in srgb,var(--sog-warn) 18%,transparent);color:var(--sog-warn)}
+/* SOG-0705 : « périmé », un mot jamais coupé ; la phrase du côté cède la place */
+[data-module="fuel"] .fu-mark[data-mark="old"]{width:auto;padding:0 8px;border-radius:12px;font-size:12px;white-space:nowrap}
+[data-module="fuel"] .fu-sumtext{min-width:0;overflow-wrap:anywhere}
 [data-module="fuel"] .fu-prows,[data-module="fuel"] .fu-procfoot,[data-module="fuel"] .fu-lnmline,[data-module="fuel"] .fu-proc>.fu-procmeta{margin-left:32px}
 [data-module="fuel"] .fu-prow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:2px;align-items:center;padding:8px 0;border-top:1px solid var(--sog-line,rgba(0,0,0,.08))}
 [data-module="fuel"] .fu-prow:first-child{border-top:0}
@@ -693,7 +696,8 @@ export function createProcedures(host) {
     };
   }
   /** La marque d'un côté replié : 'todo' (!) tant qu'une ligne attend son choix (la piste ; la SID ou la STAR quand le terrain en publie ;
-   *  l'approche quand il en publie), 'old' (⌛) quand tout est choisi sur des procédures d'un cycle passé, 'ok' (✓) sinon. */
+   *  l'approche quand il en publie), 'old' (le mot « périmé », SOG-0705) quand tout est choisi sur des procédures d'un cycle passé, 'ok'
+   *  (✓) sinon. */
   function markOf(side, m) {
     const o = CF.proceduresOf(host.flight())[side] || {},
       main = side === 'dep' ? 'sid' : 'star',
@@ -721,7 +725,7 @@ export function createProcedures(host) {
       sign = {
         ok: '✓',
         todo: '!',
-        old: '⌛'
+        old: tt(TX.procStale) // SOG-0705 (l'ergonome, 28/11) : le mot, comme partout, jamais « ⌛ »
       } [mark],
       title = tt({
         ok: TX.procMarkOk,
@@ -729,7 +733,7 @@ export function createProcedures(host) {
         old: TX.procMarkOld
       } [mark]),
       lnm = chosenLnm(side, m);
-    return `<span class="fu-mark" data-mark="${mark}" title="${esc(title)}" aria-label="${esc(title)}">${sign}</span><span class="fu-sumtext">${esc(parts.join(' · ') || tt(TX.procToChoose))}</span>${lnm.length ? `<span class="f-warn" data-lnmflag title="${esc(tt(TX.procLnmChosen, { list: lnm.join(', ') }))}">${esc(tt(TX.procLnmFlag))}</span>` : ''}`;
+    return `<span class="fu-mark" data-mark="${mark}" title="${esc(title)}" aria-label="${esc(title)}">${esc(sign)}</span><span class="fu-sumtext">${esc(parts.join(' · ') || tt(TX.procToChoose))}</span>${lnm.length ? `<span class="f-warn" data-lnmflag title="${esc(tt(TX.procLnmChosen, { list: lnm.join(', ') }))}">${esc(tt(TX.procLnmFlag))}</span>` : ''}`;
   }
   /** L'en-tête d'un côté (SOG-0308) : le repli ▸ / ▾ (toute la ligne le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un
    *  terrain inconnu d'aerodb), « Choisir sur la carte » — un seul geste. */
