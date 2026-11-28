@@ -12685,9 +12685,10 @@ def f354(c):
         return None
 
     said = lambda sel: [norm(x) for x in c.js(f"[...document.querySelectorAll('{sel}')].map(e => e.textContent)")]
-    # (i) a cruise above the bound (1 650 kt for 1 500 kt)
+    # (i) a cruise above the bound (1 500 kt) AT THE LEVEL OF THE FLIGHT: the quote takes the TAS of the performance model at FL200,
+    # not the figure of the sheet (the train 11: 1 650 kt became about 1 070 kt there, inside the bounds); 2 500 kt gives about 1 900 kt
     fast = {**_BE9L, 'id': 'XQFAST', 'name': 'XQFAST (essai)', 'icao': 'XQFA',
-            'cruise': {**_BE9L['cruise'], 'tasKt': 1650, 'ceilingFt': 60000}}
+            'cruise': {**_BE9L['cruise'], 'tasKt': 2500, 'ceilingFt': 60000}}
     opened(fast, 20000)
     U = f'{FUEL} [data-rbound] [data-rperfbound=speed_kt]'
     c.until(f"!!document.querySelector('{U}')", timeout=10000, what='said under « Calculer » before the touch (red before: nothing said)')
