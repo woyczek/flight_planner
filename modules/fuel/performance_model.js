@@ -20,7 +20,8 @@
   'use strict';
   const KT_FPM = 101.269; // 1 kt de vitesse verticale = 101,27 ft/min
   // Messages dans la langue de la page (fr, en, de, es).
-  const tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || r[0];
+  const lang = () => window.RepositoryNav?.getLanguage?.() || 'fr',
+    tl = (...r) => r[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang()))] || r[0];
 
   /** Atmosphère à l'altitude pression h (ft), écart ISA dT (°C, 0 = standard) : { theta (T / T0), delta (p / p0),
    *  sigma (ρ / ρ0), a (vitesse du son, kt) } ; tropopause à 36 089 ft. La pression dépend de l'altitude pression
@@ -160,7 +161,7 @@
   }
 
   /** Modèle de performances calibré sur un profil d'appareil (et la base des types db pour la motorisation) : polaire, poussée / puissance, consommation, plafond. Lève une erreur si la TAS ou le débit de croisière manquent. Retourne les calculs exportés (cruise, trip, climbTo, climbPoint, climbOpt, manualLaw…). */
-  function create(profile, {
+  function build(profile, {
     db,
     dIsa = 0,
     apd = null
@@ -754,6 +755,42 @@
         };
       }
     };
+  }
+  // SOG-0731 (l'ergonome, passe de performances) : Carburant demandait le même modèle 3 fois à froid et 2 fois à chaud à l'ouverture,
+  // entrées inchangées, et son calibrage (calibrateP0, l'altitude de référence : climbWith → vy → golden) faisait l'essentiel des
+  // tâches longues. build est pur : il ne lit que ses arguments, la motorisation que db donne (powerOf, catalogue commun compris) et
+  // la langue des notes. Le dernier modèle rendu est donc gardé pour des arguments identiques EN VALEUR — une seule entrée, la clé est
+  // faite des arguments eux-mêmes, jamais d'un état d'écran — et refait dès que l'un change (apd arrivé, dIsa, fiche, langue).
+  let last = null;
+  /** Modèle de performances calibré (voir build) ; le même objet, figé, pour des arguments identiques en valeur à ceux de l'appel
+   *  précédent. build lit le profil et apd aussi plus tard (vitesse de montée…) : il reçoit leurs copies, qu'un appelant qui
+   *  modifierait les siens ne peut pas changer ; le modèle et ses notes sont figés, un lecteur ne peut pas changer celui du suivant. */
+  function create(profile, opts = {}) {
+    const {
+      db,
+      dIsa = 0,
+      apd = null
+    } = opts || {};
+    let key = null,
+      own = null;
+    try {
+      key = JSON.stringify([profile, dIsa, apd, powerOf(profile, db), lang()]);
+      own = [structuredClone(profile), structuredClone(apd)];
+    } catch {
+      key = null; // un argument qui ne se sérialise ni ne se copie : pas de clé, le modèle est refait à chaque appel
+    }
+    if (key !== null && last?.key === key) return last.m;
+    const m = build(own ? own[0] : profile, {
+      ...opts,
+      apd: own ? own[1] : apd
+    });
+    Object.freeze(m.notes);
+    Object.freeze(m);
+    if (key !== null) last = {
+      key,
+      m
+    };
+    return m;
   }
   /** Cartographie moteur (table RPM / N1 → débit) ramenée à l'altitude h (ft). Chaque ligne peut porter une altitude
    *  (altFt, colonne facultative) : avec moins de deux altitudes différentes, ou sans h, les lignes valides sont rendues

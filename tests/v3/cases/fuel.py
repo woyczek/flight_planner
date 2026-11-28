@@ -12763,6 +12763,30 @@ def f354(c):
 
 
 
+@case('F355', 'The performance model is calibrated ONCE for the same arguments: two calls of FlightPerfModel.create identical in value give '
+      'the same model, frozen; a changed ISA deviation gives a new one', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0731 (the ergonomist, performance pass of 28 Nov: at the opening of Fuel all the long tasks came from the quote, the model '
+      'calibrated 3 times cold and 2 times warm with the same inputs): the pure boundary keeps its last model, one entry, the key being the '
+      'arguments themselves (never a state of the screen); invented profile, the copies of the caller (fresh objects, as compute gives)')
+def f355(c):
+    c.open('fuel', docs=flight_docs())
+    wait_quote(c)
+    got = c.js("""() => {
+        const P = window.FlightPerfModel,
+          prof = () => ({ id: 'XQJT', icao: 'XQJT', type: 'XQJT', unit: 'kg', propulsion: 'jet',
+            cruise: { tasKt: 450, fuelFlowPerHour: 2400 }, climb: { iasKt: 280, rateFpm: 2200, fuelFlowPerHour: 3300 },
+            descent: { rateFpm: -2000, iasKt: 280 } }),
+          apd = () => ({ cruise: { ceilingFL: 410, mach: 0.78 } }),
+          db = () => ({ XQJT: { description: 'L2J' } }),
+          a = P.create(prof(), { db: db(), dIsa: 0, apd: apd() }),
+          b = P.create(prof(), { db: db(), dIsa: 0, apd: apd() }),
+          w = P.create(prof(), { db: db(), dIsa: 5, apd: apd() });
+        return [a === b, w !== b, Object.isFrozen(a) && Object.isFrozen(a.notes), w.dIsa, Math.round(a.ceiling) === Math.round(b.ceiling)] }""")
+    c.eq(got, [True, True, True, 5, True], 'identical arguments: one model (red before: two); dIsa changed: a new model; the model frozen',
+         what='one model per arguments')
+
+
 @case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
       'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
