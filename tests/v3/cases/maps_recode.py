@@ -11374,13 +11374,31 @@ def d337(c):
     c.check_errors()
 
 
-@case('D338', 'SOG-0694 (rule of 28 Nov): the vertical scale follows the FLIGHT (never the ceiling of the aircraft); the ceiling is drawn at its true height when it falls in the scale, else the top edge says « Plafond : FL… ↑ » in grey; a level pulled up widens the scale and the line appears as soon as it is in', 'D', tags=('maps',),
+@case('D338', 'SOG-0694 / SOG-0722 (rule of 28 Nov, reading (c)): the vertical scale follows the FLIGHT; the ceiling of the aircraft is a plain line in the cut (no text), its words have ONE place, the top edge outside the frame, right-aligned, grey (a sample of the line then « Plafond : FL110 » in the scale, « Plafond : FL410 ↑ » without sample above it); no line crosses « TOC » or « TOD »; the line of the flight stays continuous on the level; a level pulled up widens the scale', 'D', tags=('maps',),
       designs=('standard',), night=False, screens=True,
-      rule='SOG-0694 (the ergonomist corrects his rule of 27 Nov, 28 Nov: the ceiling of the sheet in the maximum crushed a low flight): a flight at FL100 of an aircraft whose ceiling is FL410 gives a LOW scale and « Plafond : FL410 ↑ » at the top edge; a ceiling inside the scale is drawn at its height; never a line at a wrong height')
+      rule='SOG-0722 (the ergonomist read the capture at 390): a label inside the cut is always under another one; the words go to the top edge outside the frame (the profile gives them their own band), the line stays alone behind the flight, TOC and TOD take the opaque paper background of the levels; the placer of the ceiling label is gone')
 def d338(c):
     top = lambda: int(c.js("() => (document.querySelector('.mp-pc').dataset.scale || '0,0').split(',')[1]"))
     ceil = lambda: c.js("() => document.querySelector('.mp-pc').dataset.ceil || ''")
     out = {}
+    probe = """async () => { const P = CanvasRenderingContext2D.prototype, o = P.fillText, seen = [];
+      P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), a = this.textAlign, b = this.textBaseline;
+        const x0 = a === 'center' ? x - m.width / 2 : a === 'right' || a === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8;
+        seen.push([String(t), x0, y0, x0 + m.width, y0 + fs]); return o.call(this, t, x, y, w) };
+      try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { P.fillText = o }
+      const S = window.__mp.S, g = S.geo, cv = S.pc.tagName === 'CANVAS' ? S.pc : S.pc.querySelector('canvas'), dpr = cv.width / cv.getBoundingClientRect().width, cx = cv.getContext('2d');
+      const px = (x, y) => [...cx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data];
+      const ylev = ft => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(ft, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
+      const grey = p => Math.abs(p[0] - 154) < 14 && Math.abs(p[1] - 165) < 14 && Math.abs(p[2] - 177) < 14, purple = p => p[0] > 70 && p[0] < 160 && p[1] < 90 && p[2] > 110;
+      const last = new Map(); for (const b of seen) last.set(b[0], b); const texts = [...last.values()];
+      const ceilY = g.ceil && g.ceil.drawn ? ylev(g.ceil.ft) : null, boxes = texts.filter(b => /^(TOC|TOD)/.test(b[0]));
+      let crossed = 0;
+      if (ceilY !== null) for (const b of boxes) if (ceilY >= b[2] && ceilY <= b[4]) for (let x = b[1] + 2; x < b[3] - 2; x++) for (let dy = -1; dy <= 1; dy++) if (grey(px(x, ceilY + dy))) crossed++;
+      const lvl = ylev(+(S.route.levelFt || 0)); let miss = 0, tried = 0;
+      for (let k = 0; k < 9; k++) { const x = g.padL + (g.W - g.padL - 16) * (.4 + k * .025); if (texts.some(b => x >= b[1] - 2 && x <= b[3] + 2 && lvl >= b[2] - 4 && lvl <= b[4] + 4)) continue; tried++; let hit = false; for (let dy = -3; dy <= 3 && !hit; dy++) if (purple(px(x, lvl + dy))) hit = true; if (!hit) miss++ }
+      const sampleAt = b => { let n = 0; const ym = (b[2] + b[4]) / 2; for (let x = b[1] - 22; x < b[1] - 4; x++) for (let dy = -2; dy <= 2; dy++) if (grey(px(x, ym + dy))) n++; return n };
+      const pl = texts.filter(b => b[0].startsWith('Plafond'));
+      return { padT: g.padT, plafond: pl.map(b => [b[0], Math.round(b[2]), Math.round(b[4]), sampleAt(b) > 0]), crossed, miss, tried, ceil: g.ceil } }"""
     for name, ceil_ft in (('plain', None), ('above', 41000), ('inside', 11000)):
         f = flight()
         f['level'] = {'ft': 10000}
@@ -11391,17 +11409,7 @@ def d338(c):
         c.js(_STATE_JS)
         c.until("() => !!document.querySelector('.mp-pc') && (document.querySelector('.mp-pc').dataset.scale || '') !== ''", timeout=15000, what=f'{name}: the profile is drawn')
         out[name] = [top(), ceil()]
-        # SOG-0722: the label of the ceiling never sits under another label of the cut (TOC, TOD, levels, spaces) nor on the vertical of a TOC / TOD: the boxes of the texts of one drawing are measured
-        boxes = c.js("""async () => { const P = CanvasRenderingContext2D.prototype, o = P.fillText, seen = [];
-          P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), a = this.textAlign, b = this.textBaseline;
-            const x0 = a === 'center' ? x - m.width / 2 : a === 'right' || a === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8;
-            seen.push([String(t), x0, y0, x0 + m.width, y0 + fs]); return o.call(this, t, x, y, w) };
-          try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { P.fillText = o }
-          return seen }""")
-        mine = [b for b in boxes if b[0].startswith('Plafond')]
-        others = [b for b in boxes if not b[0].startswith('Plafond') and b[0][:3] in ('TOC', 'TOD')]
-        hit = [(m[0], b[0]) for m in mine for b in others if m[1] < b[3] and m[3] > b[1] and m[2] < b[4] and m[4] > b[2]]
-        out[name + '_label'] = [len(mine), hit]
+        out[name + '_m'] = c.js(probe)
         if name == 'above':
             c.shot(f'D338_{c.width}_plafond_hors.png')
             # a level pulled up (the same call the drag makes): the scale widens and the line of the ceiling appears as soon as it is in
@@ -11410,10 +11418,15 @@ def d338(c):
             c.js("async () => { const S = window.__mp.S; S.edit.reach = 0; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
         if name == 'inside':
             c.shot(f'D338_{c.width}_plafond_trace.png')
-    c.ok(out['above_label'][0] == 1 and out['above_label'][1] == [] and out['inside_label'][0] == 1 and out['inside_label'][1] == [], out, 'SOG-0722: the label of the ceiling is written once, even in the crowded cut at 390 (full words, then « Plafond », then the level), and covers no TOC / TOD label (the boxes are measured)')
-    c.ok(out['plain'][0] < 20000 and out['plain'][1] == '', out, 'without a ceiling: the scale is the one of the flight, nothing about a ceiling')
-    c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge', out, 'a flight at FL100, ceiling FL410: a LOW scale (the ceiling does not enter it) and the top edge says the ceiling (never a line at a wrong height)')
-    c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line', out, 'a ceiling inside the scale is drawn at its true height')
+    pl = lambda n: out[n + '_m']['plafond']
+    c.ok(out['plain'][0] < 20000 and out['plain'][1] == '' and pl('plain') == [], out, 'without a ceiling: the scale is the one of the flight, nothing about a ceiling, no text')
+    c.ok(all(b[2] <= out[n + '_m']['padT'] + 1 for n in ('above', 'inside') for b in pl(n)), out, 'SOG-0722: no « Plafond » inside the frame of the cut: the words are in the band of the top edge, outside it')
+    ins = pl('inside')
+    c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line' and len(ins) == 1 and ins[0][0].startswith('Plafond') and ins[0][3] is True, out, 'in the scale: the line at its true height, the words once at the top edge with a sample of the line before them')
+    ab = pl('above')
+    c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge' and len(ab) == 1 and ab[0][0].endswith('↑') and ab[0][3] is False, out, 'above the scale (FL100, ceiling FL410): a LOW scale, « Plafond : FL410 ↑ » at the top edge, no sample, no line (never a line at a wrong height)')
+    c.eq(out['inside_m']['crossed'], 0, 'no line crosses « TOC » nor « TOD » (opaque paper background)', what=str(out['inside_m']))
+    c.ok(out['inside_m']['tried'] >= 3 and out['inside_m']['miss'] == 0, out['inside_m'], 'the line of the flight is continuous on its level, away from its own labels')
     c.ok(out['pulled'][0] >= 43000 and out['pulled'][1] == '41000,line', out, 'a level pulled up widens the scale: the line of the ceiling appears as soon as it is in')
     c.check_errors()
 

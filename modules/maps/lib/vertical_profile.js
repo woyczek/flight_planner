@@ -539,6 +539,8 @@
     RMZ: '#555',
     TMZ: '#555'
   };
+  // le trait du plafond de l'aéronef (SOG-0722) : plus soutenu que la grille (#e3e8ec), plus discret que le trait du vol
+  const CEIL_COLOR = '#9aa5b1';
   // Coupe : axe des distances (NM) et des altitudes (ft AMSL), espaces derrière le relief, puis
   // obstacles, points et altitude prévue ; libellés d'espaces sans recouvrement.
   function draw(ctx, data, {
@@ -576,7 +578,8 @@
     const f = 11 * scale,
       padL = (abbrev && strictLabels ? 50 : 58) * scale, // V3 maps : pas de blanc à gauche des niveaux (profil du vol : « FL 250 » tient)
       padR = 16 * scale,
-      padT = (title ? 34 : 18) * scale;
+      padT = ((title ? 34 : 18) + (ceilText && ceilFt > 0 ? 12 : 0)) *
+      scale; // SOG-0722 : une bande du bord haut est à lui quand le plafond de l'aéronef est connu (ses mots n'entrent jamais dans le cadre)
     // V3 maps (règle 13 : le dessin tient dans sa hauteur) : les points et leurs distances sont posés d'abord, car ils gardent
     // leur place (l'axe des distances ne sort jamais du cadre) ; sur une seule rangée, sous 200 px, le bas de la coupe se
     // resserre pour rendre la hauteur au tracé
@@ -701,10 +704,19 @@
       ctx.stroke();
       ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y);
     }
-    // SOG-0694 : le plafond de l'aéronef (la fiche) est tracé à SA hauteur quand il tombe dans l'échelle (jamais un trait à une hauteur fausse) ; sinon il n'est pas tracé et le bord haut le dit (SOG-0722 :
-    // son libellé passe par le placeur de la coupe, après tous les autres, plus bas)
+    // SOG-0694, SOG-0722 (l'ergonome, 28/11) : le plafond de l'aéronef (la fiche) est un trait SEUL, sans texte, à SA hauteur quand il tombe dans l'échelle (jamais un trait à une hauteur fausse), d'un gris plus soutenu
+    // que la grille, DERRIÈRE tout le reste (le trait du vol, les étiquettes TOC / TOD) ; ses mots ont une seule place, le bord haut hors du cadre (plus bas, après le cadre)
     const ceilIn = ceilFt > bottom && ceilFt <= top;
-    let ceilPut = false;
+    if (ceilText && ceilIn) {
+      ctx.save();
+      ctx.strokeStyle = CEIL_COLOR;
+      ctx.lineWidth = 1.6 * scale;
+      ctx.beginPath();
+      ctx.moveTo(padL, Y(ceilFt));
+      ctx.lineTo(W - padR, Y(ceilFt));
+      ctx.stroke();
+      ctx.restore();
+    }
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const drawnZones = new Map(), // V3 maps : type d'espace → couleur, pour la légende (ce qui est réellement dessiné)
       labels = [],
@@ -1027,7 +1039,8 @@
           boxes: [r],
           force: 'reserve'
         });
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.fillStyle =
+          '#fff'; // SOG-0722 : le fond papier, opaque : aucune ligne horizontale (grille, plafond) ne barre « TOC … NM » ni « TOD … NM »
         ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0);
         ctx.fillStyle = col;
         ctx.font = `bold ${f}px Arial, sans-serif`;
@@ -1081,51 +1094,26 @@
         ctx.fillText(t, x, y);
       }
     }
-    // le plafond de l'aéronef (SOG-0694, SOG-0722) : le trait à sa hauteur (dans l'échelle) ; son libellé est une demande au placeur, de dernier rang : il prend la première place libre — jamais sous une étiquette de
-    // la coupe (TOC, TOD, niveaux, espaces) ni sur la verticale d'un TOC ou d'un TOD — et se tait sans place libre (le trait ou la flèche et geo.ceil restent)
+    // les mots du plafond de l'aéronef (SOG-0722) : une seule place, le bord haut du profil, HORS du cadre, alignés à droite, en gris ; dans l'échelle un court échantillon du trait puis « Plafond : FL110 », au-dessus de
+    // l'échelle « Plafond : FL110 ↑ » sans échantillon ; la bande est celle que padT lui réserve
     if (ceilText && ceilFt > bottom) {
       ctx.save();
+      ctx.font = `${f}px Arial, sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'right';
+      const text = ceilIn ? ceilText : `${ceilText} ↑`,
+        y = padT - 7 * scale,
+        x = W - padR,
+        tw = ctx.measureText(text).width;
+      ctx.fillStyle = '#56626b';
+      ctx.fillText(text, x, y);
       if (ceilIn) {
-        ctx.strokeStyle = '#7b8794';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = CEIL_COLOR;
+        ctx.lineWidth = 1.6 * scale;
         ctx.beginPath();
-        ctx.moveTo(padL, Y(ceilFt));
-        ctx.lineTo(W - padR, Y(ceilFt));
+        ctx.moveTo(x - tw - 20 * scale, y);
+        ctx.lineTo(x - tw - 6 * scale, y);
         ctx.stroke();
-      }
-      // SOG-0722 : les mots d'abord entiers (« Plafond : FL110 »), puis réduits — « Plafond » seul, puis « FL110 » — avant de renoncer ; chaque forme essaie neuf places sur la largeur, au-dessus du trait puis dessous
-      const arrow = ceilIn ? '' : ' ↑',
-        parts = ceilText.split(/\s*:\s*/).filter(Boolean),
-        forms = [...new Set([ceilText, parts[0], parts[parts.length - 1]].filter(Boolean))].map(t => t + arrow),
-        th = f * 1.4,
-        yl = ceilIn ? Y(ceilFt) : padT,
-        aside = (data.plan ? [data.plan.toc, data.plan.tod] : []).filter(Boolean).map(m => X(m.s)),
-        ys = ceilIn ? [yl - th - 2 * scale, yl + 2 * scale] : [padT + 2 * scale],
-        boxes = forms.flatMap((text, v) => {
-          const tw = ctx.measureText(text).width + 8 * scale;
-          return ys.flatMap(y0 => [0, 8, 4, 2, 6, 1, 3, 5, 7].map(k => padL + 3 * scale + k * (W - padL - padR - tw - 6 * scale) / 8)
-            .map(x0 => ({ // neuf places : le bord gauche, le droit, le milieu, puis de proche en proche
-              x0,
-              y0,
-              x1: x0 + tw,
-              y1: y0 + th,
-              v
-            })));
-        }).filter(r => r.y0 >= padT && r.y1 <= H - padB && r.x0 >= padL && r.x1 <= W - padR && !aside.some(x => x >= r.x0 - 4 * scale &&
-          x <= r.x1 + 4 * scale)),
-        at = ask({
-          rank: 'ceiling',
-          key: 'ceiling',
-          boxes
-        });
-      if (at) {
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.fillRect(at.x0, at.y0, at.x1 - at.x0, th);
-        ctx.fillStyle = '#56626b';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(forms[at.v ?? 0], at.x0 + 4 * scale, (at.y0 + at.y1) / 2);
-        ceilPut = true;
       }
       ctx.restore();
     }
@@ -1150,8 +1138,7 @@
       skipped,
       ceil: ceilText && ceilFt > bottom ? {
         ft: ceilFt,
-        drawn: ceilIn,
-        label: ceilPut // SOG-0722 : son libellé a trouvé une place libre
+        drawn: ceilIn // SOG-0722 : le trait est tracé (dans l'échelle) ou seulement dit au bord haut (au-dessus)
       } : null, // SOG-0694 : le plafond de l'aéronef, tracé (drawn) ou dit au bord haut
       placer: pl, // le placeur de la coupe : les contraintes des procédures s'y posent (procs.js, drawProfileCons)
       drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)
