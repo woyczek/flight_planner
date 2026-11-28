@@ -8460,7 +8460,9 @@ def f275(c):
     c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the three closest, by distance (all equally unchecked on the aids), then '
          'ranked by verdict: XQPE impossible (LIFR) the last of them', what='list')
     want = norm(tx(T, "aids-unread'", L, after='altnPropWhy'))
-    c.ok(all(want in norm(r[1]) for r in rows), [r[1] for r in rows], 'each line says « moyens non vérifiés »')
+    # SOG-0702 (« ✕ » in words, the cause alone, once, in place of the words further on): the lines of the aerodromes not judged keep « moyens non vérifiés »; the « ✕ » line says its cause instead
+    c.ok(all(want in norm(r[1]) for r in rows if r[0] != 'XQPE'), [r[1] for r in rows], 'each line not « ✕ » says « moyens non vérifiés »')
+    c.ok(any(r[0] == 'XQPE' and 'Impossible : météo prévue LIFR.' in norm(r[1]) for r in rows), [r[1] for r in rows], 'the « ✕ » line (XQPE, LIFR) says « Impossible : météo prévue LIFR. » (SOG-0702, SOG-0690 b point 2)')
     c.eq(c.count(f'{B} [data-altnprop][data-msg]'), 0, 'never « Aucun terrain … » (no message in place of the list)', what='none')
 
 
