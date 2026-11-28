@@ -12488,6 +12488,28 @@ def f348(c):
         c.shot(f'F348_{c.design}_{w}_{c.lang}.png')
 
 
+@case('F349', 'Procedures card, a FOLDED side whose choices are all made on procedures of a past cycle: its mark is the WORD « périmé », '
+      'never « ⌛ »; the word is never cut — when the place is short, the sentence of the side is', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0705 (the ergonomist, 28 Nov: the mark of a folded side too — « oui, le mot « périmé », comme partout ; si la place manque, '
+      'le mot reste, et c\'est le reste du libellé qui se coupe »; « ⌛ » reads « calculation in progress », SOG-0602); French only for the '
+      'mark of the screen (the word of the Map); the seeded arrival LFML, its file read under an earlier cycle')
+def f349(c):
+    open_proc(c, procs=V2_PROCS)   # the arrival LFML chosen in full (runway, STAR, approach), its file of an earlier cycle
+    S = f'{FUEL} [data-proc=arr] [data-procsum]'
+    c.until(f"!!document.querySelector('{S} [data-mark]')", timeout=15000, what='the arrival side folded, its mark')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        got = c.js(f"""(() => {{ const m = document.querySelector('{S} [data-mark]'), t = document.querySelector('{S} .fu-sumtext');
+            return [m.dataset.mark, m.textContent.trim(), m.scrollWidth <= m.clientWidth + 1, window.__t.shown(t)] }})()""")
+        c.eq(got, ['old', 'périmé', True, True], f'at {w}: the mark of the folded side is the word, never cut, its sentence shown (red '
+             'before: « ⌛ »)', what=f'mark {w}')
+        c.js(f"document.querySelector('{FUEL} [data-proc=arr]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F349_{c.design}_{w}_{c.lang}.png')
+
+
 
 @case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
       'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
