@@ -12616,6 +12616,39 @@ def f352(c):
     c.shot(f'F352_{c.design}_390_{c.lang}.png')
 
 
+@case('F353', '« Proposer un dégagement » and the line of the chosen alternate: the sign of each line is the ringed pastille of the Map '
+      '(frame/lib/altn_sign.js altnSignSvg: the same drawing, the same four colours of Q-0075), never a character alone', 'F',
+      tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0690 (b) point 1 (the ergonomist, 28 Nov: the sign of the list becomes the pastille the Map already draws — the sign of the '
+      'single judge of SOG-0702); BUGS\'s shared drawing, imported, never copied; invented aerodromes and TAFs')
+def f353(c):
+    B = f'{FUEL} [data-altnchk]'
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c)
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    got = c.js(f"""() => [...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => {{
+        const s = li.querySelector(':scope > .fu-altnsign svg');
+        return [li.dataset.cand, li.dataset.state, s?.querySelector('circle')?.getAttribute('stroke') || null,
+          (li.querySelector(':scope > .fu-altnsign')?.textContent || '').trim()] }})""")
+    c.eq(got, [['XQPB', 'ok', '#2e7d32', ''], ['XQPC', 'warn', '#e65100', ''], ['XQPE', 'err', '#c62828', '']],
+         'each line: the ringed pastille in the colour of its sign, no character (red before: « ✓ », « ! » alone)', what='list')
+    same = c.js(f"""async () => {{ const A = await import('/frame/lib/altn_sign.js');
+        const li = document.querySelector('{B} [data-altnprop] li[data-cand=XQPC] > .fu-altnsign svg'),
+          line = document.querySelector('{B} .fu-altnline'), s = line?.querySelector(':scope > .fu-altnsign svg');
+        return [li?.outerHTML === A.altnSignSvg('warn', false, {{ cls: li?.getAttribute('class') || '' }}),
+          !!s && s.querySelector('circle')?.getAttribute('stroke') === A.altnSignColor(line.dataset.state, false)] }}""")
+    c.eq(same, [True, True], 'the very drawing of the shared table, for a proposed line and for the line of the chosen alternate',
+         what='shared')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F353_{c.design}_{w}_{c.lang}.png')
+
+
 
 @case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
       'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
