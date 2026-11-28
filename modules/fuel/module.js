@@ -771,7 +771,9 @@ const TX = {
       'carácter fuera del alfabeto del mensaje'
     ]
   },
-  // SOG-0398 : la ligne sous les terrains — l'état du dégagement (SOG-0690 b : altn_wx.js chosenSay), ses critères dans un pli
+  // SOG-0398 : la ligne sous les terrains — l'état du dégagement (SOG-0690 b : altn_wx.js chosenSay), ses critères dans un pli ; la tête
+  // de la ligne (le relais, 28/11 : « Dégagement XQAL : », puis le verdict en mots)
+  altnHead: ['Dégagement {id} :', 'Alternate {id}:', 'Ausweichflugplatz {id}:', 'Alternativo {id}:'],
   altnFold: ['Critères du dégagement', 'Alternate criteria', 'Kriterien des Ausweichflugplatzes', 'Criterios del alternativo'],
   // SOG-0559 (l'ergonome, 23/11) : la météo du dégagement non jugée — la cause sur la ligne, toujours visible ; puis l'observation du METAR
   // (jamais un jugement : un METAR est une observation) ; le repli garde la règle
@@ -5663,7 +5665,7 @@ async function altnChkDraw(C) {
     wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
     whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
     ck = `altn-crit:${id}`;
-  AWX.patchInto(box, `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead><b>${esc(id)}</b> ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}${fold({ cls: 'fu-altnfold', attrs: { 'data-altnfold': true }, key: ck, open: !!S.altnFolds.get(ck), title: tt(TX.altnFold), sumCls: 'f-muted', body: AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc }) })}${altnPropHtml()}`);
+  AWX.patchInto(box, `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnHead, { id }))} ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}${fold({ cls: 'fu-altnfold', attrs: { 'data-altnfold': true }, key: ck, open: !!S.altnFolds.get(ck), title: tt(TX.altnFold), sumCls: 'f-muted', body: AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc }) })}${altnPropHtml()}`);
 }
 /** La phrase d'un critère du dégagement (« Critères du dégagement », et SOG-0690 (b) le « Détail » d'une ligne proposée) : une lecture
  *  de la météo en cours ou en échec dite telle ; sinon sa phrase, les longueurs dans la langue de l'écran, le revêtement de la fiche. */
