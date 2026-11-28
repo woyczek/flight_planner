@@ -234,6 +234,8 @@ export function detailFold(taf, crits, id, h) {
     open: !!h.open?.(key),
     title: h.tt(TX.detail),
     sumCls: 'f-muted',
-    body: `${critsHtml(crits, id, h)}${raw ? `<p class="f-muted" data-tafraw>${h.esc(raw)}</p>` : ''}`
+    // un critère connu par son état seul (un terrain rendu par l'adresse #fuel?altn= : piste et moyens jugés avant, sans leurs valeurs) n'a
+    // pas de phrase : il n'est pas dit, rien d'inventé
+    body: `${critsHtml(crits.filter(c => c?.code), id, h)}${raw ? `<p class="f-muted" data-tafraw>${h.esc(raw)}</p>` : ''}`
   });
 }

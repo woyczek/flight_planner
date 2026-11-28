@@ -5675,11 +5675,12 @@ function altnWhyText(c, sheet) {
     .altnWhy.wxFailed, {
       why: S.wxFail
     });
+  const v = c.v || {}; // un critère sans valeur (météo wxNotRead, wxNoTaf…, F262) : sa phrase, sans nombre
   return tt(TX.altnWhy[c.code], {
-    ...c.v,
-    l: c.v.l != null ? fmt(c.v.l) : '',
-    m: c.v.m != null ? fmt(c.v.m) : '',
-    s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
+    ...v,
+    l: v.l != null ? fmt(v.l) : '',
+    m: v.m != null ? fmt(v.m) : '',
+    s: tt(v.hard === false ? TX.altnAny : TX.altnHard),
     t: String(sheet?.runwayType || '').slice(0, 12)
   });
 }
@@ -6001,13 +6002,12 @@ function altnPropHtml() {
         .filter(Boolean).join(' · ');
       return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc, open: k => !!S.altnFolds.get(k) })}</li>`;
     },
-    // SOG-0690 (b) point 4 (l'ergonome) : par verdict, puis par distance (une météo inconnue est « Non jugé » : après les terrains jugés,
-    // SOG-0544) — classée UNE fois, au premier dessin de la liste, la météo lue (la proposition n'est dessinée qu'ensuite) ; le terrain
-    // désigné sur la Carte en tête, hors du rang, sans reclasser les autres
-    order = P.order ||= P.list.map(x => [x, AWX.RANK[altnPropCrits(x).sign] ?? 3]).sort((a, b) => a[1] - b[1] || a[0].nm - b[0].nm)
-    .map(([x]) => x.icao),
+    // SOG-0690 (b) point 4 (le relais, 28/11, par le titre « … les meilleurs d'abord ») : les TROIS plus proches d'abord (l'ordre de la
+    // recherche), PUIS rangés par verdict et distance — le rang ne fait jamais entrer un terrain plus loin ; une météo inconnue est « Non
+    // jugé », après les terrains jugés (SOG-0544) ; rangés UNE fois, la météo lue (P.rank) ; le terrain désigné sur la Carte en tête, en plus
+    rank = P.rank ||= Object.fromEntries(P.list.map(x => [x.icao, AWX.RANK[altnPropCrits(x).sign] ?? 3])),
     touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
-    near = order.filter(k => k !== touched?.icao).slice(0, AC.CAND_LIST).map(k => P.list.find(x => x.icao === k)).filter(Boolean),
+    near = P.list.filter(x => x.icao !== touched?.icao).slice(0, AC.CAND_LIST).sort((a, b) => rank[a.icao] - rank[b.icao] || a.nm - b.nm),
     more = Math.max(0, P.list.length - near.length - (touched ? 1 : 0)),
     // l'ergonome : un repli à chevron (fold.js, SOG-0713), le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête
     // (la proposition et la Carte restent) ; ouvert d'abord, et rouvert quand un terrain est touché sur la Carte (altnTouched)
@@ -10602,7 +10602,7 @@ export function unmount() {
   clearTimeout(S.wxTimer);
   clearTimeout(S.wxAutoTimer);
   autoStop(); // SOG-0529 : le travail route/levels en cours est annulé
-  ALTN_KEEP = { // SOG-0714 : gardés pour ce vol (départ, arrivée, aéronef)
+  ALTN_KEEP = S.flight && { // SOG-0714 : gardés pour ce vol (départ, arrivée, aéronef) ; démonté avant le vol lu (F7) : rien à garder
     key: altnPropKey(),
     prop: S.altnProp?.pending ? null : S.altnProp,
     folds: S.altnFolds
