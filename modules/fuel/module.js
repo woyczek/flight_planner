@@ -4394,10 +4394,10 @@ async function acResults(text) {
   if (gone(s) || seq !== S.acSeq || !S.body) return;
   // § 10.38 : les appareils de la flotte de la compagnie courante d'abord (la ligne d'aerodb s'il connaît l'immatriculation, sinon une
   // ligne faite de la flotte : son type, la fiche de ce type s'il y en a une) ; flotte vide : la recherche comme avant
-  const fold = v => String(v || '').toUpperCase(),
-    q = fold(text).trim(),
-    canon = c => fold(S.A?.canonical?.(c) || c),
-    co = (S.coFleet?.aircraft || []).filter(a => !q || [a.registration, a.type, a.callsign].some(v => fold(v).includes(q))),
+  const upper = v => String(v || '').toUpperCase(), // pas « fold » : le nom du pli commun importé (fold.js)
+    q = upper(text).trim(),
+    canon = c => upper(S.A?.canonical?.(c) || c),
+    co = (S.coFleet?.aircraft || []).filter(a => !q || [a.registration, a.type, a.callsign].some(v => upper(v).includes(q))),
     regs = new Set(co.map(a => a.registration)),
     coHits = co.map(a => found.find(h => h.registration === a.registration) || {
       kind: 'aircraft',
