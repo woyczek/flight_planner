@@ -6,19 +6,11 @@
 //   · unmount() : arrête ce qu'il a lancé (observateurs) ; le cadre vide el.
 // Une note par pilote, pilot/<trigramme>/hello.json (préfixe pilot/ partagé avec d'autres modules : fuel, maps), et
 // une copie locale de l'appareil, jamais synchronisée (politique « cache ») : cache/hello/last.json.
-export const meta = {
-  id: 'hello',
-  apps: ['pilot'],
-  level: 1,
-  files: [], // fichiers que ce module importe, relatifs à module.js (gardés hors ligne dès l'installation) : aucun ici
-  reads: ['pilot/', 'cache/hello/'],
-  writes: [{
-    prefix: 'pilot/',
-    merge: 'record'
-  }, {
-    prefix: 'cache/hello/',
-    policy: 'cache'
-  }]
+import {
+  meta
+} from './meta.js'; // SOG-0728 : la meta du module (littéraux, sans import), lue par le cadre sans ouvrir ce fichier
+export {
+  meta
 };
 
 const TX = {

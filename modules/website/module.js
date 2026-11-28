@@ -9,6 +9,9 @@
 //     téléphone ; le cadre l'expose aux modules en ctx.airline.
 // Jamais de POST vers le site, jamais la connexion du pilote, aucune adresse dans le code. « Inscrire le vol » (report)
 // est servi par frame/lib/website.js. Calcul pur dans model.js.
+import {
+  meta
+} from './meta.js'; // SOG-0728 : la meta du module (littéraux, sans import), lue par le cadre sans ouvrir ce fichier
 import * as W from './model.js';
 import {
   canPaste
@@ -17,22 +20,8 @@ import {
   fmtDateZ
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 
-export const meta = {
-  id: 'website',
-  apps: ['pilot'],
-  level: 2,
-  reads: ['airline/', 'pilot/'],
-  writes: [{
-    prefix: 'airline/settings.json',
-    merge: 'record'
-  }, {
-    prefix: 'airline/fleet.json',
-    merge: 'record'
-  }, {
-    prefix: 'pilot/',
-    merge: 'record'
-  }],
-  files: ['model.js', '../../frame/lib/clipboard.js', '../../frame/lib/time.js']
+export {
+  meta
 };
 
 const SETTINGS = 'airline/settings.json',

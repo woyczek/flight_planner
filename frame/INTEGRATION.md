@@ -12,15 +12,19 @@ extends the adapter and this guide in the same commit.
 
 ## 2. The module file
 
-A module is one folder, `modules/<id>/`, whose entry is `module.js`, an ES module:
+A module is one folder, `modules/<id>/`, whose entry is `module.js`, an ES module, and whose `meta` is its own file, `meta.js` (SOG-0728):
 
 ```js
+// modules/availability/meta.js — literals and PURE functions only: no import, no access to window, document, storage or network
 export const meta = {
   id: 'availability', apps: ['pilot'], level: 1,
   reads: ['disponibilites/', 'utilisateurs/'],
   writes: [{ prefix: 'disponibilites/', merge: 'record' }, { prefix: 'cache/availability/', policy: 'cache' }],
-  files: ['timeline.js', 'texts.js']
+  files: ['meta.js', 'timeline.js', 'texts.js']
 };
+// modules/availability/module.js
+import { meta } from './meta.js';
+export { meta };
 export async function mount(el, ctx) { /* draw into el with ctx */ }
 export function unmount() { /* stop watchers, timers */ }
 ```
@@ -60,6 +64,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   (`'{n} conflit(s)'`) and pass the number (`ctx.t(row, { n })`): `ctx.t` resolves `(s) (x) (es) (en) (n) (e)` by `frame/lib/plural.js` (fr: 0 and 1 singular;
   en, de, es: only 1). Without a number in the variables the text is left as it is.
 - No global style sheet: use the frame's tokens and classes (§ 3.2 of the SPEC).
+- `meta.js` is the module's one source for everything below (`id`, `level`, `fixed`, `title`, `files`, `lazy`, `reads`, `writes`, `launcher`, `net`, `help`, `titleOf`): the frame reads it without opening the module, so it holds literals and PURE functions only (no import, no `window`, `document`, storage or network). A text the module also draws (its title) is written in `meta.js` and taken from there by `texts.js`, never the other way round. `meta.js` is the first entry of `files`.
 - `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js` — the whole chain:
   a `frame/lib/` file imported by one of the module's own files counts too (noreg I26 checks it statically, with `lazy`). The frame
   keeps them offline from the first visit, before the module is ever opened. A file left out is kept only once it has

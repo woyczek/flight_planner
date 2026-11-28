@@ -1,8 +1,11 @@
 // Textes du module Données, [fr, en, de, es], français d'abord (ctx.t : {nom} remplacés, espace fine avant : ; ! ? en français
 // posée par le cadre). Sigles et noms propres (AIRAC, eAIP, CIFP, SIA…) non traduits ; les noms des sources, leurs licences et les
 // libellés de couverture par État viennent du catalogue d'aerodb, déjà en quatre langues.
+import {
+  meta
+} from './meta.js';
 export const TX = {
-  title: ['Données', 'Data', 'Daten', 'Datos'],
+  title: meta.title, // SOG-0728 : écrit dans meta.js, que le cadre lit sans ouvrir le module
   // en-tête : le cycle AIRAC en vigueur, le suivant, le lanceur
   cycleNow: ['Cycle AIRAC en vigueur', 'AIRAC cycle in force', 'Gültiger AIRAC-Zyklus', 'Ciclo AIRAC vigente'],
   cycleDates: ['du {a} au {b}', 'from {a} to {b}', 'vom {a} bis {b}', 'del {a} al {b}'],

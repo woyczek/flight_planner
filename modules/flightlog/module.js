@@ -4,6 +4,9 @@
 // par le module website) et ses sessions IVAO / VATSIM (frame/lib/last_flight.js par ctx.net), sans doublon ; trois
 // tuiles de totaux, période, recherche, « sans CR » ; un toucher déplie le détail et « Écrire le CR » / « Ouvrir le
 // CR » (passage à report par pilot/handoff.json) ; export CSV dans « Plus ». Calcul pur dans model.js.
+import {
+  meta
+} from './meta.js'; // SOG-0728 : la meta du module (littéraux, sans import), lue par le cadre sans ouvrir ce fichier
 import * as F from './model.js';
 import * as LF from '../../frame/lib/last_flight.js';
 import {
@@ -16,23 +19,8 @@ import {
   airlineText
 } from '../../frame/lib/mission_categories.js'; // la compagnie d'un compte rendu, dite comme Réglages la dit (SOG-0181)
 
-export const meta = {
-  id: 'flightlog',
-  title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'], // en-tête du téléphone (règle 16)
-  apps: ['pilot'],
-  level: 1,
-  reads: ['cr/', 'pilot/', 'cache/flightlog/', 'cache/report/'],
-  writes: [{
-    prefix: 'pilot/handoff.json',
-    policy: 'cache'
-  }, {
-    prefix: 'cache/flightlog/',
-    policy: 'cache'
-  }],
-  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
-    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js',
-    '../../frame/lib/geo.js' // SOG-0468 (2) : importé par last_flight.js (gcNm ; cas I26)
-  ]
+export {
+  meta
 };
 
 const VIEW = 'cache/flightlog/view.json',
