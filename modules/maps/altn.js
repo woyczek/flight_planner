@@ -22,7 +22,8 @@ import {
 import {
   altnSignColor,
   altnSignSvg,
-  drawAltnSign
+  drawAltnSign,
+  pageDark
 } from '../../frame/lib/altn_sign.js';
 import {
   TX
@@ -140,7 +141,8 @@ const dual = () => S?.ctx?.query?.pane === '1' || !!S?.ctx?.query?.with;
 export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
   const A = current();
   if (!A) return [];
-  const dark = !!S.theme?.dark,
+  const dark =
+    pageDark(), // la règle de frame/lib/altn_sign.js, la même que celle des jetons de la Carte (clarté de --sog-chart-bg sous 0,45) et que Carburant lit
     bg = S.theme?.bg || '#fff',
     own = new Set((S.route?.points || []).map(p => String(p.id || '').toUpperCase()).filter(Boolean)),
     taken = avoid.map(r => ({
@@ -336,7 +338,8 @@ export function altnPick(icao) {
 export function altnLegendRows() {
   const A = current();
   if (!A) return [];
-  const dark = !!S.theme?.dark,
+  const dark =
+    pageDark(), // la règle de frame/lib/altn_sign.js, la même que celle des jetons de la Carte (clarté de --sog-chart-bg sous 0,45) et que Carburant lit
     sw = s => altnSignSvg(s, dark, {
       width: 30,
       height: 14,

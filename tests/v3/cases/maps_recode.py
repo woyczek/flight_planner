@@ -8851,6 +8851,11 @@ def d340(c):
         for px, col in zip(got['px'], cols):
             exp = [int(col[i:i + 2], 16) for i in (1, 3, 5)]
             c.ok(all(abs(a - b) <= 24 for a, b in zip(px, exp)), f'{sign}: pixel {px}, table {exp}', f'{sign}: the canvas ring is in the colour of the table (the same as the SVG)')
+    # pageDark(): the rule of the Map (the lightness of --sog-chart-bg under 0.45), the same for Fuel; a missing token: light
+    d = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), st = document.documentElement.style, was = st.getPropertyValue('--sog-chart-bg'), out = [];
+      for (const v of ['#101418', '#fff', 'rgb(20, 24, 30)', '#8a8a8a', '#707070', '']) { if (v) st.setProperty('--sog-chart-bg', v); else st.removeProperty('--sog-chart-bg'); out.push([v, A.pageDark(), window.MapsRender.tokens().dark]) }
+      if (was) st.setProperty('--sog-chart-bg', was); else st.removeProperty('--sog-chart-bg'); return out }""")
+    c.ok(all(a == b for _, a, b in d[:5]) and d[0][1] is True and d[1][1] is False and d[2][1] is True and d[3][1] is False and d[4][1] is True, str(d), 'pageDark() is the rule of the Map (tokens().dark) for dark, light, rgb(), middle grey')
     c.eq(r['bogus']['colors'], want['ok'], 'an unknown sign is read as the first one (never a missing drawing)', what=str(r['bogus']['colors']))
     c.ok(len({s for k in want for s in r[k]['svg']}) == 8, '', 'the four signs, day and night: eight different drawings')
     c.check_errors()
