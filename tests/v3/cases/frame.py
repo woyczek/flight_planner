@@ -13188,6 +13188,9 @@ def a409(c):
       // the event: only when the RESOLVED theme changes
       const seen = [], win = [], ac = new AbortController();
       T.onTheme(t => seen.push([t.design, t.tone, t.dark, t.auto].join(' ')), ac.signal);
+      // the SAME file imported under another address is another copy of the module: one observer for the page all the same (train 12: two events per change)
+      const T2 = await import('/frame/lib/theme.js?copy=2'), seen2 = [];
+      T2.onTheme(t => seen2.push(t.tone), ac.signal);
       window.addEventListener('frame-theme', e => win.push(e.detail.tone));
       const tick = () => new Promise(res => setTimeout(res, 60));
       const keep = [h.dataset.design, h.dataset.tone];
@@ -13197,6 +13200,7 @@ def a409(c):
       h.dataset.design = 'cabinet'; await tick();          // the same: no event
       h.removeAttribute('data-tone'); await tick();        // auto: the device decides (light here)
       out.seen = seen.slice();
+      out.seen2 = seen2.slice();
       out.win = win.slice();
       out.auto = T.themeOf().auto;
       window.__a409 = { T, seen, ac, keep, tick };
@@ -13206,7 +13210,8 @@ def a409(c):
     c.eq(r['resolve'], 'day night night day night day', 'resolveTone: day and night are set, auto follows the device', what='resolveTone')
     c.eq(r['page'].split(' ')[0], 'true', 'the design the reader gives is the design on <html>', what='page')
     c.eq(r['seen'], ['cabinet day false false', 'cabinet night true false', 'cabinet day false true'], 'one event per RESOLVED change (day, night, then auto-light), none for the same value set twice', what='events')
-    c.eq(r['win'], ['day', 'night', 'day'], 'the window event `frame-theme` says the same', what='window event')
+    c.eq(r['win'], ['day', 'night', 'day'], 'the window event `frame-theme` says the same, once per change (not once per copy of the module)', what='window event')
+    c.eq(r['seen2'], ['day', 'night', 'day'], 'a second copy of the module (another address) hears the same, once', what='second copy')
     # the device goes dark while the tone is auto: the resolved theme changes, an event says it
     c.page.emulate_media(color_scheme='dark')
     c.wait(300)

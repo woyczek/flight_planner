@@ -32,15 +32,22 @@ export function themeOf(root = document.documentElement, prefersDark = prefersDa
   };
 }
 
-const subscribers = new Set();
-let last = null,
-  started = false;
+// L'état est UN pour la page, pas un par copie du module : le même fichier importé sous deux adresses (« theme.js?v=0 » par le cadre, « theme.js » par un module) est deux copies, donc deux observateurs et deux
+// événements par changement — le cas A409 l'a vu au train 12. Les copies se partagent donc cet objet, posé une fois sur la page.
+const shared = globalThis[Symbol.for('sog.frame.theme')] ||= {
+  subscribers: new Set(),
+  last: null,
+  started: false
+};
+const {
+  subscribers
+} = shared;
 const key = t => `${t.design}|${t.tone}`;
 
 function changed() {
   const now = themeOf();
-  if (last && key(last) === key(now)) return;
-  last = now;
+  if (shared.last && key(shared.last) === key(now)) return;
+  shared.last = now;
   for (const fn of [...subscribers]) try {
     fn(now);
   } catch (e) {
@@ -52,9 +59,9 @@ function changed() {
 }
 
 function start() {
-  if (started || typeof document === 'undefined') return;
-  started = true;
-  last = themeOf();
+  if (shared.started || typeof document === 'undefined') return;
+  shared.started = true;
+  shared.last = themeOf();
   new MutationObserver(changed).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-design', 'data-tone']
