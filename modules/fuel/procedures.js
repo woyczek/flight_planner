@@ -19,6 +19,8 @@
 //     refresh(),           redessine l'écran (devis compris)
 //     zoneGap(icao),       la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
 //     procState(icao)      l'état des procédures de son État : { readable, demand } ou null tant qu'il n'est pas connu (SOG-0157)
+//     adState(icao)        ce que la page sait du code : 'unknown' (la base ne le connaît pas), 'pending', 'known' (SOG-0688)
+//     typed(side)          SOG-0703 : le code complet tapé dans le champ du côté ('dep' | 'arr') que le vol ne tient pas encore, '' sinon
 //   L'aide de l'approche choisie (SOG-0176) : sous les listes de l'arrivée, « ILS 25 · DO 109.35 · axe 246° · DME » quand l'approche
 //   est un ILS ou un LOC (son identifiant ARINC : I…, L…) et que la base porte l'ILS de sa piste (aerodb.navaids, kind ILS, même
 //   terrain, même piste) ; aucune ligne sinon, rien d'inventé.
@@ -314,8 +316,7 @@ export function createProcedures(host) {
    *  nom du terrain d'après aerodb (coords), '' s'il est inconnu. rwys : runwayChoices. nodata : ni fiche (de n'importe quelle sorte)
    *  ni piste d'aerodb. */
   async function sideModel(side) {
-    const r = host.flight().route || {},
-      icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
+    const icao = icaoOfSide(side); // SOG-0703 : le code tapé d'abord
     if (!isIcao(icao)) return null;
     const kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
       [known, every, cov, place, cat] = await Promise.all([askAero(() => ctx.aerodb?.runways?.(icao)), askAero(() => ctx.aerodb
@@ -816,6 +817,10 @@ export function createProcedures(host) {
     // SOG-0157 : l'état des procédures de l'État (Données, « Procédures par État »), connu de l'hôte : lisible à la demande → « Lire à la
     // demande » ; ne se lit pas (tables en images, étiquettes seules…) → pas de bouton qui échouerait, la ligne « zone manquante » le dit
     // SOG-0688 : un terrain inconnu de la base (son champ dit « inconnu ») n'a pas de bouton de lecture : EAD n'y trouverait rien
+    // SOG-0703 (l'ergonome, 28/11) : un code que la base ne connaît pas — la phrase de SOG-0688, seule (ni bouton, ni zone, ni repli)
+    if (m.nodata && host.adState?.(m.icao) === 'unknown') return `<span class="fu-procnone" data-procnotinbase>${esc(tt(TX.procAdNotInBase, {
+      icao: m.icao
+    }))}</span>`;
     const ps = m.nodata ? host.procState?.(m.icao) : null,
       parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable || host.adState?.(m.icao) === 'unknown' ? '' : readButton(m.icao, ps?.demand ? tt(TX
         .procReadDemand) : tt(TX.procRead, {
@@ -1444,12 +1449,14 @@ export function createProcedures(host) {
   const SIDE_WAIT = 8000;
   // SOG-0345 (a) : le dernier modèle de chaque côté, par terrain — peint d'abord à la demande suivante, jamais remplacé par une attente
   const keptModels = new Map();
-  /** Le terrain d'un côté du vol (4 signes), '' sinon. */
-  const icaoOfSide = side => {
+  /** Le terrain d'un côté du vol (4 signes), '' sinon ; SOG-0703 (l'ergonome, 28/11) : le code complet tapé dans son champ d'abord —
+   *  dès que le code change, le côté se vide de ses procédures et dit la ligne d'attente, puis ce que la page choisit. */
+  function icaoOfSide(side) {
     const r = host.flight().route || {},
+      t = String(host.typed?.(side) || '').trim().toUpperCase(),
       v = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
-    return isIcao(v) ? v : '';
-  };
+    return isIcao(t) ? t : isIcao(v) ? v : '';
+  }
   /** SOG-0345 (b) : la phrase d'un côté en attente — la lecture en cours, puis, à la borne, la limite du dépôt (la phrase du bandeau du
    *  cadre, SOG-0337) ou « pas encore lues ; elles se lisent depuis le poste ». */
   async function waitText(icao, late) {
@@ -1466,7 +1473,7 @@ export function createProcedures(host) {
     });
   }
   /** Clé de ce que montrent les lignes : choix, terrains, vol démarré ; changée, sync redessine. */
-  const rowsKey = () => JSON.stringify([host.key(), !!host.flight().started?.at]);
+  const rowsKey = () => JSON.stringify([host.key(), !!host.flight().started?.at, icaoOfSide('dep'), icaoOfSide('arr')]);
   /** Dessine la carte : à Route avant le départ, à Départ une fois le vol démarré (rien n'est verrouillé : départ et arrivée restent
    *  modifiables). Asynchrone (aerodb) ; la dernière demande seule est dessinée. SOG-0377 (c) : `only` ('dep' | 'arr') — un choix sur ce
    *  côté : l'autre reprend son dernier modèle (keptModels), sans rien redemander à aerodb sur son terrain. */

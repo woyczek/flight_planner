@@ -3235,12 +3235,14 @@ function onPlanInput(e) {
       const code = v.trim().toUpperCase(),
         s = S;
       S.AD.onInput(e); // la ligne du nom et la liste des terrains proposés
+      if (k !== 'altn') S.P.sync(); // SOG-0703 : un autre code — la carte des procédures se vide aussitôt de celles du terrain d'avant
       if (!code) return; // vidé pour chercher : rien n'est écrit tant que le champ a le focus (revertAd l'écrit vide en le quittant)
       if (!S.AD.isPicking()) {
         // un code de quatre caractères n'entre qu'une fois connu d'aerodb (et si le champ le porte encore) ; un texte de recherche
         // n'écrit rien
         if (S.AD.isCode(code)) S.AD.known(code).then(ok => {
           const el = !gone(s) && S.body?.querySelector(`[data-k="${k}"]`);
+          if (!ok && el && k !== 'altn') S.P.render(); // SOG-0703 : la base ne connaît pas le code — la carte le dit
           if (!ok || !el || el.value.trim().toUpperCase() !== code) return;
           setAd(k, code);
           saveFlight();
@@ -9654,6 +9656,9 @@ export async function mount(el, ctx) {
     // SOG-0688 : ce que la page sait d'un code (le champ) — 'unknown' (la base ne le connaît pas), 'pending' (pas encore répondu), 'known'
     adState: icao => (n => n === null ? 'unknown' : n === undefined ? 'pending' : 'known')(S.AD?.nameKnown?.(String(icao || '')
       .toUpperCase())),
+    // SOG-0703 : le code complet tapé dans le champ du côté que le vol ne tient pas encore (un texte de recherche : '')
+    typed: side => (v => S.AD?.isCode?.(v) && v !== String(self.flight.route?.[side] || '').toUpperCase() ? v : '')(String(self.body
+      ?.querySelector(`input[data-k="${side}"]`)?.value || '').trim().toUpperCase()),
     ctx,
     flight: () => self.flight,
     route: () => self.flight.route ||= emptyFlight().route,
