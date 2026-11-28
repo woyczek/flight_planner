@@ -173,8 +173,8 @@ export const RANK = {
 };
 
 /** SOG-0690 (b) point 1 (l'ergonome) : le signe d'un terrain, la pastille cerclée de la Carte (le même dessin, les couleurs de Q-0075) ;
- *  la nuit par la règle commune quand altn_sign.js la donne (pageDark), le jour sinon : jamais une règle recopiée ici. */
-export const pastille = sign => AS.altnSignSvg(sign, !!AS.pageDark?.(), {
+ *  la nuit par la règle commune d'altn_sign.js (pageDark, celle de la Carte) : jamais une règle recopiée ici. */
+export const pastille = sign => AS.altnSignSvg(sign, AS.pageDark(), {
   cls: 'fu-altnpast'
 });
 
