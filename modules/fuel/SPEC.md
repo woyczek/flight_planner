@@ -426,8 +426,8 @@ before the start, in step 5 after (F11).
   aucune »; nothing when nothing is chosen). A tap on the line (but its other buttons) unfolds that side and folds the other; folded
   lists and secondary line are `visibility: hidden; height: 0` (kept in the shared grid so both sides keep the same columns); a side
   without data never folds; the address's focus (§ 9) unfolds its side (F72, F65, F34).
-- **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues · Cartes »:
-  the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; ⌛ when `coverage().outdated`), « Relire », the
+- **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z · périmé · Relire · 3 non lues · Cartes »:
+  the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; « · périmé » when `coverage().outdated`, SOG-0705), « Relire », the
   records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), **the ground reading** (SOG-0135, F124;
   `aerodb.groundStatus(icao)`, asked again on `on('change', { ground, groundFailed })`, one second after `{ procedures }`, every 3 s while
   it reads): « Lecture du sol en cours… », « Sol lu », or « Sol non lu : <raison> · Réessayer » (the launcher's text in its `title`;
@@ -458,8 +458,8 @@ before the start, in step 5 after (F11).
   entries compatible with the choice first, then the ⚠ ones, in each group the X-Plane records last, then runway, name, transition;
   the runway list opens with the runways of the SID (Departure) or the approach (Arrival) already chosen (F31, F20). Options: empty =
   not chosen (« — »), « aucune » (writes `null`; SID, STAR, approach), then the procedures by name (F12); a record with `status:
-  'xplane'` comes last, « X-Plane, local »; an `outdated` one ends with ⌛ (class `outdated`, grey on a computer, title « Lue sous un
-  cycle antérieur : à relire »), never the word « périmé » (F13); the runway is in the label only when NO runway is chosen, the record
+  'xplane'` comes last, « X-Plane, local »; an `outdated` one ends with « · périmé » (SOG-0705: the word of the Map; class `outdated`, grey on a computer, title « Lue sous un
+  cycle antérieur : à relire »), never « ⌛ » (F13); the runway is in the label only when NO runway is chosen, the record
   serves exactly one and its name does not say it already (« MAN1A · 07 », « RNP RWY 02 »); same-name SIDs of two runways make one row
   with their runways (F78). **An approach read in doubt** (`status: 'doubt'`, with a name; asked with `procedures(icao, { doubt: true
   })`) **is listed** at the arrival, « ⚑ à vérifier » on its line, its reasons in clear words in the tooltip (the closed list of

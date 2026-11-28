@@ -73,9 +73,7 @@ export const sideChosen = o => !!o && Object.values(o).some(v => v === null || t
 /** Un côté sans champ vide : { rwy: '23', sid: null } ; undefined retiré. */
 export const cleanSide = o => Object.fromEntries(Object.entries(o || {}).filter(([, v]) => v !== undefined && v !== ''));
 
-/** Marque d'une procédure lue sous un cycle passé (fin de libellé, listes et notifications) : un symbole court plutôt qu'un mot. */
-const PROC_OLD = ' ⌛';
-/** Marque d'une procédure en conflit avec la piste choisie, après ⌛ : orange, jamais un mot. */
+/** Marque d'une procédure en conflit avec la piste choisie, après « périmé » : orange, jamais un mot. */
 const PROC_CONFLICT = ' ⚠';
 /** Délai (ms) sans nouveau choix avant d'écrire le vol et de refaire le devis : des choix faits à la suite sont écrits une fois. */
 const SETTLE_MS = 400;
@@ -178,12 +176,15 @@ export function createProcedures(host) {
   const ctx = host.ctx,
     /** Texte d'une ligne de TX dans la langue de l'appli. */
     tt = (row, v) => ctx.t(row, v),
+    /** SOG-0705 (l'ergonome, 28/11) : la marque d'une procédure lue sous un cycle passé (fin de libellé, listes et notifications) — le mot
+     *  de la Carte, « · périmé », jamais « ⌛ », qui se lit « calcul en cours » (SOG-0602). */
+    procOld = () => ` · ${tt(TX.procStale)}`,
     /** Les motifs d'une lecture douteuse en clair (le champ `doubt` d'aerodb : codes séparés par des virgules, liste fermée de
      *  tools/proc_geometry.py DOUBT_CODES) ; un code inconnu n'est pas dit (SOG-0232). */
     doubtWhy = rec => String(rec?.doubt ?? '').split(',').map(c => c.trim()).filter(c => Object.hasOwn(TX.doubtWhy, c)).map(c => tt(TX
       .doubtWhy[c])).join(' ; ') || tt(TX.procDoubt),
     /** État des procédures d'un terrain (un seul objet par OACI) : recs, ses fiches montrées au dernier dessin (par identifiant :
-     *  conflits, ordre, ⌛ des notifications) ; stats, les comptes de sa dernière lecture à la demande (fiches douteuses). */
+     *  conflits, ordre, « périmé » des notifications) ; stats, les comptes de sa dernière lecture à la demande (fiches douteuses). */
     ads = new Map(),
     /** Ce que chaque élément dessiné montre (région ou liste) : le texte HTML posé, pour ne toucher que ce qui change. */
     painted = new WeakMap();
@@ -255,8 +256,8 @@ export function createProcedures(host) {
   }
   /** Libellé d'un enregistrement dans une liste : son nom, sa piste seulement quand AUCUNE piste n'est choisie et que la procédure
    *  n'en dessert qu'une que le nom ne dit pas déjà (« MAN1A · 07 » ; « RNP RWY 02 » la porte) — avec une piste choisie, « OPALE 2E »
-   *  seul —, « X-Plane, local » pour le repli du poste, puis ⌛ pour une lecture à la main dont le cycle est passé. ⚠ (conflit) est
-   *  ajouté par l'appelant, après ⌛. o : le choix courant du côté. */
+   *  seul —, « X-Plane, local » pour le repli du poste, puis « périmé » pour une lecture à la main dont le cycle est passé. ⚠ (conflit)
+   *  est ajouté par l'appelant, après lui. o : le choix courant du côté. */
   /** La source d'une fiche du poste dite dans la liste : « Little Navmap, lue sur ce poste » (SOG-0210 ; une fiche lnm est aussi
    *  local), « X-Plane, local » pour le repli d'X-Plane ; '' pour une lecture officielle. */
   /** Une fiche lue de Little Navmap (statut lnm). */
@@ -278,7 +279,7 @@ export function createProcedures(host) {
       one = o?.rwy || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))];
     return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', srcLabel(rec), isPartial(rec) ? tt(TX
         .procPartialShort) : '']
-      .filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
+      .filter(Boolean).join(' · ') + (rec.outdated ? procOld() : '');
   }
   /** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. La règle est celle
    *  de PR.conflictsOf (frame/lib/procedures.js, une seule pour Carburant et la Carte, § 10.23) : des données ; ici leurs textes. k :
@@ -290,9 +291,10 @@ export function createProcedures(host) {
       app: c.app || nameOfId(c.appId)
     }));
   }
-  /** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée et, si le choix o du
+  /** Nom d'une procédure choisie (identifiant) pour une notification, avec « périmé » quand la fiche montrée l'est et, si le choix o du
    *  côté est donné, ⚠ quand elle est en conflit avec lui. */
-  const procNameOf = (id, k, o) => nameOfId(id, k) + (recsNow().get(id)?.outdated ? PROC_OLD : '') + (o && conflictsOf(k, recsNow().get(id),
+  const procNameOf = (id, k, o) => nameOfId(id, k) + (recsNow().get(id)?.outdated ? procOld() : '') + (o && conflictsOf(k, recsNow().get(
+      id),
     o).length ? PROC_CONFLICT : '');
   /** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
   const valueText = (v, k, o) => v === undefined ? '—' : v === null ? tt(TX.procNone) : k === 'rwy' ? String(v) : procNameOf(v, k, o);
@@ -380,7 +382,7 @@ export function createProcedures(host) {
   /** Options d'une liste PLATE : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements dans l'ordre de
    *  PR.orderProcedures (les compatibles avec le choix d'abord, puis les ⚠ ; dans chaque groupe le repli X-Plane en dernier, puis par
    *  piste, par nom, par transition ; jamais de groupe) ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur : undefined,
-   *  null ou un identifiant. Une fiche périmée : ⌛ et classe outdated ; une fiche en conflit avec la piste choisie : ⚠ après ⌛ et
+   *  null ou un identifiant. Une fiche périmée : « périmé » et classe outdated ; une fiche en conflit avec la piste choisie : ⚠ après lui et
    *  classe conflict (orange) ; les deux se cumulent. Chaque option porte son libellé entier en infobulle (title), suivi de ses raisons.
    *  Une fiche en conflit reste choisissable. */
   function optionsHtml(recs, cur, k, none, o, lab) {
@@ -414,11 +416,12 @@ export function createProcedures(host) {
         }
         const pick = g.find(r => r.id === cur) || PR.firstServing(g, o.rwy) || g[0],
           rw = [...new Set(g.flatMap(r => PR.servesAll(r) ? [] : r.runways.map(PR.rwNum)))].sort(PR.rwOrder).join('/');
-        html.push(opt(pick.id, `${PR.nameOf(pick) || pick.id}${rw ? ` · ${rw}` : ''}${pick.outdated ? PROC_OLD : ''}${mark(pick)}`, g.some(r =>
+        html.push(opt(pick.id, `${PR.nameOf(pick) || pick.id}${rw ? ` · ${rw}` : ''}${pick.outdated ? procOld() : ''}${mark(pick)}`, g.some(r =>
           r.id === cur), pick));
       }
     } else
-      for (const r of list) html.push(opt(r.id, (lab ? lab(r) : (r.transition || r.name) + (r.outdated ? PROC_OLD : '')) + mark(r), r.id ===
+      for (const r of list) html.push(opt(r.id, (lab ? lab(r) : (r.transition || r.name) + (r.outdated ? procOld() : '')) + mark(r), r
+        .id ===
         cur, r));
     if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, k), true));
     return html.join('');
@@ -578,7 +581,7 @@ export function createProcedures(host) {
       const ac = PR.appChoices(m.lists.APP),
         xp = r => srcLabel(r) ? ` · ${srcLabel(r)}` : '';
       sel('app', 'app', TX.procApp, ac.list, true, r => appWords(PR.labelOf(r, ac.list)) + (finalOnly(r) ? ` — ${tt(TX.procFinalOnly)}` : '') + xp(r) + (PR
-        .isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r.outdated ? PROC_OLD : ''));
+        .isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r.outdated ? procOld() : ''));
       // SOG-0248 : après les approches codées, chaque approche « carte seulement » de l'AIP, dite mais jamais choisie (son lien est sous
       // la liste)
       // SOG-0298 / SOG-0308 tranche 3b : elles se CHOISISSENT (« __chart:<rang> » dans la liste du terrain, jamais un identifiant)
@@ -593,7 +596,7 @@ export function createProcedures(host) {
         }).join('')}${gone ? `<option value="__chart:gone" data-chartopt disabled selected>${esc(`${chartName(ach.name)} — ${tt(TX.procChartGone)}`)}</option>` : ''}</optgroup>`;
 
       const at = ac.transitionsOf(o.app);
-      if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? PROC_OLD : ''));
+      if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? procOld() : ''));
     }
     return out;
   }
@@ -804,14 +807,14 @@ export function createProcedures(host) {
     const busy = lnmReading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="proclnm" data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procLnmReading : TX.procLnmRead))}</button>`;
   };
-  /** Date de la dernière lecture d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il détient est une
+  /** Date de la dernière lecture d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », « · périmé » quand ce qu'il détient est une
    *  lecture d'un cycle passé (coverage().outdated) ; '' sans date (read_at null, aerodb plus ancien). */
   function fileHtml(m) {
     const when = fmtDayZ(m.cov?.read_at); // « 29/10 16:53Z » ; '' sans date (read_at null) ou illisible
     if (!when) return '';
-    return `<span class="fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (m.cov?.outdated ? PROC_OLD : ''))}</span>`;
+    return `<span class="fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (m.cov?.outdated ? procOld() : ''))}</span>`;
   }
-  /** L'unique ligne discrète d'un côté (jamais plus) : « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues » ; sans donnée : « aucune
+  /** L'unique ligne discrète d'un côté (jamais plus) : « lu le 29/10 16:53Z · périmé · Relire · 3 non lues » ; sans donnée : « aucune
    *  procédure publiée · Lire les procédures de LFXX ». L'emplacement data-source-slot, à la fin, attend le lien « Source » (§ 10.25). */
   function metaHtml(m, side) {
     // SOG-0157 : l'état des procédures de l'État (Données, « Procédures par État »), connu de l'hôte : lisible à la demande → « Lire à la

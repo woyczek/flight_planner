@@ -114,7 +114,9 @@ export const TX = {
   },
   // les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), avec leur carte
   procChartOnly: ['Carte seulement dans l’AIP', 'Chart only in the AIP', 'Nur als Karte im AIP', 'Solo carta en el AIP'],
-  // procédure lue sous un cycle passé : le seul symbole ⌛ en fin de libellé (PROC_OLD), ce texte en infobulle
+  // SOG-0705 : procédure lue sous un cycle passé — le mot en fin de libellé (procOld de procedures.js, les mots de la Carte), ce texte en
+  // infobulle
+  procStale: ['périmé', 'out of date', 'veraltet', 'desactualizado'],
   procOutdatedTitle: ['Lue sous un cycle antérieur : à relire', 'Read under an earlier cycle: to read again',
     'Unter einem früheren Zyklus gelesen: neu lesen', 'Leído en un ciclo anterior: volver a leer'
   ],
