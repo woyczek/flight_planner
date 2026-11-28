@@ -17073,7 +17073,11 @@ def n280(c):
 
 # SOG-0482 lot 7b: the HANDLE of the drag (frame/lib/reorder.js, INTEGRATION.md § 12h « The handle and the drag ») on the three lists of the itinerary that have the arrows.
 def _mgrab(c):
-    """A pointer for the drag cases (the same as `_grab` of the frame cases): a finger (Chrome's touch events) on a phone, the mouse on a screen. Returns (down, move, up)."""
+    """A pointer for the drag cases (the same as `_grab` of the frame cases): a finger (Chrome's touch events) on a phone, the mouse on a screen. Returns (down, move, up).
+    `up(still=True)`: the finger STOPS on the place before it lifts, as a hand that drops a line does (touchMove at the same point for 112 ms, then touchEnd).
+    Measured on 28/11 (SOG-0701, a probe, removed): a finger lifted while it moves is a flick, Chrome starts a fling, and the NEXT touch only stops that fling:
+    it reaches the page (pointerdown, touchend) but makes NO click — 8 times out of 8 for a touch 3 to 35 ms after the lift, and still for a stop of 45 ms;
+    after a stop of 60 ms or more, the touch given 3 ms after the lift clicks, 13 times out of 13 (« ↶ » and « Enregistrer »). The mouse has no fling: `still` changes nothing."""
     if c.phone:
         cdp = c.context.new_cdp_session(c.page)
         last = {}
@@ -17092,7 +17096,13 @@ def _mgrab(c):
                 touch('touchMove', x0 + (x - x0) * k / steps, y0 + (y - y0) * k / steps)
             last.update(x=x, y=y)
 
-        return down, move, lambda: touch('touchEnd')
+        def up(still=False):
+            if still:
+                for _ in range(7):
+                    move(last['x'], last['y'], 1)
+            touch('touchEnd')
+
+        return down, move, up
     m = c.page.mouse
     last = {}
 
@@ -17105,7 +17115,10 @@ def _mgrab(c):
         m.move(x, y, steps=steps)
         last.update(x=x, y=y)
 
-    return down, move, m.up
+    def up_mouse(still=False):
+        m.up()
+
+    return down, move, up_mouse
 
 
 # the lines of a list of the itinerary, by their handles: [name of the place or of the drawer]
@@ -17178,7 +17191,7 @@ def n276(c):
     c.eq(c.js(_DRAG_HELD)[:2], [1, 1], 'the line is held, the insertion mark shows', what='held 2')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot(f'N276_glisser_{c.width}.png')
-    up()
+    up(still=True)  # the finger stops on the place, then lifts: the touch on « ↶ » that follows is a click (see _mgrab)
     c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the route in its new order')
     c.eq(c.js(_DRAG_HELD), [0, 0, 0], 'the attributes are gone after the drop', what='clean')
     # « ↶ » gives the order back, the same as for an arrow
@@ -17189,11 +17202,9 @@ def n276(c):
     down(x, y)
     r1 = box('route', 1, 'row')
     move(x, r1[1] + r1[3] * 0.8, 8)
-    up()
+    up(still=True)  # a still drop: the touch on « Enregistrer » is a click (see _mgrab)
     c.until(f"JSON.stringify(({_DRAG_NAMES})('route')) === {json.dumps(json.dumps(after, ensure_ascii=False, separators=(',', ':')))}", timeout=8000, what='the new order again')
     want = ['ORIGIN', 'ZONE-1', 'PT1', 'TARGET', 'PT3', 'DESTINATION']
-    # measured (a diagnostic probe, removed): with a finger, a touch 64 ms after the handle was released produces NO click (Chrome); a human gesture takes longer
-    c.wait(400)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # on a phone a note born on the bar takes the touch on « Enregistrer » (N196): none is there when it comes
     pre = c.js("""(() => { const b = document.querySelector('E_ [data-do=edsave]'), r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return { disabled: b.disabled, hit: e ? e.tagName + '.' + String(e.className).slice(0, 50) + (e === b || b.contains(e) ? '' : ' (NOT the button)') : null } })()""".replace('E_', E))
