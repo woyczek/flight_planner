@@ -405,7 +405,9 @@ phases:
 ## 4 octies. The sequence — the keys of an event (SOG-0620, 26 Nov 2026)
 
 One sequence for the author: the **events** of `timeline.events` and the **drawers** of `phases`, sorted by time in the workshop (« Déroulé »,
-`modules/missions/maquette/deroule.html`). An event is *planned in the brief* — a time counted from a **reference** (« repère »), a tolerance —
+`modules/missions/maquette/deroule.html`); at an equal or absent time, in the order of the itinerary that the reader reads (`frame/lib/mission.js`,
+`route.order`: written, profile or deduced, the route changed in the session included), a line whose place is not on it after the others, then the
+order of the file (SOG-0712). An event is *planned in the brief* — a time counted from a **reference** (« repère »), a tolerance —
 and *observed* on its place, without any gesture; a drawer stays hidden until its key plays. The file keeps both lists where they are: the keys
 below are **optional keys of `timeline.events[i]`**, ignored by the V2 (which keeps reading `at`, `place`, `text`, all three still written).
 

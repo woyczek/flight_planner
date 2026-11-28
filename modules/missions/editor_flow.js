@@ -24,8 +24,10 @@
 //   plannedOf(doc) → Map id → minutes | null (MS.plannedMin ; vide sans lecteur).
 //   without(entries, n, planned) → les lignes sans la n-ième ; ses dépendants prennent pour repère le décollage, à l'heure qu'ils avaient.
 //   rows(doc, entries, drawers, t) → [{ kind: 'event'|'drawer', n (la place dans `entries`, −1 pour un tiroir), id, under, min (l'heure
-//     prévue ou de repli, null si inconnue), when, tol, title, sub, teams [lettres], imposed }] — TRIÉES PAR L'HEURE (null à la fin), les
-//     tiroirs gardent leur ordre entre eux, un événement dont le repère est un tiroir vient juste sous lui (under) ; `t(clé, valeurs)` :
+//     prévue ou de repli, null si inconnue), when, tol, title, sub, teams [lettres], imposed }] — TRIÉES PAR L'HEURE (null à la fin) ; à heure
+//     égale ou absente, dans l'ORDRE DE L'ITINÉRAIRE du lecteur (MS.readMission(doc).route.order : le départ, la route, l'arrivée), une ligne
+//     dont le lieu n'est pas sur l'itinéraire (ou sans lieu) après celles qui y sont, puis l'ordre du fichier (SOG-0712) ; les tiroirs gardent
+//     leur ordre entre eux, un événement dont le repère est un tiroir vient juste sous lui (under), rangé par la même règle ; `t(clé, valeurs)` :
 //     les textes de editor_flow_texts.js.
 //   whenOf(entry, ctx, t) → « H+45 », « H-15 », « ordre + 5 », « Point un + 10 », « ROMEO + 10 », « Rendez-vous a… + 10 », « T2 + 20 » (ctx : { drawers,
 //     entries, places } ; jamais l'identifiant d'un événement : refName) ;
@@ -332,12 +334,41 @@ export function tolOf(e, t) {
   });
 }
 
+/** SOG-0712 — le rang d'un lieu sur l'itinéraire du LECTEUR (frame/lib/mission.js, readMission(doc).route.order, la route de la séance
+ *  comprise : edDoc l'écrit en route_order) : ORIGIN 0, le premier point de la route 1…, DESTINATION après le dernier ; un lieu cité deux fois
+ *  (un aller-retour) prend son premier passage ; Infinity pour un lieu qui n'est pas sur l'itinéraire, ou aucun lieu. Ne lève jamais. */
+function itinRank(doc) {
+  const at = new Map([
+    ['ORIGIN', 0]
+  ]);
+  try {
+    const order = MS.readMission(doc)?.route?.order;
+    (Array.isArray(order) ? order : []).slice(0, 200).forEach(id => {
+      const u = String(id).toUpperCase();
+      if (u && !at.has(u)) at.set(u, at.size);
+    });
+  } catch {}
+  at.set('DESTINATION', at.size);
+  return place => {
+    const u = typeof place === 'string' ? place.toUpperCase() : '';
+    return u && at.has(u) ? at.get(u) : Infinity;
+  };
+}
+
+/** L'ordre du déroulé (voir l'en-tête) : l'heure (null à la fin), puis le rang sur l'itinéraire, puis la place d'origine (le tri est stable). */
+const byTime = (a, b) => {
+  if ((a.min === null) !== (b.min === null)) return a.min === null ? 1 : -1;
+  if (a.min !== null && a.min !== b.min) return a.min - b.min;
+  return a.rank === b.rank ? 0 : a.rank < b.rank ? -1 : 1;
+};
+
 /** Le déroulé : les événements et les tiroirs, TRIÉS PAR L'HEURE (voir l'en-tête). `drawers` : les lignes de tiroir de la séance
  *  (editor_drawers.js drawerRowsOf). */
 export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
   const plan = plannedOf(doc),
     // une ligne sans identifiant écrit a, chez le lecteur, l'identifiant « @<rang dans le fichier> » : le document de la séance porte les lignes dans leur ordre
     rd = typeof MS.readEvents === 'function' ? MS.readEvents(doc) : [],
+    rank = itinRank(doc),
     ctx = {
       drawers,
       entries,
@@ -348,6 +379,7 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
       n,
       id: e.id,
       min: Number.isFinite(plan.get(e.id || rd[n]?.id)) ? plan.get(e.id || rd[n]?.id) : null,
+      rank: rank(e.place), // le lieu MONTRÉ (l'atelier voilé l'a déjà vidé pour un lieu caché : son rang n'en dit rien)
       when: whenOf(e, ctx, t),
       tol: tolOf(e, t),
       title: e.title || e.text || t('flNoTitle'),
@@ -363,6 +395,7 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
         n: -1,
         id: d.id,
         min: fb,
+        rank: Infinity, // un tiroir n'a pas de place sur l'itinéraire : les tiroirs gardent leur ordre entre eux (les places reprises plus bas)
         when: t('flKeyWord'),
         tol: fb !== null ? t('flFallback', {
           n: fb
@@ -374,8 +407,8 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
         parent: ''
       };
     }),
-    // le tri : par l'heure (null à la fin, l'ordre d'origine entre égaux) ; les tiroirs gardent entre eux leur ordre d'origine
-    top = [...evs.filter(r => !r.parent), ...dws].sort((a, b) => (a.min === null) - (b.min === null) || (a.min ?? 0) - (b.min ?? 0)),
+    // le tri : par l'heure (null à la fin), puis l'itinéraire, puis l'ordre d'origine (byTime) ; les tiroirs gardent entre eux leur ordre d'origine
+    top = [...evs.filter(r => !r.parent), ...dws].sort(byTime),
     slots = top.map((r, k) => r.kind === 'drawer' ? k : -1).filter(k => k >= 0);
   slots.forEach((k, j) => {
     top[k] = dws[j];
@@ -383,7 +416,7 @@ export function rows(doc, entries, drawers, t, places = ED.placesOf(doc)) {
   return top.flatMap(r => [{
     ...r,
     under: false
-  }, ...(r.kind === 'drawer' ? evs.filter(x => x.parent === r.id).map(x => ({
+  }, ...(r.kind === 'drawer' ? evs.filter(x => x.parent === r.id).sort(byTime).map(x => ({
     ...x,
     under: true
   })) : [])]);

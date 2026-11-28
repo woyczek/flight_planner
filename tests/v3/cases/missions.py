@@ -17926,3 +17926,61 @@ def n302(c):
     c.eq(c.js(_ORD_FROM), [], 'no line of provenance: the order is written (empty)', what='direct provenance')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0712: the déroulé at an equal or absent time — the order of the itinerary of the reader (frame/lib/mission.js, route.order); an invented mission,
+# its events written in the file OUT of that order: four at H+30 (three places of the route, one without a place), one earlier, two without a time
+_TIE_EVENTS = """timeline:
+  events:
+    - { at: H+30, id: EV-1, title: À Un, place: PT1, ref: takeoff, offset_min: 30 }
+    - { at: H+30, id: EV-2, title: Sans lieu, ref: takeoff, offset_min: 30 }
+    - { at: H+30, id: EV-3, title: À Deux, place: PT2, ref: takeoff, offset_min: 30 }
+    - { at: H+30, id: EV-4, title: À Trois, place: PT3, ref: takeoff, offset_min: 30 }
+    - { at: H+10, id: EV-5, title: Plus tôt à Deux, place: PT2, ref: takeoff, offset_min: 10 }
+    - { at: au signal, title: Sans heure à Deux, place: PT2 }
+    - { at: au signal, title: Sans heure à Trois, place: PT3 }
+"""
+_TIE_TITLES = f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row')].map(r => r.querySelector('.fl-what > b').textContent.trim())"
+
+
+@case('N303', 'Missions › the workshop, the block « Déroulé » at an equal or absent time (SOG-0712): sorted by time, then in the ORDER OF THE ITINERARY the reader reads — '
+      'written (route_order), then the route the session changes with « ↓ Plus tard », then the vertical profile; a line without a place on the itinerary comes after those '
+      'that have one, the lines without a time at the end in the same order', 'N', tags=('missions',), designs=('standard',), screens=True, phone=True, langs4=False,
+      rule='SOG-0712 (the ergonomist, 28 Nov 2026): « Tri par heure ; à heure égale ou absente, l\'ordre de l\'itinéraire du lecteur unique »; editor_flow.js rows, itinRank')
+def n303(c):
+    # the written order PT3, PT1, PT2: the four lines of H+30 follow it, the one without a place after them; the two without a time at the end, PT3 before PT2
+    _flow_open(c, _ORD_BASE + 'route_order: [ORIGIN, PT3, PT1, PT2, DESTINATION]\n' + _TIE_EVENTS)
+    want = ['Plus tôt à Deux', 'À Trois', 'À Un', 'À Deux', 'Sans lieu', 'Sans heure à Trois', 'Sans heure à Deux']
+    c.until(f"JSON.stringify({_TIE_TITLES}) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')))}", timeout=8000,
+            what='the déroulé in the order of time, then of the written route PT3, PT1, PT2')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-flowrows] .fl-row .fl-when b')].map(b => b.textContent.trim())")[:5], ['H+10', 'H+30', 'H+30', 'H+30', 'H+30'],
+         'H+10 first, then the four lines of H+30', what='times')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N303_390_deroule.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N303_1280_deroule.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    # the session moves PT3 one place later (« ↓ Plus tard »): the route is PT1, PT3, PT2 and the déroulé follows it, without a save
+    _n20_pick(c, c.js(_AT_OF, 'PT3'))
+    later = f'{E} [data-atflow] [data-chipmove=start] [data-reorder=down]'
+    c.until(f"!!document.querySelector('{later}') && !document.querySelector('{later}').disabled", what='« ↓ Plus tard » under PT3')
+    c.tap(later)
+    c.until(f"JSON.stringify([...document.querySelectorAll('{E} [data-atflow] [data-edplaces] > .ms-plrow[data-at^=\"start:\"] .ms-plbody b')].map(b => b.textContent.split(' · ')[0].trim())) === "
+            + json.dumps(json.dumps(['PT1', 'PT3', 'PT2'], separators=(',', ':'))), what='the route of the session: PT1, PT3, PT2')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # on a phone a note born on the bar takes the touch on the tab (N196)
+    _tab(c, 'mission')
+    if not c.count(f'{E} [data-flowrows]'):
+        c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    want = ['Plus tôt à Deux', 'À Un', 'À Trois', 'À Deux', 'Sans lieu', 'Sans heure à Trois', 'Sans heure à Deux']
+    c.until(f"JSON.stringify({_TIE_TITLES}) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')))}", timeout=8000,
+            what='the déroulé follows the route of the session: PT1, PT3, PT2')
+    ed_leave(c)
+    # no route_order, the vertical profile PT2 PT3 PT1: the reader reads the profile, the déroulé follows it (never the order of the keys of the file)
+    _flow_open(c, _ORD_BASE + 'vertical_profile:\n  route: PT2 PT3 PT1\n' + _TIE_EVENTS)
+    want = ['Plus tôt à Deux', 'À Deux', 'À Trois', 'À Un', 'Sans lieu', 'Sans heure à Deux', 'Sans heure à Trois']
+    c.until(f"JSON.stringify({_TIE_TITLES}) === {json.dumps(json.dumps(want, ensure_ascii=False, separators=(',', ':')))}", timeout=8000,
+            what='the déroulé in the order of the profile PT2, PT3, PT1')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
