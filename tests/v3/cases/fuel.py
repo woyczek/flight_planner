@@ -12034,12 +12034,13 @@ def f331(c):
     c.eq(c.count('#fNotes b'), 0, 'the status of SimBrief is text, never markup', what='esc')
 
 
-@case('F332', '« Proposer un dégagement »: the TEXT of the TAF of each aerodrome proposed, folded under its line (closed first, « TAF »), as '
-      'text — never markup; an aerodrome without a TAF read has no fold', 'F', tags=('fuel', 'weather', 'security'), designs=('standard',),
+@case('F332', '« Proposer un dégagement »: under each line a fold « Détail » (closed first) — the criteria of « Critères du dégagement » '
+      '(SOG-0690 b), then the TEXT of the TAF of the aerodrome, as text — never markup', 'F', tags=('fuel', 'weather', 'security'), designs=('standard',),
       screens=True, langs4=False,
       rule='SOG-0660 (SIG-88a5feb299, 25 Nov: « le taf n\'est toujours pas affiché sur les terrains proposés »; the fact of 26 Nov: read and '
       'judged, its text shown nowhere; the relay, by the precedent of SOG-0559 (the METAR observed under the alternate\'s line): the text '
-      'folded under the line, no new sentence); French only (SOG-0680); invented aerodromes and TAFs')
+      'folded under the line, no new sentence); SOG-0690 (b) (the ergonomist, 28 Nov: the fold « TAF » becomes « Détail », the block of the '
+      'criteria reused as it is, then the TAF); French only (SOG-0680); invented aerodromes and TAFs')
 def f332(c):
     raws = {'XQPB': 'TAF XQPB 261100Z 2612/2712 27008KT 9999 FEW040', 'XQPC': 'TAF XQPC 261100Z 2612/2712 <b>BKN008</b>',
             'XQPE': 'TAF XQPE 261100Z 2612/2712 0500 FG OVC002'}
@@ -12049,13 +12050,16 @@ def f332(c):
     c.tap(f'{B} [data-do=altnpropose]')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand] details[data-candtaf]').length === 3", timeout=10000,
-            what='a TAF fold under each line (red before: none)')
+            what='a fold under each line')
     got = c.js(f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => {{
         const d = li.querySelector('details[data-candtaf]');
+        const ul = d?.querySelector('ul'), raw = d?.querySelector('[data-tafraw]');
         return [li.dataset.cand, !!d && d.open, (d?.querySelector('summary')?.textContent || '').trim(),
-          (d?.querySelector('[data-tafraw]')?.textContent || '').trim()] }})""")
-    c.eq(got, [[k, False, 'TAF', raws[k]] for k in ('XQPB', 'XQPC', 'XQPE')], 'each line: its TAF folded, closed, its text as read',
-         what='folds')
+          [...(ul?.querySelectorAll('li[data-crit]') || [])].map(x => x.dataset.crit),
+          !!(ul && raw && (ul.compareDocumentPosition(raw) & Node.DOCUMENT_POSITION_FOLLOWING)), (raw?.textContent || '').trim()] }})""")
+    c.eq(got, [[k, False, 'Détail', ['rwy', 'aids', 'wx'], True, raws[k]] for k in ('XQPB', 'XQPC', 'XQPE')],
+         'each line: « Détail », closed — the three criteria of « Critères du dégagement », then the text of its TAF as read (red before: '
+         '« TAF », the text alone)', what='folds')
     c.eq(c.count(f'{B} [data-altnprop] li[data-cand] details[data-candtaf] b'), 0, 'the text of a TAF is text, never markup (the code '
          'of the line is the screen\'s own <b>)', what='esc')
     c.js(f"document.querySelector('{B} [data-altnprop] li[data-cand] details[data-candtaf]').open = true")
@@ -12344,7 +12348,8 @@ def f343(c):
       '« ! » « Possible avec réserve : {réserve}. » (two: « Possible avec réserves : à vue seulement, météo IFR. », the plural written in full), '
       '« ? » « Non jugé : {cause}. » (the cause of SOG-0559, « pas de TAF »), « ✕ » « Impossible : {cause}. » (SOG-0702); the reservation or '
       'the cause no longer repeated further in the line; the line of the aerodrome touched on the Map in two sentences « Proposé : XQPF. Non '
-      'jugé : pas de TAF. »; the document of the Map carries the sign of the line (one aerodrome, one judge)', 'F',
+      'jugé : pas de TAF. »; the document of the Map carries the sign of the line (one aerodrome, one judge); SOG-0690 (b): the forecast '
+      'weather said in words once — « Météo prévue : VFR. » after the verdict, « météo prévue IFR / LIFR » in the reservation or the cause', 'F',
       tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
       rule='SOG-0690 (a) (the user, 27 Nov: « plusieurs AD notés avec un « ! », pas de météo claire »; the ergonomist, 27 Nov: a sign without a '
       'word is a defect — the words of each sign, once, the plural in full); SOG-0702 (the ergonomist, 28 Nov: « ✕ » by the same rule, '
@@ -12359,16 +12364,21 @@ def f345(c):
       const t = (row, v) => String(row[0]).replace(/\\{(\\w+)\\}/g, (m, k) => v?.[k] ?? m);
       const h = { tt: t, TX: { altnPropWhy: { 'aids-visual': ['à vue seulement'], 'wx-ifr': ['météo IFR'], 'rwy-unread': ['piste non vérifiée'],
         'wx-unread': ['météo non lue'], 'wx-lifr': ['météo LIFR'] }, altnWhy: { wxUnreachable: ['source météo injoignable'] } } };
-      const p = { crits: [null, null, { code: 'wxNoTaf' }], wxv: null, miss: false };
+      const p = { crits: [null, null, { code: 'wxNoTaf' }], wxv: null, miss: false },
+        cat = (state, c) => ({ ...p, crits: [null, null, { k: 'wx', state, code: 'wxCat', v: { c } }] });
       return [A.signSay('ok', [], p, h), A.signSay('warn', ['aids-visual'], p, h), A.signSay('warn', ['aids-visual', 'wx-ifr'], p, h),
         A.signSay('grey', ['wx-notaf'], p, h), A.signSay('grey', ['wx-unread'], { ...p, miss: true }, h), A.signSay('err', ['wx-lifr'], p, h),
-        A.signSay('err', ['aids-visual', 'wx-lifr'], p, h)];
+        A.signSay('err', ['aids-visual', 'wx-lifr'], p, h),
+        A.signSay('ok', [], cat('ok', 'VFR'), h), A.signSay('warn', ['aids-visual'], cat('ok', 'MVFR'), h),
+        A.signSay('warn', ['wx-ifr'], cat('warn', 'IFR'), h), A.signSay('err', ['wx-lifr'], cat('err', 'LIFR'), h)];
     }""")
-    c.eq(got, ['Possible.', 'Possible avec réserve : à vue seulement.', 'Possible avec réserves : à vue seulement, météo IFR.',
-               'Non jugé : pas de TAF.', 'Non jugé : météo non lue (source météo injoignable).', 'Impossible : météo LIFR.',
-               'Impossible : météo LIFR.'],
+    c.eq(got, ['Possible.', 'Possible avec réserve : à vue seulement.', 'Possible avec réserves : à vue seulement, météo prévue IFR.',
+               'Non jugé : pas de TAF.', 'Non jugé : météo non lue (source météo injoignable).', 'Impossible : météo prévue LIFR.',
+               'Impossible : météo prévue LIFR.', 'Possible. Météo prévue : VFR.',
+               'Possible avec réserve : à vue seulement. Météo prévue : MVFR.', 'Possible avec réserve : météo prévue IFR.',
+               'Impossible : météo prévue LIFR.'],
          'the words of each sign, the plural written in full; « ✕ » says its cause, never a reservation of a possible aerodrome (red before '
-         'SOG-0702: « ✕ » without words)',
+         'SOG-0702: « ✕ » without words; red before SOG-0690 (b): no « Météo prévue », « météo IFR »)',
          what='words')
     # B. on the screen: one line of each sign — XQPB ✓, XQPC ! (visual only), XQPE ✕ (LIFR), XQPF ? (touched on the Map: no TAF)
     _prop_net(c, {})
@@ -12382,14 +12392,16 @@ def f345(c):
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
     rows = c.js(f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state,
         (li.querySelector('[data-altnsay]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
-        (li.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ')])""")
+        (k => (k.querySelectorAll('details').forEach(d => d.remove()), k.textContent || ''))(li.cloneNode(true))
+          .replace(/[\\s\\u00a0\\u202f]+/g, ' ')])""")  # the line itself, its fold « Détail » left out
     by = {r[0]: r for r in rows}
-    c.eq({k: [by[k][1], by[k][2]] for k in by}, {'XQPF': ['grey', 'Non jugé : pas de TAF.'], 'XQPB': ['ok', 'Possible.'],
-                                                 'XQPC': ['warn', 'Possible avec réserve : à vue seulement.'],
-                                                 'XQPE': ['err', 'Impossible : météo LIFR.']},
+    c.eq({k: [by[k][1], by[k][2]] for k in by}, {'XQPF': ['grey', 'Non jugé : pas de TAF.'],
+                                                 'XQPB': ['ok', 'Possible. Météo prévue : VFR.'],
+                                                 'XQPC': ['warn', 'Possible avec réserve : à vue seulement. Météo prévue : VFR.'],
+                                                 'XQPE': ['err', 'Impossible : météo prévue LIFR.']},
          'each sign said in words after the code (red before SOG-0702: « ✕ » without words)', what='signs')
-    c.eq([by['XQPC'][3].count('à vue seulement'), by['XQPF'][3].count('pas de TAF'), by['XQPE'][3].count('météo LIFR')], [1, 1, 1],
-         'the reservation and the cause said ONCE', what='once')
+    c.eq([by['XQPC'][3].count('à vue seulement'), by['XQPF'][3].count('pas de TAF'), by['XQPE'][3].count('LIFR'),
+          by['XQPB'][3].count('VFR')], [1, 1, 1, 1], 'the reservation, the cause and the weather said ONCE', what='once')
     c.ok('Proposé : XQPF. Non jugé : pas de TAF.' in by['XQPF'][3], by['XQPF'][3],
          'the line touched on the Map in two sentences (red before: « Proposé : XQPF Non jugé : pas de TAF. »)')
     doc = c.js("Object.fromEntries((window.__altnDoc?.list || []).map(t => [t.icao, t.sign ?? null]))")
