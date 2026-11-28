@@ -11381,24 +11381,43 @@ def d338(c):
     top = lambda: int(c.js("() => (document.querySelector('.mp-pc').dataset.scale || '0,0').split(',')[1]"))
     ceil = lambda: c.js("() => document.querySelector('.mp-pc').dataset.ceil || ''")
     out = {}
-    probe = """async () => { const P = CanvasRenderingContext2D.prototype, o = P.fillText, seen = [];
+    probe = """async () => { const P = CanvasRenderingContext2D.prototype, o = { ft: P.fillText, st: P.stroke, fr: P.fillRect, bp: P.beginPath, mt: P.moveTo, lt: P.lineTo }, dpr = window.devicePixelRatio || 1;
+      const texts = [], strokes = [], rects = []; let cur = [], n = 0;
+      const tr = (c, x, y) => { const m = c.getTransform(); return [(m.a * x + m.c * y + m.e) / dpr, (m.b * x + m.d * y + m.f) / dpr] };
+      P.beginPath = function () { cur = []; return o.bp.call(this) };
+      P.moveTo = function (x, y) { cur.push(tr(this, x, y)); return o.mt.call(this, x, y) };
+      P.lineTo = function (x, y) { cur.push(tr(this, x, y)); return o.lt.call(this, x, y) };
+      P.stroke = function (...a) { strokes.push({ style: String(this.strokeStyle), lw: this.lineWidth, pts: cur.slice(), n: n++ }); return o.st.apply(this, a) };
+      P.fillRect = function (x, y, w, h) { const p0 = tr(this, x, y), p1 = tr(this, x + w, y + h); rects.push({ style: String(this.fillStyle), x0: p0[0], y0: p0[1], x1: p1[0], y1: p1[1], n: n++ }); return o.fr.call(this, x, y, w, h) };
       P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), a = this.textAlign, b = this.textBaseline;
-        const x0 = a === 'center' ? x - m.width / 2 : a === 'right' || a === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8;
-        seen.push([String(t), x0, y0, x0 + m.width, y0 + fs]); return o.call(this, t, x, y, w) };
-      try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { P.fillText = o }
-      const S = window.__mp.S, g = S.geo, cv = S.pc.tagName === 'CANVAS' ? S.pc : S.pc.querySelector('canvas'), dpr = cv.width / cv.getBoundingClientRect().width, cx = cv.getContext('2d');
-      const px = (x, y) => [...cx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data];
+        const x0 = a === 'center' ? x - m.width / 2 : a === 'right' || a === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8, p0 = tr(this, x0, y0), p1 = tr(this, x0 + m.width, y0 + fs);
+        texts.push([String(t), p0[0], p0[1], p1[0], p1[1], n++]); return o.ft.call(this, t, x, y, w) };
+      try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { P.fillText = o.ft; P.stroke = o.st; P.fillRect = o.fr; P.beginPath = o.bp; P.moveTo = o.mt; P.lineTo = o.lt }
+      const S = window.__mp.S, g = S.geo, cv = S.pc.tagName === 'CANVAS' ? S.pc : S.pc.querySelector('canvas'), cdpr = cv.width / cv.getBoundingClientRect().width, cx = cv.getContext('2d');
+      const px = (x, y) => [...cx.getImageData(Math.round(x * cdpr), Math.round(y * cdpr), 1, 1).data];
       const ylev = ft => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(ft, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
-      const grey = p => p[0] > 100 && p[0] < 215 && p[1] >= p[0] && p[2] >= p[1] && p[1] - p[0] < 25 && p[2] - p[0] < 45, purple = p => p[0] > 70 && p[0] < 160 && p[1] < 90 && p[2] > 110;
-      const last = new Map(); for (const b of seen) last.set(b[0], b); const texts = [...last.values()];
-      const ceilY = g.ceil && g.ceil.drawn ? ylev(g.ceil.ft) : null, boxes = texts.filter(b => /^(TOC|TOD)/.test(b[0]));
-      let crossed = 0;
-      if (ceilY !== null) for (const b of boxes) if (ceilY >= b[2] && ceilY <= b[4]) for (let x = b[1] + 2; x < b[3] - 2; x++) for (let dy = -1; dy <= 1; dy++) if (grey(px(x, ceilY + dy))) crossed++;
+      const purple = p => p[0] > 70 && p[0] < 160 && p[1] < 90 && p[2] > 110;
+      // a run of drawing calls repeats (the placer draws a muted pass, then the real one): the LAST drawing is the one that counts
+      const last = new Map(); for (const t of texts) last.set(t[0], t); const tx = [...last.values()];
+      const hl = s => s.pts.length === 2 && Math.abs(s.pts[0][1] - s.pts[1][1]) < .5, lum = c => { const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c); return m ? .2126 * parseInt(m[1], 16) + .7152 * parseInt(m[2], 16) + .0722 * parseInt(m[3], 16) : 255 };
+      // the grid of the levels: horizontal strokes of 1 px across the cut ; the ceiling is a horizontal stroke of 1.2 to 1.7 px (1.6 x the scale) and STRONGER than the grid (the ergonomist: « d'un gris plus soutenu que la grille »)
+      const span = g.W - g.padL - 16, gridS = strokes.filter(s => hl(s) && s.lw <= 1.1 && Math.abs(s.pts[1][0] - s.pts[0][0]) > .8 * span), gridLum = gridS.length ? lum(gridS[gridS.length - 1].style) : 220;
+      const ceilStrokes = strokes.filter(s => hl(s) && s.lw >= 1.15 && s.lw <= 1.75 && lum(s.style) < gridLum - 20 && s.style !== '#17202a' && (s.pts[0][1] < g.padT || Math.abs(s.pts[1][0] - s.pts[0][0]) > .8 * span));
+      const lastIn = list => list.length ? list[list.length - 1] : null;
+      const band = ceilStrokes.filter(s => s.pts[0][1] < g.padT), cut = ceilStrokes.filter(s => s.pts[0][1] >= g.padT);
+      const plan = strokes.filter(s => s.style === '#6a1b9a'), planFirst = plan.length ? plan[plan.length - 1].n : null;
+      const cutLine = lastIn(cut), bandLine = lastIn(band);
+      const pl = tx.filter(b => b[0].startsWith('Plafond'));
+      const sample = b => !!bandLine && Math.abs(bandLine.pts[0][1] - (b[2] + b[4]) / 2) < 3 && Math.max(bandLine.pts[0][0], bandLine.pts[1][0]) <= b[1] - 1 && Math.max(bandLine.pts[0][0], bandLine.pts[1][0]) >= b[1] - 20 && Math.abs(bandLine.pts[0][0] - bandLine.pts[1][0]) >= 8;
+      // the line of the ceiling in the cut sits at its true height, behind the line of the flight, and no label of TOC / TOD is crossed by it: each one that its row meets has an OPAQUE paper rectangle drawn after the line and before its text
+      const ceilY = g.ceil && g.ceil.drawn ? ylev(g.ceil.ft) : null;
+      const behind = cutLine && planFirst !== null ? cutLine.n < planFirst : null, atHeight = cutLine && ceilY !== null ? Math.abs(cutLine.pts[0][1] - ceilY) < 1.5 : null;
+      let crossed = 0, met = 0;
+      if (cutLine) for (const b of tx.filter(t => /^(TOC|TOD)/.test(t[0]))) if (cutLine.pts[0][1] >= b[2] && cutLine.pts[0][1] <= b[4]) { met++; if (!rects.some(r => r.style === '#ffffff' && r.x0 <= b[1] + 1 && r.x1 >= b[3] - 1 && r.y0 <= b[2] + 1 && r.y1 >= b[4] - 1 && r.n > cutLine.n && r.n < b[5])) crossed++ }
+      // the flight line stays continuous on its level, away from its own labels: purple within 3 px of the level at columns of the middle of the cut (pixels of the canvas: a fully covered, purple line)
       const lvl = ylev(+(S.route.levelFt || 0)); let miss = 0, tried = 0;
-      for (let k = 0; k < 9; k++) { const x = g.padL + (g.W - g.padL - 16) * (.4 + k * .025); if (texts.some(b => x >= b[1] - 2 && x <= b[3] + 2 && lvl >= b[2] - 4 && lvl <= b[4] + 4)) continue; tried++; let hit = false; for (let dy = -3; dy <= 3 && !hit; dy++) if (purple(px(x, lvl + dy))) hit = true; if (!hit) miss++ }
-      const sampleAt = b => { let n = 0; const ym = (b[2] + b[4]) / 2; for (let x = b[1] - 22; x < b[1] - 4; x++) for (let dy = -2; dy <= 2; dy++) if (grey(px(x, ym + dy))) n++; return n };
-      const pl = texts.filter(b => b[0].startsWith('Plafond'));
-      return { padT: g.padT, plafond: pl.map(b => [b[0], Math.round(b[2]), Math.round(b[4]), sampleAt(b) > 0]), crossed, miss, tried, ceil: g.ceil } }"""
+      for (let k = 0; k < 9; k++) { const x = g.padL + (g.W - g.padL - 16) * (.4 + k * .025); if (tx.some(b => x >= b[1] - 2 && x <= b[3] + 2 && lvl >= b[2] - 4 && lvl <= b[4] + 4)) continue; tried++; let hit = false; for (let dy = -3; dy <= 3 && !hit; dy++) if (purple(px(x, lvl + dy))) hit = true; if (!hit) miss++ }
+      return { padT: g.padT, plafond: pl.map(b => [b[0], Math.round(b[2]), Math.round(b[4]), sample(b)]), cutLines: cut.length ? 1 : 0, behind, atHeight, crossed, met, miss, tried, ceil: g.ceil } }"""
     for name, ceil_ft in (('plain', None), ('above', 41000), ('inside', 11000)):
         f = flight()
         f['level'] = {'ft': 10000}
@@ -11425,7 +11444,10 @@ def d338(c):
     c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line' and len(ins) == 1 and ins[0][0].startswith('Plafond') and ins[0][3] is True, out, 'in the scale: the line at its true height, the words once at the top edge with a sample of the line before them')
     ab = pl('above')
     c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge' and len(ab) == 1 and ab[0][0].endswith('↑') and ab[0][3] is False, out, 'above the scale (FL100, ceiling FL410): a LOW scale, « Plafond : FL410 ↑ » at the top edge, no sample, no line (never a line at a wrong height)')
-    c.eq(out['inside_m']['crossed'], 0, 'no line crosses « TOC » nor « TOD » (opaque paper background)', what=str(out['inside_m']))
+    m = out['inside_m']
+    c.ok(m['cutLines'] == 1 and m['atHeight'] is True and m['behind'] is True, m, 'the line of the ceiling in the cut: one, at its true height, drawn BEFORE (behind) the line of the flight')
+    c.ok(out['above_m']['cutLines'] == 0, out['above_m'], 'above the scale: no line in the cut')
+    c.ok(m['crossed'] == 0, m, 'no line crosses « TOC » nor « TOD »: every label met by the ceiling line has an opaque paper rectangle drawn after the line and before its text (the colour the drawing gives, not the pixel with its anti-aliasing)')
     c.ok(out['inside_m']['tried'] >= 3 and out['inside_m']['miss'] == 0, out['inside_m'], 'the line of the flight is continuous on its level, away from its own labels')
     c.ok(out['pulled'][0] >= 43000 and out['pulled'][1] == '41000,line', out, 'a level pulled up widens the scale: the line of the ceiling appears as soon as it is in')
     c.check_errors()
@@ -11494,11 +11516,11 @@ def d343(c):
     f['profile'] = {**f['profile'], 'tocNm': round(2 * 3440.065 * math.asin(math.sqrt(a)), 1)}   # the TOC falls on LUGEN, the neighbouring point whose name the diamond covered
     c.page.add_init_script("""(() => { const P = CanvasRenderingContext2D.prototype, bp = P.beginPath, mt = P.moveTo, lt = P.lineTo, fl = P.fill, ft = P.fillText;
       window.__d343 = { diamonds: [], texts: [] }; let cur = [];
-      const tr = (ctx, x, y) => { const m = ctx.getTransform(); return [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f] };
+      const tr = (ctx, x, y) => { const m = ctx.getTransform(), r = window.devicePixelRatio || 1; return [(m.a * x + m.c * y + m.e) / r, (m.b * x + m.d * y + m.f) / r] }; // CSS px: the boxes of the diamonds and of the texts are in the same unit
       P.beginPath = function () { cur = []; return bp.call(this) };
       P.moveTo = function (x, y) { cur.push(tr(this, x, y)); return mt.call(this, x, y) };
       P.lineTo = function (x, y) { cur.push(tr(this, x, y)); return lt.call(this, x, y) };
-      P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20 * (window.devicePixelRatio || 1)) window.__d343.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]) } return fl.apply(this, a) };
+      P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20) window.__d343.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]) } return fl.apply(this, a) };
       P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), al = this.textAlign, b = this.textBaseline;
         const x0 = al === 'center' ? x - m.width / 2 : al === 'right' || al === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8, p0 = tr(this, x0, y0), p1 = tr(this, x0 + m.width, y0 + fs);
         window.__d343.texts.push([String(t), p0[0], p0[1], p1[0], p1[1]]); return ft.call(this, t, x, y, w) };
