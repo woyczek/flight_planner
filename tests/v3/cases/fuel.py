@@ -12439,12 +12439,14 @@ def f344(c):
 
 
 # SOG-0688: the answer of the base for LFQQ held by the case (window.__ad.go(place | null)), and the reading refused « unknown-aerodrome »;
-# window.__ad.hold = true holds the next reading until window.__ad.release() (the base answers during the reading)
+# window.__ad.hold = true holds the next reading until window.__ad.release() (the base answers during the reading); once answered, the
+# base answers at once (window.__ad.done), as it does
 _AD_HOLD = """(() => { window.__ad = { go: null, asks: 0, hold: false, release: null };
   let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
     real = v && { ...v, create: (...a) => { const db = v.create(...a), coords = db.coords;
-      try { db.coords = (id, o) => id === 'LFQQ' ? new Promise(res => { window.__ad.asks++; const was = window.__ad.go;
-          window.__ad.go = x => { was?.(x); window.__ad.go = null; res(x); }; }) : coords.call(db, id, o);
+      try { db.coords = (id, o) => id !== 'LFQQ' ? coords.call(db, id, o) : 'done' in window.__ad ? Promise.resolve(window.__ad.done) :
+          new Promise(res => { window.__ad.asks++; const was = window.__ad.go;
+          window.__ad.go = x => { window.__ad.done = x; was?.(x); window.__ad.go = null; res(x); }; });
         db.fetchProcedures = async () => {
           if (window.__ad.hold) await new Promise(r => { window.__ad.release = () => { window.__ad.release = null; r(); }; });
           return { ok: false, reason: 'unknown-aerodrome' }; }; } catch (e) {}
@@ -12453,15 +12455,37 @@ _AD_HOLD = """(() => { window.__ad = { go: null, asks: 0, hold: false, release: 
 
 @case('F346', 'Procedures, a reading refused « unknown-aerodrome »: the PAGE chooses the sentence by what it knows of the code when the answer '
       'comes — the base has not answered yet: « La base n’a pas encore répondu pour LFQQ. Réessayez dans un instant. »; it has answered '
-      'during the reading and does not know the code: « LFQQ n’est pas dans la base : aucune procédure à lire. »', 'F', tags=('fuel', 'aerodb'),
+      'during the reading and does not know the code: « LFQQ n’est pas dans la base : aucune procédure à lire. »; SOG-0703: a code TYPED in '
+      'the field empties the departure side of the card at once (« Lecture des procédures de LFQQ… », the waiting line of the page), then the '
+      'card says the sentence the page chooses', 'F', tags=('fuel', 'aerodb'),
       designs=('standard',), screens=False, langs4=False,
       rule='SOG-0688 (the ergonomist, 27 Nov: two cases, two sentences, chosen by the page — a single « not in the base » would be false while '
-      'the base has not answered, SOG-0687 again); French only (SOG-0680); the answer of the base held by the case, an invented code')
+      'the base has not answered, SOG-0687 again); SOG-0703 (the ergonomist, 28 Nov: the card follows the code typed, no new sentence); '
+      'French only (SOG-0680); the answer of the base held by the case, an invented code')
 def f346(c):
+    # 0. SOG-0703: LFQQ TYPED in the departure field — the side of the card empties at once and says the waiting line of the page
+    c.page.add_init_script(_AD_HOLD)
+    open_proc(c)
+    wait_rows(c, 'dep')
+    c.until(f"!!document.querySelector('{FUEL} [data-proc=dep] select')", timeout=10000, what='the departure side shows its procedures')
+    set_icao(c, 'dep', 'LFQQ')
+    c.until("window.__ad.go !== null", timeout=10000, what='the name of LFQQ asked to the base (held)')
+    W = f'{FUEL} [data-proc=dep][data-procwait][data-icao=LFQQ]'
+    c.until(f"!!document.querySelector('{W}')", timeout=8000,
+            what='the departure side empties at once (red before: the procedures of the departure of before stay)')
+    c.eq([norm(c.text(f'{W} [data-procwaittext]') or ''), c.count(f'{FUEL} [data-proc=dep] select')],
+         ['Lecture des procédures de LFQQ…', 0], 'the waiting line of the page, no procedure of the aerodrome of before', what='wait')
+    # the base answers: it does not know LFQQ — the sentence the page chooses (SOG-0688), no reading offered
+    c.js("window.__ad.go(null)")
+    N = f'{FUEL} [data-proc=dep] [data-procnotinbase]'
+    c.until(f"!!document.querySelector('{N}')", timeout=8000, what='the card says what the page chooses')
+    c.eq([norm(c.text(N) or ''), c.count(f'{FUEL} [data-proc=dep] [data-do=procfetch]')],
+         ['LFQQ n’est pas dans la base : aucune procédure à lire.', 0], 'the sentence of a code the base does not know, alone',
+         what='unknown')
+    # then the readings refused (the flight leaves LFQQ)
     # the flight leaves LFQQ, the answer of the base for it held by the case. While the base has not answered, the Procedures card waits
     # (« Lecture des procédures de LFQQ… », Essais, train 8: no button there); the line of SOG-0638 under « Calculer » carries the reading
     _route_launcher(c, ['route/compute'])
-    c.page.add_init_script(_AD_HOLD)
     docs = proc_flight()
     for d in docs:
         if d[0].endswith('current_flight.json'):
