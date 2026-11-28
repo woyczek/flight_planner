@@ -18,7 +18,7 @@ Rules covered
 
   * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20);
   * a procedure serving one runway sets it when none is chosen; a transition follows its STAR (F21);
-  * conflicts are marked, not forbidden (user, 29 Oct): ⚠ at the end of the label (after ⌛), class conflict, the reason as title, the choice kept, one
+  * conflicts are marked, not forbidden (user, 29 Oct): ⚠ at the end of the label (after « périmé », SOG-0705), class conflict, the reason as title, the choice kept, one
     notification when the conflict appears; flat lists sorted by runway then name (F26).
 
   * an aerodrome whose files carry no runway still offers runways: those its procedures name, else the two ends of its axis in the base (F22).
@@ -587,18 +587,30 @@ def f12(c):
     c.ok('star' not in procs_of(d, 'arr'), f"arr {procs_of(d, 'arr')}", 'a STAR not chosen is absent, not null')
 
 
+# SOG-0705 (the ergonomist, 28 Nov): a procedure of a past cycle ends with the word of the Map, in the language of the screen, never « ⌛ »
+# (which reads « calculation in progress », SOG-0602)
+STALE_WORD = {'fr': 'périmé', 'en': 'out of date', 'de': 'veraltet', 'es': 'desactualizado'}
+
+
+def stale(c):
+    """« · périmé » in the language of the case: the end of the label of a procedure of a past cycle."""
+    return f' · {STALE_WORD[c.lang]}'
+
+
 @case('F13', 'Procedures list: X-Plane local last, outdated marked', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.20: an xplane record comes last with "X-Plane, local"; an outdated one ends with the symbol ⌛ (user, 29 Oct: a short symbol rather than the word), class outdated and a title')
+      rule='V3 spec 10.20: an xplane record comes last with "X-Plane, local"; an outdated one ends with the word « périmé » (SOG-0705, the ergonomist, 28 Nov: the word of the Map, never « ⌛ », which '
+      'reads « calculation in progress »; it was the symbol since 29 Oct), class outdated and a title')
 def f13(c):
     open_proc(c)
     wait_rows(c)
     opts = [lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
     c.eq(opts[-1], f"XPL1A · 13R · {norm(row(c, 'procXplane'))}", 'the X-Plane local STAR is the last (sorted last, no group), with its runway and its mention', what='last STAR option')
     old = next((lab for lab in opts if lab.startswith('MAN1A')), None)
-    c.eq(old, 'MAN1A · 13R ⌛', 'the hand-read STAR of an old cycle (one runway: in the label) ends with the hourglass, without the word', what='outdated STAR option')
+    c.eq(old, 'MAN1A · 13R' + stale(c), 'the hand-read STAR of an old cycle (one runway: in the label) ends with the word (red before: '
+         '« MAN1A · 13R ⌛ »)', what='outdated STAR option')
     o = c.js("(() => { const o = [...document.querySelectorAll('[data-module=fuel] [data-k=\"p-arr-star\"] option')].find(x => x.textContent.startsWith('MAN1A')); return o && { cls: o.className, title: o.title } })()")
     c.eq((o or {}).get('cls'), 'outdated', 'the option carries the class outdated (grey on the computer)', what='class')
-    c.eq(norm((o or {}).get('title') or ''), title_of('MAN1A · 13R ⌛', row(c, 'procOutdatedTitle')), 'and the title carries the whole label, then says it was read under an earlier cycle', what='title')
+    c.eq(norm((o or {}).get('title') or ''), title_of('MAN1A · 13R' + stale(c), row(c, 'procOutdatedTitle')), 'and the title carries the whole label, then says it was read under an earlier cycle', what='title')
     c.ok(opts.index(old) < len(opts) - 1, f'order {opts}', 'the outdated one is before the X-Plane one')
 
 
@@ -851,11 +863,12 @@ def f21(c):
     c.eq(procs_of(d, 'arr'), {'rwy': '13R', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'the approach serves one runway: it is the runway', what='route.procedures.arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '13R' })()", what='the runway select shows 13R')
     c.ok(any('MEN2B' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'the STAR of 31L is still listed (marked, not removed)')
-    # the hand-read STAR of an old cycle on the chosen runway, joining no point of the approach: ⌛ only (continuity is never a conflict)
+    # the hand-read STAR of an old cycle on the chosen runway, joining no point of the approach: the word only (continuity is never a conflict)
     o = opt_info(c, 'p-arr-star', 'MAN1A')
-    c.eq(o['label'], 'MAN1A ⌛', 'outdated, a runway is chosen: no runway in the label, the hourglass only, no warning for a STAR that joins no point', what='label')
+    c.eq(o['label'], 'MAN1A' + stale(c), 'outdated, a runway is chosen: no runway in the label, the word only (red before: « ⌛ »), no '
+         'warning for a STAR that joins no point', what='label')
     c.eq(o['cls'].split(), ['outdated'], 'only the class outdated', what='class')
-    c.eq(o['title'], title_of('MAN1A ⌛', row(c, 'procOutdatedTitle')), 'and its whole label then its single reason in the title', what='title')
+    c.eq(o['title'], title_of('MAN1A' + stale(c), row(c, 'procOutdatedTitle')), 'and its whole label then its single reason in the title', what='title')
     # the STAR chosen next, then another runway: both choices are kept, marked ⚠ (no notification: the mark and the title are enough)
     pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN1A.RW13R.NONE', 'the STAR is written')
@@ -994,7 +1007,7 @@ def f27(c):
     c.eq(norm(c.text(b) or ''), norm(row(c, 'procReread')), 'the button says "Read again" in the language of the run', what='button')
     c.ok(c.js("!!document.querySelector('[data-module=fuel] [data-proc=arr] select[data-k=\"p-arr-star\"]')"), 'no STAR list', 'the lists stay next to it')
     # the button is on the secondary line, after the date of the last reading (LFML's file was read by hand on 29 Oct 16:53Z, an earlier cycle)
-    c.eq(meta_parts(c, 'arr'), [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + ' ⌛', norm(row(c, 'procReread'))], 'the date of the last reading comes before the button, on one line', what='arrival line')
+    c.eq(meta_parts(c, 'arr'), [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + stale(c), norm(row(c, 'procReread'))], 'the date of the last reading comes before the button, on one line', what='arrival line')
     open_foot(c, 'arr')
     c.tap(b)
     want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
@@ -1119,10 +1132,10 @@ def f34(c):
     # le texte du titre sans son bouton « Sur la carte »
     titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => { const x = e.cloneNode(true); x.querySelectorAll('button, .fu-procsum').forEach(b => b.remove()); return x.textContent })")]  # the summary: F65
     c.eq(titles, [norm(f"{row(c, 'dep')} LFRS Lfrs Test"), norm(f"{row(c, 'arr')} LFML Lfml Test")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
-    # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: ⌛), the departure's is published (no date)
+    # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: « périmé »), the departure's is published (no date)
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta'), 2, 'one secondary line per side, not more', what='secondary lines')
     arr = meta_parts(c, 'arr')
-    c.eq(arr, [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + ' ⌛', norm(row(c, 'procReread'))], 'the arrival line: "lu le 29/10 16:53Z ⌛" then "Relire"', what='arrival line')
+    c.eq(arr, [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + stale(c), norm(row(c, 'procReread'))], 'the arrival line: "lu le 29/10 16:53Z · périmé" then "Relire"', what='arrival line')
     c.eq(meta_parts(c, 'dep'), [norm(row(c, 'procReread'))], 'the departure line: "Relire" alone (a published file has no reading date)', what='departure line')
     c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-do=procfetch][data-again]')].map(b => !!b.closest('.fu-procmeta') && !b.closest('.fu-pf'))"), [True, True],
          '"Relire" is a text button of the line, outside the grid', what='Relire in the line')
