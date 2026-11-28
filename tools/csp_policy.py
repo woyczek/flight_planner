@@ -55,36 +55,46 @@ def config_sites(config_text):
 NET_RE = re.compile(r'^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:/[A-Za-z0-9._~/-]*)?$')
 
 
+class MetaError(OSError):
+    """La meta d'un module n'est pas lisible (SOG-0728 T1) : pas de meta.js, ou rien de lisible dans son `export const meta`.
+    Une ERREUR, jamais un avertissement : une politique faite sans les hôtes d'un module casserait ses cartes sans un mot. C'est une
+    OSError : le lanceur (SOG-0219, une lecture qui échoue garde la politique précédente, ou la base, la plus stricte) la traite comme
+    une lecture ratée ; la publication (tools/build_pages.py) et les cas de test, eux, s'arrêtent dessus."""
+
+
 def app_modules(root):
-    """Identifiants des modules de l'appli V3 (APP.modules de frame/app.js) ; [] sans cadre."""
+    """Identifiants des modules de la suite V3 : chaque dossier de modules/ qui a un module.js ou un meta.js (SOG-0728 T1 : la
+    table des applis de frame/app.js n'est plus un texte lisible ici, `APP` y est une fonction) ; [] sans dossier modules/."""
+    base = os.path.join(root, 'modules')
     try:
-        with open(os.path.join(root, 'frame', 'app.js'), encoding='utf-8') as f:
-            text = f.read()
+        names = sorted(os.listdir(base))
     except OSError:
         return []
-    m = re.search(r'const APP = \{(.*?)\n  \};', text, re.S)
-    block = m.group(1) if m else ''
-    i = block.find('modules:')
-    return re.findall(r"\bid:\s*'([\w-]+)'", block[i:]) if i >= 0 else []
+    return [m for m in names if os.path.isfile(os.path.join(base, m, 'module.js')) or os.path.isfile(os.path.join(base, m, 'meta.js'))]
 
 
 def module_files(root):
-    """Points d'entrée (module.js) des modules de l'appli V3."""
-    return [os.path.join(root, 'modules', m, 'module.js') for m in app_modules(root)]
+    """Meta de chaque module de la suite V3 (modules/<id>/meta.js, SOG-0728 T1 : la meta n'est plus dans module.js)."""
+    return [os.path.join(root, 'modules', m, 'meta.js') for m in app_modules(root)]
 
 
 def module_hosts(root):
-    """Sources CSP des hôtes déclarés par meta.net des modules de l'appli (https://hôte ou https://hôte/chemin/), dans
-    l'ordre ; une entrée qui n'est pas un hôte public écrit simplement est ignorée."""
+    """Sources CSP des hôtes déclarés par meta.net des modules (https://hôte ou https://hôte/chemin/), dans l'ordre ; une entrée
+    qui n'est pas un hôte public écrit simplement est ignorée. Lève MetaError si la liste des modules est vide, si un module n'a pas de meta.js, ou si sa meta n'y est pas lisible."""
     out = []
-    for p in module_files(root):
+    files = module_files(root)
+    if not files:
+        raise MetaError('modules/ : aucun module trouvé (ni module.js ni meta.js) — une politique sans la lecture des modules n\'a pas de sens')
+    for p in files:
         try:
             with open(p, encoding='utf-8') as f:
                 text = f.read()
-        except OSError:
-            continue
+        except OSError as e:
+            raise MetaError(f'{os.path.relpath(p, root)} : meta du module illisible ({e.__class__.__name__}) — chaque module a son meta.js') from e
         meta = re.search(r'export const meta = \{(.*?)\n\};', text, re.S)
-        net = re.search(r'\bnet\s*:\s*\[([^\]]*)\]', meta.group(1)) if meta else None
+        if not meta:
+            raise MetaError(f'{os.path.relpath(p, root)} : pas de « export const meta = {{ … }}; » lisible')
+        net = re.search(r'\bnet\s*:\s*\[([^\]]*)\]', meta.group(1))
         for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", net.group(1) if net else ''):
             host = (a or b).strip().lower().removeprefix('https://')
             if not NET_RE.match(host) or host.split('/')[0] in ('localhost',) or re.fullmatch(r'[\d.]+', host.split('/')[0]):

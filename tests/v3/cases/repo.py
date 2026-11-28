@@ -70,7 +70,7 @@ def translation_rows(path):
 
 @case('I3', 'Four languages', 'I', static=True, rule='CLAUDE.md conventions: interface in four languages (fr, en, de, es)')
 def i3(c):
-    files = sorted(set(glob.glob(str(c.root / 'modules/*/module.js')) + glob.glob(str(c.root / 'modules/*/texts.js'))
+    files = sorted(set(glob.glob(str(c.root / 'modules/*/module.js')) + glob.glob(str(c.root / 'modules/*/meta.js')) + glob.glob(str(c.root / 'modules/*/texts.js'))
                        + glob.glob(str(c.root / 'modules/*/vocab.js')) + [str(c.root / 'frame/app.js')]
                        + glob.glob(str(c.root / 'frame/settings/*.js')) + glob.glob(str(c.root / 'frame/help/*.js'))))
     bad = []
@@ -1795,7 +1795,9 @@ def i26(c):
         entry = os.path.join(root, 'modules', name, 'module.js')
         if not os.path.isfile(entry):
             continue
-        src = open(entry, encoding='utf-8').read()
+        # SOG-0728 T1: the meta of the module is in modules/<id>/meta.js (the first entry of its meta.files); module.js imports it
+        mfile = os.path.join(root, 'modules', name, 'meta.js')
+        src = open(mfile, encoding='utf-8').read() if os.path.isfile(mfile) else ''
         meta = src[src.find('export const meta'):] if 'export const meta' in src else src
         base = os.path.dirname(entry)
         have = {os.path.normpath(os.path.join(base, f)) for f in listed(meta, 'files') + listed(meta, 'lazy')}
@@ -4416,3 +4418,62 @@ def i66(c):
     c.ok(len(found) >= 10 and total > 50, (len(found), total), 'the files that write a `<details` are found')
     c.le(total, DETAILS_CEILING, f'no new fold written by hand: {total} `<details` outside fold.js, the ceiling is {DETAILS_CEILING} (the biggest: {sorted(found.items(), key=lambda kv: -kv[1])[:5]})', what='details ceiling')
     c.le(DETAILS_CEILING - total, 10, f'the ceiling goes down with the count: {total} for {DETAILS_CEILING} (lower DETAILS_CEILING in tests/v3/cases/repo.py)', what='ceiling too high')
+
+
+@case('I67', 'Content policy: it reads the meta of EVERY module in modules/<id>/meta.js and FAILS (an error, not a warning) when a module has no meta.js or when its meta cannot be read (SOG-0728 T1)', 'I', static=True,
+      rule='SOG-0728 T1 (the ergonomist, 28 Nov 2026): tools/csp_policy.py reads modules/*/meta.js instead of the text of module.js, and an unreadable meta stops the policy (the publication, the case) instead of leaving a module’s hosts out of the policy without a word; the policy produced is identical byte for byte to the one before the move')
+def i67(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    P = importlib.import_module('csp_policy')
+    root = str(c.root)
+    mods = P.app_modules(root)
+    on_disk = sorted(d.name for d in (c.root / 'modules').iterdir() if (d / 'module.js').is_file())
+    c.eq(mods, on_disk, 'the modules read are every folder of modules/ that has a module.js (hello, the example, included)', what='modules')
+    c.eq(sorted(os.path.basename(os.path.dirname(f)) for f in P.module_files(root)), on_disk, 'one meta per module', what='meta files')
+    c.ok(all(f.endswith('meta.js') for f in P.module_files(root)), P.module_files(root)[:2], 'the files read are the meta.js, not the module.js')
+    hosts = P.module_hosts(root)
+    c.ok({'https://tiles.openfreemap.org', 'https://tiles.versatiles.org', 'https://s3.amazonaws.com/elevation-tiles-prod/'} <= set(hosts), hosts,
+         'the hosts of meta.net of the Map and of Missions are read (no module.js is read)')
+    # every host a module declares is already in the fixed list: the policy sent is the one of the fixed list, as before the move
+    c.eq(P.value(hosts), P.value(), 'the hosts read add nothing to the policy: identical to the one of the fixed list alone', what='policy')
+    # the counter-proof (the guard stops, then it does not): a copy of modules/ with one meta.js removed, one with a meta that cannot be read
+    tmp = Path(tempfile.mkdtemp(prefix='sog-csp-'))
+    try:
+        shutil.copytree(c.root / 'modules', tmp / 'modules', ignore=shutil.ignore_patterns('test', 'node_modules', '__pycache__'))
+        c.eq(P.module_hosts(str(tmp)), hosts, 'a copy as it is gives the same hosts', what='copy')
+        (tmp / 'modules' / 'fuel' / 'meta.js').unlink()
+        try:
+            P.module_hosts(str(tmp))
+            got = 'no error'
+        except P.MetaError as e:
+            got = str(e)
+        c.ok('fuel' in got and 'meta.js' in got, got, 'a module without meta.js: an ERROR naming the file (not a warning, not a module left out)')
+        c.ok(issubclass(P.MetaError, OSError), '', 'the error is an OSError: the launcher keeps its previous policy on a read that fails (SOG-0219, K154), the publication and the cases stop')
+        (tmp / 'modules' / 'fuel' / 'meta.js').write_text('export const nothing = 1;\n', encoding='utf-8')
+        try:
+            P.module_hosts(str(tmp))
+            got = 'no error'
+        except P.MetaError as e:
+            got = str(e)
+        c.ok('fuel' in got and 'meta' in got, got, 'a meta.js with no readable `export const meta`: an ERROR naming the file')
+        # the list of the modules empty (modules/ without module nor meta, then no modules/ at all): an ERROR too, never a policy of the fixed list alone
+        for name in os.listdir(tmp / 'modules'):
+            shutil.rmtree(tmp / 'modules' / name)
+        try:
+            P.module_hosts(str(tmp))
+            got = 'no error'
+        except P.MetaError as e:
+            got = str(e)
+        c.ok('aucun module' in got, got, 'an empty list of modules: an ERROR (the old reading returned no module and the policy was the fixed list alone, without a word)')
+        shutil.rmtree(tmp / 'modules')
+        try:
+            P.module_hosts(str(tmp))
+            got = 'no error'
+        except P.MetaError as e:
+            got = str(e)
+        c.ok('aucun module' in got, got, 'no modules/ folder at all: an ERROR')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    src = (c.root / 'tools' / 'csp_policy.py').read_text(encoding='utf-8')
+    c.ok("'module.js'" not in src.split('def module_files')[1].split('def module_hosts')[0], '', 'module_files names no module.js')
