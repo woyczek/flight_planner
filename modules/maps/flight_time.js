@@ -37,7 +37,8 @@ import {
   TRAIL_MAX
 } from '../../frame/lib/trail.js';
 import {
-  schedule
+  schedule,
+  sheetOverlap
 } from './draw.js';
 import {
   header,
@@ -587,6 +588,12 @@ const FOLLOW_PAD = 2 * PLANE_R + 8;
  *  au zoom courant, avec une marge, le centre est leur MILIEU ; sinon c'est l'appareil réel, qui a toujours la priorité. [lng, lat], la copie du monde de la vue. */
 function followCenter(st) {
   const m = S.map,
+    o =
+    sheetOverlap(), // SOG-0708 : la part du bas de la carte que la feuille recouvre ne compte pas comme visible : on y centre, on n'y range rien
+    at = p => {
+      const q = m.unproject([p.x, p.y + o / 2]); // le centre de la part visible (le milieu du cadre, remonté de la moitié de la feuille)
+      return [q.lng, q.lat];
+    },
     a = {
       lng: nearLon(st.actual.lon, m.getCenter().lng),
       lat: st.actual.lat
@@ -599,12 +606,13 @@ function followCenter(st) {
     const box = m.getContainer(),
       pa = m.project([a.lng, a.lat]),
       pg = m.project([g.lng, g.lat]);
-    if (Math.abs(pa.x - pg.x) <= box.clientWidth - 2 * FOLLOW_PAD && Math.abs(pa.y - pg.y) <= box.clientHeight - 2 * FOLLOW_PAD) {
-      const mid = m.unproject([(pa.x + pg.x) / 2, (pa.y + pg.y) / 2]);
-      return [mid.lng, mid.lat];
-    }
+    if (Math.abs(pa.x - pg.x) <= box.clientWidth - 2 * FOLLOW_PAD && Math.abs(pa.y - pg.y) <= box.clientHeight - o - 2 * FOLLOW_PAD)
+      return at({
+        x: (pa.x + pg.x) / 2,
+        y: (pa.y + pg.y) / 2
+      });
   }
-  return [a.lng, a.lat];
+  return at(m.project([a.lng, a.lat]));
 }
 /** « Suivre » : la carte reste centrée sur la position réelle (ou sur le milieu de l'appareil et de son fantôme quand ils tiennent ensemble dans la vue : followCenter) à chaque mise à jour ; un mouvement de
  *  l'utilisateur l'arrête. */

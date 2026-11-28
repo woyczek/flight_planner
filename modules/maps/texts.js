@@ -175,6 +175,8 @@ export const TX = {
   ],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   // SOG-0608 : la TÊTE d'une écriture refusée (le cadre écrit la cause : ctx.writeFailText) et ce que la Carte tient en mémoire seulement (ctx.memoryOnly)
+  // SOG-0707 : les mots du signe du cadre (frame/app.js unsavedPill), repris tels quels : aucune phrase nouvelle
+  unsaved: ['Non gardé', 'Not kept', 'Nicht gesichert', 'No guardado'],
   saveHead: ['Route non enregistrée', 'Route not saved', 'Route nicht gespeichert', 'Ruta no guardada'],
   memRoute: ['route de la carte', 'map route', 'Kartenroute', 'ruta del mapa'],
   memLeave: ['carte du vol', 'flight map', 'Flugkarte', 'mapa del vuelo'],

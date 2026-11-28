@@ -539,7 +539,7 @@ export function projNow() {
 }
 /** Part du bas du cadre de la carte que la feuille recouvre (px) : le sommet de la feuille contre le bas du cadre quand elle
  *  s'étend sur toute sa largeur (portrait) ; 0 quand la carte est au-dessus d'elle ou à côté (colonne paysage). */
-function sheetOverlap() {
+export function sheetOverlap() {
   const p = S?.dataEl,
     m = S?.mapEl;
   if (!p || !m || p.hidden) return 0;

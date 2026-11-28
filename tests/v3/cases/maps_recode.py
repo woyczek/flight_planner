@@ -11122,6 +11122,12 @@ def _hold_route(c, where, tag):
     c.shot(f'{tag}_{c.width}_{c.lang}_refus.png')            # the note « Route non enregistrée : … » on the screen
     c.eq(c.doc(PATH)['route']['points'][2]['id'], 'NEPIX', 'nothing was written: the stored route is the old one', what='stored route')
     c.eq(held(), [norm(tx(M, 'memRoute', c.lang))], 'the Map declares to the frame the work held in memory only (map route)', what='held')
+    # SOG-0707: a permanent state on the Map, by the existing sign « Non gardé » (the words of the frame, no new sentence): it stays when the note is gone
+    sign = lambda: c.js("() => { const e = document.querySelector('[data-mp-unsaved]'); return e ? [!e.hidden && e.getClientRects().length > 0, e.textContent.trim().replace(/[\\s\\u00a0\\u202f]+/g, ' ')] : null }")
+    c.eq(sign(), [True, norm(tx(M, 'unsaved', c.lang))], 'SOG-0707: the sign « Non gardé » is on the Map while the edit is held in memory only', what='sign')
+    c.js("() => { document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click()); return true }")
+    c.wait(400)
+    c.eq(sign(), [True, norm(tx(M, 'unsaved', c.lang))], 'SOG-0707: and it stays when the note has gone (a permanent state, not a note)', what='sign after the note')
     # a second gesture while the storage is still full: the write is tried again (and refused), the note is NOT raised again
     mouse_drag(c, (a[0] + 45, a[1] + 35), (a[0] + 65, a[1] + 55))
     c.wait(1500)
@@ -11136,6 +11142,7 @@ def _hold_route(c, where, tag):
     c.ok(COORD.match(doc['route']['points'][2]['id']), doc['route']['points'][2]['id'], 'the moved point is the edit made before leaving')
     c.until("() => !!window.__mp.S && window.__mp.S.route.points.length >= 3 && window.__mp.S.route.points.every(p => p.id !== 'NEPIX')", timeout=10000, what='the edited route is on the screen')
     c.until("() => window.SogFrame.memoryOnlyList().length === 0", timeout=10000, what='the write confirmed: the work is released')
+    c.eq(sign()[0], False, 'SOG-0707: the write confirmed: the sign is gone', what='sign after the write')
     c.until(f"() => ![...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(said)}))", timeout=6000,
             what='the write confirmed: the refusal note is gone (it would say a falsehood)')
     c.shot(f'{tag}_{c.width}_{c.lang}_retour.png')           # back: the edited route is drawn, nothing held
@@ -11220,6 +11227,9 @@ def d331(c):
         c.ok(stale in drawn, f'texts like the word: {like}', f'the cartouche writes the word « {stale} » as a run of its own')
     c.ok('⌛' not in ''.join(drawn), f'texts like the word: {like}', 'and never the hourglass')
     c.eq(norm(c.js("(id) => (document.querySelector(`.mp-ch-row[data-id=\"${id}\"] .mp-ch-old`) || {}).textContent", pid)), stale, 'the row of the list says the word, in the language of the run', what='row of the list')
+    # SOG-0706: the word is at the size of the text of the pastilles (the runway tag), never bigger (at 390 it was written at the size of the row)
+    sz = c.js("(id) => { const row = document.querySelector(`.mp-ch-row[data-id=\"${id}\"]`), old = row.querySelector('.mp-ch-old'), tag = document.createElement('span'); tag.className = 'mp-ch-tag'; row.append(tag); const out = [getComputedStyle(old).fontSize, getComputedStyle(tag).fontSize]; tag.remove(); return out }", pid)
+    c.eq(sz[0], sz[1], 'SOG-0706: « périmé » is at the size of the text of the pastilles', what=str(sz))
     # the label of the aerodrome card (procLabel): the name, then the tags, the word last
     lab = c.js("() => window.__pr.procLabel('SID', { name: 'XX1A', outdated: true, status: 'xplane' }, 'LFML.SID.XX1A')")   # a record WITH a name (without one it is « à vérifier »)
     c.eq(norm(lab), norm(f"SID XX1A · {norm(row(c, 'procX'))} · {stale}"), 'procLabel: the name, the state of the source, then « périmé » (a word, with « · » like the other states)', what='procLabel')
@@ -11270,7 +11280,10 @@ def d332(c):
     g1 = ghost()
     mid = [(a1[0] + g1[0]) / 2, (a1[1] + g1[1]) / 2]
     got = cam()
-    c.ok(abs(got[0] - mid[0]) < .06 and abs(got[1] - mid[1]) < .06, f'centre {got[:2]}, middle of the aircraft {a1} and the ghost {g1[:2]} = {mid}', 'both fit together: the map is centred on THEIR MIDDLE')
+    # SOG-0708: « centred » is in the VISIBLE part of the map (the part under the bottom sheet does not count): the middle sits at the centre of the frame, raised by half the sheet
+    where = lambda p: c.js("async (p) => { const m = window.__mp.S.map, b = m.getContainer(), o = (await import('/modules/maps/draw.js')).sheetOverlap(), q = m.project(p); return { dx: q.x - b.clientWidth / 2, dy: q.y - (b.clientHeight - o) / 2, o } }", p)
+    w = where(mid)
+    c.ok(abs(w['dx']) < 4 and abs(w['dy']) < 4, f'{w}, centre {got[:2]}, middle of the aircraft {a1} and the ghost {g1[:2]} = {mid}', 'both fit together: THEIR MIDDLE is at the centre of the visible part of the map')
     c.eq(round(got[2], 2), 8.0, 'the zoom is the pilot\'s: never changed by the follow', what='zoom, both fit')
     calm()
     c.shot(f'D332_{c.width}_milieu.png')
@@ -11281,11 +11294,26 @@ def d332(c):
     write(g)
     c.wait(2200)
     got2 = cam()
-    c.ok(abs(got2[0] - a2[0]) < .02 and abs(got2[1] - a2[1]) < .02, f'centre {got2[:2]}, aircraft {a2}', 'they do not fit together: the map is centred on the REAL AIRCRAFT')
+    w2 = where(a2)
+    c.ok(abs(w2['dx']) < 4 and abs(w2['dy']) < 4, f'{w2}, centre {got2[:2]}, aircraft {a2}', 'they do not fit together: the REAL AIRCRAFT is at the centre of the visible part of the map')
     c.eq(round(got2[2], 2), 8.0, 'the zoom is still the pilot\'s', what='zoom, far')
     c.eq(c.js(f"document.querySelector('{FOLLOW}').getAttribute('aria-pressed')"), 'true', 'the follow is still pressed (nothing else changed)', what='aria-pressed')
     calm()
     c.shot(f'D332_{c.width}_reel.png')
+    # SOG-0708: the part under the bottom sheet is not visible: two planes that fit in the whole frame but not in the part the sheet leaves are NOT « together » (the real one is followed)
+    o = c.js("async () => (await import('/modules/maps/draw.js')).sheetOverlap()")
+    if o > 20:
+        g = c.doc(PATH)
+        g['progress']['actual'] = {'lat': g1[1], 'lon': g1[0], 'altFt': 24000, 'at': iso(now())}
+        write(g)
+        c.wait(1500)
+        a3 = c.js("([lon, lat, o]) => { const m = window.__mp.S.map, b = m.getContainer(), q = m.project([lon, lat]), d = b.clientHeight - o / 2 - 6, p = m.unproject([q.x, q.y - d]); return [p.lng, p.lat] }", [g1[0], g1[1], o])
+        g = c.doc(PATH)
+        g['progress']['actual'] = {'lat': a3[1], 'lon': a3[0], 'altFt': 24000, 'at': iso(now())}
+        write(g)
+        c.wait(2200)
+        w3 = where(a3)
+        c.ok(abs(w3['dx']) < 4 and abs(w3['dy']) < 4, f'{w3}, aircraft {a3}, ghost {g1[:2]}, sheet {o}px', 'SOG-0708: they fit in the whole frame but not in the visible part (the sheet covers a part): the REAL AIRCRAFT is followed, not their middle')
 
 
 # SOG-0654: a SID read from Little Navmap (the three marks the reader gives it: status 'lnm', lnm true, local true), invented: ARS6 at LFRS, beside two SIDs of the file

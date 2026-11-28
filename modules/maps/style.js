@@ -373,7 +373,7 @@ export const STYLE = `
 [data-module="maps"] .mp-gd-procs{margin-left:6px}
 [data-module="maps"] .mp-ch-sw{flex:none;width:12px;height:12px;background:var(--c)}
 [data-module="maps"] .mp-ch-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="maps"] .mp-ch-old{flex:none;color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-old{flex:none;font-size:11px;font-weight:600;color:var(--sog-muted)}
 [data-module="maps"] .mp-ch-warn{flex:none;color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-empty{margin:6px 0 0}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
@@ -385,6 +385,9 @@ export const STYLE = `
 /* SOG-0617 : la puce de la mission du vol, dans la ligne d'en-tête de la feuille, à droite de Couches ; sans mission, l'emplacement est vide et ne prend aucune place */
 [data-module="maps"] .mp-mslot{position:relative;z-index:2;flex:none;display:flex;align-items:center;padding-left:4px;max-width:42vw}
 [data-module="maps"] .mp-mslot:empty{display:none}
+[data-module="maps"] .mp-unsaved{position:relative;z-index:2;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px;color:var(--sog-err);font-size:12px;font-weight:600}
+[data-module="maps"] .mp-unsaved[hidden]{display:none}
+@media (max-width:760px){[data-module="maps"] .mp-unsaved>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
 [data-module="maps"] .mp-mslot .fu-mchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ${MCH.CSS}
 `;

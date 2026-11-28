@@ -21,7 +21,8 @@ import {
   esc,
   got,
   need,
-  flightPath
+  flightPath,
+  paintUnsaved
 } from './state.js';
 import {
   svg
@@ -226,7 +227,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-alts f-card" hidden></div>
 </div>
 <div class="mp-follow" hidden></div></div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><span class="mp-mslot" data-mchip></span><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><span class="mp-mslot" data-mchip></span><span class="mp-unsaved" data-mp-unsaved hidden title="${T(TX.unsaved)}">${svg('alert', { size: 16 })}<span>${T(TX.unsaved)}</span></span><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
 <div class="mp-dprof"><p class="mp-gapnote" hidden role="status"></p><div class="mp-prof" hidden role="img" aria-label="${T(TX.profileLabel)}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div><div class="mp-spsel f-card" hidden></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -291,6 +292,7 @@ export async function mount(el, ctx) {
     dtitleEl: q('.mp-dtitle'),
     dcloseEl: q('.mp-dclose'),
     mslotEl: q('.mp-mslot'), // SOG-0617 : la puce de la mission du vol
+    unsavedEl: q('.mp-unsaved'), // SOG-0707 : le signe « Non gardé » (une édition tenue en mémoire seulement)
     segEl: q('.mp-chips:not(.mp-chips-l)'),
     segBtns: [...el.querySelectorAll('.mp-chip[data-view]')],
     legendBtn: q('.mp-chip[data-legend]'),
@@ -416,6 +418,7 @@ export async function mount(el, ctx) {
   }
   if (!S) return;
   viewAdopt(vst);
+  paintUnsaved(); // SOG-0707 : un travail tenu en mémoire seulement avant le démontage de la Carte : son signe est là dès le montage
   // SOG-0608 : ce que le stockage avait refusé avant que la Carte soit quittée (l'édition de la route, la sortie d'une mission) est réécrit au retour : au montage, et — Réglages étant un écran du
   // cadre posé PAR-DESSUS la Carte, qui reste montée (le pilote y va libérer de la place) — quand l'adresse redevient celle de la Carte
   retryHeld();

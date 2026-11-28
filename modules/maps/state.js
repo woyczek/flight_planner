@@ -47,11 +47,18 @@ export const failNote = (ctx, head, e, file) => ctx.writeFailText?.(e, head, fil
 /** Déclare au cadre, UNE fois par clé, un travail tenu en mémoire seulement (« route de la carte ») : son avertissement du navigateur reste armé tant qu'une écriture ne l'a pas relâché. */
 export function holdMemory(ctx, key, what, e) {
   if (!keep.held.has(key)) keep.held.set(key, ctx.memoryOnly?.(what, e) || (() => {}));
+  paintUnsaved();
+}
+/** SOG-0707 : le signe « Non gardé » de la Carte (celui du cadre, mêmes mots) est montré tant qu'un travail de la Carte n'est tenu qu'en mémoire (keep.held), caché dès qu'il est écrit ; écrit seulement si cela change. */
+export function paintUnsaved() {
+  const el = S?.unsavedEl;
+  if (el && el.hidden === (keep.held.size > 0)) el.hidden = keep.held.size === 0;
 }
 /** Une écriture CONFIRMÉE : le travail de cette clé n'est plus tenu en mémoire seulement. */
 export function releaseMemory(key) {
   keep.held.get(key)?.();
   keep.held.delete(key);
+  paintUnsaved();
 }
 
 /** Mètres dans un mille nautique (distances de la coupe en mètres, affichées en NM). */
