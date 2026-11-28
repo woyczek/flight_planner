@@ -1155,7 +1155,8 @@ def m41(c):
     from lib import tx_row
     keys = {'modules/fuel/module.js': ['aircraft', 'acChange', 'loadingRefs', 'acNone', 'noSheet', 'sumAircraft', 'coType', 'sheetsIntro',
                                        'newFlightDone', 'levelAutoNoSheet'],
-            'modules/aircraft/module.js': ['title', 'none', 'noHit', 'count', 'count1', 'statusCount'],
+            'modules/aircraft/meta.js': ['title'],  # SOG-0728 T1: the meta of the module (its title) moved word for word into meta.js
+            'modules/aircraft/module.js': ['none', 'noHit', 'count', 'count1', 'statusCount'],
             'modules/aircraft/sheets_texts.js': ['coType'],
             'modules/missions/module.js': ['secPayload', 'searchHint', 'aircraft'],
             'modules/flightlog/module.js': ['aircraft']}
