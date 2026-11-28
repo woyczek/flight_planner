@@ -11481,3 +11481,37 @@ def d342(c):
     bad = [x for x in r if not (x[2] == x[3] == x[4] == x[5] == (x[1] == 'night'))]
     c.ok(not bad, str(bad or r), 'for standard, aqua and metro, day and night: the old rule of the Map (the lightness of --sog-chart-bg), themeOf().dark, pageDark() and the tokens of the Map are one answer, the night tone')
     c.check_errors()
+
+
+@case('D343', 'SOG-0723: the diamond of the TOC (and of the TOD) painted on the map covers no name of a route point: its box is reserved before the names of the points', 'D', tags=('maps',),
+      designs=('standard',), night=False, screens=True,
+      rule='SOG-0723 (a minor defect, the user: the diamond of the TOC covers the label of the neighbouring point « LUGEN », the one of the TOD the mark « 300 »): the diamonds are painted over the labels (drawPlanOnMap), after them: render.js reserves their boxes in the placer before routeLabels, so the names go round them')
+def d343(c):
+    f = flight()
+    pts = f['route']['points']
+    la1, lo1, la2, lo2 = [math.radians(v) for v in (pts[0]['lat'], pts[0]['lon'], pts[1]['lat'], pts[1]['lon'])]
+    a = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    f['profile'] = {**f['profile'], 'tocNm': round(2 * 3440.065 * math.asin(math.sqrt(a)), 1)}   # the TOC falls on LUGEN, the neighbouring point whose name the diamond covered
+    c.page.add_init_script("""(() => { const P = CanvasRenderingContext2D.prototype, bp = P.beginPath, mt = P.moveTo, lt = P.lineTo, fl = P.fill, ft = P.fillText;
+      window.__d343 = { diamonds: [], texts: [] }; let cur = [];
+      const tr = (ctx, x, y) => { const m = ctx.getTransform(); return [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f] };
+      P.beginPath = function () { cur = []; return bp.call(this) };
+      P.moveTo = function (x, y) { cur.push(tr(this, x, y)); return mt.call(this, x, y) };
+      P.lineTo = function (x, y) { cur.push(tr(this, x, y)); return lt.call(this, x, y) };
+      P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20) window.__d343.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]) } return fl.apply(this, a) };
+      P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), al = this.textAlign, b = this.textBaseline;
+        const x0 = al === 'center' ? x - m.width / 2 : al === 'right' || al === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8, p0 = tr(this, x0, y0), p1 = tr(this, x0 + m.width, y0 + fs);
+        window.__d343.texts.push([String(t), p0[0], p0[1], p1[0], p1[1]]); return ft.call(this, t, x, y, w) };
+    })()""")
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.wait(1500)
+    c.js("async () => { window.__d343.diamonds = []; window.__d343.texts = []; (await import('/modules/maps/draw.js')).schedule(); await new Promise(r => setTimeout(r, 1200)); return true }")
+    r = c.js("() => window.__d343")
+    ds = r['diamonds']
+    c.ok(len(ds) >= 1, str(r['diamonds']), 'the diamond of the TOC is painted on the map')
+    hit = [t[0] for t in r['texts'] if not t[0].startswith(('TOC', 'TOD')) and any(t[1] < d[2] and t[3] > d[0] and t[2] < d[3] and t[4] > d[1] for d in ds)]
+    c.eq(hit, [], 'no name of a route point (LUGEN included) or mark is under a diamond of the TOC or the TOD', what=str(r['texts'][:12]))
+    c.shot(f'D343_{c.width}_losange.png')
+    c.check_errors()

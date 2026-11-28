@@ -1579,6 +1579,16 @@
       }, {
         id: 'routeLabels',
         reserve: () => {
+          // SOG-0723 : les losanges de TOC / TOD (et des transitions) sont réservés AVANT les noms des points : ils sont peints par-dessus (draw.js, drawPlanOnMap) et couvraient l'étiquette du point voisin
+          for (const m of plan || []) {
+            const k = (m.step ? 4.5 : 7) + 2;
+            pl.add({
+              x0: m.q.x - k,
+              y0: m.q.y - k,
+              x1: m.q.x + k,
+              y1: m.q.y + k
+            });
+          }
           labels = PR.routeLabels(route, toC, scale, pl, mk, level, env);
           planned = PR.planLabels(plan, pl);
         }
