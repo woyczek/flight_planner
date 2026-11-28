@@ -15,6 +15,7 @@
 //   chosenSay(crits, h) → SOG-0690 (b) point 5 : les mots de la ligne du dégagement choisi (ses critères : piste, moyens, météo, distance),
 //   ceux d'une ligne proposée ;
 //   patchInto(box, html) → SOG-0713 (R3) : box prend html en ne changeant que ce qui diffère (un nœud égal reste le même nœud) ;
+//   pastille(sign) → SOG-0690 (b) point 1 : le signe d'un terrain, la pastille cerclée de la Carte (altn_sign.js) ;
 //   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; RANK → SOG-0690 (b) son rang dans la liste proposée ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
 //   dégagement » (un signe et sa phrase par critère, le geste de lecture, la note de la météo) ; h = { why(c), read(c, id), note, esc }.
 
@@ -25,6 +26,7 @@ import {
 import {
   fold
 } from '../../frame/lib/fold.js'; // SOG-0713 : le pli commun de la suite
+import * as AS from '../../frame/lib/altn_sign.js'; // SOG-0690 (b) point 1 : la pastille de la Carte (BUGS), importée telle quelle
 
 export const TX = {
   // SOG-0690 (l'ergonome, 27/11) : chaque signe a ses mots, juste après le code du terrain, une seule fois ; le pluriel en clair
@@ -169,6 +171,12 @@ export const RANK = {
   grey: 2,
   err: 3
 };
+
+/** SOG-0690 (b) point 1 (l'ergonome) : le signe d'un terrain, la pastille cerclée de la Carte (le même dessin, les couleurs de Q-0075) ;
+ *  la nuit par la règle commune quand altn_sign.js la donne (pageDark), le jour sinon : jamais une règle recopiée ici. */
+export const pastille = sign => AS.altnSignSvg(sign, !!AS.pageDark?.(), {
+  cls: 'fu-altnpast'
+});
 
 /** La liste des critères du pli « Critères du dégagement » (sorti de module.js, inchangé) : par critère son signe, sa phrase (h.why) et le
  *  geste de lecture de ses procédures (h.read, du HTML déjà échappé) ; puis la note de la météo (h.note). */

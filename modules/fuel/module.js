@@ -155,7 +155,7 @@ export const meta = {
     '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par route_engine.js et par ../data/model_sets.js
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
-    '../../frame/lib/text.js', '../../frame/lib/fold.js', // SOG-0713
+    '../../frame/lib/text.js', '../../frame/lib/fold.js', '../../frame/lib/altn_sign.js', // SOG-0713, SOG-0690 (b)
     '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js', '../../frame/lib/mission_events.js',
     '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
   ]
@@ -2873,6 +2873,7 @@ const STYLE = `
 [data-module="fuel"] .fu-altnchk{margin:-4px 0 8px}
 [data-module="fuel"] .fu-altnline{display:flex;gap:6px;align-items:baseline;margin:0}
 [data-module="fuel"] .fu-altnsign{flex:0 0 1.1em;text-align:center;font-weight:700}
+[data-module="fuel"] .fu-altnsign:has(>.fu-altnpast){flex:0 0 22px;line-height:0} /* SOG-0690 (b) : la pastille de la Carte */
 [data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="ok"]>.fu-altnsign{color:var(--sog-ok)}
 [data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="warn"]>.fu-altnsign{color:var(--sog-warn)}
 [data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="err"]>.fu-altnsign{color:var(--sog-err)}
@@ -5665,7 +5666,7 @@ async function altnChkDraw(C) {
     wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
     whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
     ck = `altn-crit:${id}`;
-  AWX.patchInto(box, `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnHead, { id }))} ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}${fold({ cls: 'fu-altnfold', attrs: { 'data-altnfold': true }, key: ck, open: !!S.altnFolds.get(ck), title: tt(TX.altnFold), sumCls: 'f-muted', body: AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc }) })}${altnPropHtml()}`);
+  AWX.patchInto(box, `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.pastille(J.state)}</span><span data-altnhead>${esc(tt(TX.altnHead, { id }))} ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}${fold({ cls: 'fu-altnfold', attrs: { 'data-altnfold': true }, key: ck, open: !!S.altnFolds.get(ck), title: tt(TX.altnFold), sumCls: 'f-muted', body: AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc }) })}${altnPropHtml()}`);
 }
 /** La phrase d'un critère du dégagement (« Critères du dégagement », et SOG-0690 (b) le « Détail » d'une ligne proposée) : une lecture
  *  de la météo en cours ou en échec dite telle ; sinon sa phrase, les longueurs dans la langue de l'écran, le revêtement de la fiche. */
@@ -5707,7 +5708,6 @@ const altnWxLine = (c, id) => AWX.wxLine(c, id, {
 const ALTN_DOC = 'cache/fuel/altn_candidates.json',
   // la lecture des terrains autour de l'arrivée (aerodromes.json des zones) attend au plus tant
   ALTN_PROP_WAIT_MS = 8000;
-const ALTN_SIGN = AWX.SIGN;
 /** Un nom de terrain venu de la base (texte tiers) : sans caractère de contrôle ni de format, espaces réduits, 60 signes au plus. */
 const altnName = v => String(v ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 /** La clé du vol d'une proposition : départ, arrivée, aéronef (la Carte et Carburant la tiennent pour périmée quand elle change). */
@@ -6000,7 +6000,7 @@ function altnPropHtml() {
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc, open: k => !!S.altnFolds.get(k) })}</li>`;
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${AWX.pastille(p.sign)}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc, open: k => !!S.altnFolds.get(k) })}</li>`;
     },
     // SOG-0690 (b) point 4 (le relais, 28/11, par le titre « … les meilleurs d'abord ») : les TROIS plus proches d'abord (l'ordre de la
     // recherche), PUIS rangés par verdict et distance — le rang ne fait jamais entrer un terrain plus loin ; une météo inconnue est « Non
