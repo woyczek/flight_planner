@@ -1045,7 +1045,7 @@ function sheetHtml() {
     ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${off ? `<span class="d-st" data-off-state>${esc(badgeText)}</span>` : stepWord ? `<span class="d-st" data-step-state="${esc(step.k)}"><i class="f-dot" aria-hidden="true"${kind(badgeTone)}></i>${esc(stepWord)}</span>` : zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div>${off ? '' : `<ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul>`}</div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${inCov && !off ? nowHtml(id, seenAny, rename, step, cy, needs) : ''}${inCov ? updateBlockHtml(id, seenAny && !rename, step) : ''}${inCov && !off ? contentsHtml(cy) : ''}
     ${S.cw.proc?.state === 'ready' && !off ? `<p class="f-muted" data-sheet-proc${procs ? '' : ` data-proc-reader="${esc(S.cw.proc.readers?.[id] || '')}"`}>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(procReasonOf(S.cw.proc.readers?.[id])))}</p>` : ''}
-    ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
+    ${noReader.length && inCov ? `<p class="f-muted" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
     ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}
     <h4 class="d-sh">${esc(tt(off ? T.sourcesZone : T.sourcesTitle))}</h4>${ids.length || nrIds.length ? `${avail.map(s => off ? offSourceHtml(s, cy) : sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${nrIds.map(s => noReaderSourceHtml(s, cy)).join('')}${off ? offCopyHtml(id) : ''}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
@@ -1458,6 +1458,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-cap{margin:6px 0 2px;color:var(--sog-muted);font-size:var(--sog-size-xs,.8rem);line-height:1.4}
 [data-module="data"] .d-cap button{min-height:var(--sog-touch);padding:0 2px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit}
 [data-module="data"] .d-cap button[aria-expanded="true"]{font-weight:700;outline:0}
+[data-module="data"] [data-choose-hint=aimbe] [data-be-pdf],[data-module="data"] [data-choose-hint=aimbe] [data-be-page]{display:block}
 [data-module="data"] .d-go{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin:4px 0}
 [data-module="data"] .d-go>.d-verbs{margin:0}
 [data-module="data"] .d-go>[data-update-reason]{flex:1 1 100%;margin:0}

@@ -11673,6 +11673,9 @@ def l179(c):
     c.eq([c.count(f'{src} a[href]'), links, c.count(f'{src} [data-inventory] code'), c.count(f'{src} [data-file-name]')],
          [2, [['https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/pdf/EB_ENR_3_2_en.pdf', 'noopener noreferrer', '_blank'], ['https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Product/index.html', 'noopener noreferrer', '_blank']], 0, 0],
          'TWO links, in this order, written addresses only (nothing is followed, nothing downloaded): the ENR 3.2 PDF alone, then the home page of the eAIP (ops.skeyes.be), both opened aside; no file inventory, no file name on the card', what='the links')
+    # SOG-0710: one link per line (read as one at 390 when they followed each other): the second link is wholly under the first
+    lines = c.js(f"[...document.querySelectorAll('{src} [data-choose-hint=aimbe] a')].map(a => {{ const r = a.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom)] }})")
+    c.ok(len(lines) == 2 and lines[1][0] >= lines[0][1], lines, 'SOG-0710: the two links of Belgium are on two lines, the second under the first')
     c.eq([c.count(f'{src} [data-act=zone-upload]'), c.js(f"document.querySelector('{src} [data-act=zone-upload]').disabled"), norm(c.text(f'{src} [data-act=zone-upload]'))], [1, False, norm(UP('choose'))], 'and « Choisir le fichier… », live', what='gesture')
     # ---- 2. the line, judged by today's date
     # the personal-use box is NOT ticked (it is, further down): a set in force that nothing reads is not « déposé » with no effect and the card is not silent — the head says the box, with the words of the other personal sources
@@ -12131,6 +12134,11 @@ def l184(c):
     c.eq(c.count(blk + ' button, ' + blk + ' a, ' + blk + ' input, ' + blk + ' [data-inventory], ' + blk + ' [data-regime-line]'), 0, 'no button, no link, no inventory, no « by hand » regime: nothing to do', what='nothing to do')
     c.ok(c.count('[data-sheet=ca] [data-sheet-source=navcan]:not([data-noreader-src])') == 0, '', 'the same source has no second, hand-source block')
     c.ok(norm(CW('noReader').split('{s}')[0]) in norm(c.text('[data-sheet=ca] [data-sheet-noreader]')), c.text('[data-sheet=ca] [data-sheet-noreader]'), 'the sheet line says « Sources that the suite does not read: … »')
+    # SOG-0709: grey, never orange (orange = a gesture to make; this line invites to none): the class is the muted one and its colour is not the warning colour
+    cls = c.js("() => document.querySelector('[data-sheet=ca] [data-sheet-noreader]').className")
+    colors = c.js("() => { const p = document.querySelector('[data-sheet=ca] [data-sheet-noreader]'), w = document.createElement('p'); w.className = 'f-warn'; p.after(w); const out = [getComputedStyle(p).color, getComputedStyle(w).color]; w.remove(); return out }")
+    c.ok('f-muted' in cls.split() or 'f-muted' in cls, cls, 'SOG-0709: the line is the muted one')
+    c.ok('f-warn' not in cls and colors[0] != colors[1], [cls, colors], 'SOG-0709: and not the colour of a gesture to make (the warning orange)')
     c.ok('pas encore' not in c.text('[data-sheet=ca]').lower() and 'not read yet' not in c.text('[data-sheet=ca]').lower(), c.text('[data-sheet=ca]')[:200], 'nothing is promised: « non lu », never « pas encore lu »')
     # ---- 2. « Procédures : non » and its reason
     c.eq([c.js("document.querySelector('[data-sheet=ca] [data-sheet-proc]').dataset.procReader"), norm(c.text('[data-sheet=ca] [data-sheet-proc]'))], ['none', norm(CW('procNoReader'))], 'no reader for the state: the reason on the same line', what='none')
