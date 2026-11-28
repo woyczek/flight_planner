@@ -57,6 +57,7 @@ import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (ex
 import * as PP from './proc_partial.js'; // SOG-0613 : des départs lus en partie, au-delà de la limite de raccord
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
+import * as RB from './route_bounds.js'; // SOG-0721 : la valeur de la demande de route hors bornes, dite avant l'envoi
 import {
   fold,
   wireFolds
@@ -141,7 +142,7 @@ export const meta = {
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'route_reasons.js', 'zone_gap.js', 'fpl.js',
     'altn_check.js', 'mission_chip.js', 'proc_text.js', 'route_lines.js', 'route_limits.js', 'ceiling.js', 'simbrief_fetch.js',
     'route_refused.js',
-    'altn_wx.js', 'auto_limits.js', 'proc_partial.js',
+    'altn_wx.js', 'auto_limits.js', 'proc_partial.js', 'route_bounds.js',
     // SOG-0617 : le bloc « Suite de la mission » de Missions et ce qu'il importe
     '../../frame/lib/crossing.js', '../../frame/lib/precision.js', '../missions/assign.js', '../missions/assign_view.js',
     '../missions/assigned.js', '../missions/drawers.js', '../missions/drawers_run.js', '../missions/drawers_view.js',
@@ -3093,7 +3094,7 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
-      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p><div class="fu-rnoproc" data-rnoproc hidden></div>
+      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><div class="fu-rbound" data-rbound hidden></div><p class="f-muted" data-rvia hidden></p><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p><div class="fu-rnoproc" data-rnoproc hidden></div>
       <div data-routealts></div><p class="f-row f-warn fu-rage" data-rstale hidden><span data-rstaletext></span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
@@ -4632,6 +4633,7 @@ async function routeAsk(action) {
     box = S.body?.querySelector('[data-routealts]'),
     act = action === 'compute' ? 'compute' : 'check';
   if (!S.routeEngine) return; // sans moteur au montage, les boutons ne sont pas montrés
+  if (routeFl() != null && !flOk(routeFl())) return rboundDraw(); // SOG-0721 (b) : un niveau hors de FL010 à FL660, rien ne part
   S.noProcAsked = true; // SOG-0638 : la route est demandée — un terrain au catalogue vide le dit, le calcul part quand même
   noProcPaint();
   // SOG-0208 : jamais un appui sans suite — les terrains manquants, puis le lanceur vérifié à l'appui, dits à la place des itinéraires
@@ -4836,8 +4838,17 @@ function routePerf() {
   if (!sheet || (String(sheet.id || '').startsWith('TYPE_') && !apd)) return null;
   return RE.perfFields(C.q, apd);
 }
-/** SOG-0514 : « Vitesses par défaut du moteur » quand le calcul ou le contrôle part sans les vitesses de l'avion ; '' sinon. */
-const perfDefaultHtml = () => routePerf() ? '' : `<p class="f-muted" data-rdefperf>${esc(tt(TX.rDefaultPerf))}</p>`;
+/** SOG-0514 : « Vitesses par défaut du moteur » sans les vitesses de l'avion ; SOG-0721 : sinon celles parties à leur borne, dites. */
+const perfDefaultHtml = () => (p => p ? RB.boundLines(p.bound, RLH) : `<p class="f-muted" data-rdefperf>${esc(tt(TX.rDefaultPerf))}</p>`)(
+  routePerf());
+/** SOG-0721 : sous « Calculer », les valeurs bornées ; un niveau hors de FL010 à FL660 grise les deux boutons (route_bounds.js). */
+function rboundDraw() {
+  const box = S.body?.querySelector('[data-rbound]'),
+    bad = !flOk(routeFl() ?? 10); // sans niveau du tout, le moteur prend le sien (SOG-0517) : rien de grisé
+  for (const b of S.body?.querySelectorAll('[data-reng] [data-do="rcompute"], [data-reng] [data-do="rcheck"]') || [])
+    bad ? b.setAttribute('aria-disabled', 'true') : b.removeAttribute('aria-disabled');
+  if (box) box.hidden = !(box.innerHTML = RB.boxHtml(routePerf()?.bound, bad, maintenanceLink(currentSheet()?.id), RLH));
+}
 /** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
  *  l'horloge (l'heure prévue du vol en tient lieu). */
 const argsKey = a => JSON.stringify({
@@ -7549,6 +7560,7 @@ function routeDerived(r) {
  *  main tient). */
 function renderRinfo() {
   rviaDraw(); // SOG-0517 : les passages imposés au calcul, nommés
+  rboundDraw(); // SOG-0721 : la valeur hors bornes, dite avant l'envoi
   const box = S.body?.querySelector('[data-rinfo]');
   if (!box) return;
   const r = S.flight.route || {},

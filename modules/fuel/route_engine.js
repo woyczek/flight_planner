@@ -87,20 +87,45 @@ export function perfFields(q, apd = null) {
     end = num(q?.endFt, 1, 70000) ?? lvl, // le niveau d'où le devis descend (model.js : levels.at(-1).ft), sinon le niveau déposé
     cm = num(q?.climb?.min, .1, 600),
     dm = num(q?.descent?.min, .1, 600),
-    tas = num(q?.cruise?.tas, 30, 1500);
-  if (!lvl || !cm || !dm || !tas) return null;
-  const climb = Math.round(lvl / cm),
-    descent = Math.round(end / dm);
-  if (!(climb >= 50 && climb <= 20000) || !(descent >= 50 && descent <= 20000)) return null;
-  const out = {
-      speed_kt: Math.round(tas),
-      climb_fpm: climb,
-      descent_fpm: descent
+    tas = +q?.cruise?.tas,
+    ias = +apd?.climbInitial?.iasKt;
+  if (!lvl || !cm || !dm || !(tas > 0)) return null;
+  // SOG-0721 (l'ergonome) : une valeur hors de ce que le moteur accepte part à la BORNE la plus proche, jamais omise ; `bound` (non
+  // énumérable : la demande ne le recopie pas) dit lesquelles, pour la phrase de la page (route_bounds.js)
+  const raw = {
+      speed_kt: tas,
+      climb_fpm: lvl / cm,
+      descent_fpm: end / dm,
+      ...(ias > 0 ? {
+        terminal_speed_kt: ias
+      } : {})
     },
-    term = num(apd?.climbInitial?.iasKt, 30, 400);
-  if (term) out.terminal_speed_kt = Math.round(term);
-  return out;
+    out = {},
+    bound = [];
+  for (const [k, v] of Object.entries(raw)) {
+    const [lo, hi] = PERF_BOUNDS[k],
+      r = Math.round(v),
+      used = Math.min(hi, Math.max(lo, r));
+    out[k] = used;
+    if (used !== r) bound.push({
+      k,
+      v: r,
+      lo,
+      hi,
+      used
+    });
+  }
+  return Object.defineProperty(out, 'bound', {
+    value: bound
+  });
 }
+/** SOG-0721 : les bornes de la demande du moteur (tools/route_engine/plan.py check_request, SOG-0532), les mêmes que celles de la page. */
+export const PERF_BOUNDS = {
+  speed_kt: [30, 1500],
+  climb_fpm: [50, 20000],
+  descent_fpm: [50, 20000],
+  terminal_speed_kt: [30, 400]
+};
 /** SOG-0514 : les quatre champs de vitesse du moteur, s'ils sont des entiers positifs (perfFields) — rien d'autre n'est recopié. */
 const PERF_KEYS = ['speed_kt', 'climb_fpm', 'descent_fpm', 'terminal_speed_kt'];
 
