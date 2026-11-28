@@ -7014,8 +7014,7 @@ function staleDraw(C) {
   const p = S.body?.querySelector('[data-rstale]'),
     x = routeStale(C);
   if (!p) return;
-  // SOG-0572 (l'ergonome) : l'état appartient à la ROUTE — dit ici, sous la liste (ou « Itinéraire choisi »), avec le seul « Recalculer »
-  // de l'étape : « Route calculée pour le FL{c}, {type} : le vol a changé. », ou le niveau seul
+  // SOG-0572 (l'ergonome) : l'état de la ROUTE, dit sous la liste avec le seul « Recalculer » de l'étape, ou le niveau seul
   p.hidden = !x;
   p.querySelector('[data-rstaletext]').textContent = x ? tt(x.levelOnly ? TX.fplStaleLevel : TX.fplStale, x) : '';
 }
@@ -9313,6 +9312,7 @@ function refresh() {
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
   staleDraw(C); // SOG-0533 : la route calculée pour un autre niveau
+  rboundDraw(); // SOG-0721 : les bornes suivent le devis et le niveau (renderRinfo ne dessine qu'au dessin de l'étape ; train 11, F354)
   fplDraw(C);
   altnChkDraw(C); // SOG-0398 : la ligne du dégagement suit le terrain, la fiche, la durée du vol
   wxAutoSoon(); // SOG-0527 (2) : la météo qui manque ou a vieilli est demandée d'elle-même

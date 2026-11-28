@@ -12639,7 +12639,10 @@ def f353(c):
     same = c.js(f"""async () => {{ const A = await import('/frame/lib/altn_sign.js');
         const li = document.querySelector('{B} [data-altnprop] li[data-cand=XQPC] > .fu-altnsign svg'),
           line = document.querySelector('{B} .fu-altnline'), s = line?.querySelector(':scope > .fu-altnsign svg');
-        return [li?.outerHTML === A.altnSignSvg('warn', false, {{ cls: li?.getAttribute('class') || '' }}),
+        // the same drawing, compared through the parser of the page (the browser writes the attributes again: never two strings)
+        const t = document.createElement('template');
+        t.innerHTML = A.altnSignSvg('warn', false, {{ cls: li?.getAttribute('class') || '' }});
+        return [!!li && li.isEqualNode(t.content.firstElementChild),
           !!s && s.querySelector('circle')?.getAttribute('stroke') === A.altnSignColor(line.dataset.state, false)] }}""")
     c.eq(same, [True, True], 'the very drawing of the shared table, for a proposed line and for the line of the chosen alternate',
          what='shared')
