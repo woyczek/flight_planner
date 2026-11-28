@@ -7868,16 +7868,17 @@ def f262(c):
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state, "
                 f"!!li.querySelector('[data-do=altntake]'), li.textContent])")
-    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the three closest CHECKED first: XQPA too near, XQPD too short, the heliport '
-         'left out; XQPH (procedures not held) and LFMT (no runway length) offered after them (SOG-0494)', what='list')
-    c.eq([r[1] for r in rows], ['ok', 'warn', 'err'], 'green; visual only orange; LIFR red', what='signs')
-    c.eq([r[2] for r in rows], [True, True, False], '« Prendre » except on the red one', what='take')
-    c.ok(norm(tx(T, "aids-visual'", L, after='altnPropWhy')) in norm(rows[1][3]), rows[1][3], 'the reservation said: visual only')
+    c.eq([r[0] for r in rows], ['XQPB', 'XQPF', 'XQPC'], 'the best first, then by distance (SOG-0690 b: Possible XQPB 40 NM and XQPF '
+         '83 NM, then XQPC « avec réserve » 41 NM; XQPA too near, XQPD too short, the heliport left out; LFMT and XQPH not judged, XQPE '
+         'impossible, after them) — expectation changed on purpose', what='list')
+    c.eq([r[1] for r in rows], ['ok', 'ok', 'warn'], 'green, green; visual only orange', what='signs')
+    c.eq([r[2] for r in rows], [True, True, True], '« Prendre » on each (no red one among the three)', what='take')
+    c.ok(norm(tx(T, "aids-visual'", L, after='altnPropWhy')) in norm(rows[2][3]), rows[2][3], 'the reservation said: visual only')
     row0 = norm(rows[0][3])   # « 1 490 kg » (fr), « 1.490 kg » (de), « 1,490 kg » (en) ; « Prendre » collé après l'unité dans le texte
     c.ok(re.search(r'\b\d+ NM\b', row0) is not None and re.search(r'\d (lb|kg)', row0) is not None, row0,
          'its distance and its alternate fuel')
     more = norm(c.text(f'{B} [data-altnmore]') or '')
-    c.ok(more.startswith('3 '), more, 'the three others (XQPF, LFMT and XQPH not checked) said on the Map')
+    c.ok(more.startswith('3 '), more, 'the three others (LFMT, XQPH, XQPE) said on the Map')
     # the ergonomist: a fold with a chevron (the component of « Critères du dégagement »), closed by its heading; no « Fermer »
     c.eq(c.js(f"[document.querySelector('{B} details[data-altnprop]')?.open, !!document.querySelector('{B} details[data-altnprop] > summary'), "
               f"document.querySelectorAll('{B} [data-do=altnpropclose]').length]"), [True, True, 0], 'a fold, open, no « Fermer »', what='fold')
@@ -8458,11 +8459,10 @@ def f275(c):
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000,
             what='three aerodromes listed although no procedure is held')
     rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.textContent])")
-    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the closest, by distance (all equally unchecked on the aids)', what='list')
+    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'LFMT'], 'the closest not judged, by distance (all equally unchecked on the aids); '
+         'XQPE impossible (LIFR) after them (SOG-0690 b — expectation changed on purpose)', what='list')
     want = norm(tx(T, "aids-unread'", L, after='altnPropWhy'))
-    # SOG-0702 (« ✕ » in words, the cause alone, once, in place of the words further on): the lines of the aerodromes not judged keep « moyens non vérifiés »; the « ✕ » line says its cause instead
-    c.ok(all(want in norm(r[1]) for r in rows if r[0] != 'XQPE'), [r[1] for r in rows], 'each line not « ✕ » says « moyens non vérifiés »')
-    c.ok(any(r[0] == 'XQPE' and 'Impossible : météo LIFR.' in norm(r[1]) for r in rows), [r[1] for r in rows], 'the « ✕ » line (XQPE, LIFR) says « Impossible : météo LIFR. » (SOG-0702)')
+    c.ok(all(want in norm(r[1]) for r in rows), [r[1] for r in rows], 'each line says « moyens non vérifiés »')
     c.eq(c.count(f'{B} [data-altnprop][data-msg]'), 0, 'never « Aucun terrain … » (no message in place of the list)', what='none')
 
 
@@ -10176,8 +10176,8 @@ def f303(c):
     c.eq((by['XQPB']['state'], by['XQPB']['why']), ('warn', ['wx-unread']),
          'a failed read: « wx-unread », « warn » (red before: « ok », the Map drew it green)', what='XQPB')
     near = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => li.dataset.cand)")
-    c.eq(near, ['XQPC', 'XQPE', 'XQPF'], 'the terrains whose weather is read first: XQPB, unknown, after them (red before: XQPB first)',
-         what='list')
+    c.eq(near, ['XQPF', 'XQPC', 'XQPB'], 'by verdict then distance: XQPF possible, XQPC with a reservation, then XQPB not judged (its '
+         'weather unknown, after the terrains whose weather is read; SOG-0690 b — expectation changed on purpose)', what='list')
     c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPB' } }))")
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPB]')", timeout=8000, what='« Proposé : XQPB »')
     c.wait(600)   # the second read of the touched terrain fails too
@@ -12347,8 +12347,8 @@ def f343(c):
 @case('F345', '« Proposer un dégagement »: each sign of a line said in words, right after the code of the terrain, ONCE — « ✓ » « Possible. », '
       '« ! » « Possible avec réserve : {réserve}. » (two: « Possible avec réserves : à vue seulement, météo IFR. », the plural written in full), '
       '« ? » « Non jugé : {cause}. » (the cause of SOG-0559, « pas de TAF »), « ✕ » « Impossible : {cause}. » (SOG-0702); the reservation or '
-      'the cause no longer repeated further in the line; the line of the aerodrome touched on the Map in two sentences « Proposé : XQPF. Non '
-      'jugé : pas de TAF. »; the document of the Map carries the sign of the line (one aerodrome, one judge); SOG-0690 (b): the forecast '
+      'the cause no longer repeated further in the line; the line of the aerodrome designated on the Map at the head, in two sentences '
+      '« Désigné sur la Carte : XQPF. Non jugé : pas de TAF. », « Impossible » included (no « Prendre »); the document of the Map carries the sign of the line (one aerodrome, one judge); SOG-0690 (b): the forecast '
       'weather said in words once — « Météo prévue : VFR. » after the verdict, « météo prévue IFR / LIFR » in the reservation or the cause', 'F',
       tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
       rule='SOG-0690 (a) (the user, 27 Nov: « plusieurs AD notés avec un « ! », pas de météo claire »; the ergonomist, 27 Nov: a sign without a '
@@ -12380,7 +12380,8 @@ def f345(c):
          'the words of each sign, the plural written in full; « ✕ » says its cause, never a reservation of a possible aerodrome (red before '
          'SOG-0702: « ✕ » without words; red before SOG-0690 (b): no « Météo prévue », « météo IFR »)',
          what='words')
-    # B. on the screen: one line of each sign — XQPB ✓, XQPC ! (visual only), XQPE ✕ (LIFR), XQPF ? (touched on the Map: no TAF)
+    # B. on the screen — XQPB ✓, XQPC ! (visual only), LFMT ? (no runway length), XQPF ? (no TAF), XQPE ✕ (LIFR); XQPF then XQPE
+    # designated on the Map (SOG-0690 b: at the head whatever its verdict, « Impossible » included)
     _prop_net(c, {})
     c.page.set_viewport_size({'width': 390, 'height': 844})
     _prop_open(c, tafs={'XQPB': 'VFR', 'XQPC': 'VFR', 'XQPE': 'LIFR'})
@@ -12389,27 +12390,39 @@ def f345(c):
     c.tap(f'{B} [data-do=altnpropose]')
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
-    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
-    rows = c.js(f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state,
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='XQPF designated on the Map')
+    ROWS = f"""[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state,
         (li.querySelector('[data-altnsay]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
         (k => (k.querySelectorAll('details').forEach(d => d.remove()), k.textContent || ''))(li.cloneNode(true))
-          .replace(/[\\s\\u00a0\\u202f]+/g, ' ')])""")  # the line itself, its fold « Détail » left out
+          .replace(/[\\s\\u00a0\\u202f]+/g, ' '), !!li.querySelector('[data-do=altntake]')])"""  # the line itself, its fold « Détail » left out
+    rows = c.js(ROWS)
     by = {r[0]: r for r in rows}
-    c.eq({k: [by[k][1], by[k][2]] for k in by}, {'XQPF': ['grey', 'Non jugé : pas de TAF.'],
-                                                 'XQPB': ['ok', 'Possible. Météo prévue : VFR.'],
-                                                 'XQPC': ['warn', 'Possible avec réserve : à vue seulement. Météo prévue : VFR.'],
-                                                 'XQPE': ['err', 'Impossible : météo prévue LIFR.']},
-         'each sign said in words after the code (red before SOG-0702: « ✕ » without words)', what='signs')
-    c.eq([by['XQPC'][3].count('à vue seulement'), by['XQPF'][3].count('pas de TAF'), by['XQPE'][3].count('LIFR'),
-          by['XQPB'][3].count('VFR')], [1, 1, 1, 1], 'the reservation, the cause and the weather said ONCE', what='once')
-    c.ok('Proposé : XQPF. Non jugé : pas de TAF.' in by['XQPF'][3], by['XQPF'][3],
-         'the line touched on the Map in two sentences (red before: « Proposé : XQPF Non jugé : pas de TAF. »)')
+    c.eq([r[0] for r in rows], ['XQPF', 'XQPB', 'XQPC', 'LFMT'], 'the designated one at the head, the others by verdict then distance',
+         what='order')
+    c.eq({k: [by[k][1], by[k][2]] for k in ('XQPF', 'XQPB', 'XQPC')}, {'XQPF': ['grey', 'Non jugé : pas de TAF.'],
+                                                                      'XQPB': ['ok', 'Possible. Météo prévue : VFR.'],
+                                                                      'XQPC': ['warn', 'Possible avec réserve : à vue seulement. Météo prévue : VFR.']},
+         'each sign said in words after the code', what='signs')
+    c.eq([by['XQPC'][3].count('à vue seulement'), by['XQPF'][3].count('pas de TAF'), by['XQPB'][3].count('VFR')], [1, 1, 1],
+         'the reservation, the cause and the weather said ONCE', what='once')
+    c.ok(by['XQPF'][3].lstrip(' ?').startswith('Désigné sur la Carte : XQPF. Non jugé : pas de TAF.'), by['XQPF'][3],
+         'the line designated on the Map in two sentences (red before: « Proposé : XQPF. Non jugé : pas de TAF. »)')
+    c.ok(not any('Proposé' in r[3] for r in rows), [r[3] for r in rows], 'the word « Proposé » said by no line')
+    c.ok('aucun TAF lu' not in by['XQPF'][3], by['XQPF'][3], 'the long sentence of the weather not repeated further in the line')
     doc = c.js("Object.fromEntries((window.__altnDoc?.list || []).map(t => [t.icao, t.sign ?? null]))")
     c.eq({k: doc.get(k) for k in ('XQPB', 'XQPC', 'XQPF')}, {'XQPB': 'ok', 'XQPC': 'warn', 'XQPF': 'grey'},
          'the document of the Map carries the sign of the line, « ? » included (red before: no sign, the Map painted « ! » for « ? »)',
          what='doc')
     c.ok('XQPE' not in doc, sorted(doc), 'an aerodrome to set aside (LIFR) is not in the document')
-    c.ok('aucun TAF lu' not in by['XQPF'][3], by['XQPF'][3], 'the long sentence of the weather not repeated further in the line')
+    # XQPE designated: at the head although « Impossible », without « Prendre »
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPE' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPE]')", timeout=8000, what='XQPE designated on the Map')
+    rows = c.js(ROWS)
+    e = rows[0]
+    c.eq([e[0], e[1], e[2], e[4]], ['XQPE', 'err', 'Impossible : météo prévue LIFR.', False],
+         '« Impossible » designated: at the head, its cause in words, no « Prendre »', what='impossible')
+    c.ok(e[3].lstrip(' ✕').startswith('Désigné sur la Carte : XQPE. Impossible : météo prévue LIFR.') and e[3].count('LIFR') == 1, e[3],
+         'its line in two sentences, LIFR said once')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': 900})
         c.settle()
@@ -12439,6 +12452,40 @@ def f347(c):
     c.eq(said, norm('Le calcul de route a refusé la demande : une valeur du vol ou de la fiche de l’appareil sort de ses bornes.'), 'the cause in French (red before: '
          '« Le calcul a échoué sans donner de résultat … : réessayez. »)', what='sentence')
     c.ok('invalid' not in said.lower(), said, 'never the English message of the launcher')
+
+
+@case('F348', '« Proposer un dégagement »: the aerodromes ranked by verdict (Possible, Possible avec réserve, Non jugé, Impossible), then by '
+      'distance — a far « Possible » before a near « Non jugé »; the title « Les plus proches de LFML, les meilleurs d’abord »; nothing at the '
+      'head without an aerodrome designated on the Map; the list ranked ONCE, when the weather has been read (a designation does not rank it '
+      'again)', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0690 (b) point 4 (the ergonomist, 28 Nov: answer (a) — the aerodrome designated on the Map at the head whatever its verdict, '
+      'the word « Proposé » gone, the others by verdict then distance, ranked once); French only (SOG-0680); invented aerodromes and TAFs')
+def f348(c):
+    B = f'{FUEL} [data-altnchk]'
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    # XQPB ✓ 40 NM, XQPC ! 41 NM (visual only), LFMT ? (no runway length, closer than XQPF), XQPF ✓ 83 NM, XQPH ? 100 NM, XQPE ✕ (LIFR)
+    _prop_open(c)
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    LIST = f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state, 'proposed' in li.dataset])"
+    c.eq(c.js(LIST), [['XQPB', 'ok', False], ['XQPF', 'ok', False], ['XQPC', 'warn', False]],
+         'by verdict then distance: XQPF « Possible » at 83 NM before XQPC « avec réserve » at 41 NM and before LFMT « Non jugé », closer; '
+         'nothing at the head (red before: XQPB, XQPC, XQPE — the checked ones by distance)', what='order')
+    c.eq(norm(c.text(f'{B} details[data-altnprop] > summary') or ''), 'Les plus proches de LFML, les meilleurs d’abord', 'the title',
+         what='title')
+    # a designation on the Map: at the head; the others keep their rank (the list is not ranked again)
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPH' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPH]')", timeout=8000, what='XQPH designated on the Map')
+    c.wait(600)   # its weather read again
+    c.eq([r[0] for r in c.js(LIST)], ['XQPH', 'XQPB', 'XQPF', 'XQPC'], 'the designated one at the head, the others in their rank',
+         what='designated')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F348_{c.design}_{w}_{c.lang}.png')
 
 
 
