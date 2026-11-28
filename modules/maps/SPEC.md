@@ -40,7 +40,7 @@ position are derived by the frame's `frame/lib/flight_time.js` (§ 13; re-export
   `route.points` [{ id, lat, lon, alt_ft?, via?, awy?, wind? }], `route.dep`, `route.arr`, `route.altn`,
   `route.procedures` (v2: `{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at }`, read through
   `proceduresOf`), `route.text`, `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt, descentFpm, descentKt, tocNm,
-  todNm, `ceilingFt` (the aircraft's ceiling: the scale of the vertical profile goes up to it), `path` [{ nm, ft }] (the planned vertical path under the procedures' constraints) }, `quote` (`minutes`, `legs`
+  todNm, `ceilingFt` (the aircraft's ceiling: drawn on the vertical profile where it falls in the scale, else said at the top edge), `path` [{ nm, ft }] (the planned vertical path under the procedures' constraints) }, `quote` (`minutes`, `legs`
   [{ id, min, origin }], `taxiMin`), `planned_at`, `started`
   (`at`, `diverted`), `progress` (`actual`, `phase`, `fuelRemainingKg`, `remainingNm`), `by`, `updated_at`.
   - `alt_ft` is the level held from that point on, never on the first or the last point; the flight leaves at

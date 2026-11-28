@@ -487,6 +487,8 @@ export const TX = {
     'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
   ],
   dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
+  // SOG-0694 : le plafond de l'aéronef sur le profil vertical (tracé à sa hauteur s'il tombe dans l'échelle, sinon dit au bord haut avec « ↑ ») ; français seul (dette de traduction SOG-0680)
+  profCeil: ['Plafond : {n}'],
   segLabel: ['Profil ou météo', 'Profile or weather', 'Profil oder Wetter', 'Perfil o meteo'],
   legend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
   lgPlan: ['Trajectoire prévue (niveau de croisière)', 'Planned flight path (cruise level)', 'Geplante Flugbahn (Reiseflughöhe)',

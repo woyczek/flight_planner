@@ -11305,25 +11305,33 @@ def d337(c):
     c.check_errors()
 
 
-@case('D338', 'SOG-0694: the vertical scale of the profile also goes up to the ceiling of the aircraft (written by Fuel in the flight), so a level can be pulled up to it; without it, the scale is the one of the route', 'D', tags=('maps',),
-      designs=('standard',), night=False,
-      rule='SOG-0694, the rest after the tag (the ergonomist, 27 Nov: the scale goes up to the highest of the cruise level, the levels written in the route and the ceiling of the aircraft sheet, plus a margin): '
-      'a flight at FL100 of an aircraft whose ceiling is FL410: the scale reaches FL410 and its margin; the same flight without the ceiling: a low scale')
+@case('D338', 'SOG-0694 (rule of 28 Nov): the vertical scale follows the FLIGHT (never the ceiling of the aircraft); the ceiling is drawn at its true height when it falls in the scale, else the top edge says « Plafond : FL… ↑ » in grey; a level pulled up widens the scale and the line appears as soon as it is in', 'D', tags=('maps',),
+      designs=('standard',), night=False, screens=True,
+      rule='SOG-0694 (the ergonomist corrects his rule of 27 Nov, 28 Nov: the ceiling of the sheet in the maximum crushed a low flight): a flight at FL100 of an aircraft whose ceiling is FL410 gives a LOW scale and « Plafond : FL410 ↑ » at the top edge; a ceiling inside the scale is drawn at its height; never a line at a wrong height')
 def d338(c):
     top = lambda: int(c.js("() => (document.querySelector('.mp-pc').dataset.scale || '0,0').split(',')[1]"))
+    ceil = lambda: c.js("() => document.querySelector('.mp-pc').dataset.ceil || ''")
     out = {}
-    for name, ceil in (('plain', None), ('ceiling', 41000)):
+    for name, ceil_ft in (('plain', None), ('above', 41000), ('inside', 11000)):
         f = flight()
         f['level'] = {'ft': 10000}
-        if ceil:
-            f['profile'] = {**(f.get('profile') or {}), 'ceilingFt': ceil}
+        if ceil_ft:
+            f['profile'] = {**(f.get('profile') or {}), 'ceilingFt': ceil_ft}
         c.open('maps', docs=fdocs(f), flight=False)
         c.ready('maps', sheet=True)
         c.js(_STATE_JS)
         c.until("() => !!document.querySelector('.mp-pc') && (document.querySelector('.mp-pc').dataset.scale || '') !== ''", timeout=15000, what=f'{name}: the profile is drawn')
-        out[name] = top()
-        if ceil:
-            c.shot(f'D338_{c.width}_plafond.png')
-    c.ge(out['ceiling'], 42500, 'the scale reaches the ceiling of the aircraft with its margin', what='scale with the ceiling')
-    c.ok(out['plain'] < 30000, out, 'without the ceiling the scale is the one of the route (not the ceiling)')
+        out[name] = [top(), ceil()]
+        if name == 'above':
+            c.shot(f'D338_{c.width}_plafond_hors.png')
+            # a level pulled up (the same call the drag makes): the scale widens and the line of the ceiling appears as soon as it is in
+            c.js("async () => { const S = window.__mp.S; S.edit.reach = 43000; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
+            out['pulled'] = [top(), ceil()]
+            c.js("async () => { const S = window.__mp.S; S.edit.reach = 0; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
+        if name == 'inside':
+            c.shot(f'D338_{c.width}_plafond_trace.png')
+    c.ok(out['plain'][0] < 20000 and out['plain'][1] == '', out, 'without a ceiling: the scale is the one of the flight, nothing about a ceiling')
+    c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge', out, 'a flight at FL100, ceiling FL410: a LOW scale (the ceiling does not enter it) and the top edge says the ceiling (never a line at a wrong height)')
+    c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line', out, 'a ceiling inside the scale is drawn at its true height')
+    c.ok(out['pulled'][0] >= 43000 and out['pulled'][1] == '41000,line', out, 'a level pulled up widens the scale: the line of the ceiling appears as soon as it is in')
     c.check_errors()

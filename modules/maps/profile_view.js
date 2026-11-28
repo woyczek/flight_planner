@@ -248,6 +248,7 @@ export function drawProfile() {
   // la fenêtre au centième de NM, comme la coupe (deux arrondis différents d'une même fenêtre ne se comparent pas)
   setData(S.pc, 'window', `${(g.w0 / FT_NM).toFixed(2)},${(g.w1 / FT_NM).toFixed(2)}`);
   setData(S.pc, 'scale', `${g.bottom},${g.top}`);
+  setData(S.pc, 'ceil', g.ceil ? `${g.ceil.ft},${g.ceil.drawn ? 'line' : 'edge'}` : ''); // SOG-0694 : le plafond de l'aéronef, tracé (line) ou dit au bord haut (edge)
   setData(S.pc, 'plot', `${Math.round(g.padL)},${Math.round(g.W - g.padR)}`);
   setData(S.pc, 'ticks', g.ticks.map(m => m.nm).join(','));
   legendSync();
@@ -300,7 +301,10 @@ function paintProfile(ctx, pl, W, H) {
     select: S.selSpace,
     reach: S.edit?.reach || 0, // SOG-0694 : le glisser d'un palier élargit l'échelle
     levelFt: S.route?.levelFt || 0,
-    ceilFt: S.route?.ceilFt || 0, // SOG-0694 : le plafond de l'aéronef
+    ceilFt: S.route?.ceilFt || 0, // SOG-0694 : le plafond de l'aéronef (tracé s'il tombe dans l'échelle, sinon dit au bord haut)
+    ceilText: S.route?.ceilFt > 0 ? tt(TX.profCeil, {
+      n: level(S.route.ceilFt)
+    }) : '',
     placer: pl
   });
   // la marge de la croisière sur le relief lu (SOG-0502) : la part fautive de la ligne et son chiffre, peints par le bloc du profil

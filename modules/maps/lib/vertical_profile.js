@@ -549,7 +549,8 @@
     reach = 0, // SOG-0694 : l'altitude que le glisser d'un palier atteint : l'échelle monte au moins jusque-là
     levelFt = 0, // SOG-0694 : le niveau de croisière du vol : l'échelle monte au moins jusqu'à lui, plus une marge
     ceilFt =
-    0, // SOG-0694 : le plafond de l'aéronef (la fiche) : l'échelle monte aussi jusqu'à lui, pour qu'un niveau puisse y être tiré
+    0, // SOG-0694 : le plafond de l'aéronef (la fiche) : tracé à sa hauteur s'il tombe dans l'échelle (qui suit le vol, jamais lui), sinon dit au bord haut
+    ceilText = '', // SOG-0694 : les mots du plafond (« Plafond : FL410 »), écrits par l'appelant ; sans eux, rien n'est dit ni tracé
     scale = 1,
     limitFt,
     title = '',
@@ -652,7 +653,9 @@
     // SOG-0694 : l'échelle va jusqu'au plus haut du niveau de croisière et des niveaux écrits dans la route (tous les points, fenêtre ou non), plus une marge de 1 500 ft, et jusqu'à l'altitude
     // qu'un palier glissé atteint (`reach`) : sans cela un point ne se montait que de 2 000 ft au-dessus du plus haut niveau lu
     const writtenMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0)),
-      highest = zoomed ? 0 : Math.max(levelFt, writtenMax, ceilFt) + 1500,
+      flightMax = Math.max(levelFt, writtenMax),
+      // SOG-0694 (l'ergonome, 28/11 : le plafond n'entre plus dans le maximum, il écrasait un vol bas) : l'échelle suit le VOL, plus un pas de la grille (celui qui sert à l'axe, selon la hauteur)
+      highest = zoomed ? 0 : flightMax + (flightMax > 20000 ? 5000 : flightMax > 8000 ? 2000 : 1000),
       top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, highest, reach, zoomed ?
           2500 :
           5000)) /
@@ -697,6 +700,23 @@
       ctx.lineTo(W - padR, y);
       ctx.stroke();
       ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y);
+    }
+    // SOG-0694 : le plafond de l'aéronef (la fiche) à SA hauteur quand il tombe dans l'échelle (jamais un trait à une hauteur fausse) ; sinon il n'est pas tracé et le bord haut le dit, en gris, avec une flèche
+    const ceilIn = ceilFt > bottom && ceilFt <= top;
+    if (ceilText && ceilFt > bottom) {
+      ctx.save();
+      ctx.fillStyle = '#56626b';
+      ctx.textAlign = 'left';
+      if (ceilIn) {
+        ctx.strokeStyle = '#7b8794';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padL, Y(ceilFt));
+        ctx.lineTo(W - padR, Y(ceilFt));
+        ctx.stroke();
+        ctx.fillText(ceilText, padL + 4 * scale, Y(ceilFt) - 7 * scale);
+      } else ctx.fillText(`${ceilText} ↑`, padL + 4 * scale, padT + 8 * scale);
+      ctx.restore();
     }
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const drawnZones = new Map(), // V3 maps : type d'espace → couleur, pour la légende (ce qui est réellement dessiné)
@@ -1093,6 +1113,10 @@
       w1: s0 + dspan,
       zoomed,
       skipped,
+      ceil: ceilText && ceilFt > bottom ? {
+        ft: ceilFt,
+        drawn: ceilIn
+      } : null, // SOG-0694 : le plafond de l'aéronef, tracé (drawn) ou dit au bord haut
       placer: pl, // le placeur de la coupe : les contraintes des procédures s'y posent (procs.js, drawProfileCons)
       drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)
         plan: !!data.plan,
