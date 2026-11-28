@@ -874,8 +874,8 @@
         lang: LANGS.includes(langNow()) ? langNow() : 'fr',
         design: DESIGNS.includes(h.dataset.design) ? h.dataset.design : 'standard',
         size: w < 600 ? 'phone' : w < 1000 ? 'tablet' : 'desktop',
-        tone: h.dataset.tone === 'night' || (h.dataset.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches) ?
-          'night' : 'day'
+        tone: window.SogFrame?.theme?.themeOf(h).tone ??
+          'day' // SOG-0720 : le thème résolu par le cadre (frame/lib/theme.js), plus une copie de la règle
       };
       const ver = versionOf(v);
       if (ver) k.version = ver;

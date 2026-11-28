@@ -13169,3 +13169,57 @@ def a408(c):
         c.wait(250)
     c.eq((before, c.js(keys)), ([], [f'pilot/ABC/signalements/{sid}.json']), 'nothing before; after the synchronisation, the kept report is written under the pilot\'s folder', what='after the synchronisation')
     c.check_errors()
+
+
+@case('A409', 'The theme of the frame is read in ONE place (SOG-0720): frame/lib/theme.js gives the RESOLVED theme — design, tone (day, night, or auto following the device), dark or light — to the classic screens (SogFrame.theme), with an event when it changes (onTheme, `frame-theme`); the three tones, auto light and auto dark, and no event when nothing visible changes', 'A',
+      tags=('frame',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0720 (the ergonomist, BUGS' fact): `tone === 'night' || (tone !== 'day' && matchMedia(...).matches)` was copied in signaler.js, cards.js and atmosphere, and the Map read the lightness of --sog-chart-bg; no function, no ctx, no event said « dark »")
+def a409(c):
+    c.open('hello')
+    c.until("!!window.SogFrame && !!window.SogFrame.theme", timeout=20000, what='the frame and its theme reader')
+    r = c.js("""async () => {
+      const T = window.SogFrame.theme, h = document.documentElement, out = {};
+      const fake = (design, tone) => ({ dataset: { ...(design ? { design } : {}), ...(tone ? { tone } : {}) } });
+      out.pure = [[fake('metro', 'day'), true], [fake('metro', 'night'), false], [fake('aqua'), false], [fake('aqua'), true], [fake(), false], [fake('swiss', 'rien'), true]]
+        .map(([root, dark]) => { const t = T.themeOf(root, dark); return [t.design, t.tone, t.dark, t.auto].join(' '); });
+      out.resolve = [T.resolveTone('day', true), T.resolveTone('night', false), T.resolveTone('auto', true), T.resolveTone('auto', false), T.resolveTone(undefined, true), T.resolveTone('rien', false)].join(' ');
+      // the page itself: what the frame set on <html> is what the reader says
+      out.page = (({ design, tone, dark }) => [design === (h.dataset.design || 'standard'), tone, dark].join(' '))(T.themeOf());
+      // the event: only when the RESOLVED theme changes
+      const seen = [], win = [], ac = new AbortController();
+      T.onTheme(t => seen.push([t.design, t.tone, t.dark, t.auto].join(' ')), ac.signal);
+      window.addEventListener('frame-theme', e => win.push(e.detail.tone));
+      const tick = () => new Promise(res => setTimeout(res, 60));
+      const keep = [h.dataset.design, h.dataset.tone];
+      h.dataset.design = 'cabinet'; h.dataset.tone = 'day'; await tick();
+      h.dataset.tone = 'night'; await tick();
+      h.dataset.tone = 'night'; await tick();              // the same: no event
+      h.dataset.design = 'cabinet'; await tick();          // the same: no event
+      h.removeAttribute('data-tone'); await tick();        // auto: the device decides (light here)
+      out.seen = seen.slice();
+      out.win = win.slice();
+      out.auto = T.themeOf().auto;
+      window.__a409 = { T, seen, ac, keep, tick };
+      return out; }""")
+    c.eq(r['pure'], ['metro day false false', 'metro night true false', 'aqua day false true', 'aqua night true true', 'standard day false true', 'swiss night true true'],
+         'the pure reader: a set tone wins, auto follows the device, the design is the one on the page (standard without), an unknown tone is auto (here with a dark device)', what='themeOf')
+    c.eq(r['resolve'], 'day night night day night day', 'resolveTone: day and night are set, auto follows the device', what='resolveTone')
+    c.eq(r['page'].split(' ')[0], 'true', 'the design the reader gives is the design on <html>', what='page')
+    c.eq(r['seen'], ['cabinet day false false', 'cabinet night true false', 'cabinet day false true'], 'one event per RESOLVED change (day, night, then auto-light), none for the same value set twice', what='events')
+    c.eq(r['win'], ['day', 'night', 'day'], 'the window event `frame-theme` says the same', what='window event')
+    # the device goes dark while the tone is auto: the resolved theme changes, an event says it
+    c.page.emulate_media(color_scheme='dark')
+    c.wait(300)
+    c.eq(c.js("() => [window.__a409.seen.length, window.__a409.seen[window.__a409.seen.length - 1], window.SogFrame.theme.themeOf().dark].join(' | ')"), '4 | cabinet night true true | true', 'auto + the device goes dark: dark, one more event', what='auto dark')
+    # a set tone ignores the device
+    c.js("() => { document.documentElement.dataset.tone = 'day' }")
+    c.wait(200)
+    c.eq(c.js("() => [window.__a409.seen[window.__a409.seen.length - 1], window.SogFrame.theme.themeOf().dark].join(' | ')"), 'cabinet day false false | false', 'a set tone « day » ignores the dark device', what='set day')
+    # the subscription stops with its signal
+    c.js("() => { window.__a409.ac.abort() }")
+    n = c.js("() => window.__a409.seen.length")
+    c.js("() => { document.documentElement.dataset.tone = 'night' }")
+    c.wait(200)
+    c.eq(c.js("() => window.__a409.seen.length"), n, 'an aborted subscription hears nothing more', what='abort')
+    c.js("() => { const k = window.__a409.keep; const h = document.documentElement; if (k[0]) h.dataset.design = k[0]; else h.removeAttribute('data-design'); if (k[1]) h.dataset.tone = k[1]; else h.removeAttribute('data-tone') }")
+    c.check_errors()

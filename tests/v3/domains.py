@@ -40,6 +40,7 @@ RULES = [
     ('frame/lib/fms.js', ['F', 'I'], "flight plan writers for the simulators (X-Plane .fms, MSFS .pln): fuel's export buttons"),
     ('frame/lib/test/fms.html', ['F', 'I'], 'flight plan writers bench (F60)'),
     ('frame/lib/test/launcher.html', ['A29', 'I'], 'launcher client bench'),
+    ('frame/lib/theme.js', ['A409', 'I'], 'the theme of the frame, resolved once (SOG-0720): design, tone, auto, and the event when it changes'),
     ('frame/lib/busy.js', ['A404', 'A29', 'I'], 'the station is busy (SOG-0658): the sentence of a refusal and the request that waits'),
     ('frame/store/test/publish.html', ['A30', 'I'], 'publication bench'),
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),

@@ -4328,7 +4328,7 @@ def i63(c):
 # chooses where to cut. The files already between 1 500 and 3 000 lines are listed by name (BIG_OLD) and may not pass 3 000: any other file stays under 1 500.
 CODE_CEILING = {
     'modules/fuel/module.js': 11142,
-    'frame/app.js': 6830,
+    'frame/app.js': 6810,
     'modules/missions/editor_view.js': 5673,
     'tools/launch.py': 4833,
     'frame/aerodb/aerodb.js': 4272,

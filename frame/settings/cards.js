@@ -75,7 +75,8 @@
     let design = '';
     if (sets.length) {
       const cur = c.design?.() || {},
-        night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches),
+        night = window.SogFrame?.theme?.resolveTone(cur.tone) ===
+        'night', // SOG-0720 : la règle du ton est celle du cadre (frame/lib/theme.js)
         nameOf = id => {
           const d = sets.find(x => x.id === id);
           return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());

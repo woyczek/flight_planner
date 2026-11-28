@@ -134,6 +134,11 @@
   const foldP = import(new URL('lib/fold.js?v=0', document.currentScript.src).href).then(m => FLD = Object.freeze({
     ...m
   })).catch(e => console.warn('fold', e));
+  // le thème du cadre (frame/lib/theme.js, SOG-0720) : design + ton + « auto » résolus en UN endroit, donné en synchrone aux écrans classiques par SogFrame.theme
+  let THM = null;
+  const themeP = import(new URL('lib/theme.js?v=0', document.currentScript.src).href).then(m => THM = Object.freeze({
+    ...m
+  })).catch(e => console.warn('theme', e));
   /** Heure de l'appli : fmtZ (« 16:30Z »), fmtZLocal (« 16:30Z (18:30) »), fmtDateZ (date UTC et heure Z). */
   const tz = (fn, iso) => TZ?.[fn]?.(iso, lang()) ?? '';
   const ROOT = new URL('../', document.currentScript.src).href;
@@ -6109,6 +6114,7 @@
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await textP; // le pliage des textes, prêt pour SogFrame.text avant le premier écran
     await foldP; // le pli <details>, prêt pour SogFrame.fold avant le premier écran
+    await themeP; // le thème, prêt pour SogFrame.theme avant le premier écran
     await loadDevice();
     bootLoaded();
     readVersion(); // en fond : la version de la suite, dernière ligne du bloc d'état
@@ -6777,6 +6783,9 @@
     reloadApp, // SOG-0484 (aussi donné à Réglages) : le rechargement demandé par un geste, noté par le cadre
     get fold() {
       return FLD; // frame/lib/fold.js (fold, wireFolds, foldOf, openFold), figé ; prêt avant le premier écran ; null si son chargement a échoué
+    },
+    get theme() {
+      return THM; // frame/lib/theme.js (themeOf, resolveTone, onTheme), figé ; prêt avant le premier écran ; null si son chargement a échoué
     },
     get text() {
       return TXT; // frame/lib/text.js (stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug), figé ; prêt avant le premier écran ; null si son chargement a échoué

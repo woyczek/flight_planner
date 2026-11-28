@@ -3236,6 +3236,13 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
 
 ## 28 November 2026 — a deduced route marks the places whose place it deduced (SOG-0704)
+## 28 November 2026 — the theme of the frame: one reader, with an event (SOG-0720)
+
+- **Fact** (BUGS, the ergonomist's decision): the frame sets `data-design` / `data-tone` on `<html>`; nobody could ask « is it dark ? ». The rule of the tone was copied three times and the Map measured a colour.
+- **Decision**: `frame/lib/theme.js` (loaded at boot like `text.js` and `fold.js`, given as `SogFrame.theme`): `themeOf` (the resolved theme of the page), `resolveTone` (a set tone resolved), `onTheme` + the `frame-theme` event (fired on a change of the resolved design or tone only). « Dark » = the tone is `night`, or the tone is not set (auto) and the device is dark; the design does not change it (to be confirmed by the probe of every design in both tones, run in the noreg pass).
+- **Done**: `signaler.js` (the tone noted in a report's context) and `cards.js` (the tone cards) go through it. **Next, not mine**: Atmosphere, the Map (`screen.js`, `pageDark()` of `altn_sign.js`) and the missions' `editor_map.js`.
+- **`frame/app.js`**: 6 807 lines (ceiling 6 810 in I65) after the comment reflow of the previous `:recycle:` commit.
+
 
 - **Decision** (the ergonomist: SOG-0621 stands against SOG-0684): ONE rule, ONE reader. When the order of the itinerary is DEDUCED, `route.deduced` lists the work places that `routeOf` inserted after the nearest turning point (the turning points keep the author's file order: not marked); a written order or a profile order has `deduced: []` — the line then goes through everything the author wrote. The Map draws the line through the places that are not marked (BUGS, `3112fcf32`); a diversion is never on the line (the Map already leaves it out). The workshop's behaviour does not change.
 - **The pilot's view** (`pilotView`): `route.deduced` is filtered to the places the view keeps, like `route.order` (the secret of a closed drawer is untouched).
