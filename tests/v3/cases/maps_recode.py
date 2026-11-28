@@ -8833,6 +8833,37 @@ _ALTN_SPY_JS = """(() => { const P = CanvasRenderingContext2D.prototype; if (P._
   window.__sq = 0; window.__a5 = []; window.__dots = []; P.arc = function (x, y, r) { if (r === 9) window.__ar.push([Math.round(x), Math.round(y), ++window.__sq]); if (r === 5) window.__a5.push([x, y, ++window.__sq]); if (r === 1.4) window.__dots.push([Math.round(x), Math.round(y)]); return ar.apply(this, arguments) } })()"""
 
 
+_ALTN_SIGN_DOC = lambda: {'schema': 1, 'updated_at': iso(now()), 'arr': 'LFML', 'key': 'LFRS>LFML>C30J', 'list': [
+    {'icao': 'LFMA', 'name': 'Adapté', 'lat': 43.5, 'lon': 5.1, 'nm': 12, 'state': 'ok', 'sign': 'ok', 'why': []},
+    {'icao': 'LFMB', 'name': 'Réserve', 'lat': 43.7, 'lon': 5.3, 'nm': 25, 'state': 'warn', 'sign': 'warn', 'why': ['wx-ifr']},
+    # the list of Fuel says « ? » (weather not read): the old document said « warn » for it and the Map painted « ! » (two judges for one aerodrome)
+    {'icao': 'LFMC', 'name': 'Non jugé', 'lat': 43.2, 'lon': 5.6, 'nm': 31, 'state': 'warn', 'sign': 'grey', 'why': ['wx-notaf']},
+    {'icao': 'LFMD', 'name': 'Sans signe', 'lat': 43.9, 'lon': 5.0, 'nm': 40, 'state': 'ok', 'why': []},
+    {'icao': 'LFME', 'name': 'Signe inconnu', 'lat': 43.1, 'lon': 4.8, 'nm': 44, 'state': 'warn', 'sign': 'red', 'why': ['wx-ifr']}]}
+
+
+@case('D339', 'The alternates Fuel proposes (SOG-0702): the Map paints the sign of the list of Fuel (✓ ! ?), read in `sign`: « ? » is « Non jugé », not « ! »; a document without `sign` (an old one) is read by its `state`; an unknown sign falls back to it', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False,
+      rule='SOG-0702 (the ergonomist, 28 Nov: « un terrain, un juge », the Map reads the verdict of the list): altnSanitize keeps `sign` in the white list ok, warn, grey, else the state (weather unknown: warn); the legend and the card say « Non jugé » for « ? »')
+def d339(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    f = flight()
+    c.open('maps', docs=fdocs(f) + [['cache/fuel/altn_candidates.json', _ALTN_SIGN_DOC(), 'cache'], ['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.altn && window.__mp.S.altn.list.length === 5", timeout=15000, what='the five proposed aerodromes are read')
+    r = c.js("async () => { const S = window.__mp.S, A = await import('/modules/maps/altn.js'); return { signs: S.altn.list.map(t => [t.icao, t.sign]), legend: A.altnLegendRows().map(x => x[1]) } }")
+    c.eq(r['signs'], [['LFMA', 'ok'], ['LFMB', 'warn'], ['LFMC', 'grey'], ['LFMD', 'ok'], ['LFME', 'warn']],
+         'the sign of the list is the one painted: « ? » (grey) for the aerodrome whose weather is not read; no sign: the state; an unknown sign: the state', what=str(r))
+    c.eq([x.replace(' ', ' ') for x in r['legend']], ['Dégagement proposé : adapté', 'Dégagement proposé : à vérifier', 'Dégagement proposé : non jugé'], 'the legend has the three signs, « non jugé » for « ? »', what=str(r))
+    p = c.js("() => { const S = window.__mp.S, t = S.altn.list[2], q = S.toC(t.lat, t.lon), r = S.box.getBoundingClientRect(); return [r.left + q.x, r.top + q.y] }")
+    c.page.mouse.click(p[0], p[1])
+    c.until("() => !!document.querySelector('.mp-altn-pick')", timeout=8000, what='the card of the aerodrome opens')
+    c.ok('Non jugé' in c.js("() => document.querySelector('.mp-altn-pick').parentElement.textContent"), '', 'the card says « Non jugé » for the aerodrome of « ? »')
+    c.shot(f'D339_{c.width}.png')
+    c.check_errors()
+
+
 @case('D259', 'The Map puts forward the alternates Fuel proposes (SOG-0398, lot 2): read in the LOCAL document of Fuel, seven at most, green or orange (never red or grey), only for the arrival of the flight shown; a touch opens the sheet of the aerodrome with « Propose to Fuel », which hands it back (the event beside Fuel, the address alone) and writes nothing', 'D',
       tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
       rule='SOG-0398 lot 2 (the ergonomist, 17 Nov; contract of Features SOG: cache/fuel/altn_candidates.json, event fuel-altn-candidates, maps-altn-pick { icao } or #fuel?altn=<ICAO>): beyond seven the map cannot be read; nothing is taken by itself, Fuel PROPOSES')

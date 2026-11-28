@@ -198,6 +198,9 @@ export const TX = {
   ],
   altnOk: ['Adapté', 'Suitable', 'Geeignet', 'Adecuado'],
   altnWarn: ['À vérifier', 'To check', 'Zu prüfen', 'A comprobar'],
+  // SOG-0702 : le « ? » de la liste de Carburant (un terrain, un juge) ; français seul (dette de traduction SOG-0680)
+  altnGrey: ['Non jugé'],
+  altnLgGrey: ['Dégagement proposé : non jugé'],
   altnDist: ['à {n} NM de l’arrivée', '{n} NM from the arrival', '{n} NM vom Ziel', 'a {n} NM del destino'],
   altnWhy: {
     'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'],

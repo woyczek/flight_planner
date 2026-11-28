@@ -43,7 +43,8 @@ const DOC = 'cache/fuel/altn_candidates.json',
   ], // la liste fermée de Carburant (TX.altnPropWhy), dans son ordre (SOG-0494 : piste et moyens non vérifiés ; SOG-0544 : le mot de la météo inconnue)
   // SOG-0544 : les mots d'une météo INCONNUE — le terrain est « à vérifier », jamais « adapté », quoi que dise le document ; l'heure d'une phrase : HH:MMZ, rien d'autre
   WX_UNKNOWN = ['wx-unread', 'wx-notaf', 'wx-notime', 'wx-outside', 'wx-nocat'],
-  HHMM = /^\d{2}:\d{2}Z$/;
+  HHMM = /^\d{2}:\d{2}Z$/,
+  SIGNS = ['ok', 'warn', 'grey']; // SOG-0702 : les signes que la Carte peint (liste blanche : ✓ ! ?)
 /** SOG-0544 : une heure de wxv, clé PROPRE et motif strict (une entrée non fiable : jamais un texte montré tel quel), ou null. */
 const hourOf = (o, k) => {
   const v = own(o, k);
@@ -57,11 +58,13 @@ const num = inRange,
 export const ALTN_TINT = {
   day: {
     ok: '#2e7d32',
-    warn: '#e65100'
+    warn: '#e65100',
+    grey: '#5f6b7a' // SOG-0702 : « non jugé » (le « ? » de la liste de Carburant)
   },
   night: {
     ok: '#69d28a',
-    warn: '#ffb74d'
+    warn: '#ffb74d',
+    grey: '#9aa7b6'
   }
 };
 /** Le document ou l'événement de Carburant, nettoyé : { arr, list: [{ icao, name, lat, lon, nm, state, why, wxv, fuel }] } (sept au plus, dans l'ordre du document : la priorité de
@@ -104,6 +107,8 @@ export function altnSanitize(raw) {
       lon: +t.lon,
       nm: num(t.nm, 0, 3000) ? Math.round(+t.nm * 10) / 10 : null,
       state: codes.some(c => WX_UNKNOWN.includes(c)) ? 'warn' : t.state,
+      // SOG-0702 (l'ergonome : un terrain, un juge) : le signe de la liste de Carburant (ok, warn, grey), seul peint ; `state` ne sert qu'à un ancien document, qui n'a pas `sign`
+      sign: SIGNS.includes(t.sign) ? t.sign : codes.some(c => WX_UNKNOWN.includes(c)) ? 'warn' : t.state,
       why,
       wxv,
       fuel: f
@@ -149,6 +154,13 @@ function drawSign(ctx, x, y, state, col) {
     ctx.lineTo(x - 1.2, y + 3.4);
     ctx.lineTo(x + 4.2, y - 3.4);
     ctx.stroke();
+  } else if (state === 'grey') { // « ? » : le crochet, sa tige, son point (tracé comme ✓ et !)
+    ctx.arc(x, y - 2.4, 2.7, Math.PI, Math.PI * 2.5);
+    ctx.lineTo(x, y + 1.6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y + 4.4, 1.3, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     ctx.moveTo(x, y - 4.6);
     ctx.lineTo(x, y + .8);
@@ -205,7 +217,7 @@ export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
       q
     }
     of shown) {
-    const col = T[t.state];
+    const col = T[t.sign];
     ctx.beginPath();
     ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
     ctx.fillStyle = bg;
@@ -213,7 +225,7 @@ export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
     ctx.lineWidth = 3;
     ctx.strokeStyle = col;
     ctx.stroke();
-    drawSign(ctx, q.x, q.y, t.state, col);
+    drawSign(ctx, q.x, q.y, t.sign, col);
     taken.push({
       x: q.x - 11,
       y: q.y - 11,
@@ -237,7 +249,7 @@ export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
     }
     of shown) {
     const w = ctx.measureText(t.icao).width,
-      col = T[t.state],
+      col = T[t.sign],
       near = [
         [13, -8],
         [-13 - w, -8],
@@ -328,7 +340,7 @@ function altnAt(x, y) {
 /** La fiche d'un terrain : indicatif et nom (un texte), son état, la distance de l'arrivée, les motifs, le carburant de dégagement, puis « Proposer à Carburant ». */
 function cardHtml(t) {
   const why = t.why.map(c => tt(TX.altnWhy[c], t.wxv || {})), // SOG-0544 : les phrases de la météo inconnue portent leurs heures
-    state = tt(t.state === 'ok' ? TX.altnOk : TX.altnWarn),
+    state = tt(t.sign === 'ok' ? TX.altnOk : t.sign === 'grey' ? TX.altnGrey : TX.altnWarn),
     fuel = t.fuel ? tt(TX.altnFuel, {
       a: t.fuel.amount.toLocaleString(S.ctx.lang?.() || 'fr'),
       u: t.fuel.unit,
@@ -365,10 +377,12 @@ export function altnLegendRows() {
   const A = current();
   if (!A) return [];
   const T = ALTN_TINT[S.theme?.dark ? 'night' : 'day'],
-    mark = (s, c) => s === 'ok' ? `<path d="M11 7.4 L13.8 10.4 L19.2 3.6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>` :
+    mark = (s, c) => s === 'ok' ? `<path d="M11 7.4 L13.8 10.4 L19.2 3.6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>` : s === 'grey' ?
+    `<path d="M12.3 4.6 A2.7 2.7 0 1 1 15 7.3 L15 8.6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="11.4" r="1.3" fill="${c}"/>` :
     `<path d="M15 2.4 L15 7.8" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="10.9" r="1.4" fill="${c}"/>`,
     sw = (s, c) => `<svg class="mp-al-sw" width="30" height="14" viewBox="0 0 30 14" aria-hidden="true"><circle cx="15" cy="7" r="6" fill="none" stroke="${c}" stroke-width="2.4"/>${mark(s, c)}</svg>`;
-  return ['ok', 'warn'].filter(s => A.list.some(t => t.state === s)).map(s => [sw(s, T[s]), esc(tt(s === 'ok' ? TX.altnLgOk : TX
+  return ['ok', 'warn', 'grey'].filter(s => A.list.some(t => t.sign === s)).map(s => [sw(s, T[s]), esc(tt(s === 'ok' ? TX.altnLgOk : s ===
+    'grey' ? TX.altnLgGrey : TX
     .altnLgWarn))]);
 }
 /** Ce que Carburant publie, posé (null : rien ou effacé) et redessiné : une liste vide (un terrain pris, « Proposer » refermé, une autre arrivée) ou un document supprimé efface la couche, sans quitter l'écran.
