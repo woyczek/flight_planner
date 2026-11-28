@@ -70,16 +70,15 @@
     return;
   }
   const FD = window.FrameData;
-  // paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7) : <html class="f-land"> quand la fenêtre est plus large que haute
-  // et de moins de 1024 px (téléphone ou petite tablette tournée) ; la barre du bas devient un rail à gauche, la feuille d'un
-  // module fixe une colonne à droite (frame.css, design/primitives.css). Posée au démarrage (la page de index.html l'a déjà
-  // posée avant le premier affichage, même règle), puis sur resize et orientationchange, en une seule écriture quand la valeur
-  // change ; « frame-orientation » (detail: { land }) le dit ensuite aux primitives du cadre (la feuille). Un clavier à l'écran
-  // qui rendrait une fenêtre de téléphone portrait plus large que haute n'y change rien : l'orientation de l'écran, quand le
-  // navigateur la donne, doit être celle d'un paysage. Jamais avec un pointeur précis qui survole (souris, pavé tactile) : une
-  // fenêtre d'ordinateur plus large que haute garde le rail à libellés et son design (30 oct. : sans cela, en élargissant une
-  // fenêtre, on passait téléphone → ordinateur → rail d'icônes sans Aqua → ordinateur).
-  // SOG-0274 (the ergonomist, 12 Nov): « phone turned » is a window wider than high AND of a PHONE's height (500 px at most), not the width alone: a touch window of 900 × 700 has the 56 px icon rail and the full content width; the phone mode starts at 760 px wide as before
+  // paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7) : <html class="f-land"> quand la fenêtre est plus large que haute et de moins de 1024 px (téléphone ou
+  // petite tablette tournée) ; la barre du bas devient un rail à gauche, la feuille d'un module fixe une colonne à droite (frame.css, design/primitives.css). Posée au
+  // démarrage (la page de index.html l'a déjà posée avant le premier affichage, même règle), puis sur resize et orientationchange, en une seule écriture quand la valeur
+  // change ; « frame-orientation » (detail: { land }) le dit ensuite aux primitives du cadre (la feuille). Un clavier à l'écran qui rendrait une fenêtre de téléphone
+  // portrait plus large que haute n'y change rien : l'orientation de l'écran, quand le navigateur la donne, doit être celle d'un paysage. Jamais avec un pointeur précis
+  // qui survole (souris, pavé tactile) : une fenêtre d'ordinateur plus large que haute garde le rail à libellés et son design (30 oct. : sans cela, en élargissant une
+  // fenêtre, on passait téléphone → ordinateur → rail d'icônes sans Aqua → ordinateur). SOG-0274 (the ergonomist, 12 Nov): « phone turned » is a window wider than high
+  // AND of a PHONE's height (500 px at most), not the width alone: a touch window of 900 × 700 has the 56 px icon rail and the full content width; the phone mode starts
+  // at 760 px wide as before
   const LAND_MAX_H = 500,
     fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
     landNow = () => innerWidth > innerHeight && innerWidth < 1024 && innerHeight <= LAND_MAX_H && !fineQ.matches && !/^portrait/.test(
@@ -163,9 +162,8 @@
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     icon: 'plane',
     tint: 'var(--sog-accent)',
-    // un module = un verbe ; sept au plus ; l'ordre suit la séquence du pilote : préparer (Carburant), la Carte, la Météo
-    // avant le compte rendu, le CR, ses vols, puis le Site (l'utilisateur, 1er nov. 2026 : « on regarde la météo avant de
-    // produire un CR ») ; les Missions sont l'application Compagnie
+    // un module = un verbe ; sept au plus ; l'ordre suit la séquence du pilote : préparer (Carburant), la Carte, la Météo avant le compte rendu, le CR, ses vols, puis
+    // le Site (l'utilisateur, 1er nov. 2026 : « on regarde la météo avant de produire un CR ») ; les Missions sont l'application Compagnie
     modules: [{
       id: 'fuel',
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
@@ -195,13 +193,12 @@
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
     }],
-    // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
-    // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
-    // dans cette session, sinon le premier ; un id qui n'est pas inscrit plus haut est ignoré sans bruit) ou un écran du cadre
-    // (screen). views : des vues d'un module du groupe, adressées par une requête (module, query : #fuel?view=sheets) ; elles
-    // n'ont pas d'onglet, seulement une rangée du popover d'un second toucher (« Carburant · Fiches »). Un module absent de
-    // tous les onglets (website, hello) reste joignable par son adresse et dans la colonne de gauche des grands écrans.
-    // Réglages n'est plus dans la barre : le ⚙ de l'en-tête l'ouvre (il porte la pastille d'état).
+    // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe de modules (modules : l'onglet reste
+    // choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe dans cette session, sinon le premier ; un id qui n'est pas inscrit plus
+    // haut est ignoré sans bruit) ou un écran du cadre (screen). views : des vues d'un module du groupe, adressées par une requête (module, query : #fuel?view=sheets)
+    // ; elles n'ont pas d'onglet, seulement une rangée du popover d'un second toucher (« Carburant · Fiches »). Un module absent de tous les onglets (website, hello)
+    // reste joignable par son adresse et dans la colonne de gauche des grands écrans. Réglages n'est plus dans la barre : le ⚙ de l'en-tête l'ouvre (il porte la
+    // pastille d'état).
     tabs: [{
       id: 'prepare',
       label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
@@ -250,10 +247,9 @@
     }],
     links: []
   };
-  // Compagnie (décision de l'utilisateur, 1er nov. 2026 : « le module Missions est le premier, et actuellement unique, module
-  // du pilote de compagnie ») : les missions de la compagnie (modules/missions/SPEC.md) ; « Préparer ce vol » ouvre Carburant
-  // dans Pilote (elsewhere : l'adresse d'un module d'une autre application y passe, la requête gardée ; le vol courant est
-  // commun aux applications) ; le niveau de Missions (Découverte) ; la teinte : un jeton du design, comme Maintenance
+  // Compagnie (décision de l'utilisateur, 1er nov. 2026 : « le module Missions est le premier, et actuellement unique, module du pilote de compagnie ») : les missions de
+  // la compagnie (modules/missions/SPEC.md) ; « Préparer ce vol » ouvre Carburant dans Pilote (elsewhere : l'adresse d'un module d'une autre application y passe, la
+  // requête gardée ; le vol courant est commun aux applications) ; le niveau de Missions (Découverte) ; la teinte : un jeton du design, comme Maintenance
   APPS.company = {
     id: 'company',
     name: ['Compagnie', 'Company', 'Gesellschaft', 'Compañía'],
@@ -1339,11 +1335,10 @@
       'x-sog-offline': '1'
     }
   });
-  // SOG-0198 : le lanceur borne le relais (tools/launch.py NET_PER_HOST 2, NET_TOTAL 4) et refuse le suivant tout de suite (503, X-SOG-Reason:
-  // busy, Retry-After). Le cadre fait donc la queue AVANT d'appeler : deux appels à la fois par hôte, quatre en tout, les suivants attendent
-  // leur tour (dans l'ordre d'arrivée) et un appelant ne voit jamais « occupé » ; un « occupé » reçu quand même (un autre onglet, un autre
-  // poste) est rejoué après Retry-After, BUSY_RETRIES fois au plus, puis rendu tel quel. Les mêmes bornes que le lanceur : tout changement
-  // d'un côté se fait de l'autre.
+  // SOG-0198 : le lanceur borne le relais (tools/launch.py NET_PER_HOST 2, NET_TOTAL 4) et refuse le suivant tout de suite (503, X-SOG-Reason: busy, Retry-After). Le
+  // cadre fait donc la queue AVANT d'appeler : deux appels à la fois par hôte, quatre en tout, les suivants attendent leur tour (dans l'ordre d'arrivée) et un appelant
+  // ne voit jamais « occupé » ; un « occupé » reçu quand même (un autre onglet, un autre poste) est rejoué après Retry-After, BUSY_RETRIES fois au plus, puis rendu tel
+  // quel. Les mêmes bornes que le lanceur : tout changement d'un côté se fait de l'autre.
   const RELAY_PER_HOST = 2,
     RELAY_TOTAL = 4,
     BUSY_RETRIES = 3,
@@ -1402,11 +1397,10 @@
     const n = parseFloat(r.headers.get('retry-after'));
     return Math.min(BUSY_MAX_S, Math.max(BUSY_MIN_S, Number.isFinite(n) ? n : BUSY_DEFAULT_S)) * 1000;
   };
-  // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
-  // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
-  // météo : aviationweather.gov (METAR / TAF, pas de CORS) par le relais seulement ; sans lanceur, METAR par
-  // metar.vatsim.net (sans clé), TAF par avwx.rest avec la clé de l'appareil, ajoutée ici (jamais vue par un module)
-  // prévisions par niveau de pression (vents, températures : fuel) : api.open-meteo.com, sans clé, CORS ouvert
+  // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel direct seulement vers ceux qui l'autorisent (CORS)
+  // ; tout autre site extérieur : 503 marqué x-sog-unreachable météo : aviationweather.gov (METAR / TAF, pas de CORS) par le relais seulement ; sans lanceur, METAR par
+  // metar.vatsim.net (sans clé), TAF par avwx.rest avec la clé de l'appareil, ajoutée ici (jamais vue par un module) prévisions par niveau de pression (vents,
+  // températures : fuel) : api.open-meteo.com, sans clé, CORS ouvert
   const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov',
       'metar.vatsim.net', 'api.open-meteo.com'
     ],
@@ -1416,9 +1410,8 @@
     DIRECT_PATHS = [
       ['s3.amazonaws.com', '/elevation-tiles-prod/']
     ];
-  // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, avec le jeton GitHub, dans device/keys.json
-  // (rangement de l'identité : IndexedDB, politique cache, hors des sauvegardes, jamais synchronisée : voir « clés de
-  // l'appareil » plus bas) ; lue en mémoire, jamais rendue à une page
+  // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, avec le jeton GitHub, dans device/keys.json (rangement de l'identité : IndexedDB, politique
+  // cache, hors des sauvegardes, jamais synchronisée : voir « clés de l'appareil » plus bas) ; lue en mémoire, jamais rendue à une page
   let avwx = '';
   const avwxKey = () => avwx;
   /** Clé météo de l'appareil, pour la carte des réglages : présence, enregistrement, effacement, essai (TAF d'un
@@ -1446,9 +1439,8 @@
       };
     }
   };
-  // compte IVAO du pilote par le relais (R1b) : { access_token, refresh_token, expires_at, scope }, dans device/keys.json avec
-  // le jeton GitHub et la clé météo (hors des sauvegardes, jamais synchronisé) ; reçu une fois par le retour de l'OpenID
-  // d'IVAO (#ivao-return?…, adresse remplacée aussitôt), renouvelé par le relais (son secret)
+  // compte IVAO du pilote par le relais (R1b) : { access_token, refresh_token, expires_at, scope }, dans device/keys.json avec le jeton GitHub et la clé météo (hors des
+  // sauvegardes, jamais synchronisé) ; reçu une fois par le retour de l'OpenID d'IVAO (#ivao-return?…, adresse remplacée aussitôt), renouvelé par le relais (son secret)
   let ivaoTok = null;
   /** Retour de l'OpenID d'IVAO (le lanceur renvoie vers #ivao-return?… ) : jetons gardés, adresse remplacée — ni
    *  l'historique, ni la page, ni un journal ne les gardent ; une erreur est dite. */
@@ -1635,8 +1627,7 @@
     }
     return lcClient;
   };
-  // la table des routes du lanceur de ce poste (GET /__setup/routes, R-C4) : lue une fois par lanceur détecté ; null sans
-  // réponse ou sans table (lanceur plus ancien)
+  // la table des routes du lanceur de ce poste (GET /__setup/routes, R-C4) : lue une fois par lanceur détecté ; null sans réponse ou sans table (lanceur plus ancien)
   let routesOf = null,
     routesP = null;
   const launcherRoutes = () => {
@@ -1692,9 +1683,8 @@
       'x-sog-unreachable': '1'
     }
   });
-  // attente au plus de la première lecture de la compagnie par un appel vers un hôte non listé (31 oct. 2026 : sans borne,
-  // les tuiles de relief pouvaient attendre avec elle toute la lecture de l'arbre ; aléa de la coupe de la Carte, non
-  // reproduit)
+  // attente au plus de la première lecture de la compagnie par un appel vers un hôte non listé (31 oct. 2026 : sans borne, les tuiles de relief pouvaient attendre avec
+  // elle toute la lecture de l'arbre ; aléa de la coupe de la Carte, non reproduit)
   const AIRLINE_WAIT = 3000,
     directPath = u => DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p));
   const net = {
@@ -1788,12 +1778,11 @@
       policy: 'cache'
     }]
   });
-  // clés de l'appareil : jeton GitHub (réglage du dépôt) et clé météo, rangés comme l'identité — document
-  // device/keys.json de la base IndexedDB du cadre, politique cache : jamais synchronisés, jamais dans une sauvegarde
-  // (frame/store/frame_data.js le laisse hors de dump()). Ils étaient dans localStorage (githubData:frame, githubData:avwx)
-  // et Safari les y perdait au relancement alors que l'identité restait (frame/settings/DECISIONS.md, 25 oct 2026). En
-  // mémoire pour les lectures synchrones (FD.github.config(), avwxKey()) ; une écriture est mémoire d'abord, puis
-  // document. Une seule reprise de l'ancien localStorage, la première fois où le document n'existe pas.
+  // clés de l'appareil : jeton GitHub (réglage du dépôt) et clé météo, rangés comme l'identité — document device/keys.json de la base IndexedDB du cadre, politique cache
+  // : jamais synchronisés, jamais dans une sauvegarde (frame/store/frame_data.js le laisse hors de dump()). Ils étaient dans localStorage (githubData:frame,
+  // githubData:avwx) et Safari les y perdait au relancement alors que l'identité restait (frame/settings/DECISIONS.md, 25 oct 2026). En mémoire pour les lectures
+  // synchrones (FD.github.config(), avwxKey()) ; une écriture est mémoire d'abord, puis document. Une seule reprise de l'ancien localStorage, la première fois où le
+  // document n'existe pas.
   const KEYS = 'device/keys.json';
   let keysSaved = Promise.resolve(), // dernière écriture du document, que toute relecture attend
     keysEpoch = 0; // compte les écritures : une relecture partie avant l'une d'elles ne remplace pas la mémoire
@@ -1845,9 +1834,8 @@
     DEFAULT_LEVEL = 2;
   /** Niveau d'usage valide (1 à 3) ; défaut : courant. */
   const levelFrom = v => LEVELS.includes(+v) ? +v : DEFAULT_LEVEL;
-  // compagnie : airline/settings.json du dépôt des données (document écrit par le module website, tiré d'avance comme
-  // airline/fleet.json : recherche d'appareils hors ligne) ; aucune adresse dans le code : nom, site et pages viennent de
-  // ce fichier, {} en son absence
+  // compagnie : airline/settings.json du dépôt des données (document écrit par le module website, tiré d'avance comme airline/fleet.json : recherche d'appareils hors
+  // ligne) ; aucune adresse dans le code : nom, site et pages viennent de ce fichier, {} en son absence
   const AIRLINE = 'airline/settings.json';
   const airlineData = FD.adapter({
     id: 'frame-airline',
@@ -1904,9 +1892,8 @@
         paintCo();
       }
     }).catch(() => {});
-    // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui
-    // (airline/settings.json, code default)
-    // (un FrameData sans airline(), celui d'un cadre simulé d'avant § 10.38 : le réglage seul, comme avant)
+    // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui (airline/settings.json, code
+    // default) (un FrameData sans airline(), celui d'un cadre simulé d'avant § 10.38 : le réglage seul, comme avant)
     const next = airlineOf(a?.settings ?? null, a?.code || '');
     readLogo(next.logo, a?.root); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
     if (JSON.stringify(next) === JSON.stringify(airline)) return;
@@ -1917,12 +1904,11 @@
     }));
   }
   // ---------------------------------------------------------------- le logo de la compagnie (1er nov. 2026)
-  // Un fichier du dépôt des données nommé une fois dans airline/settings.json (logo : « airline/logo.png »), lu par la couche
-  // de données comme tout fichier (FrameData.readBytes, gardé par révision, jamais une adresse externe) : png ou webp
-  // reconnus à leurs premiers octets, 512 Ko au plus, décodable ; montré par une adresse blob: dans l'en-tête et l'onglet du
-  // navigateur de l'application Compagnie et dans le sélecteur d'applications. Sans logo, ou illisible : l'avion teinté.
-  // Jamais de svg : une adresse blob: d'un svg, ouverte comme document, exécuterait ses scripts dans l'origine de la suite
-  // (Sécurisation, ligne 156 ; Simplification, 2 nov. 2026 : png et webp seulement, un svg refusé et dit).
+  // Un fichier du dépôt des données nommé une fois dans airline/settings.json (logo : « airline/logo.png »), lu par la couche de données comme tout fichier
+  // (FrameData.readBytes, gardé par révision, jamais une adresse externe) : png ou webp reconnus à leurs premiers octets, 512 Ko au plus, décodable ; montré par une
+  // adresse blob: dans l'en-tête et l'onglet du navigateur de l'application Compagnie et dans le sélecteur d'applications. Sans logo, ou illisible : l'avion teinté.
+  // Jamais de svg : une adresse blob: d'un svg, ouverte comme document, exécuterait ses scripts dans l'origine de la suite (Sécurisation, ligne 156 ; Simplification, 2
+  // nov. 2026 : png et webp seulement, un svg refusé et dit).
   const LOGO_MAX = 512 * 1024;
   /** Le chemin du logo, dans le dossier de la compagnie courante seulement (root : « airline/ », « airline/<code>/ » ou celui de « personnel ») :
    *  le nom du réglage, seul (« logo.png ») ou en chemin complet ; '' pour tout autre dossier ou nom. Une entrée non fiable : jamais un
@@ -1961,8 +1947,7 @@
     }).catch(e => (big = !!e?.tooBig, null)) : null;
     const type = buf ? imageType(buf) : '';
     const key = type ? `${p}:${buf.byteLength}:${type}` : '';
-    // refusé : un autre format que png ou webp (un svg), un contenu qui n'en est pas un, trop gros ; absent ou hors ligne
-    // sans copie : rien à dire (l'avion, sans note)
+    // refusé : un autre format que png ou webp (un svg), un contenu qui n'en est pas un, trop gros ; absent ou hors ligne sans copie : rien à dire (l'avion, sans note)
     if (path && (!p || big || buf && !type)) sayLogoRefused(path);
     if (key === logoKey) return;
     let url = null;
@@ -2183,9 +2168,8 @@
     return adopting;
   }
   // ---------------------------------------------------------------- design (frame/design/SPEC.md § 4)
-  // jeux de jetons (frame/design/tokens.css) ; choix de l'appareil dans device/design.json (carte Design des réglages),
-  // copié dans localStorage pour que la ligne de démarrage de frame/index.html pose les attributs avant le premier
-  // affichage
+  // jeux de jetons (frame/design/tokens.css) ; choix de l'appareil dans device/design.json (carte Design des réglages), copié dans localStorage pour que la ligne de
+  // démarrage de frame/index.html pose les attributs avant le premier affichage
   const DESIGNS = [{
       id: 'standard',
       label: ['Standard', 'Standard', 'Standard', 'Estándar'],
@@ -2308,10 +2292,9 @@
     paintName(id);
     paintBar();
   }
-  // titre du module dans l'en-tête du téléphone (V3_SPECIFICATION § 7.1, règle 16) : un module qui n'est pas une vue fixe y
-  // met son titre (meta.title, quatre langues) à la place du nom de l'application, et sa page perd sa grande ligne de titre
-  // (<html class="f-titled">, frame.css : le h1 reste pour les lecteurs d'écran) ; un module fixe, un écran du cadre et
-  // tout écran large gardent le nom de l'application.
+  // titre du module dans l'en-tête du téléphone (V3_SPECIFICATION § 7.1, règle 16) : un module qui n'est pas une vue fixe y met son titre (meta.title, quatre langues) à
+  // la place du nom de l'application, et sa page perd sa grande ligne de titre (<html class="f-titled">, frame.css : le h1 reste pour les lecteurs d'écran) ; un module
+  // fixe, un écran du cadre et tout écran large gardent le nom de l'application.
   const moduleTitle = {}, // meta.title de chaque module (rangée de quatre textes), relevé avec le niveau et au montage
     phoneQ = matchMedia('(max-width: 760px)');
   let nameFor = ''; // écran ou module dont l'en-tête porte le nom
@@ -2349,11 +2332,10 @@
     applyFull();
   }
   // ---------------------------------------------------------------- plein écran d'un module fixe
-  // <html class="f-full"> (avec f-fixed) cache l'en-tête et, sur téléphone, la barre du bas (en paysage : le rail) ; sur un écran,
-  // l'en-tête et la colonne des verbes (frame.css). Demandé par le bouton que le cadre ajoute à la colonne de droite de la couche
-  // de superposition (il montre « réduire » une fois en plein écran : pas de puce de sortie) ou par Échap ; gardé tant que la
-  // page vit (même sous un écran du cadre ouvert par-dessus, où il est sans effet), remis à zéro au changement de module. Pas
-  // l'API plein écran du navigateur (absente de Safari sur iPhone) : la page prend toute la fenêtre.
+  // <html class="f-full"> (avec f-fixed) cache l'en-tête et, sur téléphone, la barre du bas (en paysage : le rail) ; sur un écran, l'en-tête et la colonne des verbes
+  // (frame.css). Demandé par le bouton que le cadre ajoute à la colonne de droite de la couche de superposition (il montre « réduire » une fois en plein écran : pas de
+  // puce de sortie) ou par Échap ; gardé tant que la page vit (même sous un écran du cadre ouvert par-dessus, où il est sans effet), remis à zéro au changement de
+  // module. Pas l'API plein écran du navigateur (absente de Safari sur iPhone) : la page prend toute la fenêtre.
   let full = false;
   const overlays = new Set(); // couches de superposition montées (module principal, volet)
   /** Pose ou retire f-full selon la demande et la vue fixe affichée ; à chaque changement, les modules sont prévenus
@@ -2513,13 +2495,12 @@
       if (!host || o.host === host || host.contains(o.host)) o.dispose();
   }
   // ---------------------------------------------------------------- état de l'appli : bloc de tête des Réglages, pastille du ⚙
-  // (V3_SPECIFICATION.md § 7.1 règle 14, qui remplace le bouton « i » et son pop-up de la règle 3). iVAC : une pastille quand quelque
-  // chose s'applique, une ligne par chose, un chevron quand elle mène quelque part. Rien d'autre que : vol en cours (› Carte),
-  // CR à écrire (enregistrement de cache publié par flightlog), état des données (dernière synchronisation, écritures en
-  // attente, conflits, échange utilisé), trigramme absent, base aéronautique, lanceur, hors ligne, position réelle (téléphone).
-  // Les lignes sont le bloc « État » qui ouvre l'écran des Réglages (statusBlock / bindStatus, remis à frame/settings par son
-  // contexte) ; la pastille est sur le ⚙ de l'en-tête : verte pour une nouvelle (vol démarré, CR à écrire), orange pour une
-  // chose qui demande de l'attention (la ligne des données et « hors ligne » sont un état, pas une nouvelle).
+  // (V3_SPECIFICATION.md § 7.1 règle 14, qui remplace le bouton « i » et son pop-up de la règle 3). iVAC : une pastille quand quelque chose s'applique, une ligne par
+  // chose, un chevron quand elle mène quelque part. Rien d'autre que : vol en cours (› Carte), CR à écrire (enregistrement de cache publié par flightlog), état des
+  // données (dernière synchronisation, écritures en attente, conflits, échange utilisé), trigramme absent, base aéronautique, lanceur, hors ligne, position réelle
+  // (téléphone). Les lignes sont le bloc « État » qui ouvre l'écran des Réglages (statusBlock / bindStatus, remis à frame/settings par son contexte) ; la pastille est
+  // sur le ⚙ de l'en-tête : verte pour une nouvelle (vol démarré, CR à écrire), orange pour une chose qui demande de l'attention (la ligne des données et « hors ligne »
+  // sont un état, pas une nouvelle).
   const PENDING_REPORTS = 'cache/flightlog/pending.json',
     HANDOFF = 'pilot/handoff.json';
   // lecture du cache de flightlog (jamais synchronisé) et passage à report (pilot/handoff.json, même politique « cache »
@@ -2588,10 +2569,9 @@
     pendingReports = []; // CR à écrire, d'après cache/flightlog/pending.json
   const statusViews = new Set(); // blocs d'état affichés (éléments) : redessinés quand l'état change, oubliés une fois retirés
 
-  // lignes d'état publiées par les modules eux-mêmes (cache/<module>/status.json, INTEGRATION § 10.1) : texte prêt dans les
-  // quatre langues, adresse, passage éventuel à un autre module ; le cadre les vérifie et les affiche, sans connaître le
-  // format d'un module. Un module qui publie son status.json remplace ce que le cadre déduisait de son ancien
-  // enregistrement (cache/flightlog/pending.json, schéma 2 : dette, retirée quand flightlog publie le sien)
+  // lignes d'état publiées par les modules eux-mêmes (cache/<module>/status.json, INTEGRATION § 10.1) : texte prêt dans les quatre langues, adresse, passage éventuel à
+  // un autre module ; le cadre les vérifie et les affiche, sans connaître le format d'un module. Un module qui publie son status.json remplace ce que le cadre déduisait
+  // de son ancien enregistrement (cache/flightlog/pending.json, schéma 2 : dette, retirée quand flightlog publie le sien)
   let moduleLines = [],
     statusFiles = new Set(); // modules qui publient un status.json
   /** Ligne d'état publiée par le module from, vérifiée : texte (rangée de 1 à 4 textes), adresse d'un module ou d'un écran du
@@ -3097,8 +3077,7 @@
       return;
     }
     let to = go;
-    // ligne publiée par un module : le passage éventuel (pilot/handoff.json, tel que le module l'a donné, avec sa source et
-    // l'heure), puis son adresse
+    // ligne publiée par un module : le passage éventuel (pilot/handoff.json, tel que le module l'a donné, avec sa source et l'heure), puis son adresse
     if (go.startsWith('line:')) {
       const l = moduleLines[+go.slice(5)];
       if (!l) return;
@@ -3590,9 +3569,8 @@
     });
   };
   // ---------------------------------------------------------------- écrans chargés à la demande
-  // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service
-  // worker les garde comme les autres fichiers du cadre) ; le démarrage, le menu et le premier module ne les attendent
-  // jamais ; l'aide en page d'un module est chargée après son montage
+  // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service worker les garde comme les autres fichiers du
+  // cadre) ; le démarrage, le menu et le premier module ne les attendent jamais ; l'aide en page d'un module est chargée après son montage
   const DOCS = ['help', 'roadmap', 'recette',
     'signaler'
   ]; // les écrans du cadre qui défilent comme une page (la recette : SOG-0167 ; Signaler : SOG-0316)
@@ -3945,9 +3923,8 @@
     }
   }
   // ---------------------------------------------------------------- barre d'onglets du téléphone (APP.tabs)
-  // un onglet = un groupe de modules ou un écran du cadre ; choisi tant qu'un module de son groupe est affiché ; le toucher
-  // ouvre le dernier module du groupe montré dans cette session, sinon le premier. Dessinée toujours, masquée par la
-  // feuille de style au-dessus de 760 px (la colonne des verbes la remplace sur un écran).
+  // un onglet = un groupe de modules ou un écran du cadre ; choisi tant qu'un module de son groupe est affiché ; le toucher ouvre le dernier module du groupe montré dans
+  // cette session, sinon le premier. Dessinée toujours, masquée par la feuille de style au-dessus de 760 px (la colonne des verbes la remplace sur un écran).
   const lastInTab = {}; // onglet → dernier module du groupe affiché
   let tabsKey = '';
   /** Onglet qui groupe le module id (même non inscrit : atmosphere avant son module), sinon null. */
@@ -4031,10 +4008,9 @@
     }
   }
   // ---------------------------------------------------------------- second toucher sur l'onglet choisi : les modules du groupe
-  // pas de rangée de sous-onglets : un deuxième toucher sur l'onglet déjà choisi ouvre, au-dessus de lui, un popover qui liste
-  // les modules du groupe et leurs vues (verbe et icône, le courant marqué : « Carburant · Fiches ») ; un toucher en choisit un,
-  // un toucher à côté, Échap, un défilement ou un changement d'adresse le ferment. Seulement pour un groupe de deux rangées ou
-  // plus au niveau de l'appareil ; sur un onglet qui n'en a qu'une, le deuxième toucher ne fait rien.
+  // pas de rangée de sous-onglets : un deuxième toucher sur l'onglet déjà choisi ouvre, au-dessus de lui, un popover qui liste les modules du groupe et leurs vues (verbe
+  // et icône, le courant marqué : « Carburant · Fiches ») ; un toucher en choisit un, un toucher à côté, Échap, un défilement ou un changement d'adresse le ferment.
+  // Seulement pour un groupe de deux rangées ou plus au niveau de l'appareil ; sur un onglet qui n'en a qu'une, le deuxième toucher ne fait rien.
   let tabPop = null; // { el, tab, off }
   /** Ferme le popover du groupe (focus rendu à l'onglet si focusBack). */
   function closeTabPop(focusBack = false) {
@@ -4613,10 +4589,9 @@
   }
 
   // ---------------------------------------------------------------- retour au module d'origine
-  // un module ouvert par passage d'un autre (#fuel?from=maps, ou une adresse posée par le module précédent : « Modifier
-  // la route » de la Carte, « Écrire le CR » de Mes vols) montre « ← <module d'origine> » dans l'en-tête ; pas après un
-  // choix dans le menu ; disparaît au changement de module. Retour : page précédente de la session si c'est elle,
-  // sinon l'adresse du module d'origine
+  // un module ouvert par passage d'un autre (#fuel?from=maps, ou une adresse posée par le module précédent : « Modifier la route » de la Carte, « Écrire le CR » de Mes
+  // vols) montre « ← <module d'origine> » dans l'en-tête ; pas après un choix dans le menu ; disparaît au changement de module. Retour : page précédente de la session si
+  // c'est elle, sinon l'adresse du module d'origine
   let lastScreen = null, // { id, hash } : dernier écran affiché
     origin = null, // { id, hash, back }
     viaMenu = false; // navigation demandée par le menu des verbes
@@ -4951,8 +4926,7 @@
       get live() {
         return liveApi(life);
       },
-      // niveau d'usage de l'appareil (1 Découverte, 2 Courant, 3 Complet), en lecture : un module y réserve ce qui engage la
-      // compagnie
+      // niveau d'usage de l'appareil (1 Découverte, 2 Courant, 3 Complet), en lecture : un module y réserve ce qui engage la compagnie
       get level() {
         return level;
       },
@@ -4971,9 +4945,8 @@
           once: true
         });
       },
-      // ctx.consume(clés) : les valeurs de ces clés de ctx.query, retirées de l'adresse en une seule écriture (replaceState, sans
-      // remonter le module) ; with, from et pane restent au cadre ; dans un volet, l'adresse n'est pas la sienne : rien
-      // n'est réécrit (INTEGRATION § 6.1)
+      // ctx.consume(clés) : les valeurs de ces clés de ctx.query, retirées de l'adresse en une seule écriture (replaceState, sans remonter le module) ; with, from et
+      // pane restent au cadre ; dans un volet, l'adresse n'est pas la sienne : rien n'est réécrit (INTEGRATION § 6.1)
       consume: (...keys) => consumeQuery(entry.id, query, keys.flat(), inPane),
       // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas
       tab: tabOf(entry.id)?.id || null,
@@ -5322,9 +5295,8 @@
           } : null
         };
       },
-      // carte Design : jeux proposés, choix actuel, enregistrement (device/design.json, appliqué aussitôt)
-      // carte Design : hors ordinateur, pas de design d'ordinateur (desktop) ; applied = design posé (standard quand le choix
-      // mémorisé est un design d'ordinateur et que l'appareil n'en est pas un)
+      // carte Design : jeux proposés, choix actuel, enregistrement (device/design.json, appliqué aussitôt) carte Design : hors ordinateur, pas de design d'ordinateur
+      // (desktop) ; applied = design posé (standard quand le choix mémorisé est un design d'ordinateur et que l'appareil n'en est pas un)
       designs: () => DESIGNS.filter(d => !d.desktop || document.documentElement.classList.contains('f-desk')),
       design: () => ({
         ...design,
@@ -5494,9 +5466,8 @@
       on = flying(cur);
     lastFlight = cur;
     paintStatus(); // la pastille du ⚙ et le bloc d'état suivent le vol courant
-    // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
-    // à null, la carte ne la montre jamais au nouveau départ
-    // comparée en instants (comme flying), jamais en texte : « …50Z » se range après « …50.400Z » et « 09:…+02:00 » après « 07:…Z » (SOG-0037)
+    // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise à null, la carte ne la montre jamais au
+    // nouveau départ comparée en instants (comme flying), jamais en texte : « …50Z » se range après « …50.400Z » et « 09:…+02:00 » après « 07:…Z » (SOG-0037)
     const stale = on && cur?.progress?.actual?.at && Date.parse(cur.progress.actual.at) < Date.parse(cur.started.at);
     if ((stale || !on) && cur?.progress?.actual) await clearActual(cur); // vol arrêté (ici ou ailleurs) : plus de position
     if (on && !live.active) {
@@ -5791,10 +5762,9 @@
   async function writeFix(a) {
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
-    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé (la
-    // position seule : une trace d'avant le 30 oct. y est retirée) ; la trace de l'appareil continue seulement pour ce
-    // départ (from = started.at, à l'identique : deux écritures d'une même heure, en Z et en +02:00, ne se comparent pas
-    // comme des chaînes), et reprend une fois celle qu'un enregistrement d'avant portait pour ce même départ
+    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé (la position seule : une trace d'avant le 30 oct. y
+    // est retirée) ; la trace de l'appareil continue seulement pour ce départ (from = started.at, à l'identique : deux écritures d'une même heure, en Z et en +02:00,
+    // ne se comparent pas comme des chaînes), et reprend une fois celle qu'un enregistrement d'avant portait pour ce même départ
     const [CF, TR] = await Promise.all([import(new URL('frame/lib/current_flight.js', ROOT).href), import(new URL('frame/lib/trail.js',
         ROOT).href)]),
       prev = cur.progress?.actual,
@@ -6035,10 +6005,9 @@
       if (o.back && history.length > 1) history.back();
       else location.hash = o.hash;
     };
-    // un verbe de la colonne ou un onglet de la barre : un choix dans le menu, pas un passage entre modules
-    // (pas de « ← » vers l'écran quitté) ; la même adresse que l'actuelle ne change rien, elle ne note donc rien
-    // (second toucher sur l'onglet choisi : le popover du groupe, ou rien ; il remplace la navigation, qui perdrait la suite
-    // de l'adresse)
+    // un verbe de la colonne ou un onglet de la barre : un choix dans le menu, pas un passage entre modules (pas de « ← » vers l'écran quitté) ; la même adresse que
+    // l'actuelle ne change rien, elle ne note donc rien (second toucher sur l'onglet choisi : le popover du groupe, ou rien ; il remplace la navigation, qui perdrait
+    // la suite de l'adresse)
     $('fTabs').addEventListener('click', e => {
       const a = e.target.closest('a'),
         tb = a && APP.tabs.find(x => x.id === a.dataset.tab);
@@ -6284,9 +6253,8 @@
     // différée (✕), la note revient au prochain moment calme : retour de l'appli au premier plan (ici), changement de module
     // (route) ; jamais de rechargement sans geste
     document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && sayUpdate());
-    // orientation verrouillée en portrait en appli installée (V3_SPECIFICATION.md § 7.1, 24 oct 2026) : effective seulement
-    // avec le manifeste « orientation » ou la coque Capacitor ; Safari ne l'honore pas, d'où la disposition en paysage (f-land, au
-    // début de ce fichier) ; en page de navigateur l'appel échoue et c'est attendu
+    // orientation verrouillée en portrait en appli installée (V3_SPECIFICATION.md § 7.1, 24 oct 2026) : effective seulement avec le manifeste « orientation » ou la
+    // coque Capacitor ; Safari ne l'honore pas, d'où la disposition en paysage (f-land, au début de ce fichier) ; en page de navigateur l'appel échoue et c'est attendu
     try {
       if (matchMedia('(display-mode: standalone)').matches) screen.orientation?.lock?.('portrait')?.catch?.(() => {});
     } catch {
