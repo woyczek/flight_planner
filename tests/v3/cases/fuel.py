@@ -12561,6 +12561,55 @@ def f350(c):
         c.shot(f'F350_{c.design}_{w}_{c.lang}_near.png')
 
 
+@case('F352', '« Proposer un dégagement »: a fold opened by the pilot stays open through every update of the block — the weather of ANOTHER '
+      'aerodrome arrives, the « Détail » of a line stays open; a line that does not change keeps its node (nothing blinks); a round trip to '
+      'the Map at 390 brings back the proposal and its folds as they were left', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=True, langs4=False,
+      rule='SOG-0713 (SIG-f556a97602: each event rewrote the whole block, every fold of a line rebuilt closed) and SOG-0714 '
+      '(SIG-29ccba7848: on the phone a round trip to the Map closed the alternates); the ergonomist, 28 Nov: R1 a fold opened stays open '
+      'until the pilot closes it, kept by key (the common fold, frame/lib/fold.js); R2 the proposal and its folds survive the round trip '
+      '(the state of the page for this flight, nothing in a document); R3 only the line that changes is redrawn; invented aerodromes and TAFs')
+def f352(c):
+    B = f'{FUEL} [data-altnchk]'
+    D = f'{B} li[data-cand=XQPB] details[data-candtaf]'
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c)
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    # (i) the pilot opens the « Détail » of XQPB and « Critères du dégagement » of the chosen alternate
+    c.tap(f'{D} > summary')
+    c.until(f"document.querySelector('{D}')?.open === true", timeout=3000, what='the « Détail » of XQPB open')
+    c.tap(f'{B} details[data-altnfold] > summary')
+    c.until(f"document.querySelector('{B} details[data-altnfold]')?.open === true", timeout=3000, what='« Critères du dégagement » open')
+    c.js(f"window.__keep = document.querySelector('{B} li[data-cand=XQPC]')")
+    # the weather of ANOTHER aerodrome arrives: XQPH designated on the Map, its weather read, the block updated
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPH' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPH]')", timeout=8000, what='XQPH designated on the Map')
+    c.wait(800)   # its weather read, the block updated again
+    c.eq([c.js(f"document.querySelector('{D}')?.open"), c.js(f"document.querySelector('{B} details[data-altnfold]')?.open")],
+         [True, True], 'the folds opened by the pilot stay open (red before: rebuilt closed)', what='R1')
+    # (iii) the line of XQPC did not change: the SAME node
+    c.eq(c.js(f"window.__keep === document.querySelector('{B} li[data-cand=XQPC]') && window.__keep.isConnected"), True,
+         'a line that does not change keeps its node (red before: the whole block rewritten)', what='R3')
+    # (ii) to the Map and back, at 390
+    c.js("location.hash = '#maps'")
+    c.until("!!document.querySelector('[data-module=maps]') && !document.querySelector('[data-module=fuel]')", timeout=15000,
+            what='the Map alone on the phone (Fuel unmounted)')
+    c.js("location.hash = '#fuel'")
+    c.until(f"!!document.querySelector('{FUEL} [data-altnchk]')", timeout=15000, what='Fuel back')
+    to_step(c, 0)
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 4", timeout=15000,
+            what='the proposal back (red before: « Proposer un dégagement » again)')
+    c.eq([c.js(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPH]')"), c.js(f"document.querySelector('{D}')?.open"),
+          c.js(f"document.querySelector('{B} details[data-altnfold]')?.open"), c.js(f"document.querySelector('{B} details[data-altnprop]')?.open")],
+         [True, True, True, True], 'the proposal and its folds as they were left', what='R2')
+    c.eq(c.count(f'{B} [data-altnstale]'), 0, 'not « Périmé »: the flight did not change (SOG-0566)', what='not stale')
+    c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'start'}})")
+    c.wait(300)
+    c.shot(f'F352_{c.design}_390_{c.lang}.png')
+
+
 
 @case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
       'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
