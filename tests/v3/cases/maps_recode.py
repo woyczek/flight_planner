@@ -11389,7 +11389,7 @@ def d338(c):
       const S = window.__mp.S, g = S.geo, cv = S.pc.tagName === 'CANVAS' ? S.pc : S.pc.querySelector('canvas'), dpr = cv.width / cv.getBoundingClientRect().width, cx = cv.getContext('2d');
       const px = (x, y) => [...cx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data];
       const ylev = ft => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(ft, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
-      const grey = p => Math.abs(p[0] - 154) < 14 && Math.abs(p[1] - 165) < 14 && Math.abs(p[2] - 177) < 14, purple = p => p[0] > 70 && p[0] < 160 && p[1] < 90 && p[2] > 110;
+      const grey = p => p[0] > 100 && p[0] < 215 && p[1] >= p[0] && p[2] >= p[1] && p[1] - p[0] < 25 && p[2] - p[0] < 45, purple = p => p[0] > 70 && p[0] < 160 && p[1] < 90 && p[2] > 110;
       const last = new Map(); for (const b of seen) last.set(b[0], b); const texts = [...last.values()];
       const ceilY = g.ceil && g.ceil.drawn ? ylev(g.ceil.ft) : null, boxes = texts.filter(b => /^(TOC|TOD)/.test(b[0]));
       let crossed = 0;
@@ -11498,7 +11498,7 @@ def d343(c):
       P.beginPath = function () { cur = []; return bp.call(this) };
       P.moveTo = function (x, y) { cur.push(tr(this, x, y)); return mt.call(this, x, y) };
       P.lineTo = function (x, y) { cur.push(tr(this, x, y)); return lt.call(this, x, y) };
-      P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20) window.__d343.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]) } return fl.apply(this, a) };
+      P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20 * (window.devicePixelRatio || 1)) window.__d343.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]) } return fl.apply(this, a) };
       P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), al = this.textAlign, b = this.textBaseline;
         const x0 = al === 'center' ? x - m.width / 2 : al === 'right' || al === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8, p0 = tr(this, x0, y0), p1 = tr(this, x0 + m.width, y0 + fs);
         window.__d343.texts.push([String(t), p0[0], p0[1], p1[0], p1[1]]); return ft.call(this, t, x, y, w) };
