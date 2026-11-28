@@ -4392,3 +4392,27 @@ def i64(c):
     c.eq((page['text'], page['comment']), (launcher['text'], launcher['comment']), 'the page and the launcher say the same bound for a text and for a comment', what='page vs launcher')
     c.ok(page['text'] <= launcher['text'] and page['comment'] <= launcher['comment'], (page, launcher), 'the page never lets through more than the launcher takes')
     c.eq(page['count'] * 10, page['text'] * 9, 'the counter appears at 90 % of the bound', what='counter at 90 %')
+
+
+# SOG-0719 (the ergonomist): ONE folding block for the whole suite, frame/lib/fold.js; a `<details` written elsewhere is a fold that dodges it. The count of the `<details` written outside fold.js, in the code of
+# frame/ and modules/ (not the mock-ups `maquette/`, the benches `test/`), has a CEILING: the number of the tip where the case came in. It goes down with the refactoring (SOG-0718 for Fuel), never up.
+DETAILS_CEILING = 97
+
+
+@case('I66', 'One folding block (SOG-0719): the `<details` written outside frame/lib/fold.js, in the code of frame/ and modules/ (mock-ups and benches excluded), do not pass their ceiling — it only goes down with the refactoring (SOG-0718)', 'I', static=True,
+      rule="SOG-0719 (the ergonomist, 28 Nov 2026): frame/lib/fold.js is THE fold; the ceiling is the count of the tip where the case came in (97) and does not go up, like I65; the list below says where each one is")
+def i66(c):
+    skip_dirs = {'test', 'maquette', 'build', '__pycache__', 'node_modules'}
+    found = {}
+    for top in ('frame', 'modules'):
+        for f in sorted((c.root / top).rglob('*')):
+            rel = f.relative_to(c.root).as_posix()
+            if f.suffix not in ('.js', '.html', '.css', '.py') or not f.is_file() or skip_dirs & set(rel.split('/')[:-1]) or rel == 'frame/lib/fold.js':
+                continue
+            n = len(re.findall(r'<details\b', f.read_text(encoding='utf-8', errors='replace')))
+            if n:
+                found[rel] = n
+    total = sum(found.values())
+    c.ok(len(found) >= 10 and total > 50, (len(found), total), 'the files that write a `<details` are found')
+    c.le(total, DETAILS_CEILING, f'no new fold written by hand: {total} `<details` outside fold.js, the ceiling is {DETAILS_CEILING} (the biggest: {sorted(found.items(), key=lambda kv: -kv[1])[:5]})', what='details ceiling')
+    c.le(DETAILS_CEILING - total, 10, f'the ceiling goes down with the count: {total} for {DETAILS_CEILING} (lower DETAILS_CEILING in tests/v3/cases/repo.py)', what='ceiling too high')
