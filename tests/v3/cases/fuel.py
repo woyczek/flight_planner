@@ -12453,13 +12453,13 @@ def f347(c):
     c.ok('invalid' not in said.lower(), said, 'never the English message of the launcher')
 
 
-@case('F348', '« Proposer un dégagement »: the aerodromes ranked by verdict (Possible, Possible avec réserve, Non jugé, Impossible), then by '
+@case('F351', '« Proposer un dégagement »: the aerodromes ranked by verdict (Possible, Possible avec réserve, Non jugé, Impossible), then by '
       'distance — a far « Possible » before a near « Non jugé »; the title « Les plus proches de LFML, les meilleurs d’abord »; nothing at the '
       'head without an aerodrome designated on the Map; the list ranked ONCE, when the weather has been read (a designation does not rank it '
       'again)', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
       rule='SOG-0690 (b) point 4 (the ergonomist, 28 Nov: answer (a) — the aerodrome designated on the Map at the head whatever its verdict, '
       'the word « Proposé » gone, the others by verdict then distance, ranked once); French only (SOG-0680); invented aerodromes and TAFs')
-def f348(c):
+def f351(c):
     B = f'{FUEL} [data-altnchk]'
     c.page.set_viewport_size({'width': 390, 'height': 844})
     # XQPB ✓ 40 NM, XQPC ! 41 NM (visual only), LFMT ? (no runway length, closer than XQPF), XQPF ✓ 83 NM, XQPH ? 100 NM, XQPE ✕ (LIFR)
@@ -12484,7 +12484,7 @@ def f348(c):
         c.settle()
         c.js(f"document.querySelector('{B} details[data-altnprop]').scrollIntoView({{block: 'center'}})")
         c.wait(300)
-        c.shot(f'F348_{c.design}_{w}_{c.lang}.png')
+        c.shot(f'F351_{c.design}_{w}_{c.lang}.png')
 
 
 @case('F349', 'Procedures card, a FOLDED side whose choices are all made on procedures of a past cycle: its mark is the WORD « périmé », '
