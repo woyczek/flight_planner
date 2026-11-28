@@ -8787,7 +8787,9 @@ def n145(c):
     P = importlib.import_module('csp_policy')
 
     def net_of(mod):
-        text = (c.root / 'modules' / mod / 'module.js').read_text(encoding='utf-8')
+        # the declaration of a module: its meta.js when it has one (SOG-0728, the meta out of module.js, which re-exports it), else module.js
+        own = c.root / 'modules' / mod / 'meta.js'
+        text = (own if own.exists() else c.root / 'modules' / mod / 'module.js').read_text(encoding='utf-8')
         meta = re.search(r'export const meta = \{(.*?)\n\};', text, re.S)
         net = re.search(r'\bnet\s*:\s*\[([^\]]*)\]', meta.group(1)) if meta else None
         return [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", net.group(1) if net else '')]
@@ -8798,7 +8800,7 @@ def n145(c):
     full = P.module_hosts(str(c.root))
     real = P.module_files
     try:
-        P.module_files = lambda root: [p for p in real(root) if not p.replace('\\', '/').endswith('/missions/module.js')]
+        P.module_files = lambda root: [p for p in real(root) if not p.replace('\\', '/').endswith(('/missions/module.js', '/missions/meta.js'))]
         without = P.module_hosts(str(c.root))
     finally:
         P.module_files = real
