@@ -1581,7 +1581,8 @@
         reserve: () => {
           // SOG-0723 : les losanges de TOC / TOD (et des transitions) sont réservés AVANT les noms des points : ils sont peints par-dessus (draw.js, drawPlanOnMap) et couvraient l'étiquette du point voisin
           for (const m of plan || []) {
-            const k = (m.step ? 4.5 : 7) + 2;
+            const k = (m.step ? 4.5 : 7) +
+              .5; // le losange lui-même (le symbole) : les coins de « TOC » / « TOD » (à 8 px) restent libres
             pl.add({
               x0: m.q.x - k,
               y0: m.q.y - k,
@@ -1591,6 +1592,8 @@
           }
           labels = PR.routeLabels(route, toC, scale, pl, mk, level, env);
           planned = PR.planLabels(plan, pl);
+          labels = labels.concat(PR.markLabels(mk, toC, scale,
+            pl)); // SOG-0723 : les repères de distance après « TOC » et « TOD » (le dernier rang)
         }
       }, {
         id: 'zoneShapes',

@@ -86,8 +86,12 @@
       f0 = 12 * scale,
       out = [];
     if (pts.length < 2) return out;
-    for (const [i, p] of pts.entries()) {
-      const q = toC(p.lat, p.lon),
+    // SOG-0723 : le départ et l'arrivée sont servis en premier (et réservés), puis les noms des autres points
+    const order = [...pts.keys()].sort((a, b) => ((b === 0 || b === pts.length - 1) ? 1 : 0) - ((a === 0 || a === pts.length - 1) ? 1 :
+      0));
+    for (const i of order) {
+      const p = pts[i],
+        q = toC(p.lat, p.lon),
         end = i === 0 || i === pts.length - 1,
         // altitude à atteindre au point (alt), sinon niveau tenu à partir du point (lvl ; pas au départ, déjà en tête)
         h = Number.isFinite(p.alt) ? p.alt : i > 0 && !end && +p.lvl?.ft > 0 ? +p.lvl.ft : NaN,
@@ -116,14 +120,32 @@
         // ne dessine pas garde ce libellé
         key: /^[A-Z]{4}$/.test(p.id || '') ? p.id : `${p.id || p.name}@${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`,
         anchor: q,
-        force: end ? 'paint' : false,
-        boxes: [r],
-        paint: () => out.push({
+        force: end ? 'reserve' : false, // les deux bouts toujours écrits ET réservés : les autres textes les contournent
+        // SOG-0723 : le nom du point passe avant « TOC » / « TOD » (le losange est réservé avant lui, jamais déplacé) : à sa place habituelle (nord-est), sinon sud-est, nord-ouest, sud-ouest
+        boxes: [r, {
+          x0: r.x0,
+          y0: q.y + 8 * scale,
+          x1: r.x1,
+          y1: q.y + 8 * scale + (r.y1 - r.y0)
+        }, {
+          x0: q.x - 10 * scale - (r.x1 - r.x0),
+          y0: r.y0,
+          x1: q.x - 10 * scale,
+          y1: r.y1,
+          align: 'right' // à gauche du point le texte finit au bord de sa boîte, quelle que soit sa largeur : il ne mord jamais sur le losange
+        }, {
+          x0: q.x - 10 * scale - (r.x1 - r.x0),
+          y0: q.y + 8 * scale,
+          x1: q.x - 10 * scale,
+          y1: q.y + 8 * scale + (r.y1 - r.y0),
+          align: 'right'
+        }],
+        paint: b => out.push({
           text,
-          x: r.x0,
-          y: q.y + 3 * scale + f * .6,
+          x: b.align === 'right' ? b.x1 : b.x0,
+          y: b.y0 + (q.y + 3 * scale + f * .6 - r.y0),
           size: f,
-          align: 'left'
+          align: b.align || 'left'
         })
       });
       // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
@@ -201,7 +223,12 @@
         })
       });
     }
-    const f = f0;
+    return out;
+  }
+  /** Marques de distance (NM) : le dernier rang des textes de la route (SOG-0723 : départ et arrivée, noms des points, « TOC » et « TOD », puis les repères) ; sans place, le repère n'est pas écrit (son point reste). Appelée APRÈS planLabels. */
+  function markLabels(mk, toC, scale, pl) {
+    const f = 12 * scale,
+      out = [];
     for (const m of mk) {
       const q = toC(m.lat, m.lon),
         text = String(m.nm),
@@ -400,6 +427,7 @@
     value: Object.freeze({
       routeLegs,
       routeLabels,
+      markLabels,
       planLabels,
       drawRoute,
       drawDirects,

@@ -11534,6 +11534,79 @@ def d343(c):
     ds = r['diamonds']
     c.ok(len(ds) >= 1, str(r['diamonds']), 'the diamond of the TOC is painted on the map')
     hit = [t[0] for t in r['texts'] if not t[0].startswith(('TOC', 'TOD')) and any(t[1] < d[2] and t[3] > d[0] and t[2] < d[3] and t[4] > d[1] for d in ds)]
-    c.eq(hit, [], 'no name of a route point (LUGEN included) or mark is under a diamond of the TOC or the TOD', what=str(r['texts'][:12]))
+    c.eq(hit, [], 'no name of a route point (LUGEN included) or mark is under a diamond of the TOC or the TOD', what=str({'diamonds': [[round(v) for v in d] for d in ds], 'texts': [(t[0], round(t[1]), round(t[2]), round(t[3]), round(t[4])) for t in r['texts'] if '°' not in t[0]]}))
     c.shot(f'D343_{c.width}_losange.png')
+    c.check_errors()
+
+
+def _nm(a, b):
+    la1, lo1, la2, lo2 = [math.radians(v) for v in (a['lat'], a['lon'], b['lat'], b['lon'])]
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 3440.065 * math.asin(math.sqrt(h))
+
+
+_D344_SPY = """(() => { const P = CanvasRenderingContext2D.prototype, bp = P.beginPath, mt = P.moveTo, lt = P.lineTo, fl = P.fill, ft = P.fillText, ar = P.arc, dpr = () => window.devicePixelRatio || 1;
+  window.__d344 = { diamonds: [], arcs: [], texts: [], n: 0 }; let cur = [];
+  const tr = (c, x, y) => { const m = c.getTransform(), r = dpr(); return [(m.a * x + m.c * y + m.e) / r, (m.b * x + m.d * y + m.f) / r] };
+  P.beginPath = function () { cur = []; return bp.call(this) };
+  P.moveTo = function (x, y) { cur.push(tr(this, x, y)); return mt.call(this, x, y) };
+  P.lineTo = function (x, y) { cur.push(tr(this, x, y)); return lt.call(this, x, y) };
+  P.arc = function (x, y, r, a0, a1, ccw) { const c = tr(this, x, y), m = this.getTransform(); window.__d344.arcs.push([c[0], c[1], r * Math.hypot(m.a, m.b) / dpr(), window.__d344.n++]); return ar.call(this, x, y, r, a0, a1, ccw) };
+  P.fill = function (...a) { if (cur.length === 4 && String(this.fillStyle) === '#6a1b9a') { const xs = cur.map(p => p[0]), ys = cur.map(p => p[1]); if (Math.max(...xs) - Math.min(...xs) < 20) window.__d344cv = this.canvas, window.__d344.diamonds.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys), window.__d344.n++]) } return fl.apply(this, a) };
+  P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), al = this.textAlign, b = this.textBaseline;
+    const x0 = al === 'center' ? x - m.width / 2 : al === 'right' || al === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8, p0 = tr(this, x0, y0), p1 = tr(this, x0 + m.width, y0 + fs);
+    window.__d344.texts.push([String(t), p0[0], p0[1], p1[0], p1[1], window.__d344.n++]); return ft.call(this, t, x, y, w) };
+})()"""
+
+
+@case('D344', 'SOG-0723 (c): the texts of the route on the Map are served in a fixed order (departure and arrival, names of the points, « TOC » and « TOD », the distance marks), a lower one always gives way; the symbols never move: a route point under the diamond of the TOC or of the TOD keeps its circle, its name is written, the « TOC » goes elsewhere', 'D', tags=('maps',),
+      designs=('standard',), night=False, screens=True,
+      rule='SOG-0723 (the ergonomist, 28 Nov): priority departure/arrival > names of the points > « TOC » « TOD » > distance marks; a text of a lower rank always gives way; the symbols never move and are never removed (the circle of the point stays visible round or over the diamond); « no place, not written » only between texts of the SAME rank; no leader line; the box of the DIAMOND (the symbol), not the one of its text, is reserved before the names')
+def d344(c):
+    c.page.add_init_script(_D344_SPY)
+    f0 = flight()
+    P = f0['route']['points']
+    to_lugen, to_nepix_end = _nm(P[0], P[1]), _nm(P[2], P[3])
+    scenes = [('toc_near', {'tocNm': round(to_lugen + 4, 1)}, 'LUGEN', 'TOC', False),
+              ('toc_on', {'tocNm': round(to_lugen, 1)}, 'LUGEN', 'TOC', True),
+              ('tod_on', {'todNm': round(to_nepix_end, 1)}, 'NEPIX', 'TOD', True)]
+    for name, prof, point, mark, exact in scenes:
+        f = flight()
+        f['profile'] = {**f['profile'], **prof}
+        c.open('maps', docs=fdocs(f), flight=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.wait(1200)
+        c.js("async () => { window.__d344.diamonds = []; window.__d344.arcs = []; window.__d344.texts = []; (await import('/modules/maps/draw.js')).schedule(); await new Promise(r => setTimeout(r, 1200)); return true }")
+        r = c.js("() => window.__d344")
+        ds = [d for d in r['diamonds']]
+        want = mark
+        # the diamond of this mark: the one nearest to the text « TOC » / « TOD » (the texts are placed round their diamond)
+        mk = next((t for t in r['texts'] if t[0].startswith(want)), None)
+        c.ok(bool(ds) and mk is not None, f'{name}: diamonds {[[round(v) for v in d] for d in ds]}, texts {[(t[0], round(t[1]), round(t[2]), round(t[3]), round(t[4])) for t in r["texts"] if "°" not in t[0]]}, arcs {[[round(v, 1) for v in a] for a in r["arcs"] if a[2] < 16][:30]}', f'{name}: the diamond and the « {want} » are drawn')
+        if not ds or mk is None:
+            continue
+        d = min(ds, key=lambda b: math.hypot((b[0] + b[2]) / 2 - (mk[1] + mk[3]) / 2, (b[1] + b[3]) / 2 - (mk[2] + mk[4]) / 2))
+        cx, cy = (d[0] + d[2]) / 2, (d[1] + d[3]) / 2
+        nm = [t for t in r['texts'] if t[0].startswith(point)]
+        c.ok(len(nm) >= 1, f'{name}: {[t[0] for t in r["texts"]][:14]}', f'{name}: the name of the point « {point} » is written (a name always passes before the « {want} »)')
+        box = [d[0], d[1], d[2], d[3]]
+        hit = [t[0] for t in r['texts'] if t[0] != want and not t[0].startswith(want) and t[1] < box[2] and t[3] > box[0] and t[2] < box[3] and t[4] > box[1]]
+        c.eq(hit, [], f'{name}: no text under the diamond (its box is reserved before the names)', what=str(r['texts'][:10]))
+        c.ok(not (mk[1] < box[2] and mk[3] > box[0] and mk[2] < box[3] and mk[4] > box[1]), f'{name}: {mk} on {box}', f'{name}: the « {want} » is not on its own diamond (it looks for another place round it)')
+        if nm:
+            n0 = nm[0]
+            c.ok(not (mk[1] < n0[3] and mk[3] > n0[1] and mk[2] < n0[4] and mk[4] > n0[2]), f'{name}: {mk} on {n0}', f'{name}: the « {want} » does not cover the name of the point (it gives way)')
+        # the circle of the point stays visible: a ring drawn AFTER the diamond (order n), round it when the point is under it, else at the point itself, over its edge
+        rings = [a for a in r['arcs'] if a[3] > d[4] and math.hypot(a[0] - cx, a[1] - cy) < 16 and 3 <= a[2] <= 14]
+        if exact:
+            c.ok(any(math.hypot(a[0] - cx, a[1] - cy) < 2 and a[2] >= 8 for a in rings), f'{name}: rings {rings}', f'{name}: the point is under the diamond: its circle is drawn ROUND the diamond (over it), the symbols both visible')
+        else:
+            c.ok(len(rings) >= 1, f'{name}: rings {rings}', f'{name}: the circle of the point is still drawn over the edge of the diamond')
+        # the symbols are never removed: the diamond stays READABLE at its place, a measured share of its pixels are still the colour of the diamond (the ring of the point does not wipe it)
+        share = c.js("""(b) => { const cv = window.__d344cv, cx = cv.getContext('2d'), k = cv.width / cv.getBoundingClientRect().width, mx = (b[0] + b[2]) / 2, my = (b[1] + b[3]) / 2; let tot = 0, ok = 0;
+          for (let y = Math.floor(my - 6); y <= Math.ceil(my + 6); y++) for (let x = Math.floor(mx - 6); x <= Math.ceil(mx + 6); x++) { if (Math.abs(x - mx) + Math.abs(y - my) > 5) continue; tot++; const p = cx.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data; if (Math.abs(p[0] - 106) < 40 && Math.abs(p[1] - 27) < 40 && Math.abs(p[2] - 154) < 40) ok++ }
+          return ok / Math.max(1, tot) }""", [d[0], d[1], d[2], d[3]])
+        c.ok(share >= .6, f'{name}: {round(share, 2)} of the diamond is still its colour', f'{name}: the diamond stays readable at its place (the ring of the point does not wipe it)')
+        c.shot(f'D344_{c.width}_{name}.png')
     c.check_errors()

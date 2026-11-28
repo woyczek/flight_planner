@@ -1049,6 +1049,29 @@ function drawPlanOnMap(ctx, toC, planned = []) {
     ctx.strokeStyle = m.step ? col : S.theme.bg;
     ctx.lineWidth = m.step ? 1.8 : 2;
     ctx.stroke();
+    // SOG-0723 : un point de la route que le losange couvre garde son cercle : les symboles ne bougent pas et ne sont jamais retirés ; sur le losange (le point exactement dessous) le cercle l'entoure, sinon c'est le cercle du point, en
+    // anneau, par-dessus le bord du losange (son trait seul : le losange reste lisible à sa place)
+    if (!m.step)
+      for (const p of S.route.points || []) {
+        if (!Number.isFinite(p?.lat) || !Number.isFinite(p?.lon)) continue;
+        const c = toC(p.lat, p.lon),
+          d = Math.hypot(c.x - q.x, c.y - q.y);
+        if (d >= k + 5.5) continue;
+        const on = d < 2,
+          cx = on ? q.x : c.x,
+          cy = on ? q.y : c.y,
+          rr = on ? k + 3 : 4.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+        if (on) { // le point exactement sous le losange : l'anneau l'entoure, sur le fond de la carte, avec son halo
+          ctx.strokeStyle = S.theme.bg;
+          ctx.lineWidth = 4.5;
+          ctx.stroke();
+        } // le point à côté : son trait seul, jamais de halo sur le losange (qui reste lisible à sa place)
+        ctx.strokeStyle = MapsRender.palette(!!S.theme.dark).route;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
     if (!r) continue;
     ctx.textAlign = r.align;
     ctx.lineWidth = 3;
