@@ -7507,8 +7507,8 @@ def _altn_open(c, hard_m, app, cat, min_ft=5000, more_ads=(), held=True, typed=F
     c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
 
 
-@case('F257', 'Flight step, under the aerodromes: the line of the alternate — a sign, a sentence (the worst criterion, the good and the '
-      'unchecked counted), the three criteria in a fold: RUNWAY (the sheet\'s minimum runway length against the longest runway of the right '
+@case('F257', 'Flight step, under the aerodromes: the line of the alternate — a sign, its code and its verdict in the words of a proposed '
+      'line (SOG-0690 b: « XQAL Possible. Météo prévue : VFR. », « Impossible : piste trop courte. … »), the three criteria in a fold: RUNWAY (the sheet\'s minimum runway length against the longest runway of the right '
       'surface), AIDS (« visual only » when the base holds the aerodrome\'s procedures without an approach; not held: not checked), WEATHER '
       '(the worst category of the TAF an hour before and after the arrival at the alternate, an INDICATOR); four states: green, orange, red, '
       'grey « not checked » with what is missing — never a green check on what could not be checked', 'F', tags=('fuel', 'weather'),
@@ -7552,10 +7552,12 @@ def f257(c):
     c.eq(got[20], {'state': 'grey', 'ok': 2, 'grey': 1}, 'one criterion not checked: never green, counted apart', what='judge')
     c.eq(got[21:], ['warn', 'err'], 'the worst state gives the sign', what='worst')
     # 2. the screen: the four states, at 390 and 1280
-    head = lambda k, w=None: norm(tx(T, k, L, after='altnChk: {')).replace('{id}', _ALT_ID).replace('{w}', w or '')
-    K = lambda k: norm(tx(T, k, L, after='altnK: {'))
-    states = [('ok', 2500, 2, 'VFR', 5000, head('ok')), ('warn', 2500, 0, 'VFR', 5000, head('warn', K('aids'))),
-              ('err', 1000, 2, 'VFR', 5000, head('err', K('rwy'))), ('grey', 2500, 2, 'VFR', None, head('grey', K('rwy')))]
+    # SOG-0690 (b) point 5: the words of a proposed line, in French (the screen texts are written in French only, SOG-0680: the other
+    # languages are read after their translation)
+    states = [('ok', 2500, 2, 'VFR', 5000, 'XQAL Possible. Météo prévue : VFR.'),
+              ('warn', 2500, 0, 'VFR', 5000, 'XQAL Possible avec réserve : à vue seulement. Météo prévue : VFR.'),
+              ('err', 1000, 2, 'VFR', 5000, 'XQAL Impossible : piste trop courte. Météo prévue : VFR.'),
+              ('grey', 2500, 2, 'VFR', None, 'XQAL Non jugé : piste non vérifiée. Météo prévue : VFR.')]
     for state, hard, app, cat, min_ft, want in states:
         c.page.set_viewport_size({'width': 390, 'height': 844})
         _altn_open(c, hard, app, cat, min_ft)
@@ -7564,14 +7566,10 @@ def f257(c):
                 f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000,
                 what=f'the line in state {state}, the weather read')
         got_head = norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
-        c.ok(got_head.startswith(want), got_head, f'the sentence of the state {state}')
-        if state == 'ok':
-            c.eq(c.count(f'{FUEL} [data-altnchk] [data-altncount]'), 0, 'all good: no count', what='count')
-        else:
-            cnt = norm(c.text(f'{FUEL} [data-altnchk] [data-altncount]') or '')
-            unchecked = norm(tx(T, 'altnCount', L)).split('{g}')[1].split('(')[0].strip()
-            # the unchecked counted only when there are some (the ergonomist: « 2 bons », never « 0 non vérifié »)
-            c.ok((unchecked in cnt) == (state == 'grey') and cnt.startswith('2'), cnt, 'the good counted, the unchecked only when not zero')
+        if L == 'fr':
+            c.eq(got_head, want, f'the sentence of the state {state}: the words of a proposed line (red before: « Dégagement XQAL : … »)',
+                 what=f'head {state}')
+        c.eq(c.count(f'{FUEL} [data-altnchk] [data-altncount]'), 0, 'no count: the verdict says its cause', what='count')
         crit = c.js(f"[...document.querySelectorAll('{FUEL} [data-altnchk] li[data-crit]')].map(li => [li.dataset.crit, li.dataset.state])")
         c.eq([k for k, _ in crit], ['rwy', 'aids', 'wx'], 'three criteria in the fold, in order', what='criteria')
         c.ok(c.count(f'{FUEL} [data-altnchk] li') <= 7, 'fold', 'seven elements at most in the fold')
@@ -9006,7 +9004,8 @@ def f287(c):
         c.eq(c.js(f"document.querySelector('{FUEL} [data-altnchk] li[data-crit=dist]')?.dataset.state"), 'err',
              'the reason: the distance from the new arrival', what='dist')
         head = norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
-        c.ok(norm(tx(T, 'dist', c.lang, after='altnK: {')) in head, head, 'the sentence names the distance')
+        c.eq(head, 'XQAL Impossible : trop loin de l’arrivée. Météo prévue : VFR.', 'the sentence names the distance in its short words '
+             '(SOG-0690 b, French only; red before: « Dégagement XQAL : ne convient pas (distance) »)', what='head')
         d = cf_doc(c, lambda d: ((d.get('route') or {}).get('arr') == 'XQNR'), 'the arrival written')
         c.eq((d.get('route') or {}).get('altn'), _ALT_ID, 'the alternate stays in the flight, marked, never removed', what='kept')
         c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
@@ -12508,6 +12507,58 @@ def f349(c):
         c.js(f"document.querySelector('{FUEL} [data-proc=arr]').scrollIntoView({{block: 'center'}})")
         c.wait(300)
         c.shot(f'F349_{c.design}_{w}_{c.lang}.png')
+
+
+# SOG-0690 (b) point 5: an invented aerodrome about 12 NM from the alternate XQAL (43.45N 3.62E): an arrival too near
+_NEAR_AD = {'icao': 'XQNN', 'name': 'XQNN TEST', 'lat': 43.45, 'lon': 3.90, 'elev': 40, 'hardLen': 2500}
+
+
+@case('F350', 'Flight step, the line of the chosen alternate: a verdict never without its cause, in SHORT words — « Impossible : piste trop '
+      'courte. », « Impossible : trop loin de l’arrivée. », several causes one after the other in the order runway, aids, weather, distance '
+      '(« Impossible : piste trop courte, trop loin de l’arrivée. »), the reservation of distance « Possible avec réserve : trop près de '
+      'l’arrivée. »; the forecast weather after the verdict (« Météo prévue : VFR. ») ; the figures stay in the fold', 'F',
+      tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0690 (b) point 5 (the ergonomist, 28 Nov: answer (a), a CLOSED list of short words; a cause without short words gives '
+      '« Impossible. » alone); French only (SOG-0680); invented aerodromes XQAL, XQNR, XQNN, sheet and TAF')
+def f350(c):
+    line = f'{FUEL} [data-altnchk] .fu-altnline'
+    head = lambda: norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    # 1. a runway too short (1 000 m for 5 000 ft), then also too far from the new arrival XQNR (about 420 NM)
+    _altn_open(c, 1000, 2, 'VFR', 5000, more_ads=[_FAR_AD])
+    c.until(f"document.querySelector('{line}')?.dataset.state === 'err' && "
+            f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000,
+            what='the line « Impossible », the weather read')
+    c.eq(head(), 'XQAL Impossible : piste trop courte. Météo prévue : VFR.', 'one cause, in short words (red before: « Dégagement XQAL : '
+         'ne convient pas (piste) »)', what='short')
+    c.page.fill(f'{FUEL} input[data-k="arr"]', 'XQNR')
+    c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
+    c.until(f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=dist][data-state=err]')", timeout=20000,
+            what='the distance judged from XQNR')
+    c.until("(w) => (document.querySelector('[data-module=fuel] [data-altnchk] [data-altnhead]')?.textContent || '')"
+            ".replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            'XQAL Impossible : piste trop courte, trop loin de l’arrivée. Météo prévue : VFR.', timeout=8000,
+            what='two causes, one after the other: the runway, then the distance')
+    c.ok(not any(ch.isdigit() for ch in head().replace('VFR', '')), head(), 'no figure in the line: they stay in the fold')
+    c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+    c.wait(300)
+    c.shot(f'F350_{c.design}_390_{c.lang}_far.png')
+    # 2. a good alternate, then an arrival about 12 NM from it: the reservation of distance
+    _altn_open(c, 2500, 2, 'VFR', 5000, more_ads=[_NEAR_AD])
+    c.until(f"document.querySelector('{line}')?.dataset.state === 'ok' && "
+            f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000, what='the line good')
+    c.eq(head(), 'XQAL Possible. Météo prévue : VFR.', 'a good alternate: its verdict and its weather', what='ok')
+    c.page.fill(f'{FUEL} input[data-k="arr"]', 'XQNN')
+    c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
+    c.until(f"document.querySelector('{line}')?.dataset.state === 'warn'", timeout=20000, what='the line « avec réserve »')
+    c.eq(head(), 'XQAL Possible avec réserve : trop près de l’arrivée. Météo prévue : VFR.', 'the reservation of distance in its short '
+         'words', what='near')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F350_{c.design}_{w}_{c.lang}_near.png')
 
 
 
