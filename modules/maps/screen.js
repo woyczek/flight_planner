@@ -99,6 +99,23 @@ export const styleFor = () => baseStyle({
   base: S.topoDown && S.profile?.base === 'otm-topo' ? 'ofm-liberty' : S.profile
     ?.base // le fond topographique qui ne vient pas : le fond de repli (SOG-0300)
 });
+/** SOG-0715 (l'ergonome revient sur SOG-0512 : hors connexion la carte se déplace et se zoome comme en ligne) : le style du fond quand le réseau manque — un OBJET sans source, ni glyphes, ni sprite
+ *  (map_base.needsNetwork le sait local), d'un fond uni de la couleur de la mer : MapLibre, qui est dans le dépôt et dans le service worker, tourne alors hors ligne ; les contours des terres et des
+ *  frontières sont peints par la Carte (draw.js, drawPlain) ; la note de la feuille dit que le fond manque. */
+const blankStyle = () => ({
+  version: 8,
+  name: 'offline',
+  sources: {},
+  layers: [{
+    id: 'background',
+    type: 'background',
+    paint: {
+      'background-color': S.theme?.page || '#dfe6ec'
+    }
+  }]
+});
+/** Le style du fond en ce moment : celui sans réseau tant que la Carte est montée sur lui (S.blank), sinon celui du profil. */
+export const styleNow = () => S?.blank ? blankStyle() : styleFor();
 /** Une erreur du fond topographique (tuile refusée, hôte injoignable) : après trois erreurs sans qu'une seule tuile soit venue, le fond de repli (OpenFreeMap et nos courbes de niveau)
  *  prend la place, une fois, et la Carte le dit en une ligne. */
 function topoError(e) {
@@ -372,7 +389,7 @@ export async function status() {
   }
   // pour information : fond uni, relief absent (l'état normal hors ligne)
   const soft = [];
-  if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
+  if ((S.plain || S.blank) && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
   if (S.corrNote > 0 && !onMission()) soft.push(`<p>${esc(tt(TX.corrNote, {
     n: S.corrNote
   }))}</p>`); // des espaces hors du couloir du vol sont masqués à ce zoom (SOG-0169)
@@ -532,8 +549,10 @@ export async function startTiles() {
   // finale du cadre (la feuille posée avant, module.js)
   const cam = keptCam();
   if (cam) S.userMoved = true;
+  S.blank = navigator.onLine ===
+    false; // hors connexion : MapLibre sur un fond uni sans tuiles (SOG-0715), pas le fond uni sans gestes de S.plain
   const map = await baseTiles(S.mapEl, {
-    style: styleFor(),
+    style: styleNow(),
     bounds: [
       [S.fit.w, S.fit.s],
       [S.fit.e, S.fit.n]
@@ -568,6 +587,19 @@ export async function startTiles() {
       baseNames(S.placeWant);
     },
     onLoad: map => {
+      if (S?.mapNew === map && S
+        .blank
+      ) { // le réseau revient : le vrai fond prend la place du fond uni (le style se recharge, ses couches sont reposées par onStyleLoad)
+        const back = () => {
+          if (!S?.map || !S.blank) return;
+          S.blank = false;
+          S.map.setStyle(styleFor());
+          status();
+          schedule();
+        };
+        addEventListener('online', back);
+        S.stops.push(() => removeEventListener('online', back));
+      }
       if (!S || S.mapNew !==
         map) { // la carte d'un montage qui n'est plus le courant (la Carte a été remontée pendant le chargement) : abandonnée
         try {
@@ -625,7 +657,11 @@ export async function startTiles() {
       });
     }
   });
-  if (S) S.mapNew = null;
+  if (S) {
+    S.mapNew = null;
+    if (!map) S.blank =
+      false; // le fond sans réseau n'est pas venu non plus (pas de MapLibre, pas de WebGL) : S.plain, le fond uni sans gestes
+  }
   return !!map;
 }
 
@@ -639,7 +675,7 @@ export function watchTheme() {
     if (JSON.stringify(t) === JSON.stringify(S.theme)) return;
     const night = t.dark !== S.theme.dark;
     S.theme = t;
-    if (night && S.map) S.map.setStyle(styleFor());
+    if (night && S.map) S.map.setStyle(styleNow());
     drawProfile();
     redrawSheet();
     schedule();

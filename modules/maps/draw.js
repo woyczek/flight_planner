@@ -726,8 +726,8 @@ function draw() {
     });
   onCanvas();
   raw.clearRect(0, 0, CW, CH);
-  if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
-  if (!S.map) drawPlain(ctx, shiftTo(toRaw, mx, my), CW, CH, {
+  if ((S.plain || S.blank) && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
+  if (!S.map || S.blank) drawPlain(ctx, shiftTo(toRaw, mx, my), CW, CH, {
     sea: t.page,
     land: t.bg,
     border: t.grid

@@ -11399,3 +11399,33 @@ def d338(c):
     c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line', out, 'a ceiling inside the scale is drawn at its true height')
     c.ok(out['pulled'][0] >= 43000 and out['pulled'][1] == '41000,line', out, 'a level pulled up widens the scale: the line of the ceiling appears as soon as it is in')
     c.check_errors()
+
+
+@case('D341', 'SOG-0715 (the ergonomist reverses SOG-0512): offline the map moves and zooms as online — MapLibre runs on a style WITHOUT tiles (a plain sea colour), the route and the layers stay drawn, and the note of the sheet says the base map is missing', 'D', tags=('maps',),
+      designs=('standard',), night=False, screens=True,
+      rule='SOG-0715 (the user, from the phone: « elle reste fixe, on ne peut rien faire »): offline the Map fell to its own plain background, which had neither zoom nor pan (SOG-0512); the library is in the repository and in the service worker, only the style needed the network. Now: a style object without source, glyphs or sprite (map_base.needsNetwork), the same gestures; the plain background of the Map stays only when the library or WebGL is missing')
+def d341(c):
+    c.page.add_init_script("Object.defineProperty(Navigator.prototype, 'onLine', { get: () => false })")   # the page believes it is offline (the launcher of the test still serves the files)
+    f = flight()
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.map", timeout=15000, what='offline, MapLibre runs on a style without tiles (the map exists)')
+    r = c.js("() => { const S = window.__mp.S; return { blank: !!S.blank, plain: !!S.plain, sources: Object.keys(S.map.getStyle().sources), points: S.route.points.length } }")
+    c.ok(r['blank'] and not r['plain'] and r['sources'] == [] and r['points'] >= 2, str(r), 'offline: the map runs (S.map), on a style with no source, and is not the plain background without gestures; the route is read')
+    note = norm(tx(M, 'plain', c.lang))
+    c.until(f"() => (document.querySelector('.mp-notes')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(note)})", timeout=8000, what='the note of the sheet says the base map is missing')
+    cam = lambda: c.js("() => { const m = window.__mp.S.map, p = m.getCenter(); return [p.lng, p.lat, m.getZoom()] }")
+    box = c.js("() => { const r = window.__mp.S.mapEl.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }")
+    before = cam()
+    mouse_drag(c, (box[0], box[1]), (box[0] + 80, box[1] + 40))
+    c.wait(500)
+    after = cam()
+    c.ok(abs(after[0] - before[0]) > 1e-4 or abs(after[1] - before[1]) > 1e-4, f'{before} -> {after}', 'a drag moves the map offline (it stayed fixed)')
+    c.page.mouse.move(*box)
+    c.page.mouse.wheel(0, -500)
+    c.wait(700)
+    zoomed = cam()
+    c.ok(zoomed[2] > after[2] + .05, f'{after} -> {zoomed}', 'the wheel zooms the map offline')
+    c.shot(f'D341_{c.width}_{c.lang}_hors_ligne.png')
+    c.check_errors()
