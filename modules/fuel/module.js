@@ -5946,7 +5946,8 @@ function altnDocWrite() {
       lon: x.lon,
       nm: x.nm,
       state: p.state,
-      // SOG-0702 (l'ergonome : un terrain, un juge) : le signe même de la ligne de la liste (ok, warn, grey), que la Carte peint
+      // SOG-0702 (l'ergonome : un terrain, un juge) : le signe même de la ligne de la liste (ok, warn, grey), que la Carte peint ; jamais
+      // « ✕ » : il ne vient que d'une météo LIFR (state null, écarté) — une piste en échec n'est jamais candidate, les moyens jamais en échec
       sign: p.sign,
       why: p.why,
       // SOG-0544 : les heures de la phrase de la météo inconnue (HH:MMZ), pour que la Carte dise la même
