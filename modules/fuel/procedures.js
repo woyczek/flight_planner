@@ -40,8 +40,8 @@ import {
 } from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
 import * as CF from '../../frame/lib/current_flight.js';
 import {
-  fold
-} from '../../frame/lib/fold.js'; // SOG-0718 : le pli commun de la suite
+  fold as foldHtml
+} from '../../frame/lib/fold.js'; // SOG-0718 : le pli commun de la suite (renommé : createProcedures a SA fonction fold(side), le pli de la carte, qui masquerait l'import)
 import * as PR from '../../frame/lib/procedures.js';
 import * as RT from '../../frame/lib/route_text.js';
 import {
@@ -847,7 +847,7 @@ export function createProcedures(host) {
     const ground = m.nodata ? '' : `<span data-ground-slot>${groundHtml(m.icao)}</span>`;
     // SOG-0203 : les avertissements de la dernière lecture, en texte, repliés (« 2 avertissements » seuls ne disaient rien de LFOE)
     const wl = adOf(m.icao).warnings || [],
-      warn = wl.length ? fold({
+      warn = wl.length ? foldHtml({
         cls: 'fu-procwarn',
         attrs: {
           'data-procwarn': true
@@ -1083,7 +1083,7 @@ export function createProcedures(host) {
   const skeleton = (side, m, fields) => {
     const of = row => fields.filter(f => ROW_OF[f.k.split('-')[2]] === row),
       rows = m.nodata ? '' : `<div class="fu-prows">${rowHtml(side, 'rwy', TX.procRwy, of('rwy'))}${rowHtml(side, 'main', side === 'dep' ? TX.procSidRow : TX.procStarRow, of('main'))}${side === 'arr' ? rowHtml(side, 'app', TX.procApp, of('app')) + `<div class="fu-prow fu-pterrain" data-terrainrow><span class="fu-plab">${esc(tt(TX.procTerrain))}</span><span class="fu-pval" data-r="v-terrain" data-terrain></span></div>` : ''}</div>`;
-    return `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><p class="fu-procsum" data-r="sum" data-procsum></p>${m.nodata ? '<div class="fu-procmeta f-muted" data-r="meta"></div>' : `${rows}<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p>${fold({ cls: 'fu-procfoot', attrs: { 'data-procfoot': true }, title: tt(TX.procFoot), body: '<div class="fu-procmeta f-muted" data-r="meta"></div>' })}`}</div>`;
+    return `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><p class="fu-procsum" data-r="sum" data-procsum></p>${m.nodata ? '<div class="fu-procmeta f-muted" data-r="meta"></div>' : `${rows}<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p>${foldHtml({ cls: 'fu-procfoot', attrs: { 'data-procfoot': true }, title: tt(TX.procFoot), body: '<div class="fu-procmeta f-muted" data-r="meta"></div>' })}`}</div>`;
   };
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
