@@ -13250,3 +13250,20 @@ def a410(c):
     c.shot(f'A410_{c.width}_{c.lang}_delivered.png')
     c.js(measure, 0)
     c.check_errors()
+
+
+@case('A411', 'A simple <button aria-disabled="true"> LOOKS inactive (SOG-0724): the rule of the inactive button (opacity .55) reached only `button:disabled` and `.f-btn[aria-disabled]`, and Fuel\'s buttons are plain `<button>` — « Calculer A → B », « Contrôler », « Copier pour Eurocontrol » looked active; now a plain button with aria-disabled="true" has a computed opacity below 1, in two designs (standard, metro), like a disabled one; an active button keeps 1', 'A',
+      tags=('frame',), designs=('standard', 'metro'), screens=False, night=False, langs4=False,
+      rule="SOG-0724 (the relay,  Features' F354 captures at 13:30): frame/design/primitives.css `button:disabled, .f-btn[aria-disabled=\"true\"]`; no button of the suite carries aria-disabled=\"true\" and stays active by design (fplcopy and the Map's chips are inactive on purpose)")
+def a411(c):
+    c.open('hello')
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""() => {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      host.innerHTML = '<button id="t-plain" type="button">Plain</button><button id="t-aria" type="button" aria-disabled="true">Aria</button><button id="t-dis" type="button" disabled>Disabled</button><button id="t-ariafalse" type="button" aria-disabled="false">False</button><button id="t-fbtn" class="f-btn" aria-disabled="true">Fbtn</button>';
+      const o = id => +getComputedStyle(host.querySelector('#' + id)).opacity;
+      const out = { plain: o('t-plain'), aria: o('t-aria'), dis: o('t-dis'), ariafalse: o('t-ariafalse'), fbtn: o('t-fbtn'), design: document.documentElement.dataset.design || 'standard' };
+      host.remove(); return out; }""")
+    c.eq((r['plain'], r['ariafalse']), (1, 1), 'an active button, and aria-disabled="false", keep their full opacity', what='active')
+    c.ok(r['aria'] < 1 and r['aria'] == r['dis'] == r['fbtn'], r, f'a plain button with aria-disabled="true" is as dim as a disabled one and as a .f-btn ({r["design"]})')
+    c.check_errors()

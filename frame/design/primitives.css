@@ -62,6 +62,7 @@ button.primary,
   text-shadow: var(--sog-btn-primary-text-shadow)
 }
 button:disabled,
+button[aria-disabled="true"],
 .f-btn[aria-disabled="true"] {
   opacity: .55;
   cursor: default
