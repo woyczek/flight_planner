@@ -3087,7 +3087,7 @@ function renderPlanBody() {
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="fu-altnchk" data-altnchk aria-live="polite"></div>
       <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><p class="f-warn fu-lvlceil" data-lvlceil hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
-      <div class="fu-lvlwhy" data-lvlwhy hidden><p class="f-muted" data-lvlmain></p><details class="fu-altnfold" data-lvlfold hidden><summary class="f-muted">${esc(tt(TX.levelAutoWhyFold))}</summary><p class="f-muted" data-lvlreason></p></details></div>
+      <div class="fu-lvlwhy" data-lvlwhy hidden><p class="f-muted" data-lvlmain></p>${fold({ cls: 'fu-altnfold', attrs: { 'data-lvlfold': true, hidden: true }, title: tt(TX.levelAutoWhyFold), sumCls: 'f-muted', body: '<p class="f-muted" data-lvlreason></p>' })}</div>
       <p class="f-warn" data-pastdate hidden></p>
       <div class="f-grid fu-themes" data-themes></div>
     </div>`)}
@@ -3102,10 +3102,10 @@ function renderPlanBody() {
       <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
-      <details data-fold="pts"><summary data-ptsn>${esc(tt(TX.ptsN, { n: (r.points || []).length }))}</summary>
+      ${fold({ key: 'pts', sumAttrs: { 'data-ptsn': true }, title: tt(TX.ptsN, { n: (r.points || []).length }), body: `
       <div class="f-list fu-pts" data-pts></div>
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
-      <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
+      <p class="f-muted">${esc(tt(TX.ptsHint))}</p>` })}
       <div data-fpl></div>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
     </div>
@@ -3119,7 +3119,7 @@ function renderPlanBody() {
     </div>
   <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>
   <div class="f-card"><h2>${esc(tt(TX.aloftTitle))}</h2><div data-aloft></div></div>`)}
-  ${sec(3, `<details class="f-card" data-fold="settings"><summary data-settingssum>${esc(`${tt(TX.settings)} · ${S.settings.displayUnit || 'kg'}/h`)}</summary>
+  ${sec(3, `${fold({ cls: 'f-card', key: 'settings', open: !!S.ui.open?.settings, sumAttrs: { 'data-settingssum': true }, title: `${tt(TX.settings)} · ${S.settings.displayUnit || 'kg'}/h`, body: `
     <div class="f-grid fu-g3 fu-pairs">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}${fld('wxRadius', TX.wxRadius, S.settings.wxRadiusNm ?? 10, 'inputmode="numeric"')}
     </div>
     <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
@@ -3127,14 +3127,14 @@ function renderPlanBody() {
       <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
       ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
     <div class="fu-pairs" data-entrybox></div>
-  </details>
-  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
+  ` })}
+  ${fold({ cls: 'f-card', key: 'da', open: !!S.ui.open?.da, title: tt(TX.da), body: '<div data-da></div>' })}
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
       <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
 </div>
-  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
-  <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
-  <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
+  ${fold({ cls: 'f-card', key: 'openin', open: !!S.ui.open?.openin, title: tt(TX.openIn), body: `<p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div>` })}
+  ${fold({ cls: 'f-card', key: 'details', open: !!S.ui.open?.details, title: tt(TX.details), body: '<div data-details></div>' })}
+  ${fold({ cls: 'f-card', key: 'climb', open: !!S.ui.open?.climb, title: tt(TX.climbGuide), body: '<div data-climb></div>' })}
 `)}
   ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
       <div class="f-row" data-startrow></div>
@@ -3147,21 +3147,6 @@ function renderPlanBody() {
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
     <div class="f-card" data-block="fms"><h2>${esc(tt(TX.fmsTitle))}</h2><p class="f-muted">${esc(tt(TX.fmsHint))}</p><div class="f-row">${[['xp11', TX.fmsXp11], ['xp10', TX.fmsXp10], ['pln', TX.fmsPln]].map(([k, t]) => `<button type="button" data-do="fms" data-fms="${k}" disabled>${esc(tt(t))}</button>`).join('')}</div></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
-  for (const d of S.body.querySelectorAll('details[data-fold]')) {
-    // SOG-0222 (« « points » fermé par défaut. c'était le cas « avant » ») : la liste des points n'est pas mémorisée — fermée à chaque
-    // ouverture ; les autres plis gardent leur état sur l'appareil (depuis f917841cd, 23/10, ils l'étaient tous)
-    const kept = d.dataset.fold !== 'pts';
-    d.open = kept && !!S.ui.open?.[d.dataset.fold];
-    d.ontoggle = () => {
-      if (!kept) return;
-      S.ui.open = {
-        ...S.ui.open,
-        [d.dataset.fold]: d.open
-      };
-      S.ctx.data.put(UI_PATH, S.ui);
-      if (d.open) refresh();
-    };
-  }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
   S.body.onkeydown = e => {
     if (S.AD.onKey(e) || S.RC.onKey(e)) return; // liste de terrains ou de route ouverte : ↑ ↓ Entrée Échap sont à elle
@@ -4266,7 +4251,7 @@ function renderWx() {
       ${st.temp != null || st.qnh != null ? `<dt>${esc(tt(TX.wxTemp))}</dt><dd>${st.temp != null ? `${st.temp} °C` : '—'} · ${st.qnh != null ? `${Math.round(st.qnh)} hPa` : '—'}</dd>` : ''}
       ${st.tempo.map(g => `<dt>${esc(g.change)}</dt><dd>${esc(wind(g.wdir, g.wspd, g.wgst))} · ${esc(vis(g.vis))}${g.ceil != null ? ` · ${g.ceil} ft` : ''}${g.wx ? ` · ${esc(g.wx)}` : ''}${g.cat ? ` <span class="f-badge" data-kind="${kinds[g.cat] || 'accent'}">${esc(g.cat)}</span>` : ''}</dd>`).join('')}</dl>
       ${st.convective ? `<p class="f-warn">${esc(tt(TX.wxCb))}</p>` : ''}
-      <details><summary>${esc(tt(TX.wxRaw))}</summary><pre>${esc(st.raw)}</pre></details></div>`;
+      ${fold({ title: tt(TX.wxRaw), body: `<pre>${esc(st.raw)}</pre>` })}</div>`;
     },
     all = wxStations(),
     ends = all.filter(x => x.role !== 'mid'),
@@ -4274,9 +4259,7 @@ function renderWx() {
   box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: fmtDateZ(S.wx.at, S.ctx.lang()) }))}</p>` : '') +
     (S.wx.source === 'direct' ? `<p class="f-muted">${esc(tt(TX.wxDirect))}</p>` : '') +
     (S.wx.noTaf && wxWhen() != null ? `<p class="f-warn">${esc(tt(TX.wxNoTaf))}</p>` : '') + ends.map(card).join('') +
-    (mids.length > 2 ? `<details data-wxmids${S.ui.wxMidsOpen ? ' open' : ''}><summary>${esc(tt(TX.wxMids, { n: mids.length }))}</summary>${mids.map(card).join('')}</details>` : mids.map(card).join(''));
-  const det = box.querySelector('[data-wxmids]');
-  if (det) det.ontoggle = () => S.ui.wxMidsOpen = det.open;
+    (mids.length > 2 ? `${fold({ attrs: { 'data-wxmids': true }, key: 'wxmids', open: !!S.ui.wxMidsOpen, title: tt(TX.wxMids, { n: mids.length }), body: mids.map(card).join('') })}` : mids.map(card).join(''));
 }
 /** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
  *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
@@ -5374,7 +5357,7 @@ function faultsHtml(lines, plan = null) {
   const li = l => `<li data-fault>${[l.seg ? `<b>${esc(l.seg)}</b>` : '<b>—</b>', l.ruleId || l.kind ? `<span class="fu-faultrule">${esc(l.ruleId || tt(TX.rKinds[l.kind] || TX.rKinds.altitude))}</span>` : '', l.text ? esc(l.text) : ''].filter(Boolean).join(' · ')}</li>`;
   // SOG-0081 : un contrôle incomplet le dit en titre et en première ligne, avec ses raisons « revue » quand il en a
   const inc = plan?.incomplete ? `<li data-incomplete><b>${esc(tt(TX.rIncomplete))}</b> · ${esc(plan.reviews?.length ? plan.reviews.join(' · ') : tt(TX.rIncompleteWhy))}</li>` : '';
-  return `<details class="fu-rfaults" data-faults data-rcheck><summary class="f-warn">${esc([lines.length ? tt(TX.rCheckN, { n: lines.length }) : '', plan?.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}</summary><ul class="fu-faultlist">${inc}${lines.slice(0, 7).map(li).join('')}</ul>${lines.length > 7 ? `<details class="fu-faultmore" data-faultmore><summary class="f-muted">${esc(tt(TX.rMore, { n: lines.length - 7 }))}</summary><ul class="fu-faultlist">${lines.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
+  return `${fold({ cls: 'fu-rfaults', attrs: { 'data-faults': true, 'data-rcheck': true }, title: [lines.length ? tt(TX.rCheckN, { n: lines.length }) : '', plan?.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '), sumCls: 'f-warn', body: `<ul class="fu-faultlist">${inc}${lines.slice(0, 7).map(li).join('')}</ul>${lines.length > 7 ? fold({ cls: 'fu-faultmore', attrs: { 'data-faultmore': true }, title: tt(TX.rMore, { n: lines.length - 7 }), sumCls: 'f-muted', body: `<ul class="fu-faultlist">${lines.slice(7).map(li).join('')}</ul>` }) : ''}` })}`;
 }
 /** Le partage d'un itinéraire (SOG-0161) : « contrôlé 22 % · incomplet 65 % · repli 14 % » (l'erreur si elle a une part) ; « contrôlé »
  *  seul seulement à 100 % ; '' sans contrôle. */
@@ -5405,7 +5388,7 @@ function sectionsHtml(a) {
     return `<b>${RL.legendHtml(S.ctx.lang(), [n], { hint: false })}</b>${x.layer && !word.startsWith(x.layer) ? ` <span class="f-muted">(${esc(x.layer)})</span>` : ''}`;
   };
   const li = x => `<li data-section="${esc(x.control)}" data-layer="${esc(x.layer)}" data-nature="${esc(natOf(x))}">${[head(x), esc(`${x.from}–${x.to}`), `<span class="fu-ctrl-${esc(x.control)}">${esc(tt(TX.rCtrl[x.control]))}</span>`, x.nm !== null ? esc(`${x.nm} NM`) : '', x.reason ? esc(x.reason) : ''].filter(Boolean).join(' · ')}</li>`;
-  return `<details class="fu-rsections" data-sections><summary class="f-muted">${esc(tt(TX.rSections, { n: list.length }))}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(li).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore"><summary class="f-muted">${esc(tt(TX.rMore, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
+  return `${fold({ cls: 'fu-rsections', attrs: { 'data-sections': true }, title: tt(TX.rSections, { n: list.length }), sumCls: 'f-muted', body: `<ul class="fu-faultlist">${list.slice(0, 7).map(li).join('')}</ul>${list.length > 7 ? fold({ cls: 'fu-faultmore', title: tt(TX.rMore, { n: list.length - 7 }), sumCls: 'f-muted', body: `<ul class="fu-faultlist">${list.slice(7).map(li).join('')}</ul>` }) : ''}` })}`;
 }
 // « Ce que le contrôle ne couvre pas » : modules/fuel/route_limits.js (SOG-0669, extrait de ce fichier)
 const RLMH = {
@@ -5524,7 +5507,7 @@ function fplDraw(C, textOnly = false) {
     box.innerHTML = `<p class="f-muted" data-fplstale>${esc(tt(TX.fplStaleCopy))}</p>`;
     return;
   }
-  box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
+  box.innerHTML = `${vio ? `<p class="f-warn" data-fplviolations>${esc(tt(TX.fplViolations, { n: vio }))}</p>` : ''}<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div>${fold({ cls: 'fu-fpl', attrs: { 'data-fplfold': true }, open, title: tt(TX.fplFold), sumCls: 'f-muted', body: `<label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div>` })}`;
 }
 /** SOG-0529 (2) : une route qui n'est qu'un direct — « aucune route calculée … : calculez-en une ou saisissez-la », puis : si le contrôle
  *  de route d'AeroDB a jugé CE texte (« Contrôler », S.rcheck) et y a trouvé des écarts, SES phrases (RE.faultLines, trois au plus) ;
@@ -5684,6 +5667,17 @@ function altnWhyText(c, sheet) {
     s: tt(v.hard === false ? TX.altnAny : TX.altnHard),
     t: String(sheet?.runwayType || '').slice(0, 12)
   });
+}
+/** SOG-0718 : un pli à clé de l'écran s'ouvre ou se ferme (wireFolds, frame/lib/fold.js) — ceux des dégagements dans S.altnFolds
+ *  (SOG-0713) ; les stations le long de la route pour cet écran ; la liste des points jamais retenue (SOG-0222 : « « points » fermé par
+ *  défaut ») ; les autres gardés sur l'appareil (UI_PATH, depuis f917841cd), et un pli ouvert redessine l'écran. */
+function onFold(k, open) {
+  if (k.startsWith('altn-')) return S.altnFolds.set(k, open);
+  if (k === 'wxmids') return S.ui.wxMidsOpen = open;
+  if (k === 'pts') return;
+  (S.ui.open = Object.assign({}, S.ui.open))[k] = open;
+  S.ctx.data.put(UI_PATH, S.ui);
+  if (open) refresh();
 }
 /** SOG-0714 : la proposition gardée au démontage (ALTN_KEEP) rendue au montage suivant quand c'est le même vol (départ, arrivée,
  *  aéronef) ; un autre vol : ni elle ni ses plis. Elle ne devient « à recalculer » que par la règle de SOG-0566. */
@@ -6257,7 +6251,7 @@ function routeAltsDraw() {
   box.innerHTML = head + conformLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `${cols}<div class="f-list fu-ralts" data-altlist>${shown.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (A.mode === 'levels' ? autoMoreHtml() : '') + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
-    '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
+    '') + (A.list.length ? `${fold({ cls: 'fu-rlegend', attrs: { 'data-rlegend': true }, title: tt(TX.rLegend), sumCls: 'f-muted', body: RL.legendHtml(S.ctx.lang()) })}` : '') + limitsHtml(A.n || {
     limitation: '',
     gaps: []
   });
@@ -6521,15 +6515,13 @@ function proofHtml(a) {
     },
     // les routes NAT écartées et pourquoi (six au plus), dans un pli FERMÉ qui dit leur nombre ; rien sans route écartée
     rl = P.rejected || [],
-    rej = rl.length ? `<details class="fu-rprooffold" data-proofrejs><summary class="f-muted">${esc(tt(pl(rl.length, TX.rProofRej1, TX.rProofRejN), {
-        n: rl.length
-      }))}</summary>${rl.map(x => `<small class="f-muted fu-rproof" data-proofrej="${esc(x.track)}">${esc(tt(TX.rProofRejected, {
+    rej = rl.length ? `${fold({ cls: 'fu-rprooffold', attrs: { 'data-proofrejs': true }, title: tt(pl(rl.length, TX.rProofRej1, TX.rProofRejN), { n: rl.length }), sumCls: 'f-muted', body: rl.map(x => `<small class="f-muted fu-rproof" data-proofrej="${esc(x.track)}">${esc(tt(TX.rProofRejected, {
       t: x.track,
       w: x.why
     }))}${x.near ? ` <span data-proofnear="${esc(x.near.side)}">— ${esc(tt(TX.rProofNear[x.near.side], {
       m: x.near.minutes,
       t: zTime(x.near.depart)
-    }))}</span>` : ''}</small>`).join('')}</details>` : '',
+    }))}</span>` : ''}</small>`).join('') })}` : '',
     // l'heure de départ absente de la demande : la validité horaire des routes NAT n'a pas été vérifiée
     noTime = P.noTime ? `<small class="f-muted fu-rproof" data-proofnotime>${esc(tt(TX.rProofNoTime))}</small>` : '';
   return `${P.list?.length ? `<small class="f-muted fu-rproof" data-proof>${P.list.map(one).join(' · ')}</small>` : ''}${rej}${noTime}`;
@@ -6970,9 +6962,9 @@ function verdictsHtml(a, open = false) {
         it = nv?.items || [],
         li = x => `<li data-rule>${esc(RR.ruleLine(x, tt))}</li>`;
       if (!it.length && r.code === 'connector_limit') return `<li data-reason="${esc(r.code)}">${text}${noProcHtml(r.values)}</li>`;
-      return it.length ? `<li data-reason="${esc(r.code)}"><details class="fu-faultmore" data-staterules><summary>${text}</summary><ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? `<details class="fu-faultmore" data-rulesmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: it.length - 7 }))}</summary><ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul></details>` : ''}</details></li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
+      return it.length ? `<li data-reason="${esc(r.code)}">${fold({ cls: 'fu-faultmore', attrs: { 'data-staterules': true }, head: text, body: `<ul class="fu-faultlist">${it.slice(0, 7).map(li).join('')}</ul>${it.length > 7 ? fold({ cls: 'fu-faultmore', attrs: { 'data-rulesmore': true }, title: tt(RR.ROWS.more, { n: it.length - 7 }), sumCls: 'f-muted', body: `<ul class="fu-faultlist">${it.slice(7).map(li).join('')}</ul>` }) : ''}` })}</li>` : `<li data-reason="${esc(r.code)}">${text}</li>`;
     },
-    group = (list, kind, title, cls) => list.length ? `<details class="fu-rverdicts" data-reasons="${kind}"${open ? ' open' : ''}><summary class="${cls}">${esc(title)}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore" data-reasonsmore><summary class="f-muted">${esc(tt(RR.ROWS.more, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul></details>` : ''}</details>` : '',
+    group = (list, kind, title, cls) => list.length ? `${fold({ cls: 'fu-rverdicts', attrs: { 'data-reasons': kind }, open, title, sumCls: cls, body: `<ul class="fu-faultlist">${list.slice(0, 7).map(line).join('')}</ul>${list.length > 7 ? fold({ cls: 'fu-faultmore', attrs: { 'data-reasonsmore': true }, title: tt(RR.ROWS.more, { n: list.length - 7 }), sumCls: 'f-muted', body: `<ul class="fu-faultlist">${list.slice(7).map(line).join('')}</ul>` }) : ''}` })}` : '',
     R0 = a.reasons || {
       violates: [],
       unverifiable: []
@@ -7613,7 +7605,7 @@ function renderPts() {
     plan = +S.flight.level?.ft || 0,
     groups = procGroups(),
     inGroup = new Set(groups.flatMap(g => g.fixes)),
-    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(pl(g.fixes.length, TX.ptsGroup1, TX.ptsGroupN), { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt" data-hover-pt="${esc(fx)}"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
+    group = g => `${fold({ cls: 'f-item fu-ptgrp', attrs: { 'data-kind': g.kind }, title: `${g.label} · ${tt(pl(g.fixes.length, TX.ptsGroup1, TX.ptsGroupN), { n: g.fixes.length })}`, body: `<div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt" data-hover-pt="${esc(fx)}"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div>` })}`;
   // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
   const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
     why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
@@ -9147,7 +9139,7 @@ function mPaneBody(id, m) {
   return `<section data-mrisks><h3>${esc(tt(TX.mRisks))}</h3>${risks.length ? li(risks) : `<p class="f-muted">${esc(tt(TX.mNoRisk))}</p>`}</section>
     ${m.summary ? `<p data-msummary>${esc(m.summary)}</p>` : ''}
     ${sec(TX.mObjectives, obj.length ? li(obj) : '')}${sec(TX.mTeams, teams.length ? li(teams) : '')}${sec(TX.mZones, zones.length ? li(zones) : '')}
-    ${details ? `<details><summary>${esc(tt(TX.mDetails))}</summary>${details}</details>` : ''}`;
+    ${details ? `${fold({ title: tt(TX.mDetails), body: details })}` : ''}`;
 }
 /** Redessine ce qui dépend du calcul : origine de la croisière, décision, résultat, blocs repliés ouverts. */
 /** Profil vertical du devis pour maps (pilot/<trigramme>/current_flight.json, champ profile) : vario et vitesse sol
@@ -9438,7 +9430,7 @@ function renderSheets() {
   S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
     <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
     <div class="f-list" data-acres></div>
-    <div class="f-list" data-sheets>${ours.length ? `<h3 class="fu-cat" data-cosheets>${esc(tt(TX.coSheets, { a: S.coFleet.name || '' }))}</h3>${ours.map(rowHtml).join('')}${others.length ? `<details class="fu-others" data-othersheets><summary>${esc(tt(TX.otherSheets, { n: others.length }))}</summary>${grouped(r => !mine(r))}</details>` : ''}` : grouped(() => true) || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
+    <div class="f-list" data-sheets>${ours.length ? `<h3 class="fu-cat" data-cosheets>${esc(tt(TX.coSheets, { a: S.coFleet.name || '' }))}</h3>${ours.map(rowHtml).join('')}${others.length ? `${fold({ cls: 'fu-others', attrs: { 'data-othersheets': true }, title: tt(TX.otherSheets, { n: others.length }), body: grouped(r => !mine(r)) })}` : ''}` : grouped(() => true) || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
   S.body.oninput = e => e.target.dataset?.k === 'acsearch' ? acResults(e.target.value) : null;
   S.body.onkeydown = S.body.onchange = null;
@@ -9831,8 +9823,8 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   // SOG-0713 (R1) : les plis des dégagements retenus par clé (fold.js : le pli du haut, « Critères du dégagement », un « Détail » par terrain)
   S.altnFolds = ALTN_KEEP?.folds || new Map();
-  S.stops.push(wireFolds(S.body, (k, o) => S.altnFolds.set(k, o), {
-    get: k => S.altnFolds.get(k)
+  S.stops.push(wireFolds(S.body, onFold, {
+    get: k => k.startsWith('altn-') ? S.altnFolds.get(k) : k === 'wxmids' ? S.ui.wxMidsOpen : S.ui.open?.[k]
   }));
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
@@ -10949,7 +10941,7 @@ function aidsDraw() {
   if (!box) return;
   const ils = S.P?.approachAid?.() || '',
     vors = routeAids(),
-    list = vors?.length ? `<details class="fu-aidsroute" data-aidsroute><summary>${esc(tt(TX.aidsRoute, { n: vors.length }))}</summary><ul class="fu-aidlist">${vors.map(v => `<li data-aid="${esc(v.id)}"><b>${esc(v.id)}</b> ${esc(v.kind)} ${esc(v.freq)} <span class="f-muted">${esc(v.leg)}</span></li>`).join('')}</ul></details>` : '',
+    list = vors?.length ? `${fold({ cls: 'fu-aidsroute', attrs: { 'data-aidsroute': true }, title: tt(TX.aidsRoute, { n: vors.length }), body: `<ul class="fu-aidlist">${vors.map(v => `<li data-aid="${esc(v.id)}"><b>${esc(v.id)}</b> ${esc(v.kind)} ${esc(v.freq)} <span class="f-muted">${esc(v.leg)}</span></li>`).join('')}</ul>` })}` : '',
     html = ils || list ? `${ils ? `<p class="fu-aidils" data-aidils><b>${ils}</b></p>` : ''}${list}` : vors === null ? '' : `<p class="f-muted" data-aidsnone>${esc(tt(TX.aidsNone))}</p>`;
   // SOG-0247 (l'utilisateur : « se referme tout seul dès qu'on l'ouvre ») : comparé au dernier HTML écrit ICI, pas à innerHTML (un pli
   // ouvert y ajoute open : chaque redessin le réécrivait, donc le refermait) ; réécrit, il garde son état ouvert
