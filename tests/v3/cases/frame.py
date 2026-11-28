@@ -5889,11 +5889,11 @@ def a264(c):
 def a280(c):
     full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
     c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
-    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    src = (ROOT / 'modules' / 'hello' / 'meta.js').read_text(encoding='utf-8')   # SOG-0728: the meta of a module is its own file
     old = "writes: [{\n    prefix: 'pilot/',"
     assert src.count(old) == 1
     patched = src.replace(old, "writes: [{\n    prefix: 'hello/rows.json',\n    merge: 'keyed:rows:id'\n  }, {\n    prefix: 'pilot/',")
-    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.context.route(re.compile(r'/modules/hello/meta\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
     c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
     c.open('fuel', wait=False)    # the module that declares the rule is NOT mounted
     c.until("!!document.querySelector('[data-module=fuel]') && !!window.FrameData", timeout=20000, what='Fuel mounted, hello not')
@@ -12585,11 +12585,11 @@ def _hello_watcher(c, watch_js):
     """The example module (dev only) declares a watcher (meta.watch = 'watch.js') whose file is `watch_js`; a simulated launcher gives the position of the simulator."""
     mode = {'m': 'fix'}
     _sim_launcher(c, mode)
-    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    src = (ROOT / 'modules' / 'hello' / 'meta.js').read_text(encoding='utf-8')   # SOG-0728: the meta of a module is its own file
     head = "  apps: ['pilot'],"
     assert src.count(head) == 1
     patched = src.replace(head, head + "\n  watch: 'watch.js',")
-    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.context.route(re.compile(r'/modules/hello/meta\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
     c.context.route(re.compile(r'/modules/hello/watch\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=watch_js))
     c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
     return mode
