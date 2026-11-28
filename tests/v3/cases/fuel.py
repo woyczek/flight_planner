@@ -7411,6 +7411,9 @@ def f256(c):
     # the message fails: the button carries aria-disabled (Playwright will not tap it) but still answers a press, saying why
     c.eq(c.js(f"document.querySelector('{FUEL} [data-do=fplcopy]').getAttribute('aria-disabled')"), 'true', 'the button said unavailable',
          what='aria-disabled')
+    # the relay (train 13): greyed to the eye too, the look of the frame for an inactive button (red before: opacity 1, the usual look)
+    op = c.js(f"+getComputedStyle(document.querySelector('{FUEL} [data-do=fplcopy]')).opacity")
+    c.ok(op < 1, op, '« Copier pour Eurocontrol » unavailable looks greyed (the opacity of the frame)')
     c.js(f"document.querySelector('{FUEL} [data-do=fplcopy]').click()")
     want = norm(tx(T, 'routeword', L)).split('{')[0].strip()
     c.until(f"(window.__notes || []).some(x => x.replace(/\\s+/g, ' ').includes({json.dumps(want)}))", timeout=5000, what='the button says the element')
