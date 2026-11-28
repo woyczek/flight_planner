@@ -13120,3 +13120,52 @@ def a406(c):
         c.eq(c.js("document.querySelector('[data-cm-text]').value"), 'Un autre', 'the text stays in the field', what='text kept 2')
         c.ok(not any('le lanceur ne l’a pas écrit' in n[0] for n in c.js('window.__nl')), c.js('window.__nl'), 'not the bare « pas écrit »: the cause is said')
         c.check_errors()
+
+
+@case('A407', 'A report that the phone kept « non envoyé » leaves WITHOUT opening Signaler (SOG-0717): when the app comes back to the foreground, the kept report of the pilot is written under pilot/<trigram>/signalements/, the list of the device says so, and nothing is loaded while the device keeps none; a report is never sent twice', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0717 (the user's report SIG-29db07ed1d: written on 20 Nov, sent on 28 Nov): the retry of st.unsent ran only when the Signaler screen was mounted, though the note of the gesture says « part avec le prochain envoi réussi »; the frame now flushes it at the return to the foreground and after a successful synchronisation")
+def a407(c):
+    sid = 'SIG-0123456789'
+    kept = {'unsent': [{'id': sid, 'kind': 'bug', 'title': 'Un signalement retenu', 'text': 'Il attend sur le téléphone.', 'screen': 'fuel', 'at': '2026-11-20T19:31:29Z', 'via': 'pilote'}]}
+    c.open('hello', docs=LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache'], ['device/signaler.json', kept, 'cache']])
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    keys = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => String(k).includes('signalements/'))) } })"""
+    c.wait(1500)
+    c.eq(c.js(keys), [], 'nothing sent by itself: the frame waits for a reason (the foreground, a synchronisation)', what='kept')
+    # the app comes back to the foreground (the phone woken up): the kept report is written, with ITS date
+    c.js("() => document.dispatchEvent(new Event('visibilitychange'))")
+    for _ in range(60):
+        if c.js(keys):
+            break
+        c.wait(250)
+    c.eq(c.js(keys), [f'pilot/ABC/signalements/{sid}.json'], 'one document under the pilot\'s folder, under the identifier it already had', what='document')
+    doc = json.loads(c.js("""(k) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').get(k); q.onsuccess = () => res(q.result?.text || '') } })""", f'pilot/ABC/signalements/{sid}.json'))
+    c.eq((doc['id'], doc['title'], doc['text'], doc['at'], doc['schema']), (sid, 'Un signalement retenu', 'Il attend sur le téléphone.', '2026-11-20T19:31:29Z', 'sog-signalement/1'), 'the document is the kept report, its own date (the sheet of the ergonomist reads when it was written)', what='doc')
+    store = json.loads(c.js("""(k) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').get(k); q.onsuccess = () => res(q.result?.text || '{}') } })""", 'device/signaler.json'))
+    c.eq((len(store.get('unsent', [])), [m['id'] for m in store.get('mine', [])]), (0, [sid]), 'the device list: no more « non envoyé », the report is in « Mes signalements »', what='store')
+    # coming back again: nothing is sent a second time
+    c.js("() => document.dispatchEvent(new Event('visibilitychange'))")
+    c.wait(1500)
+    c.eq(c.js(keys), [f'pilot/ABC/signalements/{sid}.json'], 'still one document', what='once')
+    c.check_errors()
+
+
+@case('A408', 'A report that the phone kept « non envoyé » leaves after a SUCCESSFUL SYNCHRONISATION, without opening Signaler (SOG-0717): the same kept report, the same document under pilot/<trigram>/signalements/, once', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0717: the note of the gesture says the report « part avec le prochain envoi réussi »; the frame flushes it when the status of the synchronisation shows a new successful one (paintSync: lastSync changes)")
+def a408(c):
+    sid = 'SIG-0123456789'
+    kept = {'unsent': [{'id': sid, 'kind': 'bug', 'title': 'Un signalement retenu', 'text': 'Il attend sur le téléphone.', 'screen': 'fuel', 'at': '2026-11-20T19:31:29Z', 'via': 'pilote'}]}
+    c.open('hello', docs=LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache'], ['device/signaler.json', kept, 'cache']])
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    keys = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => String(k).includes('signalements/'))) } })"""
+    c.wait(1500)
+    before = c.js(keys)
+    c.js("async () => { await window.SogFrame.syncNow(); }")
+    for _ in range(60):
+        if c.js(keys):
+            break
+        c.wait(250)
+    c.eq((before, c.js(keys)), ([], [f'pilot/ABC/signalements/{sid}.json']), 'nothing before; after the synchronisation, the kept report is written under the pilot\'s folder', what='after the synchronisation')
+    c.check_errors()

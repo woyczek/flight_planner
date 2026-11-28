@@ -1,26 +1,23 @@
 (() => {
   'use strict';
   // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
-  //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran ; sur téléphone, une barre
-  //     d'onglets en bas (APP.tabs : Préparer · Carte · CR · Vols · Météo, un onglet = un groupe de modules ; Réglages est le ⚙ de l'en-tête) ;
-  //     l'adresse (#module, #module?clé=valeur : la suite après « ? » est donnée au module en ctx.query) suffit à
-  //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
-  //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
-  //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
-  //     unique), t, lang, notify, dismissNote, ask, askText, writeFailure, writeFailText, memoryOnly, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
-  //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
-  //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
-  //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
-  //   · transport : page servie par un lanceur → son data/ est le stockage de l'appareil (lanceur ; échange git
-  //     seulement si « plusieurs appareils » ou « plusieurs utilisateurs » est coché dans device/usages.json, écrit par
-  //     l'écran des réglages) ; sans lanceur : aucun usage d'échange coché → local seul, sinon GitHub s'il est réglé ;
-  //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
-  //     lecture seule, objet vide en son absence ;
-  //   · niveau d'usage (device/level.json, choisi dans les réglages : 1 découverte, 2 courant par défaut, 3 complet) : le
-  //     menu ne montre que les modules dont meta.level est inférieur ou égal ; un module caché reste joignable par son
-  //     adresse ;
-  //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
-  //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
+  //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran ; sur téléphone, une barre d'onglets en bas (APP.tabs : Préparer · Carte · CR
+  //     · Vols · Météo, un onglet = un groupe de modules ; Réglages est le ⚙ de l'en-tête) ; l'adresse (#module, #module?clé=valeur : la suite après « ? » est donnée
+  //     au module en ctx.query) suffit à revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
+  //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et unmount() ; ctx = { data (adaptateur de la couche de
+  //     données, préfixes déclarés dans meta), aerodb (service unique), t, lang, notify, dismissNote, ask, askText, writeFailure, writeFailText, memoryOnly, net,
+  //     identity et airline (lecture seule), query } ; un module ne charge aucune feuille de style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…)
+  //     ;
+  //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet appareil seul) ; clic : synchroniser, ou l'écran des
+  //     conflits s'il y en a ;
+  //   · transport : page servie par un lanceur → son data/ est le stockage de l'appareil (lanceur ; échange git seulement si « plusieurs appareils » ou « plusieurs
+  //     utilisateurs » est coché dans device/usages.json, écrit par l'écran des réglages) ; sans lanceur : aucun usage d'échange coché → local seul, sinon GitHub s'il
+  //     est réglé ;
+  //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en lecture seule, objet vide en son absence ;
+  //   · niveau d'usage (device/level.json, choisi dans les réglages : 1 découverte, 2 courant par défaut, 3 complet) : le menu ne montre que les modules dont
+  //     meta.level est inférieur ou égal ; un module caché reste joignable par son adresse ;
+  //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au rechargement), appels sortants des modules
+  //     relayés par le lanceur s'il y en a un (ctx.net).
   // scripts du store posés avant le cadre (index.html) : un fichier perdu en route (réseau, copie du service worker
   // indisponible) laissait la page vide sur une erreur (« reading 'detect' », « reading 'persist' ») ; il est redemandé
   // une fois, puis le cadre repart de zéro (app.js remis dans la page) ; toujours perdu, la page dit pourquoi et propose
@@ -99,12 +96,10 @@
       }
     }));
   }
-  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> exactement quand la mise en page est celle de l'ordinateur,
-  // le rail à libellés — plus de 760 px et pas le paysage de téléphone (f-land) ; un seul critère pour la mise en page et le
-  // design d'ordinateur (Aqua) qui s'y accroche, jamais sur le rail d'icônes ni sur la barre du bas. Même règle dans
-  // index.html avant le premier affichage ; recalculée sur resize, orientationchange et au changement du pointeur (une
-  // tablette à laquelle on branche une souris), en une seule écriture quand la valeur change ; « frame-desk »
-  // (detail: { desk }) le dit ensuite.
+  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> exactement quand la mise en page est celle de l'ordinateur, le rail à libellés — plus de 760 px et
+  // pas le paysage de téléphone (f-land) ; un seul critère pour la mise en page et le design d'ordinateur (Aqua) qui s'y accroche, jamais sur le rail d'icônes ni sur la
+  // barre du bas. Même règle dans index.html avant le premier affichage ; recalculée sur resize, orientationchange et au changement du pointeur (une tablette à laquelle
+  // on branche une souris), en une seule écriture quand la valeur change ; « frame-desk » (detail: { desk }) le dit ensuite.
   const deskNow = () => innerWidth > 760 && !landNow();
 
   function paintDesk() {
@@ -3288,7 +3283,12 @@
     return ` · ${host && host !== 'gitlab.com' ? `${host}/` : ''}${cfg.repo.slice(0, 120)}`;
   }
 
+  // SOG-0717 : un signalement « non envoyé » repart sans ouvrir Signaler (retour au premier plan, synchronisation réussie) ; rien n'est chargé tant que l'appareil n'en garde aucun
+  const reportsBack = () => own.get('device/signaler.json').then(r => r?.unsent?.length && need('signaler').then(() => SogSignaler
+    .flushUnsent(helpCtx()))).catch(() => {});
+
   function paintSync(s) {
+    if (lastStatus && s.lastSync && s.lastSync !== lastStatus.lastSync) void reportsBack();
     lastStatus = s;
     // le transport du lanceur n'a pas pu l'atteindre : le lanceur est parti (le réseau n'y est pour rien : c'est en local)
     if (s.transport === 'launcher' && s.lastError === 'offline') setLauncherDown(true);
@@ -6225,7 +6225,7 @@
     window.addEventListener('offline', () => FD.status().then(paintSync));
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        FD.status().then(paintSync); // téléphone rallumé : état du moment
+        FD.status().then(paintSync), void reportsBack(); // téléphone rallumé : état du moment, et un signalement non envoyé repart
         if (launcherHere) void recheckLauncher();
       }
     });

@@ -3241,6 +3241,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **The pilot's view** (`pilotView`): `route.deduced` is filtered to the places the view keeps, like `route.order` (the secret of a closed drawer is untouched).
 - **Noreg A405** (extended): see the case.
 
+## 28 November 2026 — a report kept « non envoyé » leaves without opening Signaler (SOG-0717, after SOG-0715)
+- **Fact** (SOG-0715): the report SIG-29db07ed1d was kept on the phone on 20 Nov (a write refused: `no-write`) and left on 28 Nov, when the user opened Signaler again: the flush of `st.unsent` ran only at the mount of the screen, nothing else triggered it, and the note of the gesture promised « le prochain envoi réussi ». Nothing outside the screen said that a report waited.
+- **Decision** (the ergonomist, via the relay): (a) the kept reports of a pilot leave at the return of the app to the foreground and after a successful synchronisation (`flushUnsent`, called by the frame: `reportsBack` in `app.js`, one read of `device/signaler.json` first, so that no script is loaded when the device keeps none); the words of the note do not change; (b) the reason of a refused write goes to the diagnostic of the device (`writeFailure`, head « Signalement non envoyé »); (c) no new sentence for the status block yet.
+- **Not done**: the reports of the workstation (the launcher's `ajouter`) keep waiting for the screen; the status-block line « 1 signalement non envoyé depuis le … » + « Ouvrir » (the ergonomist's list); a retry timer.
+- **`frame/app.js` stays at 6 830 lines** (the header comment and two prose comments reflowed to make room: code lines identical).
+- **Noreg A407** (foreground) and **A408** (synchronisation).
 ## 27 November 2026 — a comment on a report is never silent: the cause is said, the request waits (SOG-0691)
 
 - **Fact**: the verb `signalement/commenter` is sound (run on a COPY of the real `organisation/`, 92 reports: `ok`), the page too (a probe on the real verbs: « Ajouter » writes and lists). `signaler.js` `tools().call` returned `{ offline: true }` for EVERY failure (launcher stopped, 409 busy, 429, error) and the gesture said « le lanceur ne l'a pas écrit » whatever the cause: since SOG-0410 (18 Nov), no pushed commit broke it. The likely cause for the user: the launcher off (SOG-0692 the same day) or busy with a long operation (a write is not in `PARALLEL`).

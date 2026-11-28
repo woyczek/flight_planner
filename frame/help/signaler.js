@@ -429,6 +429,33 @@
       /\r\n?/g, '\n').trim()
     .slice(0, n) : '';
   const now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  /** Le document d'un signalement de pilote (pilot/<trigramme>/signalements/<id>.json) : UNE seule forme, celle de l'envoi et du renvoi (SOG-0717). */
+  const reportDoc = (r, id, at, shots = 0) => ({
+    schema: 'sog-signalement/1',
+    id,
+    kind: r.kind,
+    title: r.title,
+    text: r.text,
+    screen: r.screen,
+    ...(r.ctx ? {
+      ctx: r.ctx
+    } : {}),
+    ...(shots ? {
+      shots: Math.min(shots, MAX_SHOTS)
+    } : {}),
+    at
+  });
+  /** SOG-0717 : le MOTIF d'une écriture refusée (le stockage plein, un dépôt qui ne répond pas) est gardé dans le diagnostic de l'appareil (Réglages › À propos › Diagnostic) ; jamais montré tel quel. */
+  const keepRefusal = (e, id) => {
+    try {
+      window.SogFrame?.writeFailure?.(e, {
+        head: 'Signalement non envoyé',
+        file: `signalements/${id}.json`
+      });
+    } catch {
+      /* le diagnostic n'est jamais une raison de plus de ne pas envoyer */
+    }
+  };
   let FLUSH =
     null; // SOG-0409 : écrit tout de suite le brouillon en attente du montage en cours (un nouveau montage, avant de lire le brouillon)
   const DRAFT_MS = 800; // SOG-0409 : le brouillon s'écrit 800 ms après la dernière frappe, jamais à chaque signe
@@ -1379,22 +1406,9 @@
             }).ok) throw new Error('photo');
           await c.data.put(`pilot/${tri}/signalements/${id}/${k + 1}.json`, doc);
         }
-        await c.data.put(`pilot/${tri}/signalements/${id}.json`, {
-          schema: 'sog-signalement/1',
-          id,
-          kind: r.kind,
-          title: r.title,
-          text: r.text,
-          screen: r.screen,
-          ...(r.ctx ? {
-            ctx: r.ctx
-          } : {}),
-          ...(photos.length ? {
-            shots: Math.min(photos.length, MAX_SHOTS)
-          } : {}),
-          at
-        });
-      } catch {
+        await c.data.put(`pilot/${tri}/signalements/${id}.json`, reportDoc(r, id, at, photos.length));
+      } catch (e) {
+        keepRefusal(e, id);
         ui.refusal = {
           reason: 'no-write'
         };
@@ -1880,8 +1894,58 @@
       else if (e.target.closest('[data-cmadd]')) addCm();
     });
   }
+  let FLUSHING = false;
+  /** SOG-0717 : un signalement « non envoyé » (par le dépôt des données, un pilote) repart SANS ouvrir Signaler : le cadre l'appelle au retour de l'appli au premier plan et après une synchronisation réussie
+   *  (la note du geste dit qu'il part « avec le prochain envoi réussi » : cela devient vrai). Rend le nombre parti. Un envoi en cours, un écran qui n'a pas de trigramme : rien. Ceux du poste (lanceur) attendent
+   *  l'ouverture de l'écran, comme avant. */
+  async function flushUnsent(c) {
+    const tri = c?.trigram?.() || '';
+    if (FLUSHING || SENDING || !TRI.test(tri) || !c.data) return 0;
+    FLUSHING = true;
+    try {
+      const st = await readStore(c),
+        left = [];
+      let sent = 0;
+      for (const u of st.unsent) {
+        if (u.via !== 'pilote') {
+          left.push(u);
+          continue;
+        }
+        const id = SG_ID.test(u.id) ? u.id : rid(),
+          at = AT.test(u.at) ? u.at : now();
+        try {
+          await c.data.put(`pilot/${tri}/signalements/${id}.json`, reportDoc(u, id, at));
+        } catch (e) {
+          keepRefusal(e, id);
+          left.push(u);
+          continue;
+        }
+        st.mine.unshift({
+          id,
+          kind: u.kind,
+          title: u.title,
+          text: u.text,
+          screen: u.screen,
+          at,
+          via: 'pilote'
+        });
+        sent++;
+      }
+      if (sent) {
+        st.unsent = left;
+        st.mine = st.mine.slice(0, MINE_MAX);
+        await saveStore(c, st);
+      }
+      return sent;
+    } catch {
+      return 0;
+    } finally {
+      FLUSHING = false;
+    }
+  }
   window.SogSignaler = {
     screen,
+    flushUnsent,
     T
   };
 })();
