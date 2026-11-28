@@ -2993,7 +2993,7 @@ ${PROC_STYLE}
 ${MCH.CSS}
 ${AWX.CSS}
 [data-module="fuel"]:has(> .fu-mpane:not([hidden])){position:relative} /* le volet dans la colonne de Carburant : la Carte à côté reste libre */
-[data-module="fuel"] .fu-mpane{position:absolute;z-index:30;right:0;top:88px;width:min(420px,100%);max-height:calc(100vh - 128px);overflow:auto;margin:0;box-shadow:var(--sog-shadow)}
+[data-module="fuel"] .fu-mpane{position:absolute;z-index:30;right:0;top:88px;width:min(420px,100%);max-height:calc(var(--f-vh) - 128px);overflow:auto;margin:0;box-shadow:var(--sog-shadow)} /* SOG-0716 : la hauteur de la fenêtre du cadre (dvh au téléphone) */
 [data-module="fuel"] .fu-mpane[hidden]{display:none}
 [data-module="fuel"] .fu-mhead{align-items:flex-start;justify-content:space-between;gap:8px}
 [data-module="fuel"] .fu-mhead h2{margin:0;font-size:var(--sog-size-s)}
