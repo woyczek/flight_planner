@@ -6,13 +6,15 @@
 //   cours ou en échec : le repli le dit), metar (le METAR du terrain, ou null), station(metar) (weather.js station), tt, TX (les textes de
 //   module.js : altnWxObs, altnWxNoTime, altnWxOutside, altnWxNoCat, altnWxNoTaf, altnWxNone), esc }.
 //   detailFold(taf, crits, id, h) → SOG-0690 (b) : le pli « Détail » d'un terrain proposé, replié sous sa ligne — ses critères (critsHtml,
-//   le bloc de « Critères du dégagement »), puis le texte de son TAF (SOG-0660) quand il est lu ; CSS : son style, posé par module.js.
+//   le bloc de « Critères du dégagement »), puis le texte de son TAF (SOG-0660) quand il est lu ; SOG-0713 : un pli de fold.js, clé
+//   « altn-detail:{code} », ouvert selon h.open(clé) ; CSS : son style, posé par module.js.
 //   signSay(sign, why, p, h) → SOG-0690 : les mots du signe d'une ligne proposée (« Possible. », « Possible avec réserve(s) : … »,
 //   « Non jugé : … », SOG-0702 « Impossible : … »), SOG-0690 (b) suivis de la météo prévue quand rien ne la dit déjà ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
 //   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
 //   chosenSay(crits, h) → SOG-0690 (b) point 5 : les mots de la ligne du dégagement choisi (ses critères : piste, moyens, météo, distance),
 //   ceux d'une ligne proposée ;
+//   patchInto(box, html) → SOG-0713 (R3) : box prend html en ne changeant que ce qui diffère (un nœud égal reste le même nœud) ;
 //   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; RANK → SOG-0690 (b) son rang dans la liste proposée ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
 //   dégagement » (un signe et sa phrase par critère, le geste de lecture, la note de la météo) ; h = { why(c), read(c, id), note, esc }.
 
@@ -20,6 +22,9 @@ import {
   judge,
   proposalOf
 } from './altn_check.js'; // SOG-0690 (b) point 5 : le juge et les réserves d'un terrain
+import {
+  fold
+} from '../../frame/lib/fold.js'; // SOG-0713 : le pli commun de la suite
 
 export const TX = {
   // SOG-0690 (l'ergonome, 27/11) : chaque signe a ses mots, juste après le code du terrain, une seule fois ; le pluriel en clair
@@ -171,6 +176,41 @@ export function critsHtml(crits, id, h) {
   return `<ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${h.esc(h.why(c))}</span>${h.read(c, id)}</li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${h.esc(h.note)}</span></li></ul>`;
 }
 
+/** SOG-0713 (R3, l'ergonome) : box prend le HTML donné sans être réécrit — un nœud égal reste le même nœud (son défilement, son focus) ;
+ *  un élément de même nom et de même clé (data-cand, data-fold) garde son nœud, ses attributs et ses enfants mis au jour ; le reste est
+ *  remplacé. Rien ne clignote quand une seule ligne change. */
+export function patchInto(box, html) {
+  if (!box) return;
+  const t = document.createElement('template');
+  t.innerHTML = html;
+  morph(box, t.content);
+}
+const keyOf = n => n.nodeType === 1 ? n.getAttribute('data-cand') ?? n.getAttribute('data-fold') ?? '' : '';
+
+function morph(old, neu) {
+  const want = [...neu.childNodes],
+    byKey = new Map();
+  for (const o of old.childNodes)
+    if (keyOf(o)) byKey.set(`${o.nodeName}|${keyOf(o)}`, o);
+  want.forEach((n, i) => {
+    const k = keyOf(n),
+      at = old.childNodes[i] || null,
+      o = k ? byKey.get(`${n.nodeName}|${k}`) || null : at;
+    if (o && o !== at) old.insertBefore(o, at); // une ligne à clé reprend sa place, son nœud gardé
+    if (o?.isEqualNode(n)) return;
+    if (o && o.nodeType === 1 && o.nodeName === n.nodeName && keyOf(o) === k) {
+      for (const x of [...o.attributes])
+        if (!n.hasAttribute(x.name)) o.removeAttribute(x.name);
+      for (const x of [...n.attributes])
+        if (o.getAttribute(x.name) !== x.value) o.setAttribute(x.name, x.value);
+      return morph(o, n);
+    }
+    if (o) old.replaceChild(n, o);
+    else old.insertBefore(n, at);
+  });
+  while (old.childNodes.length > want.length) old.lastChild.remove();
+}
+
 /** SOG-0660 : le style du repli du TAF — une ligne entière sous celle du terrain (la ligne est en flex), le texte coupé où il faut. */
 export const CSS = `[data-module="fuel"] .fu-altnprop>ul>li{flex-wrap:wrap}
 [data-module="fuel"] .fu-altnprop>ul>li>span:nth-child(2){flex-basis:0}
@@ -184,5 +224,16 @@ const rawOf = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, 
  *  « Critères du dégagement » tel quel (critsHtml ; h comme lui), puis le texte de son TAF (SOG-0660), posé par h.esc, quand il est lu. */
 export function detailFold(taf, crits, id, h) {
   const raw = rawOf(taf?.rawTAF);
-  return `<details class="fu-faultmore fu-candtaf" data-candtaf><summary class="f-muted">${h.esc(h.tt(TX.detail))}</summary>${critsHtml(crits, id, h)}${raw ? `<p class="f-muted" data-tafraw>${h.esc(raw)}</p>` : ''}</details>`;
+  const key = `altn-detail:${id}`;
+  return fold({
+    cls: 'fu-faultmore fu-candtaf',
+    attrs: {
+      'data-candtaf': true
+    },
+    key,
+    open: !!h.open?.(key),
+    title: h.tt(TX.detail),
+    sumCls: 'f-muted',
+    body: `${critsHtml(crits, id, h)}${raw ? `<p class="f-muted" data-tafraw>${h.esc(raw)}</p>` : ''}`
+  });
 }

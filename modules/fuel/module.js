@@ -57,6 +57,10 @@ import * as CEIL from './ceiling.js'; // SOG-0674 : le plafond de l'aéronef (ex
 import * as PP from './proc_partial.js'; // SOG-0613 : des départs lus en partie, au-delà de la limite de raccord
 import * as SBF from './simbrief_fetch.js'; // SOG-0677 : le dernier OFP SimBrief, sa demande et sa réponse (extrait)
 import * as AWX from './altn_wx.js'; // SOG-0660 : la météo d'un dégagement, ses lignes (extrait)
+import {
+  fold,
+  wireFolds
+} from '../../frame/lib/fold.js'; // SOG-0713 : le pli commun ; il retient les plis ouverts des dégagements
 import * as AL from './auto_limits.js'; // SOG-0653 : les bornes des niveaux d'« Auto » (extrait)
 import * as RF from './route_refused.js'; // SOG-0658 : la ligne d'un calcul de route refusé (extrait)
 import {
@@ -151,7 +155,7 @@ export const meta = {
     '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par route_engine.js et par ../data/model_sets.js
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
-    '../../frame/lib/text.js',
+    '../../frame/lib/text.js', '../../frame/lib/fold.js', // SOG-0713
     '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js', '../../frame/lib/mission_events.js',
     '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
   ]
@@ -1872,6 +1876,9 @@ const TX = {
 };
 // ---------------------------------------------------------------- état du module (un montage à la fois)
 let S = null;
+// SOG-0714 (l'ergonome, R2) : au démontage (un aller-retour vers la Carte au téléphone), la proposition de dégagements et l'état de ses
+// plis, pour ce vol ; rendus au montage suivant (altnKeepBack), jamais écrits dans un document
+let ALTN_KEEP = null;
 /** Vrai si le montage s a été démonté ou remplacé pendant une attente (réponse réseau, base, dialogue) : la suite est
  *  abandonnée, rien n'est écrit dans l'état d'un autre montage. */
 const gone = s => S !== s;
@@ -5597,11 +5604,9 @@ async function altnChkDraw(C) {
   if (!box) return;
   const s = S,
     id = String(S.flight.route?.altn || '').toUpperCase().trim();
+  altnKeepBack();
   altnPropStale();
-  if (!isIcao(id)) {
-    box.innerHTML = altnPropHtml();
-    return;
-  }
+  if (!isIcao(id)) return AWX.patchInto(box, altnPropHtml());
   if (S.altnData?.id !== id) {
     S.altnData = {
       id,
@@ -5657,8 +5662,8 @@ async function altnChkDraw(C) {
     wxC = crits.find(c => c.k === 'wx'),
     wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
     whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
-    open = !!box.querySelector('details[data-altnfold]')?.open;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead><b>${esc(id)}</b> ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary>${AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc })}</details>${altnPropHtml()}`;
+    ck = `altn-crit:${id}`;
+  AWX.patchInto(box, `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead><b>${esc(id)}</b> ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}${fold({ cls: 'fu-altnfold', attrs: { 'data-altnfold': true }, key: ck, open: !!S.altnFolds.get(ck), title: tt(TX.altnFold), sumCls: 'f-muted', body: AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc }) })}${altnPropHtml()}`);
 }
 /** La phrase d'un critère du dégagement (« Critères du dégagement », et SOG-0690 (b) le « Détail » d'une ligne proposée) : une lecture
  *  de la météo en cours ou en échec dite telle ; sinon sa phrase, les longueurs dans la langue de l'écran, le revêtement de la fiche. */
@@ -5675,6 +5680,15 @@ function altnWhyText(c, sheet) {
     s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
     t: String(sheet?.runwayType || '').slice(0, 12)
   });
+}
+/** SOG-0714 : la proposition gardée au démontage (ALTN_KEEP) rendue au montage suivant quand c'est le même vol (départ, arrivée,
+ *  aéronef) ; un autre vol : ni elle ni ses plis. Elle ne devient « à recalculer » que par la règle de SOG-0566. */
+function altnKeepBack() {
+  if (!ALTN_KEEP || S.flightPending) return;
+  const k = ALTN_KEEP;
+  ALTN_KEEP = null;
+  if (k.key !== altnPropKey()) return S.altnFolds.clear();
+  if (!S.altnProp && k.prop) S.altnProp = k.prop;
 }
 /** SOG-0559 : la ligne d'une météo de dégagement non jugée (modules/fuel/altn_wx.js, SOG-0660 : extrait de ce fichier). */
 const altnWxLine = (c, id) => AWX.wxLine(c, id, {
@@ -5983,7 +5997,7 @@ function altnPropHtml() {
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc })}</li>`;
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc, open: k => !!S.altnFolds.get(k) })}</li>`;
     },
     // SOG-0690 (b) point 4 (l'ergonome) : par verdict, puis par distance (une météo inconnue est « Non jugé » : après les terrains jugés,
     // SOG-0544) — classée UNE fois, au premier dessin de la liste, la météo lue (la proposition n'est dessinée qu'ensuite) ; le terrain
@@ -5993,14 +6007,12 @@ function altnPropHtml() {
     touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
     near = order.filter(k => k !== touched?.icao).slice(0, AC.CAND_LIST).map(k => P.list.find(x => x.icao === k)).filter(Boolean),
     more = Math.max(0, P.list.length - near.length - (touched ? 1 : 0)),
-    // l'ergonome : un repli à chevron, le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête (la proposition
-    // et la Carte restent) ; ouvert d'abord, et rouvert quand un terrain est touché sur la Carte
-    was = S.body?.querySelector('[data-altnchk] details[data-altnprop]'),
-    open = P.reopen || !was || was.open;
-  P.reopen = false;
+    // l'ergonome : un repli à chevron (fold.js, SOG-0713), le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête
+    // (la proposition et la Carte restent) ; ouvert d'abord, et rouvert quand un terrain est touché sur la Carte (altnTouched)
+    open = S.altnFolds.get('altn-prop') !== false;
   // SOG-0566 : le vol a changé depuis la proposition — dit, avec « Recalculer » (le geste qui propose) ; jamais un calcul tout seul
   const old = P.sig && P.sig !== altnPropSig() ? `<p class="f-row fu-rage f-warn" data-altnstale><span>${esc(tt(TX.altnPropOld, { t: hhmmLocal(P.at) }))}</span><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.rRecompute))}</button></p>` : '';
-  return `${old}<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary>${allNoTime ? `<p class="f-muted" data-altnwxall>${esc(tt(TX.altnPropNoTime))}</p>` : ''}<ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
+  return `${old}${fold({ cls: 'fu-altnfold fu-altnprop', attrs: { 'data-altnprop': true }, key: 'altn-prop', open, title: tt(TX.altnPropHead, { arr: P.arr }), sumCls: 'f-muted', body: `${allNoTime ? `<p class="f-muted" data-altnwxall>${esc(tt(TX.altnPropNoTime))}</p>` : ''}<ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}` })}`;
 }
 /** « Prendre » : le terrain écrit dans le champ Dégagement (le seul geste qui l'écrit), la proposition fermée, la Carte prévenue. */
 function altnTake(icao) {
@@ -6020,7 +6032,7 @@ async function altnTouched(icao) {
   // l'adresse et l'événement viennent de dehors (un lien peut porter #fuel?altn=) : le code revalidé, et seulement un terrain proposé
   if (!isIcao(k) || !P || P.pending || !P.list.some(x => x.icao === k)) return;
   P.touched = k;
-  P.reopen = true; // le repli fermé : rouvert sur le terrain touché
+  S.altnFolds.set('altn-prop', true); // le repli fermé : rouvert sur le terrain touché
   altnChkDraw(S.C);
   if (!P.wxRead.has(k)) {
     await altnPropWx([k]);
@@ -9815,6 +9827,11 @@ export async function mount(el, ctx) {
   S.srTitle();
   window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // SOG-0713 (R1) : les plis des dégagements retenus par clé (fold.js : le pli du haut, « Critères du dégagement », un « Détail » par terrain)
+  S.altnFolds = ALTN_KEEP?.folds || new Map();
+  S.stops.push(wireFolds(S.body, (k, o) => S.altnFolds.set(k, o), {
+    get: k => S.altnFolds.get(k)
+  }));
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
   // les bases de Little Navmap sur ce poste (le lanceur le dit) : un repli externe de la ligne « zone manquante » (SOG-0143)
@@ -10583,6 +10600,11 @@ export function unmount() {
   clearTimeout(S.wxTimer);
   clearTimeout(S.wxAutoTimer);
   autoStop(); // SOG-0529 : le travail route/levels en cours est annulé
+  ALTN_KEEP = { // SOG-0714 : gardés pour ce vol (départ, arrivée, aéronef)
+    key: altnPropKey(),
+    prop: S.altnProp?.pending ? null : S.altnProp,
+    folds: S.altnFolds
+  };
   S.body = null;
   S = null;
 }
