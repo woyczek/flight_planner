@@ -5676,18 +5676,7 @@ async function altnChkDraw(C) {
     ].filter(Boolean),
     J = AC.judge(crits),
     w = crits.filter(c => c.state === J.state).map(c => tt(TX.altnK[c.k])).join(', '),
-    fmt = n => Number(n).toLocaleString(S.ctx.lang()),
-    why = c => ['wxNotRead', 'wxNoTaf', 'wxNoKey'].includes(c.code) && (S.wxBusy || S.wxFail) ? (S.wxBusy ? tt(TX.altnWhy.wxReading) : tt(
-      TX.altnWhy
-      .wxFailed, {
-        why: S.wxFail
-      })) : tt(TX.altnWhy[c.code], {
-      ...c.v,
-      l: c.v.l != null ? fmt(c.v.l) : '',
-      m: c.v.m != null ? fmt(c.v.m) : '',
-      s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
-      t: String(sheet?.runwayType || '').slice(0, 12)
-    }),
+    why = c => altnWhyText(c, sheet),
     // SOG-0559 : la cause d'une météo non jugée, sur la ligne ; le repli garde la règle (sauf une lecture en cours ou en échec, dite là)
     wxC = crits.find(c => c.k === 'wx'),
     wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
@@ -5695,6 +5684,22 @@ async function altnChkDraw(C) {
     open = !!box.querySelector('details[data-altnfold]')?.open,
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
   box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary>${AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc })}</details>${altnPropHtml()}`;
+}
+/** La phrase d'un critère du dégagement (« Critères du dégagement », et SOG-0690 (b) le « Détail » d'une ligne proposée) : une lecture
+ *  de la météo en cours ou en échec dite telle ; sinon sa phrase, les longueurs dans la langue de l'écran, le revêtement de la fiche. */
+function altnWhyText(c, sheet) {
+  const fmt = n => Number(n).toLocaleString(S.ctx.lang());
+  if (['wxNotRead', 'wxNoTaf', 'wxNoKey'].includes(c.code) && (S.wxBusy || S.wxFail)) return S.wxBusy ? tt(TX.altnWhy.wxReading) : tt(TX
+    .altnWhy.wxFailed, {
+      why: S.wxFail
+    });
+  return tt(TX.altnWhy[c.code], {
+    ...c.v,
+    l: c.v.l != null ? fmt(c.v.l) : '',
+    m: c.v.m != null ? fmt(c.v.m) : '',
+    s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
+    t: String(sheet?.runwayType || '').slice(0, 12)
+  });
 }
 /** SOG-0559 : la ligne d'une météo de dégagement non jugée (modules/fuel/altn_wx.js, SOG-0660 : extrait de ce fichier). */
 const altnWxLine = (c, id) => AWX.wxLine(c, id, {
@@ -6003,7 +6008,7 @@ function altnPropHtml() {
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
         .filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.tafFold(S.altnProp?.taf?.[x.icao], esc)}</li>`;
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc })}</li>`;
     },
     // SOG-0544 (le critère de l'ergonome) : un terrain dont la météo n'est pas connue passe après ceux dont elle est lue
     unk = x => altnPropCrits(x).crits[2]?.state === 'grey' ? 1 : 0,

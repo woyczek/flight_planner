@@ -5,10 +5,10 @@
 // API : wxLine(c, id, h) → le HTML de la ligne, ou « » ; c : le critère météo (altn_check.js weatherOf) ; h = { busy (une lecture en
 //   cours ou en échec : le repli le dit), metar (le METAR du terrain, ou null), station(metar) (weather.js station), tt, TX (les textes de
 //   module.js : altnWxObs, altnWxNoTime, altnWxOutside, altnWxNoCat, altnWxNoTaf, altnWxNone), esc }.
-//   tafFold(taf, esc) → SOG-0660 : le texte du TAF d'un terrain proposé, replié sous sa ligne (« TAF », aucune phrase), ou « » sans texte
-//   lu ; CSS : son style, posé par module.js.
+//   detailFold(taf, crits, id, h) → SOG-0690 (b) : le pli « Détail » d'un terrain proposé, replié sous sa ligne — ses critères (critsHtml,
+//   le bloc de « Critères du dégagement »), puis le texte de son TAF (SOG-0660) quand il est lu ; CSS : son style, posé par module.js.
 //   signSay(sign, why, p, h) → SOG-0690 : les mots du signe d'une ligne proposée (« Possible. », « Possible avec réserve(s) : … »,
-//   « Non jugé : … », SOG-0702 « Impossible : … ») ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
+//   « Non jugé : … », SOG-0702 « Impossible : … »), SOG-0690 (b) suivis de la météo prévue quand rien ne la dit déjà ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
 //   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
 //   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
@@ -24,6 +24,11 @@ export const TX = {
   // SOG-0702 (l'ergonome, 28/11) : « ✕ » par la même règle — sa cause seule, jamais une réserve d'un terrain possible
   sayErr: ['Impossible : {r}.'],
   sayErr0: ['Impossible.'],
+  // SOG-0690 (b) (l'ergonome, 28/11) : la météo prévue dite une fois par ligne — après le verdict, ou dans la réserve et la cause
+  sayWx: ['Météo prévue : {c}.'],
+  cIfr: ['météo prévue IFR'],
+  cLifr: ['météo prévue LIFR'],
+  detail: ['Détail'],
   // les causes de SOG-0559 (la ligne du dégagement choisi), sans le code du terrain
   cNoTaf: ['pas de TAF'],
   cNoTime: ['la durée du vol est inconnue'],
@@ -64,7 +69,9 @@ const CAUSE = {
   'wx-notaf': 'cNoTaf',
   'wx-notime': 'cNoTime',
   'wx-outside': 'cOutside',
-  'wx-nocat': 'cNoCat'
+  'wx-nocat': 'cNoCat',
+  'wx-ifr': 'cIfr',
+  'wx-lifr': 'cLifr'
 };
 
 /** SOG-0690 : les mots d'une réserve ou d'une cause (un code de proposalOf) — la cause de SOG-0559 pour la météo, sinon le mot court de
@@ -84,11 +91,14 @@ const ERR_WHY = ['wx-lifr'];
 export function signSay(sign, why, p, h) {
   const list = Array.isArray(why) ? why : [],
     words = l => l.map(w => wordOf(w, p || {}, h)).filter(Boolean),
-    r = words(list);
-  if (sign === 'ok') return h.tt(TX.sayOk);
-  if (sign === 'warn') return r.length ? h.tt(r.length > 1 ? TX.sayWarns : TX.sayWarn, {
+    r = words(list),
+    // SOG-0690 (b) : une météo prévue bonne (VFR, MVFR) n'est dite par aucune réserve : elle suit le verdict
+    wx = p?.crits?.[2],
+    cat = wx?.state === 'ok' && wx.code === 'wxCat' && wx.v?.c ? ` ${h.tt(TX.sayWx, { c: wx.v.c })}` : '';
+  if (sign === 'ok') return h.tt(TX.sayOk) + cat;
+  if (sign === 'warn') return (r.length ? h.tt(r.length > 1 ? TX.sayWarns : TX.sayWarn, {
     r: r.join(', ')
-  }) : h.tt(TX.sayOk);
+  }) : h.tt(TX.sayOk)) + cat;
   if (sign === 'grey') return r.length ? h.tt(TX.sayGrey, {
     r: r.join(', ')
   }) : h.tt(TX.sayGrey0);
@@ -116,17 +126,17 @@ export function critsHtml(crits, id, h) {
 }
 
 /** SOG-0660 : le style du repli du TAF — une ligne entière sous celle du terrain (la ligne est en flex), le texte coupé où il faut. */
-export const CSS = `[data-module="fuel"] .fu-altnprop li{flex-wrap:wrap}
-[data-module="fuel"] .fu-altnprop li>span:nth-child(2){flex-basis:0}
+export const CSS = `[data-module="fuel"] .fu-altnprop>ul>li{flex-wrap:wrap}
+[data-module="fuel"] .fu-altnprop>ul>li>span:nth-child(2){flex-basis:0}
 [data-module="fuel"] .fu-candtaf{flex-basis:100%;box-sizing:border-box;min-width:0;padding-left:22px}
 [data-module="fuel"] .fu-candtaf>p{margin:2px 0;overflow-wrap:anywhere;font-family:var(--sog-mono,ui-monospace,monospace)}`;
 
 /** SOG-0660 : le texte brut d'un TAF (rawTAF, une entrée non fiable) — une ligne, sans signe de contrôle, 1 200 signes au plus. */
 const rawOf = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1200) : '';
 
-/** SOG-0660 (le relais, par le précédent de SOG-0559) : sous la ligne d'un terrain proposé, le texte de son TAF, replié (fermé d'abord),
- *  posé par esc ; « » sans texte lu. */
-export function tafFold(taf, esc) {
+/** SOG-0690 (b) (l'ergonome, 28/11) : sous la ligne d'un terrain proposé, « Détail », replié (fermé d'abord) — ses critères, le bloc de
+ *  « Critères du dégagement » tel quel (critsHtml ; h comme lui), puis le texte de son TAF (SOG-0660), posé par h.esc, quand il est lu. */
+export function detailFold(taf, crits, id, h) {
   const raw = rawOf(taf?.rawTAF);
-  return raw ? `<details class="fu-faultmore fu-candtaf" data-candtaf><summary class="f-muted">TAF</summary><p class="f-muted" data-tafraw>${esc(raw)}</p></details>` : '';
+  return `<details class="fu-faultmore fu-candtaf" data-candtaf><summary class="f-muted">${h.esc(h.tt(TX.detail))}</summary>${critsHtml(crits, id, h)}${raw ? `<p class="f-muted" data-tafraw>${h.esc(raw)}</p>` : ''}</details>`;
 }
