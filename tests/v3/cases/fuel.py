@@ -12649,6 +12649,86 @@ def f353(c):
         c.shot(f'F353_{c.design}_{w}_{c.lang}.png')
 
 
+@case('F354', 'Route step, a value of the sheet outside what the route engine accepts: the page sends the nearest BOUND (never nothing) and '
+      'says it, under « Calculer » as soon as it is known and in the reasons of the computed route — « {Grandeur} de la fiche ({v} {unité}) '
+      'hors de ce que le calcul de route accepte ({min} à {max} {unité}) : il compte {borne} {unité}. »; a level of the flight outside FL010 '
+      'to FL660: « Calculer » greyed, its cause under it, nothing sent', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True,
+      langs4=False,
+      rule='SOG-0721 (the ergonomist, 28 Nov: forms (a) and (c) for a value of the sheet, the page no longer omits it; form (b) for the level '
+      'of the flight, no level by default); French only (SOG-0680); invented sheets, a fake launcher')
+def f354(c):
+    st = _route_launcher(c, ['route/compute'])
+
+    def opened(sheet, level_ft):
+        docs = proc_flight()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft'] = {'type': sheet['icao'], 'sheetId': sheet['id'], 'registration': 'F-ZZXQ'}
+                d[1]['level'] = {'ft': level_ft}
+        c.open('fuel', docs=proc_docs() + docs + [[f"aircraft/sheets/{sheet['id']}.json", sheet, 'document']], airfields=True)
+        to_step(c, 1)
+        c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+
+    def asked(act='compute', want=True):
+        n = len(st['posts'])
+        c.tap(f'{FUEL} [data-reng] [data-do="{"rcompute" if act == "compute" else "rcheck"}"]')
+        for _ in range(20 if want else 10):
+            got = [p.get('args') or {} for p in st['posts'][n:] if (p.get('args') or {}).get('action') == act]
+            if got:
+                return got[0]
+            c.wait(150)
+        return None
+
+    said = lambda sel: [norm(x) for x in c.js(f"[...document.querySelectorAll('{sel}')].map(e => e.textContent)")]
+    # (i) a cruise above the bound (1 650 kt for 1 500 kt)
+    fast = {**_BE9L, 'id': 'XQFAST', 'name': 'XQFAST (essai)', 'icao': 'XQFA',
+            'cruise': {**_BE9L['cruise'], 'tasKt': 1650, 'ceilingFt': 60000}}
+    opened(fast, 20000)
+    U = f'{FUEL} [data-rbound] [data-rperfbound=speed_kt]'
+    c.until(f"!!document.querySelector('{U}')", timeout=10000, what='said under « Calculer » before the touch (red before: nothing said)')
+    m = re.fullmatch(r'Vitesse de croisière de la fiche \((\d[\d ]*) kt\) hors de ce que le calcul de route accepte \(30 à 1 500 kt\) : il '
+                     r'compte 1 500 kt\. Ouvrir la fiche', said(U)[0] + ' ' + norm(c.text(f'{FUEL} [data-rbound] a[data-rsheet]') or ''))
+    c.ok(bool(m) and int(m.group(1).replace(' ', '')) > 1500, said(U), 'the sentence of the ergonomist, then « Ouvrir la fiche »')
+    a = asked()
+    c.eq((a or {}).get('speed_kt'), 1500, 'the request carries the bound, never nothing (red before: no speed sent, the engine\'s own)',
+         what='bound sent')
+    c.until(f"document.querySelectorAll('{FUEL} [data-rperfbound=speed_kt]').length === 2", timeout=15000,
+            what='and in the reasons of the computed route')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-reng] [data-do=rcompute]').getAttribute('aria-disabled')"), None,
+         'the button never greyed for a value of the sheet', what='not greyed')
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    c.js(_F281_NOTES_OFF)
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.shot(f'F354_{c.design}_{w}_{c.lang}_bound.png')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    # (ii) a rate under the low bound: a descent of 30 ft/min from FL020
+    slow = {**_BE9L, 'id': 'XQSLOW', 'name': 'XQSLOW (essai)', 'icao': 'XQSL', 'descent': {**_BE9L['descent'], 'rateFpm': 30}}
+    opened(slow, 2000)
+    D = f'{FUEL} [data-rbound] [data-rperfbound=descent_fpm]'
+    c.until(f"!!document.querySelector('{D}')", timeout=10000, what='the descent said under « Calculer »')
+    m = re.fullmatch(r'Taux de descente de la fiche \((\d+) ft/min\) hors de ce que le calcul de route accepte \(50 à 20 000 ft/min\) : il '
+                     r'compte 50 ft/min\.', said(D)[0])
+    c.ok(bool(m) and int(m.group(1)) < 50, said(D), 'the sentence with the low bound')
+    c.eq((asked() or {}).get('descent_fpm'), 50, 'the request carries the low bound', what='low bound sent')
+    # (iii) a level of the flight outside FL010 to FL660: greyed, its cause, nothing sent
+    high = {**fast, 'id': 'XQHIGH', 'icao': 'XQHI', 'cruise': {**fast['cruise'], 'tasKt': 450, 'ceilingFt': 75000}}
+    opened(high, 70000)
+    L = f'{FUEL} [data-rbound] [data-rlevelbad]'
+    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='the cause under « Calculer »')
+    c.eq([said(L)[0], c.js(f"document.querySelector('{FUEL} [data-reng] [data-do=rcompute]').getAttribute('aria-disabled')"),
+          c.js(f"document.querySelector('{FUEL} [data-reng] [data-do=rcheck]').getAttribute('aria-disabled')")],
+         ['Niveau hors de FL010 à FL660.', 'true', 'true'], '« Calculer » and « Contrôler » greyed, the cause said (red before: sent '
+         'without a level, the engine\'s own)', what='greyed')
+    c.eq([asked('compute', False), asked('check', False)], [None, None], 'nothing sent', what='nothing sent')
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.shot(f'F354_{c.design}_{w}_{c.lang}_level.png')
+
+
 
 @case('F344', 'An aerodrome code the base does not know (« inconnu » under its field): no reading of procedures is offered for it — no '
       'button on its row of the Procedures card, no line « Aucune procédure de … » when the route is asked — the field already says « inconnu »',
