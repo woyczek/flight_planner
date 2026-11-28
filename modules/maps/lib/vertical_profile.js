@@ -1093,21 +1093,25 @@
         ctx.lineTo(W - padR, Y(ceilFt));
         ctx.stroke();
       }
-      const text = ceilIn ? ceilText : `${ceilText} ↑`,
-        tw = ctx.measureText(text).width + 8 * scale,
+      // SOG-0722 : les mots d'abord entiers (« Plafond : FL110 »), puis réduits — « Plafond » seul, puis « FL110 » — avant de renoncer ; chaque forme essaie neuf places sur la largeur, au-dessus du trait puis dessous
+      const arrow = ceilIn ? '' : ' ↑',
+        parts = ceilText.split(/\s*:\s*/).filter(Boolean),
+        forms = [...new Set([ceilText, parts[0], parts[parts.length - 1]].filter(Boolean))].map(t => t + arrow),
         th = f * 1.4,
         yl = ceilIn ? Y(ceilFt) : padT,
         aside = (data.plan ? [data.plan.toc, data.plan.tod] : []).filter(Boolean).map(m => X(m.s)),
         ys = ceilIn ? [yl - th - 2 * scale, yl + 2 * scale] : [padT + 2 * scale],
-        xs = [padL + 3 * scale, W - padR - tw - 3 * scale, padL + (W - padL - padR - tw) / 2, padL + (W - padL - padR - tw) / 4, padL +
-          3 * (W - padL - padR - tw) / 4
-        ],
-        boxes = ys.flatMap(y0 => xs.map(x0 => ({
-          x0,
-          y0,
-          x1: x0 + tw,
-          y1: y0 + th
-        }))).filter(r => r.y0 >= padT && r.y1 <= H - padB && r.x0 >= padL && r.x1 <= W - padR && !aside.some(x => x >= r.x0 - 4 * scale &&
+        boxes = forms.flatMap((text, v) => {
+          const tw = ctx.measureText(text).width + 8 * scale;
+          return ys.flatMap(y0 => [0, 8, 4, 2, 6, 1, 3, 5, 7].map(k => padL + 3 * scale + k * (W - padL - padR - tw - 6 * scale) / 8)
+            .map(x0 => ({ // neuf places : le bord gauche, le droit, le milieu, puis de proche en proche
+              x0,
+              y0,
+              x1: x0 + tw,
+              y1: y0 + th,
+              v
+            })));
+        }).filter(r => r.y0 >= padT && r.y1 <= H - padB && r.x0 >= padL && r.x1 <= W - padR && !aside.some(x => x >= r.x0 - 4 * scale &&
           x <= r.x1 + 4 * scale)),
         at = ask({
           rank: 'ceiling',
@@ -1116,11 +1120,11 @@
         });
       if (at) {
         ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.fillRect(at.x0, at.y0, tw, th);
+        ctx.fillRect(at.x0, at.y0, at.x1 - at.x0, th);
         ctx.fillStyle = '#56626b';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, at.x0 + 4 * scale, (at.y0 + at.y1) / 2);
+        ctx.fillText(forms[at.v ?? 0], at.x0 + 4 * scale, (at.y0 + at.y1) / 2);
         ceilPut = true;
       }
       ctx.restore();

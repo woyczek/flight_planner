@@ -11411,7 +11411,7 @@ def d338(c):
             c.js("async () => { const S = window.__mp.S; S.edit.reach = 0; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
         if name == 'inside':
             c.shot(f'D338_{c.width}_plafond_trace.png')
-    c.ok(out['above_label'][0] == 1 and out['above_label'][1] == [] and out['inside_label'][0] == 1 and out['inside_label'][1] == [], out, 'SOG-0722: the label of the ceiling is written once and covers no TOC / TOD label (the boxes are measured)')
+    c.ok(out['above_label'][0] == 1 and out['above_label'][1] == [] and out['inside_label'][0] == 1 and out['inside_label'][1] == [], out, 'SOG-0722: the label of the ceiling is written once, even in the crowded cut at 390 (full words, then « Plafond », then the level), and covers no TOC / TOD label (the boxes are measured)')
     c.ok(out['plain'][0] < 20000 and out['plain'][1] == '', out, 'without a ceiling: the scale is the one of the flight, nothing about a ceiling')
     c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge', out, 'a flight at FL100, ceiling FL410: a LOW scale (the ceiling does not enter it) and the top edge says the ceiling (never a line at a wrong height)')
     c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line', out, 'a ceiling inside the scale is drawn at its true height')
