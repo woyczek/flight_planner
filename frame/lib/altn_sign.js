@@ -10,7 +10,7 @@
 //   drawAltnSign(ctx, x, y, sign, { dark, bg }) → la pastille en canvas, centrée en (x, y) : l'anneau (rempli de bg), le signe tracé (jamais une police) ; rend la couleur.
 import {
   themeOf
-} from './theme.js';
+} from './theme.js?v=0'; // la même adresse que le cadre (app.js l'importe en ?v=0) : un seul module, un seul observateur
 export const RING_R = 9,
   RING_W = 3,
   GLYPH_W = 2.2;

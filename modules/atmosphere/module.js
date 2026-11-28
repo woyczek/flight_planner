@@ -14,7 +14,7 @@
 import * as A from './atmo.js';
 import {
   onTheme
-} from '../../frame/lib/theme.js';
+} from '../../frame/lib/theme.js?v=0'; // la même adresse que le cadre (app.js) : un seul module, un seul observateur
 import {
   STYLE
 } from './style.js';

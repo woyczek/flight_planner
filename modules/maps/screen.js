@@ -4,7 +4,7 @@
 
 import {
   onTheme as onFrameTheme
-} from '../../frame/lib/theme.js';
+} from '../../frame/lib/theme.js?v=0'; // la même adresse que le cadre (app.js) : un seul module, un seul observateur
 import {
   S,
   keep,
