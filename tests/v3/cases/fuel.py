@@ -12478,3 +12478,30 @@ def f346(c):
             what='the base has answered during the reading and does not know the code: said so')
     c.until(f"!document.querySelector('{FUEL} [data-do=procfetch][data-icao=LFQQ]')", timeout=8000,
             what='and the reading of LFQQ is offered no more (F344: a code the base does not know)')
+
+
+@case('F348', 'SOG-0694: Fuel writes the ceiling of the aircraft in the flight (profile.ceilingFt, to the hundred feet), and rewrites it when the aircraft changes — the Map reads it for the scale of its vertical profile',
+      'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='SOG-0694 (the scale of the vertical profile goes up to the highest of the cruise level, the levels written in the route and the ceiling of the aircraft sheet): the Map does not know the sheet, '
+      'Fuel writes the ceiling of the aircraft (the lower of the sheet and of the performance model, ceilOf) in current_flight.profile')
+def f348(c):
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    lo = {'id': 'XLOW', 'name': 'XLOW', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 300, 'fuelFlowPerHour': 2200, 'ceilingFt': 9000}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document'], ['aircraft/sheets/XLOW.json', lo, 'document']], airfields=True)
+    wait_quote(c)
+    d = cf_doc(c, lambda d: (d.get('profile') or {}).get('ceilingFt') is not None, 'the profile written with the ceiling of the aircraft', timeout=15000)
+    c.eq(d['profile']['ceilingFt'], 25000, 'the ceiling of the sheet, in feet', what='ceilingFt of the C-130J')
+    # another aircraft (ceiling 9 000 ft): the flight is rewritten with it
+    to_step(c, 0)
+    c.tap(f'{FUEL} [data-view="sheets"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-id=\"XLOW\"] [data-do=use]')", what='the Sheets view')
+    c.tap(f'{FUEL} [data-id="XLOW"] [data-do="use"]')
+    d = cf_doc(c, lambda d: (d.get('profile') or {}).get('ceilingFt') == 9000, 'the ceiling of the other aircraft written', timeout=15000)
+    c.eq(d['profile']['ceilingFt'], 9000, 'the ceiling of the new aircraft', what='ceilingFt of XLOW')
+    c.check_errors()

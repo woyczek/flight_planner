@@ -32,6 +32,12 @@ export function ceilOf(C) {
   return v.length ? Math.min(...v) : null;
 }
 
+/** SOG-0694 : le plafond de l'aéronef au cent pied (ce que Carburant écrit dans le vol, profile.ceilingFt : la Carte monte l'échelle de son profil vertical jusqu'à lui) ; null sans plafond. */
+export const ceilHundred = C => {
+  const v = ceilOf(C);
+  return v ? Math.round(v / 100) * 100 : null;
+};
+
 /** SOG-0674 (l'ergonome) : les deux limites d'un niveau, en pieds — declared, le plafond que la fiche DÉCLARE (cruise.ceilingFt), sinon
  *  le plafond EUROCONTROL du type (perf.ceilingGiven) ; calc, la limite de montée que le modèle de performance calcule (perf.modelCeiling),
  *  seulement quand elle est plus basse que le plafond déclaré ; null pour une limite absente. */

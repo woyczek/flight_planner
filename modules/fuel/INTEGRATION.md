@@ -112,7 +112,7 @@ report and maps never write nor erase it.
   "wind": { "dirDeg": 270, "speedKt": 30 },
   "isaDev": 0,
   "planned_at": "2026-10-25T09:40:00Z",
-  "profile": { "climbFpm": 1230, "climbKt": 196, "descentFpm": 1500, "descentKt": 253, "tocNm": 48.2, "todNm": 56.1 },
+  "profile": { "climbFpm": 1230, "climbKt": 196, "descentFpm": 1500, "descentKt": 253, "tocNm": 48.2, "todNm": 56.1, "ceilingFt": 28000 },
   "ofp": { "date": "2026-10-19T13:44:06Z", "dep": "LFRS", "arr": "LFML", "altn": "LFPG", "points": 11,
            "levelFt": 27000, "aircraft": "S210 F-BHHH", "callsign": "" }
 }

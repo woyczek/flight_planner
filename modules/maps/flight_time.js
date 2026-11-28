@@ -70,7 +70,7 @@ export const sameRoute = (a, b) => !!a && !!b && JSON.stringify(sigOf(a)) === JS
 const sigOf = f => [f.route?.points, f.level?.ft, f.started?.at, f.route?.dep, f.route?.arr, f.route?.altn, f.route?.procedures, f.profile
   ?.path, f.profile
   ?.tocNm,
-  f.profile?.todNm, f.profile?.climbFpm, f.profile?.climbKt, f.profile?.descentFpm, f.profile?.descentKt
+  f.profile?.todNm, f.profile?.climbFpm, f.profile?.climbKt, f.profile?.descentFpm, f.profile?.descentKt, f.profile?.ceilingFt
 ];
 /** Position valide { lat, lon, … } d'un objet, sinon null. */
 const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {

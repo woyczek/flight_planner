@@ -9180,6 +9180,7 @@ function verticalProfile(q) {
 function profileOf(C) {
   const p = verticalProfile(C.q),
     fp = p ? fpNow() : null;
+  if (p && CEIL.ceilHundred(C)) p.ceilingFt = CEIL.ceilHundred(C);
   if (p && fp) {
     const path = PG.verticalPath(fp, C.q);
     if (path.length) p.path = path;

@@ -108,6 +108,8 @@ async function readFlight() {
     points: pts,
     altn,
     levelFt: +f?.level?.ft || 0,
+    ceilFt: +f?.profile?.ceilingFt ||
+      0, // SOG-0694 : le plafond de l'aéronef, écrit par Carburant (l'échelle du profil monte jusqu'à lui)
     updated: f?.updated_at || '',
     base: routeBase(f) // la route et le niveau tels que la Carte les a lus : ce qu'elle écrit, c'est ce qu'elle en a changé (SOG-0013)
   };

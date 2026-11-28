@@ -401,6 +401,7 @@
     select = null, // l'espace choisi (surligné)
     reach = 0, // SOG-0694 : l'altitude qu'un palier glissé atteint (l'échelle monte jusque-là)
     levelFt = 0, // SOG-0694 : le niveau de croisière du vol (l'échelle monte jusqu'à lui)
+    ceilFt = 0, // SOG-0694 : le plafond de l'aéronef (l'échelle monte jusqu'à lui)
     placer = null // le placeur de la passe de la coupe (profile_view.js)
   }) {
     const geo = P().draw(ctx, data, {
@@ -418,6 +419,7 @@
       select,
       reach,
       levelFt,
+      ceilFt,
       maxLabels: 7, // au plus 7 espaces étiquetés par écran ; les autres dans la liste du dessous
       reserveBottom: 18 * scale, // marques NM posées par module.js au bas de la coupe
       placer

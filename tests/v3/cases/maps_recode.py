@@ -11272,3 +11272,27 @@ def d337(c):
     c.eq(top(), before, 'the drag over: the scale is the one of the route again', what='scale after the drag')
     c.shot(f'D337_{c.width}_hauts.png')
     c.check_errors()
+
+
+@case('D338', 'SOG-0694: the vertical scale of the profile also goes up to the ceiling of the aircraft (written by Fuel in the flight), so a level can be pulled up to it; without it, the scale is the one of the route', 'D', tags=('maps',),
+      designs=('standard',), night=False,
+      rule='SOG-0694, the rest after the tag (the ergonomist, 27 Nov: the scale goes up to the highest of the cruise level, the levels written in the route and the ceiling of the aircraft sheet, plus a margin): '
+      'a flight at FL100 of an aircraft whose ceiling is FL410: the scale reaches FL410 and its margin; the same flight without the ceiling: a low scale')
+def d338(c):
+    top = lambda: int(c.js("() => (document.querySelector('.mp-pc').dataset.scale || '0,0').split(',')[1]"))
+    out = {}
+    for name, ceil in (('plain', None), ('ceiling', 41000)):
+        f = flight()
+        f['level'] = {'ft': 10000}
+        if ceil:
+            f['profile'] = {**(f.get('profile') or {}), 'ceilingFt': ceil}
+        c.open('maps', docs=fdocs(f), flight=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!document.querySelector('.mp-pc') && (document.querySelector('.mp-pc').dataset.scale || '') !== ''", timeout=15000, what=f'{name}: the profile is drawn')
+        out[name] = top()
+        if ceil:
+            c.shot(f'D338_{c.width}_plafond.png')
+    c.ge(out['ceiling'], 42500, 'the scale reaches the ceiling of the aircraft with its margin', what='scale with the ceiling')
+    c.ok(out['plain'] < 30000, out, 'without the ceiling the scale is the one of the route (not the ceiling)')
+    c.check_errors()

@@ -548,6 +548,8 @@
     floor = 0,
     reach = 0, // SOG-0694 : l'altitude que le glisser d'un palier atteint : l'échelle monte au moins jusque-là
     levelFt = 0, // SOG-0694 : le niveau de croisière du vol : l'échelle monte au moins jusqu'à lui, plus une marge
+    ceilFt =
+    0, // SOG-0694 : le plafond de l'aéronef (la fiche) : l'échelle monte aussi jusqu'à lui, pour qu'un niveau puisse y être tiré
     scale = 1,
     limitFt,
     title = '',
@@ -650,7 +652,7 @@
     // SOG-0694 : l'échelle va jusqu'au plus haut du niveau de croisière et des niveaux écrits dans la route (tous les points, fenêtre ou non), plus une marge de 1 500 ft, et jusqu'à l'altitude
     // qu'un palier glissé atteint (`reach`) : sans cela un point ne se montait que de 2 000 ft au-dessus du plus haut niveau lu
     const writtenMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0)),
-      highest = zoomed ? 0 : Math.max(levelFt, writtenMax) + 1500,
+      highest = zoomed ? 0 : Math.max(levelFt, writtenMax, ceilFt) + 1500,
       top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, highest, reach, zoomed ?
           2500 :
           5000)) /
