@@ -767,31 +767,7 @@ const TX = {
       'carácter fuera del alfabeto del mensaje'
     ]
   },
-  // SOG-0398 : la ligne sous les terrains — l'état du dégagement, ses critères dans un pli
-  altnChk: {
-    ok: ['Dégagement {id} : piste, moyens et météo bons', 'Alternate {id}: runway, aids and weather good',
-      'Ausweichflugplatz {id}: Piste, Navigationshilfen und Wetter gut', 'Alternativo {id}: pista, medios y meteorología buenos'
-    ],
-    warn: ['Dégagement {id} : utilisable, avec réserve ({w})', 'Alternate {id}: usable, with a reservation ({w})',
-      'Ausweichflugplatz {id}: nutzbar, mit Vorbehalt ({w})', 'Alternativo {id}: utilizable, con reserva ({w})'
-    ],
-    err: ['Dégagement {id} : ne convient pas ({w})', 'Alternate {id}: not suitable ({w})', 'Ausweichflugplatz {id}: nicht geeignet ({w})',
-      'Alternativo {id}: no conviene ({w})'
-    ],
-    grey: ['Dégagement {id} : non vérifié ({w})', 'Alternate {id}: not checked ({w})', 'Ausweichflugplatz {id}: nicht geprüft ({w})',
-      'Alternativo {id}: no comprobado ({w})'
-    ]
-  },
-  altnCount: ['{ok} bon(s), {g} non vérifié(s)', '{ok} good, {g} not checked', '{ok} gut, {g} nicht geprüft',
-    '{ok} bueno(s), {g} no comprobado(s)'
-  ],
-  altnCountOk: ['{ok} bon(s)', '{ok} good', '{ok} gut', '{ok} bueno(s)'],
-  altnK: {
-    rwy: ['piste', 'runway', 'Piste', 'pista'],
-    aids: ['moyens', 'aids', 'Navigationshilfen', 'medios'],
-    wx: ['météo', 'weather', 'Wetter', 'meteorología'],
-    dist: ['distance', 'distance', 'Entfernung', 'distancia'] // SOG-0528
-  },
+  // SOG-0398 : la ligne sous les terrains — l'état du dégagement (SOG-0690 b : altn_wx.js chosenSay), ses critères dans un pli
   altnFold: ['Critères du dégagement', 'Alternate criteria', 'Kriterien des Ausweichflugplatzes', 'Criterios del alternativo'],
   // SOG-0559 (l'ergonome, 23/11) : la météo du dégagement non jugée — la cause sur la ligne, toujours visible ; puis l'observation du METAR
   // (jamais un jugement : un METAR est une observation) ; le repli garde la règle
@@ -5676,15 +5652,13 @@ async function altnChkDraw(C) {
       AC.distOf(altnArrNm(S.altnArr?.pos, S.altnData.ad))
     ].filter(Boolean),
     J = AC.judge(crits),
-    w = crits.filter(c => c.state === J.state).map(c => tt(TX.altnK[c.k])).join(', '),
     why = c => altnWhyText(c, sheet),
     // SOG-0559 : la cause d'une météo non jugée, sur la ligne ; le repli garde la règle (sauf une lecture en cours ou en échec, dite là)
     wxC = crits.find(c => c.k === 'wx'),
     wxLine = wxC?.state === 'grey' ? altnWxLine(wxC, id) : '',
     whyOf = c => c.k === 'wx' && wxLine ? tt(TX.altnWxRule) : why(c),
-    open = !!box.querySelector('details[data-altnfold]')?.open,
-    count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary>${AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc })}</details>${altnPropHtml()}`;
+    open = !!box.querySelector('details[data-altnfold]')?.open;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${AWX.SIGN[J.state]}</span><span data-altnhead><b>${esc(id)}</b> ${esc(AWX.chosenSay(crits, RLH))}</span></p>${wxLine}<details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary>${AWX.critsHtml(crits, id, { why: whyOf, read: altnReadHtml, note: tt(TX.altnWxNote), esc })}</details>${altnPropHtml()}`;
 }
 /** La phrase d'un critère du dégagement (« Critères du dégagement », et SOG-0690 (b) le « Détail » d'une ligne proposée) : une lecture
  *  de la météo en cours ou en échec dite telle ; sinon sa phrase, les longueurs dans la langue de l'écran, le revêtement de la fiche. */

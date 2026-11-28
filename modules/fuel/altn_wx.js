@@ -11,8 +11,15 @@
 //   « Non jugé : … », SOG-0702 « Impossible : … »), SOG-0690 (b) suivis de la météo prévue quand rien ne la dit déjà ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
 //   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
+//   chosenSay(crits, h) → SOG-0690 (b) point 5 : les mots de la ligne du dégagement choisi (ses critères : piste, moyens, météo, distance),
+//   ceux d'une ligne proposée ;
 //   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; RANK → SOG-0690 (b) son rang dans la liste proposée ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
 //   dégagement » (un signe et sa phrase par critère, le geste de lecture, la note de la météo) ; h = { why(c), read(c, id), note, esc }.
+
+import {
+  judge,
+  proposalOf
+} from './altn_check.js'; // SOG-0690 (b) point 5 : le juge et les réserves d'un terrain
 
 export const TX = {
   // SOG-0690 (l'ergonome, 27/11) : chaque signe a ses mots, juste après le code du terrain, une seule fois ; le pluriel en clair
@@ -29,6 +36,12 @@ export const TX = {
   cIfr: ['météo prévue IFR'],
   cLifr: ['météo prévue LIFR'],
   detail: ['Détail'],
+  // SOG-0690 (b) point 5 (l'ergonome, 28/11) : la LISTE FERMÉE des causes courtes d'un dégagement choisi — une cause sans mots courts
+  // donne « Impossible. » seul (signalée au relais, jamais inventée) ; les chiffres restent dans « Détail »
+  cRwyShort: ['piste trop courte'],
+  cRwyNoHard: ['pas de piste en dur'],
+  cDistFar: ['trop loin de l’arrivée'],
+  cDistNear: ['trop près de l’arrivée'],
   // les causes de SOG-0559 (la ligne du dégagement choisi), sans le code du terrain
   cNoTaf: ['pas de TAF'],
   cNoTime: ['la durée du vol est inconnue'],
@@ -71,7 +84,11 @@ const CAUSE = {
   'wx-outside': 'cOutside',
   'wx-nocat': 'cNoCat',
   'wx-ifr': 'cIfr',
-  'wx-lifr': 'cLifr'
+  'wx-lifr': 'cLifr',
+  'rwy-short': 'cRwyShort',
+  'rwy-nohard': 'cRwyNoHard',
+  'dist-far': 'cDistFar',
+  'dist-near': 'cDistNear'
 };
 
 /** SOG-0690 : les mots d'une réserve ou d'une cause (un code de proposalOf) — la cause de SOG-0559 pour la météo, sinon le mot court de
@@ -84,31 +101,51 @@ function wordOf(w, p, h) {
   return why ? `${head} (${why})` : head;
 }
 
-/** SOG-0702 : les codes qui font « ✕ » (un critère en échec : la météo LIFR) — les seuls que « Impossible » dit. */
-const ERR_WHY = ['wx-lifr'];
+/** SOG-0702 : les codes qui font « ✕ » (un critère en échec : la météo LIFR ; SOG-0690 b, pour le dégagement choisi, la piste et la
+ *  distance) — les seuls que « Impossible » dit. */
+const ERR_WHY = ['rwy-short', 'rwy-nohard', 'wx-lifr', 'dist-far'];
 
 /** SOG-0690 (l'ergonome, 27/11) : les mots du signe d'une ligne proposée (voir l'en-tête) ; SOG-0702 : « ✕ » dit sa cause. */
 export function signSay(sign, why, p, h) {
   const list = Array.isArray(why) ? why : [],
     words = l => l.map(w => wordOf(w, p || {}, h)).filter(Boolean),
     r = words(list),
-    // SOG-0690 (b) : une météo prévue bonne (VFR, MVFR) n'est dite par aucune réserve : elle suit le verdict
+    // SOG-0690 (b) : une météo prévue bonne (VFR, MVFR) n'est dite par aucune réserve ni cause : elle suit le verdict, quel qu'il soit
     wx = p?.crits?.[2],
     cat = wx?.state === 'ok' && wx.code === 'wxCat' && wx.v?.c ? ` ${h.tt(TX.sayWx, { c: wx.v.c })}` : '';
   if (sign === 'ok') return h.tt(TX.sayOk) + cat;
   if (sign === 'warn') return (r.length ? h.tt(r.length > 1 ? TX.sayWarns : TX.sayWarn, {
     r: r.join(', ')
   }) : h.tt(TX.sayOk)) + cat;
-  if (sign === 'grey') return r.length ? h.tt(TX.sayGrey, {
+  if (sign === 'grey') return (r.length ? h.tt(TX.sayGrey, {
     r: r.join(', ')
-  }) : h.tt(TX.sayGrey0);
+  }) : h.tt(TX.sayGrey0)) + cat;
   if (sign === 'err') {
     const e = words(list.filter(w => ERR_WHY.includes(w)));
-    return e.length ? h.tt(TX.sayErr, {
+    return (e.length ? h.tt(TX.sayErr, {
       r: e.join(', ')
-    }) : h.tt(TX.sayErr0);
+    }) : h.tt(TX.sayErr0)) + cat;
   }
   return '';
+}
+
+/** SOG-0690 (b) point 5 (l'ergonome, 28/11) : les mots de la ligne du dégagement choisi, ceux d'une ligne proposée — son verdict (le pire
+ *  critère, altn_check.js judge) et ses causes dans l'ordre piste, moyens, météo, distance : la piste en échec (trop courte, pas en dur),
+ *  les réserves et les causes de proposalOf, la météo LIFR, la distance (trop loin, trop près) ; crits : [piste, moyens, météo, distance?]. */
+export function chosenSay(crits, h) {
+  const [rwy, aids, wx] = crits,
+  dist = crits.find(c => c?.k === 'dist'),
+    P = proposalOf([rwy, aids, wx]),
+    why = [...(rwy?.code === 'rwyShort' ? ['rwy-short'] : rwy?.code === 'rwyNoHard' ? ['rwy-nohard'] : []), ...P.why,
+      ...(wx?.state === 'err' ? ['wx-lifr'] : []), ...(dist?.code === 'distFar' ? ['dist-far'] : dist?.code === 'distNear' ? [
+        'dist-near'
+      ] : [])
+    ];
+  return signSay(judge(crits).state, why, {
+    crits: [rwy, aids, wx],
+    wxv: P.wxv,
+    miss: false
+  }, h);
 }
 
 /** Le signe de chaque état d'un critère ou d'un terrain (la couleur seule ne suffit pas). */
