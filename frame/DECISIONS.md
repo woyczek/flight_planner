@@ -3235,6 +3235,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Offline**: the file of each watcher of the table is added to the precache of every application (`moduleFiles`); its heavy dynamic imports are kept at their first use by the service worker, like any file a page asks for.
 - **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
 
+## 28 November 2026 — a deduced route marks the places whose place it deduced (SOG-0704)
+
+- **Decision** (the ergonomist: SOG-0621 stands against SOG-0684): ONE rule, ONE reader. When the order of the itinerary is DEDUCED, `route.deduced` lists the work places that `routeOf` inserted after the nearest turning point (the turning points keep the author's file order: not marked); a written order or a profile order has `deduced: []` — the line then goes through everything the author wrote. The Map draws the line through the places that are not marked (BUGS, `3112fcf32`); a diversion is never on the line (the Map already leaves it out). The workshop's behaviour does not change.
+- **The pilot's view** (`pilotView`): `route.deduced` is filtered to the places the view keeps, like `route.order` (the secret of a closed drawer is untouched).
+- **Noreg A405** (extended): see the case.
+
 ## 27 November 2026 — a comment on a report is never silent: the cause is said, the request waits (SOG-0691)
 
 - **Fact**: the verb `signalement/commenter` is sound (run on a COPY of the real `organisation/`, 92 reports: `ok`), the page too (a probe on the real verbs: « Ajouter » writes and lists). `signaler.js` `tools().call` returned `{ offline: true }` for EVERY failure (launcher stopped, 409 busy, 429, error) and the gesture said « le lanceur ne l'a pas écrit » whatever the cause: since SOG-0410 (18 Nov), no pushed commit broke it. The likely cause for the user: the launcher off (SOG-0692 the same day) or busy with a long operation (a write is not in `PARALLEL`).

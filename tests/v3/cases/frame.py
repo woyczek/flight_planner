@@ -13025,13 +13025,16 @@ def a405(c):
       out.writtenOne = got('A-009A', { route_order: ['PT2'] });
       out.none = got('A-010A', { turning_points: [], rendezvous: [], zones: [] });
       out.direct = got('A-014A', { route_order: ['ORIGIN', 'DESTINATION'] });      // the author took every place out of the route: a direct flight, written
+      // SOG-0704: the places whose PLACE is deduced (the work places inserted after the nearest turning point) carry a mark; a written or profile order marks none
+      const mk = (id, extra) => M.readMission(base(id, extra)).route.deduced.join(' ');
+      out.marks = [mk('A-017A'), mk('A-018A', { route_order: ['PT1', 'PT2'] }), mk('A-019A', { vertical_profile: { route: ['ORIGIN', 'PT3', 'PT1', 'DESTINATION'] } }), mk('A-020A', { turning_points: [] }), mk('A-021A', { route_order: [] })];
       out.directEmpty = got('A-015A', { route_order: [] });   // present, empty: written too (the direct flight)
       out.directBad = got('A-016A', { route_order: ['NOWHERE'] });   // present, names no place: written, nothing deduced
       // the pilot: a deduced route shows its turning points, never a work point (a zone, a rendezvous: the place of a closed drawer)
       const m = M.readMission(base('A-011A', { phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'RDV-1', duration_sec: 60, max_gap_sec: 10 }, fallback_delay_min: 60 }] }));
       const v = M.pilotView(m, []), o = M.pilotView(m, ['B']);
       out.pilot = [v.route.from, v.route.order.join(' '), Object.keys(v.points).join(' '), M.missionFlight(v).route.points.map(p => p.id).join(' ')];
-      out.pilotOpen = [o.route.order.join(' '), Object.keys(o.points).join(' ')];
+      out.pilotOpen = [o.route.order.join(' '), Object.keys(o.points).join(' '), o.route.deduced.join(' ')];
       out.noRoute = M.missionFlight({ ...m, route: undefined, routeOrder: [] }).route.points.length;   // an object with no order: no route (never the keys of the file)
       // Security (SOG-0684): a closed drawer with a ZONE key and no written order: no place, and `from` is empty too (« deduced » with no place would say that a drawer hides places); with a written order the zone stays hidden, the written places are there
       const zdoc = { phases: [{ id: 'B', title: 'Zone', trigger_zone: 'Z1', fallback_delay_min: 60 }] };
@@ -13049,11 +13052,12 @@ def a405(c):
     c.eq(r['written'], ['written', 'PT2 PT1', 'PT2 PT1'], 'route_order wins over the profile', what='written')
     c.eq(r['writtenOne'], ['written', 'PT2', 'PT2'], 'a written order is respected, even of one place (the V2 asked for two; the author said it)', what='written one')
     c.eq(r['none'], ['', '', ''], 'no place at all: no route', what='none')
+    c.eq(r['marks'], ['RDV-1 Z1', '', '', 'RDV-1 Z1', ''], 'SOG-0704: a DEDUCED route marks the work places it inserted (`route.deduced`: the rendezvous and the zone, in the order they were placed); a written order, a profile order and an empty written order mark none; with no turning point the work places are all deduced', what='marks')
     c.eq((r['direct'], r['directEmpty'], r['directBad']), (['written', '', ''], ['written', '', ''], ['written', '', '']), 'a route_order that is PRESENT is a written order, even with no place (only the departure and the arrival, an empty list, a token that names nothing): an empty order, nothing deduced — the deduction only when it is ABSENT', what='direct')
     c.eq(r['pilot'], ['', '', '', ''], 'the pilot sees no place of a deduced route that nothing visible cites (the secret of the closed drawers holds: the places only a drawer may cite stay hidden)', what='pilot')
-    c.eq(r['pilotOpen'], ['RDV-1', 'RDV-1'], 'the drawer opened: the place it cites is back, in its place on the route', what='pilot open')
+    c.eq(r['pilotOpen'], ['RDV-1', 'RDV-1', 'RDV-1'], 'the drawer opened: the place it cites is back, in its place on the route', what='pilot open')
     c.eq(r['noRoute'], 0, 'a mission object with no order has no route (the order of the keys of the file is never a route)', what='no keys')
-    c.eq((r['zoneNone'], r['zoneWritten']), ({'order': [], 'from': ''}, {'order': ['PT1', 'PT2'], 'from': 'written'}), 'a closed drawer with a zone key and NO written order: route == { order: [], from: "" } (nothing says a drawer hides places); with route_order [PT1, PT2] and the zone hidden: the written order, nothing more', what='zone key')
+    c.eq((r['zoneNone'], r['zoneWritten']), ({'order': [], 'from': '', 'deduced': []}, {'order': ['PT1', 'PT2'], 'from': 'written', 'deduced': []}), 'a closed drawer with a zone key and NO written order: route == { order: [], from: "" } (nothing says a drawer hides places); with route_order [PT1, PT2] and the zone hidden: the written order, nothing more', what='zone key')
     c.check_errors()
 
 
