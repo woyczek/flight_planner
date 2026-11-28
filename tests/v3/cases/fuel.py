@@ -12731,6 +12731,13 @@ def f354(c):
           '400 kt.', False], 'the type and EUROCONTROL named (the ergonomist, 28 Nov, answer a), no « Ouvrir la fiche » when it is the only '
          'sentence: nothing the pilot can correct there', what='terminal')
     c.eq((asked() or {}).get('terminal_speed_kt'), 400, 'the request carries the bound', what='terminal bound sent')
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    c.js(_F281_NOTES_OFF)
+    for w in (390, 1280):  # for the relay: the terminal speed alone, no « Ouvrir la fiche »
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.shot(f'F354_{c.design}_{w}_{c.lang}_terminal.png')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
     # (iii) a level of the flight outside FL010 to FL660: greyed, its cause, nothing sent
     high = {**fast, 'id': 'XQHIGH', 'icao': 'XQHI', 'cruise': {**fast['cruise'], 'tasKt': 450, 'ceilingFt': 75000}}
     opened(high, 70000)
