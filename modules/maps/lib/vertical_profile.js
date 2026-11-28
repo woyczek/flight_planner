@@ -701,23 +701,10 @@
       ctx.stroke();
       ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y);
     }
-    // SOG-0694 : le plafond de l'aéronef (la fiche) à SA hauteur quand il tombe dans l'échelle (jamais un trait à une hauteur fausse) ; sinon il n'est pas tracé et le bord haut le dit, en gris, avec une flèche
+    // SOG-0694 : le plafond de l'aéronef (la fiche) est tracé à SA hauteur quand il tombe dans l'échelle (jamais un trait à une hauteur fausse) ; sinon il n'est pas tracé et le bord haut le dit (SOG-0722 :
+    // son libellé passe par le placeur de la coupe, après tous les autres, plus bas)
     const ceilIn = ceilFt > bottom && ceilFt <= top;
-    if (ceilText && ceilFt > bottom) {
-      ctx.save();
-      ctx.fillStyle = '#56626b';
-      ctx.textAlign = 'left';
-      if (ceilIn) {
-        ctx.strokeStyle = '#7b8794';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(padL, Y(ceilFt));
-        ctx.lineTo(W - padR, Y(ceilFt));
-        ctx.stroke();
-        ctx.fillText(ceilText, padL + 4 * scale, Y(ceilFt) - 7 * scale);
-      } else ctx.fillText(`${ceilText} ↑`, padL + 4 * scale, padT + 8 * scale);
-      ctx.restore();
-    }
+    let ceilPut = false;
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const drawnZones = new Map(), // V3 maps : type d'espace → couleur, pour la légende (ce qui est réellement dessiné)
       labels = [],
@@ -1094,6 +1081,50 @@
         ctx.fillText(t, x, y);
       }
     }
+    // le plafond de l'aéronef (SOG-0694, SOG-0722) : le trait à sa hauteur (dans l'échelle) ; son libellé est une demande au placeur, de dernier rang : il prend la première place libre — jamais sous une étiquette de
+    // la coupe (TOC, TOD, niveaux, espaces) ni sur la verticale d'un TOC ou d'un TOD — et se tait sans place libre (le trait ou la flèche et geo.ceil restent)
+    if (ceilText && ceilFt > bottom) {
+      ctx.save();
+      if (ceilIn) {
+        ctx.strokeStyle = '#7b8794';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padL, Y(ceilFt));
+        ctx.lineTo(W - padR, Y(ceilFt));
+        ctx.stroke();
+      }
+      const text = ceilIn ? ceilText : `${ceilText} ↑`,
+        tw = ctx.measureText(text).width + 8 * scale,
+        th = f * 1.4,
+        yl = ceilIn ? Y(ceilFt) : padT,
+        aside = (data.plan ? [data.plan.toc, data.plan.tod] : []).filter(Boolean).map(m => X(m.s)),
+        ys = ceilIn ? [yl - th - 2 * scale, yl + 2 * scale] : [padT + 2 * scale],
+        xs = [padL + 3 * scale, W - padR - tw - 3 * scale, padL + (W - padL - padR - tw) / 2, padL + (W - padL - padR - tw) / 4, padL +
+          3 * (W - padL - padR - tw) / 4
+        ],
+        boxes = ys.flatMap(y0 => xs.map(x0 => ({
+          x0,
+          y0,
+          x1: x0 + tw,
+          y1: y0 + th
+        }))).filter(r => r.y0 >= padT && r.y1 <= H - padB && r.x0 >= padL && r.x1 <= W - padR && !aside.some(x => x >= r.x0 - 4 * scale &&
+          x <= r.x1 + 4 * scale)),
+        at = ask({
+          rank: 'ceiling',
+          key: 'ceiling',
+          boxes
+        });
+      if (at) {
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.fillRect(at.x0, at.y0, tw, th);
+        ctx.fillStyle = '#56626b';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, at.x0 + 4 * scale, (at.y0 + at.y1) / 2);
+        ceilPut = true;
+      }
+      ctx.restore();
+    }
     ctx.strokeStyle = '#17202a';
     ctx.lineWidth = 1;
     ctx.strokeRect(padL, padT, W - padL - padR, H - padT - padB);
@@ -1115,7 +1146,8 @@
       skipped,
       ceil: ceilText && ceilFt > bottom ? {
         ft: ceilFt,
-        drawn: ceilIn
+        drawn: ceilIn,
+        label: ceilPut // SOG-0722 : son libellé a trouvé une place libre
       } : null, // SOG-0694 : le plafond de l'aéronef, tracé (drawn) ou dit au bord haut
       placer: pl, // le placeur de la coupe : les contraintes des procédures s'y posent (procs.js, drawProfileCons)
       drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)

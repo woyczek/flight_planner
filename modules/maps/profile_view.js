@@ -248,7 +248,7 @@ export function drawProfile() {
   // la fenêtre au centième de NM, comme la coupe (deux arrondis différents d'une même fenêtre ne se comparent pas)
   setData(S.pc, 'window', `${(g.w0 / FT_NM).toFixed(2)},${(g.w1 / FT_NM).toFixed(2)}`);
   setData(S.pc, 'scale', `${g.bottom},${g.top}`);
-  setData(S.pc, 'ceil', g.ceil ? `${g.ceil.ft},${g.ceil.drawn ? 'line' : 'edge'}` : ''); // SOG-0694 : le plafond de l'aéronef, tracé (line) ou dit au bord haut (edge)
+  setData(S.pc, 'ceil', g.ceil ? `${g.ceil.ft},${g.ceil.drawn ? 'line' : 'edge'}${g.ceil.label ? '' : ',nolabel'}` : ''); // SOG-0694 : le plafond de l'aéronef, tracé (line) ou dit au bord haut (edge)
   setData(S.pc, 'plot', `${Math.round(g.padL)},${Math.round(g.W - g.padR)}`);
   setData(S.pc, 'ticks', g.ticks.map(m => m.nm).join(','));
   legendSync();
@@ -257,7 +257,7 @@ export function drawProfile() {
 }
 /** La liste fermée des priorités de la coupe (SPEC § 3) : TOC / TOD, contraintes des procédures choisies, paliers, espaces,
  *  obstacles, points des voies ; la case « +n » des espaces est réservée avant tout. */
-const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'awy', 'obstacle', 'fix', 'zoneLow'].map((k, i) => [k, i]));
+const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'awy', 'obstacle', 'fix', 'zoneLow', 'ceiling'].map((k, i) => [k, i]));
 /** Les points des voies et les balises à moins de 3 NM de la route, avec leur abscisse sur elle : projetés UNE fois pour un profil et les données lues (SOG-0305 : chaque dessin de la coupe — chaque
  *  image d'un déplacement ou d'un zoom de sa fenêtre — projetait tous les points des voies et toutes les balises de la zone lue, 104 ms avec 4 000 d'entre eux, 2 images par seconde sur un
  *  vol de 4 500 NM) ; un dessin ne fait plus que les placer. Refait quand le profil, les voies, les balises ou les points de la route changent d'objet. */

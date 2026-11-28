@@ -11392,6 +11392,17 @@ def d338(c):
         c.js(_STATE_JS)
         c.until("() => !!document.querySelector('.mp-pc') && (document.querySelector('.mp-pc').dataset.scale || '') !== ''", timeout=15000, what=f'{name}: the profile is drawn')
         out[name] = [top(), ceil()]
+        # SOG-0722: the label of the ceiling never sits under another label of the cut (TOC, TOD, levels, spaces) nor on the vertical of a TOC / TOD: the boxes of the texts of one drawing are measured
+        boxes = c.js("""async () => { const P = CanvasRenderingContext2D.prototype, o = P.fillText, seen = [];
+          P.fillText = function (t, x, y, w) { const m = this.measureText(String(t)), fs = parseFloat(/([0-9.]+)px/.exec(this.font)?.[1] || '12'), a = this.textAlign, b = this.textBaseline;
+            const x0 = a === 'center' ? x - m.width / 2 : a === 'right' || a === 'end' ? x - m.width : x, y0 = b === 'middle' ? y - fs / 2 : b === 'top' ? y : y - fs * .8;
+            seen.push([String(t), x0, y0, x0 + m.width, y0 + fs]); return o.call(this, t, x, y, w) };
+          try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { P.fillText = o }
+          return seen }""")
+        mine = [b for b in boxes if b[0].startswith('Plafond')]
+        others = [b for b in boxes if not b[0].startswith('Plafond') and b[0][:3] in ('TOC', 'TOD')]
+        hit = [(m[0], b[0]) for m in mine for b in others if m[1] < b[3] and m[3] > b[1] and m[2] < b[4] and m[4] > b[2]]
+        out[name + '_label'] = [len(mine), hit]
         if name == 'above':
             c.shot(f'D338_{c.width}_plafond_hors.png')
             # a level pulled up (the same call the drag makes): the scale widens and the line of the ceiling appears as soon as it is in
@@ -11400,6 +11411,7 @@ def d338(c):
             c.js("async () => { const S = window.__mp.S; S.edit.reach = 0; (await import('/modules/maps/profile_view.js')).drawProfile(); return true }")
         if name == 'inside':
             c.shot(f'D338_{c.width}_plafond_trace.png')
+    c.ok(out['above_label'][0] == 1 and out['above_label'][1] == [] and out['inside_label'][0] == 1 and out['inside_label'][1] == [], out, 'SOG-0722: the label of the ceiling is written once and covers no TOC / TOD label (the boxes are measured)')
     c.ok(out['plain'][0] < 20000 and out['plain'][1] == '', out, 'without a ceiling: the scale is the one of the flight, nothing about a ceiling')
     c.ok(out['above'][0] < 20000 and out['above'][1] == '41000,edge', out, 'a flight at FL100, ceiling FL410: a LOW scale (the ceiling does not enter it) and the top edge says the ceiling (never a line at a wrong height)')
     c.ok(out['inside'][0] >= 11000 and out['inside'][1] == '11000,line', out, 'a ceiling inside the scale is drawn at its true height')
