@@ -112,7 +112,12 @@ export function perfFields(q, apd = null) {
       v: r,
       lo,
       hi,
-      used
+      used,
+      // SOG-0721 (l'ergonome) : la TAS du devis au niveau déposé et le vario MOYEN jusqu'à lui sont recalculés à ce niveau (fl) ; la
+      // descente et la vitesse terminale partent telles que la fiche les écrit
+      ...(k === 'speed_kt' || k === 'climb_fpm' ? {
+        fl: Math.round(lvl / 100)
+      } : {})
     });
   }
   return Object.defineProperty(out, 'bound', {

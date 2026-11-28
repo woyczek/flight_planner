@@ -2745,7 +2745,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   quote — the cruise TAS of the performance model at the level of the flight, what the IFPS judges (SOG-0514) — not the figure typed in the
   sheet. The invented sheet (1 650 kt, no reference altitude) had its reference estimated at FL420 by the model, hence about 1 070 kt at
   FL200, inside the bounds: the page rightly said nothing. Measured with the model alone (node): 2 500 kt gives about 1 900 kt at FL200;
-  the case uses it. The code is unchanged.
+  the case uses it. The word, decided by the ergonomist (b, the origin kept): a value recomputed at the level of the flight — the cruise
+  TAS of the quote, the AVERAGE climb rate up to the filed level — is said « {Grandeur} au FL{n} d’après la fiche ({v} {unité}) … »
+  (perfFields gives `fl` in its `bound`); the descent rate and the terminal speed (the APD sheet) leave as written and keep « … de la
+  fiche ({v} {unité}) … ». F354 writes both sentences in clear (1 907 kt at FL200; 30 ft/min).
 
 - **28 Nov 2026 — the train 11 on 42dcfb03b, the last two reds of Fuel**. F354 (the code): the box of the bounds of SOG-0721 was drawn by renderRinfo only, once, when the route step is drawn — the quote or the sheet not read yet, it stayed empty, and a level changed on the step never greyed « Calculer »; refresh() now draws it after staleDraw, each time the quote is computed again. F353 (the case): the browser writes the attributes of the SVG again, so two strings differ for the same drawing — the case parses the string of altnSignSvg in a template and compares the nodes (isEqualNode), the equality of the drawings kept.
 

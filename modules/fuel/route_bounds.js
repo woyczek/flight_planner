@@ -5,12 +5,14 @@
 // rien ; ses textes sont en français seul (dette SOG-0680).
 //
 // API : boundLines(bound, h) → les phrases, une par valeur, dans l'ordre de la liste fermée (croisière, montée, descente, terminale) ;
-//   bound : perfFields(…).bound ([{ k, v, lo, hi, used }]) ; h = { tt, esc, lang() }.
+//   bound : perfFields(…).bound ([{ k, v, lo, hi, used, fl? }]) ; h = { tt, esc, lang() } ; fl : la valeur est recalculée à ce niveau
+//   (la croisière, la montée) : « … au FL{n} d’après la fiche … », sinon « … de la fiche … » (l'ergonome, 28/11).
 //   boxHtml(bound, levelBad, href, h) → le contenu de la ligne sous « Calculer » : la cause d'un niveau hors bornes, sinon les phrases et
 //   « Ouvrir la fiche » (href : la fiche dans Maintenance) ; '' sans rien à dire.
 
 export const TX = {
   bound: ['{g} de la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
+  boundAt: ['{g} au FL{n} d’après la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
   // la liste fermée des grandeurs (l'ergonome)
   names: {
     speed_kt: ['Vitesse de croisière'],
@@ -34,8 +36,9 @@ const ORDER = ['speed_kt', 'climb_fpm', 'descent_fpm', 'terminal_speed_kt'],
 export function boundLines(bound, h) {
   const fmt = n => Number(n).toLocaleString(h.lang());
   return (Array.isArray(bound) ? bound : []).filter(x => ORDER.includes(x?.k)).sort((a, b) => ORDER.indexOf(a.k) - ORDER.indexOf(b.k))
-    .map(x => `<p class="f-muted" data-rperfbound="${x.k}">${h.esc(h.tt(TX.bound, {
+    .map(x => `<p class="f-muted" data-rperfbound="${x.k}">${h.esc(h.tt(x.fl > 0 ? TX.boundAt : TX.bound, {
       g: h.tt(TX.names[x.k]),
+      n: String(x.fl).padStart(3, '0'),
       v: fmt(x.v),
       u: UNIT[x.k],
       min: fmt(x.lo),

@@ -12656,7 +12656,8 @@ def f353(c):
 
 @case('F354', 'Route step, a value of the sheet outside what the route engine accepts: the page sends the nearest BOUND (never nothing) and '
       'says it, under « Calculer » as soon as it is known and in the reasons of the computed route — « {Grandeur} de la fiche ({v} {unité}) '
-      'hors de ce que le calcul de route accepte ({min} à {max} {unité}) : il compte {borne} {unité}. »; a level of the flight outside FL010 '
+      'hors de ce que le calcul de route accepte ({min} à {max} {unité}) : il compte {borne} {unité}. », « {Grandeur} au FL{n} d’après la '
+      'fiche (…) … » for a value recomputed at the level of the flight (the cruise, the climb); a level of the flight outside FL010 '
       'to FL660: « Calculer » greyed, its cause under it, nothing sent', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True,
       langs4=False,
       rule='SOG-0721 (the ergonomist, 28 Nov: forms (a) and (c) for a value of the sheet, the page no longer omits it; form (b) for the level '
@@ -12692,9 +12693,10 @@ def f354(c):
     opened(fast, 20000)
     U = f'{FUEL} [data-rbound] [data-rperfbound=speed_kt]'
     c.until(f"!!document.querySelector('{U}')", timeout=10000, what='said under « Calculer » before the touch (red before: nothing said)')
-    m = re.fullmatch(r'Vitesse de croisière de la fiche \((\d[\d ]*) kt\) hors de ce que le calcul de route accepte \(30 à 1 500 kt\) : il '
-                     r'compte 1 500 kt\. Ouvrir la fiche', said(U)[0] + ' ' + norm(c.text(f'{FUEL} [data-rbound] a[data-rsheet]') or ''))
-    c.ok(bool(m) and int(m.group(1).replace(' ', '')) > 1500, said(U), 'the sentence of the ergonomist, then « Ouvrir la fiche »')
+    c.eq(said(U)[0] + ' ' + norm(c.text(f'{FUEL} [data-rbound] a[data-rsheet]') or ''),
+         'Vitesse de croisière au FL200 d’après la fiche (1 907 kt) hors de ce que le calcul de route accepte (30 à 1 500 kt) : il compte '
+         '1 500 kt. Ouvrir la fiche', 'the sentence of the ergonomist (28 Nov, the word b: the figure judged is the TAS of the quote at FL200, '
+         'written nowhere in the sheet — the level said, the origin kept), then « Ouvrir la fiche »', what='sentence')
     a = asked()
     c.eq((a or {}).get('speed_kt'), 1500, 'the request carries the bound, never nothing (red before: no speed sent, the engine\'s own)',
          what='bound sent')
@@ -12714,9 +12716,8 @@ def f354(c):
     opened(slow, 2000)
     D = f'{FUEL} [data-rbound] [data-rperfbound=descent_fpm]'
     c.until(f"!!document.querySelector('{D}')", timeout=10000, what='the descent said under « Calculer »')
-    m = re.fullmatch(r'Taux de descente de la fiche \((\d+) ft/min\) hors de ce que le calcul de route accepte \(50 à 20 000 ft/min\) : il '
-                     r'compte 50 ft/min\.', said(D)[0])
-    c.ok(bool(m) and int(m.group(1)) < 50, said(D), 'the sentence with the low bound')
+    c.eq(said(D)[0], 'Taux de descente de la fiche (30 ft/min) hors de ce que le calcul de route accepte (50 à 20 000 ft/min) : il compte '
+         '50 ft/min.', 'the sentence with the low bound: the rate written in the sheet, sent as it is — no level said', what='descent')
     c.eq((asked() or {}).get('descent_fpm'), 50, 'the request carries the low bound', what='low bound sent')
     # (iii) a level of the flight outside FL010 to FL660: greyed, its cause, nothing sent
     high = {**fast, 'id': 'XQHIGH', 'icao': 'XQHI', 'cruise': {**fast['cruise'], 'tasKt': 450, 'ceilingFt': 75000}}
