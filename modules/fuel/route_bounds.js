@@ -15,7 +15,9 @@
 export const TX = {
   bound: ['{g} de la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
   boundAt: ['{g} au FL{n} d’après la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
-  boundApd: ['Vitesse terminale du type {t} d’après Eurocontrol ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
+  boundApd: [
+    'Vitesse terminale du type {t} d’après Eurocontrol ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'
+  ],
   // la liste fermée des grandeurs (l'ergonome)
   names: {
     speed_kt: ['Vitesse de croisière'],
