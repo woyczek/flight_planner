@@ -3,6 +3,9 @@
 // fond uni), les jetons de dessin du design et de la nuit, l'ancre de l'aide en ligne.
 
 import {
+  onTheme as onFrameTheme
+} from '../../frame/lib/theme.js';
+import {
   S,
   keep,
   esc,
@@ -680,15 +683,6 @@ export function watchTheme() {
     redrawSheet();
     schedule();
   };
-  const mq = matchMedia('(prefers-color-scheme: dark)'),
-    mo = new MutationObserver(onTheme);
-  mq.addEventListener('change', onTheme);
-  mo.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-design', 'data-tone']
-  });
-  return () => {
-    mq.removeEventListener('change', onTheme);
-    mo.disconnect();
-  };
+  return onFrameTheme(
+    onTheme); // le thème du cadre (frame/lib/theme.js, SOG-0720) : un seul observateur pour la page, rend la fonction qui arrête celui-ci
 }

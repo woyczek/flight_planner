@@ -176,7 +176,7 @@ export const meta = {
     'mission_view.js?v=0', 'pilot.js?v=0', 'lib/safe_text.js?v=0', '../../frame/lib/text.js?v=0', '../missions/drawers.js?v=0',
     '../../frame/lib/crossing.js?v=0',
     '../../frame/lib/hit_target.js?v=0', // (a1) : importé par choose.js (cible commune du doigt)
-    '../../frame/lib/untrusted.js?v=0', '../../frame/lib/altn_sign.js?v=0',
+    '../../frame/lib/untrusted.js?v=0', '../../frame/lib/altn_sign.js?v=0', '../../frame/lib/theme.js?v=0',
     '../fuel/mission_chip.js?v=0', // SOG-0617 : la puce « Mission <ID> » de la ligne d'en-tête, celle de Carburant
     '../../frame/lib/precision.js?v=0', // SOG-0516 : importé par missions/drawers.js
     '../../frame/lib/mission.js?v=0', '../../frame/lib/mission_events.js?v=0',

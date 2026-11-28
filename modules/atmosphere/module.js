@@ -13,6 +13,9 @@
 
 import * as A from './atmo.js';
 import {
+  onTheme
+} from '../../frame/lib/theme.js';
+import {
   STYLE
 } from './style.js';
 import {
@@ -83,7 +86,7 @@ export const meta = {
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/weather_store.js?v=0',
     '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/icons.js?v=0',
-    '../../frame/lib/hit_target.js?v=0',
+    '../../frame/lib/hit_target.js?v=0', '../../frame/lib/theme.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
@@ -1046,13 +1049,8 @@ export async function mount(el, ctx) {
     map.repaint();
     drawData();
   };
-  const mo = new MutationObserver(repaint);
-  mo.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-design', 'data-tone']
-  });
-  const mq = matchMedia('(prefers-color-scheme: dark)');
-  mq.addEventListener('change', repaint);
+  const offTheme = onTheme(
+    repaint); // le thème du cadre (frame/lib/theme.js, SOG-0720) : design, ton ou réglage de l'appareil en « auto »
   // retour d'un onglet caché ou d'une page gelée : les observations de taille faites pendant ce temps sont perdues
   const back = () => {
     if (document.visibilityState !== 'visible' || !S.map) return;
@@ -1099,8 +1097,7 @@ export async function mount(el, ctx) {
     sheet?.stop();
     cancelAnimationFrame(shiftFrame);
     ro.disconnect();
-    mo.disconnect();
-    mq.removeEventListener('change', repaint);
+    offTheme();
     document.removeEventListener('visibilitychange', back);
     document.removeEventListener('keydown', legendKey);
     window.removeEventListener('pageshow', back);

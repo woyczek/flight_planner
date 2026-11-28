@@ -71,7 +71,9 @@
         }
       },
       rgb = rgbOf(t.bg) || [255, 255, 255];
-    t.dark = (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) / 255 < .45;
+    // SOG-0720 : le thème du cadre, lu en un seul endroit (frame/lib/theme.js, donné en synchrone par SogFrame.theme) ; sa clarté de fond n'est plus que le repli d'un cadre qui ne le donnerait pas
+    t.dark = window.SogFrame?.theme?.themeOf ? window.SogFrame.theme.themeOf().dark : (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) /
+      255 < .45;
     MAP_TOK = t.map;
     return t;
   }

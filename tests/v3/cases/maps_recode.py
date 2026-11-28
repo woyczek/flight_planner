@@ -8851,12 +8851,11 @@ def d340(c):
         for px, col in zip(got['px'], cols):
             exp = [int(col[i:i + 2], 16) for i in (1, 3, 5)]
             c.ok(all(abs(a - b) <= 24 for a, b in zip(px, exp)), f'{sign}: pixel {px}, table {exp}', f'{sign}: the canvas ring is in the colour of the table (the same as the SVG)')
-    # pageDark(): the rule of the Map (the lightness of --sog-chart-bg under 0.45), the same for Fuel; a missing token: light
-    d = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), st = document.documentElement.style, was = st.getPropertyValue('--sog-chart-bg'), out = [];
-      if (!window.MapsRender) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = '/modules/maps/render.js?v=0'; sc.onload = ok; sc.onerror = () => no(new Error('render.js')); document.head.append(sc) }); // the bench page does not load the render script of the Map
-      for (const v of ['#101418', '#fff', 'rgb(20, 24, 30)', '#8a8a8a', '#707070', '']) { if (v) st.setProperty('--sog-chart-bg', v); else st.removeProperty('--sog-chart-bg'); out.push([v, A.pageDark(), window.MapsRender.tokens().dark]) }
-      if (was) st.setProperty('--sog-chart-bg', was); else st.removeProperty('--sog-chart-bg'); return out }""")
-    c.ok(all(a == b for _, a, b in d[:5]) and d[0][1] is True and d[1][1] is False and d[2][1] is True and d[3][1] is False and d[4][1] is True, str(d), 'pageDark() is the rule of the Map (tokens().dark) for dark, light, rgb(), middle grey')
+    # pageDark() reads the theme of the frame (frame/lib/theme.js, SOG-0720): the same answer as themeOf, for a night tone and a day tone set on <html>
+    d = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), T = await import('/frame/lib/theme.js'), h = document.documentElement, was = h.getAttribute('data-tone'), out = [];
+      for (const tone of ['night', 'day']) { h.setAttribute('data-tone', tone); await new Promise(r => setTimeout(r, 60)); out.push([tone, A.pageDark(), T.themeOf().dark]) }
+      if (was) h.setAttribute('data-tone', was); else h.removeAttribute('data-tone'); return out }""")
+    c.eq(d, [['night', True, True], ['day', False, False]], 'pageDark() is the theme of the frame: the same as themeOf, night then day', what=str(d))
     c.eq(r['bogus']['colors'], want['ok'], 'an unknown sign is read as the first one (never a missing drawing)', what=str(r['bogus']['colors']))
     c.ok(len({s for k in want for s in r[k]['svg']}) == 8, '', 'the four signs, day and night: eight different drawings')
     c.check_errors()
@@ -11446,4 +11445,26 @@ def d341(c):
     zoomed = cam()
     c.ok(zoomed[2] > after[2] + .05, f'{after} -> {zoomed}', 'the wheel zooms the map offline')
     c.shot(f'D341_{c.width}_{c.lang}_hors_ligne.png')
+    c.check_errors()
+
+
+@case('D342', 'The theme of the frame and the background of the Map say the same « dark » (SOG-0720): on two designs at least, aqua included, in day and in night, the lightness of --sog-chart-bg (the old rule of the Map) gives themeOf().dark, pageDark() and the tokens of the Map', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0720 (V3 Frame probe, the relay, 28 Nov: no design is dark or light by itself, « dark = night tone, or auto on a dark device »; the probe measured the background of the PAGE, not the one of the Map): the background of the Map (--sog-chart-bg) must give the same answer as the reader of the frame, else the pastilles of the alternates and the tokens of the Map would change with the lot of the readers')
+def d342(c):
+    c.open('maps', docs=fdocs(flight()), flight=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), T = await import('/frame/lib/theme.js'), h = document.documentElement, was = [h.getAttribute('data-design'), h.getAttribute('data-tone')], out = [];
+      const rgb = s => s[0] === '#' ? (s.length === 4 ? [1, 2, 3].map(i => parseInt(s[i] + s[i], 16)) : [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16))) : ((s.match(/[0-9.]+/g) || []).slice(0, 3).map(Number).concat([255, 255, 255]).slice(0, 3));
+      for (const design of ['standard', 'aqua', 'metro'])
+        for (const tone of ['day', 'night']) {
+          h.setAttribute('data-design', design); h.setAttribute('data-tone', tone); await new Promise(r => setTimeout(r, 80));
+          const bg = getComputedStyle(h).getPropertyValue('--sog-chart-bg').trim(), c3 = rgb(bg), light = (.2126 * c3[0] + .7152 * c3[1] + .0722 * c3[2]) / 255;
+          out.push([design, tone, light < .45, T.themeOf().dark, A.pageDark(), window.MapsRender.tokens().dark, bg]);
+        }
+      for (const [i, k] of ['data-design', 'data-tone'].entries()) if (was[i]) h.setAttribute(k, was[i]); else h.removeAttribute(k);
+      return out }""")
+    bad = [x for x in r if not (x[2] == x[3] == x[4] == x[5] == (x[1] == 'night'))]
+    c.ok(not bad, str(bad or r), 'for standard, aqua and metro, day and night: the old rule of the Map (the lightness of --sog-chart-bg), themeOf().dark, pageDark() and the tokens of the Map are one answer, the night tone')
     c.check_errors()

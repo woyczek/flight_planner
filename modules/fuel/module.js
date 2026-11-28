@@ -158,7 +158,7 @@ export const meta = {
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
     '../../frame/lib/text.js', '../../frame/lib/fold.js', '../../frame/lib/altn_sign.js', // SOG-0713, SOG-0690 (b)
     '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js', '../../frame/lib/mission_events.js',
-    '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
+    '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js', '../../frame/lib/theme.js'
   ]
 };
 
