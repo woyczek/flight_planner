@@ -12677,7 +12677,9 @@ def f354(c):
 
     def asked(act='compute', want=True):
         n = len(st['posts'])
-        c.tap(f'{FUEL} [data-reng] [data-do="{"rcompute" if act == "compute" else "rcheck"}"]')
+        sel = f'{FUEL} [data-reng] [data-do="{"rcompute" if act == "compute" else "rcheck"}"]'
+        # a greyed button (aria-disabled): Playwright refuses to tap it (Essais, train 11) — the click goes through the DOM, nothing may leave
+        c.tap(sel) if want else c.js(f"document.querySelector('{sel}').click()")
         for _ in range(20 if want else 10):
             got = [p.get('args') or {} for p in st['posts'][n:] if (p.get('args') or {}).get('action') == act]
             if got:
