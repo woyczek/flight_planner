@@ -8853,6 +8853,7 @@ def d340(c):
             c.ok(all(abs(a - b) <= 24 for a, b in zip(px, exp)), f'{sign}: pixel {px}, table {exp}', f'{sign}: the canvas ring is in the colour of the table (the same as the SVG)')
     # pageDark(): the rule of the Map (the lightness of --sog-chart-bg under 0.45), the same for Fuel; a missing token: light
     d = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), st = document.documentElement.style, was = st.getPropertyValue('--sog-chart-bg'), out = [];
+      if (!window.MapsRender) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = '/modules/maps/render.js?v=0'; sc.onload = ok; sc.onerror = () => no(new Error('render.js')); document.head.append(sc) }); // the bench page does not load the render script of the Map
       for (const v of ['#101418', '#fff', 'rgb(20, 24, 30)', '#8a8a8a', '#707070', '']) { if (v) st.setProperty('--sog-chart-bg', v); else st.removeProperty('--sog-chart-bg'); out.push([v, A.pageDark(), window.MapsRender.tokens().dark]) }
       if (was) st.setProperty('--sog-chart-bg', was); else st.removeProperty('--sog-chart-bg'); return out }""")
     c.ok(all(a == b for _, a, b in d[:5]) and d[0][1] is True and d[1][1] is False and d[2][1] is True and d[3][1] is False and d[4][1] is True, str(d), 'pageDark() is the rule of the Map (tokens().dark) for dark, light, rgb(), middle grey')
