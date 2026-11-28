@@ -12764,11 +12764,12 @@ def f354(c):
 
 
 @case('F355', 'The performance model is calibrated ONCE for the same arguments: two calls of FlightPerfModel.create identical in value give '
-      'the same model, frozen; a changed ISA deviation gives a new one', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      'the same model, frozen; any argument changed (ISA deviation, db, apd) gives a new one', 'F', tags=('fuel',), designs=('standard',), screens=False,
       langs4=False,
       rule='SOG-0731 (the ergonomist, performance pass of 28 Nov: at the opening of Fuel all the long tasks came from the quote, the model '
       'calibrated 3 times cold and 2 times warm with the same inputs): the pure boundary keeps its last model, one entry, the key being the '
-      'arguments themselves (never a state of the screen); invented profile, the copies of the caller (fresh objects, as compute gives)')
+      'arguments themselves, ALL of them (the ergonomist: none left aside « because it never changes »), never a state of the screen; '
+      'invented profile, the copies of the caller (fresh objects, as compute gives)')
 def f355(c):
     c.open('fuel', docs=flight_docs())
     wait_quote(c)
@@ -12781,9 +12782,14 @@ def f355(c):
           db = () => ({ XQJT: { description: 'L2J' } }),
           a = P.create(prof(), { db: db(), dIsa: 0, apd: apd() }),
           b = P.create(prof(), { db: db(), dIsa: 0, apd: apd() }),
-          w = P.create(prof(), { db: db(), dIsa: 5, apd: apd() });
-        return [a === b, w !== b, Object.isFrozen(a) && Object.isFrozen(a.notes), w.dIsa, Math.round(a.ceiling) === Math.round(b.ceiling)] }""")
-    c.eq(got, [True, True, True, 5, True], 'identical arguments: one model (red before: two); dIsa changed: a new model; the model frozen',
+          w = P.create(prof(), { db: db(), dIsa: 5, apd: apd() }),
+          // the profile declares its engine: db does not change a figure, it is in the key all the same (every argument)
+          d = P.create(prof(), { db: { XQJT: { description: 'L2T' } }, dIsa: 5, apd: apd() }),
+          e = P.create(prof(), { db: { XQJT: { description: 'L2T' } }, dIsa: 5, apd: { cruise: { ceilingFL: 390, mach: 0.78 } } });
+        return [a === b, w !== b, Object.isFrozen(a) && Object.isFrozen(a.notes), w.dIsa, d !== w, e !== d,
+          Math.round(a.ceiling) === Math.round(b.ceiling)] }""")
+    c.eq(got, [True, True, True, 5, True, True, True],
+         'identical arguments: one model (red before: two); dIsa, db, apd changed: a new model each; the model frozen',
          what='one model per arguments')
 
 

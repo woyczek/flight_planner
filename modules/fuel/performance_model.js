@@ -758,9 +758,11 @@
   }
   // SOG-0731 (l'ergonome, passe de performances) : Carburant demandait le même modèle 3 fois à froid et 2 fois à chaud à l'ouverture,
   // entrées inchangées, et son calibrage (calibrateP0, l'altitude de référence : climbWith → vy → golden) faisait l'essentiel des
-  // tâches longues. build est pur : il ne lit que ses arguments, la motorisation que db donne (powerOf, catalogue commun compris) et
-  // la langue des notes. Le dernier modèle rendu est donc gardé pour des arguments identiques EN VALEUR — une seule entrée, la clé est
-  // faite des arguments eux-mêmes, jamais d'un état d'écran — et refait dès que l'un change (apd arrivé, dIsa, fiche, langue).
+  // tâches longues. build ne lit que ses arguments, plus deux choses hors d'eux : la langue des notes et, sans db ou avec la base
+  // commune, la motorisation du catalogue commun (powerOf). Le dernier modèle rendu est donc gardé pour des arguments identiques EN
+  // VALEUR — une seule entrée ; la clé est faite de TOUS les arguments (le profil et l'objet d'options entier : db, dIsa, apd, et toute
+  // autre clé — l'ergonome : aucun laissé de côté « parce qu'il ne change jamais »), plus ces deux lectures, jamais d'un état d'écran —
+  // et refait dès que l'un change (apd arrivé, dIsa, fiche, langue).
   let last = null;
   /** Modèle de performances calibré (voir build) ; le même objet, figé, pour des arguments identiques en valeur à ceux de l'appel
    *  précédent. build lit le profil et apd aussi plus tard (vitesse de montée…) : il reçoit leurs copies, qu'un appelant qui
@@ -768,22 +770,24 @@
   function create(profile, opts = {}) {
     const {
       db,
-      dIsa = 0,
-      apd = null
+      ...rest
     } = opts || {};
     let key = null,
       own = null;
     try {
-      key = JSON.stringify([profile, dIsa, apd, powerOf(profile, db), lang()]);
-      own = [structuredClone(profile), structuredClone(apd)];
+      // copies d'abord : une fonction (que JSON omettrait sans rien dire) refuse la clé ; un nombre non fini garde son nom (JSON écrirait null)
+      own = [structuredClone(profile), structuredClone(rest)];
+      key = JSON.stringify([profile, opts ?? null, powerOf(profile, db), lang()], (k, v) => typeof v === 'number' && !Number
+        .isFinite(v) ? `\u0000${v}` : v);
     } catch {
-      key = null; // un argument qui ne se sérialise ni ne se copie : pas de clé, le modèle est refait à chaque appel
+      key = own = null; // un argument qui ne se copie ni ne se sérialise : pas de clé, le modèle est refait à chaque appel
     }
     if (key !== null && last?.key === key) return last.m;
-    const m = build(own ? own[0] : profile, {
-      ...opts,
-      apd: own ? own[1] : apd
-    });
+    // db tel quel, jamais copié : powerOf le compare à la base commune (window.AIRCRAFT_DB) et le calcul ne le lit qu'à la création
+    const m = own ? build(own[0], {
+      ...own[1],
+      db
+    }) : build(profile, opts);
     Object.freeze(m.notes);
     Object.freeze(m);
     if (key !== null) last = {
