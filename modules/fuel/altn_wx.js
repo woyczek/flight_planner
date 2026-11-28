@@ -8,7 +8,8 @@
 //   tafFold(taf, esc) → SOG-0660 : le texte du TAF d'un terrain proposé, replié sous sa ligne (« TAF », aucune phrase), ou « » sans texte
 //   lu ; CSS : son style, posé par module.js.
 //   signSay(sign, why, p, h) → SOG-0690 : les mots du signe d'une ligne proposée (« Possible. », « Possible avec réserve(s) : … »,
-//   « Non jugé : … »), '' pour « ✕ » ; why : ses codes de réserve (altn_check.js proposalOf) ; p : son état (crits, wxv, miss) ;
+//   « Non jugé : … », SOG-0702 « Impossible : … ») ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
+//   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
 
 export const TX = {
@@ -18,6 +19,9 @@ export const TX = {
   sayWarns: ['Possible avec réserves : {r}.'],
   sayGrey: ['Non jugé : {r}.'],
   sayGrey0: ['Non jugé.'],
+  // SOG-0702 (l'ergonome, 28/11) : « ✕ » par la même règle — sa cause seule, jamais une réserve d'un terrain possible
+  sayErr: ['Impossible : {r}.'],
+  sayErr0: ['Impossible.'],
   // les causes de SOG-0559 (la ligne du dégagement choisi), sans le code du terrain
   cNoTaf: ['pas de TAF'],
   cNoTime: ['la durée du vol est inconnue'],
@@ -71,9 +75,14 @@ function wordOf(w, p, h) {
   return why ? `${head} (${why})` : head;
 }
 
-/** SOG-0690 (l'ergonome, 27/11) : les mots du signe d'une ligne proposée (voir l'en-tête) ; '' pour « ✕ » (jamais proposé). */
+/** SOG-0702 : les codes qui font « ✕ » (un critère en échec : la météo LIFR) — les seuls que « Impossible » dit. */
+const ERR_WHY = ['wx-lifr'];
+
+/** SOG-0690 (l'ergonome, 27/11) : les mots du signe d'une ligne proposée (voir l'en-tête) ; SOG-0702 : « ✕ » dit sa cause. */
 export function signSay(sign, why, p, h) {
-  const r = (Array.isArray(why) ? why : []).map(w => wordOf(w, p || {}, h)).filter(Boolean);
+  const list = Array.isArray(why) ? why : [],
+    words = l => l.map(w => wordOf(w, p || {}, h)).filter(Boolean),
+    r = words(list);
   if (sign === 'ok') return h.tt(TX.sayOk);
   if (sign === 'warn') return r.length ? h.tt(r.length > 1 ? TX.sayWarns : TX.sayWarn, {
     r: r.join(', ')
@@ -81,6 +90,12 @@ export function signSay(sign, why, p, h) {
   if (sign === 'grey') return r.length ? h.tt(TX.sayGrey, {
     r: r.join(', ')
   }) : h.tt(TX.sayGrey0);
+  if (sign === 'err') {
+    const e = words(list.filter(w => ERR_WHY.includes(w)));
+    return e.length ? h.tt(TX.sayErr, {
+      r: e.join(', ')
+    }) : h.tt(TX.sayErr0);
+  }
   return '';
 }
 

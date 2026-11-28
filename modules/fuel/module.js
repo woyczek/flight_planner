@@ -967,7 +967,8 @@ const TX = {
     'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída']
   },
   altnPropMore: ['{n} autre(s) sur la Carte.', '{n} more on the Map.', '{n} weitere auf der Karte.', '{n} más en el mapa.'],
-  altnProposed: ['Proposé : {icao}', 'Suggested: {icao}', 'Vorgeschlagen: {icao}', 'Propuesto: {icao}'],
+  // SOG-0702 (l'ergonome) : une phrase, ses mots du signe en suivent une seconde
+  altnProposed: ['Proposé : {icao}.', 'Suggested: {icao}.', 'Vorgeschlagen: {icao}.', 'Propuesto: {icao}.'],
   altnTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
   altnWxNote: ['La météo est un indicateur (catégories VFR, MVFR, IFR, LIFR de la FAA), jamais une conformité aux minima du terrain.',
     'The weather is an indicator (the FAA’s VFR, MVFR, IFR, LIFR categories), never compliance with the aerodrome’s minima.',
@@ -5943,6 +5944,8 @@ function altnDocWrite() {
       lon: x.lon,
       nm: x.nm,
       state: p.state,
+      // SOG-0702 (l'ergonome : un terrain, un juge) : le signe même de la ligne de la liste (ok, warn, grey), que la Carte peint
+      sign: p.sign,
       why: p.why,
       // SOG-0544 : les heures de la phrase de la météo inconnue (HH:MMZ), pour que la Carte dise la même
       ...(p.wxv ? {
@@ -6003,7 +6006,7 @@ function altnPropHtml() {
       // SOG-0544 : chaque réserve dite par son vrai mot, la météo inconnue comprise (plus de « météo non lue » caché)
       const p = altnPropCrits(x),
         ws = [...p.why.filter(w => !(allNoTime && w === 'wx-notime')), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])],
-        say = AWX.signSay(p.sign, ws, p, RLH), // SOG-0690 : les mots du signe, une fois, après le code (« ✕ » : la ligne d'avant)
+        say = AWX.signSay(p.sign, ws, p, RLH), // SOG-0690, SOG-0702 : les mots du signe, une fois, après le code
         why = (say ? [] : ws).flatMap(w => altnWhyBits(w, p)).map(([s, short]) =>
           short ? `<span class="fu-nowrap">${esc(s)}</span>` : `<span>${esc(s)}</span>`),
         bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
