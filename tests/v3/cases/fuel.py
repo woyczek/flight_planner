@@ -7554,10 +7554,10 @@ def f257(c):
     # 2. the screen: the four states, at 390 and 1280
     # SOG-0690 (b) point 5: the words of a proposed line, in French (the screen texts are written in French only, SOG-0680: the other
     # languages are read after their translation)
-    states = [('ok', 2500, 2, 'VFR', 5000, 'XQAL Possible. Météo prévue : VFR.'),
-              ('warn', 2500, 0, 'VFR', 5000, 'XQAL Possible avec réserve : à vue seulement. Météo prévue : VFR.'),
-              ('err', 1000, 2, 'VFR', 5000, 'XQAL Impossible : piste trop courte. Météo prévue : VFR.'),
-              ('grey', 2500, 2, 'VFR', None, 'XQAL Non jugé : piste non vérifiée. Météo prévue : VFR.')]
+    states = [('ok', 2500, 2, 'VFR', 5000, 'Dégagement XQAL : Possible. Météo prévue : VFR.'),
+              ('warn', 2500, 0, 'VFR', 5000, 'Dégagement XQAL : Possible avec réserve : à vue seulement. Météo prévue : VFR.'),
+              ('err', 1000, 2, 'VFR', 5000, 'Dégagement XQAL : Impossible : piste trop courte. Météo prévue : VFR.'),
+              ('grey', 2500, 2, 'VFR', None, 'Dégagement XQAL : Non jugé : piste non vérifiée. Météo prévue : VFR.')]
     for state, hard, app, cat, min_ft, want in states:
         c.page.set_viewport_size({'width': 390, 'height': 844})
         _altn_open(c, hard, app, cat, min_ft)
@@ -9004,7 +9004,7 @@ def f287(c):
         c.eq(c.js(f"document.querySelector('{FUEL} [data-altnchk] li[data-crit=dist]')?.dataset.state"), 'err',
              'the reason: the distance from the new arrival', what='dist')
         head = norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
-        c.eq(head, 'XQAL Impossible : trop loin de l’arrivée. Météo prévue : VFR.', 'the sentence names the distance in its short words '
+        c.eq(head, 'Dégagement XQAL : Impossible : trop loin de l’arrivée. Météo prévue : VFR.', 'the sentence names the distance in its short words '
              '(SOG-0690 b, French only; red before: « Dégagement XQAL : ne convient pas (distance) »)', what='head')
         d = cf_doc(c, lambda d: ((d.get('route') or {}).get('arr') == 'XQNR'), 'the arrival written')
         c.eq((d.get('route') or {}).get('altn'), _ALT_ID, 'the alternate stays in the flight, marked, never removed', what='kept')
@@ -12529,7 +12529,7 @@ def f350(c):
     c.until(f"document.querySelector('{line}')?.dataset.state === 'err' && "
             f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000,
             what='the line « Impossible », the weather read')
-    c.eq(head(), 'XQAL Impossible : piste trop courte. Météo prévue : VFR.', 'one cause, in short words (red before: « Dégagement XQAL : '
+    c.eq(head(), 'Dégagement XQAL : Impossible : piste trop courte. Météo prévue : VFR.', 'one cause, in short words (red before: « Dégagement XQAL : '
          'ne convient pas (piste) »)', what='short')
     c.page.fill(f'{FUEL} input[data-k="arr"]', 'XQNR')
     c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
@@ -12537,7 +12537,7 @@ def f350(c):
             what='the distance judged from XQNR')
     c.until("(w) => (document.querySelector('[data-module=fuel] [data-altnchk] [data-altnhead]')?.textContent || '')"
             ".replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
-            'XQAL Impossible : piste trop courte, trop loin de l’arrivée. Météo prévue : VFR.', timeout=8000,
+            'Dégagement XQAL : Impossible : piste trop courte, trop loin de l’arrivée. Météo prévue : VFR.', timeout=8000,
             what='two causes, one after the other: the runway, then the distance')
     c.ok(not any(ch.isdigit() for ch in head().replace('VFR', '')), head(), 'no figure in the line: they stay in the fold')
     c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
@@ -12547,11 +12547,11 @@ def f350(c):
     _altn_open(c, 2500, 2, 'VFR', 5000, more_ads=[_NEAR_AD])
     c.until(f"document.querySelector('{line}')?.dataset.state === 'ok' && "
             f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000, what='the line good')
-    c.eq(head(), 'XQAL Possible. Météo prévue : VFR.', 'a good alternate: its verdict and its weather', what='ok')
+    c.eq(head(), 'Dégagement XQAL : Possible. Météo prévue : VFR.', 'a good alternate: its verdict and its weather', what='ok')
     c.page.fill(f'{FUEL} input[data-k="arr"]', 'XQNN')
     c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
     c.until(f"document.querySelector('{line}')?.dataset.state === 'warn'", timeout=20000, what='the line « avec réserve »')
-    c.eq(head(), 'XQAL Possible avec réserve : trop près de l’arrivée. Météo prévue : VFR.', 'the reservation of distance in its short '
+    c.eq(head(), 'Dégagement XQAL : Possible avec réserve : trop près de l’arrivée. Météo prévue : VFR.', 'the reservation of distance in its short '
          'words', what='near')
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': 900})
