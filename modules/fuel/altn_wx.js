@@ -11,7 +11,7 @@
 //   « Non jugé : … », SOG-0702 « Impossible : … »), SOG-0690 (b) suivis de la météo prévue quand rien ne la dit déjà ; why : ses codes de réserve (altn_check.js proposalOf, plus « wx-lifr » pour
 //   « ✕ ») ; p : son état (crits, wxv, miss) ;
 //   h = { tt, TX (les textes de module.js : altnPropWhy, altnWhy.wxUnreachable) } ; TX : ses textes, français seul (SOG-0680).
-//   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
+//   SIGN → le signe de chaque état (ok ✓, warn !, err ✕, grey ?) ; RANK → SOG-0690 (b) son rang dans la liste proposée ; critsHtml(crits, id, h) → la liste des critères du pli « Critères du
 //   dégagement » (un signe et sa phrase par critère, le geste de lecture, la note de la météo) ; h = { why(c), read(c, id), note, esc }.
 
 export const TX = {
@@ -117,6 +117,15 @@ export const SIGN = {
   warn: '!',
   err: '✕',
   grey: '?'
+};
+
+/** SOG-0690 (b) point 4 (l'ergonome, 28/11) : le rang d'un verdict dans la liste proposée — Possible, Possible avec réserve, Non jugé,
+ *  Impossible (puis la distance). */
+export const RANK = {
+  ok: 0,
+  warn: 1,
+  grey: 2,
+  err: 3
 };
 
 /** La liste des critères du pli « Critères du dégagement » (sorti de module.js, inchangé) : par critère son signe, sa phrase (h.why) et le

@@ -954,7 +954,8 @@ const TX = {
     'Ohne Flugdatum wird das Wetter der Ausweichflugplätze nicht beurteilt.',
     'Sin fecha de vuelo, la meteorología de los alternativos no se evalúa.'
   ],
-  altnPropHead: ['Les plus proches de {arr} (piste et moyens vérifiés d’abord)', 'Closest to {arr} (runway and aids checked first)',
+  // SOG-0690 (b) point 4 (l'ergonome, 28/11) : les meilleurs d'abord ; français seul (SOG-0680)
+  altnPropHead: ['Les plus proches de {arr}, les meilleurs d’abord', 'Closest to {arr} (runway and aids checked first)',
     'Am nächsten zu {arr} (geprüfte Piste und Navigationshilfen zuerst)',
     'Los más cercanos a {arr} (pista y medios comprobados primero)'
   ],
@@ -967,8 +968,8 @@ const TX = {
     'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída']
   },
   altnPropMore: ['{n} autre(s) sur la Carte.', '{n} more on the Map.', '{n} weitere auf der Karte.', '{n} más en el mapa.'],
-  // SOG-0702 (l'ergonome) : une phrase, ses mots du signe en suivent une seconde
-  altnProposed: ['Proposé : {icao}.', 'Suggested: {icao}.', 'Vorgeschlagen: {icao}.', 'Propuesto: {icao}.'],
+  // SOG-0702 (l'ergonome) : une phrase, ses mots du signe en suivent une seconde ; SOG-0690 (b) : « Proposé » disparaît (français seul)
+  altnProposed: ['Désigné sur la Carte : {icao}.', 'Suggested: {icao}.', 'Vorgeschlagen: {icao}.', 'Propuesto: {icao}.'],
   altnTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
   altnWxNote: ['La météo est un indicateur (catégories VFR, MVFR, IFR, LIFR de la FAA), jamais une conformité aux minima du terrain.',
     'The weather is an indicator (the FAA’s VFR, MVFR, IFR, LIFR categories), never compliance with the aerodrome’s minima.',
@@ -5985,9 +5986,9 @@ function altnPropStale() {
     altnDocWrite();
   }
 }
-/** Le bloc de la proposition, sous la ligne du dégagement : le bouton ; la recherche en cours ; ce qui empêche ; les trois plus proches
- *  (signe, code, nom, distance, carburant de dégagement, réserves) avec « Prendre » ; « Proposé : … — Prendre » pour le terrain touché sur
- *  la Carte. Rien sans arrivée. */
+/** Le bloc de la proposition, sous la ligne du dégagement : le bouton ; la recherche en cours ; ce qui empêche ; les trois meilleurs
+ *  (SOG-0690 b : par verdict puis distance ; signe, code, verdict en mots, nom, distance, carburant de dégagement, « Détail ») avec
+ *  « Prendre » ; en tête, « Désigné sur la Carte : … » pour le terrain touché sur la Carte. Rien sans arrivée. */
 function altnPropHtml() {
   const r = S.flight.route || {},
     P = S.altnProp;
@@ -6010,11 +6011,14 @@ function altnPropHtml() {
         .filter(Boolean).join(' · ');
       return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}${say ? `<span data-altnsay>${esc(say)}</span> ` : ''}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}${AWX.detailFold(S.altnProp?.taf?.[x.icao], p.crits, x.icao, { why: c => altnWhyText(c, S.C?.sheet), read: altnReadHtml, note: tt(TX.altnWxNote), tt, esc })}</li>`;
     },
-    // SOG-0544 (le critère de l'ergonome) : un terrain dont la météo n'est pas connue passe après ceux dont elle est lue
-    unk = x => altnPropCrits(x).crits[2]?.state === 'grey' ? 1 : 0,
-    near = P.list.map((x, i) => [x, i]).sort((a, b) => unk(a[0]) - unk(b[0]) || a[1] - b[1]).slice(0, AC.CAND_LIST).map(([x]) => x),
+    // SOG-0690 (b) point 4 (l'ergonome) : par verdict, puis par distance (une météo inconnue est « Non jugé » : après les terrains jugés,
+    // SOG-0544) — classée UNE fois, au premier dessin de la liste, la météo lue (la proposition n'est dessinée qu'ensuite) ; le terrain
+    // désigné sur la Carte en tête, hors du rang, sans reclasser les autres
+    order = P.order ||= P.list.map(x => [x, AWX.RANK[altnPropCrits(x).sign] ?? 3]).sort((a, b) => a[1] - b[1] || a[0].nm - b[0].nm)
+    .map(([x]) => x.icao),
     touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
-    more = Math.max(0, P.list.length - near.length),
+    near = order.filter(k => k !== touched?.icao).slice(0, AC.CAND_LIST).map(k => P.list.find(x => x.icao === k)).filter(Boolean),
+    more = Math.max(0, P.list.length - near.length - (touched ? 1 : 0)),
     // l'ergonome : un repli à chevron, le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête (la proposition
     // et la Carte restent) ; ouvert d'abord, et rouvert quand un terrain est touché sur la Carte
     was = S.body?.querySelector('[data-altnchk] details[data-altnprop]'),
