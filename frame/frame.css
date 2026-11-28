@@ -10,7 +10,7 @@
 @import url("design/material.css");
 @import url("design/aqua.css");
 /* Mesures du cadre, données aux modules (frame/INTEGRATION.md § 9.2) : un module ne recopie jamais ces nombres.
-   --f-head-h : l'en-tête, une seule ligne (6 + 44 + 6 + filet de 1 px), à tout état et toute largeur.
+   --f-head-h : l'en-tête, une seule ligne (6 + 44 + 6 + filet de 1 px), à tout état et toute largeur, plus la zone sûre du HAUT de l'appareil (--f-safe-top : la barre d'état d'un iPhone, SOG-0716).
    --f-vh : la hauteur de la fenêtre (dvh quand le navigateur le sait : la barre d'adresse d'un téléphone n'y compte pas).
    --f-view-h : la hauteur dont dispose un module de vue fixe (html.f-fixed) : la fenêtre moins l'en-tête (et la barre du
    bas sur téléphone) ; elle vaut --f-split-h dans une vue double (.f-view.f-split) et --f-pane-h dans le volet (.f-pane),
@@ -20,7 +20,9 @@
    --f-rail-w : la largeur du rail d'icônes à gauche, en paysage sur un téléphone (html.f-land, plus bas) ; la barre du bas n'y
    prend plus de hauteur (--f-tab-space vaut 0). */
 :root {
-  --f-head-h: 57px;
+  --f-safe-top: env(safe-area-inset-top, 0px);
+  /* SOG-0716 : la barre d'état de l'appareil (0 ailleurs) ; les cas la posent à la main */
+  --f-head-h: calc(57px + var(--f-safe-top));
   --f-rail-w: 44px;
   --f-vh: 100vh;
   --f-view-pad: 16px;
@@ -108,7 +110,8 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: calc(6px + var(--f-safe-top)) 12px 6px;
+  /* l'en-tête passe sous la barre d'état : sa couleur la remplit, ses boutons restent dessous (SOG-0716) */
   min-width: 0;
   /* une seule ligne de --f-head-h : jamais plus haut, quel que soit l'état (retour, pastilles, écran du cadre) ; ses enfants
      n'ont pas de marge verticale (la règle « p.f-back » de l'aide ne les atteint plus, et rien ne les y remettrait) */

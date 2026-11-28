@@ -548,7 +548,8 @@ What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
 
 | Variable | What it is | Value |
 | --- | --- | --- |
-| `--f-head-h` | the header, one row at every width and state | `57px` |
+| `--f-safe-top` | the top safe area of the device (the status bar of a phone, `env(safe-area-inset-top)`; 0 elsewhere), counted in the header (SOG-0716) | `0px` |
+| `--f-head-h` | the header, one row at every width and state, plus `--f-safe-top` | `57px` + `--f-safe-top` |
 | `--f-vh` | the window's height | `100dvh` (`100vh` where `dvh` is unknown) |
 | `--f-view-h` | the height a fixed module may fill | `--f-vh` − `--f-head-h` (− `--f-tab-space`, the bar, on a phone) |
 | `--f-split-h` | the main module of a dual view (`#maps?with=fuel`) | `--f-vh` − `--f-head-h` − 2 × 16 px (the view's margins) |

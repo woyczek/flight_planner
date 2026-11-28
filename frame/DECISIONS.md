@@ -3236,6 +3236,12 @@ After the SOG-0360 survey (the transport never mistakes a quota for a refused to
 - **Case A398**: no `module.js` of another application's module is loaded on that page, the watcher declared in the table IS loaded; red before (the old `startWatchers` loads seven foreign `module.js`).
 
 ## 28 November 2026 — a deduced route marks the places whose place it deduced (SOG-0704)
+## 28 November 2026 — the top safe area of the device is counted in the header (SOG-0716)
+
+- **Fact**: the height of a view comes from the FRAME (`--f-vh` = 100dvh, `--f-view-h` = `--f-vh` − `--f-head-h`); the page asks `viewport-fit=cover`; the top safe area (`env(safe-area-inset-top)`) was counted only in the full screen of a fixed module (`html.f-fixed.f-full`); the normal header had no padding for it and `--f-head-h` was 57 px. On an iPhone whose status bar overlaps the page (the browser with its bar folded, an installed app) the header went under the bar. The measure comes from the frame, not from Fuel (Fuel only has `.fu-mpane` at `100vh`: Features').
+- **Decision** (the ergonomist, via the relay): `--f-safe-top` in `:root` (env, 0 elsewhere); `--f-head-h` = 57 px + it; the header pads its top by it. One place: everything under the header follows by its variables. `apple-mobile-web-app-status-bar-style` is NOT set: with `default` the bar is opaque and the inset is 0 (the rule changes nothing there); with `black-translucent` the rule is what is needed.
+- **Proof**: a browser cannot give the inset: A410 sets `--f-safe-top` by hand. Not measured on a real iPhone (nobody here): the user's next look on the phone is the check.
+
 ## 28 November 2026 — the theme of the frame: one reader, with an event (SOG-0720)
 
 - **Fact** (BUGS, the ergonomist's decision): the frame sets `data-design` / `data-tone` on `<html>`; nobody could ask « is it dark ? ». The rule of the tone was copied three times and the Map measured a colour.

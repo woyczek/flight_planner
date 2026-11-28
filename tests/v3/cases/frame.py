@@ -13223,3 +13223,25 @@ def a409(c):
     c.eq(c.js("() => window.__a409.seen.length"), n, 'an aborted subscription hears nothing more', what='abort')
     c.js("() => { const k = window.__a409.keep; const h = document.documentElement; if (k[0]) h.dataset.design = k[0]; else h.removeAttribute('data-design'); if (k[1]) h.dataset.tone = k[1]; else h.removeAttribute('data-tone') }")
     c.check_errors()
+
+
+@case('A410', 'The status bar of the phone is counted (SOG-0716): the header takes the TOP safe area of the device (--f-safe-top, env(safe-area-inset-top)) — its colour fills it, its buttons stay under it — and every measure of the frame that starts under the header follows (--f-head-h, the column of the verbs, the view); with no safe area (0) nothing moves', 'A',
+      tags=('frame',), designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0716 (the user, on an iPhone, in Fuel: « un poil trop haut »): the page asks viewport-fit=cover, the header had no padding for the top safe area and --f-head-h was 57 px whatever the device; the case sets --f-safe-top by hand (a browser cannot give env(safe-area-inset-top))")
+def a410(c):
+    c.open('hello')
+    c.until("!!window.SogFrame && !!document.querySelector('.f-head')", timeout=20000, what='the frame and its header')
+    measure = """(top) => { const h = document.documentElement; h.style.setProperty('--f-safe-top', top + 'px');
+      const head = document.querySelector('.f-head').getBoundingClientRect(), first = [...document.querySelectorAll('.f-head button, .f-head a')].filter(e => { const r = e.getBoundingClientRect(), p = getComputedStyle(e).position; return r.height >= 30 && r.width >= 30 && p !== 'absolute' && p !== 'fixed' }).sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top)[0], f = first ? first.getBoundingClientRect() : null,
+        view = document.querySelector('.f-view, #fView'), v = view ? view.getBoundingClientRect() : null, nav = document.querySelector('.f-nav'), n = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect() : null;
+      return { head: Math.round(head.height), headTop: Math.round(head.top), firstTop: f ? Math.round(f.top) : null, viewTop: v ? Math.round(v.top) : null, navTop: n ? Math.round(n.top) : null, cssHead: getComputedStyle(h).getPropertyValue('--f-head-h').trim(), calc: getComputedStyle(document.querySelector('.f-head')).height } }"""
+    zero = c.js(measure, 0)
+    c.eq((zero['head'], zero['calc']), (57, '57px'), 'no safe area: the header is what it always was (57 px)', what='no inset')
+    notch = c.js(measure, 47)
+    c.eq((notch['head'], notch['calc']), (104, '104px'), 'a 47 px status bar: the header is 57 + 47 px tall (its colour fills the bar)', what='inset header')
+    c.ok(notch['firstTop'] is None or notch['firstTop'] >= 47, notch, 'the buttons of the header stay UNDER the status bar (their top is at 47 px or more)')
+    c.ok(notch['viewTop'] is None or notch['viewTop'] >= 104 or c.width >= 1000, notch, 'the view starts under the taller header')
+    c.ok(notch['navTop'] is None or notch['navTop'] >= 104, notch, 'the column of the verbs, when it is shown, starts under the taller header')
+    c.shot(f'A410_{c.width}_{c.lang}_delivered.png')
+    c.js(measure, 0)
+    c.check_errors()
