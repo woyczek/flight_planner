@@ -12453,6 +12453,17 @@ _AD_HOLD = """(() => { window.__ad = { go: null, asks: 0, hold: false, release: 
       return db } } } }) })()"""
 
 
+def f346_shots(c, sel, what):
+    """F346: the element `sel` captured at 390 and 1280 (the relay reads them), the viewport back to 390 after."""
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{sel}')?.scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        c.shot(f'F346_{c.design}_{w}_{c.lang}_{what}.png')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+
+
 @case('F346', 'Procedures, a reading refused « unknown-aerodrome »: the PAGE chooses the sentence by what it knows of the code when the answer '
       'comes — the base has not answered yet: « La base n’a pas encore répondu pour LFQQ. Réessayez dans un instant. »; it has answered '
       'during the reading and does not know the code: « LFQQ n’est pas dans la base : aucune procédure à lire. »; SOG-0703: a code TYPED in '
@@ -12475,6 +12486,7 @@ def f346(c):
             what='the departure side empties at once (red before: the procedures of the departure of before stay)')
     c.eq([norm(c.text(f'{W} [data-procwaittext]') or ''), c.count(f'{FUEL} [data-proc=dep] select')],
          ['Lecture des procédures de LFQQ…', 0], 'the waiting line of the page, no procedure of the aerodrome of before', what='wait')
+    f346_shots(c, W, 'wait')
     # the base answers: it does not know LFQQ — the sentence the page chooses (SOG-0688), no reading offered
     c.js("window.__ad.go(null)")
     N = f'{FUEL} [data-proc=dep] [data-procnotinbase]'
@@ -12482,6 +12494,7 @@ def f346(c):
     c.eq([norm(c.text(N) or ''), c.count(f'{FUEL} [data-proc=dep] [data-do=procfetch]')],
          ['LFQQ n’est pas dans la base : aucune procédure à lire.', 0], 'the sentence of a code the base does not know, alone',
          what='unknown')
+    f346_shots(c, f'{FUEL} [data-proc=dep]', 'unknown')
     # then the readings refused (the flight leaves LFQQ)
     # the flight leaves LFQQ, the answer of the base for it held by the case. While the base has not answered, the Procedures card waits
     # (« Lecture des procédures de LFQQ… », Essais, train 8: no button there); the line of SOG-0638 under « Calculer » carries the reading
