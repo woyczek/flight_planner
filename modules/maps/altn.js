@@ -20,6 +20,11 @@ import {
   plain
 } from '../../frame/lib/untrusted.js';
 import {
+  altnSignColor,
+  altnSignSvg,
+  drawAltnSign
+} from '../../frame/lib/altn_sign.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -54,19 +59,6 @@ const hourOf = (o, k) => {
 // signes de contrôle, sans < > ni marques de format, borné : les gardes du socle (lib/safe_text.js, bâti sur frame/lib/untrusted.js)
 const num = inRange,
   clean = text;
-/** Les couleurs de la couche : vert et orange, de jour et de nuit (ni le rouge de la route proposée ni le gris du dégagement du vol). */
-export const ALTN_TINT = {
-  day: {
-    ok: '#2e7d32',
-    warn: '#e65100',
-    grey: '#5f6b7a' // SOG-0702 : « non jugé » (le « ? » de la liste de Carburant)
-  },
-  night: {
-    ok: '#69d28a',
-    warn: '#ffb74d',
-    grey: '#9aa7b6'
-  }
-};
 /** Le document ou l'événement de Carburant, nettoyé : { arr, list: [{ icao, name, lat, lon, nm, state, why, wxv, fuel }] } (sept au plus, dans l'ordre du document : la priorité de
  *  Carburant) ou null. Un terrain mal formé est écarté ; un état autre que ok / warn aussi (le document ne porte ni rouge ni gris). */
 export function altnSanitize(raw) {
@@ -142,41 +134,13 @@ export function altnSet(on) {
 }
 /** Vue double : Carburant est à côté, il écoute maps-altn-pick ; seule, la Carte renvoie vers lui (comme les itinéraires proposés). */
 const dual = () => S?.ctx?.query?.pane === '1' || !!S?.ctx?.query?.with;
-/** Le signe de l'état dans l'anneau, comme dans Carburant (la couleur seule ne suffit pas) : ✓ pour un terrain adapté, ! pour une réserve (le document ne porte pas d'état refusé : pas de ✕). Tracé, jamais une police. */
-function drawSign(ctx, x, y, state, col) {
-  ctx.strokeStyle = col;
-  ctx.fillStyle = col;
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  if (state === 'ok') {
-    ctx.moveTo(x - 4, y + .5);
-    ctx.lineTo(x - 1.2, y + 3.4);
-    ctx.lineTo(x + 4.2, y - 3.4);
-    ctx.stroke();
-  } else if (state === 'grey') { // « ? » : le crochet, sa tige, son point (tracé comme ✓ et !)
-    ctx.arc(x, y - 2.4, 2.7, Math.PI, Math.PI * 2.5);
-    ctx.lineTo(x, y + 1.6);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x, y + 4.4, 1.3, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.moveTo(x, y - 4.6);
-    ctx.lineTo(x, y + .8);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x, y + 3.9, 1.4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
 /** Les terrains mis en avant, sur la couche des écrans ; rend les cibles touchables : [{ icao, x, y }] en coordonnées de la vue. Un anneau de la couleur de l'état (vert ou orange, son
  *  halo du fond) avec son signe (✓ ou !) et, à côté, l'INDICATIF seul : le nom est dans la fiche (sept noms près de l'arrivée la recouvriraient) ; les terrains que la route du vol nomme
  *  déjà ne sont pas redessinés ; un indicatif ne couvre jamais les étiquettes de la route (avoid) ni un autre indicatif. */
 export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
   const A = current();
   if (!A) return [];
-  const T = ALTN_TINT[S.theme?.dark ? 'night' : 'day'],
+  const dark = !!S.theme?.dark,
     bg = S.theme?.bg || '#fff',
     own = new Set((S.route?.points || []).map(p => String(p.id || '').toUpperCase()).filter(Boolean)),
     taken = avoid.map(r => ({
@@ -217,15 +181,11 @@ export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
       q
     }
     of shown) {
-    const col = T[t.sign];
-    ctx.beginPath();
-    ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = col;
-    ctx.stroke();
-    drawSign(ctx, q.x, q.y, t.sign, col);
+    drawAltnSign(ctx, q.x, q.y, t
+      .sign, { // l'anneau et son signe : la table de frame/lib/altn_sign.js (la même que la légende et la liste de Carburant)
+        dark,
+        bg
+      });
     taken.push({
       x: q.x - 11,
       y: q.y - 11,
@@ -249,7 +209,7 @@ export function drawProposedAltn(ctx, toC, avoid = [], cur = null) {
     }
     of shown) {
     const w = ctx.measureText(t.icao).width,
-      col = T[t.sign],
+      col = altnSignColor(t.sign, dark),
       near = [
         [13, -8],
         [-13 - w, -8],
@@ -376,12 +336,13 @@ export function altnPick(icao) {
 export function altnLegendRows() {
   const A = current();
   if (!A) return [];
-  const T = ALTN_TINT[S.theme?.dark ? 'night' : 'day'],
-    mark = (s, c) => s === 'ok' ? `<path d="M11 7.4 L13.8 10.4 L19.2 3.6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>` : s === 'grey' ?
-    `<path d="M12.3 4.6 A2.7 2.7 0 1 1 15 7.3 L15 8.6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="11.4" r="1.3" fill="${c}"/>` :
-    `<path d="M15 2.4 L15 7.8" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="10.9" r="1.4" fill="${c}"/>`,
-    sw = (s, c) => `<svg class="mp-al-sw" width="30" height="14" viewBox="0 0 30 14" aria-hidden="true"><circle cx="15" cy="7" r="6" fill="none" stroke="${c}" stroke-width="2.4"/>${mark(s, c)}</svg>`;
-  return ['ok', 'warn', 'grey'].filter(s => A.list.some(t => t.sign === s)).map(s => [sw(s, T[s]), esc(tt(s === 'ok' ? TX.altnLgOk : s ===
+  const dark = !!S.theme?.dark,
+    sw = s => altnSignSvg(s, dark, {
+      width: 30,
+      height: 14,
+      cls: 'mp-al-sw'
+    });
+  return ['ok', 'warn', 'grey'].filter(s => A.list.some(t => t.sign === s)).map(s => [sw(s), esc(tt(s === 'ok' ? TX.altnLgOk : s ===
     'grey' ? TX.altnLgGrey : TX
     .altnLgWarn))]);
 }

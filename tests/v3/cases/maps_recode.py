@@ -8833,6 +8833,29 @@ _ALTN_SPY_JS = """(() => { const P = CanvasRenderingContext2D.prototype; if (P._
   window.__sq = 0; window.__a5 = []; window.__dots = []; P.arc = function (x, y, r) { if (r === 9) window.__ar.push([Math.round(x), Math.round(y), ++window.__sq]); if (r === 5) window.__a5.push([x, y, ++window.__sq]); if (r === 1.4) window.__dots.push([Math.round(x), Math.round(y)]); return ar.apply(this, arguments) } })()"""
 
 
+@case('D340', 'The sign of a proposed alternate (frame/lib/altn_sign.js, SOG-0702): ONE table for the Map and for Fuel — four signs (✓ green, ! orange, ? grey, ✕ red, the colours of Q-0075), day and night; the SVG and the canvas draw the same ring in the same colour', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0702 (the ergonomist and the relay, 28 Nov): the Map drew the pastille twice, in private (canvas and SVG), and its colours knew only ✓ and !: one file, one table, `altnSignSvg(sign, dark)` for the SVG, `drawAltnSign` for the canvas; the colours of Q-0075')
+def d340(c):
+    _me_open(c)
+    want = {'ok': ['#2e7d32', '#69d28a'], 'warn': ['#e65100', '#ffb74d'], 'grey': ['#5f6b7a', '#9aa7b6'], 'err': ['#c62828', '#ff8a80']}
+    r = c.js("""async () => { const A = await import('/frame/lib/altn_sign.js'), out = {}, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+      for (const s of ['ok', 'warn', 'grey', 'err', 'bogus']) {
+        out[s] = { svg: [false, true].map(d => A.altnSignSvg(s, d)), px: [false, true].map(d => { const cv = document.createElement('canvas'); cv.width = cv.height = 40; const x = cv.getContext('2d'); A.drawAltnSign(x, 20, 20, s, { dark: d, bg: '#fff' }); return [...x.getImageData(29, 20, 1, 1).data].slice(0, 3) }),
+          colors: [false, true].map(d => A.altnSignColor(s, d)) } }
+      return out }""")
+    for sign, cols in want.items():
+        got = r[sign]
+        c.eq(got['colors'], cols, f'{sign}: the colour of the table, day then night (Q-0075)', what=str(got['colors']))
+        c.ok(all(col in svg for col, svg in zip(cols, got['svg'])) and all(svg.startswith('<svg') and 'aria-hidden="true"' in svg for svg in got['svg']), got['svg'], f'{sign}: the SVG of the pastille carries the colour of the table, day and night')
+        for px, col in zip(got['px'], cols):
+            exp = [int(col[i:i + 2], 16) for i in (1, 3, 5)]
+            c.ok(all(abs(a - b) <= 24 for a, b in zip(px, exp)), f'{sign}: pixel {px}, table {exp}', f'{sign}: the canvas ring is in the colour of the table (the same as the SVG)')
+    c.eq(r['bogus']['colors'], want['ok'], 'an unknown sign is read as the first one (never a missing drawing)', what=str(r['bogus']['colors']))
+    c.ok(len({s for k in want for s in r[k]['svg']}) == 8, '', 'the four signs, day and night: eight different drawings')
+    c.check_errors()
+
+
 _ALTN_SIGN_DOC = lambda: {'schema': 1, 'updated_at': iso(now()), 'arr': 'LFML', 'key': 'LFRS>LFML>C30J', 'list': [
     {'icao': 'LFMA', 'name': 'Adapté', 'lat': 43.5, 'lon': 5.1, 'nm': 12, 'state': 'ok', 'sign': 'ok', 'why': []},
     {'icao': 'LFMB', 'name': 'Réserve', 'lat': 43.7, 'lon': 5.3, 'nm': 25, 'state': 'warn', 'sign': 'warn', 'why': ['wx-ifr']},
