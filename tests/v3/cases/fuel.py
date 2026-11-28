@@ -12747,6 +12747,10 @@ def f354(c):
           c.js(f"document.querySelector('{FUEL} [data-reng] [data-do=rcheck]').getAttribute('aria-disabled')")],
          ['Niveau hors de FL010 à FL660.', 'true', 'true'], '« Calculer » and « Contrôler » greyed, the cause said (red before: sent '
          'without a level, the engine\'s own)', what='greyed')
+    # the relay (train 13): greyed to the eye too — the look of the frame for an inactive button (red before: opacity 1, the usual look)
+    look = c.js(f"""[...document.querySelectorAll('{FUEL} [data-reng] [data-do=rcompute], {FUEL} [data-reng] [data-do=rcheck]')]
+        .map(b => +getComputedStyle(b).opacity)""")
+    c.ok(len(look) == 2 and all(o < 1 for o in look), look, '« Calculer » and « Contrôler » look greyed (the opacity of the frame)')
     c.eq([asked('compute', False), asked('check', False)], [None, None], 'nothing sent', what='nothing sent')
     c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
     for w in (390, 1280):
