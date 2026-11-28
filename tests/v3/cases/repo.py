@@ -4396,7 +4396,7 @@ def i64(c):
 
 # SOG-0719 (the ergonomist): ONE folding block for the whole suite, frame/lib/fold.js; a `<details` written elsewhere is a fold that dodges it. The count of the `<details` written outside fold.js, in the code of
 # frame/ and modules/ (not the mock-ups `maquette/`, the benches `test/`), has a CEILING: the number of the tip where the case came in. It goes down with the refactoring (SOG-0718 for Fuel), never up.
-DETAILS_CEILING = 97
+DETAILS_CEILING = 66   # 97 at the tip where the case came in; 66 on the tip after SOG-0718 (Fuel's 26 hand-written folds go through fold.js: 31 fewer)
 
 
 @case('I66', 'One folding block (SOG-0719): the `<details` written outside frame/lib/fold.js, in the code of frame/ and modules/ (mock-ups and benches excluded), do not pass their ceiling — it only goes down with the refactoring (SOG-0718)', 'I', static=True,
