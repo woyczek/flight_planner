@@ -2748,7 +2748,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the case uses it. The word, decided by the ergonomist (b, the origin kept): a value recomputed at the level of the flight — the cruise
   TAS of the quote, the AVERAGE climb rate up to the filed level — is said « {Grandeur} au FL{n} d’après la fiche ({v} {unité}) … »
   (perfFields gives `fl` in its `bound`); the descent rate and the terminal speed (the APD sheet) leave as written and keep « … de la
-  fiche ({v} {unité}) … ». F354 writes both sentences in clear (1 907 kt at FL200; 30 ft/min).
+  fiche ({v} {unité}) … ». F354 writes both sentences in clear (1 907 kt at FL200; 30 ft/min). The terminal speed (the ergonomist's answer
+  a): it comes from the EUROCONTROL sheet of the TYPE, not from the sheet of the aircraft — « Vitesse terminale du type {TYPE} d’après
+  Eurocontrol ({v} kt) … », grey, at the same two places, and « Ouvrir la fiche » is not shown when it is the only sentence (nothing the
+  pilot can correct there); F354 (iv) with an invented type and value.
 
 - **28 Nov 2026 — the train 11 on 42dcfb03b, the last two reds of Fuel**. F354 (the code): the box of the bounds of SOG-0721 was drawn by renderRinfo only, once, when the route step is drawn — the quote or the sheet not read yet, it stayed empty, and a level changed on the step never greyed « Calculer »; refresh() now draws it after staleDraw, each time the quote is computed again. F353 (the case): the browser writes the attributes of the SVG again, so two strings differ for the same drawing — the case parses the string of altnSignSvg in a template and compares the nodes (isEqualNode), the equality of the drawings kept.
 

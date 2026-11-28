@@ -4836,7 +4836,7 @@ function routePerf() {
     code = sheet ? sheet.icao || sheet.type || sheet.id : '',
     apd = code ? S.A?.perf?.(code) || null : null;
   if (!sheet || (String(sheet.id || '').startsWith('TYPE_') && !apd)) return null;
-  return RE.perfFields(C.q, apd);
+  return RE.perfFields(C.q, apd, code);
 }
 /** SOG-0514 : « Vitesses par défaut du moteur » sans les vitesses de l'avion ; SOG-0721 : sinon celles parties à leur borne, dites. */
 const perfDefaultHtml = () => (p => p ? RB.boundLines(p.bound, RLH) : `<p class="f-muted" data-rdefperf>${esc(tt(TX.rDefaultPerf))}</p>`)(

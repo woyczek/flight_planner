@@ -12665,13 +12665,13 @@ def f353(c):
 def f354(c):
     st = _route_launcher(c, ['route/compute'])
 
-    def opened(sheet, level_ft):
+    def opened(sheet, level_ft, extra=()):
         docs = proc_flight()
         for d in docs:
             if d[0].endswith('current_flight.json'):
                 d[1]['aircraft'] = {'type': sheet['icao'], 'sheetId': sheet['id'], 'registration': 'F-ZZXQ'}
                 d[1]['level'] = {'ft': level_ft}
-        c.open('fuel', docs=proc_docs() + docs + [[f"aircraft/sheets/{sheet['id']}.json", sheet, 'document']], airfields=True)
+        c.open('fuel', docs=proc_docs() + docs + [[f"aircraft/sheets/{sheet['id']}.json", sheet, 'document'], *extra], airfields=True)
         to_step(c, 1)
         c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
 
@@ -12721,6 +12721,16 @@ def f354(c):
     c.eq(said(D)[0], 'Taux de descente de la fiche (30 ft/min) hors de ce que le calcul de route accepte (50 à 20 000 ft/min) : il compte '
          '50 ft/min.', 'the sentence with the low bound: the rate written in the sheet, sent as it is — no level said', what='descent')
     c.eq((asked() or {}).get('descent_fpm'), 50, 'the request carries the low bound', what='low bound sent')
+    # (iv) the terminal speed comes from the EUROCONTROL sheet of the TYPE (an invented type, an invented value: no line of a workbook)
+    term = {**_BE9L, 'id': 'XQTERM', 'name': 'XQTERM (essai)', 'icao': 'XQTV'}
+    opened(term, 10000, [['AircraftDB/aircraft_perf.json', {'XQTV': {'climbInitial': {'iasKt': 450}}}, 'document']])
+    T = f'{FUEL} [data-rbound] [data-rperfbound=terminal_speed_kt]'
+    c.until(f"!!document.querySelector('{T}')", timeout=10000, what='the terminal speed said under « Calculer »')
+    c.eq([said(T)[0], c.js(f"!!document.querySelector('{FUEL} [data-rbound] a[data-rsheet]')")],
+         ['Vitesse terminale du type XQTV d’après Eurocontrol (450 kt) hors de ce que le calcul de route accepte (30 à 400 kt) : il compte '
+          '400 kt.', False], 'the type and EUROCONTROL named (the ergonomist, 28 Nov, answer a), no « Ouvrir la fiche » when it is the only '
+         'sentence: nothing the pilot can correct there', what='terminal')
+    c.eq((asked() or {}).get('terminal_speed_kt'), 400, 'the request carries the bound', what='terminal bound sent')
     # (iii) a level of the flight outside FL010 to FL660: greyed, its cause, nothing sent
     high = {**fast, 'id': 'XQHIGH', 'icao': 'XQHI', 'cruise': {**fast['cruise'], 'tasKt': 450, 'ceilingFt': 75000}}
     opened(high, 70000)

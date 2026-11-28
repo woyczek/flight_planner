@@ -6,13 +6,16 @@
 //
 // API : boundLines(bound, h) → les phrases, une par valeur, dans l'ordre de la liste fermée (croisière, montée, descente, terminale) ;
 //   bound : perfFields(…).bound ([{ k, v, lo, hi, used, fl? }]) ; h = { tt, esc, lang() } ; fl : la valeur est recalculée à ce niveau
-//   (la croisière, la montée) : « … au FL{n} d’après la fiche … », sinon « … de la fiche … » (l'ergonome, 28/11).
+//   (la croisière, la montée) : « … au FL{n} d’après la fiche … », sinon « … de la fiche … » (l'ergonome, 28/11) ; la vitesse terminale
+//   vient de la fiche EUROCONTROL du type (type) : « Vitesse terminale du type {TYPE} d’après Eurocontrol … », et « Ouvrir la fiche » n'est
+//   pas montré quand elle est seule (le pilote n'y peut rien corriger).
 //   boxHtml(bound, levelBad, href, h) → le contenu de la ligne sous « Calculer » : la cause d'un niveau hors bornes, sinon les phrases et
 //   « Ouvrir la fiche » (href : la fiche dans Maintenance) ; '' sans rien à dire.
 
 export const TX = {
   bound: ['{g} de la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
   boundAt: ['{g} au FL{n} d’après la fiche ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
+  boundApd: ['Vitesse terminale du type {t} d’après Eurocontrol ({v} {u}) hors de ce que le calcul de route accepte ({min} à {max} {u}) : il compte {b} {u}.'],
   // la liste fermée des grandeurs (l'ergonome)
   names: {
     speed_kt: ['Vitesse de croisière'],
@@ -36,8 +39,10 @@ const ORDER = ['speed_kt', 'climb_fpm', 'descent_fpm', 'terminal_speed_kt'],
 export function boundLines(bound, h) {
   const fmt = n => Number(n).toLocaleString(h.lang());
   return (Array.isArray(bound) ? bound : []).filter(x => ORDER.includes(x?.k)).sort((a, b) => ORDER.indexOf(a.k) - ORDER.indexOf(b.k))
-    .map(x => `<p class="f-muted" data-rperfbound="${x.k}">${h.esc(h.tt(x.fl > 0 ? TX.boundAt : TX.bound, {
+    .map(x => `<p class="f-muted" data-rperfbound="${x.k}">${h.esc(h.tt(x.k === 'terminal_speed_kt' ? TX.boundApd : x.fl > 0 ? TX.boundAt :
+      TX.bound, {
       g: h.tt(TX.names[x.k]),
+      t: x.type || '',
       n: String(x.fl).padStart(3, '0'),
       v: fmt(x.v),
       u: UNIT[x.k],
@@ -51,6 +56,8 @@ export function boundLines(bound, h) {
  *  bornées de la fiche et le lien vers elle. */
 export function boxHtml(bound, levelBad, href, h) {
   if (levelBad) return `<p class="f-warn" data-rlevelbad>${h.esc(h.tt(TX.levelBad))}</p>`;
-  const lines = boundLines(bound, h);
-  return lines ? `${lines}<p class="f-muted"><a data-rsheet href="${h.esc(href)}">${h.esc(h.tt(TX.openSheet))}</a></p>` : '';
+  const lines = boundLines(bound, h),
+    // la vitesse terminale seule vient de la fiche EUROCONTROL : rien à corriger dans la fiche de l'avion, pas de lien
+    own = (Array.isArray(bound) ? bound : []).some(x => x?.k !== 'terminal_speed_kt');
+  return lines ? `${lines}${own ? `<p class="f-muted"><a data-rsheet href="${h.esc(href)}">${h.esc(h.tt(TX.openSheet))}</a></p>` : ''}` : '';
 }

@@ -81,8 +81,9 @@ const num = (v, lo, hi) => Number.isFinite(+v) && v !== null && v !== '' && +v >
  *  d'où le devis descend, palier compris, ÷ sa durée — comme verticalProfile) pose le sommet de montée
  *  et le début de descente au bon moment (AeroDB, 19/11) ; les mêmes chiffres que le profil écrit pour la Carte (verticalProfile).
  *  speed_kt : la TAS de croisière SANS vent, ce que l'IFPS juge. terminal_speed_kt : la Badin de montée initiale de la fiche APD (sous
- *  5 000 ft, là où sont les procédures), sinon omis. Entrées bornées (la fiche APD vient du dossier de données : non fiable). */
-export function perfFields(q, apd = null) {
+ *  5 000 ft, là où sont les procédures), sinon omis. Entrées bornées (la fiche APD vient du dossier de données : non fiable). type : le
+ *  code du type de la fiche APD, nommé dans la phrase de la vitesse terminale bornée (SOG-0721). */
+export function perfFields(q, apd = null, type = '') {
   const lvl = num(q?.levelFt, 1, 70000),
     end = num(q?.endFt, 1, 70000) ?? lvl, // le niveau d'où le devis descend (model.js : levels.at(-1).ft), sinon le niveau déposé
     cm = num(q?.climb?.min, .1, 600),
@@ -117,6 +118,9 @@ export function perfFields(q, apd = null) {
       // descente et la vitesse terminale partent telles que la fiche les écrit
       ...(k === 'speed_kt' || k === 'climb_fpm' ? {
         fl: Math.round(lvl / 100)
+      } : {}),
+      ...(k === 'terminal_speed_kt' ? {
+        type: String(type || '').slice(0, 8)
       } : {})
     });
   }
